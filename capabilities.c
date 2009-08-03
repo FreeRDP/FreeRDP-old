@@ -154,7 +154,7 @@ rdp_out_order_capset(rdpRdp * rdp, STREAM s)
 	orderSupport[NEG_PATBLT_INDEX] = 1;
 	orderSupport[NEG_SCRBLT_INDEX] = 1;
 	orderSupport[NEG_MEMBLT_INDEX] = (rdp->settings->bitmap_cache ? 1 : 0);
-	// orderSupport[NEG_MEM3BLT_INDEX] = 1;
+	orderSupport[NEG_MEM3BLT_INDEX] = (rdp->settings->triblt ? 1 : 0);
 	// orderSupport[NEG_DRAWNINEGRID_INDEX] = 1;
 	orderSupport[NEG_LINETO_INDEX] = 1;
 	orderSupport[NEG_MULTI_DRAWNINEGRID_INDEX] = 1;
