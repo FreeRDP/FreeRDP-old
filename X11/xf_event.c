@@ -190,7 +190,10 @@ xf_handle_event(rdpInst * inst, xfInfo * xfi, XEvent * xevent)
 			printf("xf_handle_event: LeaveNotify\n");
 			break;
 		case NoExpose:
-			//printf("xf_handle_event: NoExpose\n");
+			printf("xf_handle_event: NoExpose\n");
+			break;
+		case GraphicsExpose:
+			printf("xf_handle_event: GraphicsExpose\n");
 			break;
 		case ConfigureNotify:
 			printf("xf_handle_event: ConfigureNotify\n");

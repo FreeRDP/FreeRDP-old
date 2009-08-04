@@ -76,7 +76,7 @@ xf_set_rop3(xfInfo * xfi, int rop3)
 			break;
 		case 0xf0: /* P */
 			XSetFunction(xfi->display, xfi->gc, GXcopy);
-			break;		
+			break;
 		default:
 			printf("xf_set_rop3: unknonw rop3 %x\n", rop3);
 			break;
@@ -462,12 +462,19 @@ l_ui_screenblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int c
 	{
 		if (xfi->unobscured)
 		{
-			XCopyArea(xfi->display, xfi->wnd, xfi->wnd, xfi->gc, srcx, srcy, cx, cy, x, y);
+			XCopyArea(xfi->display, xfi->wnd, xfi->wnd, xfi->gc, srcx, srcy, cx, cy,
+				x, y);
 		}
 		else
 		{
-			XCopyArea(xfi->display, xfi->backstore, xfi->wnd, xfi->gc, x, y, cx, cy, x, y);
+			XSetFunction(xfi->display, xfi->gc, GXcopy);
+			XCopyArea(xfi->display, xfi->backstore, xfi->wnd, xfi->gc, x, y, cx, cy,
+				x, y);
 		}
+	}
+	else
+	{
+		printf("l_ui_screenblt:\n");
 	}
 }
 
@@ -524,14 +531,9 @@ static void
 l_ui_reset_clip(struct rdp_inst * inst)
 {
 	xfInfo * xfi;
-	XRectangle clip_rect;
 
 	xfi = GET_XFI(inst);
-	clip_rect.x = 0;
-	clip_rect.y = 0;
-	clip_rect.width = 4096;
-	clip_rect.height = 4096;
-	XSetClipRectangles(xfi->display, xfi->gc, 0, 0, &clip_rect, 1, YXBanded);
+	XSetClipMask(xfi->display, xfi->gc, None);
 }
 
 static void
@@ -553,7 +555,7 @@ l_ui_destroy_cursor(struct rdp_inst * inst, RD_HCURSOR cursor)
 }
 
 static RD_HCURSOR
-l_ui_create_cursor(struct rdp_inst * inst, unsigned int x, unsigned int y,
+l_ui_create_cursor(struct rdp_inst * inst, uint32 x, uint32 y,
 	int width, int height, uint8 * andmask, uint8 * xormask)
 {
 	printf("ui_create_cursor:\n");
@@ -569,7 +571,11 @@ l_ui_set_null_cursor(struct rdp_inst * inst)
 static void
 l_ui_set_default_cursor(struct rdp_inst * inst)
 {
+	xfInfo * xfi;
+
+	xfi = GET_XFI(inst);
 	printf("ui_set_default_cursor:\n");
+	XUndefineCursor(xfi->display, xfi->wnd);
 }
 
 static RD_HCOLOURMAP
@@ -585,7 +591,11 @@ l_ui_create_colourmap(struct rdp_inst * inst, RD_COLOURMAP * colours)
 static void
 l_ui_move_pointer(struct rdp_inst * inst, int x, int y)
 {
+	xfInfo * xfi;
+
+	xfi = GET_XFI(inst);
 	printf("ui_move_pointer:\n");
+	XWarpPointer(xfi->display, xfi->wnd, xfi->wnd, 0, 0, 0, 0, x, y);
 }
 
 static void
@@ -599,20 +609,22 @@ l_ui_set_colourmap(struct rdp_inst * inst, RD_HCOLOURMAP map)
 }
 
 static RD_HBITMAP
-l_ui_create_surface(struct rdp_inst * inst, int width, int height, RD_HBITMAP old)
+l_ui_create_surface(struct rdp_inst * inst, int width, int height, RD_HBITMAP old_surface)
 {
 	Pixmap new;
+	Pixmap old;
 	xfInfo * xfi;
 
 	xfi = GET_XFI(inst);
 	new = XCreatePixmap(xfi->display, xfi->wnd, width, height, xfi->depth);
+	old = (Pixmap) old_surface;
 	if (old != 0)
 	{
-		XCopyArea(xfi->display, (Drawable) old, new, xfi->gc_default, 0, 0,
+		XCopyArea(xfi->display, old, new, xfi->gc_default, 0, 0,
 			width, height, 0, 0);
-		XFreePixmap(xfi->display, (Pixmap) old);
+		XFreePixmap(xfi->display, old);
 	}
-	if (xfi->drw == (Drawable) old)
+	if (xfi->drw == old)
 	{
 		xfi->drw = new;
 	}
@@ -784,6 +796,7 @@ xf_post_connect(rdpInst * inst)
 {
 	xfInfo * xfi;
 	XEvent xevent;
+	XGCValues gcv;
 	int input_mask;
 	int width;
 	int height;
@@ -811,12 +824,13 @@ xf_post_connect(rdpInst * inst)
 	}
 	while (xevent.type != VisibilityNotify);
 	xfi->unobscured = xevent.xvisibility.state == VisibilityUnobscured;
-	xfi->gc = XCreateGC(xfi->display, xfi->wnd, 0, NULL);
+	memset(&gcv, 0, sizeof(gcv));
+	xfi->gc = XCreateGC(xfi->display, xfi->wnd, GCGraphicsExposures, &gcv);
 	xfi->backstore = XCreatePixmap(xfi->display, xfi->wnd, width, height, xfi->depth);
 	xfi->drw = xfi->backstore;
 	xfi->bitmap_mono = XCreatePixmap(xfi->display, xfi->wnd, 8, 8, 1);
-	xfi->gc_mono = XCreateGC(xfi->display, xfi->bitmap_mono, 0, NULL);
-	xfi->gc_default = XCreateGC(xfi->display, xfi->wnd, 0, NULL);
+	xfi->gc_mono = XCreateGC(xfi->display, xfi->bitmap_mono, GCGraphicsExposures, &gcv);
+	xfi->gc_default = XCreateGC(xfi->display, xfi->wnd, GCGraphicsExposures, &gcv);
 	XSetForeground(xfi->display, xfi->gc, BlackPixelOfScreen(xfi->screen));
 	XFillRectangle(xfi->display, xfi->backstore, xfi->gc, 0, 0, width, height);
 	return 0;
