@@ -21,7 +21,8 @@ xf_handle_event_Expose(rdpInst * inst, xfInfo * xfi, XEvent * xevent)
 		y = xevent->xexpose.y;
 		cx = xevent->xexpose.width;
 		cy = xevent->xexpose.height;
-		XCopyArea(xfi->display, xfi->backstore, xfi->wnd, xfi->gc, x, y, cx, cy, x, y);
+		XCopyArea(xfi->display, xfi->backstore, xfi->wnd, xfi->gc_default,
+			x, y, cx, cy, x, y);
 	}
 	return 0;
 }

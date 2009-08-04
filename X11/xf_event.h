@@ -8,8 +8,6 @@ struct xf_info
 {
 	Window wnd;
 	GC gc;
-	GC create_bitmap_gc;
-	GC create_glyph_gc;
 	Display * display;
 	Screen * screen;
 	Colormap xcolmap;
@@ -27,6 +25,9 @@ struct xf_info
 	int blue_mask;
 	int * colourmap;
 	Drawable drw;
+	Pixmap bitmap_mono;
+	GC gc_mono;
+	GC gc_default;
 };
 typedef struct xf_info xfInfo;
 

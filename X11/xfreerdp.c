@@ -40,22 +40,38 @@ process_params(rdpSet * settings, int argc, char ** argv)
 
 	set_default_params(settings);
 	printf("process_params\n");
+	if (argc < 2)
+	{
+		return 1;
+	}
 	for (index = 1; index < argc; index++)
 	{
 		if (strcmp("-a", argv[index]) == 0)
 		{
 			index++;
+			if (index == argc)
+			{
+				return 1;
+			}
 			settings->server_depth = atoi(argv[index]);
 		}
 		else if (strcmp("-u", argv[index]) == 0)
 		{
 			index++;
+			if (index == argc)
+			{
+				return 1;
+			}
 			strncpy(settings->username, argv[index], 255);
 			settings->username[255] = 0;
 		}
 		else if (strcmp("-p", argv[index]) == 0)
 		{
 			index++;
+			if (index == argc)
+			{
+				return 1;
+			}
 			strncpy(settings->password, argv[index], 63);
 			settings->password[63] = 0;
 			settings->autologin = 1;
@@ -63,6 +79,10 @@ process_params(rdpSet * settings, int argc, char ** argv)
 		else if (strcmp("-g", argv[index]) == 0)
 		{
 			index++;
+			if (index == argc)
+			{
+				return 1;
+			}
 			settings->width = strtol(argv[index], &p, 10);
 			if (*p == 'x')
 			{
@@ -78,6 +98,10 @@ process_params(rdpSet * settings, int argc, char ** argv)
 		else if (strcmp("-t", argv[index]) == 0)
 		{
 			index++;
+			if (index == argc)
+			{
+				return 1;
+			}
 			settings->tcp_port_rdp = atoi(argv[index]);
 		}
 		else
