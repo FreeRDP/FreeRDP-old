@@ -51,8 +51,12 @@ iso_send_msg(rdpIso * iso, uint8 code)
 static void
 iso_send_connection_request(rdpIso * iso, char * username)
 {
+	/*
+	 * Network Level Authentication (NLA) starts by saying we support it :P
+	 */
+
 	STREAM s;
-	int length = 30 + strlen(username);
+	int length = 30 + strlen(username) + 8;
 
 	s = tcp_init(iso->tcp, length);
 
@@ -69,8 +73,16 @@ iso_send_connection_request(rdpIso * iso, char * username)
 	out_uint8p(s, "Cookie: mstshash=", strlen("Cookie: mstshash="));
 	out_uint8p(s, username, strlen(username));
 
-	out_uint8(s, 0x0d);	/* Unknown */
-	out_uint8(s, 0x0a);	/* Unknown */
+	/* routingToken */
+	out_uint8(s, 0x0D);	/* Unknown */
+	out_uint8(s, 0x0A);	/* Unknown */
+
+	/* When using NLA, the RDP_NEG_DATA field should be present */
+
+	out_uint8(s, 0x01);	/* TYPE_RDP_NEG_REQ */
+	out_uint8(s, 0x00);	/* flags, must be set to zero */
+	out_uint16(s, 8);	/* RDP_NEG_DATA length (8) */
+	out_uint32(s, 0x00000003);	/* requestedProtocols, PROTOCOL_HYBRID_FLAG | PROTOCOL_SSL_FLAG */
 
 	s_mark_end(s);
 	tcp_send(iso->tcp, s);
