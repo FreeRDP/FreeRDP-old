@@ -53,6 +53,23 @@ enum MCS_PDU_TYPE
 	MCS_SDIN = 26		/* Send Data Indication */
 };
 
+/* Negotation message types*/
+#define TYPE_RDP_NEG_REQ	0x1
+#define TYPE_RDP_NEG_RSP	0x2
+#define TYPE_RDP_NEG_FAILURE	0x3
+
+/* Protocol security flags */
+#define PROTOCOL_RDP		0x00000000
+#define PROTOCOL_SSL		0x00000001
+#define PROTOCOL_HYBRID		0x00000002
+
+/* Protocol security negotation failure reason flags */
+#define SSL_REQUIRED_BY_SERVER		0x00000001
+#define SSL_NOT_ALLOWED_BY_SERVER	0x00000002
+#define SSL_CERT_NOT_ON_SERVER		0x00000003
+#define INCONSISTENT_FLAGS		0x00000004
+#define HYBRID_REQUIRED_BY_SERVER	0x00000005
+
 #define MCS_CONNECT_INITIAL	0x7f65
 #define MCS_CONNECT_RESPONSE	0x7f66
 
