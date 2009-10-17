@@ -23,8 +23,11 @@
 #include "iso.h"
 #include "mcs.h"
 #include "secure.h"
+#include "spnego.h"
 #include "rdp.h"
 #include "mem.h"
+
+#include <openssl/ssl.h>
 
 //#define USE_NLA
 
@@ -87,7 +90,7 @@ iso_send_connection_request(rdpIso * iso, char * username) {
 	out_uint8(s, 0x01); /* TYPE_RDP_NEG_REQ */
 	out_uint8(s, 0x00); /* flags, must be set to zero */
 	out_uint16(s, 8); /* RDP_NEG_DATA length (8) */
-	out_uint32(s, 0x00000000); /* requestedProtocols, PROTOCOL_HYBRID_FLAG | PROTOCOL_SSL_FLAG */
+	out_uint32(s, 0x00000003); /* requestedProtocols, PROTOCOL_HYBRID_FLAG | PROTOCOL_SSL_FLAG */
 #endif
 	s_mark_end(s);
 	tcp_send(iso->tcp, s);
@@ -105,6 +108,7 @@ rdp_process_negotiation_response(STREAM s)
 	in_uint16_le(s, length);
 	in_uint32_le(s, selectedProtocol);
 
+#ifdef USE_NLA
 	switch (selectedProtocol)
 	{
 		case PROTOCOL_RDP:
@@ -120,6 +124,7 @@ rdp_process_negotiation_response(STREAM s)
 			printf("Error: Unknown protocol security\n");
 			break;
 	}
+#endif
 }
 
 /* Process Negotiation Failure */
@@ -134,6 +139,7 @@ rdp_process_negotiation_failure(STREAM s)
 	in_uint16_le(s, length);
 	in_uint32_le(s, failureCode);
 
+#ifdef USE_NLA
 	switch (failureCode)
 	{
 		case SSL_REQUIRED_BY_SERVER:
@@ -155,6 +161,47 @@ rdp_process_negotiation_failure(STREAM s)
 			printf("Error: Unknown protocol security error\n");
 			break;
 	}
+#endif
+}
+
+/* This is quite ugly, I'll make it clean later */
+
+void
+rdp_tls_init(STREAM s, rdpIso * iso, uint8 * code, uint8 * rdpver)
+{
+	//char buffer[1024];
+	SSL_CTX *sslContext;
+	SSL *sslConnection;
+
+	SSL_load_error_strings();
+	SSL_library_init();
+
+	sslContext = SSL_CTX_new(TLSv1_client_method());
+
+	if(sslContext == NULL) {
+		printf("SSL_CTX_new() error\n");
+	}
+
+	sslConnection = SSL_new(sslContext);
+	if (sslConnection == NULL) {
+		printf("SSL_new() Error\n");
+	}
+
+	SSL_set_fd(sslConnection, iso->tcp->sock);
+
+	if(SSL_connect(sslConnection) <= 0) {
+		printf("SSL_connect() Error\n");
+	}
+
+	/* SPNEGO comes here
+	 *
+	 * I know samba has an SPNEGO implementation, but it's licensed under GPLv3
+	 * As it is the intention of FreeRDP to change the license of the library to
+	 * LGPL it doesn't look like a good idea to reuse that code. I'll have to write
+	 * a new implementation from scratch...
+	 */
+
+	exit(0);
 }
 
 /* Receive a message on the ISO layer, return code */
@@ -199,7 +246,6 @@ iso_recv_msg(rdpIso * iso, uint8 * code, uint8 * rdpver) {
 	}
 	in_uint8s(s, 5); /* dst_ref, src_ref, class */
 
-#ifdef USE_NLA
 	in_uint8(s, type); /* Type */
 
 	switch (type)
@@ -211,7 +257,11 @@ iso_recv_msg(rdpIso * iso, uint8 * code, uint8 * rdpver) {
 			rdp_process_negotiation_failure(s);
 			break;
 	}
+
+#ifdef USE_NLA
+	rdp_tls_init(s, iso, code, rdpver);
 #endif
+
 	return s;
 }
 
