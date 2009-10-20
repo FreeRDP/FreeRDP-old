@@ -19,7 +19,7 @@ clean:
 	rm -f libfreerdp.so
 
 libfreerdp.so: $(LIBOBJS)
-	$(CC) -shared -o libfreerdp.so $(LIBOBJS) -lcrypto
+	$(CC) -shared -o libfreerdp.so $(LIBOBJS) -lcrypto -lssl
 
 rdp.o: ../rdp.c
 	$(CC) $(CFLAGS) -c ../rdp.c
