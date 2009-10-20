@@ -101,7 +101,7 @@ AC_ARG_ENABLE(static-openssl,
 LIBS="$LIBS $ssldir/lib/libcrypto.a" 
              ],
              [ 
-LIBS="$LIBS -L$ssldir/lib -lcrypto" 
+LIBS="$LIBS -L$ssldir/lib -lcrypto -lssl" 
 rpath="$rpath:$ssldir/lib"
              ])
 
@@ -908,7 +908,7 @@ case "$host" in
     CFLAGS="$CFLAGS -D_XOPEN_SOURCE_EXTENDED"
     ;;
 *-*-irix6.5*)
-    LIBS="$LIBS -L$ssldir/lib32 -lcrypto"
+    LIBS="$LIBS -L$ssldir/lib32 -lcrypto -lssl"
     CFLAGS="$CFLAGS -D__SGI_IRIX__"
     ;;
 esac
