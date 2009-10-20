@@ -28,6 +28,7 @@ struct xf_info
 	Pixmap bitmap_mono;
 	GC gc_mono;
 	GC gc_default;
+	Cursor null_cursor;
 };
 typedef struct xf_info xfInfo;
 

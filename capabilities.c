@@ -379,19 +379,27 @@ rdp_out_window_activation_capset(STREAM s)
 
 /* Output pointer capability set */
 void
-rdp_out_pointer_capset(STREAM s)
+rdp_out_pointer_capset(rdpRdp * rdp, STREAM s)
 {
-	rdp_out_capset_header(s, CAPSET_TYPE_POINTER, CAPSET_LEN_POINTER);
+	int len;
 
-	out_uint16(s, 1); // colorPointerFlag (assumed to be always true)
-	out_uint16_le(s, 20); // colorPointerCacheSize
-        
-        /*
-         * pointerCacheSize (2 bytes):
-         * Optional, if absent or set to 0 the server
-         * will not use the New Pointer Update
-         */
-        // out_uint16_le(s, 20); // pointerCacheSize
+	len = CAPSET_LEN_POINTER;
+	if (rdp->settings->new_cursors)
+	{
+		len += 2;
+	}
+	rdp_out_capset_header(s, CAPSET_TYPE_POINTER, len);
+	out_uint16_le(s, 1); /* colorPointerFlag (assumed to be always true) */
+	out_uint16_le(s, 20); /* colorPointerCacheSize */
+	if (rdp->settings->new_cursors)
+	{
+		/*
+		* pointerCacheSize (2 bytes):
+		* Optional, if absent or set to 0 the server
+		* will not use the New Pointer Update
+		*/
+		out_uint16_le(s, 20); /* pointerCacheSize */
+	}
 }
 
 /* Process pointer capability set */

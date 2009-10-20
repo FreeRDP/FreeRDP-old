@@ -41,7 +41,7 @@ rdp_out_control_capset(STREAM s);
 void
 rdp_out_window_activation_capset(STREAM s);
 void
-rdp_out_pointer_capset(STREAM s);
+rdp_out_pointer_capset(rdpRdp * rdp, STREAM s);
 void
 rdp_out_share_capset(STREAM s);
 void

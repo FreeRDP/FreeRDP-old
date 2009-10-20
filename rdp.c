@@ -715,12 +715,15 @@ rdp_send_confirm_active(rdpRdp * rdp)
 		numberCapabilities++;
 		caplen += CAPSET_LEN_OFFSCREENCACHE;
 	}
-
-        if(rdp->settings->remote_app)
-        {
-                caplen += CAPSET_LEN_RAIL + CAPSET_LEN_WINDOW;
-                numberCapabilities += 2;
+	if (rdp->settings->remote_app)
+	{
+		caplen += CAPSET_LEN_RAIL + CAPSET_LEN_WINDOW;
+		numberCapabilities += 2;
         }
+	if (rdp->settings->new_cursors)
+	{
+		caplen += 2;
+	}
 
 	s = sec_init(rdp->sec, sec_flags, 6 + 14 + caplen + sizeof(RDP_SOURCE));
 
@@ -749,7 +752,7 @@ rdp_send_confirm_active(rdpRdp * rdp)
 	rdp_out_colorcache_capset(s);
 	rdp_out_window_activation_capset(s);
 	rdp_out_control_capset(s);
-	rdp_out_pointer_capset(s);
+	rdp_out_pointer_capset(rdp, s);
 	rdp_out_share_capset(s);
         rdp_out_input_capset(rdp, s);
         rdp_out_brush_capset(s);
@@ -925,7 +928,7 @@ process_demand_active(rdpRdp * rdp, STREAM s)
 
 /* Process a colour pointer PDU */
 void
-process_colour_pointer_pdu(rdpRdp * rdp, STREAM s)
+process_colour_pointer_common(rdpRdp * rdp, STREAM s, int bpp)
 {
 	uint16 x, y, width, height, cache_idx, masklen, datalen;
 	uint8 *mask, *data;
@@ -940,9 +943,16 @@ process_colour_pointer_pdu(rdpRdp * rdp, STREAM s)
 	in_uint16_le(s, datalen);
 	in_uint8p(s, data, datalen);
 	in_uint8p(s, mask, masklen);
-	cursor = ui_create_cursor(rdp->inst, x, y, width, height, mask, data);
+	cursor = ui_create_cursor(rdp->inst, x, y, width, height, mask, data, bpp);
 	ui_set_cursor(rdp->inst, cursor);
 	cache_put_cursor(rdp->cache, cache_idx, cursor);
+}
+
+/* Process a colour pointer PDU */
+void
+process_colour_pointer_pdu(rdpRdp * rdp, STREAM s)
+{
+	process_colour_pointer_common(rdp, s, 24);
 }
 
 /* Process a cached pointer PDU */
@@ -977,6 +987,16 @@ process_system_pointer_pdu(rdpRdp * rdp, STREAM s)
 	}
 }
 
+/* Process a new pointer PDU */
+void
+process_new_pointer_pdu(rdpRdp * rdp, STREAM s)
+{
+	int xor_bpp;
+
+	in_uint16_le(s, xor_bpp);
+	process_colour_pointer_common(rdp, s, xor_bpp);
+}
+
 /* Process a pointer PDU */
 static void
 process_pointer_pdu(rdpRdp * rdp, STREAM s)
@@ -1009,7 +1029,7 @@ process_pointer_pdu(rdpRdp * rdp, STREAM s)
 			break;
 
 		case RDP_PTRMSGTYPE_POINTER:
-                        printf("Not implemented: RDP_PRTMSGTYPE_POINTER");
+			process_new_pointer_pdu(rdp, s);
 			break;
 
 		default:

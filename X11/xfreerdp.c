@@ -29,6 +29,7 @@ set_default_params(rdpSet * settings)
 		RDP5_NO_WALLPAPER | RDP5_NO_FULLWINDOWDRAG | RDP5_NO_MENUANIMATIONS;
 	settings->off_screen_bitmaps = 1;
 	settings->triblt = 0;
+	settings->new_cursors = 1;
 	return 0;
 }
 

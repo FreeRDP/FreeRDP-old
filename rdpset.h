@@ -55,6 +55,7 @@ struct rdp_set
 	int autologin;
 	int off_screen_bitmaps;
 	int triblt;
+	int new_cursors;
 };
 typedef struct rdp_set rdpSet;
 

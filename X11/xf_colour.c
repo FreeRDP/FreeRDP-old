@@ -33,6 +33,56 @@
 
 #define MAKE32RGB(_red, _green, _blue) (_red << 16) | (_green << 8) | _blue;
 
+static int
+get_pixel(uint8 * data, int x, int y, int width, int height, int bpp)
+{
+	int start;
+	int shift;
+	int red;
+	int green;
+	int blue;
+
+	if (bpp == 1)
+	{
+		width = (width + 7) / 8;
+		start = (y * width) + x / 8;
+		shift = x % 8;
+		return (data[start] & (0x80 >> shift)) != 0;
+	}
+	else if (bpp == 24)
+	{
+		data += y * width * 3;
+		data += x * 3;
+		red = data[0];
+		green = data[1];
+		blue = data[2];
+		return (red << 16) | (green << 8) | blue;
+	}
+	return 0;
+}
+
+static void
+set_pixel(uint8 * data, int x, int y, int width, int height, int bpp, int pixel)
+{
+	int start;
+	int shift;
+
+	if (bpp == 1)
+	{
+		width = (width + 7) / 8;
+		start = (y * width) + x / 8;
+		shift = x % 8;
+		if (pixel)
+		{
+			data[start] = data[start] | (0x80 >> shift);
+		}
+		else
+		{
+			data[start] = data[start] & ~(0x80 >> shift);
+		}
+	}
+}
+
 int
 xf_colour_convert(xfInfo * xfi, rdpSet * settings, int colour)
 {
@@ -185,5 +235,40 @@ xf_set_colourmap(xfInfo * xfi, rdpSet * settings, RD_HCOLOURMAP map)
 		free(xfi->colourmap);
 	}
 	xfi->colourmap = (int *) map;
+	return 0;
+}
+
+int
+xf_cursor_convert_mono(xfInfo * xfi, uint8 * src_data, uint8 * msk_data,
+	uint8 * xormask, uint8 * andmask, int width, int height, int bpp)
+{
+	int i;
+	int j;
+	int jj;
+	int xpixel;
+	int apixel;
+
+	for (j = 0; j < height; j++)
+	{
+		jj = (bpp == 1) ? j : (height - 1) - j;
+		for (i = 0; i < width; i++)
+		{
+			xpixel = get_pixel(xormask, i, jj, width, height, bpp);
+			apixel = get_pixel(andmask, i, jj, width, height, 1);
+			if ((xpixel != 0) && (apixel != 0))
+			{
+				/* use pattern(not solid black) for xor area */
+				xpixel = (i & 1) == (j & 1);
+				apixel = 1;
+			}
+			else
+			{
+				xpixel = xpixel != 0;
+				apixel = apixel == 0;
+			}
+			set_pixel(src_data, i, j, width, height, 1, xpixel);
+			set_pixel(msk_data, i, j, width, height, 1, apixel);
+		}
+	}
 	return 0;
 }

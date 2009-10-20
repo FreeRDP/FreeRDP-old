@@ -545,27 +545,63 @@ l_ui_resize_window(struct rdp_inst * inst)
 static void
 l_ui_set_cursor(struct rdp_inst * inst, RD_HCURSOR cursor)
 {
-	printf("ui_set_cursor: inst %p\n", inst);
+	xfInfo * xfi;
+
+	xfi = GET_XFI(inst);
+	XDefineCursor(xfi->display, xfi->wnd, (Cursor) cursor);
 }
 
 static void
 l_ui_destroy_cursor(struct rdp_inst * inst, RD_HCURSOR cursor)
 {
-	printf("ui_destroy_cursor:\n");
+	xfInfo * xfi;
+
+	xfi = GET_XFI(inst);
+	XFreeCursor(xfi->display, (Cursor) cursor);
 }
 
 static RD_HCURSOR
 l_ui_create_cursor(struct rdp_inst * inst, uint32 x, uint32 y,
-	int width, int height, uint8 * andmask, uint8 * xormask)
+	int width, int height, uint8 * andmask, uint8 * xormask, int bpp)
 {
-	printf("ui_create_cursor:\n");
-	return (RD_HCURSOR) 1;
+	xfInfo * xfi;
+	Pixmap src_glyph;
+	Pixmap msk_glyph;
+	XColor fg;
+	XColor bg;
+	Cursor cur;
+	uint8 * src_data;
+	uint8 * msk_data;
+
+	printf("l_ui_create_cursor width %d height %d bpp %d\n", width, height, bpp);
+	xfi = GET_XFI(inst);
+	src_data = (uint8 *) malloc(width * height);
+	memset(src_data, 0, width * height);
+	msk_data = (uint8 *) malloc(width * height);
+	memset(msk_data, 0, width * height);
+	memset(&fg, 0xff, sizeof(fg));
+	memset(&bg, 0, sizeof(bg));
+	if ((andmask != 0) && (xormask != 0))
+	{
+		xf_cursor_convert_mono(xfi, src_data, msk_data, xormask, andmask, width, height, bpp);
+	}
+	src_glyph = (Pixmap) l_ui_create_glyph(inst, width, height, src_data);
+	msk_glyph = (Pixmap) l_ui_create_glyph(inst, width, height, msk_data);
+	cur = XCreatePixmapCursor(xfi->display, src_glyph, msk_glyph, &fg, &bg, x, y);
+	l_ui_destroy_glyph(inst, (RD_HGLYPH) src_glyph);
+	l_ui_destroy_glyph(inst, (RD_HGLYPH) msk_glyph);
+	free(src_data);
+	free(msk_data);
+	return (RD_HCURSOR) cur;
 }
 
 static void
 l_ui_set_null_cursor(struct rdp_inst * inst)
 {
-	printf("ui_set_null_cursor:\n");
+	xfInfo * xfi;
+
+	xfi = GET_XFI(inst);
+	XDefineCursor(xfi->display, xfi->wnd, xfi->null_cursor);
 }
 
 static void
@@ -574,7 +610,6 @@ l_ui_set_default_cursor(struct rdp_inst * inst)
 	xfInfo * xfi;
 
 	xfi = GET_XFI(inst);
-	printf("ui_set_default_cursor:\n");
 	XUndefineCursor(xfi->display, xfi->wnd);
 }
 
@@ -833,6 +868,7 @@ xf_post_connect(rdpInst * inst)
 	xfi->gc_default = XCreateGC(xfi->display, xfi->wnd, GCGraphicsExposures, &gcv);
 	XSetForeground(xfi->display, xfi->gc, BlackPixelOfScreen(xfi->screen));
 	XFillRectangle(xfi->display, xfi->backstore, xfi->gc, 0, 0, width, height);
+	xfi->null_cursor = (Cursor) l_ui_create_cursor(inst, 0, 0, 32, 32, 0, 0, 0);
 	return 0;
 }
 

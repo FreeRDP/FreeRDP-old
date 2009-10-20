@@ -381,12 +381,12 @@ ui_resize_window(void * inst)
 
 RD_HCURSOR
 ui_create_cursor(void * inst, unsigned int x, unsigned int y, int width, int height,
-		 uint8 * andmask, uint8 * xormask)
+		 uint8 * andmask, uint8 * xormask, int bpp)
 {
 	rdpInst * linst;
 
 	linst = (rdpInst *) inst;
-	return linst->ui_create_cursor(linst, x, y, width, height, andmask, xormask);
+	return linst->ui_create_cursor(linst, x, y, width, height, andmask, xormask, bpp);
 }
 
 void

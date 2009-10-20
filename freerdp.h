@@ -91,7 +91,7 @@ struct rdp_inst
 	void (* ui_set_cursor)(struct rdp_inst * inst, RD_HCURSOR cursor);
 	void (* ui_destroy_cursor)(struct rdp_inst * inst, RD_HCURSOR cursor);
 	RD_HCURSOR (* ui_create_cursor)(struct rdp_inst * inst, unsigned int x, unsigned int y,
-		int width, int height, uint8 * andmask, uint8 * xormask);
+		int width, int height, uint8 * andmask, uint8 * xormask, int bpp);
 	void (* ui_set_null_cursor)(struct rdp_inst * inst);
 	void (* ui_set_default_cursor)(struct rdp_inst * inst);
 	RD_HCOLOURMAP (* ui_create_colourmap)(struct rdp_inst * inst, RD_COLOURMAP * colours);

@@ -1555,7 +1555,7 @@ ui_create_window(void * inst)
 
 	/* create invisible 1x1 cursor to be used as null cursor */
 	if (g_null_cursor == NULL)
-		g_null_cursor = ui_create_cursor(inst, 0, 0, 1, 1, null_pointer_mask, null_pointer_data);
+		g_null_cursor = ui_create_cursor(inst, 0, 0, 1, 1, null_pointer_mask, null_pointer_data, 24);
 
 	return True;
 }
@@ -2070,7 +2070,7 @@ ui_destroy_glyph(void * inst, RD_HGLYPH glyph)
 
 RD_HCURSOR
 ui_create_cursor(void * inst, unsigned int x, unsigned int y, int width, int height,
-		 uint8_t * andmask, uint8_t * xormask)
+		 uint8_t * andmask, uint8_t * xormask, int bpp)
 {
 	RD_HGLYPH maskglyph, cursorglyph;
 	XColor bg, fg;

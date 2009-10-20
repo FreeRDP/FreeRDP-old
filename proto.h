@@ -122,7 +122,7 @@ void ui_destroy_bitmap(void * inst, RD_HBITMAP bmp);
 RD_HGLYPH ui_create_glyph(void * inst, int width, int height, uint8 * data);
 void ui_destroy_glyph(void * inst, RD_HGLYPH glyph);
 RD_HCURSOR ui_create_cursor(void * inst, unsigned int x, unsigned int y, int width, int height, uint8 * andmask,
-			    uint8 * xormask);
+			    uint8 * xormask, int bpp);
 void ui_set_cursor(void * inst, RD_HCURSOR cursor);
 void ui_destroy_cursor(void * inst, RD_HCURSOR cursor);
 void ui_set_null_cursor(void * inst);
