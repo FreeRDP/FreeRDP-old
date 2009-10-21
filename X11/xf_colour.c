@@ -41,22 +41,33 @@ get_pixel(uint8 * data, int x, int y, int width, int height, int bpp)
 	int red;
 	int green;
 	int blue;
+	uint16 * s16;
+	uint32 * s32;
 
-	if (bpp == 1)
+	switch (bpp)
 	{
-		width = (width + 7) / 8;
-		start = (y * width) + x / 8;
-		shift = x % 8;
-		return (data[start] & (0x80 >> shift)) != 0;
-	}
-	else if (bpp == 24)
-	{
-		data += y * width * 3;
-		data += x * 3;
-		red = data[0];
-		green = data[1];
-		blue = data[2];
-		return (red << 16) | (green << 8) | blue;
+		case  1:
+			width = (width + 7) / 8;
+			start = (y * width) + x / 8;
+			shift = x % 8;
+			return (data[start] & (0x80 >> shift)) != 0;
+		case 15:
+		case 16:
+			s16 = (uint16 *) data;
+			return s16[y * width + x];
+		case 24:
+			data += y * width * 3;
+			data += x * 3;
+			red = data[0];
+			green = data[1];
+			blue = data[2];
+			return MAKE32RGB(red, green, blue);
+		case 32:
+			s32 = (uint32 *) data;
+			return s32[y * width + x];
+		default:
+			printf("unknonw in get_pixel\n");
+			break;
 	}
 	return 0;
 }
@@ -66,6 +77,7 @@ set_pixel(uint8 * data, int x, int y, int width, int height, int bpp, int pixel)
 {
 	int start;
 	int shift;
+	int * d32;
 
 	if (bpp == 1)
 	{
@@ -81,40 +93,79 @@ set_pixel(uint8 * data, int x, int y, int width, int height, int bpp, int pixel)
 			data[start] = data[start] & ~(0x80 >> shift);
 		}
 	}
+	else if (bpp == 32)
+	{
+		d32 = (int *) data;
+		d32[y * width + x] = pixel;
+	}
+	else
+	{
+		printf("unknonw in set_pixel\n");
+	}
+}
+
+static int
+xf_colour(xfInfo * xfi, int in_colour, int in_bpp, int out_bpp)
+{
+	int red;
+	int green;
+	int blue;
+	int rv;
+
+	red = 0;
+	green = 0;
+	blue = 0;
+	rv = 0;
+	switch (in_bpp)
+	{
+		case 32:
+		case 24:
+			SPLIT24BGR(red, green, blue, in_colour);
+			break;
+		case 16:
+			SPLIT16RGB(red, green, blue, in_colour);
+			break;
+		case 15:
+			SPLIT15RGB(red, green, blue, in_colour);
+			break;
+		case 8:
+			SPLIT24BGR(red, green, blue, xfi->colourmap[in_colour]);
+			break;
+		case 1:
+			if (in_colour != 0)
+			{
+				red = 0xff;
+				green = 0xff;
+				blue = 0xff;
+			}
+			break;
+		default:
+			printf("xf_colour: bad in_bpp %d\n", in_bpp);
+			break;
+	}
+	switch (out_bpp)
+	{
+		case 32:
+		case 24:
+			rv = MAKE32RGB(red, green, blue);
+			break;
+		case 1:
+			if ((red != 0) || (green != 0) || (blue != 0))
+			{
+				rv = 1;
+			}
+			break;
+		default:
+			printf("xf_colour: bad out_bpp %d\n", out_bpp);
+			break;
+	}
+	return rv;
 }
 
 int
 xf_colour_convert(xfInfo * xfi, rdpSet * settings, int colour)
 {
-	int red;
-	int green;
-	int blue;
-
-	switch (settings->server_depth)
-	{
-		case 32:
-		case 24:
-			SPLIT24BGR(red, green, blue, colour);
-			break;
-		case 16:
-			SPLIT16RGB(red, green, blue, colour);
-			break;
-		case 15:
-			SPLIT15RGB(red, green, blue, colour);
-			break;
-		case 8:
-			return xfi->colourmap[colour];
-		default:
-			red = 0;
-			green = 0;
-			blue = 0;
-			break;
-	}
-	if (xfi->bpp == 32)
-	{
-		return MAKE32RGB(red, green, blue);
-	}
-	return 0;
+	return xf_colour(xfi, colour, settings->server_depth, xfi->bpp);
 }
 
 uint8 *
@@ -238,6 +289,7 @@ xf_set_colourmap(xfInfo * xfi, rdpSet * settings, RD_HCOLOURMAP map)
 	return 0;
 }
 
+/* create mono cursor */
 int
 xf_cursor_convert_mono(xfInfo * xfi, uint8 * src_data, uint8 * msk_data,
 	uint8 * xormask, uint8 * andmask, int width, int height, int bpp)
@@ -254,6 +306,7 @@ xf_cursor_convert_mono(xfInfo * xfi, uint8 * src_data, uint8 * msk_data,
 		for (i = 0; i < width; i++)
 		{
 			xpixel = get_pixel(xormask, i, jj, width, height, bpp);
+			xpixel = xf_colour(xfi, xpixel, bpp, 1);
 			apixel = get_pixel(andmask, i, jj, width, height, 1);
 			if ((xpixel != 0) && (apixel != 0))
 			{
@@ -268,6 +321,49 @@ xf_cursor_convert_mono(xfInfo * xfi, uint8 * src_data, uint8 * msk_data,
 			}
 			set_pixel(src_data, i, j, width, height, 1, xpixel);
 			set_pixel(msk_data, i, j, width, height, 1, apixel);
+		}
+	}
+	return 0;
+}
+
+/* create 32 bpp cursor */
+int
+xf_cursor_convert_alpha(xfInfo * xfi, uint8 * alpha_data,
+	uint8 * xormask, uint8 * andmask, int width, int height,
+        int bpp, int server_depth)
+{
+	int i;
+	int j;
+	int jj;
+	int xpixel;
+	int apixel;
+	int lbpp;
+
+	lbpp = bpp == 1 ? bpp : server_depth;
+	if (((bpp + 7) / 8) != ((lbpp + 7) / 8))
+	{
+		lbpp = bpp;
+	}
+	for (j = 0; j < height; j++)
+	{
+		jj = (lbpp == 1) ? j : (height - 1) - j;
+		for (i = 0; i < width; i++)
+		{
+			xpixel = get_pixel(xormask, i, jj, width, height, lbpp);
+			xpixel = xf_colour(xfi, xpixel, lbpp, 32);
+			apixel = get_pixel(andmask, i, jj, width, height, 1);
+			if ((xpixel != 0) && (apixel != 0))
+			{
+				/* use pattern(not solid black) for xor area */
+				xpixel = (i & 1) == (j & 1);
+				xpixel = xpixel ? 0xffffff : 0;
+				xpixel |= 0xff000000;
+			}
+			else
+			{
+				xpixel |= apixel ? 0 : 0xff000000;
+			}
+			set_pixel(alpha_data, i, j, width, height, 32, xpixel);
 		}
 	}
 	return 0;

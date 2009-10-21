@@ -931,7 +931,8 @@ void
 process_colour_pointer_common(rdpRdp * rdp, STREAM s, int bpp)
 {
 	uint16 x, y, width, height, cache_idx, masklen, datalen;
-	uint8 *mask, *data;
+	uint8 * mask;
+	uint8 * data;
 	RD_HCURSOR cursor;
 
 	in_uint16_le(s, cache_idx);
@@ -943,6 +944,11 @@ process_colour_pointer_common(rdpRdp * rdp, STREAM s, int bpp)
 	in_uint16_le(s, datalen);
 	in_uint8p(s, data, datalen);
 	in_uint8p(s, mask, masklen);
+	if ((width != 32) || (height != 32))
+	{
+		printf("process_colour_pointer_common: warning width %d height %d bpp %d\n",
+			width, height, bpp);
+	}
 	cursor = ui_create_cursor(rdp->inst, x, y, width, height, mask, data, bpp);
 	ui_set_cursor(rdp->inst, cursor);
 	cache_put_cursor(rdp->cache, cache_idx, cursor);

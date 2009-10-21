@@ -1,6 +1,13 @@
 
+#define USE_XCURSOR
+
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
+
+#ifdef USE_XCURSOR
+#include <X11/Xcursor/Xcursor.h>
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -62,6 +69,9 @@ xf_set_rop3(xfInfo * xfi, int rop3)
 		case 0x5a: /* D^P */
 			XSetFunction(xfi->display, xfi->gc, GXxor);
 			break;
+		case 0x55: /* ~D */
+			XSetFunction(xfi->display, xfi->gc, GXinvert);
+			break;
 		case 0x66: /* D^S */
 			XSetFunction(xfi->display, xfi->gc, GXxor);
 			break;
@@ -71,7 +81,7 @@ xf_set_rop3(xfInfo * xfi, int rop3)
 		case 0xcc: /* S */
 			XSetFunction(xfi->display, xfi->gc, GXcopy);
 			break;
-		case 0xee: /* D|S*/
+		case 0xee: /* D|S */
 			XSetFunction(xfi->display, xfi->gc, GXor);
 			break;
 		case 0xf0: /* P */
@@ -560,6 +570,39 @@ l_ui_destroy_cursor(struct rdp_inst * inst, RD_HCURSOR cursor)
 	XFreeCursor(xfi->display, (Cursor) cursor);
 }
 
+#ifdef USE_XCURSOR
+
+static RD_HCURSOR
+l_ui_create_cursor(struct rdp_inst * inst, uint32 x, uint32 y,
+	int width, int height, uint8 * andmask, uint8 * xormask, int bpp)
+{
+	xfInfo * xfi;
+	Cursor cur;
+	XcursorImage ci;
+
+	printf("l_ui_create_cursor1: alpha width %d height %d bpp %d\n", width, height, bpp);
+	xfi = GET_XFI(inst);
+	memset(&ci, 0, sizeof(ci));
+	ci.version = XCURSOR_IMAGE_VERSION;
+	ci.size = sizeof(ci);
+	ci.width = width;
+	ci.height = height;
+	ci.xhot = x;
+	ci.yhot = y;
+	ci.pixels = (XcursorPixel *) malloc(width * height * 4);
+	memset(ci.pixels, 0, width * height * 4);
+	if ((andmask != 0) && (xormask != 0))
+	{
+		xf_cursor_convert_alpha(xfi, (uint8 *) (ci.pixels), xormask, andmask, width, height,
+			bpp, inst->settings->server_depth);
+	}
+	cur = XcursorImageLoadCursor(xfi->display, &ci);
+	free(ci.pixels);
+	return (RD_HCURSOR) cur;
+}
+
+#else
+
 static RD_HCURSOR
 l_ui_create_cursor(struct rdp_inst * inst, uint32 x, uint32 y,
 	int width, int height, uint8 * andmask, uint8 * xormask, int bpp)
@@ -573,7 +616,7 @@ l_ui_create_cursor(struct rdp_inst * inst, uint32 x, uint32 y,
 	uint8 * src_data;
 	uint8 * msk_data;
 
-	printf("l_ui_create_cursor width %d height %d bpp %d\n", width, height, bpp);
+	printf("l_ui_create_cursor: mono width %d height %d bpp %d\n", width, height, bpp);
 	xfi = GET_XFI(inst);
 	src_data = (uint8 *) malloc(width * height);
 	memset(src_data, 0, width * height);
@@ -594,6 +637,8 @@ l_ui_create_cursor(struct rdp_inst * inst, uint32 x, uint32 y,
 	free(msk_data);
 	return (RD_HCURSOR) cur;
 }
+
+#endif
 
 static void
 l_ui_set_null_cursor(struct rdp_inst * inst)

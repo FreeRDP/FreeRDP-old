@@ -6,7 +6,7 @@ mem.o
 OBJS = xfreerdp.o xf_win.o xf_event.o xf_colour.o
 
 CFLAGS = -O2 -Wall -fPIC -I..
-LDFLAGS = -L. -Wl,-rpath,. -lX11 -lfreerdp
+LDFLAGS = -L. -Wl,-rpath,. -lX11 -lXcursor -lfreerdp
 
 all: libfreerdp.so xfreerdp
 
