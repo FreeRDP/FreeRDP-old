@@ -21,6 +21,11 @@
   _green = (_pixel & 0xff00) >> 8; \
   _blue = (_pixel & 0xff0000) >> 16;
 
+#define SPLIT24RGB(_red, _green, _blue, _pixel) \
+  _blue  = _pixel & 0xff; \
+  _green = (_pixel & 0xff00) >> 8; \
+  _red   = (_pixel & 0xff0000) >> 16;
+
 #define SPLIT16RGB(_red, _green, _blue, _pixel) \
   _red = ((_pixel >> 8) & 0xf8) | ((_pixel >> 13) & 0x7); \
   _green = ((_pixel >> 3) & 0xfc) | ((_pixel >> 9) & 0x3); \
@@ -51,6 +56,8 @@ get_pixel(uint8 * data, int x, int y, int width, int height, int bpp)
 			start = (y * width) + x / 8;
 			shift = x % 8;
 			return (data[start] & (0x80 >> shift)) != 0;
+		case 8:
+			return data[y * width + x];
 		case 15:
 		case 16:
 			s16 = (uint16 *) data;
@@ -129,7 +136,7 @@ xf_colour(xfInfo * xfi, int in_colour, int in_bpp, int out_bpp)
 			SPLIT15RGB(red, green, blue, in_colour);
 			break;
 		case 8:
-			SPLIT24BGR(red, green, blue, xfi->colourmap[in_colour]);
+			SPLIT24RGB(red, green, blue, xfi->colourmap[in_colour]);
 			break;
 		case 1:
 			if (in_colour != 0)
@@ -340,16 +347,12 @@ xf_cursor_convert_alpha(xfInfo * xfi, uint8 * alpha_data,
 	int lbpp;
 
 	lbpp = bpp == 1 ? bpp : server_depth;
-	if (((bpp + 7) / 8) != ((lbpp + 7) / 8))
-	{
-		lbpp = bpp;
-	}
 	for (j = 0; j < height; j++)
 	{
-		jj = (lbpp == 1) ? j : (height - 1) - j;
+		jj = (bpp == 1) ? j : (height - 1) - j;
 		for (i = 0; i < width; i++)
 		{
-			xpixel = get_pixel(xormask, i, jj, width, height, lbpp);
+			xpixel = get_pixel(xormask, i, jj, width, height, bpp);
 			xpixel = xf_colour(xfi, xpixel, lbpp, 32);
 			apixel = get_pixel(andmask, i, jj, width, height, 1);
 			if ((xpixel != 0) && (apixel != 0))
