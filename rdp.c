@@ -697,35 +697,53 @@ rdp_send_fonts(rdpRdp * rdp, uint16 seq)
 static void
 rdp_send_confirm_active(rdpRdp * rdp)
 {
+	STREAM caps;
 	STREAM s;
 	uint32 sec_flags = rdp->settings->encryption ? (RDP5_FLAG | SEC_ENCRYPT) : RDP5_FLAG;
-	uint16 caplen =
-		CAPSET_LEN_GENERAL + CAPSET_LEN_BITMAP + CAPSET_LEN_ORDER +
-		CAPSET_LEN_BITMAPCACHE + CAPSET_LEN_COLORCACHE +
-		CAPSET_LEN_ACTIVATION + CAPSET_LEN_CONTROL +
-		CAPSET_LEN_POINTER + CAPSET_LEN_SHARE +
-		CAPSET_LEN_BRUSH + CAPSET_LEN_INPUT +
-		CAPSET_LEN_SOUND + CAPSET_LEN_FONT +
-		CAPSET_LEN_GLYPHCACHE + 4; /* w2k fix, why? */
+	int caplen;
+	uint16 numberCapabilities = 14;
 
-        uint16 numberCapabilities = 14;
-
+	caps = (STREAM) xmalloc(sizeof(struct stream));
+	memset(caps, 0, sizeof(struct stream));
+	caps->size = 8192;
+	caps->data = (uint8 *) xmalloc(caps->size);
+	caps->p = caps->data;
+	rdp_out_general_capset(rdp, caps);
+	rdp_out_bitmap_capset(rdp, caps);
+	rdp_out_order_capset(rdp, caps);
+	if (rdp->settings->rdp_version >= 5)
+	{
+		rdp_out_bitmapcache_rev2_capset(rdp, caps);
+	}
+	else
+	{
+		rdp_out_bitmapcache_capset(rdp, caps);
+	}
+	rdp_out_colorcache_capset(caps);
+	rdp_out_window_activation_capset(caps);
+	rdp_out_control_capset(caps);
+	rdp_out_pointer_capset(rdp, caps);
+	rdp_out_share_capset(caps);
+	rdp_out_input_capset(rdp, caps);
+	rdp_out_brush_capset(caps);
+	rdp_out_sound_capset(caps);
+	rdp_out_font_capset(caps);
 	if (rdp->settings->off_screen_bitmaps)
 	{
 		numberCapabilities++;
-		caplen += CAPSET_LEN_OFFSCREENCACHE;
+		rdp_out_offscreenscache_capset(caps);
 	}
+	rdp_out_glyphcache_capset(caps);
 	if (rdp->settings->remote_app)
 	{
-		caplen += CAPSET_LEN_RAIL + CAPSET_LEN_WINDOW;
 		numberCapabilities += 2;
+		rdp_out_rail_capset(caps);
+		rdp_out_window_capset(caps);
         }
-	if (rdp->settings->new_cursors)
-	{
-		caplen += 2;
-	}
+	s_mark_end(caps);
+	caplen = (int) (caps->end - caps->data);
 
-	s = sec_init(rdp->sec, sec_flags, 6 + 14 + caplen + sizeof(RDP_SOURCE));
+	s = sec_init(rdp->sec, sec_flags, 6 + 14 + caplen + 4 + sizeof(RDP_SOURCE));
 
 	out_uint16_le(s, 2 + 14 + caplen + sizeof(RDP_SOURCE));
 	out_uint16_le(s, (RDP_PDU_CONFIRM_ACTIVE | 0x10));	/* Version 1 */
@@ -738,38 +756,15 @@ rdp_send_confirm_active(rdpRdp * rdp)
 	out_uint16_le(s, sizeof(RDP_SOURCE)); // lengthSourceDescriptor
         /* lengthCombinedCapabilities is the combined size of
             numberCapabilities, pad2Octets and capabilitySets */
-	out_uint16_le(s, caplen); // lengthCombinedCapabilities
+	out_uint16_le(s, caplen + 4); // lengthCombinedCapabilities
 
         /* sourceDescriptor is "MSTSC" for Microsoft RDP clients */
 	out_uint8p(s, RDP_SOURCE, sizeof(RDP_SOURCE)); // sourceDescriptor
 	out_uint16_le(s, numberCapabilities); // numberCapabilities
 	out_uint8s(s, 2); // pad
-
-	rdp_out_general_capset(rdp, s);
-	rdp_out_bitmap_capset(rdp, s);
-	rdp_out_order_capset(rdp, s);
-	rdp->settings->rdp_version >= 5 ? rdp_out_bitmapcache_rev2_capset(rdp, s) : rdp_out_bitmapcache_capset(rdp, s);
-	rdp_out_colorcache_capset(s);
-	rdp_out_window_activation_capset(s);
-	rdp_out_control_capset(s);
-	rdp_out_pointer_capset(rdp, s);
-	rdp_out_share_capset(s);
-        rdp_out_input_capset(rdp, s);
-        rdp_out_brush_capset(s);
-	rdp_out_sound_capset(s);
-	rdp_out_font_capset(s);
-	if (rdp->settings->off_screen_bitmaps)
-	{
-		rdp_out_offscreenscache_capset(s);
-	}
-	rdp_out_glyphcache_capset(s);
-
-        if(rdp->settings->remote_app)
-        {
-            rdp_out_rail_capset(s);
-            rdp_out_window_capset(s);
-        }
-
+	out_uint8p(s, caps->data, caplen);
+	xfree(caps->data);
+	xfree(caps);
 	s_mark_end(s);
 	sec_send(rdp->sec, s, sec_flags);
 }

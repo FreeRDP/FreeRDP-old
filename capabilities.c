@@ -25,20 +25,37 @@
 #include "pstcache.h"
 #include "capabilities.h"
 
-/* Output capability set header */
-void
-rdp_out_capset_header(STREAM s, uint16 capabilitySetType, uint16 lengthCapability)
+static uint8 *
+rdp_skip_capset_header(STREAM s, int size)
 {
-	out_uint16_le(s, capabilitySetType); // capabilitySetType
-	out_uint16_le(s, lengthCapability); // lengthCapability
+	uint8 * rv;
+
+	rv = s->p;
+	s->p += size;
+	return rv;
+}
+
+/* Output capability set header */
+static void
+rdp_out_capset_header(STREAM s, uint8 * header, uint16 capabilitySetType)
+{
+	int cap_len;
+
+	s->end = s->p;
+	cap_len = (int) (s->end - header);
+	s->p = header;
+	out_uint16_le(s, capabilitySetType); /* capabilitySetType */
+	out_uint16_le(s, cap_len); /* lengthCapability */
+	s->p = s->end;
 }
 
 /* Output general capability set */
 void
 rdp_out_general_capset(rdpRdp * rdp, STREAM s)
 {
-	rdp_out_capset_header(s, CAPSET_TYPE_GENERAL, CAPSET_LEN_GENERAL);
+	uint8 * header;
 
+	header = rdp_skip_capset_header(s, 4);
 	out_uint16_le(s, OS_MAJOR_TYPE_WINDOWS); // osMajorType, should we lie?
 	out_uint16_le(s, OS_MINOR_TYPE_WINDOWS_NT); // osMinorType
 	out_uint16_le(s, CAPS_PROTOCOL_VERSION); // protocolVersion
@@ -59,13 +76,16 @@ rdp_out_general_capset(rdpRdp * rdp, STREAM s)
 		out_uint8(s, 0); // refreshRectSupport, either TRUE (0x01) or FALSE (0x00)
 		out_uint8(s, 0); // suppressOutputSupport, either TRUE (0x01) or FALSE (0x00)
 	}
+	rdp_out_capset_header(s, header, CAPSET_TYPE_GENERAL);
 }
 
 /* Output bitmap capability set */
 void
 rdp_out_bitmap_capset(rdpRdp * rdp, STREAM s)
 {
-	rdp_out_capset_header(s, CAPSET_TYPE_BITMAP, CAPSET_LEN_BITMAP);
+	uint8 * header;
+
+	header = rdp_skip_capset_header(s, 4);
 
 	/*
 	 * preferredBitsPerPixel (2 bytes):
@@ -94,6 +114,7 @@ rdp_out_bitmap_capset(rdpRdp * rdp, STREAM s)
 	out_uint8(s, 1); // drawingFlags, indicating support for 32 bpp bitmaps
 	out_uint16_le(s, 1); // multipleRectangleSupport, must be set to true
 	out_uint16(s, 0); // pad
+	rdp_out_capset_header(s, header, CAPSET_TYPE_BITMAP);
 }
 
 /* Process bitmap capability set */
@@ -148,6 +169,9 @@ void
 rdp_out_order_capset(rdpRdp * rdp, STREAM s)
 {
 	uint8 orderSupport[32];
+	uint8 * header;
+
+	header = rdp_skip_capset_header(s, 4);
 
 	memset(orderSupport, 0, 32);
 	orderSupport[NEG_DSTBLT_INDEX] = 1;
@@ -171,9 +195,6 @@ rdp_out_order_capset(rdpRdp * rdp, STREAM s)
 	orderSupport[NEG_ELLIPSE_SC_INDEX] = (rdp->settings->polygon_ellipse_orders ? 1 : 0);
 	orderSupport[NEG_ELLIPSE_CB_INDEX] = (rdp->settings->polygon_ellipse_orders ? 1 : 0);
 	orderSupport[NEG_INDEX_INDEX] = 1;
-
-	out_uint16_le(s, CAPSET_TYPE_ORDER);
-	out_uint16_le(s, CAPSET_LEN_ORDER);
 
 	out_uint8s(s, 16); // terminalDescriptor, ignored and should all be set to zeros
 	out_uint32(s, 0); // pad
@@ -199,6 +220,8 @@ rdp_out_order_capset(rdpRdp * rdp, STREAM s)
 	/* See [MSDN-CP]: http://msdn.microsoft.com/en-us/library/dd317756(VS.85).aspx */
 	out_uint16_le(s, 0x04E4); // textANSICodePage, 0x04E4 is "ANSI Latin 1 Western European (Windows)"
 	out_uint16(s, 0); // pad
+
+	rdp_out_capset_header(s, header, CAPSET_TYPE_ORDER);
 }
 
 /* Process order capability set */
@@ -239,8 +262,9 @@ void
 rdp_out_bitmapcache_capset(rdpRdp * rdp, STREAM s)
 {
 	int Bpp;
-	rdp_out_capset_header(s, CAPSET_TYPE_BITMAPCACHE, CAPSET_LEN_BITMAPCACHE);
+	uint8 * header;
 
+	header = rdp_skip_capset_header(s, 4);
 	Bpp = (rdp->settings->server_depth + 7) / 8;	/* bytes per pixel */
 	out_uint8s(s, 24); // pad
 	out_uint16_le(s, 0x258); // Cache1Entries
@@ -249,14 +273,16 @@ rdp_out_bitmapcache_capset(rdpRdp * rdp, STREAM s)
 	out_uint16_le(s, 0x400 * Bpp); // Cache2MaximumCellSize
 	out_uint16_le(s, 0x106); // Cache3Entries
 	out_uint16_le(s, 0x1000 * Bpp); //Cache3MaximumCellSize
+	rdp_out_capset_header(s, header, CAPSET_TYPE_BITMAPCACHE);
 }
 
 /* Output bitmap cache v2 capability set */
 void
 rdp_out_bitmapcache_rev2_capset(rdpRdp * rdp, STREAM s)
 {
-	rdp_out_capset_header(s, CAPSET_TYPE_BITMAPCACHE_REV2, CAPSET_LEN_BITMAPCACHE_REV2);
+	uint8 * header;
 
+	header = rdp_skip_capset_header(s, 4);
 	out_uint16_le(s, rdp->settings->bitmap_cache_persist_enable ? 2 : 0); // CacheFlags
 	out_uint8s(s, 1); // pad
 	out_uint8(s, 3); // numCellCaches
@@ -273,35 +299,40 @@ rdp_out_bitmapcache_rev2_capset(rdpRdp * rdp, STREAM s)
 		out_uint32_le(s, BMPCACHE2_C2_CELLS);
 	}
 	out_uint8s(s, 20);	/* other bitmap caches not used */
+	rdp_out_capset_header(s, header, CAPSET_TYPE_BITMAPCACHE_REV2);
 }
 
 /* Output bitmap cache host support capability set */
 void
 rdp_out_bitmapcache_hostsupport_capset(rdpRdp * rdp, STREAM s)
 {
-	rdp_out_capset_header(s, CAPSET_TYPE_BITMAPCACHE_HOSTSUPPORT, CAPSET_LEN_BITMAPCACHE_HOSTSUPPORT);
+	uint8 * header;
 
-        out_uint8(s, BITMAPCACHE_REV2); // cacheVersion, must be set to BITMAPCACHE_REV2
-        out_uint8(s, 0); // pad
-        out_uint16(s, 0); // pad
+	header = rdp_skip_capset_header(s, 4);
+	out_uint8(s, BITMAPCACHE_REV2); // cacheVersion, must be set to BITMAPCACHE_REV2
+	out_uint8(s, 0); // pad
+	out_uint16(s, 0); // pad
+	rdp_out_capset_header(s, header, CAPSET_TYPE_BITMAPCACHE_HOSTSUPPORT);
 }
 
 /* Process bitmap cache host support capability set */
 void
 rdp_process_bitmapcache_hostsupport_capset(rdpRdp * rdp, STREAM s)
 {
-        uint8 cacheVersion;
-        in_uint8(s, cacheVersion); // cacheVersion, must be set to BITMAPCACHE_REV2
-        // pad (1 byte)
-        // pad (2 bytes)
+	uint8 cacheVersion;
+
+	in_uint8(s, cacheVersion); // cacheVersion, must be set to BITMAPCACHE_REV2
+	// pad (1 byte)
+	// pad (2 bytes)
 }
 
 /* Output input capability set */
 void
 rdp_out_input_capset(rdpRdp * rdp, STREAM s)
 {
-	rdp_out_capset_header(s, CAPSET_TYPE_INPUT, CAPSET_LEN_INPUT);
+	uint8 * header;
 
+	header = rdp_skip_capset_header(s, 4);
 	out_uint16_le(s, INPUT_FLAG_SCANCODES | INPUT_FLAG_MOUSEX | INPUT_FLAG_UNICODE); // inputFlags
 	out_uint16(s, 0); // pad
         out_uint32_le(s, rdp->settings->keyboard_layout); // keyboardLayout
@@ -312,42 +343,46 @@ rdp_out_input_capset(rdpRdp * rdp, STREAM s)
 	//rdp_out_unistr(rdp, s, rdp->settings->keyboard_ime, 2 * strlen(rdp->settings->keyboard_ime));
 	//out_uint8s(s, 62 - 2 * strlen(rdp->settings->keyboard_ime)); // imeFileName (64 bytes)
 	out_uint8s(s, 64);
+	rdp_out_capset_header(s, header, CAPSET_TYPE_INPUT);
 }
 
 /* Process input capability set */
 void
 rdp_process_input_capset(rdpRdp * rdp, STREAM s)
 {
-        uint16 inputFlags;
-        uint32 keyboardLayout;
-        uint32 keyboardType;
-        uint32 keyboardSubType;
-        uint32 keyboardFunctionKeys;
+	uint16 inputFlags;
+	uint32 keyboardLayout;
+	uint32 keyboardType;
+	uint32 keyboardSubType;
+	uint32 keyboardFunctionKeys;
 
 	in_uint16_le(s, inputFlags); // inputFlags
 	in_uint8s(s, 2); // pad
-        in_uint32_le(s, keyboardLayout); // keyboardLayout
+	in_uint32_le(s, keyboardLayout); // keyboardLayout
 	in_uint32_le(s, keyboardType); // keyboardType
 	in_uint32_le(s, keyboardSubType); // keyboardSubType
 	in_uint32_le(s, keyboardFunctionKeys); // keyboardFunctionKeys
-        // in_uint8s(s, 64); // imeFileName (64 bytes)
+	// in_uint8s(s, 64); // imeFileName (64 bytes)
 }
 
 /* Output font capability set */
 void
 rdp_out_font_capset(STREAM s)
 {
-	rdp_out_capset_header(s, CAPSET_TYPE_FONT, CAPSET_LEN_FONT);
+	uint8 * header;
 
+	header = rdp_skip_capset_header(s, 4);
 	out_uint16_le(s, FONTSUPPORT_FONTLIST); // fontSupportFlags
 	out_uint16(s, 0); // pad
+	rdp_out_capset_header(s, header, CAPSET_TYPE_FONT);
 }
 
 /* Process font capability set */
 void
 rdp_process_font_capset(rdpRdp * rdp, STREAM s)
 {
-        uint16 fontSupportFlags;
+	uint16 fontSupportFlags;
+
 	in_uint16_le(s, fontSupportFlags); // fontSupportFlags
 	// pad (2 bytes)
 }
@@ -356,39 +391,38 @@ rdp_process_font_capset(rdpRdp * rdp, STREAM s)
 void
 rdp_out_control_capset(STREAM s)
 {
-	rdp_out_capset_header(s, CAPSET_TYPE_CONTROL, CAPSET_LEN_CONTROL);
+	uint8 * header;
 
+	header = rdp_skip_capset_header(s, 4);
 	out_uint16(s, 0); // controlFlags, should be set to zero
 	out_uint16(s, 0); // remoteDetachFlag, should be set to FALSE
 	out_uint16_le(s, CONTROLPRIORITY_NEVER); // controlInterest
 	out_uint16_le(s, CONTROLPRIORITY_NEVER); // detachInterest
+	rdp_out_capset_header(s, header, CAPSET_TYPE_CONTROL);
 }
 
 /* Output window activation capability set */
 void
 rdp_out_window_activation_capset(STREAM s)
 {
-	rdp_out_capset_header(s, CAPSET_TYPE_ACTIVATION, CAPSET_LEN_ACTIVATION);
+	uint8 * header;
 
+	header = rdp_skip_capset_header(s, 4);
 	/* All of the following should be set to FALSE (0x0) */
 	out_uint16(s, 0); // helpKeyFlag
 	out_uint16(s, 0); // helpKeyIndexFlag
 	out_uint16(s, 0); // helpExtendedKeyFlag
 	out_uint16(s, 0); // windowManagerKeyFlag
+	rdp_out_capset_header(s, header, CAPSET_TYPE_ACTIVATION);
 }
 
 /* Output pointer capability set */
 void
 rdp_out_pointer_capset(rdpRdp * rdp, STREAM s)
 {
-	int len;
+	uint8 * header;
 
-	len = CAPSET_LEN_POINTER;
-	if (rdp->settings->new_cursors)
-	{
-		len += 2;
-	}
-	rdp_out_capset_header(s, CAPSET_TYPE_POINTER, len);
+	header = rdp_skip_capset_header(s, 4);
 	out_uint16_le(s, 1); /* colorPointerFlag (assumed to be always true) */
 	out_uint16_le(s, 20); /* colorPointerCacheSize */
 	if (rdp->settings->new_cursors)
@@ -400,35 +434,40 @@ rdp_out_pointer_capset(rdpRdp * rdp, STREAM s)
 		*/
 		out_uint16_le(s, 20); /* pointerCacheSize */
 	}
+	rdp_out_capset_header(s, header, CAPSET_TYPE_POINTER);
 }
 
 /* Process pointer capability set */
 void
 rdp_process_pointer_capset(rdpRdp * rdp, STREAM s)
 {
-        uint16 colorPointerFlags;
-        uint16 colorPointerCacheSize;
-        // uint16 pointerCacheSize;
+	uint16 colorPointerFlags;
+	uint16 colorPointerCacheSize;
+	// uint16 pointerCacheSize;
+
 	in_uint16(s, colorPointerFlags); // colorPointerFlags (assumed to be always true)
 	in_uint16_le(s, colorPointerCacheSize); // colorPointerCacheSize
-        // int_uint16_le(s, pointerCacheSize); // pointerCacheSize
+	// int_uint16_le(s, pointerCacheSize); // pointerCacheSize
 }
 
 /* Output share capability set */
 void
 rdp_out_share_capset(STREAM s)
 {
-	rdp_out_capset_header(s, CAPSET_TYPE_SHARE, CAPSET_LEN_SHARE);
+	uint8 * header;
 
+	header = rdp_skip_capset_header(s, 4);
 	out_uint16(s, 0); // nodeID
 	out_uint16(s, 0); // pad
+	rdp_out_capset_header(s, header, CAPSET_TYPE_SHARE);
 }
 
 /* Process share capability set */
 void
 rdp_process_share_capset(rdpRdp * rdp, STREAM s)
 {
-        uint16 nodeID;
+	uint16 nodeID;
+
 	in_uint16(s, nodeID); // nodeID
 	// pad
 }
@@ -437,28 +476,33 @@ rdp_process_share_capset(rdpRdp * rdp, STREAM s)
 void
 rdp_out_colorcache_capset(STREAM s)
 {
-	rdp_out_capset_header(s, CAPSET_TYPE_COLORCACHE, CAPSET_LEN_COLORCACHE);
+	uint8 * header;
 
+	header = rdp_skip_capset_header(s, 4);
 	out_uint16_le(s, 6);	/* cache size */
 	out_uint16(s, 0);	/* pad */
+	rdp_out_capset_header(s, header, CAPSET_TYPE_COLORCACHE);
 }
 
 /* Process color cache capability set */
 void
 rdp_process_colorcache_capset(rdpRdp * rdp, STREAM s)
 {
-        uint16 cacheSize;
+	uint16 cacheSize;
+
 	in_uint16_le(s, cacheSize); // cacheSize
-        // pad (2 bytes)
+	// pad (2 bytes)
 }
 
 /* Output brush capability set */
 void
 rdp_out_brush_capset(STREAM s)
 {
-	rdp_out_capset_header(s, CAPSET_TYPE_BRUSH, CAPSET_LEN_BRUSH);
+	uint8 * header;
 
+	header = rdp_skip_capset_header(s, 4);
 	out_uint32_le(s, BRUSH_COLOR_FULL); // brushSupportLevel
+	rdp_out_capset_header(s, header, CAPSET_TYPE_BRUSH);
 }
 
 /* Output glyph cache definition */
@@ -473,8 +517,9 @@ rdp_out_cache_definition(STREAM s, uint16 cacheEntries, uint16 cacheMaximumCellS
 void
 rdp_out_glyphcache_capset(STREAM s)
 {
-	rdp_out_capset_header(s, CAPSET_TYPE_GLYPHCACHE, CAPSET_LEN_GLYPHCACHE);
+	uint8 * header;
 
+	header = rdp_skip_capset_header(s, 4);
 	/*
 		glyphCache (40 bytes):
 		An array of 10 cache definition structures
@@ -502,37 +547,44 @@ rdp_out_glyphcache_capset(STREAM s)
 
 	out_uint16_le(s, GLYPH_SUPPORT_FULL); // glyphSupportLevel
 	out_uint16(s, 0); // pad
+	rdp_out_capset_header(s, header, CAPSET_TYPE_GLYPHCACHE);
 }
 
 /* Output sound capability set */
 void
 rdp_out_sound_capset(STREAM s)
 {
-	rdp_out_capset_header(s, CAPSET_TYPE_SOUND, CAPSET_LEN_SOUND);
+	uint8 * header;
 
+	header = rdp_skip_capset_header(s, 4);
 	out_uint16_le(s, SOUND_BEEPS_FLAG); // soundFlags
 	out_uint16(s, 0); // pad
+	rdp_out_capset_header(s, header, CAPSET_TYPE_SOUND);
 }
 
 /* Output offscreen cache capability set */
 void
 rdp_out_offscreenscache_capset(STREAM s)
 {
-        rdp_out_capset_header(s, CAPSET_TYPE_OFFSCREENCACHE, CAPSET_LEN_OFFSCREENCACHE);
+	uint8 * header;
 
-        out_uint32_le(s, 1); // offscreenSupportLevel, either TRUE (0x1) or FALSE (0x0)
-        out_uint16_le(s, 7680); // offscreenCacheSize, maximum is 7680 (in KB)
-        out_uint16_le(s, 100); // offscreenCacheEntries, maximum is 500 entries
+	header = rdp_skip_capset_header(s, 4);
+	out_uint32_le(s, 1); // offscreenSupportLevel, either TRUE (0x1) or FALSE (0x0)
+	out_uint16_le(s, 7680); // offscreenCacheSize, maximum is 7680 (in KB)
+	out_uint16_le(s, 100); // offscreenCacheEntries, maximum is 500 entries
+	rdp_out_capset_header(s, header, CAPSET_TYPE_OFFSCREENCACHE);
 }
 
 /* Output virtual channel capability set */
 void
 rdp_out_virtualchannel_capset(STREAM s)
 {
-	rdp_out_capset_header(s, CAPSET_TYPE_VIRTUALCHANNEL, CAPSET_LEN_VIRTUALCHANNEL);
+	uint8 * header;
 
+	header = rdp_skip_capset_header(s, 4);
 	out_uint32_le(s, VCCAPS_COMPR_SC); // virtual channel compression flags
 	out_uint32_le(s, 0); // VCChunkSize, ignored when sent from client to server
+	rdp_out_capset_header(s, header, CAPSET_TYPE_VIRTUALCHANNEL);
 }
 
 /* Output virtual channel capability set */
@@ -549,11 +601,13 @@ rdp_process_virtualchannel_capset(rdpRdp * rdp, STREAM s)
 void
 rdp_out_drawninegridcache_capset(STREAM s)
 {
-	rdp_out_capset_header(s, CAPSET_TYPE_DRAWNINEGRIDCACHE, CAPSET_LEN_DRAWNINEGRIDCACHE);
+	uint8 * header;
 
-        out_uint32_le(s, DRAW_NINEGRID_NO_SUPPORT); // drawNineGridSupportLevel
-        out_uint16_le(s, 2560); // drawNineGridCacheSize, maximum is 2560 (in KB)
-        out_uint16_le(s, 256); // drawNineGridCacheEntries, maximum is 256
+	header = rdp_skip_capset_header(s, 4);
+	out_uint32_le(s, DRAW_NINEGRID_NO_SUPPORT); // drawNineGridSupportLevel
+	out_uint16_le(s, 2560); // drawNineGridCacheSize, maximum is 2560 (in KB)
+	out_uint16_le(s, 256); // drawNineGridCacheEntries, maximum is 256
+	rdp_out_capset_header(s, header, CAPSET_TYPE_DRAWNINEGRIDCACHE);
 }
 
 /* Output GDI+ cache entries structure */
@@ -590,15 +644,16 @@ rdp_out_gdiplus_image_cache_properties(STREAM s)
 void
 rdp_out_draw_gdiplus_capset(STREAM s)
 {
-	rdp_out_capset_header(s, CAPSET_TYPE_DRAWGDIPLUS, CAPSET_LEN_DRAWGDIPLUS);
+	uint8 * header;
 
-        out_uint32_le(s, DRAW_GDIPLUS_DEFAULT); // drawGDIPlusSupportLevel
+	header = rdp_skip_capset_header(s, 4);
+	out_uint32_le(s, DRAW_GDIPLUS_DEFAULT); // drawGDIPlusSupportLevel
 	out_uint32_le(s, 0); // gdipVersion, build number for the GDI+ 1.1 subsystem
 	out_uint32_le(s, DRAW_GDIPLUS_CACHE_LEVEL_DEFAULT); // drawGdiplusCacheLevel
-
 	rdp_out_gdiplus_cache_entries(s); // gdipCacheEntries
 	rdp_out_gdiplus_cache_chunk_size(s); // gdipCacheChunkSize
 	rdp_out_gdiplus_image_cache_properties(s); // gdipImageCacheProperties
+	rdp_out_capset_header(s, header, CAPSET_TYPE_DRAWGDIPLUS);
 }
 
 /* Process GDI+ cache entries structure */
@@ -655,7 +710,7 @@ rdp_process_draw_gdiplus_capset(rdpRdp * rdp, STREAM s)
 	uint32 gdipVersion;
 	uint32 drawGdiplusCacheLevel;
 
-        in_uint32_le(s, drawGDIPlusSupportLevel); // drawGDIPlusSupportLevel
+	in_uint32_le(s, drawGDIPlusSupportLevel); // drawGDIPlusSupportLevel
 	in_uint32_le(s, gdipVersion); // gdipVersion, build number for the GDI+ 1.1 subsystem
 	in_uint32_le(s, drawGdiplusCacheLevel); // drawGdiplusCacheLevel
 
@@ -668,9 +723,11 @@ rdp_process_draw_gdiplus_capset(rdpRdp * rdp, STREAM s)
 void
 rdp_out_rail_capset(STREAM s)
 {
-	rdp_out_capset_header(s, CAPSET_TYPE_RAIL, CAPSET_LEN_RAIL);
+	uint8 * header;
 
+	header = rdp_skip_capset_header(s, 4);
 	out_uint32_le(s, RAIL_LEVEL_SUPPORTED); // RailSupportLevel
+	rdp_out_capset_header(s, header, CAPSET_TYPE_RAIL);
 }
 
 /* Process RAIL capability set */
@@ -685,11 +742,13 @@ rdp_process_rail_capset(rdpRdp * rdp, STREAM s)
 void
 rdp_out_window_capset(STREAM s)
 {
-	rdp_out_capset_header(s, CAPSET_TYPE_WINDOW, CAPSET_LEN_WINDOW);
+	uint8 * header;
 
+	header = rdp_skip_capset_header(s, 4);
 	out_uint32_le(s, WINDOW_LEVEL_SUPPORTED); // wndSupportLevel
 	out_uint8(s, 3); // numIconCaches
 	out_uint16_le(s, 12); // numIconCacheEntries
+	rdp_out_capset_header(s, header, CAPSET_TYPE_WINDOW);
 }
 
 /* Process window list capability set */
@@ -709,18 +768,22 @@ rdp_process_window_capset(rdpRdp * rdp, STREAM s)
 void
 rdp_out_large_pointer_capset(STREAM s)
 {
-	rdp_out_capset_header(s, CAPSET_TYPE_LARGE_POINTER, CAPSET_LEN_LARGE_POINTER);
+	uint8 * header;
 
+	header = rdp_skip_capset_header(s, 4);
 	out_uint16_le(s, LARGE_POINTER_FLAG_96x96); // largePointerSupportFlags
+	rdp_out_capset_header(s, header, CAPSET_TYPE_LARGE_POINTER);
 }
 
 /* Output desktop composition capability set */
 void
 rdp_out_compdesk_capset(STREAM s)
 {
-	rdp_out_capset_header(s, CAPSET_TYPE_COMPDESK, CAPSET_LEN_COMPDESK);
+	uint8 * header;
 
+	header = rdp_skip_capset_header(s, 4);
 	out_uint16_le(s, COMPDESK_NOT_SUPPORTED); // CompDeskSupportLevel
+	rdp_out_capset_header(s, header, CAPSET_TYPE_COMPDESK);
 }
 
 /* Process desktop composition capability set */
@@ -735,15 +798,17 @@ rdp_process_compdesk_capset(rdpRdp * rdp, STREAM s)
 void
 rdp_out_multifragmentupdate_capset(STREAM s)
 {
-	rdp_out_capset_header(s, CAPSET_TYPE_MULTIFRAGMENTUPDATE, CAPSET_LEN_MULTIFRAGMENTUPDATE);
+	uint8 * header;
 
-        /*
-         * MaxRequestsize (4 bytes):
-         * The size of the buffer used to reassemble the fragments of a
-         * fast-path update. The size of this buffer places a cap on the
-         * size of the largest fast-path update that can be fragmented.
-         */
+	header = rdp_skip_capset_header(s, 4);
+	/*
+	* MaxRequestsize (4 bytes):
+	* The size of the buffer used to reassemble the fragments of a
+	* fast-path update. The size of this buffer places a cap on the
+	* size of the largest fast-path update that can be fragmented.
+	*/
 	out_uint32_le(s, 0x2000); // maxRequestSize
+	rdp_out_capset_header(s, header, CAPSET_TYPE_MULTIFRAGMENTUPDATE);
 }
 
 /* Process multifragment update capability set */
@@ -758,70 +823,75 @@ rdp_process_multifragmentupdate_capset(rdpRdp * rdp, STREAM s)
 void
 rdp_out_surface_commands_capset(STREAM s)
 {
-	rdp_out_capset_header(s, CAPSET_TYPE_SURFACE_COMMANDS, CAPSET_LEN_SURFACE_COMMANDS);
+	uint8 * header;
 
+	header = rdp_skip_capset_header(s, 4);
 	out_uint32_le(s, SURFCMDS_SETSURFACEBITS); // cmdFlags
-        out_uint32(s, 0); // reserved for future use
+	out_uint32(s, 0); // reserved for future use
+	rdp_out_capset_header(s, header, CAPSET_TYPE_SURFACE_COMMANDS);
 }
 
 /* Output a bitmap codec structure */
 void
 rdp_out_bitmap_codec(STREAM s)
 {
-        // codecGUID (16 bytes)
-        out_uint32_le(s, 0); // codecGUID1
-        out_uint16_le(s, 0); // codecGUID2
-        out_uint16_le(s, 0); // codecGUID3
-        out_uint8(s, 0); // codecGUID4
-        out_uint8(s, 0); // codecGUID5
-        out_uint8(s, 0); // codecGUID6
-        out_uint8(s, 0); // codecGUID7
-        out_uint8(s, 0); // codecGUID8
-        out_uint8(s, 0); // codecGUID9
-        out_uint8(s, 0); // codecGUID10
-        out_uint8(s, 0); // codecGUID11
+	// codecGUID (16 bytes)
+	out_uint32_le(s, 0); // codecGUID1
+	out_uint16_le(s, 0); // codecGUID2
+	out_uint16_le(s, 0); // codecGUID3
+	out_uint8(s, 0); // codecGUID4
+	out_uint8(s, 0); // codecGUID5
+	out_uint8(s, 0); // codecGUID6
+	out_uint8(s, 0); // codecGUID7
+	out_uint8(s, 0); // codecGUID8
+	out_uint8(s, 0); // codecGUID9
+	out_uint8(s, 0); // codecGUID10
+	out_uint8(s, 0); // codecGUID11
 
-        out_uint8(s, 0); // codecID
-        out_uint32_le(s, 0); // codecPropertiesLength
-        out_uint8s(s, 0); // codecProperties
+	out_uint8(s, 0); // codecID
+	out_uint32_le(s, 0); // codecPropertiesLength
+	out_uint8s(s, 0); // codecProperties
 }
 
 /* Output bitmap codecs capability set */
 void
 rdp_out_bitmap_codecs_capset(STREAM s)
 {
-	rdp_out_capset_header(s, CAPSET_TYPE_BITMAP_CODECS, CAPSET_LEN_BITMAP_CODECS);
+	uint8 * header;
 
-        out_uint8(s, 0); // bitmapCodecCount, the number of bitmap codec entries
-
-        // bitmapCodecArray
-        // rdp_out_bitmap_codec(s, ...);
+	header = rdp_skip_capset_header(s, 4);
+	out_uint8(s, 0); // bitmapCodecCount, the number of bitmap codec entries
+	// bitmapCodecArray
+	// rdp_out_bitmap_codec(s, ...);
+	rdp_out_capset_header(s, header, CAPSET_TYPE_BITMAP_CODECS);
 }
-
 
 /*
  * Device redirection capability sets
  */
 
-
 /* Output device redirection capability set header */
 void
-rdp_out_dr_capset_header(STREAM s, uint16 capabilityType, uint16 capabilityLength, uint32 version)
+rdp_out_dr_capset_header(STREAM s, uint8 * header, uint16 capabilityType, uint32 version)
 {
+	int cap_len;
+
+	s->end = s->p;
+	cap_len = (int) (s->end - header);
+	s->p = header;
 	out_uint16_le(s, capabilityType); // capabilityType
-	out_uint16_le(s, capabilityLength); // capabilityLength
+	out_uint16_le(s, cap_len); // capabilityLength
 	out_uint32_le(s, version); // version
+	s->p = s->end;
 }
 
 /* Output device direction general capability set */
 void
 rdp_out_dr_general_capset(STREAM s)
 {
-	rdp_out_dr_capset_header(s,
-		DR_CAPSET_TYPE_GENERAL,
-		DR_CAPSET_LEN_GENERAL,
-		DR_GENERAL_CAPABILITY_VERSION_01);
+	uint8 * header;
 
+	header = rdp_skip_capset_header(s, 8);
 	out_uint32_le(s, 0); // osType, ignored on receipt
 	out_uint32_le(s, 0); // osVersion, unused and must be set to zero
 	out_uint16_le(s, 1); // protocolMajorVersion, must be set to 1
@@ -836,6 +906,7 @@ rdp_out_dr_general_capset(STREAM s)
 	 * SpecialTypeDeviceCap (4 bytes):
 	 * present when DR_GENERAL_CAPABILITY_VERSION_02 is used
 	 */
+	rdp_out_dr_capset_header(s, header, DR_CAPSET_TYPE_GENERAL, DR_GENERAL_CAPABILITY_VERSION_01);
 }
 
 /* Process device direction general capability set */
@@ -879,10 +950,10 @@ rdp_process_dr_general_capset(STREAM s)
 void
 rdp_out_dr_printer_capset(STREAM s)
 {
-	rdp_out_dr_capset_header(s,
-		DR_CAPSET_TYPE_PRINTER,
-		DR_CAPSET_LEN_PRINTER,
-		DR_GENERAL_CAPABILITY_VERSION_01);
+	uint8 * header;
+
+	header = rdp_skip_capset_header(s, 8);
+	rdp_out_dr_capset_header(s, header, DR_CAPSET_TYPE_PRINTER, DR_GENERAL_CAPABILITY_VERSION_01);
 }
 
 /* Process printer direction capability set */
@@ -900,10 +971,10 @@ rdp_process_dr_printer_capset(STREAM s)
 void
 rdp_out_dr_port_capset(STREAM s)
 {
-	rdp_out_dr_capset_header(s,
-		DR_CAPSET_TYPE_PORT,
-		DR_CAPSET_LEN_PORT,
-		DR_GENERAL_CAPABILITY_VERSION_01);
+	uint8 * header;
+
+	header = rdp_skip_capset_header(s, 8);
+	rdp_out_dr_capset_header(s, header, DR_CAPSET_TYPE_PORT, DR_GENERAL_CAPABILITY_VERSION_01);
 }
 
 /* Process port redirection capability set */
@@ -921,10 +992,10 @@ rdp_process_dr_port_capset(STREAM s)
 void
 rdp_out_dr_drive_capset(STREAM s)
 {
-	rdp_out_dr_capset_header(s,
-		DR_CAPSET_TYPE_DRIVE,
-		DR_CAPSET_LEN_DRIVE,
-		DR_GENERAL_CAPABILITY_VERSION_01);
+	uint8 * header;
+
+	header = rdp_skip_capset_header(s, 8);
+	rdp_out_dr_capset_header(s, header, DR_CAPSET_TYPE_DRIVE, DR_GENERAL_CAPABILITY_VERSION_01);
 
 	/*
 	 * [MS-RDPEFS] says DR_GENERAL_CAPABILITY_VERSION_02 must be used
@@ -948,10 +1019,10 @@ rdp_process_dr_drive_capset(STREAM s)
 void
 rdp_out_dr_smartcard_capset(STREAM s)
 {
-	rdp_out_dr_capset_header(s,
-		DR_CAPSET_TYPE_SMARTCARD,
-		DR_CAPSET_LEN_SMARTCARD,
-		DR_GENERAL_CAPABILITY_VERSION_01);
+	uint8 * header;
+
+	header = rdp_skip_capset_header(s, 8);
+	rdp_out_dr_capset_header(s, header, DR_CAPSET_TYPE_SMARTCARD, DR_GENERAL_CAPABILITY_VERSION_01);
 }
 
 /* Process smartcard redirection capability set */
@@ -964,5 +1035,3 @@ rdp_process_dr_smartcard_capset(STREAM s)
 	in_uint16_le(s, capabilityLength); // capabilityLength
 	in_uint32_le(s, version); // version
 }
-
-
