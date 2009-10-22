@@ -205,14 +205,6 @@ enum RDP_RAIL_PDU_TYPE
 #define RAIL_EXEC_FLAG_FILE                     0x0004
 #define RAIL_EXEC_FLAG_EXPAND_ARGUMENTS         0x0008
 
-
-/* Device flags */
-#define KBD_FLAG_RIGHT          0x0001
-#define KBD_FLAG_EXT            0x0100
-#define KBD_FLAG_QUIET          0x1000
-#define KBD_FLAG_DOWN           0x4000
-#define KBD_FLAG_UP             0x8000
-
 /* Toggle key synchronization */
 #define KBD_SYNC_SCROLL_LOCK	0x0001
 #define KBD_SYNC_NUM_LOCK	0x0002
