@@ -27,7 +27,7 @@
  */
 
 /* NegTokenInit2 is sent by the client to the server after the TLS handshake is complete */
-
+#if 0
 void
 spnego_send_neg_token_init2(STREAM s)
 {
@@ -81,4 +81,4 @@ spnego_recv_neg_token_rsp(STREAM s)
 	*/
 
 }
-
+#endif
