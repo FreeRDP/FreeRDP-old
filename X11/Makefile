@@ -3,10 +3,11 @@ LIBOBJS = tcp.o iso.o mcs.o channels.o secure.o orders.o cache.o pstcache.o \
 licence.o ssl.o mppc.o rdp.o rdp5.o bitmap.o freerdp.o capabilities.o rail.o spnego.o \
 mem.o
 
-OBJS = xfreerdp.o xf_win.o xf_event.o xf_colour.o
+OBJS = xfreerdp.o xf_win.o xf_event.o xf_colour.o xf_keyboard.o
 
 CFLAGS = -O2 -Wall -fPIC -I..
 LDFLAGS = -L. -Wl,-rpath,. -lX11 -lXcursor -lfreerdp
+#LDFLAGS = -L. -Wl,-rpath,. -lX11 -lfreerdp
 
 all: libfreerdp.so xfreerdp
 

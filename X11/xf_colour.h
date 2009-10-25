@@ -18,7 +18,6 @@ xf_cursor_convert_mono(xfInfo * xfi, uint8 * src_glyph, uint8 * msk_glyph,
 	uint8 * xormask, uint8 * andmask, int width, int height, int bpp);
 int
 xf_cursor_convert_alpha(xfInfo * xfi, uint8 * alpha_data,
-	uint8 * xormask, uint8 * andmask, int width, int height,
-        int bpp, int server_depth);
+	uint8 * xormask, uint8 * andmask, int width, int height, int bpp);
 
 #endif

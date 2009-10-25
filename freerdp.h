@@ -44,6 +44,7 @@ struct rdp_inst
 	int (* rdp_check_fds)(struct rdp_inst * inst);
 	int (* rdp_send_input)(struct rdp_inst * inst, int message_type, int device_flags,
 		int param1, int param2);
+	int (* rdp_sync_input)(struct rdp_inst * inst, int toggle_flags);
 	/* calls from library to ui */
 	void (* ui_error)(struct rdp_inst * inst, char * text);
 	void (* ui_warning)(struct rdp_inst * inst, char * text);

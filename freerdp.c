@@ -540,6 +540,10 @@ l_rdp_connect(struct rdp_inst * inst)
 	connect_flags = RDP_LOGON_NORMAL;
 	rdp = (rdpRdp *) (inst->rdp);
 	s = rdp->settings;
+	if (s->bulk_compression)
+	{
+		connect_flags |= (RDP_LOGON_COMPRESSION | RDP_LOGON_COMPRESSION2);
+	}
 	if (s->autologin)
 	{
 		connect_flags |= RDP_LOGON_AUTO;
@@ -593,6 +597,16 @@ l_rdp_send_input(struct rdp_inst * inst, int message_type, int device_flags,
 	return 0;
 }
 
+static int
+l_rdp_sync_input(struct rdp_inst * inst, int toggle_flags)
+{
+	rdpRdp * rdp;
+
+	rdp = (rdpRdp *) (inst->rdp);
+	rdp_sync_input(rdp, time(NULL), toggle_flags);
+	return 0;
+}
+
 rdpInst *
 freerdp_init(rdpSet * settings)
 {
@@ -610,6 +624,7 @@ freerdp_init(rdpSet * settings)
 	inst->rdp_get_fds = l_rdp_get_fds;
 	inst->rdp_check_fds = l_rdp_check_fds;
 	inst->rdp_send_input = l_rdp_send_input;
+	inst->rdp_sync_input = l_rdp_sync_input;
 	return inst;
 }
 

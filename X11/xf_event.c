@@ -6,6 +6,7 @@
 #include <string.h>
 #include "freerdp.h"
 #include "xf_event.h"
+#include "xf_keyboard.h"
 
 static int
 xf_handle_event_Expose(rdpInst * inst, xfInfo * xfi, XEvent * xevent)
@@ -139,12 +140,32 @@ xf_handle_event_ButtonRelease(rdpInst * inst, xfInfo * xfi, XEvent * xevent)
 static int
 xf_handle_event_KeyPress(rdpInst * inst, xfInfo * xfi, XEvent * xevent)
 {
+	xf_kb_send_key(inst, RDP_KEYPRESS, xevent->xkey.keycode);
 	return 0;
 }
 
 static int
 xf_handle_event_KeyRelease(rdpInst * inst, xfInfo * xfi, XEvent * xevent)
 {
+	xf_kb_send_key(inst, RDP_KEYRELEASE, xevent->xkey.keycode);
+	return 0;
+}
+
+static int
+xf_handle_event_FocusIn(rdpInst * inst, xfInfo * xfi, XEvent * xevent)
+{
+	xf_kb_focus_in(inst);
+	return 0;
+}
+
+static int
+xf_handle_event_MappingNotify(rdpInst * inst, xfInfo * xfi, XEvent * xevent)
+{
+	if (xevent->xmapping.request == MappingModifier)
+	{
+		XFreeModifiermap(xfi->mod_map);
+		xfi->mod_map = XGetModifierMapping(xfi->display);
+	}
 	return 0;
 }
 
@@ -178,31 +199,33 @@ xf_handle_event(rdpInst * inst, xfInfo * xfi, XEvent * xevent)
 			rv = xf_handle_event_KeyRelease(inst, xfi, xevent);
 			break;
 		case FocusIn:
-			printf("xf_handle_event: FocusIn\n");
+			rv = xf_handle_event_FocusIn(inst, xfi, xevent);
 			break;
 		case FocusOut:
-			printf("xf_handle_event: FocusOut\n");
 			break;
 		case EnterNotify:
-			printf("xf_handle_event: EnterNotify\n");
+			//printf("xf_handle_event: EnterNotify\n");
 			break;
 		case LeaveNotify:
-			printf("xf_handle_event: LeaveNotify\n");
+			//printf("xf_handle_event: LeaveNotify\n");
 			break;
 		case NoExpose:
-			printf("xf_handle_event: NoExpose\n");
+			//printf("xf_handle_event: NoExpose\n");
 			break;
 		case GraphicsExpose:
-			printf("xf_handle_event: GraphicsExpose\n");
+			//printf("xf_handle_event: GraphicsExpose\n");
 			break;
 		case ConfigureNotify:
-			printf("xf_handle_event: ConfigureNotify\n");
+			//printf("xf_handle_event: ConfigureNotify\n");
 			break;
 		case MapNotify:
-			printf("xf_handle_event: MapNotify\n");
+			//printf("xf_handle_event: MapNotify\n");
 			break;
 		case ReparentNotify:
-			printf("xf_handle_event: ReparentNotify\n");
+			//printf("xf_handle_event: ReparentNotify\n");
+			break;
+		case MappingNotify:
+			rv = xf_handle_event_MappingNotify(inst, xfi, xevent);
 			break;
 		default:
 			printf("xf_handle_event unknown event %d\n", xevent->type);

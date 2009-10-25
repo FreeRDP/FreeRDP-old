@@ -4,6 +4,15 @@
 
 #include "freerdp.h"
 
+#define SET_XFI(_inst, _xfi) (_inst)->param1 = _xfi
+#define GET_XFI(_inst) ((xfInfo *) ((_inst)->param1))
+
+struct xf_km
+{
+	int scancode;
+	int flags;
+};
+
 struct xf_info
 {
 	Window wnd;
@@ -29,6 +38,10 @@ struct xf_info
 	GC gc_mono;
 	GC gc_default;
 	Cursor null_cursor;
+	struct xf_km km[256];
+	int pause_key;
+	int tab_key;
+	XModifierKeymap * mod_map;
 };
 typedef struct xf_info xfInfo;
 

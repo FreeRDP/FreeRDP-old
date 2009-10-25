@@ -56,6 +56,7 @@ struct rdp_set
 	int off_screen_bitmaps;
 	int triblt;
 	int new_cursors;
+	int bulk_compression;
 };
 typedef struct rdp_set rdpSet;
 

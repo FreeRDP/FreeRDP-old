@@ -205,12 +205,6 @@ enum RDP_RAIL_PDU_TYPE
 #define RAIL_EXEC_FLAG_FILE                     0x0004
 #define RAIL_EXEC_FLAG_EXPAND_ARGUMENTS         0x0008
 
-/* Toggle key synchronization */
-#define KBD_SYNC_SCROLL_LOCK	0x0001
-#define KBD_SYNC_NUM_LOCK	0x0002
-#define KBD_SYNC_CAPS_LOCK	0x0004
-#define KBD_SYNC_KANA_LOCK	0x0008
-
 /* Raster operation masks */
 #define ROP2_S(rop3) (rop3 & 0xf)
 #define ROP2_P(rop3) ((rop3 & 0x3) | ((rop3 & 0x30) >> 2))

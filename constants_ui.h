@@ -18,6 +18,12 @@ enum RDP_INPUT_DEVICE
 #define KBD_FLAG_DOWN           0x4000
 #define KBD_FLAG_UP             0x8000
 
+/* Toggle key synchronization */
+#define KBD_SYNC_SCROLL_LOCK	0x0001
+#define KBD_SYNC_NUM_LOCK	0x0002
+#define KBD_SYNC_CAPS_LOCK	0x0004
+#define KBD_SYNC_KANA_LOCK	0x0008
+
 /* See T.128 */
 #define RDP_KEYPRESS 0
 #define RDP_KEYRELEASE (KBD_FLAG_DOWN | KBD_FLAG_UP)

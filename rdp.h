@@ -75,6 +75,8 @@ process_cached_pointer_pdu(rdpRdp * rdp, STREAM s);
 void
 process_system_pointer_pdu(rdpRdp * rdp, STREAM s);
 void
+process_new_pointer_pdu(rdpRdp * rdp, STREAM s);
+void
 process_bitmap_updates(rdpRdp * rdp, STREAM s);
 void
 process_palette(rdpRdp * rdp, STREAM s);

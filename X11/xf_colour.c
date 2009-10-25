@@ -38,6 +38,16 @@
 
 #define MAKE32RGB(_red, _green, _blue) (_red << 16) | (_green << 8) | _blue;
 
+#define MAKE15RGB(_red, _green, _blue) \
+  (((_red & 0xff) >> 3) << 10) | \
+  (((_green & 0xff) >> 3) <<  5) | \
+  (((_blue & 0xff) >> 3) <<  0)
+
+#define MAKE16RGB(_red, _green, _blue) \
+  (((_red & 0xff) >> 3) << 11) | \
+  (((_green & 0xff) >> 2) <<  5) | \
+  (((_blue & 0xff) >> 3) <<  0)
+
 static int
 get_pixel(uint8 * data, int x, int y, int width, int height, int bpp)
 {
@@ -136,6 +146,7 @@ xf_colour(xfInfo * xfi, int in_colour, int in_bpp, int out_bpp)
 			SPLIT15RGB(red, green, blue, in_colour);
 			break;
 		case 8:
+			in_colour &= 0xff;
 			SPLIT24RGB(red, green, blue, xfi->colourmap[in_colour]);
 			break;
 		case 1:
@@ -155,6 +166,12 @@ xf_colour(xfInfo * xfi, int in_colour, int in_bpp, int out_bpp)
 		case 32:
 		case 24:
 			rv = MAKE32RGB(red, green, blue);
+			break;
+		case 16:
+			rv = MAKE16RGB(red, green, blue);
+			break;
+		case 15:
+			rv = MAKE15RGB(red, green, blue);
 			break;
 		case 1:
 			if ((red != 0) || (green != 0) || (blue != 0))
@@ -187,6 +204,7 @@ xf_image_convert(xfInfo * xfi, rdpSet * settings, int width, int height,
 	uint8 * out_data;
 	uint8 * src8;
 	uint16 * src16;
+	uint16 * dst16;
 	uint32 * dst32;
 
 	if ((settings->server_depth == 24) && (xfi->bpp == 32))
@@ -252,6 +270,56 @@ xf_image_convert(xfInfo * xfi, rdpSet * settings, int width, int height,
 		}
 		return out_data;
 	}
+	else if ((settings->server_depth == 15) && (xfi->bpp == 16))
+	{
+		out_data = (uint8 *) malloc(width * height * 2);
+		src16 = (uint16 *) in_data;
+		dst16 = (uint16 *) out_data;
+		for (index = width * height; index > 0; index--)
+		{
+			pixel = *src16;
+			src16++;
+			SPLIT15RGB(red, green, blue, pixel);
+			pixel = MAKE16RGB(red, green, blue);
+			*dst16 = pixel;
+			dst16++;
+		}
+		return out_data;
+	}
+	else if ((settings->server_depth == 8) && (xfi->bpp == 16))
+	{
+		out_data = (uint8 *) malloc(width * height * 2);
+		src8 = in_data;
+		dst16 = (uint16 *) out_data;
+		for (index = width * height; index > 0; index--)
+		{
+			pixel = *src8;
+			src8++;
+			pixel = xfi->colourmap[pixel];
+			SPLIT24RGB(red, green, blue, pixel);
+			pixel = MAKE16RGB(red, green, blue);
+			*dst16 = pixel;
+			dst16++;
+		}
+		return out_data;
+	}
+	else if ((settings->server_depth == 8) && (xfi->bpp == 15))
+	{
+		out_data = (uint8 *) malloc(width * height * 2);
+		src8 = in_data;
+		dst16 = (uint16 *) out_data;
+		for (index = width * height; index > 0; index--)
+		{
+			pixel = *src8;
+			src8++;
+			pixel = xfi->colourmap[pixel];
+			SPLIT24RGB(red, green, blue, pixel);
+			pixel = MAKE15RGB(red, green, blue);
+			*dst16 = pixel;
+			dst16++;
+		}
+		return out_data;
+	}
 	return in_data;
 }
 
@@ -272,15 +340,12 @@ xf_create_colourmap(xfInfo * xfi, rdpSet * settings, RD_COLOURMAP * colours)
 	{
 		count = 256;
 	}
-	if (xfi->bpp == 32)
+	for (index = count - 1; index >= 0; index--)
 	{
-		for (index = count - 1; index >= 0; index--)
-		{
-			red = colours->colours[index].red;
-			green = colours->colours[index].green;
-			blue = colours->colours[index].blue;
-			colourmap[index] = MAKE32RGB(red, green, blue);
-		}
+		red = colours->colours[index].red;
+		green = colours->colours[index].green;
+		blue = colours->colours[index].blue;
+		colourmap[index] = MAKE32RGB(red, green, blue);
 	}
 	return (RD_HCOLOURMAP) colourmap;
 }
@@ -313,9 +378,9 @@ xf_cursor_convert_mono(xfInfo * xfi, uint8 * src_data, uint8 * msk_data,
 		for (i = 0; i < width; i++)
 		{
 			xpixel = get_pixel(xormask, i, jj, width, height, bpp);
-			xpixel = xf_colour(xfi, xpixel, bpp, 1);
+			xpixel = xf_colour(xfi, xpixel, bpp, 32);
 			apixel = get_pixel(andmask, i, jj, width, height, 1);
-			if ((xpixel != 0) && (apixel != 0))
+			if ((xpixel == 0xffffff) && (apixel != 0))
 			{
 				/* use pattern(not solid black) for xor area */
 				xpixel = (i & 1) == (j & 1);
@@ -336,26 +401,23 @@ xf_cursor_convert_mono(xfInfo * xfi, uint8 * src_data, uint8 * msk_data,
 /* create 32 bpp cursor */
 int
 xf_cursor_convert_alpha(xfInfo * xfi, uint8 * alpha_data,
-	uint8 * xormask, uint8 * andmask, int width, int height,
-        int bpp, int server_depth)
+	uint8 * xormask, uint8 * andmask, int width, int height, int bpp)
 {
 	int i;
 	int j;
 	int jj;
 	int xpixel;
 	int apixel;
-	int lbpp;
 
-	lbpp = bpp == 1 ? bpp : server_depth;
 	for (j = 0; j < height; j++)
 	{
 		jj = (bpp == 1) ? j : (height - 1) - j;
 		for (i = 0; i < width; i++)
 		{
 			xpixel = get_pixel(xormask, i, jj, width, height, bpp);
-			xpixel = xf_colour(xfi, xpixel, lbpp, 32);
+			xpixel = xf_colour(xfi, xpixel, bpp, 32);
 			apixel = get_pixel(andmask, i, jj, width, height, 1);
-			if ((xpixel != 0) && (apixel != 0))
+			if ((xpixel == 0xffffff) && (apixel != 0))
 			{
 				/* use pattern(not solid black) for xor area */
 				xpixel = (i & 1) == (j & 1);

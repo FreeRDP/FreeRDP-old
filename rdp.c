@@ -922,10 +922,11 @@ process_demand_active(rdpRdp * rdp, STREAM s)
 }
 
 /* Process a colour pointer PDU */
-void
+static void
 process_colour_pointer_common(rdpRdp * rdp, STREAM s, int bpp)
 {
-	uint16 x, y, width, height, cache_idx, masklen, datalen;
+	uint16 width, height, cache_idx, masklen, datalen;
+	sint16 x, y;
 	uint8 * mask;
 	uint8 * data;
 	RD_HCURSOR cursor;
@@ -941,9 +942,14 @@ process_colour_pointer_common(rdpRdp * rdp, STREAM s, int bpp)
 	in_uint8p(s, mask, masklen);
 	if ((width != 32) || (height != 32))
 	{
-		printf("process_colour_pointer_common: warning width %d height %d bpp %d\n",
-			width, height, bpp);
+		ui_error(rdp->inst, "process_colour_pointer_common: error "
+			"width %d height %d\n", width, height);
+		return;
 	}
+	x = MAX(x, 0);
+	x = MIN(x, width - 1);
+	y = MAX(y, 0);
+	y = MIN(y, height - 1);
 	cursor = ui_create_cursor(rdp->inst, x, y, width, height, mask, data, bpp);
 	ui_set_cursor(rdp->inst, cursor);
 	cache_put_cursor(rdp->cache, cache_idx, cursor);
@@ -1192,37 +1198,30 @@ process_data_pdu(rdpRdp * rdp, STREAM s, uint32 * ext_disc_reason)
 	uint8 ctype;
 	uint16 clen;
 	uint32 len;
-
 	uint32 roff, rlen;
-
-	struct stream *ns = &(rdp->mppc_dict.ns);
+	struct stream * ns;
 
 	in_uint8s(s, 6);	/* shareid, pad, streamid */
 	in_uint16_le(s, len);
 	in_uint8(s, data_pdu_type);
 	in_uint8(s, ctype);
 	in_uint16_le(s, clen);
-	clen -= 18;
 
 	if (ctype & RDP_MPPC_COMPRESSED)
 	{
+		ns = &(rdp->mppc_dict.ns);
+		clen -= 18;
 		if (len > RDP_MPPC_DICT_SIZE)
 			ui_error(rdp->inst, "error decompressed packet size exceeds max\n");
 		if (mppc_expand(rdp, s->p, clen, ctype, &roff, &rlen) == -1)
 			ui_error(rdp->inst, "error while decompressing packet\n");
-
-		/* len -= 18; */
-
 		/* allocate memory and copy the uncompressed data into the temporary stream */
 		ns->data = (uint8 *) xrealloc(ns->data, rlen);
-
-		memcpy((ns->data), (unsigned char *) (rdp->mppc_dict.hist + roff), rlen);
-
+		memcpy(ns->data, rdp->mppc_dict.hist + roff, rlen);
 		ns->size = rlen;
 		ns->end = (ns->data + ns->size);
 		ns->p = ns->data;
 		ns->rdp_hdr = ns->p;
-
 		s = ns;
 	}
 

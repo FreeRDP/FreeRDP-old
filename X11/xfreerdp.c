@@ -21,7 +21,7 @@ set_default_params(rdpSet * settings)
 	settings->tcp_port_rdp = 3389;
 	settings->encryption = 1;
 	settings->rdp_version = 5;
-	settings->server_depth = 32;
+	settings->server_depth = 16;
 	settings->bitmap_cache = 1;
 	settings->bitmap_compression = 1;
 	settings->desktop_save = 0;
@@ -104,6 +104,11 @@ process_params(rdpSet * settings, int argc, char ** argv)
 				return 1;
 			}
 			settings->tcp_port_rdp = atoi(argv[index]);
+		}
+		else if (strcmp("-z", argv[index]) == 0)
+		{
+			index++;
+			settings->bulk_compression = 1;
 		}
 		else
 		{

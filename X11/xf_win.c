@@ -14,9 +14,7 @@
 #include "xf_win.h"
 #include "xf_event.h"
 #include "xf_colour.h"
-
-#define SET_XFI(_inst, _xfi) (_inst)->param1 = _xfi
-#define GET_XFI(_inst) ((xfInfo *) ((_inst)->param1))
+#include "xf_keyboard.h"
 
 static uint8 g_hatch_patterns[] = {
 	0x00, 0x00, 0x00, 0xff, 0x00, 0x00, 0x00, 0x00, /* 0 - bsHorizontal */
@@ -27,7 +25,7 @@ static uint8 g_hatch_patterns[] = {
 	0x81, 0x42, 0x24, 0x18, 0x18, 0x24, 0x42, 0x81  /* 5 - bsDiagCross */
 };
 
-static int g_rop2_map[] = {
+static uint8 g_rop2_map[] = {
 	GXclear,        /* 0 */
 	GXnor,          /* DPon */
 	GXandInverted,  /* DPna */
@@ -63,29 +61,89 @@ xf_set_rop3(xfInfo * xfi, int rop3)
 {
 	switch (rop3)
 	{
-		case 0x00: /* 0 */
+		case 0x00: /* 0 - 0 */
 			XSetFunction(xfi->display, xfi->gc, GXclear);
-			break;		
-		case 0x5a: /* D^P */
-			XSetFunction(xfi->display, xfi->gc, GXxor);
 			break;
-		case 0x55: /* ~D */
+		case 0x05: /* ~(P | D) - DPon */
+			XSetFunction(xfi->display, xfi->gc, GXnor);
+			break;
+		case 0x0a: /* ~P & D - DPna */
+			XSetFunction(xfi->display, xfi->gc, GXandInverted);
+			break;
+		case 0x0f: /* ~P - Pn */
+			XSetFunction(xfi->display, xfi->gc, GXcopyInverted);
+			break;
+		case 0x11: /* ~(S | D) - DSon */
+			XSetFunction(xfi->display, xfi->gc, GXnor);
+			break;
+		case 0x22: /* ~S & D - DSna */
+			XSetFunction(xfi->display, xfi->gc, GXandInverted);
+			break;
+		case 0x33: /* ~S - Sn */
+			XSetFunction(xfi->display, xfi->gc, GXcopyInverted);
+			break;
+		case 0x44: /* S & ~D - SDna */
+			XSetFunction(xfi->display, xfi->gc, GXandReverse);
+			break;
+		case 0x50: /* P & ~D - PDna */
+			XSetFunction(xfi->display, xfi->gc, GXandReverse);
+			break;
+		case 0x55: /* ~D - Dn */
 			XSetFunction(xfi->display, xfi->gc, GXinvert);
 			break;
-		case 0x66: /* D^S */
+		case 0x5a: /* D ^ P - DPx */
 			XSetFunction(xfi->display, xfi->gc, GXxor);
 			break;
-		case 0x88: /* D&S */
+		case 0x5f: /* ~(P & D) - DPan */
+			XSetFunction(xfi->display, xfi->gc, GXnand);
+			break;
+		case 0x66: /* D ^ S - DSx */
+			XSetFunction(xfi->display, xfi->gc, GXxor);
+			break;
+		case 0x77: /* ~(S & D) - DSan */
+			XSetFunction(xfi->display, xfi->gc, GXnand);
+			break;
+		case 0x88: /* D & S - DSa */
 			XSetFunction(xfi->display, xfi->gc, GXand);
 			break;
-		case 0xcc: /* S */
+		case 0x99: /* ~(S ^ D) - DSxn */
+			XSetFunction(xfi->display, xfi->gc, GXequiv);
+			break;
+		case 0xa0: /* P & D - DPa */
+			XSetFunction(xfi->display, xfi->gc, GXand);
+			break;
+		case 0xa5: /* ~(P ^ D) - PDxn */
+			XSetFunction(xfi->display, xfi->gc, GXequiv);
+			break;
+		case 0xaa: /* D - D */
+			XSetFunction(xfi->display, xfi->gc, GXnoop);
+			break;
+		case 0xaf: /* ~P | D - DPno */
+			XSetFunction(xfi->display, xfi->gc, GXorInverted);
+			break;
+		case 0xbb: /* ~S | D - DSno */
+			XSetFunction(xfi->display, xfi->gc, GXorInverted);
+			break;
+		case 0xcc: /* S - S */
 			XSetFunction(xfi->display, xfi->gc, GXcopy);
 			break;
-		case 0xee: /* D|S */
+		case 0xdd: /* S | ~D - SDno */
+			XSetFunction(xfi->display, xfi->gc, GXorReverse);
+			break;
+		case 0xee: /* D | S - DSo */
 			XSetFunction(xfi->display, xfi->gc, GXor);
 			break;
-		case 0xf0: /* P */
+		case 0xf0: /* P - P */
 			XSetFunction(xfi->display, xfi->gc, GXcopy);
+			break;
+		case 0xf5: /* P | ~D - PDno */
+			XSetFunction(xfi->display, xfi->gc, GXorReverse);
+			break;
+		case 0xfa: /* P | D - DPo */
+			XSetFunction(xfi->display, xfi->gc, GXor);
+			break;
+		case 0xff: /* 1 - 1 */
+			XSetFunction(xfi->display, xfi->gc, GXset);
 			break;
 		default:
 			printf("xf_set_rop3: unknonw rop3 %x\n", rop3);
@@ -342,8 +400,10 @@ l_ui_end_draw_glyphs(struct rdp_inst * inst, int x, int y, int cx, int cy)
 static uint32
 l_ui_get_toggle_keys_state(struct rdp_inst * inst)
 {
-	printf("ui_get_toggle_keys_state:\n");
-	return 0;
+	xfInfo * xfi;
+
+	xfi = GET_XFI(inst);
+	return xf_kb_get_toggle_keys_state(xfi);
 }
 
 static void
@@ -484,7 +544,7 @@ l_ui_screenblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int c
 	}
 	else
 	{
-		printf("l_ui_screenblt:\n");
+		//printf("l_ui_screenblt:\n");
 	}
 }
 
@@ -580,7 +640,8 @@ l_ui_create_cursor(struct rdp_inst * inst, uint32 x, uint32 y,
 	Cursor cur;
 	XcursorImage ci;
 
-	printf("l_ui_create_cursor1: alpha width %d height %d bpp %d\n", width, height, bpp);
+	printf("l_ui_create_cursor1: alpha width %d height %d bpp %d x %d y %d\n",
+		width, height, bpp, x, y);
 	xfi = GET_XFI(inst);
 	memset(&ci, 0, sizeof(ci));
 	ci.version = XCURSOR_IMAGE_VERSION;
@@ -593,8 +654,8 @@ l_ui_create_cursor(struct rdp_inst * inst, uint32 x, uint32 y,
 	memset(ci.pixels, 0, width * height * 4);
 	if ((andmask != 0) && (xormask != 0))
 	{
-		xf_cursor_convert_alpha(xfi, (uint8 *) (ci.pixels), xormask, andmask, width, height,
-			bpp, inst->settings->server_depth);
+		xf_cursor_convert_alpha(xfi, (uint8 *) (ci.pixels), xormask, andmask,
+			width, height, bpp);
 	}
 	cur = XcursorImageLoadCursor(xfi->display, &ci);
 	free(ci.pixels);
@@ -616,7 +677,8 @@ l_ui_create_cursor(struct rdp_inst * inst, uint32 x, uint32 y,
 	uint8 * src_data;
 	uint8 * msk_data;
 
-	printf("l_ui_create_cursor: mono width %d height %d bpp %d\n", width, height, bpp);
+	printf("l_ui_create_cursor: mono width %d height %d bpp %d x %d y %d\n",
+		width, height, bpp, x, y);
 	xfi = GET_XFI(inst);
 	src_data = (uint8 *) malloc(width * height);
 	memset(src_data, 0, width * height);
@@ -914,6 +976,8 @@ xf_post_connect(rdpInst * inst)
 	XSetForeground(xfi->display, xfi->gc, BlackPixelOfScreen(xfi->screen));
 	XFillRectangle(xfi->display, xfi->backstore, xfi->gc, 0, 0, width, height);
 	xfi->null_cursor = (Cursor) l_ui_create_cursor(inst, 0, 0, 32, 32, 0, 0, 0);
+	xfi->mod_map = XGetModifierMapping(xfi->display);
+	xf_kb_init(inst);
 	return 0;
 }
 
