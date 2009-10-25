@@ -27,6 +27,7 @@
 #include <netinet/tcp.h>	/* TCP_NODELAY */
 #include <arpa/inet.h>		/* inet_addr */
 #include <errno.h>		/* errno */
+#include <fcntl.h>		/* fcntl F_GETFL F_SETFL O_NONBLOCK */
 #endif
 
 #include "rdesktop.h"
@@ -206,6 +207,7 @@ tcp_recv(rdpTcp * tcp, STREAM s, uint32 length)
 		{
 			if (rcvd == -1 && TCP_BLOCKS)
 			{
+				tcp_can_recv(tcp->sock, 1);
 				rcvd = 0;
 			}
 			else
@@ -306,6 +308,11 @@ tcp_connect(rdpTcp * tcp, char * server, int port)
 	}
 
 #endif /* IPv6 */
+
+	/* set non blocking */
+	option_value = fcntl(tcp->sock, F_GETFL);
+	option_value = option_value | O_NONBLOCK;
+	fcntl(tcp->sock, F_SETFL, option_value);
 
 	option_value = 1;
 	option_len = sizeof(option_value);
