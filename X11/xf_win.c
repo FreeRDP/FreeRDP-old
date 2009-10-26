@@ -172,13 +172,15 @@ l_ui_unimpl(struct rdp_inst * inst, char * text)
 static void
 l_ui_begin_update(struct rdp_inst * inst)
 {
-	//printf("ui_begin_update: inst %p\n", inst);
 }
 
 static void
 l_ui_end_update(struct rdp_inst * inst)
 {
-	//printf("ui_end_update: %p\n", inst);
+	xfInfo * xfi;
+
+	xfi = GET_XFI(inst);
+	XFlush(xfi->display);
 }
 
 static void
