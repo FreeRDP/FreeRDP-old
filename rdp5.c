@@ -105,6 +105,9 @@ rdp5_process(rdpRdp * rdp, STREAM s)
 			case 10:	/* cached pointer */
 				process_cached_pointer_pdu(rdp, ts);
 				break;
+			case 11:
+				process_new_pointer_pdu(rdp, ts);
+				break;
 			default:
 				ui_unimpl(rdp->inst, "RDP5 opcode %d\n", type);
 		}
