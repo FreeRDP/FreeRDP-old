@@ -54,6 +54,7 @@ void
 rdp_out_general_capset(rdpRdp * rdp, STREAM s)
 {
 	uint8 * header;
+	int flags;
 
 	header = rdp_skip_capset_header(s, 4);
 	out_uint16_le(s, OS_MAJOR_TYPE_WINDOWS); // osMajorType, should we lie?
@@ -61,21 +62,18 @@ rdp_out_general_capset(rdpRdp * rdp, STREAM s)
 	out_uint16_le(s, CAPS_PROTOCOL_VERSION); // protocolVersion
 	out_uint16(s, 0); // pad
 	out_uint16(s, 0); // generalCompressionTypes, must be set to 0
-
-	// This section is not part of RDP 4
-
-	if(rdp->settings->rdp_version >= 5)
+	flags = 0;
+	if (rdp->settings->rdp_version >= 5)
 	{
-		out_uint16_le(s,
-			NO_BITMAP_COMPRESSION_HDR |
-			LONG_CREDENTIALS_SUPPORTED |
-			AUTORECONNECT_SUPPORTED); // extraFlags
-		out_uint16(s, 0); // updateCapabilityFlag, must be set to 0
-		out_uint16(s, 0); // remoteUnshareFlag, must be set to 0
-		out_uint16(s, 0); // generalCompressionLevel, must be set to 0
-		out_uint8(s, 0); // refreshRectSupport, either TRUE (0x01) or FALSE (0x00)
-		out_uint8(s, 0); // suppressOutputSupport, either TRUE (0x01) or FALSE (0x00)
+		flags = FASTPATH_OUTPUT_SUPPORTED | NO_BITMAP_COMPRESSION_HDR |
+			LONG_CREDENTIALS_SUPPORTED | AUTORECONNECT_SUPPORTED;
 	}
+	out_uint16_le(s, flags); // extraFlags
+	out_uint16(s, 0); // updateCapabilityFlag, must be set to 0
+	out_uint16(s, 0); // remoteUnshareFlag, must be set to 0
+	out_uint16(s, 0); // generalCompressionLevel, must be set to 0
+	out_uint8(s, 0); // refreshRectSupport, either TRUE (0x01) or FALSE (0x00)
+	out_uint8(s, 0); // suppressOutputSupport, either TRUE (0x01) or FALSE (0x00)
 	rdp_out_capset_header(s, header, CAPSET_TYPE_GENERAL);
 }
 

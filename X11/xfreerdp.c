@@ -20,7 +20,6 @@ set_default_params(rdpSet * settings)
 	strcpy(settings->username, "guest");
 	settings->tcp_port_rdp = 3389;
 	settings->encryption = 1;
-	settings->rdp_version = 5;
 	settings->server_depth = 16;
 	settings->bitmap_cache = 1;
 	settings->bitmap_compression = 1;
