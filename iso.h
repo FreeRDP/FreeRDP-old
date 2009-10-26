@@ -23,6 +23,7 @@
 
 struct rdp_iso
 {
+	int nla;
 	struct rdp_mcs * mcs;
 	struct rdp_tcp * tcp;
 };

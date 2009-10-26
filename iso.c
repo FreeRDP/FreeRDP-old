@@ -29,11 +29,10 @@
 
 #include <openssl/ssl.h>
 
-//#define USE_NLA
-
 /* Send a self-contained ISO PDU */
 static void
-iso_send_msg(rdpIso * iso, uint8 code) {
+iso_send_msg(rdpIso * iso, uint8 code)
+{
 	STREAM s;
 
 	s = tcp_init(iso->tcp, 11);
@@ -53,17 +52,13 @@ iso_send_msg(rdpIso * iso, uint8 code) {
 }
 
 static void
-iso_send_connection_request(rdpIso * iso, char * username) {
-	/*
-	 * Network Level Authentication (NLA) starts by saying we support it :P
-	 */
-
+iso_send_connection_request(rdpIso * iso, char * username)
+{
 	STREAM s;
 	int length = 30 + strlen(username);
 
-#ifdef USE_NLA
-	length += 8;
-#endif
+	if(iso->nla)
+		length += 8;
 
 	s = tcp_init(iso->tcp, length);
 
@@ -84,21 +79,22 @@ iso_send_connection_request(rdpIso * iso, char * username) {
 	out_uint8(s, 0x0D); /* Unknown */
 	out_uint8(s, 0x0A); /* Unknown */
 
-#ifdef USE_NLA
-	/* When using NLA, the RDP_NEG_DATA field should be present */
+	if(iso->nla)
+	{
+		/* When using NLA, the RDP_NEG_DATA field should be present */
+		out_uint8(s, 0x01); /* TYPE_RDP_NEG_REQ */
+		out_uint8(s, 0x00); /* flags, must be set to zero */
+		out_uint16(s, 8); /* RDP_NEG_DATA length (8) */
+		out_uint32(s, 0x00000003); /* requestedProtocols, PROTOCOL_HYBRID_FLAG | PROTOCOL_SSL_FLAG */
+	}
 
-	out_uint8(s, 0x01); /* TYPE_RDP_NEG_REQ */
-	out_uint8(s, 0x00); /* flags, must be set to zero */
-	out_uint16(s, 8); /* RDP_NEG_DATA length (8) */
-	out_uint32(s, 0x00000003); /* requestedProtocols, PROTOCOL_HYBRID_FLAG | PROTOCOL_SSL_FLAG */
-#endif
 	s_mark_end(s);
 	tcp_send(iso->tcp, s);
 }
 
 /* Process Negotiation Response */
 void
-rdp_process_negotiation_response(STREAM s)
+rdp_process_negotiation_response(rdpIso * iso, STREAM s)
 {
 	uint8 flags;
 	uint16 length;
@@ -108,28 +104,29 @@ rdp_process_negotiation_response(STREAM s)
 	in_uint16_le(s, length);
 	in_uint32_le(s, selectedProtocol);
 
-#ifdef USE_NLA
-	switch (selectedProtocol)
+	if(iso->nla)
 	{
-		case PROTOCOL_RDP:
-			printf("Selected PROTOCOL_RDP Security\n");
-			break;
-		case PROTOCOL_SSL:
-			printf("Selected PROTOCOL_SSL Security\n");
-			break;
-		case PROTOCOL_HYBRID:
-			printf("Selected PROTOCOL_HYBRID Security\n");
-			break;
-		default:
-			printf("Error: Unknown protocol security\n");
-			break;
+		switch (selectedProtocol)
+		{
+			case PROTOCOL_RDP:
+				printf("Selected PROTOCOL_RDP Security\n");
+				break;
+			case PROTOCOL_SSL:
+				printf("Selected PROTOCOL_SSL Security\n");
+				break;
+			case PROTOCOL_HYBRID:
+				printf("Selected PROTOCOL_HYBRID Security\n");
+				break;
+			default:
+				printf("Error: Unknown protocol security\n");
+				break;
+		}
 	}
-#endif
 }
 
 /* Process Negotiation Failure */
 void
-rdp_process_negotiation_failure(STREAM s)
+rdp_process_negotiation_failure(rdpIso * iso, STREAM s)
 {
 	uint8 flags;
 	uint16 length;
@@ -139,74 +136,36 @@ rdp_process_negotiation_failure(STREAM s)
 	in_uint16_le(s, length);
 	in_uint32_le(s, failureCode);
 
-#ifdef USE_NLA
-	switch (failureCode)
+	if(iso->nla)
 	{
-		case SSL_REQUIRED_BY_SERVER:
-			printf("Error: SSL_REQUIRED_BY_SERVER\n");
-			break;
-		case SSL_NOT_ALLOWED_BY_SERVER:
-			printf("Error: SSL_NOT_ALLOWED_BY_SERVER\n");
-			break;
-		case SSL_CERT_NOT_ON_SERVER:
-			printf("Error: SSL_CERT_NOT_ON_SERVER\n");
-			break;
-		case INCONSISTENT_FLAGS:
-			printf("Error: INCONSISTENT_FLAGS\n");
-			break;
-		case HYBRID_REQUIRED_BY_SERVER:
-			printf("Error: HYBRID_REQUIRED_BY_SERVER\n");
-			break;
-		default:
-			printf("Error: Unknown protocol security error\n");
-			break;
+		switch (failureCode)
+		{
+			case SSL_REQUIRED_BY_SERVER:
+				printf("Error: SSL_REQUIRED_BY_SERVER\n");
+				break;
+			case SSL_NOT_ALLOWED_BY_SERVER:
+				printf("Error: SSL_NOT_ALLOWED_BY_SERVER\n");
+				break;
+			case SSL_CERT_NOT_ON_SERVER:
+				printf("Error: SSL_CERT_NOT_ON_SERVER\n");
+				break;
+			case INCONSISTENT_FLAGS:
+				printf("Error: INCONSISTENT_FLAGS\n");
+				break;
+			case HYBRID_REQUIRED_BY_SERVER:
+				printf("Error: HYBRID_REQUIRED_BY_SERVER\n");
+				break;
+			default:
+				printf("Error: Unknown protocol security error\n");
+				break;
+		}
 	}
-#endif
-}
-
-/* This is quite ugly, I'll make it clean later */
-
-void
-rdp_tls_init(STREAM s, rdpIso * iso, uint8 * code, uint8 * rdpver)
-{
-	//char buffer[1024];
-	SSL_CTX *sslContext;
-	SSL *sslConnection;
-
-	SSL_load_error_strings();
-	SSL_library_init();
-
-	sslContext = SSL_CTX_new(TLSv1_client_method());
-
-	if(sslContext == NULL) {
-		printf("SSL_CTX_new() error\n");
-	}
-
-	sslConnection = SSL_new(sslContext);
-	if (sslConnection == NULL) {
-		printf("SSL_new() Error\n");
-	}
-
-	SSL_set_fd(sslConnection, iso->tcp->sock);
-
-	if(SSL_connect(sslConnection) <= 0) {
-		printf("SSL_connect() Error\n");
-	}
-
-	/* SPNEGO comes here
-	 *
-	 * I know samba has an SPNEGO implementation, but it's licensed under GPLv3
-	 * As it is the intention of FreeRDP to change the license of the library to
-	 * LGPL it doesn't look like a good idea to reuse that code. I'll have to write
-	 * a new implementation from scratch...
-	 */
-
-	exit(0);
 }
 
 /* Receive a message on the ISO layer, return code */
 static STREAM
-iso_recv_msg(rdpIso * iso, uint8 * code, uint8 * rdpver) {
+iso_recv_msg(rdpIso * iso, uint8 * code, uint8 * rdpver)
+{
 	STREAM s;
 	uint16 length;
 	uint8 version;
@@ -251,23 +210,22 @@ iso_recv_msg(rdpIso * iso, uint8 * code, uint8 * rdpver) {
 	switch (type)
 	{
 		case TYPE_RDP_NEG_RSP:
-			rdp_process_negotiation_response(s);
+			rdp_process_negotiation_response(iso, s);
 			break;
 		case TYPE_RDP_NEG_FAILURE:
-			rdp_process_negotiation_failure(s);
+			rdp_process_negotiation_failure(iso, s);
 			break;
 	}
 
-#ifdef USE_NLA
-	rdp_tls_init(s, iso, code, rdpver);
-#endif
+	/* NLA should follow here */
 
 	return s;
 }
 
 /* Initialise ISO transport data packet */
 STREAM
-iso_init(rdpIso * iso, int length) {
+iso_init(rdpIso * iso, int length)
+{
 	STREAM s;
 
 	s = tcp_init(iso->tcp, length + 7);
@@ -278,7 +236,8 @@ iso_init(rdpIso * iso, int length) {
 
 /* Send an ISO data PDU */
 void
-iso_send(rdpIso * iso, STREAM s) {
+iso_send(rdpIso * iso, STREAM s)
+{
 	uint16 length;
 
 	s_pop_layer(s, iso_hdr);
@@ -297,7 +256,8 @@ iso_send(rdpIso * iso, STREAM s) {
 
 /* Receive ISO transport data packet */
 STREAM
-iso_recv(rdpIso * iso, uint8 * rdpver) {
+iso_recv(rdpIso * iso, uint8 * rdpver)
+{
 	STREAM s;
 	uint8 code = 0;
 
@@ -316,7 +276,8 @@ iso_recv(rdpIso * iso, uint8 * rdpver) {
 
 /* Establish a connection up to the ISO layer */
 RD_BOOL
-iso_connect(rdpIso * iso, char * server, char * username, int port) {
+iso_connect(rdpIso * iso, char * server, char * username, int port)
+{
 	uint8 code = 0;
 
 	if (!tcp_connect(iso->tcp, server, port))
@@ -326,6 +287,11 @@ iso_connect(rdpIso * iso, char * server, char * username, int port) {
 
 	if (iso_recv_msg(iso, &code, NULL) == NULL)
 		return False;
+
+	if(iso->nla)
+	{
+		tls_connect(iso->tcp->sock, server);
+	}
 
 	if (code != ISO_PDU_CC) {
 		ui_error(iso->mcs->sec->rdp->inst, "expected CC, got 0x%x\n", code);
@@ -338,7 +304,8 @@ iso_connect(rdpIso * iso, char * server, char * username, int port) {
 
 /* Establish a reconnection up to the ISO layer */
 RD_BOOL
-iso_reconnect(rdpIso * iso, char * server, int port) {
+iso_reconnect(rdpIso * iso, char * server, int port)
+{
 	uint8 code = 0;
 
 	if (!tcp_connect(iso->tcp, server, port))
@@ -348,6 +315,11 @@ iso_reconnect(rdpIso * iso, char * server, int port) {
 
 	if (iso_recv_msg(iso, &code, NULL) == NULL)
 		return False;
+
+	if(iso->nla)
+	{
+		tls_connect(iso->tcp->sock, server);
+	}
 
 	if (code != ISO_PDU_CC) {
 		ui_error(iso->mcs->sec->rdp->inst, "expected CC, got 0x%x\n", code);
@@ -360,19 +332,22 @@ iso_reconnect(rdpIso * iso, char * server, int port) {
 
 /* Disconnect from the ISO layer */
 void
-iso_disconnect(rdpIso * iso) {
+iso_disconnect(rdpIso * iso)
+{
 	iso_send_msg(iso, ISO_PDU_DR);
 	tcp_disconnect(iso->tcp);
 }
 
 /* reset the state to support reconnecting */
 void
-iso_reset_state(rdpIso * iso) {
+iso_reset_state(rdpIso * iso)
+{
 	tcp_reset_state(iso->tcp);
 }
 
 rdpIso *
-iso_setup(struct rdp_mcs * mcs) {
+iso_setup(struct rdp_mcs * mcs)
+{
 	rdpIso * self;
 
 	self = (rdpIso *) xmalloc(sizeof (rdpIso));
@@ -380,13 +355,16 @@ iso_setup(struct rdp_mcs * mcs) {
 		memset(self, 0, sizeof (rdpIso));
 		self->mcs = mcs;
 		self->tcp = tcp_setup(self);
+		self->nla = 0;
 	}
 	return self;
 }
 
 void
-iso_cleanup(rdpIso * iso) {
-	if (iso != NULL) {
+iso_cleanup(rdpIso * iso)
+{
+	if (iso != NULL)
+	{
 		tcp_cleanup(iso->tcp);
 		xfree(iso);
 	}

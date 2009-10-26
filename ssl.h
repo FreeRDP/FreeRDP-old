@@ -22,6 +22,8 @@
 #ifndef _SSL_H
 #define _SSL_H
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
 #include <openssl/rc4.h>
 #include <openssl/md5.h>
 #include <openssl/sha.h>
@@ -77,5 +79,16 @@ ssl_rkey_get_exp_mod(SSL_RKEY * rkey, uint8 * exponent, uint32 max_exp_len, uint
 RD_BOOL
 ssl_sig_ok(uint8 * exponent, uint32 exp_len, uint8 * modulus, uint32 mod_len,
 	   uint8 * signature, uint32 sig_len);
+
+/* Functions for TLS */
+
+SSL*
+tls_connect(int fd, char *server);
+void
+tls_disconnect(SSL *connection);
+int
+tls_write(SSL *connection, const void *buf, int num);
+int
+tls_read(SSL *connection, void *buf, int num);
 
 #endif
