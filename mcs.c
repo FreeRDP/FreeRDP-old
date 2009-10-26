@@ -25,72 +25,7 @@
 #include "secure.h"
 #include "rdp.h"
 #include "mem.h"
-
-/* Parse an ASN.1 BER header */
-static RD_BOOL
-ber_parse_header(rdpMcs * mcs, STREAM s, int tagval, int *length)
-{
-	int tag, len;
-
-	if (tagval > 0xff)
-	{
-		in_uint16_be(s, tag);
-	}
-	else
-	{
-		in_uint8(s, tag);
-	}
-
-	if (tag != tagval)
-	{
-		ui_error(mcs->sec->rdp->inst, "expected tag %d, got %d\n", tagval, tag);
-		return False;
-	}
-
-	in_uint8(s, len);
-
-	if (len & 0x80)
-	{
-		len &= ~0x80;
-		*length = 0;
-		while (len--)
-			next_be(s, *length);
-	}
-	else
-		*length = len;
-
-	return s_check(s);
-}
-
-/* Output an ASN.1 BER header */
-static void
-ber_out_header(STREAM s, int tagval, int length)
-{
-	if (tagval > 0xff)
-	{
-		out_uint16_be(s, tagval);
-	}
-	else
-	{
-		out_uint8(s, tagval);
-	}
-
-	if (length >= 0x80)
-	{
-		out_uint8(s, 0x82);
-		out_uint16_be(s, length);
-	}
-	else
-		out_uint8(s, length);
-}
-
-/* Output an ASN.1 BER integer */
-static void
-ber_out_integer(STREAM s, int value)
-{
-	ber_out_header(s, BER_TAG_INTEGER, 2);
-	out_uint16_be(s, value);
-}
+#include "asn1.h"
 
 /* Output a DOMAIN_PARAMS structure (ASN.1 BER) */
 static void

@@ -217,8 +217,6 @@ iso_recv_msg(rdpIso * iso, uint8 * code, uint8 * rdpver)
 			break;
 	}
 
-	/* NLA should follow here */
-
 	return s;
 }
 
@@ -351,12 +349,15 @@ iso_setup(struct rdp_mcs * mcs)
 	rdpIso * self;
 
 	self = (rdpIso *) xmalloc(sizeof (rdpIso));
-	if (self != NULL) {
+
+	if (self != NULL)
+	{
 		memset(self, 0, sizeof (rdpIso));
 		self->mcs = mcs;
 		self->tcp = tcp_setup(self);
 		self->nla = 0;
 	}
+	
 	return self;
 }
 
