@@ -1,7 +1,7 @@
 
 LIBOBJS = tcp.o iso.o mcs.o channels.o secure.o orders.o cache.o pstcache.o \
 licence.o ssl.o mppc.o rdp.o rdp5.o bitmap.o freerdp.o capabilities.o rail.o spnego.o \
-mem.o
+mem.o asn1.o
 
 OBJS = xfreerdp.o xf_win.o xf_event.o xf_colour.o xf_keyboard.o
 
@@ -78,3 +78,6 @@ mem.o: ../mem.c
 
 spnego.o: ../spnego.c
 	$(CC) $(CFLAGS) -c ../spnego.c
+
+asn1.o: ../asn1.c
+	$(CC) $(CFLAGS) -c ../asn1.c
