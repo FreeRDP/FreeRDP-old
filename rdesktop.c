@@ -593,7 +593,7 @@ main(int argc, char *argv[])
 				break;
 
 			case 'z':
-				DEBUG(("rdp compression enabled\n"));
+				DEBUG("rdp compression enabled\n");
 				connect_flags |= (RDP_LOGON_COMPRESSION |
 					RDP_LOGON_COMPRESSION2);
 				break;
@@ -853,7 +853,7 @@ main(int argc, char *argv[])
 			g_settings.encryption = False;
 
 
-		DEBUG(("Connection successful.\n"));
+		DEBUG("Connection successful.\n");
 		memset(g_settings.password, 0, sizeof(g_settings.password));
 
 		if (run_count == 0)
@@ -863,7 +863,7 @@ main(int argc, char *argv[])
 		if (continue_connect)
 			rdp_main_loop(g_rdp, &deactivated, &ext_disc_reason);
 
-		DEBUG(("Disconnecting...\n"));
+		DEBUG("Disconnecting...\n");
 		rdp_disconnect(g_rdp);
 
 		if ((g_rdp->redirect) && (run_count == 0))	/* Support for Session Directory */

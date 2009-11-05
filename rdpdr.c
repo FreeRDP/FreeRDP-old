@@ -659,9 +659,7 @@ rdpdr_process_irp(STREAM s)
 
 			in_uint32_le(s, length);
 			in_uint32_le(s, offset);
-#if WITH_DEBUG_RDP5
-			DEBUG(("RDPDR IRP Read (length: %d, offset: %d)\n", length, offset));
-#endif
+			DEBUG_RDP5("RDPDR IRP Read (length: %d, offset: %d)\n", length, offset);
 			if (!rdpdr_handle_ok(deviceID, fileID))
 			{
 				status = RD_STATUS_INVALID_HANDLE;
@@ -712,9 +710,8 @@ rdpdr_process_irp(STREAM s)
 			in_uint32_le(s, length);
 			in_uint32_le(s, offset);
 			in_uint8s(s, 0x18);
-#if WITH_DEBUG_RDP5
-			DEBUG(("RDPDR IRP Write (length: %d)\n", result));
-#endif
+			DEBUG_RDP5("RDPDR IRP Write (length: %d)\n", result);
+
 			if (!rdpdr_handle_ok(deviceID, fileID))
 			{
 				status = RD_STATUS_INVALID_HANDLE;
@@ -1004,8 +1001,8 @@ rdpdr_process(STREAM s)
 	uint16 component;
 	uint16 packetID;
 
+	DEBUG_RDP5("--- rdpdr_process ---\n");
 #if WITH_DEBUG_RDP5
-	printf("--- rdpdr_process ---\n");
 	hexdump(s->p, s->end - s->p);
 #endif
 	in_uint16_le(s, component);
@@ -1030,9 +1027,7 @@ rdpdr_process(STREAM s)
 			case PAKID_CORE_DEVICE_REPLY:
 				/* connect to a specific resource */
 				in_uint32(s, handle);
-#if WITH_DEBUG_RDP5
-				DEBUG(("RDPDR: Server connected to resource %d\n", handle));
-#endif
+				DEBUG_RDP5("RDPDR: Server connected to resource %d\n", handle);
 				break;
 
 			case PAKID_CORE_DEVICE_IOREQUEST:
@@ -1267,17 +1262,14 @@ _rdpdr_check_fds(fd_set * rfds, fd_set * wfds, RD_BOOL timed_out)
 							iorq->partial_len += result;
 							iorq->offset += result;
 						}
-#if WITH_DEBUG_RDP5
-						DEBUG(("RDPDR: %d bytes of data read\n", result));
-#endif
+						DEBUG_RDP5("RDPDR: %d bytes of data read\n", result);
+
 						/* only delete link if all data has been transfered */
 						/* or if result was 0 and status success - EOF      */
 						if ((iorq->partial_len == iorq->length) ||
 						    (result == 0))
 						{
-#if WITH_DEBUG_RDP5
-							DEBUG(("RDPDR: AIO total %u bytes read of %u\n", iorq->partial_len, iorq->length));
-#endif
+							DEBUG_RDP5("RDPDR: AIO total %u bytes read of %u\n", iorq->partial_len, iorq->length);
 							rdpdr_send_completion(iorq->device,
 									      iorq->id, status,
 									      iorq->partial_len,
@@ -1310,18 +1302,14 @@ _rdpdr_check_fds(fd_set * rfds, fd_set * wfds, RD_BOOL timed_out)
 							iorq->offset += result;
 						}
 
-#if WITH_DEBUG_RDP5
-						DEBUG(("RDPDR: %d bytes of data written\n",
-						       result));
-#endif
+						DEBUG_RDP5("RDPDR: %d bytes of data written\n",
+						       result);
 						/* only delete link if all data has been transfered */
 						/* or we couldn't write */
 						if ((iorq->partial_len == iorq->length)
 						    || (result == 0))
 						{
-#if WITH_DEBUG_RDP5
-							DEBUG(("RDPDR: AIO total %u bytes written of %u\n", iorq->partial_len, iorq->length));
-#endif
+							DEBUG_RDP5("RDPDR: AIO total %u bytes written of %u\n", iorq->partial_len, iorq->length);
 							rdpdr_send_completion(iorq->device,
 									      iorq->id, status,
 									      iorq->partial_len,

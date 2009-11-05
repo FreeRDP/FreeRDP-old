@@ -695,6 +695,7 @@ with_debug_clipboard
 with_debug_sound
 with_debug_channel
 with_debug_seamless
+with_debug_serial
 with_debug_smartcard
 '
       ac_precious_vars='build_alias
@@ -1359,6 +1360,7 @@ Optional Packages:
   --with-debug-sound  enable debugging of sound code
   --with-debug-channel  enable debugging of virtual channel code
   --with-debug-seamless  enable debugging of SeamlessRDP code
+  --with-debug-serial  enable debugging of Serial code
   --with-debug-smartcard  enable debugging of smart-card code
 
 Some influential environment variables:
@@ -4883,7 +4885,7 @@ LIBS="$LIBS $ssldir/lib/libcrypto.a"
 
 else
 
-LIBS="$LIBS -L$ssldir/lib -lcrypto"
+LIBS="$LIBS -L$ssldir/lib -lcrypto -lssl"
 rpath="$rpath:$ssldir/lib"
 
 fi
@@ -7060,6 +7062,19 @@ fi
 
 
 
+# Check whether --with-debug-serial was given.
+if test "${with_debug_serial+set}" = set; then :
+  withval=$with_debug_serial;
+        if test $withval != "no";
+        then
+            $as_echo "#define WITH_DEBUG_SERIAL 1" >>confdefs.h
+
+	fi
+
+fi
+
+
+
 # Check whether --with-debug-smartcard was given.
 if test "${with_debug_smartcard+set}" = set; then :
   withval=$with_debug_smartcard;
@@ -7161,7 +7176,7 @@ case "$host" in
     CFLAGS="$CFLAGS -D_XOPEN_SOURCE_EXTENDED"
     ;;
 *-*-irix6.5*)
-    LIBS="$LIBS -L$ssldir/lib32 -lcrypto"
+    LIBS="$LIBS -L$ssldir/lib32 -lcrypto -lssl"
     CFLAGS="$CFLAGS -D__SGI_IRIX__"
     ;;
 esac

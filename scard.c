@@ -611,16 +611,16 @@ TS_SCardEstablishContext(STREAM in, STREAM out)
 	MYPCSC_SCARDCONTEXT hContext;
 	/* code segment  */
 
-	DEBUG_SCARD(("SCARD: SCardEstablishContext()\n"));
+	DEBUG_SCARD("SCARD: SCardEstablishContext()\n");
 	rv = SCardEstablishContext(SCARD_SCOPE_SYSTEM, NULL, NULL, &hContext);
 	if (rv)
 	{
-		DEBUG_SCARD(("SCARD: -> Failure: %s (0x%08x)\n",
+		DEBUG_SCARD("SCARD: -> Failure: %s (0x%08x)\n",
 			     pcsc_stringify_error(rv), (unsigned int) rv));
 	}
 	else
 	{
-		DEBUG_SCARD(("SCARD: -> Success (context: 0x%08lx)\n", hContext));
+		DEBUG_SCARD("SCARD: -> Success (context: 0x%08lx)\n", hContext);
 	}
 
 	out_uint32_le(out, 0x00000004);
@@ -639,17 +639,17 @@ TS_SCardReleaseContext(STREAM in, STREAM out)
 
 	in->p += 0x1C;
 	in_uint32_le(in, hContext);
-	DEBUG_SCARD(("SCARD: SCardReleaseContext(context: 0x%08x)\n", (unsigned) hContext));
+	DEBUG_SCARD("SCARD: SCardReleaseContext(context: 0x%08x)\n", (unsigned) hContext);
 	rv = SCardReleaseContext((MYPCSC_SCARDCONTEXT) hContext);
 
 	if (rv)
 	{
-		DEBUG_SCARD(("SCARD: -> Failure: %s (0x%08x)\n",
+		DEBUG_SCARD("SCARD: -> Failure: %s (0x%08x)\n",
 			     pcsc_stringify_error(rv), (unsigned int) rv));
 	}
 	else
 	{
-		DEBUG_SCARD(("SCARD: -> Success\n"));
+		DEBUG_SCARD("SCARD: -> Success\n");
 	}
 
 	return rv;
@@ -666,7 +666,7 @@ TS_SCardIsValidContext(STREAM in, STREAM out)
 
 	in->p += 0x1C;
 	in_uint32_le(in, hContext);
-	DEBUG_SCARD(("SCARD: SCardIsValidContext(context: 0x%08x)\n", (unsigned) hContext));
+	DEBUG_SCARD("SCARD: SCardIsValidContext(context: 0x%08x)\n", (unsigned) hContext);
 	/* There is no realization of SCardIsValidContext in PC/SC Lite so we call SCardListReaders */
 
 	readers = SC_xmalloc(&lcHandle, 1024);
@@ -677,13 +677,13 @@ TS_SCardIsValidContext(STREAM in, STREAM out)
 
 	if (rv)
 	{
-		DEBUG_SCARD(("SCARD: -> Failure: %s (0x%08x)\n",
+		DEBUG_SCARD("SCARD: -> Failure: %s (0x%08x)\n",
 			     pcsc_stringify_error(rv), (unsigned int) rv));
 		rv = SCARD_E_INVALID_HANDLE;
 	}
 	else
 	{
-		DEBUG_SCARD(("SCARD: -> Success\n"));
+		DEBUG_SCARD("SCARD: -> Success\n");
 	}
 
 	outForceAlignment(out, 8);
@@ -706,7 +706,7 @@ TS_SCardListReaders(STREAM in, STREAM out, RD_BOOL wide)
 
 	in->p += 0x2C;
 	in_uint32_le(in, hContext);
-	DEBUG_SCARD(("SCARD: SCardListReaders(context: 0x%08x)\n", (unsigned) hContext));
+	DEBUG_SCARD("SCARD: SCardListReaders(context: 0x%08x)\n", (unsigned) hContext);
 	plen1 = out->p;
 	out_uint32_le(out, 0x00000000);	/* Temp value for data length as 0x0 */
 	out_uint32_le(out, 0x01760650);
@@ -725,14 +725,14 @@ TS_SCardListReaders(STREAM in, STREAM out, RD_BOOL wide)
 	cur = readers;
 	if (rv != SCARD_S_SUCCESS)
 	{
-		DEBUG_SCARD(("SCARD: -> Failure: %s (0x%08x)\n",
+		DEBUG_SCARD("SCARD: -> Failure: %s (0x%08x)\n",
 			     pcsc_stringify_error(rv), (unsigned int) rv));
 	}
 	else
 	{
 		int i;
 		PSCNameMapRec tmpMap;
-		DEBUG_SCARD(("SCARD: -> Success\n"));
+		DEBUG_SCARD("SCARD: -> Success\n");
 		for (i = 0, tmpMap = nameMapList; i < nameMapCount; i++, tmpMap++)
 		{
 			dataLength += outString(out, tmpMap->alias, wide);
@@ -746,7 +746,7 @@ TS_SCardListReaders(STREAM in, STREAM out, RD_BOOL wide)
 			{
 				if (!hasAlias(cur))
 				{
-					DEBUG_SCARD(("SCARD:    \"%s\"\n", cur));
+					DEBUG_SCARD("SCARD:    \"%s\"\n", cur);
 					dataLength += outString(out, cur, wide);
 				}
 				cur = (void *) ((unsigned char *) cur + lenSC + 1);
@@ -790,23 +790,23 @@ TS_SCardConnect(STREAM in, STREAM out, RD_BOOL wide)
 	inReaderName(&lcHandle, in, &szReader, wide);
 	in->p += 0x04;
 	in_uint32_le(in, hContext);
-	DEBUG_SCARD(("SCARD: SCardConnect(context: 0x%08x, share: 0x%08x, proto: 0x%08x, reader: \"%s\")\n", (unsigned) hContext, (unsigned) dwShareMode, (unsigned) dwPreferredProtocol, szReader ? szReader : "NULL"));
+	DEBUG_SCARD("SCARD: SCardConnect(context: 0x%08x, share: 0x%08x, proto: 0x%08x, reader: \"%s\")\n", (unsigned) hContext, (unsigned) dwShareMode, (unsigned) dwPreferredProtocol, szReader ? szReader : "NULL");
 	rv = SCardConnect(hContext, szReader, (MYPCSC_DWORD) dwShareMode,
 			  (MYPCSC_DWORD) dwPreferredProtocol, &myHCard, &dwActiveProtocol);
 	hCard = scHandleToServer(myHCard);
 	if (rv != SCARD_S_SUCCESS)
 	{
-		DEBUG_SCARD(("SCARD: -> Failure: %s (0x%08x)\n",
+		DEBUG_SCARD("SCARD: -> Failure: %s (0x%08x)\n",
 			     pcsc_stringify_error(rv), (unsigned int) rv));
 	}
 	else
 	{
 		char *szVendor = getVendor(szReader);
-		DEBUG_SCARD(("SCARD: -> Success (hcard: 0x%08x [0x%08lx])\n",
+		DEBUG_SCARD("SCARD: -> Success (hcard: 0x%08x [0x%08lx])\n",
 			     (unsigned) hCard, (unsigned long) myHCard));
 		if (szVendor && (strlen(szVendor) > 0))
 		{
-			DEBUG_SCARD(("SCARD: Set Attribute ATTR_VENDOR_NAME\n"));
+			DEBUG_SCARD("SCARD: Set Attribute ATTR_VENDOR_NAME\n");
 			pthread_mutex_lock(&hcardAccess);
 			PSCHCardRec hcard = xmalloc(sizeof(TSCHCardRec));
 			if (hcard)
@@ -862,17 +862,17 @@ TS_SCardReconnect(STREAM in, STREAM out)
 	in->p += 0x04;
 	in_uint32_le(in, hCard);
 	myHCard = scHandleToMyPCSC(hCard);
-	DEBUG_SCARD(("SCARD: SCardReconnect(context: 0x%08x, hcard: 0x%08x [0x%08lx], share: 0x%08x, proto: 0x%08x, init: 0x%08x)\n", (unsigned) hContext, (unsigned) hCard, (unsigned long) myHCard, (unsigned) dwShareMode, (unsigned) dwPreferredProtocol, (unsigned) dwInitialization));
+	DEBUG_SCARD("SCARD: SCardReconnect(context: 0x%08x, hcard: 0x%08x [0x%08lx], share: 0x%08x, proto: 0x%08x, init: 0x%08x)\n", (unsigned) hContext, (unsigned) hCard, (unsigned long) myHCard, (unsigned) dwShareMode, (unsigned) dwPreferredProtocol, (unsigned) dwInitialization);
 	rv = SCardReconnect(myHCard, (MYPCSC_DWORD) dwShareMode, (MYPCSC_DWORD) dwPreferredProtocol,
 			    (MYPCSC_DWORD) dwInitialization, &dwActiveProtocol);
 	if (rv != SCARD_S_SUCCESS)
 	{
-		DEBUG_SCARD(("SCARD: -> Failure: %s (0x%08x)\n",
+		DEBUG_SCARD("SCARD: -> Failure: %s (0x%08x)\n",
 			     pcsc_stringify_error(rv), (unsigned int) rv));
 	}
 	else
 	{
-		DEBUG_SCARD(("SCARD: -> Success (proto: 0x%08x)\n", (unsigned) dwActiveProtocol));
+		DEBUG_SCARD("SCARD: -> Success (proto: 0x%08x)\n", (unsigned) dwActiveProtocol);
 	}
 
 	outForceAlignment(out, 8);
@@ -896,7 +896,7 @@ TS_SCardDisconnect(STREAM in, STREAM out)
 	in->p += 0x04;
 	in_uint32_le(in, hCard);
 
-	DEBUG_SCARD(("SCARD: SCardDisconnect(context: 0x%08x, hcard: 0x%08x, disposition: 0x%08x)\n", (unsigned) hContext, (unsigned) hCard, (unsigned) dwDisposition));
+	DEBUG_SCARD("SCARD: SCardDisconnect(context: 0x%08x, hcard: 0x%08x, disposition: 0x%08x)\n", (unsigned) hContext, (unsigned) hCard, (unsigned) dwDisposition);
 
 	pthread_mutex_lock(&hcardAccess);
 	PSCHCardRec hcard = hcardFirst;
@@ -922,12 +922,12 @@ TS_SCardDisconnect(STREAM in, STREAM out)
 
 	if (rv != SCARD_S_SUCCESS)
 	{
-		DEBUG_SCARD(("SCARD: -> Failure: %s (0x%08x)\n",
+		DEBUG_SCARD("SCARD: -> Failure: %s (0x%08x)\n",
 			     pcsc_stringify_error(rv), (unsigned int) rv));
 	}
 	else
 	{
-		DEBUG_SCARD(("SCARD: -> Success\n"));
+		DEBUG_SCARD("SCARD: -> Success\n");
 	}
 
 	outForceAlignment(out, 8);
@@ -1038,7 +1038,7 @@ TS_SCardGetStatusChange(STREAM in, STREAM out, RD_BOOL wide)
 	in_uint32_le(in, hContext);
 	in->p += 0x04;
 
-	DEBUG_SCARD(("SCARD: SCardGetStatusChange(context: 0x%08x, timeout: 0x%08x, count: %d)\n",
+	DEBUG_SCARD("SCARD: SCardGetStatusChange(context: 0x%08x, timeout: 0x%08x, count: %d)\n",
 		     (unsigned) hContext, (unsigned) dwTimeout, (int) dwCount));
 
 	if (dwCount > 0)
@@ -1102,11 +1102,11 @@ TS_SCardGetStatusChange(STREAM in, STREAM out, RD_BOOL wide)
 			if (strcmp(cur->szReader, "\\\\?PnP?\\Notification") == 0)
 				cur->dwCurrentState |= SCARD_STATE_IGNORE;
 
-			DEBUG_SCARD(("SCARD:    \"%s\"\n", cur->szReader ? cur->szReader : "NULL"));
-			DEBUG_SCARD(("SCARD:        user: 0x%08x, state: 0x%08x, event: 0x%08x\n",
+			DEBUG_SCARD("SCARD:    \"%s\"\n", cur->szReader ? cur->szReader : "NULL");
+			DEBUG_SCARD("SCARD:        user: 0x%08x, state: 0x%08x, event: 0x%08x\n",
 				     (unsigned) cur->pvUserData, (unsigned) cur->dwCurrentState,
 				     (unsigned) cur->dwEventState));
-			DEBUG_SCARD(("SCARD:            current state: 0x%08x\n",
+			DEBUG_SCARD("SCARD:            current state: 0x%08x\n",
 				     (unsigned) *curState));
 		}
 	}
@@ -1128,12 +1128,12 @@ TS_SCardGetStatusChange(STREAM in, STREAM out, RD_BOOL wide)
 
 	if (rv != SCARD_S_SUCCESS)
 	{
-		DEBUG_SCARD(("SCARD: -> Failure: %s (0x%08x)\n",
+		DEBUG_SCARD("SCARD: -> Failure: %s (0x%08x)\n",
 			     pcsc_stringify_error(rv), (unsigned int) rv));
 	}
 	else
 	{
-		DEBUG_SCARD(("SCARD: -> Success\n"));
+		DEBUG_SCARD("SCARD: -> Success\n");
 	}
 
 	out_uint32_le(out, dwCount);
@@ -1170,8 +1170,8 @@ TS_SCardGetStatusChange(STREAM in, STREAM out, RD_BOOL wide)
 #endif
 		cur->dwEventState = incStatus(cur->dwEventState, False);
 
-		DEBUG_SCARD(("SCARD:    \"%s\"\n", cur->szReader ? cur->szReader : "NULL"));
-		DEBUG_SCARD(("SCARD:        user: 0x%08x, state: 0x%08x, event: 0x%08x\n",
+		DEBUG_SCARD("SCARD:    \"%s\"\n", cur->szReader ? cur->szReader : "NULL");
+		DEBUG_SCARD("SCARD:        user: 0x%08x, state: 0x%08x, event: 0x%08x\n",
 			     (unsigned) cur->pvUserData, (unsigned) cur->dwCurrentState,
 			     (unsigned) cur->dwEventState));
 
@@ -1196,16 +1196,16 @@ TS_SCardCancel(STREAM in, STREAM out)
 
 	in->p += 0x1C;
 	in_uint32_le(in, hContext);
-	DEBUG_SCARD(("SCARD: SCardCancel(context: 0x%08x)\n", (unsigned) hContext));
+	DEBUG_SCARD("SCARD: SCardCancel(context: 0x%08x)\n", (unsigned) hContext);
 	rv = SCardCancel((MYPCSC_SCARDCONTEXT) hContext);
 	if (rv != SCARD_S_SUCCESS)
 	{
-		DEBUG_SCARD(("SCARD: -> Failure: %s (0x%08x)\n",
+		DEBUG_SCARD("SCARD: -> Failure: %s (0x%08x)\n",
 			     pcsc_stringify_error(rv), (unsigned int) rv));
 	}
 	else
 	{
-		DEBUG_SCARD(("SCARD: -> Success\n"));
+		DEBUG_SCARD("SCARD: -> Success\n");
 	}
 	outForceAlignment(out, 8);
 	return rv;
@@ -1240,27 +1240,27 @@ TS_SCardLocateCardsByATR(STREAM in, STREAM out, RD_BOOL wide)
 		return SC_returnNoMemoryError(&lcHandle, in, out);
 	memset(rsArray, 0, readerCount * sizeof(SCARD_READERSTATE_A));
 
-	DEBUG_SCARD(("SCARD: SCardLocateCardsByATR(context: 0x%08x, atrs: %d, readers: %d)\n",
+	DEBUG_SCARD("SCARD: SCardLocateCardsByATR(context: 0x%08x, atrs: %d, readers: %d)\n",
 		     (unsigned) hContext, (int) atrMaskCount, (int) readerCount));
 
 	for (i = 0, cur = pAtrMasks; i < atrMaskCount; i++, cur++)
 	{
 		cur->cbAtr = swap32(cur->cbAtr);
 
-		DEBUG_SCARD(("SCARD:    ATR: "));
+		DEBUG_SCARD("SCARD:    ATR: ");
 		for (j = 0; j < pAtrMasks->cbAtr; j++)
 		{
-		DEBUG_SCARD(("%02x%c",
+		DEBUG_SCARD("%02x%c",
 				     (unsigned) (unsigned char) cur->rgbAtr[j],
 				     (j == pAtrMasks->cbAtr - 1) ? ' ' : ':'))}
-		DEBUG_SCARD(("\n"));
-		DEBUG_SCARD(("SCARD:         "));
+		DEBUG_SCARD("\n");
+		DEBUG_SCARD("SCARD:         ");
 		for (j = 0; j < pAtrMasks->cbAtr; j++)
 		{
-		DEBUG_SCARD(("%02x%c",
+		DEBUG_SCARD("%02x%c",
 				     (unsigned) (unsigned char) cur->rgbMask[j],
 				     (j == pAtrMasks->cbAtr - 1) ? ' ' : ':'))}
-		DEBUG_SCARD(("\n"));
+		DEBUG_SCARD("\n");
 	}
 
 	for (i = 0, rsCur = (SERVER_LPSCARD_READERSTATE_A) ((unsigned char **) rsArray + 2);
@@ -1282,8 +1282,8 @@ TS_SCardLocateCardsByATR(STREAM in, STREAM out, RD_BOOL wide)
 		rsCur->cbAtr = swap32(rsCur->cbAtr);
 
 		inReaderName(&lcHandle, in, (char **) &rsCur->szReader, wide);
-		DEBUG_SCARD(("SCARD:    \"%s\"\n", rsCur->szReader ? rsCur->szReader : "NULL"));
-		DEBUG_SCARD(("SCARD:        user: 0x%08x, state: 0x%08x, event: 0x%08x\n",
+		DEBUG_SCARD("SCARD:    \"%s\"\n", rsCur->szReader ? rsCur->szReader : "NULL");
+		DEBUG_SCARD("SCARD:        user: 0x%08x, state: 0x%08x, event: 0x%08x\n",
 			     (unsigned) rsCur->pvUserData, (unsigned) rsCur->dwCurrentState,
 			     (unsigned) rsCur->dwEventState));
 	}
@@ -1299,12 +1299,12 @@ TS_SCardLocateCardsByATR(STREAM in, STREAM out, RD_BOOL wide)
 	copyReaderState_MyPCSCToServer(myRsArray, rsArray, readerCount);
 	if (rv != SCARD_S_SUCCESS)
 	{
-		DEBUG_SCARD(("SCARD: -> Failure: %s (0x%08x)\n",
+		DEBUG_SCARD("SCARD: -> Failure: %s (0x%08x)\n",
 			     pcsc_stringify_error(rv), (unsigned int) rv));
 	}
 	else
 	{
-		DEBUG_SCARD(("SCARD: -> Success\n"));
+		DEBUG_SCARD("SCARD: -> Success\n");
 		cur = pAtrMasks;
 		for (i = 0, cur = pAtrMasks; i < atrMaskCount; i++, cur++)
 		{
@@ -1324,9 +1324,9 @@ TS_SCardLocateCardsByATR(STREAM in, STREAM out, RD_BOOL wide)
 				{
 					rsCur->dwEventState |= 0x00000040;	/* SCARD_STATE_ATRMATCH 0x00000040 */
 					memcpy(ResArray + j, rsCur, sizeof(SCARD_READERSTATE_A));
-					DEBUG_SCARD(("SCARD:    \"%s\"\n",
+					DEBUG_SCARD("SCARD:    \"%s\"\n",
 						     rsCur->szReader ? rsCur->szReader : "NULL"));
-					DEBUG_SCARD(("SCARD:        user: 0x%08x, state: 0x%08x, event: 0x%08x\n", (unsigned) rsCur->pvUserData, (unsigned) rsCur->dwCurrentState, (unsigned) rsCur->dwEventState));
+					DEBUG_SCARD("SCARD:        user: 0x%08x, state: 0x%08x, event: 0x%08x\n", (unsigned) rsCur->pvUserData, (unsigned) rsCur->dwCurrentState, (unsigned) rsCur->dwEventState);
 				}
 			}
 		}
@@ -1362,17 +1362,17 @@ TS_SCardBeginTransaction(STREAM in, STREAM out)
 	in->p += 0x30;
 	in_uint32_le(in, hCard);
 	myHCard = scHandleToMyPCSC(hCard);
-	DEBUG_SCARD(("SCARD: SCardBeginTransaction(hcard: 0x%08x [0x%08lx])\n",
+	DEBUG_SCARD("SCARD: SCardBeginTransaction(hcard: 0x%08x [0x%08lx])\n",
 		     (unsigned) hCard, (unsigned long) myHCard));
 	rv = SCardBeginTransaction(myHCard);
 	if (rv != SCARD_S_SUCCESS)
 	{
-		DEBUG_SCARD(("SCARD: -> Failure: %s (0x%08x)\n",
+		DEBUG_SCARD("SCARD: -> Failure: %s (0x%08x)\n",
 			     pcsc_stringify_error(rv), (unsigned int) rv));
 	}
 	else
 	{
-		DEBUG_SCARD(("SCARD: -> Success\n"));
+		DEBUG_SCARD("SCARD: -> Success\n");
 	}
 	outForceAlignment(out, 8);
 	return rv;
@@ -1392,21 +1392,21 @@ TS_SCardEndTransaction(STREAM in, STREAM out)
 	in_uint32_le(in, hCard);
 	myHCard = scHandleToMyPCSC(hCard);
 
-	DEBUG_SCARD(("[hCard = 0x%.8x]\n", (unsigned int) hCard));
-	DEBUG_SCARD(("[myHCard = 0x%016lx]\n", (unsigned long) myHCard));
-	DEBUG_SCARD(("[dwDisposition = 0x%.8x]\n", (unsigned int) dwDisposition));
+	DEBUG_SCARD("[hCard = 0x%.8x]\n", (unsigned int) hCard);
+	DEBUG_SCARD("[myHCard = 0x%016lx]\n", (unsigned long) myHCard);
+	DEBUG_SCARD("[dwDisposition = 0x%.8x]\n", (unsigned int) dwDisposition);
 
-	DEBUG_SCARD(("SCARD: SCardEndTransaction(hcard: 0x%08x [0x%08lx], disposition: 0x%08x)\n",
+	DEBUG_SCARD("SCARD: SCardEndTransaction(hcard: 0x%08x [0x%08lx], disposition: 0x%08x)\n",
 		     (unsigned) hCard, (unsigned long) myHCard, (unsigned) dwDisposition));
 	rv = SCardEndTransaction(myHCard, (MYPCSC_DWORD) dwDisposition);
 	if (rv != SCARD_S_SUCCESS)
 	{
-		DEBUG_SCARD(("SCARD: -> Failure: %s (0x%08x)\n",
+		DEBUG_SCARD("SCARD: -> Failure: %s (0x%08x)\n",
 			     pcsc_stringify_error(rv), (unsigned int) rv));
 	}
 	else
 	{
-		DEBUG_SCARD(("SCARD: -> Success\n"));
+		DEBUG_SCARD("SCARD: -> Success\n");
 	}
 	outForceAlignment(out, 8);
 	return rv;
@@ -1541,7 +1541,7 @@ TS_SCardTransmit(STREAM in, STREAM out)
 	else
 		pioRecvPci = NULL;
 
-	DEBUG_SCARD(("SCARD: SCardTransmit(hcard: 0x%08x [0x%08lx], send: %d bytes, recv: %d bytes)\n", (unsigned) hCard, (unsigned long) myHCard, (int) cbSendLength, (int) cbRecvLength));
+	DEBUG_SCARD("SCARD: SCardTransmit(hcard: 0x%08x [0x%08lx], send: %d bytes, recv: %d bytes)\n", (unsigned) hCard, (unsigned long) myHCard, (int) cbSendLength, (int) cbRecvLength);
 
 	myCbRecvLength = cbRecvLength;
 	myPioSendPci = SC_xmalloc(&lcHandle,
@@ -1573,7 +1573,7 @@ TS_SCardTransmit(STREAM in, STREAM out)
 	if (cbRecvLength > 448)
 	{
 		ui_warning(NULL, "Card response limited from %d to 448 bytes!\n", cbRecvLength);
-		DEBUG_SCARD(("SCARD:    Truncated %d to %d\n", (unsigned int) cbRecvLength, 448));
+		DEBUG_SCARD("SCARD:    Truncated %d to %d\n", (unsigned int) cbRecvLength, 448);
 		cbRecvLength = 448;
 	}
 
@@ -1589,12 +1589,12 @@ TS_SCardTransmit(STREAM in, STREAM out)
 
 	if (rv != SCARD_S_SUCCESS)
 	{
-		DEBUG_SCARD(("SCARD: -> Failure: %s (0x%08x)\n",
+		DEBUG_SCARD("SCARD: -> Failure: %s (0x%08x)\n",
 			     pcsc_stringify_error(rv), (unsigned int) rv));
 	}
 	else
 	{
-		DEBUG_SCARD(("SCARD: -> Success (%d bytes)\n", (int) cbRecvLength));
+		DEBUG_SCARD("SCARD: -> Success (%d bytes)\n", (int) cbRecvLength);
 #if 0
 		if ((pioRecvPci != NULL) && (mypioRecvPci->cbPciLength > 0))
 		{
@@ -1646,7 +1646,7 @@ TS_SCardStatus(STREAM in, STREAM out, RD_BOOL wide)
 	in->p += 0x04;
 	myHCard = scHandleToMyPCSC(hCard);
 
-	DEBUG_SCARD(("SCARD: SCardStatus(hcard: 0x%08x [0x%08lx], reader len: %d bytes, atr len: %d bytes)\n", (unsigned) hCard, (unsigned long) myHCard, (int) dwReaderLen, (int) dwAtrLen));
+	DEBUG_SCARD("SCARD: SCardStatus(hcard: 0x%08x [0x%08lx], reader len: %d bytes, atr len: %d bytes)\n", (unsigned) hCard, (unsigned long) myHCard, (int) dwReaderLen, (int) dwAtrLen);
 
 	if (dwReaderLen <= 0 || dwReaderLen == SCARD_AUTOALLOCATE || dwReaderLen > SCARD_MAX_MEM)
 		dwReaderLen = SCARD_MAX_MEM;
@@ -1683,7 +1683,7 @@ TS_SCardStatus(STREAM in, STREAM out, RD_BOOL wide)
 
 	if (rv != SCARD_S_SUCCESS)
 	{
-		DEBUG_SCARD(("SCARD: -> Failure: %s (0x%08x)\n",
+		DEBUG_SCARD("SCARD: -> Failure: %s (0x%08x)\n",
 			     pcsc_stringify_error(rv), (unsigned int) rv));
 		return SC_returnCode(rv, &lcHandle, in, out);
 	}
@@ -1691,15 +1691,15 @@ TS_SCardStatus(STREAM in, STREAM out, RD_BOOL wide)
 	{
 		int i;
 
-		DEBUG_SCARD(("SCARD: -> Success (state: 0x%08x, proto: 0x%08x)\n",
+		DEBUG_SCARD("SCARD: -> Success (state: 0x%08x, proto: 0x%08x)\n",
 			     (unsigned) dwState, (unsigned) dwProtocol));
-		DEBUG_SCARD(("SCARD:        Reader: \"%s\"\n", readerName ? readerName : "NULL"));
-		DEBUG_SCARD(("SCARD:        ATR: "));
+		DEBUG_SCARD("SCARD:        Reader: \"%s\"\n", readerName ? readerName : "NULL");
+		DEBUG_SCARD("SCARD:        ATR: ");
 		for (i = 0; i < dwAtrLen; i++)
 		{
-			DEBUG_SCARD(("%02x%c", atr[i], (i == dwAtrLen - 1) ? ' ' : ':'));
+			DEBUG_SCARD("%02x%c", atr[i], (i == dwAtrLen - 1) ? ' ' : ':');
 		}
-		DEBUG_SCARD(("\n"));
+		DEBUG_SCARD("\n");
 
 		if (dwState & (SCARD_SPECIFIC | SCARD_NEGOTIABLE))
 			dwState = 0x00000006;
@@ -1770,7 +1770,7 @@ TS_SCardState(STREAM in, STREAM out)
 	in->p += 0x04;
 	myHCard = scHandleToMyPCSC(hCard);
 
-	DEBUG_SCARD(("SCARD: SCardState(hcard: 0x%08x [0x%08lx], atr len: %d bytes)\n",
+	DEBUG_SCARD("SCARD: SCardState(hcard: 0x%08x [0x%08lx], atr len: %d bytes)\n",
 		     (unsigned) hCard, (unsigned long) myHCard, (int) dwAtrLen));
 
 	dwReaderLen = SCARD_MAX_MEM;
@@ -1797,7 +1797,7 @@ TS_SCardState(STREAM in, STREAM out)
 
 	if (rv != SCARD_S_SUCCESS)
 	{
-		DEBUG_SCARD(("SCARD: -> Failure: %s (0x%08x)\n",
+		DEBUG_SCARD("SCARD: -> Failure: %s (0x%08x)\n",
 			     pcsc_stringify_error(rv), (unsigned int) rv));
 		return SC_returnCode(rv, &lcHandle, in, out);
 	}
@@ -1805,14 +1805,14 @@ TS_SCardState(STREAM in, STREAM out)
 	{
 		int i;
 
-		DEBUG_SCARD(("SCARD: -> Success (state: 0x%08x, proto: 0x%08x)\n",
+		DEBUG_SCARD("SCARD: -> Success (state: 0x%08x, proto: 0x%08x)\n",
 			     (unsigned) dwState, (unsigned) dwProtocol));
-		DEBUG_SCARD(("SCARD:        ATR: "));
+		DEBUG_SCARD("SCARD:        ATR: ");
 		for (i = 0; i < dwAtrLen; i++)
 		{
-			DEBUG_SCARD(("%02x%c", atr[i], (i == dwAtrLen - 1) ? ' ' : ':'));
+			DEBUG_SCARD("%02x%c", atr[i], (i == dwAtrLen - 1) ? ' ' : ':');
 		}
-		DEBUG_SCARD(("\n"));
+		DEBUG_SCARD("\n");
 
 		if (dwState & (SCARD_SPECIFIC | SCARD_NEGOTIABLE))
 			dwState = 0x00000006;
@@ -1867,7 +1867,7 @@ TS_SCardListReaderGroups(STREAM in, STREAM out)
 	in->p += 0x04;
 	in_uint32_le(in, hContext);
 
-	DEBUG_SCARD(("SCARD: SCardListReaderGroups(context: 0x%08x, groups: %d)\n",
+	DEBUG_SCARD("SCARD: SCardListReaderGroups(context: 0x%08x, groups: %d)\n",
 		     (unsigned) hContext, (int) dwGroups));
 
 	if (dwGroups <= 0 || dwGroups == SCARD_AUTOALLOCATE || dwGroups > SCARD_MAX_MEM)
@@ -1883,7 +1883,7 @@ TS_SCardListReaderGroups(STREAM in, STREAM out)
 
 	if (rv)
 	{
-		DEBUG_SCARD(("SCARD: -> Failure: %s (0x%08x)\n",
+		DEBUG_SCARD("SCARD: -> Failure: %s (0x%08x)\n",
 			     pcsc_stringify_error(rv), (unsigned int) rv));
 		return SC_returnCode(rv, &lcHandle, in, out);
 	}
@@ -1892,10 +1892,10 @@ TS_SCardListReaderGroups(STREAM in, STREAM out)
 		int i;
 		char *cur;
 
-		DEBUG_SCARD(("SCARD: -> Success\n"));
+		DEBUG_SCARD("SCARD: -> Success\n");
 		for (i = 0, cur = szGroups; i < dwGroups; i++, cur += strlen(cur) + 1)
 		{
-			DEBUG_SCARD(("SCARD:    %s\n", cur));
+			DEBUG_SCARD("SCARD:    %s\n", cur);
 		}
 	}
 
@@ -1933,7 +1933,7 @@ TS_SCardGetAttrib(STREAM in, STREAM out)
 
 	dwAttrId = dwAttrId & 0x0000FFFF;
 
-	DEBUG_SCARD(("SCARD: SCardGetAttrib(hcard: 0x%08x [0x%08lx], attrib: 0x%08x (%d bytes))\n",
+	DEBUG_SCARD("SCARD: SCardGetAttrib(hcard: 0x%08x [0x%08lx], attrib: 0x%08x (%d bytes)\n",
 		     (unsigned) hCard, (unsigned long) myHCard,
 		     (unsigned) dwAttrId, (int) dwAttrLen));
 
@@ -1961,7 +1961,7 @@ TS_SCardGetAttrib(STREAM in, STREAM out)
 
 	if (dwAttrId == 0x00000100 && rv != SCARD_S_SUCCESS)
 	{
-		DEBUG_SCARD(("SCARD:    Faking attribute ATTR_VENDOR_NAME\n"));
+		DEBUG_SCARD("SCARD:    Faking attribute ATTR_VENDOR_NAME\n");
 		pthread_mutex_lock(&hcardAccess);
 		PSCHCardRec hcard = hcardFirst;
 		while (hcard)
@@ -1976,18 +1976,18 @@ TS_SCardGetAttrib(STREAM in, STREAM out)
 			hcard = hcard->next;
 		}
 		pthread_mutex_unlock(&hcardAccess);
-		DEBUG_SCARD(("[0x%.8x]\n", (unsigned int) rv));
+		DEBUG_SCARD("[0x%.8x]\n", (unsigned int) rv);
 	}
 
 	if (rv != SCARD_S_SUCCESS)
 	{
-		DEBUG_SCARD(("SCARD: -> Failure: %s (0x%08x)\n",
+		DEBUG_SCARD("SCARD: -> Failure: %s (0x%08x)\n",
 			     pcsc_stringify_error(rv), (unsigned int) rv));
 		return SC_returnCode(rv, &lcHandle, in, out);
 	}
 	else
 	{
-		DEBUG_SCARD(("SCARD: -> Success (%d bytes)\n", (int) dwAttrLen));
+		DEBUG_SCARD("SCARD: -> Success (%d bytes)\n", (int) dwAttrLen);
 
 		out_uint32_le(out, dwAttrLen);
 		out_uint32_le(out, 0x00000200);
@@ -2028,7 +2028,7 @@ TS_SCardSetAttrib(STREAM in, STREAM out)
 
 	dwAttrId = dwAttrId & 0x0000FFFF;
 
-	DEBUG_SCARD(("SCARD: SCardSetAttrib(hcard: 0x%08x [0x%08lx], attrib: 0x%08x (%d bytes))\n",
+	DEBUG_SCARD("SCARD: SCardSetAttrib(hcard: 0x%08x [0x%08lx], attrib: 0x%08x (%d bytes)\n",
 		     (unsigned) hCard, (unsigned long) myHCard,
 		     (unsigned) dwAttrId, (int) dwAttrLen));
 
@@ -2044,12 +2044,12 @@ TS_SCardSetAttrib(STREAM in, STREAM out)
 
 	if (rv != SCARD_S_SUCCESS)
 	{
-		DEBUG_SCARD(("SCARD: -> Failure: %s (0x%08x)\n",
+		DEBUG_SCARD("SCARD: -> Failure: %s (0x%08x)\n",
 			     pcsc_stringify_error(rv), (unsigned int) rv));
 	}
 	else
 	{
-		DEBUG_SCARD(("SCARD: -> Success\n"));
+		DEBUG_SCARD("SCARD: -> Success\n");
 	}
 
 	out_uint32_le(out, 0x00000000);
@@ -2119,7 +2119,7 @@ TS_SCardControl(STREAM in, STREAM out)
 	if (!pOutBuffer)
 		return SC_returnNoMemoryError(&lcHandle, in, out);
 
-	DEBUG_SCARD(("SCARD: SCardControl(context: 0x%08x, hcard: 0x%08x, code: 0x%08x, in: %d bytes, out: %d bytes)\n", (unsigned) hContext, (unsigned) hCard, (unsigned) dwControlCode, (int) nInBufferSize, (int) nOutBufferSize));
+	DEBUG_SCARD("SCARD: SCardControl(context: 0x%08x, hcard: 0x%08x, code: 0x%08x, in: %d bytes, out: %d bytes)\n", (unsigned) hContext, (unsigned) hCard, (unsigned) dwControlCode, (int) nInBufferSize, (int) nOutBufferSize);
 
 	sc_nBytesReturned = nBytesReturned;
 	myHCard = scHandleToMyPCSC(hCard);
@@ -2135,12 +2135,12 @@ TS_SCardControl(STREAM in, STREAM out)
 
 	if (rv != SCARD_S_SUCCESS)
 	{
-		DEBUG_SCARD(("SCARD: -> Failure: %s (0x%08x)\n",
+		DEBUG_SCARD("SCARD: -> Failure: %s (0x%08x)\n",
 			     pcsc_stringify_error(rv), (unsigned int) rv));
 	}
 	else
 	{
-		DEBUG_SCARD(("SCARD: -> Success (out: %d bytes)\n", (int) nBytesReturned));
+		DEBUG_SCARD("SCARD: -> Success (out: %d bytes)\n", (int) nBytesReturned);
 	}
 
 	out_uint32_le(out, nBytesReturned);
@@ -2160,7 +2160,7 @@ TS_SCardControl(STREAM in, STREAM out)
 static MYPCSC_DWORD
 TS_SCardAccessStartedEvent(STREAM in, STREAM out)
 {
-	DEBUG_SCARD(("SCARD: SCardAccessStartedEvent()\n"));
+	DEBUG_SCARD("SCARD: SCardAccessStartedEvent()\n");
 	out_uint8s(out, 8);
 	return SCARD_S_SUCCESS;
 }

@@ -98,7 +98,7 @@ rdp_recv(rdpRdp * rdp, uint8 * type)
 	*type = pdu_type & 0xf;
 
 #if WITH_DEBUG
-	DEBUG(("RDP packet #%d, (type %x)\n", ++(rdp->packetno), *type));
+	DEBUG("RDP packet #%d, (type %x)\n", ++(rdp->packetno), *type);
 	hexdump(rdp->next_packet, length);
 #endif /*  */
 
@@ -387,7 +387,7 @@ rdp_send_logon_info(rdpRdp * rdp, uint32 flags, char *domain, char *user,
 
 	if ((rdp->settings->rdp_version < 5))
 	{
-		DEBUG_RDP5(("Sending RDP4-style Logon packet\n"));
+		DEBUG_RDP5("Sending RDP4-style Logon packet\n");
 
 		s = sec_init(rdp->sec, sec_flags, 18 + len_domain + len_user + len_password
 			     + len_program + len_directory + 10);
@@ -409,7 +409,7 @@ rdp_send_logon_info(rdpRdp * rdp, uint32 flags, char *domain, char *user,
 	{
 
 		flags |= RDP_LOGON_BLOB;
-		DEBUG_RDP5(("Sending RDP5-style Logon packet\n"));
+		DEBUG_RDP5("Sending RDP5-style Logon packet\n");
 		packetlen = 4 +	/* Codepage */
 			4 +	/* flags */
 			2 +	/* length of Domain field */
@@ -430,7 +430,7 @@ rdp_send_logon_info(rdpRdp * rdp, uint32 flags, char *domain, char *user,
 			10; // performanceFlags and othersftrg
 
 		s = sec_init(rdp->sec, sec_flags, packetlen);
-		DEBUG_RDP5(("Called sec_init with packetlen %d\n", packetlen));
+		DEBUG_RDP5("Called sec_init with packetlen %d\n", packetlen);
 
 		out_uint32(s, 0);	// Codepage, see http://go.microsoft.com/fwlink/?LinkId=89981
 		// out_uint32_le(s, flags);	// See constants.h for Info Packet Flags
@@ -891,7 +891,7 @@ process_demand_active(rdpRdp * rdp, STREAM s)
 	in_uint16_le(s, lengthCombinedCapabilities); // lengthCombinedCapabilities
 	in_uint8s(s, lengthSourceDescriptor); // sourceDescriptor, should be "RDP"
 
-	DEBUG(("DEMAND_ACTIVE(id=0x%x)\n", rdp->rdp_shareid));
+	DEBUG("DEMAND_ACTIVE(id=0x%x)\n", rdp->rdp_shareid);
 	rdp_process_server_caps(rdp, s, lengthCombinedCapabilities);
 	in_uint8s(s, 4); // sessionID, ignored by the client
 
@@ -1072,8 +1072,8 @@ process_bitmap_updates(rdpRdp * rdp, STREAM s)
 		cx = right - left + 1;
 		cy = bottom - top + 1;
 
-		DEBUG(("BITMAP_UPDATE(l=%d,t=%d,r=%d,b=%d,w=%d,h=%d,Bpp=%d,cmp=%d)\n",
-		       left, top, right, bottom, width, height, Bpp, compress));
+		DEBUG("BITMAP_UPDATE(l=%d,t=%d,r=%d,b=%d,w=%d,h=%d,Bpp=%d,cmp=%d)\n",
+		       left, top, right, bottom, width, height, Bpp, compress);
 
 		if (!compress)
 		{
@@ -1108,7 +1108,7 @@ process_bitmap_updates(rdpRdp * rdp, STREAM s)
 		}
 		else
 		{
-			DEBUG_RDP5(("Failed to decompress data\n"));
+			DEBUG_RDP5("Failed to decompress data\n");
 		}
 
 		xfree(bmpdata);
@@ -1130,7 +1130,7 @@ process_palette(rdpRdp * rdp, STREAM s)
 
 	map.colours = (RD_COLOURENTRY *) xmalloc(sizeof(RD_COLOURENTRY) * map.ncolours);
 
-	DEBUG(("PALETTE(c=%d)\n", map.ncolours));
+	DEBUG("PALETTE(c=%d)\n", map.ncolours);
 
 	for (i = 0; i < map.ncolours; i++)
 	{
@@ -1187,7 +1187,7 @@ process_disconnect_pdu(STREAM s, uint32 * ext_disc_reason)
 {
 	in_uint32_le(s, *ext_disc_reason);
 
-	DEBUG(("Received disconnect PDU\n"));
+	DEBUG("Received disconnect PDU\n");
 }
 
 /* Process data PDU */
@@ -1232,11 +1232,11 @@ process_data_pdu(rdpRdp * rdp, STREAM s, uint32 * ext_disc_reason)
 			break;
 
 		case RDP_DATA_PDU_CONTROL:
-			DEBUG(("Received Control PDU\n"));
+			DEBUG("Received Control PDU\n");
 			break;
 
 		case RDP_DATA_PDU_SYNCHRONIZE:
-			DEBUG(("Received Sync PDU\n"));
+			DEBUG("Received Sync PDU\n");
 			break;
 
 		case RDP_DATA_PDU_POINTER:
@@ -1248,7 +1248,7 @@ process_data_pdu(rdpRdp * rdp, STREAM s, uint32 * ext_disc_reason)
 			break;
 
 		case RDP_DATA_PDU_LOGON:
-			DEBUG(("Received Logon PDU\n"));
+			DEBUG("Received Logon PDU\n");
 			/* User logged on */
 			break;
 
@@ -1358,7 +1358,7 @@ rdp_loop(rdpRdp * rdp, RD_BOOL * deactivated, uint32 * ext_disc_reason)
 				*deactivated = False;
 				break;
 			case RDP_PDU_DEACTIVATE:
-				DEBUG(("RDP_PDU_DEACTIVATE\n"));
+				DEBUG("RDP_PDU_DEACTIVATE\n");
 				*deactivated = True;
 				break;
 			case RDP_PDU_REDIRECT:

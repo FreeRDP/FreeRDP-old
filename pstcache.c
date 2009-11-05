@@ -67,8 +67,8 @@ pstcache_load_bitmap(rdpPcache * pcache, uint8 cache_id, uint16 cache_idx)
 	rd_read_file(fd, celldata, cellhdr.length);
 
 	bitmap = ui_create_bitmap(pcache->rdp->inst, cellhdr.width, cellhdr.height, celldata);
-	DEBUG(("Load bitmap from disk: id=%d, idx=%d, bmp=0x%x)\n", cache_id, cache_idx,
-	       (unsigned int) bitmap));
+	DEBUG("Load bitmap from disk: id=%d, idx=%d, bmp=0x%x)\n", cache_id, cache_idx,
+	       (unsigned int) bitmap);
 	cache_put_bitmap(pcache->rdp->cache, cache_id, cache_idx, bitmap);
 
 	xfree(celldata);
@@ -120,7 +120,7 @@ pstcache_enumerate(rdpPcache * pcache, uint8 id, HASH_KEY * keylist)
 	if (pcache->pstcache_enumerated)
 		return 0;
 
-	DEBUG_RDP5(("Persistent bitmap cache enumeration... "));
+	DEBUG_RDP5("Persistent bitmap cache enumeration... ");
 	for (idx = 0; idx < BMPCACHE2_NUM_PSTCELLS; idx++)
 	{
 		fd = pcache->pstcache_fd[id];
@@ -154,7 +154,7 @@ pstcache_enumerate(rdpPcache * pcache, uint8 id, HASH_KEY * keylist)
 		}
 	}
 
-	DEBUG_RDP5(("%d cached bitmaps.\n", idx));
+	DEBUG_RDP5("%d cached bitmaps.\n", idx);
 
 	cache_rebuild_bmpcache_linked_list(pcache->rdp->cache, id, mru_idx, idx);
 	pcache->pstcache_enumerated = True;
@@ -179,13 +179,13 @@ pstcache_init(rdpPcache * pcache, uint8 cache_id)
 
 	if (!rd_pstcache_mkdir())
 	{
-		DEBUG(("failed to get/make cache directory!\n"));
+		DEBUG("failed to get/make cache directory!\n");
 		return False;
 	}
 
 	pcache->pstcache_Bpp = (pcache->rdp->settings->server_depth + 7) / 8;
 	sprintf(filename, "cache/pstcache_%d_%d", cache_id, pcache->pstcache_Bpp);
-	DEBUG(("persistent bitmap cache file: %s\n", filename));
+	DEBUG("persistent bitmap cache file: %s\n", filename);
 
 	fd = rd_open_file(filename);
 	if (fd == -1)

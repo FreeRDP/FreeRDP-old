@@ -1330,7 +1330,7 @@ ui_init(void)
 
 	if (g_no_translate_image)
 	{
-		DEBUG(("Performance optimization possible: avoiding image translation (colour depth conversion).\n"));
+		DEBUG("Performance optimization possible: avoiding image translation (colour depth conversion).\n");
 	}
 
 	if (g_settings.server_depth > g_bpp)
@@ -1339,8 +1339,8 @@ ui_init(void)
 			   "depth %d.\n", g_settings.server_depth, g_bpp);
 	}
 
-	DEBUG(("RDP depth: %d, display depth: %d, display bpp: %d, X server BE: %d, host BE: %d\n",
-	       g_settings.server_depth, g_depth, g_bpp, g_xserver_be, g_host_be));
+	DEBUG("RDP depth: %d, display depth: %d, display bpp: %d, X server BE: %d, host BE: %d\n",
+	       g_settings.server_depth, g_depth, g_bpp, g_xserver_be, g_host_be);
 
 	if (!g_owncolmap)
 	{
@@ -1391,7 +1391,7 @@ ui_init(void)
 
 	xclip_init();
 
-	DEBUG_RDP5(("server bpp %d client bpp %d depth %d\n", g_settings.server_depth, g_bpp, g_depth));
+	DEBUG_RDP5("server bpp %d client bpp %d depth %d\n", g_settings.server_depth, g_bpp, g_depth);
 
 	return True;
 }
@@ -1725,7 +1725,7 @@ xwin_process_events(void)
 
 		if ((g_IC != NULL) && (XFilterEvent(&xevent, None) == True))
 		{
-			DEBUG_KBD(("Filtering event\n"));
+			DEBUG_KBD("Filtering event\n");
 			continue;
 		}
 

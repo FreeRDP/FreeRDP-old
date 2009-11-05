@@ -390,9 +390,9 @@ alsa_play(void)
 
 		if (abs((next_tick - packet->tick) - duration) > 20)
 		{
-			DEBUG(("duration: %d, calc: %d, ", duration, next_tick - packet->tick));
-			DEBUG(("last: %d, is: %d, should: %d\n", packet->tick,
-			       (packet->tick + duration) % 65536, next_tick % 65536));
+			DEBUG("duration: %d, calc: %d, ", duration, next_tick - packet->tick);
+			DEBUG("last: %d, is: %d, should: %d\n", packet->tick,
+			       (packet->tick + duration) % 65536, next_tick % 65536);
 		}
 
 		if (snd_pcm_delay(out_handle, &delay_frames) < 0)

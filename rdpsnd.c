@@ -113,8 +113,8 @@ rdpsnd_send_completion(uint16 tick, uint8 packet_index)
 	s_mark_end(s);
 	rdpsnd_send(s);
 
-	DEBUG_SOUND(("RDPSND: -> RDPSND_COMPLETION(tick: %u, index: %u)\n",
-		     (unsigned) tick, (unsigned) packet_index));
+	DEBUG_SOUND("-> RDPSND_COMPLETION(tick: %u, index: %u)\n",
+		     (unsigned) tick, (unsigned) packet_index);
 }
 
 static void
@@ -152,7 +152,7 @@ rdpsnd_flush_record(void)
 		data = data + chunk_size;
 		record_buffer_size -= chunk_size;
 
-		DEBUG_SOUND(("RDPSND: -> RDPSND_REC_DATA(length: %u)\n", (unsigned) chunk_size));
+		DEBUG_SOUND("-> RDPSND_REC_DATA(length: %u)\n", (unsigned) chunk_size);
 	}
 
 	record_buffer_size = 0;
@@ -202,10 +202,10 @@ rdpsnd_auto_select(void)
 		current_driver = drivers;
 		while (current_driver != NULL)
 		{
-			DEBUG(("trying %s...\n", current_driver->name));
+			DEBUG("trying %s...\n", current_driver->name);
 			if (current_driver->wave_out_open())
 			{
-				DEBUG(("selected %s\n", current_driver->name));
+				DEBUG("selected %s\n", current_driver->name);
 				current_driver->wave_out_close();
 				return True;
 			}
@@ -238,8 +238,8 @@ rdpsnd_process_negotiate(STREAM in)
 	in_uint16_le(in, version);
 	in_uint8s(in, 1);	/* padding */
 
-	DEBUG_SOUND(("RDPSND: RDPSND_NEGOTIATE(formats: %d, pad: 0x%02x, version: %x)\n",
-		     (int) in_format_count, (unsigned) pad, (unsigned) version));
+	DEBUG_SOUND("RDPSND_NEGOTIATE(formats: %d, pad: 0x%02x, version: %x)\n",
+		     (int) in_format_count, (unsigned) pad, (unsigned) version);
 
 	if (!current_driver)
 		device_available = rdpsnd_auto_select();
@@ -311,7 +311,7 @@ rdpsnd_process_negotiate(STREAM in)
 
 	s_mark_end(out);
 
-	DEBUG_SOUND(("RDPSND: -> RDPSND_NEGOTIATE(formats: %d)\n", (int) format_count));
+	DEBUG_SOUND("-> RDPSND_NEGOTIATE(formats: %d)\n", (int) format_count);
 
 	rdpsnd_send(out);
 }
@@ -324,7 +324,7 @@ rdpsnd_process_ping(STREAM in)
 
 	in_uint16_le(in, tick);
 
-	DEBUG_SOUND(("RDPSND: RDPSND_PING(tick: 0x%04x)\n", (unsigned) tick));
+	DEBUG_SOUND("RDPSND_PING(tick: 0x%04x)\n", (unsigned) tick);
 
 	out = rdpsnd_init_packet(RDPSND_PING | 0x2300, 4);
 	out_uint16_le(out, tick);
@@ -332,7 +332,7 @@ rdpsnd_process_ping(STREAM in)
 	s_mark_end(out);
 	rdpsnd_send(out);
 
-	DEBUG_SOUND(("RDPSND: -> (tick: 0x%04x)\n", (unsigned) tick));
+	DEBUG_SOUND("-> (tick: 0x%04x)\n", (unsigned) tick);
 }
 
 static void
@@ -350,8 +350,8 @@ rdpsnd_process_rec_negotiate(STREAM in)
 	in_uint16_le(in, in_format_count);
 	in_uint16_le(in, version);
 
-	DEBUG_SOUND(("RDPSND: RDPSND_REC_NEGOTIATE(formats: %d, version: %x)\n",
-		     (int) in_format_count, (unsigned) version));
+	DEBUG_SOUND("RDPSND_REC_NEGOTIATE(formats: %d, version: %x)\n",
+		     (int) in_format_count, (unsigned) version);
 
 	if (!current_driver)
 		device_available = rdpsnd_auto_select();
@@ -420,7 +420,7 @@ rdpsnd_process_rec_negotiate(STREAM in)
 
 	s_mark_end(out);
 
-	DEBUG_SOUND(("RDPSND: -> RDPSND_REC_NEGOTIATE(formats: %d)\n", (int) rec_format_count));
+	DEBUG_SOUND("-> RDPSND_REC_NEGOTIATE(formats: %d)\n", (int) rec_format_count);
 
 	rdpsnd_send(out);
 }
@@ -439,7 +439,7 @@ rdpsnd_process_packet(uint8 opcode, STREAM s)
 			in_uint16_le(s, format);
 			in_uint8(s, packet_index);
 			in_uint8s(s, 3);
-			DEBUG_SOUND(("RDPSND: RDPSND_WRITE(tick: %u, format: %u, index: %u, data: %u bytes)\n", (unsigned) tick, (unsigned) format, (unsigned) packet_index, (unsigned) s->size - 8));
+			DEBUG_SOUND("RDPSND_WRITE(tick: %u, format: %u, index: %u, data: %u bytes)\n", (unsigned) tick, (unsigned) format, (unsigned) packet_index, (unsigned) s->size - 8);
 
 			if (format >= MAX_FORMATS)
 			{
@@ -481,7 +481,7 @@ rdpsnd_process_packet(uint8 opcode, STREAM s)
 			return;
 			break;
 		case RDPSND_CLOSE:
-			DEBUG_SOUND(("RDPSND: RDPSND_CLOSE()\n"));
+			DEBUG_SOUND("RDPSND_CLOSE()\n");
 			if (device_open)
 				current_driver->wave_out_close();
 			device_open = False;
@@ -495,7 +495,7 @@ rdpsnd_process_packet(uint8 opcode, STREAM s)
 		case RDPSND_SET_VOLUME:
 			in_uint16_le(s, vol_left);
 			in_uint16_le(s, vol_right);
-			DEBUG_SOUND(("RDPSND: RDPSND_VOLUME(left: 0x%04x (%u %%), right: 0x%04x (%u %%))\n", (unsigned) vol_left, (unsigned) vol_left / 655, (unsigned) vol_right, (unsigned) vol_right / 655));
+			DEBUG_SOUND("RDPSND_VOLUME(left: 0x%04x (%u %%), right: 0x%04x (%u %%))\n", (unsigned) vol_left, (unsigned) vol_left / 655, (unsigned) vol_right, (unsigned) vol_right / 655);
 			if (device_open)
 				current_driver->wave_out_volume(vol_left, vol_right);
 			break;
@@ -504,7 +504,7 @@ rdpsnd_process_packet(uint8 opcode, STREAM s)
 			break;
 		case RDPSND_REC_START:
 			in_uint16_le(s, format);
-			DEBUG_SOUND(("RDPSND: RDPSND_REC_START(format: %u)\n", (unsigned) format));
+			DEBUG_SOUND("RDPSND_REC_START(format: %u)\n", (unsigned) format);
 
 			if (format >= MAX_FORMATS)
 			{
@@ -531,7 +531,7 @@ rdpsnd_process_packet(uint8 opcode, STREAM s)
 			rec_device_open = True;
 			break;
 		case RDPSND_REC_STOP:
-			DEBUG_SOUND(("RDPSND: RDPSND_REC_STOP()\n"));
+			DEBUG_SOUND("RDPSND_REC_STOP()\n");
 			rdpsnd_flush_record();
 			if (rec_device_open)
 				current_driver->wave_in_close();
@@ -540,7 +540,7 @@ rdpsnd_process_packet(uint8 opcode, STREAM s)
 		case RDPSND_REC_SET_VOLUME:
 			in_uint16_le(s, vol_left);
 			in_uint16_le(s, vol_right);
-			DEBUG_SOUND(("RDPSND: RDPSND_REC_VOLUME(left: 0x%04x (%u %%), right: 0x%04x (%u %%))\n", (unsigned) vol_left, (unsigned) vol_left / 655, (unsigned) vol_right, (unsigned) vol_right / 655));
+			DEBUG_SOUND("RDPSND_REC_VOLUME(left: 0x%04x (%u %%), right: 0x%04x (%u %%))\n", (unsigned) vol_left, (unsigned) vol_left / 655, (unsigned) vol_right, (unsigned) vol_right / 655);
 			if (rec_device_open)
 				current_driver->wave_in_volume(vol_left, vol_right);
 			break;
@@ -569,8 +569,8 @@ rdpsnd_process(STREAM s)
 			in_uint8s(s, 1);	/* Padding */
 			in_uint16_le(s, len);
 
-			DEBUG_SOUND(("RDPSND: == Opcode %x Length: %d ==\n",
-				     (int) packet_opcode, (int) len));
+			DEBUG_SOUND("== Opcode %x Length: %d ==\n",
+				     (int) packet_opcode, (int) len);
 
 			packet.p = packet.data;
 			packet.end = packet.data + len;
@@ -587,8 +587,8 @@ rdpsnd_process(STREAM s)
 					len = MIN(len, 12 - (packet.p - packet.data));
 				else if ((packet.p - packet.data) == 12)
 				{
-					DEBUG_SOUND(("RDPSND: Eating 4 bytes of %d bytes...\n",
-						     len));
+					DEBUG_SOUND("Eating 4 bytes of %d bytes...\n",
+						     len);
 					in_uint8s(s, 4);
 					len -= 4;
 				}
@@ -611,9 +611,7 @@ rdpsnd_process(STREAM s)
 static RD_BOOL
 rdpsnddbg_line_handler(const char *line, void *data)
 {
-#ifdef WITH_DEBUG_SOUND
-	fprintf(stderr, "SNDDBG: %s\n", line);
-#endif
+	DEBUG_SOUND("%s\n", line);
 	return True;
 }
 
@@ -725,7 +723,7 @@ rdpsnd_init(char *optarg)
 	{
 		if (!strcmp(pos->name, driver))
 		{
-			DEBUG(("selected %s\n", pos->name));
+			DEBUG_SOUND("selected %s\n", pos->name);
 			current_driver = pos;
 			return True;
 		}

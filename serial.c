@@ -36,12 +36,6 @@
 #include "rdesktop.h"
 #include "mem.h"
 
-#ifdef WITH_DEBUG_SERIAL
-#define DEBUG_SERIAL(args) printf args;
-#else
-#define DEBUG_SERIAL(args)
-#endif
-
 #define FILE_DEVICE_SERIAL_PORT		0x1b
 
 #define SERIAL_SET_BAUD_RATE		1
@@ -583,7 +577,7 @@ serial_create(uint32 device_id, uint32 access, uint32 share_mode, uint32 disposi
 	g_rdpdr_device[device_id].handle = serial_fd;
 
 	/* some sane information */
-	DEBUG_SERIAL(("INFO: SERIAL %s to %s\nINFO: speed %u baud, stop bits %u, parity %u, word length %u bits, dtr %u, rts %u\n", g_rdpdr_device[device_id].name, g_rdpdr_device[device_id].local_path, pser_inf->baud_rate, pser_inf->stop_bits, pser_inf->parity, pser_inf->word_length, pser_inf->dtr, pser_inf->rts));
+	DEBUG_SERIAL("INFO: SERIAL %s to %s\nINFO: speed %u baud, stop bits %u, parity %u, word length %u bits, dtr %u, rts %u\n", g_rdpdr_device[device_id].name, g_rdpdr_device[device_id].local_path, pser_inf->baud_rate, pser_inf->stop_bits, pser_inf->parity, pser_inf->word_length, pser_inf->dtr, pser_inf->rts);
 
 	pser_inf->ptermios->c_iflag &=
 		~(IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL | IXON);
@@ -668,13 +662,13 @@ serial_read(RD_NTHANDLE handle, uint8 * data, uint32 length, uint32 offset, uint
 
 #if defined(WITH_DEBUG_SERIAL) && defined(TIOCINQ)
 	ioctl(handle, TIOCINQ, &bytes_inqueue);
-	DEBUG_SERIAL(("serial_read inqueue: %d expected %d\n", bytes_inqueue, length));
+	DEBUG_SERIAL("serial_read inqueue: %d expected %d\n", bytes_inqueue, length);
 #endif
 
 	*result = read(handle, data, length);
 
 #ifdef WITH_DEBUG_SERIAL
-	DEBUG_SERIAL(("serial_read Bytes %d\n", *result));
+	DEBUG_SERIAL("serial_read Bytes %d\n", *result);
 	if (*result > 0)
 		hexdump(data, *result);
 #endif
@@ -694,7 +688,7 @@ serial_write(RD_NTHANDLE handle, uint8 * data, uint32 length, uint32 offset, uin
 	if (*result > 0)
 		pser_inf->event_txempty = *result;
 
-	DEBUG_SERIAL(("serial_write length %d, offset %d result %d\n", length, offset, *result));
+	DEBUG_SERIAL("serial_write length %d, offset %d result %d\n", length, offset, *result);
 
 	return RD_STATUS_SUCCESS;
 }
@@ -723,48 +717,48 @@ serial_device_control(RD_NTHANDLE handle, uint32 request, STREAM in, STREAM out)
 		case SERIAL_SET_BAUD_RATE:
 			in_uint32_le(in, pser_inf->baud_rate);
 			set_termios(pser_inf, handle);
-			DEBUG_SERIAL(("serial_ioctl -> SERIAL_SET_BAUD_RATE %d\n",
-				      pser_inf->baud_rate));
+			DEBUG_SERIAL("serial_ioctl -> SERIAL_SET_BAUD_RATE %d\n",
+				      pser_inf->baud_rate);
 			break;
 		case SERIAL_GET_BAUD_RATE:
 			out_uint32_le(out, pser_inf->baud_rate);
-			DEBUG_SERIAL(("serial_ioctl -> SERIAL_GET_BAUD_RATE %d\n",
-				      pser_inf->baud_rate));
+			DEBUG_SERIAL("serial_ioctl -> SERIAL_GET_BAUD_RATE %d\n",
+				      pser_inf->baud_rate);
 			break;
 		case SERIAL_SET_QUEUE_SIZE:
 			in_uint32_le(in, pser_inf->queue_in_size);
 			in_uint32_le(in, pser_inf->queue_out_size);
-			DEBUG_SERIAL(("serial_ioctl -> SERIAL_SET_QUEUE_SIZE in %d out %d\n",
-				      pser_inf->queue_in_size, pser_inf->queue_out_size));
+			DEBUG_SERIAL("serial_ioctl -> SERIAL_SET_QUEUE_SIZE in %d out %d\n",
+				      pser_inf->queue_in_size, pser_inf->queue_out_size);
 			break;
 		case SERIAL_SET_LINE_CONTROL:
 			in_uint8(in, pser_inf->stop_bits);
 			in_uint8(in, pser_inf->parity);
 			in_uint8(in, pser_inf->word_length);
 			set_termios(pser_inf, handle);
-			DEBUG_SERIAL(("serial_ioctl -> SERIAL_SET_LINE_CONTROL stop %d parity %d word %d\n", pser_inf->stop_bits, pser_inf->parity, pser_inf->word_length));
+			DEBUG_SERIAL("serial_ioctl -> SERIAL_SET_LINE_CONTROL stop %d parity %d word %d\n", pser_inf->stop_bits, pser_inf->parity, pser_inf->word_length);
 			break;
 		case SERIAL_GET_LINE_CONTROL:
-			DEBUG_SERIAL(("serial_ioctl -> SERIAL_GET_LINE_CONTROL\n"));
+			DEBUG_SERIAL("serial_ioctl -> SERIAL_GET_LINE_CONTROL\n");
 			out_uint8(out, pser_inf->stop_bits);
 			out_uint8(out, pser_inf->parity);
 			out_uint8(out, pser_inf->word_length);
 			break;
 		case SERIAL_IMMEDIATE_CHAR:
-			DEBUG_SERIAL(("serial_ioctl -> SERIAL_IMMEDIATE_CHAR\n"));
+			DEBUG_SERIAL("serial_ioctl -> SERIAL_IMMEDIATE_CHAR\n");
 			in_uint8(in, immediate);
 			serial_write(handle, &immediate, 1, 0, &result);
 			break;
 		case SERIAL_CONFIG_SIZE:
-			DEBUG_SERIAL(("serial_ioctl -> SERIAL_CONFIG_SIZE\n"));
+			DEBUG_SERIAL("serial_ioctl -> SERIAL_CONFIG_SIZE\n");
 			out_uint32_le(out, 0);
 			break;
 		case SERIAL_GET_CHARS:
-			DEBUG_SERIAL(("serial_ioctl -> SERIAL_GET_CHARS\n"));
+			DEBUG_SERIAL("serial_ioctl -> SERIAL_GET_CHARS\n");
 			out_uint8a(out, pser_inf->chars, 6);
 			break;
 		case SERIAL_SET_CHARS:
-			DEBUG_SERIAL(("serial_ioctl -> SERIAL_SET_CHARS\n"));
+			DEBUG_SERIAL("serial_ioctl -> SERIAL_SET_CHARS\n");
 			in_uint8a(in, pser_inf->chars, 6);
 #ifdef WITH_DEBUG_SERIAL
 			hexdump(pser_inf->chars, 6);
@@ -772,7 +766,7 @@ serial_device_control(RD_NTHANDLE handle, uint32 request, STREAM in, STREAM out)
 			set_termios(pser_inf, handle);
 			break;
 		case SERIAL_GET_HANDFLOW:
-			DEBUG_SERIAL(("serial_ioctl -> SERIAL_GET_HANDFLOW\n"));
+			DEBUG_SERIAL("serial_ioctl -> SERIAL_GET_HANDFLOW\n");
 			get_termios(pser_inf, handle);
 			out_uint32_le(out, pser_inf->control);
 			out_uint32_le(out, pser_inf->xonoff);	/* Xon/Xoff */
@@ -784,9 +778,9 @@ serial_device_control(RD_NTHANDLE handle, uint32 request, STREAM in, STREAM out)
 			in_uint32_le(in, pser_inf->xonoff);
 			in_uint32_le(in, pser_inf->onlimit);
 			in_uint32_le(in, pser_inf->offlimit);
-			DEBUG_SERIAL(("serial_ioctl -> SERIAL_SET_HANDFLOW %x %x %x %x\n",
+			DEBUG_SERIAL("serial_ioctl -> SERIAL_SET_HANDFLOW %x %x %x %x\n",
 				      pser_inf->control, pser_inf->xonoff, pser_inf->onlimit,
-				      pser_inf->onlimit));
+				      pser_inf->onlimit);
 			set_termios(pser_inf, handle);
 			break;
 		case SERIAL_SET_TIMEOUTS:
@@ -795,16 +789,16 @@ serial_device_control(RD_NTHANDLE handle, uint32 request, STREAM in, STREAM out)
 			in_uint32(in, pser_inf->read_total_timeout_constant);
 			in_uint32(in, pser_inf->write_total_timeout_multiplier);
 			in_uint32(in, pser_inf->write_total_timeout_constant);
-			DEBUG_SERIAL(("serial_ioctl -> SERIAL_SET_TIMEOUTS read timeout %d %d %d\n",
+			DEBUG_SERIAL("serial_ioctl -> SERIAL_SET_TIMEOUTS read timeout %d %d %d\n",
 				      pser_inf->read_interval_timeout,
 				      pser_inf->read_total_timeout_multiplier,
-				      pser_inf->read_total_timeout_constant));
+				      pser_inf->read_total_timeout_constant);
 			break;
 		case SERIAL_GET_TIMEOUTS:
-			DEBUG_SERIAL(("serial_ioctl -> SERIAL_GET_TIMEOUTS read timeout %d %d %d\n",
+			DEBUG_SERIAL("serial_ioctl -> SERIAL_GET_TIMEOUTS read timeout %d %d %d\n",
 				      pser_inf->read_interval_timeout,
 				      pser_inf->read_total_timeout_multiplier,
-				      pser_inf->read_total_timeout_constant));
+				      pser_inf->read_total_timeout_constant);
 
 			out_uint32(out, pser_inf->read_interval_timeout);
 			out_uint32(out, pser_inf->read_total_timeout_multiplier);
@@ -813,38 +807,38 @@ serial_device_control(RD_NTHANDLE handle, uint32 request, STREAM in, STREAM out)
 			out_uint32(out, pser_inf->write_total_timeout_constant);
 			break;
 		case SERIAL_GET_WAIT_MASK:
-			DEBUG_SERIAL(("serial_ioctl -> SERIAL_GET_WAIT_MASK %X\n",
-				      pser_inf->wait_mask));
+			DEBUG_SERIAL("serial_ioctl -> SERIAL_GET_WAIT_MASK %X\n",
+				      pser_inf->wait_mask);
 			out_uint32(out, pser_inf->wait_mask);
 			break;
 		case SERIAL_SET_WAIT_MASK:
 			in_uint32(in, pser_inf->wait_mask);
-			DEBUG_SERIAL(("serial_ioctl -> SERIAL_SET_WAIT_MASK %X\n",
-				      pser_inf->wait_mask));
+			DEBUG_SERIAL("serial_ioctl -> SERIAL_SET_WAIT_MASK %X\n",
+				      pser_inf->wait_mask);
 			break;
 		case SERIAL_SET_DTR:
-			DEBUG_SERIAL(("serial_ioctl -> SERIAL_SET_DTR\n"));
+			DEBUG_SERIAL("serial_ioctl -> SERIAL_SET_DTR\n");
 			ioctl(handle, TIOCMGET, &result);
 			result |= TIOCM_DTR;
 			ioctl(handle, TIOCMSET, &result);
 			pser_inf->dtr = 1;
 			break;
 		case SERIAL_CLR_DTR:
-			DEBUG_SERIAL(("serial_ioctl -> SERIAL_CLR_DTR\n"));
+			DEBUG_SERIAL("serial_ioctl -> SERIAL_CLR_DTR\n");
 			ioctl(handle, TIOCMGET, &result);
 			result &= ~TIOCM_DTR;
 			ioctl(handle, TIOCMSET, &result);
 			pser_inf->dtr = 0;
 			break;
 		case SERIAL_SET_RTS:
-			DEBUG_SERIAL(("serial_ioctl -> SERIAL_SET_RTS\n"));
+			DEBUG_SERIAL("serial_ioctl -> SERIAL_SET_RTS\n");
 			ioctl(handle, TIOCMGET, &result);
 			result |= TIOCM_RTS;
 			ioctl(handle, TIOCMSET, &result);
 			pser_inf->rts = 1;
 			break;
 		case SERIAL_CLR_RTS:
-			DEBUG_SERIAL(("serial_ioctl -> SERIAL_CLR_RTS\n"));
+			DEBUG_SERIAL("serial_ioctl -> SERIAL_CLR_RTS\n");
 			ioctl(handle, TIOCMGET, &result);
 			result &= ~TIOCM_RTS;
 			ioctl(handle, TIOCMSET, &result);
@@ -867,7 +861,7 @@ serial_device_control(RD_NTHANDLE handle, uint32 request, STREAM in, STREAM out)
 			if (result & TIOCM_RTS)
 				modemstate |= SERIAL_MS_RTS;
 #endif
-			DEBUG_SERIAL(("serial_ioctl -> SERIAL_GET_MODEMSTATUS %X\n", modemstate));
+			DEBUG_SERIAL("serial_ioctl -> SERIAL_GET_MODEMSTATUS %X\n", modemstate);
 			out_uint32_le(out, modemstate);
 			break;
 		case SERIAL_GET_COMMSTATUS:
@@ -880,8 +874,8 @@ serial_device_control(RD_NTHANDLE handle, uint32 request, STREAM in, STREAM out)
 #endif
 			out_uint32_le(out, result);	/* Amount in in queue */
 			if (result)
-				DEBUG_SERIAL(("serial_ioctl -> SERIAL_GET_COMMSTATUS in queue %d\n",
-					      result));
+				DEBUG_SERIAL("serial_ioctl -> SERIAL_GET_COMMSTATUS in queue %d\n",
+					      result);
 
 			result = 0;
 #ifdef TIOCOUTQ
@@ -889,14 +883,14 @@ serial_device_control(RD_NTHANDLE handle, uint32 request, STREAM in, STREAM out)
 #endif
 			out_uint32_le(out, result);	/* Amount in out queue */
 			if (result)
-				DEBUG_SERIAL(("serial_ioctl -> SERIAL_GET_COMMSTATUS out queue %d\n", result));
+				DEBUG_SERIAL("serial_ioctl -> SERIAL_GET_COMMSTATUS out queue %d\n", result);
 
 			out_uint8(out, 0);	/* EofReceived */
 			out_uint8(out, 0);	/* WaitForImmediate */
 			break;
 		case SERIAL_PURGE:
 			in_uint32(in, purge_mask);
-			DEBUG_SERIAL(("serial_ioctl -> SERIAL_PURGE purge_mask %X\n", purge_mask));
+			DEBUG_SERIAL("serial_ioctl -> SERIAL_PURGE purge_mask %X\n", purge_mask);
 			flush_mask = 0;
 			if (purge_mask & SERIAL_PURGE_TXCLEAR)
 				flush_mask |= TCOFLUSH;
@@ -910,32 +904,32 @@ serial_device_control(RD_NTHANDLE handle, uint32 request, STREAM in, STREAM out)
 				rdpdr_abort_io(handle, 3, RD_STATUS_CANCELLED);
 			break;
 		case SERIAL_WAIT_ON_MASK:
-			DEBUG_SERIAL(("serial_ioctl -> SERIAL_WAIT_ON_MASK %X\n",
-				      pser_inf->wait_mask));
+			DEBUG_SERIAL("serial_ioctl -> SERIAL_WAIT_ON_MASK %X\n",
+				      pser_inf->wait_mask);
 			pser_inf->event_pending = 1;
 			if (serial_get_event(handle, &result))
 			{
-				DEBUG_SERIAL(("WAIT end  event = %x\n", result));
+				DEBUG_SERIAL("WAIT end  event = %x\n", result);
 				out_uint32_le(out, result);
 				break;
 			}
 			return RD_STATUS_PENDING;
 			break;
 		case SERIAL_SET_BREAK_ON:
-			DEBUG_SERIAL(("serial_ioctl -> SERIAL_SET_BREAK_ON\n"));
+			DEBUG_SERIAL("serial_ioctl -> SERIAL_SET_BREAK_ON\n");
 			tcsendbreak(handle, 0);
 			break;
 		case SERIAL_RESET_DEVICE:
-			DEBUG_SERIAL(("serial_ioctl -> SERIAL_RESET_DEVICE\n"));
+			DEBUG_SERIAL("serial_ioctl -> SERIAL_RESET_DEVICE\n");
 			break;
 		case SERIAL_SET_BREAK_OFF:
-			DEBUG_SERIAL(("serial_ioctl -> SERIAL_SET_BREAK_OFF\n"));
+			DEBUG_SERIAL("serial_ioctl -> SERIAL_SET_BREAK_OFF\n");
 			break;
 		case SERIAL_SET_XOFF:
-			DEBUG_SERIAL(("serial_ioctl -> SERIAL_SET_XOFF\n"));
+			DEBUG_SERIAL("serial_ioctl -> SERIAL_SET_XOFF\n");
 			break;
 		case SERIAL_SET_XON:
-			DEBUG_SERIAL(("serial_ioctl -> SERIAL_SET_XON\n"));
+			DEBUG_SERIAL("serial_ioctl -> SERIAL_SET_XON\n");
 			tcflow(handle, TCION);
 			break;
 		default:
@@ -966,13 +960,13 @@ serial_get_event(RD_NTHANDLE handle, uint32 * result)
 
 	if (bytes > 0)
 	{
-		DEBUG_SERIAL(("serial_get_event Bytes %d\n", bytes));
+		DEBUG_SERIAL("serial_get_event Bytes %d\n", bytes);
 		if (bytes > pser_inf->event_rlsd)
 		{
 			pser_inf->event_rlsd = bytes;
 			if (pser_inf->wait_mask & SERIAL_EV_RLSD)
 			{
-				DEBUG_SERIAL(("Event -> SERIAL_EV_RLSD \n"));
+				DEBUG_SERIAL("Event -> SERIAL_EV_RLSD \n");
 				*result |= SERIAL_EV_RLSD;
 				ret = True;
 			}
@@ -981,13 +975,13 @@ serial_get_event(RD_NTHANDLE handle, uint32 * result)
 
 		if ((bytes > 1) && (pser_inf->wait_mask & SERIAL_EV_RXFLAG))
 		{
-			DEBUG_SERIAL(("Event -> SERIAL_EV_RXFLAG Bytes %d\n", bytes));
+			DEBUG_SERIAL("Event -> SERIAL_EV_RXFLAG Bytes %d\n", bytes);
 			*result |= SERIAL_EV_RXFLAG;
 			ret = True;
 		}
 		if ((pser_inf->wait_mask & SERIAL_EV_RXCHAR))
 		{
-			DEBUG_SERIAL(("Event -> SERIAL_EV_RXCHAR Bytes %d\n", bytes));
+			DEBUG_SERIAL("Event -> SERIAL_EV_RXCHAR Bytes %d\n", bytes);
 			*result |= SERIAL_EV_RXCHAR;
 			ret = True;
 		}
@@ -1005,7 +999,7 @@ serial_get_event(RD_NTHANDLE handle, uint32 * result)
 	    && (pser_inf->event_txempty > 0) && (pser_inf->wait_mask & SERIAL_EV_TXEMPTY))
 	{
 
-		DEBUG_SERIAL(("Event -> SERIAL_EV_TXEMPTY\n"));
+		DEBUG_SERIAL("Event -> SERIAL_EV_TXEMPTY\n");
 		*result |= SERIAL_EV_TXEMPTY;
 		ret = True;
 	}
@@ -1018,8 +1012,8 @@ serial_get_event(RD_NTHANDLE handle, uint32 * result)
 		pser_inf->event_dsr = bytes & TIOCM_DSR;
 		if (pser_inf->wait_mask & SERIAL_EV_DSR)
 		{
-			DEBUG_SERIAL(("event -> SERIAL_EV_DSR %s\n",
-				      (bytes & TIOCM_DSR) ? "ON" : "OFF"));
+			DEBUG_SERIAL("event -> SERIAL_EV_DSR %s\n",
+				      (bytes & TIOCM_DSR) ? "ON" : "OFF");
 			*result |= SERIAL_EV_DSR;
 			ret = True;
 		}
@@ -1030,8 +1024,8 @@ serial_get_event(RD_NTHANDLE handle, uint32 * result)
 		pser_inf->event_cts = bytes & TIOCM_CTS;
 		if (pser_inf->wait_mask & SERIAL_EV_CTS)
 		{
-			DEBUG_SERIAL((" EVENT-> SERIAL_EV_CTS %s\n",
-				      (bytes & TIOCM_CTS) ? "ON" : "OFF"));
+			DEBUG_SERIAL(" EVENT-> SERIAL_EV_CTS %s\n",
+				      (bytes & TIOCM_CTS) ? "ON" : "OFF");
 			*result |= SERIAL_EV_CTS;
 			ret = True;
 		}

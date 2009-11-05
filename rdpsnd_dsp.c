@@ -47,7 +47,7 @@ rdpsnd_dsp_softvol_set(uint16 left, uint16 right)
 {
 	softvol_left = left;
 	softvol_right = right;
-	DEBUG(("rdpsnd_dsp_softvol_set: left: %u, right: %u\n", left, right));
+	DEBUG_SOUND("left: %u, right: %u\n", left, right);
 }
 
 void
@@ -107,8 +107,8 @@ rdpsnd_dsp_softvol(unsigned char *buffer, unsigned int size, RD_WAVEFORMATEX * f
 		}
 	}
 
-	DEBUG(("using softvol with factors left: %d, right: %d (%d/%d)\n", factor_left,
-	       factor_right, format->wBitsPerSample, format->nChannels));
+	DEBUG_SOUND("using softvol with factors left: %d, right: %d (%d/%d)\n", factor_left,
+	       factor_right, format->wBitsPerSample, format->nChannels);
 }
 
 void
