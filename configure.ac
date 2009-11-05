@@ -880,6 +880,15 @@ AC_ARG_WITH(debug-seamless,
 	fi
     ])
 
+AC_ARG_WITH(debug-serial,
+    [  --with-debug-serial  enable debugging of Serial code],
+    [
+        if test $withval != "no";
+        then
+            AC_DEFINE(WITH_DEBUG_SERIAL,1)
+	fi
+    ])
+
 AC_ARG_WITH(debug-smartcard,
     [  --with-debug-smartcard  enable debugging of smart-card code],
     [
