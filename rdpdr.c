@@ -1065,13 +1065,9 @@ rdpdr_process(STREAM s)
 RD_BOOL
 rdpdr_init()
 {
-	if (g_num_devices > 0)
-	{
-		rdpdr_channel =
-			channel_register(g_rdp->sec->mcs->chan, "rdpdr",
+	rdpdr_channel =	channel_register(g_rdp->sec->mcs->chan, "rdpdr",
 					 CHANNEL_OPTION_INITIALIZED | CHANNEL_OPTION_COMPRESS_RDP,
 					 rdpdr_process);
-	}
 
 	return (rdpdr_channel != NULL);
 }
