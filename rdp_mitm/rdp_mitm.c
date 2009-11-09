@@ -40,6 +40,9 @@
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 
+#include "TSRequest.h"
+#include "NegotiationToken.h"
+
 #define BUFFER_SIZE	65536
 
 int srcfd;
@@ -60,7 +63,6 @@ BIO *bioDst;
 int n;
 int size;
 int total;
-int addrSize;
 int listeningPort;
 int serverPort;
 char srcIP[25];
@@ -73,6 +75,11 @@ char dstBuffer[BUFFER_SIZE];
 struct sockaddr_in addr;
 struct sockaddr_in srcAddr;
 struct sockaddr_in dstAddr;
+socklen_t addrSize;
+
+asn_dec_rval_t rval;
+TSRequest_t *ts_request;
+NegotiationToken_t *nego_token;
 
 unsigned char clientInitial[] =
 	"\x03\x00\x00\x13\x0e\xe0\x00\x00\x00\x00\x00\x01\x00\x08\x00\x03\x00\x00\x00";
@@ -80,17 +87,36 @@ unsigned char clientInitial[] =
 unsigned char serverInitial[] =
 	"\x03\x00\x00\x13\x0e\xd0\x00\x00\x12\x34\x00\x02\x00\x08\x00\x02\x00\x00\x00";
 
-char ntlm_challenge_blob[] =
+void hexdump(char* bytes, int length);
+
+void decode_ts_request(char* bytes, int length)
 {
-	0x30, 0x37, 0xa0, 0x03, 0x02, 0x01, 0x02, 0xa1, 
-	0x30, 0x30, 0x2e, 0x30, 0x2c, 0xa0, 0x2a, 0x04, 
-	0x28, 0x4e, 0x54, 0x4c, 0x4d, 0x53, 0x53, 0x50, 
-	0x00, 0x01, 0x00, 0x00, 0x00, 0xb7, 0x82, 0x08, 
-	0xe2, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-	0x00, 0x06, 0x00, 0x72, 0x17, 0x00, 0x00, 0x00, 
-	0x0f
-};
+	ts_request = 0;
+	rval = asn_DEF_TSRequest.ber_decoder(0, &asn_DEF_TSRequest, (void **)&ts_request, bytes, length, 0);
+
+	if(rval.code == RC_OK)
+	{
+		int i;
+		asn_fprint(stdout, &asn_DEF_TSRequest, ts_request);
+
+		for(i = 0; i < ts_request->negoTokens->list.count; i++)
+		{
+			nego_token = 0;
+			rval = asn_DEF_NegotiationToken.ber_decoder(0, &asn_DEF_NegotiationToken, (void **)&nego_token,
+				ts_request->negoTokens->list.array[i]->negoToken.buf,
+				ts_request->negoTokens->list.array[i]->negoToken.size, 0);
+
+			printf("----------------------NegotiationToken-------------------\n");
+			hexdump(ts_request->negoTokens->list.array[i]->negoToken.buf, ts_request->negoTokens->list.array[i]->negoToken.size);
+			printf("---------------------------------------------------------\n");
+		}
+	}
+	else
+	{
+		printf("Failed to decode TSRequest\n");
+		asn_DEF_TSRequest.free_struct(&asn_DEF_TSRequest, ts_request, 0);
+	}
+}
 
 void hexdump(char* bytes, int length)
 {
@@ -310,12 +336,12 @@ int main(int argc, char* argv[])
 
 	/* Receive client initial */
 	n = recv(srcfd, buffer, BUFFER_SIZE, 0);
-	printf("Received RDP client initial from source\n", n);
+	printf("Received RDP client initial from source\n");
 	hexdump(buffer, n);
 
 	/* Send server initial */
 	n = send(srcfd, serverInitial, sizeof(serverInitial) - 1, 0);
-	printf("Sent RDP server initial to source\n", n);
+	printf("Sent RDP server initial to source\n");
 	hexdump(serverInitial, n);
 
 	/* Initialize OpenSSL */
@@ -394,12 +420,12 @@ int main(int argc, char* argv[])
 
 	/* Send client initial */
 	n = send(dstfd, clientInitial, sizeof(clientInitial) - 1, 0);
-	printf("Sent RDP client initial to destination\n", n);
+	printf("Sent RDP client initial to destination\n");
 	hexdump(buffer, n);
 
 	/* Receive server initial */
 	n = recv(dstfd, buffer, BUFFER_SIZE, 0);
-	printf("Received RDP server initial from destination\n", n);
+	printf("Received RDP server initial from destination\n");
 	hexdump(buffer, n);
 
 	/* Create destination TLS context */
@@ -460,6 +486,20 @@ int main(int argc, char* argv[])
 	inDstBuffer = 0;
 	maxfd = (srcfd > dstfd) ? srcfd : dstfd;
 
+	/*
+	 * CredSSP Negotiation Sequence (on top of TLS)
+	 *
+	 * CredSSP Client ----------------------------------------------------- CredSSP Server
+	 *       |                                                                    |
+	 *       |--------------------TSRequest[SPNEGO Token])---------------------->>|
+	 *       |<<------------------TSRequest[SPNEGO Token])------------------------|
+	 *       |--------TSRequest[SPNEGO encrypted(server's public key)])--------->>|
+	 *       |<<------TSRequest[SPNEGO encrypted(server's public key + 1)])-------|
+	 *       |-----------TSRequest[SPNEGO encrypted(user credentials)])--------->>|
+	 *       |                                                                    |
+	 *
+	 */
+
 	while (1)
 	{
 		FD_ZERO(&readfds);
@@ -473,12 +513,16 @@ int main(int argc, char* argv[])
 		if(FD_ISSET(srcfd, &readfds))
 		{
 			printf("srcfd readable\n");
-			inSrcBuffer = tls_read_record(sslSrc, srcBuffer, BUFFER_SIZE);	
+			inSrcBuffer = tls_read_record(sslSrc, srcBuffer, BUFFER_SIZE);
+			
+			decode_ts_request(srcBuffer, inSrcBuffer);	
 		}
 		if(FD_ISSET(dstfd, &readfds))
 		{
 			printf("dstfd readable\n");
 			inDstBuffer = tls_read_record(sslDst, dstBuffer, BUFFER_SIZE);
+
+			decode_ts_request(dstBuffer, inDstBuffer);
 		}
 
 		FD_ZERO(&writefds);
