@@ -1,8 +1,8 @@
 
 ASN1_PATH = ../asn1
-CFLAGS = -O2 -w -I$(ASN1_PATH)
+CFLAGS = -O2 -w -I$(ASN1_PATH) -I..
 LDFLAGS = -lssl
-OBJS = rdp_mitm.o $(ASN1_PATH)/*.o
+OBJS = rdp_mitm.o $(ASN1_PATH)/*.o ../mem.o
 
 all: rdp_mitm
 
