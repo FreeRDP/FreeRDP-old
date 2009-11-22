@@ -433,12 +433,11 @@ rdp_send_logon_info(rdpRdp * rdp, uint32 flags, char *domain, char *user,
 		DEBUG_RDP5("Called sec_init with packetlen %d\n", packetlen);
 
 		out_uint32(s, 0);	// Codepage, see http://go.microsoft.com/fwlink/?LinkId=89981
-		// out_uint32_le(s, flags);	// See constants.h for Info Packet Flags
 
-		out_uint32_le(s, INFO_MOUSE |
-				INFO_UNICODE |
-				INFO_ENABLEWINDOWSKEY |
-				INFO_MOUSE_HAS_WHEEL);
+		if(rdp->settings->autologin)
+			flags |= INFO_AUTOLOGON;
+
+		out_uint32_le(s, flags);	// See constants.h for Info Packet Flags
 
 		out_uint16_le(s, len_domain);	// cbDomain, length of Domain field
 		out_uint16_le(s, len_user);	// cbUserName, length of UserName field
