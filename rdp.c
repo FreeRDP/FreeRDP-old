@@ -437,6 +437,12 @@ rdp_send_logon_info(rdpRdp * rdp, uint32 flags, char *domain, char *user,
 		if(rdp->settings->autologin)
 			flags |= INFO_AUTOLOGON;
 
+		if(rdp->settings->bulk_compression)
+		{
+			flags |= INFO_COMPRESSION;
+			flags |= PACKET_COMPR_TYPE_64K;
+		}
+
 		out_uint32_le(s, flags);	// See constants.h for Info Packet Flags
 
 		out_uint16_le(s, len_domain);	// cbDomain, length of Domain field

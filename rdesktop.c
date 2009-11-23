@@ -594,8 +594,7 @@ main(int argc, char *argv[])
 
 			case 'z':
 				DEBUG("rdp compression enabled\n");
-				connect_flags |= (RDP_LOGON_COMPRESSION |
-					RDP_LOGON_COMPRESSION2);
+				g_settings.bulk_compression = 1;
 				break;
 
 			case 'x':

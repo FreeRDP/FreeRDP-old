@@ -305,10 +305,27 @@ enum RDP_RAIL_PDU_TYPE
 #define INFO_USING_SAVED_CREDS		0x00100000
 
 #define CompressionTypeMask		0x00001E00
-#define PACKET_COMPR_TYPE_8K			0
-#define PACKET_COMPR_TYPE_64K			1
-#define PACKET_COMPR_TYPE_RDP6			2
-#define PACKET_COMPR_TYPE_RDP61			3
+#define PACKET_COMPR_TYPE_8K		0x00000100
+#define PACKET_COMPR_TYPE_64K		0x00000200
+#define PACKET_COMPR_TYPE_RDP6		0x00000300
+#define PACKET_COMPR_TYPE_RDP61		0x00000400
+
+/* Logon flags (to be replaced by the flags above) */
+#define RDP_LOGON_AUTO		0x0008
+#define RDP_LOGON_NORMAL	0x0033
+#define RDP_LOGON_COMPRESSION	0x0080	/* mppc compression with 8kB histroy buffer */
+#define RDP_LOGON_BLOB		0x0100
+#define RDP_LOGON_COMPRESSION2	0x0200	/* rdp5 mppc compression with 64kB history buffer */
+#define RDP_LOGON_LEAVE_AUDIO	0x2000
+
+/* compression types */
+#define RDP_MPPC_BIG		0x01
+#define RDP_MPPC_COMPRESSED	0x20
+#define RDP_MPPC_RESET		0x40
+#define RDP_MPPC_FLUSH		0x80
+#define RDP_MPPC_DICT_SIZE      65536
+
+#define RDP5_COMPRESSED		0x80
 
 /* OS Major Types */
 #define OS_MAJOR_TYPE_UNSPECIFIED	0x0000
@@ -683,23 +700,6 @@ enum RDP_RAIL_PDU_TYPE
 #define TF_SFT_EXTRAICONSONMINIMIZED	0x00000200
 #define TF_SFT_NOEXTRAICONSONMINIMIZED	0x00000400
 #define TF_SFT_DESKBAND			0x00000800
-
-/* Logon flags */
-#define RDP_LOGON_AUTO		0x0008
-#define RDP_LOGON_NORMAL	0x0033
-#define RDP_LOGON_COMPRESSION	0x0080	/* mppc compression with 8kB histroy buffer */
-#define RDP_LOGON_BLOB		0x0100
-#define RDP_LOGON_COMPRESSION2	0x0200	/* rdp5 mppc compression with 64kB history buffer */
-#define RDP_LOGON_LEAVE_AUDIO	0x2000
-
-/* compression types */
-#define RDP_MPPC_BIG		0x01
-#define RDP_MPPC_COMPRESSED	0x20
-#define RDP_MPPC_RESET		0x40
-#define RDP_MPPC_FLUSH		0x80
-#define RDP_MPPC_DICT_SIZE      65536
-
-#define RDP5_COMPRESSED		0x80
 
 /* Keymap flags */
 #define MapRightShiftMask   (1<<0)
