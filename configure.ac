@@ -1,13 +1,40 @@
-AC_INIT(rdesktop, 1.6.0)
-
-AC_CONFIG_SRCDIR([rdesktop.c])
+AC_INIT(freerdp, 1.6.0)
+AM_INIT_AUTOMAKE
+AM_CONFIG_HEADER([config.h])
+AC_CONFIG_SRCDIR([libfreerdp/freerdp.c])
 
 AC_PROG_CC
+AM_PROG_CC_C_O
 if test "$GCC" = yes; then
     CFLAGS="$CFLAGS -Wall"
 fi
 
+AH_TEMPLATE(B_ENDIAN, [Big endian])
+AH_TEMPLATE(L_ENDIAN, [Little endian])
+AH_TEMPLATE(EGD_SOCKET, [EGD])
+AH_TEMPLATE(HAVE_LIBSAMPLERATE, [Define if you have libsamplerate])
+AH_TEMPLATE(IPv6, [IPv6])
+AH_TEMPLATE(NEED_ALIGN, [Alignment])
+AH_TEMPLATE(RDPSND_ALSA, [ALSA sound module])
+AH_TEMPLATE(RDPSND_LIBAO, [libao sound module])
+AH_TEMPLATE(RDPSND_OSS, [OSS sound module])
+AH_TEMPLATE(RDPSND_SGI, [SGI sound module])
+AH_TEMPLATE(RDPSND_SUN, [SUN sound module])
+AH_TEMPLATE(WITH_RDPSND, [Define if sound is enabled])
+AH_TEMPLATE(WITH_SCARD, [Define if smartcard is enabled])
+AH_TEMPLATE(WITH_DEBUG, [Turn on debugging messages])
+AH_TEMPLATE(WITH_DEBUG_CHANNEL, [Turn on debugging messages])
+AH_TEMPLATE(WITH_DEBUG_CLIPBOARD, [Turn on debugging messages])
+AH_TEMPLATE(WITH_DEBUG_KBD, [Turn on debugging messages])
+AH_TEMPLATE(WITH_DEBUG_RDP5, [Turn on debugging messages])
+AH_TEMPLATE(WITH_DEBUG_SCARD, [Turn on debugging messages])
+AH_TEMPLATE(WITH_DEBUG_SEAMLESS, [Turn on debugging messages])
+AH_TEMPLATE(WITH_DEBUG_SERIAL, [Turn on debugging messages])
+AH_TEMPLATE(WITH_DEBUG_SOUND, [Turn on debugging messages])
+AH_TEMPLATE(ssldir, [openssl directory])
+
 AC_PROG_INSTALL
+AC_PROG_LIBTOOL
 AC_LANG_C
 AC_HEADER_STDC
 AC_C_BIGENDIAN([AC_DEFINE(B_ENDIAN)], [AC_DEFINE(L_ENDIAN)])
@@ -24,18 +51,20 @@ if test "$no_x" = "yes"; then
     echo
     exit 1
 fi
-    
+
 AC_PATH_PROG(PKG_CONFIG, pkg-config)
 
 AC_SEARCH_LIBS(socket, socket)
 AC_SEARCH_LIBS(inet_aton, resolv)
 
-AC_CHECK_HEADER(sys/select.h, AC_DEFINE(HAVE_SYS_SELECT_H))
-AC_CHECK_HEADER(sys/modem.h, AC_DEFINE(HAVE_SYS_MODEM_H))
-AC_CHECK_HEADER(sys/filio.h, AC_DEFINE(HAVE_SYS_FILIO_H))
-AC_CHECK_HEADER(sys/strtio.h, AC_DEFINE(HAVE_SYS_STRTIO_H))
-AC_CHECK_HEADER(locale.h, AC_DEFINE(HAVE_LOCALE_H))
-AC_CHECK_HEADER(langinfo.h, AC_DEFINE(HAVE_LANGINFO_H))
+AC_CHECK_HEADERS_ONCE(
+	sys/select.h
+	sys/modem.h
+	sys/filio.h
+	sys/strtio.h
+	locale.h
+	langinfo.h
+)
 
 AC_CHECK_TOOL(STRIP, strip, :)
 
@@ -49,6 +78,10 @@ m4_ifdef([PKG_CHECK_MODULES], [], [
 ])
 
 rpath=""
+
+dnl Define keymap path
+KEYMAP_PATH="$(datadir)/rdesktop/xkb"
+AC_SUBST(KEYMAP_PATH)
 
 #
 # OpenSSL detection borrowed from stunnel
@@ -455,7 +488,7 @@ AC_DEFUN([UTILS_FUNC_ICONV],
       if test -d $dir/lib; then LDFLAGS="$LDFLAGS -L$dir/lib"; fi
     done
    ])
-  AC_CHECK_HEADER(iconv.h, AC_DEFINE(HAVE_ICONV_H))
+  AC_CHECK_HEADERS(iconv.h)
 
   AC_CACHE_CHECK(for iconv, am_cv_func_iconv, [
     am_cv_func_iconv="no, consider installing GNU libiconv"
@@ -525,11 +558,11 @@ AC_DEFUN([TYPE_SOCKLEN_T],
 [
    AC_CHECK_TYPE([socklen_t], ,[
       AC_MSG_CHECKING([for socklen_t equivalent])
-      AC_CACHE_VAL([socklen_t_equiv],
+      AC_CACHE_VAL([socklen_t_cv_equiv],
       [
          # Systems have either "struct sockaddr *" or
          # "void *" as the second argument to getpeername
-         socklen_t_equiv=
+         socklen_t_cv_equiv=
          for arg2 in "struct sockaddr" void; do
             for t in int size_t unsigned long "unsigned long"; do
                AC_TRY_COMPILE([
@@ -541,18 +574,18 @@ AC_DEFUN([TYPE_SOCKLEN_T],
                   $t len;
                   getpeername(0,0,&len);
                ],[
-                  socklen_t_equiv="$t"
+                  socklen_t_cv_equiv="$t"
                   break
                ])
             done
          done
 
-         if test "x$socklen_t_equiv" = x; then
+         if test "x$socklen_t_cv_equiv" = x; then
             AC_MSG_ERROR([Cannot find a type to use in place of socklen_t])
          fi
       ])
-      AC_MSG_RESULT($socklen_t_equiv)
-      AC_DEFINE_UNQUOTED(socklen_t, $socklen_t_equiv,
+      AC_MSG_RESULT($socklen_t_cv_equiv)
+      AC_DEFINE_UNQUOTED(socklen_t, $socklen_t_cv_equiv,
 			[type to use in place of socklen_t if not defined])],
       [#include <sys/types.h>
 #include <sys/socket.h>])
@@ -798,7 +831,7 @@ AC_SYS_LARGEFILE
 #
 # mntent
 #
-AC_CHECK_HEADER(mntent.h, AC_DEFINE(HAVE_MNTENT_H))
+AC_CHECK_HEADERS(mntent.h)
 AC_CHECK_FUNCS(setmntent)
 
 #
@@ -923,7 +956,15 @@ case "$host" in
 esac
 
 
-AC_OUTPUT(Makefile)
+AC_CONFIG_FILES([
+Makefile
+libfreerdp/Makefile
+include/Makefile
+xkb/Makefile
+X11/Makefile
+])
+
+AC_OUTPUT
 
 dnl Local Variables:
 dnl comment-start: "dnl "

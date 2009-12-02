@@ -21,6 +21,8 @@
 #ifndef __RDESKTOP_H
 #define __RDESKTOP_H
 
+#include "config.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -48,8 +50,6 @@
 #ifdef HAVE_INTTYPES_H
 #include <inttypes.h>
 #endif
-
-#define VERSION "1.6.0"
 
 /* X11 includes */
 #include <X11/Xlib.h>

@@ -18,6 +18,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#include "rdesktop.h"
 #include "disk.h"
 
 #include <sys/types.h>
@@ -72,7 +73,6 @@
 #include <sys/mount.h>
 #endif
 
-#include "rdesktop.h"
 #include "rdp.h"
 #include "mem.h"
 

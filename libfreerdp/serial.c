@@ -23,6 +23,9 @@
 #include <strings.h>
 #include <sys/ioctl.h>
 
+#include "rdesktop.h"
+#include "mem.h"
+
 #ifdef HAVE_SYS_MODEM_H
 #include <sys/modem.h>
 #endif
@@ -32,9 +35,6 @@
 #ifdef HAVE_SYS_STRTIO_H
 #include <sys/strtio.h>
 #endif
-
-#include "rdesktop.h"
-#include "mem.h"
 
 #define FILE_DEVICE_SERIAL_PORT		0x1b
 

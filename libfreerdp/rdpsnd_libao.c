@@ -23,6 +23,7 @@
 #include "rdesktop.h"
 #include "rdpsnd.h"
 #include "rdpsnd_dsp.h"
+#include "mem.h"
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
@@ -185,7 +186,7 @@ libao_play(void)
 		{
 			DEBUG("duration: %d, calc: %d, ", duration, next_tick - packet->tick);
 			DEBUG("last: %d, is: %d, should: %d\n", packet->tick,
-			       (packet->tick + duration) % 65536, next_tick % 65536));
+			       (packet->tick + duration) % 65536, next_tick % 65536);
 		}
 
 		delay_us = ((out->size / 4) * (1000000 / 44100));
