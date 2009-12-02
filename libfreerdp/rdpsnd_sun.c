@@ -22,6 +22,9 @@
 */
 
 #include "rdesktop.h"
+
+#ifdef RDPSND_SUN
+
 #include "rdpsnd.h"
 #include <unistd.h>
 #include <fcntl.h>
@@ -537,3 +540,6 @@ sun_register(char *options)
 
 	return &sun_driver;
 }
+
+#endif /* RDPSND_SUN */
+

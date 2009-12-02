@@ -281,7 +281,6 @@ if test -n "$PKG_CONFIG"; then
 fi
 
 if test "$sound" != "no"; then
-    SOUNDOBJ="$SOUNDOBJ rdpsnd.o rdpsnd_dsp.o"
     CFLAGS="$CFLAGS $LIBSAMPLERATE_CFLAGS"
     LIBS="$LIBS $LIBSAMPLERATE_LIBS"
     AC_DEFINE(WITH_RDPSND)
@@ -290,30 +289,25 @@ fi
 case $sound in
     yes)
         if test x"$HAVE_OSS" = "x1"; then
-            SOUNDOBJ="$SOUNDOBJ rdpsnd_oss.o"
             AC_DEFINE(RDPSND_OSS)
         fi
 
         if test x"$HAVE_SGI" = "x1"; then
-            SOUNDOBJ="$SOUNDOBJ rdpsnd_sgi.o"
             LIBS="$LIBS -laudio"
             AC_DEFINE(RDPSND_SGI)
         fi
 
         if test x"$HAVE_SUN" = "x1"; then
-            SOUNDOBJ="$SOUNDOBJ rdpsnd_sun.o"
             AC_DEFINE(RDPSND_SUN)
         fi
 
         if test x"$HAVE_ALSA" = "x1"; then
-            SOUNDOBJ="$SOUNDOBJ rdpsnd_alsa.o"
             CFLAGS="$CFLAGS $ALSA_CFLAGS"
             LIBS="$LIBS $ALSA_LIBS"
             AC_DEFINE(RDPSND_ALSA)
         fi
 
         if test x"$HAVE_LIBAO" = "x1"; then
-            SOUNDOBJ="$SOUNDOBJ rdpsnd_libao.o"
             CFLAGS="$CFLAGS $LIBAO_CFLAGS"
             LIBS="$LIBS $LIBAO_LIBS"
             AC_DEFINE(RDPSND_LIBAO)
@@ -323,7 +317,6 @@ case $sound in
 
     oss)
         if test x"$HAVE_OSS" = "x1"; then
-            SOUNDOBJ="$SOUNDOBJ rdpsnd_oss.o"
             AC_DEFINE(RDPSND_OSS)
         else
             AC_MSG_ERROR([Selected sound system is not available.])
@@ -332,7 +325,6 @@ case $sound in
 
     sgi)
         if test x"$HAVE_SGI" = "x1"; then
-            SOUNDOBJ="$SOUNDOBJ rdpsnd_sgi.o"
             LIBS="$LIBS -laudio"
             AC_DEFINE(RDPSND_SGI)
         else
@@ -342,7 +334,6 @@ case $sound in
 
     sun)
         if test x"$HAVE_SUN" = "x1"; then
-            SOUNDOBJ="$SOUNDOBJ rdpsnd_sun.o"
             AC_DEFINE(RDPSND_SUN)
         else
             AC_MSG_ERROR([Selected sound system is not available.])
@@ -351,7 +342,6 @@ case $sound in
 
     alsa)
         if test x"$HAVE_ALSA" = "x1"; then
-            SOUNDOBJ="$SOUNDOBJ rdpsnd_alsa.o"
             CFLAGS="$CFLAGS $ALSA_CFLAGS"
             LIBS="$LIBS $ALSA_LIBS"
             AC_DEFINE(RDPSND_ALSA)
@@ -362,7 +352,6 @@ case $sound in
 
     libao)
         if test x"$HAVE_LIBAO" = "x1"; then
-            SOUNDOBJ="$SOUNDOBJ rdpsnd_libao.o"
             CFLAGS="$CFLAGS $LIBAO_CFLAGS"
             LIBS="$LIBS $LIBAO_LIBS"
             AC_DEFINE(RDPSND_LIBAO)
@@ -379,8 +368,6 @@ case $sound in
         AC_MSG_WARN([Currently supported systems are Open Sound System (oss), SGI AL (sgi), Sun/BSD (sun), ALSA (alsa) and libao])
         ;;
 esac
-
-AC_SUBST(SOUNDOBJ)
 
 # Checks for time zones
 AC_STRUCT_TIMEZONE

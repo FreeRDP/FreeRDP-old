@@ -21,6 +21,9 @@
 */
 
 #include "rdesktop.h"
+
+#ifdef RDPSND_SGI
+
 #include <errno.h>
 #include <dmedia/audio.h>
 
@@ -318,3 +321,6 @@ sgi_register(char *options)
 	}
 	return &sgi_driver;
 }
+
+#endif /* RDPSND_SGI */
+

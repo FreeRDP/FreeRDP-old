@@ -31,6 +31,9 @@
 #include <assert.h>
 
 #include "rdesktop.h"
+
+#ifdef RDPSND_OSS
+
 #include "rdpsnd.h"
 #include "rdpsnd_dsp.h"
 #include "mem.h"
@@ -527,3 +530,6 @@ oss_register(char *options)
 
 	return &oss_driver;
 }
+
+#endif /* RDPSND_OSS */
+

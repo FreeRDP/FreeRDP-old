@@ -22,6 +22,9 @@
 */
 
 #include "rdesktop.h"
+
+#ifdef RDPSND_ALSA
+
 #include "rdpsnd.h"
 #include "rdpsnd_dsp.h"
 #include "mem.h"
@@ -508,3 +511,5 @@ alsa_register(char *options)
 
 	return &alsa_driver;
 }
+
+#endif /* RDPSND_ALSA */

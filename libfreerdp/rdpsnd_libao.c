@@ -21,6 +21,9 @@
 */
 
 #include "rdesktop.h"
+
+#ifdef RDPSND_LIBAO
+
 #include "rdpsnd.h"
 #include "rdpsnd_dsp.h"
 #include "mem.h"
@@ -224,3 +227,6 @@ libao_register(char *options)
 
 	return &libao_driver;
 }
+
+#endif /* RDPSND_LIBAO*/
+
