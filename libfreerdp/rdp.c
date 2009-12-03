@@ -328,11 +328,14 @@ rdp_out_client_timezone_info(rdpRdp * rdp, STREAM s)
 			bias = (uint32)(altzone / 3600);
 		else
 			bias = (uint32)(timezone / 3600);
-#else
+#elif defined(HAVE_TM_GMTOFF)
 		if(localTime->tm_gmtoff >= 0)
 			bias = (uint32)(localTime->tm_gmtoff / 60);
 		else
 			bias = (uint32)((-1 * localTime->tm_gmtoff) / 60 + 720);
+#else
+		/* TODO: Implement another way of finding the bias */
+		bias = 0;
 #endif
 
 		if(localTime->tm_isdst > 0)

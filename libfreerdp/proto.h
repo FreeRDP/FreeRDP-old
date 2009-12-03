@@ -107,7 +107,7 @@ void ui_clip_set_mode(const char *optarg);
 void xclip_init(void);
 void xclip_deinit(void);
 /* xwin.c */
-RD_BOOL get_key_state(unsigned int state, uint32 keysym);
+//RD_BOOL get_key_state(unsigned int state, uint32 keysym);
 RD_BOOL ui_init(void);
 void ui_deinit(void * inst);
 RD_BOOL ui_create_window(void * inst);
@@ -150,8 +150,8 @@ void ui_ellipse(void * inst, uint8 opcode, uint8 fillmode, int x, int y, int cx,
 void ui_start_draw_glyphs(void * inst, int bgcolour, int fgcolour);
 void ui_draw_glyph(void * inst, int x, int y, int cx, int cy, RD_HGLYPH glyph);
 void ui_end_draw_glyphs(void * inst, int x, int y, int cx, int cy);
-void ui_desktop_save(void * inst, uint32 offset, int x, int y, int cx, int cy);
-void ui_desktop_restore(void * inst, uint32 offset, int x, int y, int cx, int cy);
+//void ui_desktop_save(void * inst, uint32 offset, int x, int y, int cx, int cy);
+//void ui_desktop_restore(void * inst, uint32 offset, int x, int y, int cx, int cy);
 void ui_begin_update(void * inst);
 void ui_end_update(void * inst);
 uint32 ui_get_toggle_keys_state(void * inst);

@@ -34,3 +34,4 @@ ber_out_integer(STREAM s, int value);
 
 
 #endif // __ASN1_H
+
