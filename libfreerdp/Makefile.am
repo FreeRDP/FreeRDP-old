@@ -12,7 +12,7 @@ libfreerdp_la_SOURCES = \
 	capabilities.c capabilities.h \
 	channels.c channels.h \
 	constants.h \
-	freerdp.c freerdp.h \
+	freerdp.c \
 	iso.c iso.h \
 	keyboard.h \
 	licence.c licence.h \

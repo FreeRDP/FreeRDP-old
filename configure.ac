@@ -80,7 +80,7 @@ m4_ifdef([PKG_CHECK_MODULES], [], [
 rpath=""
 
 dnl Define keymap path
-KEYMAP_PATH="$(datadir)/rdesktop/xkb"
+KEYMAP_PATH="${datadir}/freerdp/xkb"
 AC_SUBST(KEYMAP_PATH)
 
 #

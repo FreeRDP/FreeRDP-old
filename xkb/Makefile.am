@@ -1,7 +1,7 @@
 ## Process this file with automake to produce Makefile.in
 
 xkbdir = $(KEYMAP_PATH)
-xkb_DATA = \
+nobase_xkb_DATA = \
 	aliases \
 	ataritt \
 	fujitsu \
@@ -20,5 +20,5 @@ xkb_DATA = \
 	sgi_vndr/indy \
 	sgi_vndr/iris
 
-EXTRA_DIST = $(xkb_DATA) xkb.pl
+EXTRA_DIST = $(nobase_xkb_DATA) xkb.pl
 
