@@ -106,8 +106,33 @@ process_params(rdpSet * settings, int argc, char ** argv)
 		}
 		else if (strcmp("-z", argv[index]) == 0)
 		{
-			index++;
 			settings->bulk_compression = 1;
+		}
+		else if (strcmp("-x", argv[index]) == 0)
+		{
+			index++;
+			if (index == argc)
+			{
+				return 1;
+			}
+			if (strncmp("m", argv[index], 1) == 0) /* modem */
+			{
+				settings->rdp5_performanceflags = RDP5_NO_WALLPAPER |
+					RDP5_NO_FULLWINDOWDRAG |  RDP5_NO_MENUANIMATIONS |
+					RDP5_NO_THEMING;
+			}
+			else if (strncmp("b", argv[index], 1) == 0) /* broadband */
+			{
+				settings->rdp5_performanceflags = RDP5_NO_WALLPAPER;
+			}
+			else if (strncmp("l", argv[index], 1) == 0) /* lan */
+			{
+				settings->rdp5_performanceflags = RDP5_DISABLE_NOTHING;
+			}
+			else
+			{
+				settings->rdp5_performanceflags = strtol(argv[index], 0, 16);
+			}
 		}
 		else
 		{
