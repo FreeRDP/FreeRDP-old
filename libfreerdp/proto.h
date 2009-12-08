@@ -162,6 +162,8 @@ void ui_unimpl(void * inst, char *format, ...);
 RD_HBITMAP ui_create_surface(void * inst, int width, int height, RD_HBITMAP old);
 void ui_set_surface(void * inst, RD_HBITMAP surface);
 void ui_destroy_surface(void * inst, RD_HBITMAP surface);
+void ui_channel_data(void * inst, int chan_id, char * data, int data_size,
+		int flags, int total_size);
 /* lspci.c */
 /* scard.c */
 void scard_lock(int lock);

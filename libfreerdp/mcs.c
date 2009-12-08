@@ -21,7 +21,7 @@
 #include "rdesktop.h"
 #include "iso.h"
 #include "mcs.h"
-#include "channels.h"
+#include "chan.h"
 #include "secure.h"
 #include "rdp.h"
 #include "mem.h"
@@ -302,6 +302,7 @@ RD_BOOL
 mcs_connect(rdpMcs * mcs, char *server, STREAM mcs_data, char *username, int port)
 {
 	uint32 i;
+	int mcs_id;
 
 	if (!iso_connect(mcs->iso, server, username, port))
 		return False;
@@ -327,7 +328,10 @@ mcs_connect(rdpMcs * mcs, char *server, STREAM mcs_data, char *username, int por
 
 	for (i = 0; i < mcs->chan->num_channels; i++)
 	{
-		mcs_send_cjrq(mcs, mcs->chan->channels[i].mcs_id);
+		mcs_id = mcs->chan->channels[i].mcs_id;
+		if (mcs_id >= mcs->mcs_userid + MCS_USERCHANNEL_BASE)
+			goto error;
+		mcs_send_cjrq(mcs, mcs_id);
 		if (!mcs_recv_cjcf(mcs))
 			goto error;
 	}
@@ -405,7 +409,7 @@ mcs_setup(struct rdp_sec * sec)
 		memset(self, 0, sizeof(rdpMcs));
 		self->sec = sec;
 		self->iso = iso_setup(self);
-		self->chan = channels_setup(self);
+		self->chan = channel_setup(self);
 	}
 	return self;
 }
@@ -415,7 +419,7 @@ mcs_cleanup(rdpMcs * mcs)
 {
 	if (mcs != NULL)
 	{
-		channels_cleanup(mcs->chan);
+		channel_cleanup(mcs->chan);
 		iso_cleanup(mcs->iso);
 		xfree(mcs);
 	}

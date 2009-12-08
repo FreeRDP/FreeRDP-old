@@ -70,16 +70,6 @@ typedef struct _systemTime
 
 } systemTime;
 
-typedef struct _VCHANNEL
-{
-	uint16 mcs_id;
-	char name[8];
-	uint32 flags;
-	struct stream in;
-	void (*process) (STREAM);
-}
-VCHANNEL;
-
 /* PSTCACHE */
 typedef uint8 HASH_KEY[8];
 

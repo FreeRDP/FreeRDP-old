@@ -21,7 +21,7 @@
 #include "rdesktop.h"
 
 #include "mcs.h"
-#include "channels.h"
+#include "chan.h"
 #include "secure.h"
 #include "licence.h"
 #include "rdp.h"
@@ -460,7 +460,7 @@ sec_out_mcs_data(rdpSec * sec, STREAM s)
 
 	/* End of Client Security Data */
 
-	DEBUG_RDP5("g_num_channels is %d\n", sec->mcs->chan->num_channels);
+	DEBUG_RDP5("num_channels is %d\n", sec->mcs->chan->num_channels);
 	if (sec->mcs->chan->num_channels > 0)
 	{
 		/* Client Network Data */

@@ -10,7 +10,7 @@ libfreerdp_la_SOURCES = \
 	bitmap.c bitmap.h \
 	cache.c cache.h \
 	capabilities.c capabilities.h \
-	channels.c channels.h \
+	chan.c chan.h \
 	constants.h \
 	freerdp.c \
 	iso.c iso.h \
@@ -37,35 +37,6 @@ libfreerdp_la_SOURCES = \
 libfreerdp_la_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include -I$(top_srcdir)/include/freerdp
 
 libfreerdp_la_LDFLAGS =
-
-# rdesktop (some files should move to libfreerdp above when it's ready
-bin_PROGRAMS = rdesktop
-
-rdesktop_SOURCES = \
-	cliprdr.c \
-	disk.c disk.h \
-	irp.c irp.h \
-	lspci.c lspci.h \
-	rdpdr.c rdpdr.h \
-	rdpsnd.c rdpsnd.h \
-	rdpsnd_alsa.c \
-	rdpsnd_dsp.c rdpsnd_dsp.h \
-	rdpsnd_libao.c \
-	rdpsnd_oss.c \
-	parallel.c \
-	printer.c \
-	printercache.c \
-	serial.c \
-	rdesktop.c rdesktop.h \
-	xclip.c \
-	xkbkeymap.c xkbkeymap.h \
-	xproto.h \
-	xwin.c
-
-rdesktop_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include -I$(top_srcdir)/include/freerdp \
-	-DKEYMAP_PATH=\"$(KEYMAP_PATH)\"
-
-rdesktop_LDADD = libfreerdp.la -lX11
 
 # extra
 EXTRA_DIST =

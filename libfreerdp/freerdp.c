@@ -11,6 +11,7 @@
 #include "iso.h"
 #include "tcp.h"
 #include "mem.h"
+#include "chan.h"
 
 void
 ui_error(void * inst, char * format, ...)
@@ -529,6 +530,16 @@ ui_destroy_surface(void * inst, RD_HBITMAP surface)
 	linst->ui_destroy_surface(linst, surface);
 }
 
+void
+ui_channel_data(void * inst, int chan_id, char * data, int data_size,
+		int flags, int total_size)
+{
+	rdpInst * linst;
+
+	linst = (rdpInst *) inst;
+	linst->ui_channel_data(linst, chan_id, data, data_size, flags, total_size);
+}
+
 /* returns error */
 static int
 l_rdp_connect(struct rdp_inst * inst)
@@ -607,6 +618,28 @@ l_rdp_sync_input(struct rdp_inst * inst, int toggle_flags)
 	return 0;
 }
 
+static int
+l_rdp_channel_register(struct rdp_inst * inst, char * chan_name, int chan_flags)
+{
+	rdpRdp * rdp;
+	rdpChannels * chan;
+	
+	rdp = (rdpRdp *) (inst->rdp);
+	chan = rdp->sec->mcs->chan;
+	return channel_register(chan, chan_name, chan_flags);
+}
+
+static int
+l_rdp_channel_data(struct rdp_inst * inst, int chan_id, char * data, int data_size)
+{
+	rdpRdp * rdp;
+	rdpChannels * chan;
+	
+	rdp = (rdpRdp *) (inst->rdp);
+	chan = rdp->sec->mcs->chan;
+	return channel_send(chan, chan_id, data, data_size);
+}
+
 rdpInst *
 freerdp_init(rdpSet * settings)
 {
@@ -615,7 +648,7 @@ freerdp_init(rdpSet * settings)
 
 	rdp = rdp_setup(settings);
 	inst = (rdpInst *) xmalloc(sizeof(rdpInst));
-	inst->version = 1;
+	inst->version = FREERDP_INTERFACE_VERSION;
 	inst->size = sizeof(rdpInst);
 	inst->settings = settings;
 	rdp->inst = inst;
@@ -625,6 +658,8 @@ freerdp_init(rdpSet * settings)
 	inst->rdp_check_fds = l_rdp_check_fds;
 	inst->rdp_send_input = l_rdp_send_input;
 	inst->rdp_sync_input = l_rdp_sync_input;
+	inst->rdp_channel_register = l_rdp_channel_register;
+	inst->rdp_channel_data = l_rdp_channel_data;
 	return inst;
 }
 

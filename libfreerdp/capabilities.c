@@ -848,7 +848,7 @@ rdp_out_bitmap_codec(STREAM s)
 
 	out_uint8(s, 0); // codecID
 	out_uint32_le(s, 0); // codecPropertiesLength
-	out_uint8s(s, 0); // codecProperties
+	//out_uint8s(s, 0); // codecProperties
 }
 
 /* Output bitmap codecs capability set */

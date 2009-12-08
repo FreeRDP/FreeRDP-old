@@ -22,7 +22,7 @@
 #include "rdesktop.h"
 #include "iso.h"
 #include "mcs.h"
-#include "channels.h"
+#include "chan.h"
 #include "secure.h"
 #include "rdp.h"
 #include "mem.h"
