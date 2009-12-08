@@ -29,6 +29,7 @@ set_default_params(rdpSet * settings)
 	settings->off_screen_bitmaps = 1;
 	settings->triblt = 0;
 	settings->new_cursors = 1;
+	settings->rdp_version = 5;
 	return 0;
 }
 
@@ -165,9 +166,13 @@ run_xfreerdp(rdpSet * settings)
 		printf("run_xfreerdp: freerdp_init failed\n");
 		return 1;
 	}
-	if ((inst->version != 1) || (inst->size != sizeof(rdpInst)))
+	if ((inst->version != FREERDP_INTERFACE_VERSION) ||
+	    (inst->size != sizeof(rdpInst)))
 	{
-		printf("run_xfreerdp: freerdp_init size, version do not match\n");
+		printf("run_xfreerdp: freerdp_init size, version / size do not "
+		       "match expecting v %d s %d got v %d s %d\n",
+		       FREERDP_INTERFACE_VERSION, sizeof(rdpInst),
+		       inst->version, inst->size);
 		return 1;
 	}
 	if (xf_pre_connect(inst) != 0)
@@ -175,6 +180,9 @@ run_xfreerdp(rdpSet * settings)
 		printf("run_xfreerdp: xf_pre_connect failed\n");
 		return 1;
 	}
+	printf("%d cliprdr\n", inst->rdp_channel_register(inst, "cliprdr", CHANNEL_OPTION_INITIALIZED));
+	printf("%d rdpdr\n", inst->rdp_channel_register(inst, "rdpdr", CHANNEL_OPTION_INITIALIZED));
+	printf("%d rdpsnd\n", inst->rdp_channel_register(inst, "rdpsnd", CHANNEL_OPTION_INITIALIZED));
 	/* call connect */
 	if (inst->rdp_connect(inst) != 0)
 	{

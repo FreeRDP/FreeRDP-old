@@ -808,6 +808,14 @@ l_ui_destroy_surface(struct rdp_inst * inst, RD_HBITMAP surface)
 	}
 }
 
+static void
+l_ui_channel_data(struct rdp_inst * inst, int chan_id, char * data, int data_size,
+	int flags, int total_size)
+{
+	printf("ui_channel_data: chan_id %d, data_size %d flags %d total_size %d\n",
+		chan_id, data_size, flags, total_size);
+}
+
 static int
 xf_assign_callbacks(rdpInst * inst)
 {
@@ -853,6 +861,7 @@ xf_assign_callbacks(rdpInst * inst)
 	inst->ui_create_surface = l_ui_create_surface;
 	inst->ui_set_surface = l_ui_set_surface;
 	inst->ui_destroy_surface = l_ui_destroy_surface;
+	inst->ui_channel_data = l_ui_channel_data;
 	return 0;
 }
 
