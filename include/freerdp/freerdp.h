@@ -27,6 +27,8 @@
 #include "types_ui.h"
 #include "constants_ui.h"
 
+#define FREERDP_INTERFACE_VERSION 2
+
 struct rdp_inst
 {
 	int version;
@@ -45,6 +47,9 @@ struct rdp_inst
 	int (* rdp_send_input)(struct rdp_inst * inst, int message_type, int device_flags,
 		int param1, int param2);
 	int (* rdp_sync_input)(struct rdp_inst * inst, int toggle_flags);
+	int (* rdp_channel_register)(struct rdp_inst * inst, char * chan_name, int chan_flags);
+	int (* rdp_channel_data)(struct rdp_inst * inst, int chan_id, char * data, int data_size,
+		int flags, int total_size);
 	/* calls from library to ui */
 	void (* ui_error)(struct rdp_inst * inst, char * text);
 	void (* ui_warning)(struct rdp_inst * inst, char * text);
@@ -101,6 +106,8 @@ struct rdp_inst
 	RD_HBITMAP (* ui_create_surface)(struct rdp_inst * inst, int width, int height, RD_HBITMAP old);
 	void (* ui_set_surface)(struct rdp_inst * inst, RD_HBITMAP surface);
 	void (* ui_destroy_surface)(struct rdp_inst * inst, RD_HBITMAP surface);
+	void (* ui_channel_data)(struct rdp_inst * inst, int chan_id, char * data, int data_size,
+		int flags, int total_size);
 };
 typedef struct rdp_inst rdpInst;
 
