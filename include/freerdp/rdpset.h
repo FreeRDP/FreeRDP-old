@@ -21,6 +21,14 @@
 #ifndef __RDPSET_H
 #define __RDPSET_H
 
+struct rdp_chan
+{
+	char name[8]; /* ui sets */
+	int flags; /* ui sets */
+	int chan_id; /* libfreerdp sets */
+	void * handle; /* just for ui */
+};
+
 struct rdp_set
 {
 	char hostname[16];
@@ -57,6 +65,8 @@ struct rdp_set
 	int triblt;
 	int new_cursors;
 	int bulk_compression;
+	int num_channels;
+	struct rdp_chan channels[16];
 };
 typedef struct rdp_set rdpSet;
 
