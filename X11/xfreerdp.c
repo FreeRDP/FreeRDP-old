@@ -180,9 +180,6 @@ run_xfreerdp(rdpSet * settings)
 		printf("run_xfreerdp: xf_pre_connect failed\n");
 		return 1;
 	}
-	printf("%d cliprdr\n", inst->rdp_channel_register(inst, "cliprdr", CHANNEL_OPTION_INITIALIZED));
-	printf("%d rdpdr\n", inst->rdp_channel_register(inst, "rdpdr", CHANNEL_OPTION_INITIALIZED));
-	printf("%d rdpsnd\n", inst->rdp_channel_register(inst, "rdpsnd", CHANNEL_OPTION_INITIALIZED));
 	/* call connect */
 	if (inst->rdp_connect(inst) != 0)
 	{
