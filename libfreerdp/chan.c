@@ -11,24 +11,6 @@
 #include "rdpset.h"
 
 int
-channel_register(rdpChannels * chan, char * name, int flags)
-{
-	struct rdp_chan_item * channel;
-
-	if (chan->num_channels >= MAX_CHANNELS)
-	{
-		ui_error(chan->mcs->sec->rdp->inst, "too many channels\n");
-		return 0;
-	}
-	channel = &(chan->channels[chan->num_channels]);
-	channel->mcs_id = MCS_GLOBAL_CHANNEL + 1 + chan->num_channels;
-	strncpy(channel->name, name, 8);
-	channel->flags = flags;
-	chan->num_channels++;
-	return channel->mcs_id;
-}
-
-int
 channel_send(rdpChannels * chan, int mcs_id, char * data, int total_length)
 {
 	STREAM s;
@@ -37,19 +19,21 @@ channel_send(rdpChannels * chan, int mcs_id, char * data, int total_length)
 	int sent;
 	int chan_flags;
 	int chan_index;
-	struct rdp_chan_item * channel;
+	rdpSet * settings;
+	struct rdp_chan * channel;
 
 	/* lock mutex */
+	settings = chan->mcs->sec->rdp->settings;
 	chan_index = (mcs_id - MCS_GLOBAL_CHANNEL) - 1;
-	if ((chan_index < 0) || (chan_index >= chan->num_channels))
+	if ((chan_index < 0) || (chan_index >= settings->num_channels))
 	{
 		ui_error(chan->mcs->sec->rdp->inst, "error\n");
 		return 0;
 	}
-	channel = &(chan->channels[chan_index]);
+	channel = &(settings->channels[chan_index]);
 	chan_flags = CHANNEL_FLAG_FIRST;
 	sent = 0;
-	sec_flags = chan->mcs->sec->rdp->settings->encryption ? SEC_ENCRYPT : 0;
+	sec_flags = settings->encryption ? SEC_ENCRYPT : 0;
 	while (sent < total_length)
 	{
 		length = MIN(CHANNEL_CHUNK_LENGTH, total_length);

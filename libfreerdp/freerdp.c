@@ -547,6 +547,7 @@ l_rdp_connect(struct rdp_inst * inst)
 	rdpRdp * rdp;
 	rdpSet * s;
 	uint32 connect_flags;
+	int index;
 
 	connect_flags = RDP_LOGON_NORMAL;
 	rdp = (rdpRdp *) (inst->rdp);
@@ -558,6 +559,10 @@ l_rdp_connect(struct rdp_inst * inst)
 	if (s->autologin)
 	{
 		connect_flags |= RDP_LOGON_AUTO;
+	}
+	for (index = 0; index < s->num_channels; index++)
+	{
+		s->channels[index].chan_id = MCS_GLOBAL_CHANNEL + 1 + index;
 	}
 	if (rdp_connect(rdp, s->server, connect_flags, s->domain, s->password, s->shell,
 			s->directory, s->tcp_port_rdp, s->username))
@@ -619,17 +624,6 @@ l_rdp_sync_input(struct rdp_inst * inst, int toggle_flags)
 }
 
 static int
-l_rdp_channel_register(struct rdp_inst * inst, char * chan_name, int chan_flags)
-{
-	rdpRdp * rdp;
-	rdpChannels * chan;
-	
-	rdp = (rdpRdp *) (inst->rdp);
-	chan = rdp->sec->mcs->chan;
-	return channel_register(chan, chan_name, chan_flags);
-}
-
-static int
 l_rdp_channel_data(struct rdp_inst * inst, int chan_id, char * data, int data_size)
 {
 	rdpRdp * rdp;
@@ -658,7 +652,6 @@ freerdp_init(rdpSet * settings)
 	inst->rdp_check_fds = l_rdp_check_fds;
 	inst->rdp_send_input = l_rdp_send_input;
 	inst->rdp_sync_input = l_rdp_sync_input;
-	inst->rdp_channel_register = l_rdp_channel_register;
 	inst->rdp_channel_data = l_rdp_channel_data;
 	return inst;
 }

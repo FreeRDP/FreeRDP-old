@@ -333,12 +333,13 @@ sec_establish_key(rdpSec * sec)
 static void
 sec_out_mcs_data(rdpSec * sec, STREAM s)
 {
-	int hostlen = 2 * strlen(sec->rdp->settings->hostname);
+	rdpSet * settings = sec->rdp->settings;
+	int hostlen = 2 * strlen(settings->hostname);
 	int length = 158 + 76 + 12 + 4;
 	unsigned int i;
 
-	if (sec->mcs->chan->num_channels > 0)
-		length += sec->mcs->chan->num_channels * 12 + 8;
+	if (settings->num_channels > 0)
+		length += settings->num_channels * 12 + 8;
 
 	if (hostlen > 30)
 		hostlen = 30;
@@ -461,21 +462,21 @@ sec_out_mcs_data(rdpSec * sec, STREAM s)
 	/* End of Client Security Data */
 
 	DEBUG_RDP5("num_channels is %d\n", sec->mcs->chan->num_channels);
-	if (sec->mcs->chan->num_channels > 0)
+	if (settings->num_channels > 0)
 	{
 		/* Client Network Data */
 
 		/* User Data Header */
 		out_uint16_le(s, SEC_TAG_CLI_CHANNELS); // CS_NET (0xC003)
-		out_uint16_le(s, sec->mcs->chan->num_channels * 12 + 8); // Length
+		out_uint16_le(s, settings->num_channels * 12 + 8); // Length
 		/* End of User Data Header */
 
-		out_uint32_le(s, sec->mcs->chan->num_channels);	// channelCount
-		for (i = 0; i < sec->mcs->chan->num_channels; i++)
+		out_uint32_le(s, settings->num_channels);	// channelCount
+		for (i = 0; i < settings->num_channels; i++)
 		{
-			DEBUG_RDP5("Requesting channel %s\n", sec->mcs->chan->channels[i].name);
-			out_uint8a(s, sec->mcs->chan->channels[i].name, 8); // name (8 bytes) 7 characters with null terminator
-			out_uint32_be(s, sec->mcs->chan->channels[i].flags); // options (4 bytes)
+			DEBUG_RDP5("Requesting channel %s\n", settings->channels[i].name);
+			out_uint8a(s, settings->channels[i].name, 8); // name (8 bytes) 7 characters with null terminator
+			out_uint32_be(s, settings->channels[i].flags); // options (4 bytes)
 		}
 		/* End of Client Network Data */
 	}

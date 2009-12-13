@@ -26,6 +26,7 @@
 #include "rdp.h"
 #include "mem.h"
 #include "asn1.h"
+#include "rdpset.h"
 
 /* Output a DOMAIN_PARAMS structure (ASN.1 BER) */
 static void
@@ -303,6 +304,7 @@ mcs_connect(rdpMcs * mcs, char *server, STREAM mcs_data, char *username, int por
 {
 	uint32 i;
 	int mcs_id;
+	rdpSet * settings;
 
 	if (!iso_connect(mcs->iso, server, username, port))
 		return False;
@@ -326,9 +328,10 @@ mcs_connect(rdpMcs * mcs, char *server, STREAM mcs_data, char *username, int por
 	if (!mcs_recv_cjcf(mcs))
 		goto error;
 
-	for (i = 0; i < mcs->chan->num_channels; i++)
+	settings = mcs->sec->rdp->settings;
+	for (i = 0; i < settings->num_channels; i++)
 	{
-		mcs_id = mcs->chan->channels[i].mcs_id;
+		mcs_id = settings->channels[i].chan_id;
 		if (mcs_id >= mcs->mcs_userid + MCS_USERCHANNEL_BASE)
 			goto error;
 		mcs_send_cjrq(mcs, mcs_id);
@@ -347,6 +350,8 @@ RD_BOOL
 mcs_reconnect(rdpMcs * mcs, char *server, STREAM mcs_data, int port)
 {
 	uint32 i;
+	int mcs_id;
+	rdpSet * settings;
 
 	if (!iso_reconnect(mcs->iso, server, port))
 		return False;
@@ -370,9 +375,13 @@ mcs_reconnect(rdpMcs * mcs, char *server, STREAM mcs_data, int port)
 	if (!mcs_recv_cjcf(mcs))
 		goto error;
 
-	for (i = 0; i < mcs->chan->num_channels; i++)
+	settings = mcs->sec->rdp->settings;
+	for (i = 0; i < settings->num_channels; i++)
 	{
-		mcs_send_cjrq(mcs, mcs->chan->channels[i].mcs_id);
+		mcs_id = settings->channels[i].chan_id;
+		if (mcs_id >= mcs->mcs_userid + MCS_USERCHANNEL_BASE)
+			goto error;
+		mcs_send_cjrq(mcs, mcs_id);
 		if (!mcs_recv_cjcf(mcs))
 			goto error;
 	}
