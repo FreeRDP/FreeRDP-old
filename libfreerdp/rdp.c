@@ -23,7 +23,8 @@
 #include <errno.h>
 #include <unistd.h>
 #endif
-#include "rdesktop.h"
+#include "frdp.h"
+#include "types_ui.h"
 #include "iso.h"
 #include "tcp.h"
 #include "mcs.h"
@@ -37,6 +38,7 @@
 #include "cache.h"
 #include "bitmap.h"
 #include "mem.h"
+#include "debug.h"
 
 #ifdef HAVE_ICONV
 #ifdef HAVE_ICONV_H

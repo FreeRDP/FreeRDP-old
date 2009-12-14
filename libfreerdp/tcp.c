@@ -30,7 +30,7 @@
 #include <fcntl.h>		/* fcntl F_GETFL F_SETFL O_NONBLOCK */
 #endif
 
-#include "rdesktop.h"
+#include "frdp.h"
 #include "tcp.h"
 #include "iso.h"
 #include "mcs.h"

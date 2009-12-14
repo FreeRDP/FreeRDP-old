@@ -21,6 +21,9 @@
 #ifndef __RDP_H
 #define __RDP_H
 
+#include "types.h"
+#include "types_ui.h"
+
 struct rdp_rdp
 {
 	uint8 * next_packet;

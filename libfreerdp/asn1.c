@@ -19,7 +19,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "rdesktop.h"
 #include "iso.h"
 #include "mcs.h"
 #include "chan.h"

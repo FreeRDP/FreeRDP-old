@@ -21,7 +21,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "rdesktop.h"
+#include "frdp.h"
 #include "rdp.h"
 
 /* mppc decompression                       */

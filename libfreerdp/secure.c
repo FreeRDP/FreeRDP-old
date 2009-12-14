@@ -18,8 +18,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "rdesktop.h"
-
+#include "frdp.h"
 #include "mcs.h"
 #include "chan.h"
 #include "secure.h"
@@ -27,6 +26,7 @@
 #include "rdp.h"
 #include "rdpset.h"
 #include "mem.h"
+#include "debug.h"
 
 /* these are read only */
 static uint8 pad_54[40] = {

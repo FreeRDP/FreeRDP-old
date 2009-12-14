@@ -1,6 +1,6 @@
 
 #include <stdio.h>
-#include "rdesktop.h"
+#include "frdp.h"
 
 /* malloc; exit if out of memory */
 void *

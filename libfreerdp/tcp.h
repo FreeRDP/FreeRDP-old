@@ -21,6 +21,10 @@
 #ifndef __TCP_H
 #define __TCP_H
 
+#include "frdp.h"
+#include "types_ui.h"
+#include "parse.h"
+
 struct rdp_tcp
 {
 	struct rdp_iso * iso;

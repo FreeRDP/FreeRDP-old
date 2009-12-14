@@ -19,11 +19,12 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "rdesktop.h"
+#include "frdp.h"
 #include "rdp.h"
 #include "rdpset.h"
 #include "pstcache.h"
 #include "capabilities.h"
+#include "parse.h"
 
 static uint8 *
 rdp_skip_capset_header(STREAM s, int size)
@@ -260,17 +261,21 @@ void
 rdp_out_bitmapcache_capset(rdpRdp * rdp, STREAM s)
 {
 	int Bpp;
+	int size;
 	uint8 * header;
 
 	header = rdp_skip_capset_header(s, 4);
 	Bpp = (rdp->settings->server_depth + 7) / 8;	/* bytes per pixel */
 	out_uint8s(s, 24); // pad
 	out_uint16_le(s, 0x258); // Cache1Entries
-	out_uint16_le(s, 0x100 * Bpp); // Cache1MaximumCellSize
+	size = 0x100 * Bpp;
+	out_uint16_le(s, size); // Cache1MaximumCellSize
 	out_uint16_le(s, 0x12c); // Cache2Entries
-	out_uint16_le(s, 0x400 * Bpp); // Cache2MaximumCellSize
+	size = 0x400 * Bpp;
+	out_uint16_le(s, size); // Cache2MaximumCellSize
 	out_uint16_le(s, 0x106); // Cache3Entries
-	out_uint16_le(s, 0x1000 * Bpp); //Cache3MaximumCellSize
+	size = 0x1000 * Bpp;
+	out_uint16_le(s, size); //Cache3MaximumCellSize
 	rdp_out_capset_header(s, header, CAPSET_TYPE_BITMAPCACHE);
 }
 

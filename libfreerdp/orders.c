@@ -18,7 +18,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "rdesktop.h"
+#include "frdp.h"
 #include "orderstypes.h"
 #include "orders.h"
 #include "rdp.h"
@@ -27,6 +27,7 @@
 #include "bitmap.h"
 #include "rdpset.h"
 #include "mem.h"
+#include "debug.h"
 
 /* Read field indicating which parameters are present */
 static void

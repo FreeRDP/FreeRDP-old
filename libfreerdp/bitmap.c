@@ -25,7 +25,7 @@
 /* indent is confused by this file */
 /* *INDENT-OFF* */
 
-#include "rdesktop.h"
+#include "frdp.h"
 
 #define CVAL(p)   (*(p++))
 #ifdef NEED_ALIGN

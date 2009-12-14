@@ -22,6 +22,7 @@
 #define __SECURE_H
 
 #include "ssl.h"
+#include "constants.h"
 
 struct rdp_sec
 {

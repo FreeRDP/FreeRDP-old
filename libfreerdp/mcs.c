@@ -18,7 +18,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "rdesktop.h"
+#include "frdp.h"
 #include "iso.h"
 #include "mcs.h"
 #include "chan.h"
@@ -27,6 +27,7 @@
 #include "mem.h"
 #include "asn1.h"
 #include "rdpset.h"
+#include "debug.h"
 
 /* Output a DOMAIN_PARAMS structure (ASN.1 BER) */
 static void
