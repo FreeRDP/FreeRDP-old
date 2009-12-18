@@ -309,10 +309,14 @@ tcp_connect(rdpTcp * tcp, char * server, int port)
 
 #endif /* IPv6 */
 
-	/* set non blocking */
+	/* set socket as non blocking */
+#ifdef _WINDOWS
+	ioctlsocket(tcp->sock, FIONBIO, 1);
+#else
 	option_value = fcntl(tcp->sock, F_GETFL);
 	option_value = option_value | O_NONBLOCK;
 	fcntl(tcp->sock, F_SETFL, option_value);
+#endif
 
 	option_value = 1;
 	option_len = sizeof(option_value);

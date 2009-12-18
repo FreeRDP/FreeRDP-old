@@ -8,6 +8,12 @@
 #include "types_ui.h"
 #include "types.h"
 
+#ifdef _WINDOWS
+#include "winsock.h"
+#define snprintf sprintf_s
+#define strcasecmp lstrcmpi
+#endif
+
 #ifndef MIN
 #define MIN(x,y)		(((x) < (y)) ? (x) : (y))
 #endif
