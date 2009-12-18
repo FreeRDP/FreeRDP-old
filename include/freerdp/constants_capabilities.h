@@ -79,6 +79,8 @@
 #define CAPSET_LEN_RAIL                         0x0008
 #define CAPSET_LEN_WINDOW                       0x000B
 
+#define CAPS_PROTOCOL_VERSION			0x0200
+
 /* Device redirection capability set types */
 #define DR_CAPSET_TYPE_GENERAL			0x0001
 #define DR_CAPSET_TYPE_PRINTER			0x0002
@@ -210,5 +212,22 @@
 
 /* Surface commands capability set flags */
 #define SURFCMDS_SETSURFACEBITS         0x00000002
+
+/* Extra Capabilities Flags */
+#define FASTPATH_OUTPUT_SUPPORTED	0x0001 // RDP 5.0
+#define NO_BITMAP_COMPRESSION_HDR	0x0400 // RDP 5.0
+#define SHADOW_COMPRESSION_LEVEL	0x0002 // RDP 5.1
+#define LONG_CREDENTIALS_SUPPORTED	0x0004 // RDP 5.1
+#define AUTORECONNECT_SUPPORTED		0x0008 // RDP 5.2
+#define ENC_SALTED_CHECKSUM		0x0010 // RDP 5.2
+
+/* Remote Programs Capabilities */
+#define RAIL_LEVEL_SUPPORTED			0x00000001
+#define RAIL_LEVEL_DOCKED_LANGBAR_SUPPORTED	0x00000002
+
+/* Window List Capabilities */
+#define WINDOW_LEVEL_NOT_SUPPORTED	0x00000000
+#define WINDOW_LEVEL_SUPPORTED		0x00000001
+#define WINDOW_LEVEL_SUPPORTED_EX	0x00000002
 
 #endif /* __CONSTANTS_CAPABILITIES_H */
