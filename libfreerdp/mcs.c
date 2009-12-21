@@ -303,7 +303,7 @@ mcs_recv(rdpMcs * mcs, uint16 * channel, uint8 * rdpver)
 RD_BOOL
 mcs_connect(rdpMcs * mcs, char *server, STREAM mcs_data, char *username, int port)
 {
-	uint32 i;
+	int i;
 	int mcs_id;
 	rdpSet * settings;
 
@@ -350,7 +350,7 @@ mcs_connect(rdpMcs * mcs, char *server, STREAM mcs_data, char *username, int por
 RD_BOOL
 mcs_reconnect(rdpMcs * mcs, char *server, STREAM mcs_data, int port)
 {
-	uint32 i;
+	int i;
 	int mcs_id;
 	rdpSet * settings;
 

@@ -79,7 +79,7 @@ ui_unimpl(void * inst, char * format, ...)
 }
 
 void
-hexdump(unsigned char * p, unsigned int len)
+hexdump(unsigned char * p, int len)
 {
 	unsigned char *line = p;
 	int i, thisline, offset = 0;
@@ -156,10 +156,10 @@ rd_open_file(char * filename)
 void
 generate_random(uint8 * random)
 {
-	int index;
+	time_t index;
 
 	index = time(NULL);
-	srand(index);
+	srand((unsigned int)index);
 	for (index = 0; index < 32; index++)
 	{
 		random[index] = rand();

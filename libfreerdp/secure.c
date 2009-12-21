@@ -333,10 +333,10 @@ sec_establish_key(rdpSec * sec)
 static void
 sec_out_mcs_data(rdpSec * sec, STREAM s)
 {
+	int i;
 	rdpSet * settings = sec->rdp->settings;
 	int hostlen = 2 * strlen(settings->hostname);
 	int length = 158 + 76 + 12 + 4;
-	unsigned int i;
 
 	if (settings->num_channels > 0)
 		length += settings->num_channels * 12 + 8;

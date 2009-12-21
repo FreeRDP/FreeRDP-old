@@ -8,7 +8,7 @@
 #include "types_ui.h"
 #include "types.h"
 
-#ifdef _WINDOWS
+#ifdef WIN32
 #include "winsock.h"
 #define snprintf sprintf_s
 #define strcasecmp lstrcmpi
@@ -29,7 +29,7 @@ ui_warning(void * inst, char * format, ...);
 void
 ui_unimpl(void * inst, char * format, ...);
 void
-hexdump(unsigned char * p, unsigned int len);
+hexdump(unsigned char * p, int len);
 int
 load_licence(unsigned char ** data);
 RD_BOOL

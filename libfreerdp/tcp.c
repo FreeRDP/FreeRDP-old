@@ -311,7 +311,7 @@ tcp_connect(rdpTcp * tcp, char * server, int port)
 
 	/* set socket as non blocking */
 #ifdef _WINDOWS
-	ioctlsocket(tcp->sock, FIONBIO, 1);
+	ioctlsocket(tcp->sock, FIONBIO, (u_long*)1);
 #else
 	option_value = fcntl(tcp->sock, F_GETFL);
 	option_value = option_value | O_NONBLOCK;

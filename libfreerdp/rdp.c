@@ -551,7 +551,7 @@ rdp_send_synchronize(rdpRdp * rdp)
 
 /* Send a single input event */
 void
-rdp_send_input(rdpRdp * rdp, uint32 time, uint16 message_type, uint16 device_flags, uint16 param1,
+rdp_send_input(rdpRdp * rdp, time_t time, uint16 message_type, uint16 device_flags, uint16 param1,
 	       uint16 param2)
 {
 	STREAM s;
@@ -573,7 +573,7 @@ rdp_send_input(rdpRdp * rdp, uint32 time, uint16 message_type, uint16 device_fla
 
 /* Send a single keyboard synchronize event */
 void
-rdp_sync_input(rdpRdp * rdp, uint32 time, uint32 toggle_keys_state)
+rdp_sync_input(rdpRdp * rdp, time_t time, uint32 toggle_keys_state)
 {
 	STREAM s;
 
@@ -593,7 +593,7 @@ rdp_sync_input(rdpRdp * rdp, uint32 time, uint32 toggle_keys_state)
 
 /* Send a single unicode character input event */
 void
-rdp_unicode_input(rdpRdp * rdp, uint32 time, uint16 unicode_character)
+rdp_unicode_input(rdpRdp * rdp, time_t time, uint16 unicode_character)
 {
 	STREAM s;
 
@@ -605,7 +605,7 @@ rdp_unicode_input(rdpRdp * rdp, uint32 time, uint16 unicode_character)
 	out_uint32_le(s, time);	// eventTime
 	out_uint16_le(s, RDP_INPUT_UNICODE);	// messageType
 	out_uint16_le(s, 0);	// pad
-	out_uint32_le(s, unicode_character);	// Unicode character
+	out_uint16_le(s, unicode_character);	// Unicode character
 	out_uint16_le(s, 0);	// pad
 
 	s_mark_end(s);

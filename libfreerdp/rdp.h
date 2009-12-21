@@ -63,12 +63,12 @@ rdp_out_unistr(rdpRdp * rdp, STREAM s, char *string, int len);
 int
 rdp_in_unistr(rdpRdp * rdp, STREAM s, char *string, int str_len, int in_len);
 void
-rdp_send_input(rdpRdp * rdp, uint32 time, uint16 message_type, uint16 device_flags, uint16 param1,
+rdp_send_input(rdpRdp * rdp, time_t time, uint16 message_type, uint16 device_flags, uint16 param1,
 	       uint16 param2);
 void
-rdp_sync_input(rdpRdp * rdp, uint32 time, uint32 toggle_keys_state);
+rdp_sync_input(rdpRdp * rdp, time_t time, uint32 toggle_keys_state);
 void
-rdp_unicode_input(rdpRdp * rdp, uint32 time, uint16 unicode_character);
+rdp_unicode_input(rdpRdp * rdp, time_t time, uint16 unicode_character);
 void
 rdp_send_client_window_status(rdpRdp * rdp, int status);
 void
