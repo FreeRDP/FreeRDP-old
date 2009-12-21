@@ -221,8 +221,8 @@ process_destblt(rdpOrders * orders, STREAM s, DESTBLT_ORDER * os, uint32 present
 	if (present & 0x10)
 		in_uint8(s, os->opcode);
 
-	DEBUG("DESTBLT(op=0x%x,x=%d,y=%d,cx=%d,cy=%d)\n",
-	       os->opcode, os->x, os->y, os->cx, os->cy);
+	NEW_DEBUG(("DESTBLT(op=0x%x,x=%d,y=%d,cx=%d,cy=%d)\n",
+	       os->opcode, os->x, os->y, os->cx, os->cy));
 
 	ui_destblt(orders->rdp->inst, os->opcode, os->x, os->y, os->cx, os->cy);
 }
