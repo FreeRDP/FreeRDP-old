@@ -68,4 +68,77 @@ struct _CHANNEL_PDU_HEADER
 typedef struct _CHANNEL_PDU_HEADER CHANNEL_PDU_HEADER;
 typedef CHANNEL_PDU_HEADER * PCHANNEL_PDU_HEADER;
 
+typedef void (*PCHANNEL_INIT_EVENT_FN)(void * pInitHandle,
+                                       uint32 event,
+                                       void * pData,
+                                       uint32 dataLength);
+
+#define CHANNEL_EVENT_INITIALIZED 0
+#define CHANNEL_EVENT_CONNECTED 1
+#define CHANNEL_EVENT_V1_CONNECTED 2
+#define CHANNEL_EVENT_DISCONNECTED 3
+#define CHANNEL_EVENT_TERMINATED 4
+
+typedef void (*PCHANNEL_OPEN_EVENT_FN)(uint32  openHandle,
+                                       uint32  event,
+                                       void *  pData,
+                                       uint32  dataLength,
+                                       uint32  totalLength,
+                                       uint32  dataFlags);
+
+#define CHANNEL_EVENT_DATA_RECEIVED 10
+#define CHANNEL_EVENT_WRITE_COMPLETE 11
+#define CHANNEL_EVENT_WRITE_CANCELLED 12
+
+#define CHANNEL_RC_OK                             0
+#define CHANNEL_RC_ALREADY_INITIALIZED            1
+#define CHANNEL_RC_NOT_INITIALIZED                2
+#define CHANNEL_RC_ALREADY_CONNECTED              3
+#define CHANNEL_RC_NOT_CONNECTED                  4
+#define CHANNEL_RC_TOO_MANY_CHANNELS              5
+#define CHANNEL_RC_BAD_CHANNEL                    6
+#define CHANNEL_RC_BAD_CHANNEL_HANDLE             7
+#define CHANNEL_RC_NO_BUFFER                      8
+#define CHANNEL_RC_BAD_INIT_HANDLE                9
+#define CHANNEL_RC_NOT_OPEN                      10
+#define CHANNEL_RC_BAD_PROC                      11
+#define CHANNEL_RC_NO_MEMORY                     12
+#define CHANNEL_RC_UNKNOWN_CHANNEL_NAME          13
+#define CHANNEL_RC_ALREADY_OPEN                  14
+#define CHANNEL_RC_NOT_IN_VIRTUALCHANNELENTRY    15
+#define CHANNEL_RC_NULL_DATA                     16
+#define CHANNEL_RC_ZERO_LENGTH                   17
+
+#define VIRTUAL_CHANNEL_VERSION_WIN2000         1
+
+typedef uint32 (*PVIRTUALCHANNELINIT)(void ** ppInitHandle,
+                               PCHANNEL_DEF pChannel,
+                               int channelCount,
+                               uint32 versionRequested,
+                               PCHANNEL_INIT_EVENT_FN pChannelInitEventProc);
+typedef uint32 (*PVIRTUALCHANNELOPEN(void * pInitHandle,
+                                     uint32 * pOpenHandle,
+                                     char * pChannelName,
+                                     PCHANNEL_OPEN_EVENT_FN pChannelOpenEventProc);
+typedef uint32 (*PVIRTUALCHANNELCLOSE)(uint32 openHandle);
+
+typedef uint32 (*PVIRTUALCHANNELWRITE(uint32  openHandle,
+                                      void *  pData,
+                                      uint32  dataLength,
+                                      void *  pUserData);
+
+struct _CHANNEL_ENTRY_POINTS
+{
+    uint32 cbSize;
+    uint32 protocolVersion;
+    PVIRTUALCHANNELINIT  pVirtualChannelInit;
+    PVIRTUALCHANNELOPEN  pVirtualChannelOpen;
+    PVIRTUALCHANNELCLOSE pVirtualChannelClose;
+    PVIRTUALCHANNELWRITE pVirtualChannelWrite;
+};
+typedef struct _CHANNEL_ENTRY_POINTS CHANNEL_ENTRY_POINTS;
+typedef CHANNEL_ENTRY_POINTS * PCHANNEL_ENTRY_POINTS;
+
+typedef int (*PVIRTUALCHANNELENTRY)(PCHANNEL_ENTRY_POINTS pEntryPoints);
+
 #endif
