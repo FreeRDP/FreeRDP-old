@@ -120,6 +120,8 @@
    the w32 cross compiler
    this is the CF_ set when WINVER is 0x0400 */
 
+#ifndef WIN32
+
 #ifndef CF_TEXT
 #define CF_TEXT         1
 #define CF_BITMAP       2
@@ -147,6 +149,8 @@
 #define CF_PRIVATELAST  767
 #define CF_GDIOBJFIRST  768
 #define CF_GDIOBJLAST   1023
+#endif
+
 #endif
 
 /* Sound format constants */
