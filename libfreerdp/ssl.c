@@ -274,7 +274,7 @@ tls_verify_peer_identity(X509 *cert, const char *peer)
 		asn1str = X509_NAME_ENTRY_get_data(entry);
 		len = ASN1_STRING_to_UTF8(&ustr, asn1str);
 		str = (char *)ustr;
-		if (strcasecmp(str, peer) == 0)
+		if (strcmp(str, peer) == 0)
 			break;	/* found a match */
 	}
 

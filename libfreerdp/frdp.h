@@ -11,7 +11,7 @@
 #ifdef WIN32
 #include "winsock.h"
 #define snprintf sprintf_s
-#define strcasecmp lstrcmpi
+#define strdup _strdup
 #endif
 
 #ifndef MIN
