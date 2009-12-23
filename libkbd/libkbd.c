@@ -580,6 +580,7 @@ kbd_init()
 	unsigned int rv;
 
 	rv = detect_and_load_keyboard();
+	printf("kbd_init: detect_and_load_keyboard returned %d\n", rv);
 	if (rv == 0)
 	{
 		rv = 0x0409;
