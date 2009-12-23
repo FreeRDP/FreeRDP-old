@@ -24,9 +24,7 @@
 #include <string.h>
 
 #include "freerdp.h"
-#include "keyboard.h"
-#include "locales.h"
-#include "xkbkeymap.h"
+#include "libkbd.h"
 
 unsigned int
 find_keyboard_layout_in_xorg_rules(char* layout, char* variant)
@@ -568,7 +566,7 @@ detect_and_load_keyboard()
 }
 
 int
-xkbkeymap_init()
+kbd_init()
 {	
 	detect_and_load_keyboard();
 	return 0;

@@ -8,7 +8,7 @@ libkbd_LTLIBRARIES = libkbd.la
 libkbd_la_SOURCES = \
 	keyboard.h \
 	locales.h \
-	xkbkeymap.c xkbkeymap.h
+	libkbd.c libkbd.h
 
 libkbd_la_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include -I$(top_srcdir)/include/freerdp
 
