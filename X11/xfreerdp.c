@@ -194,6 +194,7 @@ run_xfreerdp(rdpSet * settings)
 		return 1;
 	}
 	/* call connect */
+	printf("keyboard_layout: %X\n", inst->settings->keyboard_layout);
 	if (inst->rdp_connect(inst) != 0)
 	{
 		printf("run_xfreerdp: inst->rdp_connect failed\n");

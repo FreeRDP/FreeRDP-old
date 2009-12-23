@@ -12,6 +12,7 @@ void
 xf_kb_init(rdpInst * inst)
 {
 	inst->settings->keyboard_layout = kbd_init();
+	printf("kbd_init: %X\n", inst->settings->keyboard_layout);
 };
 
 void

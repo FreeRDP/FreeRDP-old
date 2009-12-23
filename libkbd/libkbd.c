@@ -388,6 +388,8 @@ load_keyboard(char* kbd)
 		}
 	}
 
+	printf("xkbfilepath: %s\n", xkbfilepath);
+
 	while(fgets(buffer, sizeof(buffer), fp) != NULL)
 	{
 		if(buffer[0] == '#')
@@ -494,9 +496,6 @@ detect_and_load_keyboard()
 	char* beg;
 	char* end;
 
-	char xkb_layout[64];
-	char xkb_variant[64];
-
 	char xkbfile[256];
 	unsigned int keyboard_layout = 0;
 	unsigned int keyboardLayoutID = 0;
@@ -513,13 +512,17 @@ detect_and_load_keyboard()
 		keyboardLayoutID = detect_keyboard_layout_from_xkb();
 	}
 	
-	keyboard_layout = find_keyboard_layout_in_xorg_rules(xkb_layout, xkb_variant);
+	keyboard_layout = detect_keyboard_layout_from_xkb();
 		
+	printf("find_keyboard_layout_in_xorg_rules: %X\n", keyboard_layout);
+
 	if(keyboard_layout != 0)
 		keyboardLayoutID = keyboard_layout;
 
 	if(keyboardLayoutID == 0)
 		keyboardLayoutID = detect_keyboard_layout_from_locale();
+
+	printf("detect_keyboard_layout_from_locale: %X\n", keyboardLayoutID);
 
 	keyboard_layout = keyboardLayoutID;
 
