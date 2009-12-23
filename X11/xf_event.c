@@ -204,25 +204,25 @@ xf_handle_event(rdpInst * inst, xfInfo * xfi, XEvent * xevent)
 		case FocusOut:
 			break;
 		case EnterNotify:
-			//printf("xf_handle_event: EnterNotify\n");
+			printf("xf_handle_event: EnterNotify\n");
 			break;
 		case LeaveNotify:
-			//printf("xf_handle_event: LeaveNotify\n");
+			printf("xf_handle_event: LeaveNotify\n");
 			break;
 		case NoExpose:
-			//printf("xf_handle_event: NoExpose\n");
+			printf("xf_handle_event: NoExpose\n");
 			break;
 		case GraphicsExpose:
-			//printf("xf_handle_event: GraphicsExpose\n");
+			printf("xf_handle_event: GraphicsExpose\n");
 			break;
 		case ConfigureNotify:
-			//printf("xf_handle_event: ConfigureNotify\n");
+			printf("xf_handle_event: ConfigureNotify\n");
 			break;
 		case MapNotify:
-			//printf("xf_handle_event: MapNotify\n");
+			printf("xf_handle_event: MapNotify\n");
 			break;
 		case ReparentNotify:
-			//printf("xf_handle_event: ReparentNotify\n");
+			printf("xf_handle_event: ReparentNotify\n");
 			break;
 		case MappingNotify:
 			rv = xf_handle_event_MappingNotify(inst, xfi, xevent);

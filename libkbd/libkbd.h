@@ -25,7 +25,7 @@
 #include "locales.h"
 #include "keyboard.h"
 
-int
+unsigned int
 kbd_init();
 
 #endif // __LIBKBD_H

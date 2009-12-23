@@ -941,6 +941,7 @@ xf_pre_connect(rdpInst * inst)
 	xfi->screen = ScreenOfDisplay(xfi->display, xfi->screen_num);
 	xfi->depth = DefaultDepthOfScreen(xfi->screen);
 	xfi->xserver_be = (ImageByteOrder(xfi->display) == MSBFirst);
+	xf_kb_init(inst);
 	return 0;
 }
 
@@ -988,7 +989,6 @@ xf_post_connect(rdpInst * inst)
 	XFillRectangle(xfi->display, xfi->backstore, xfi->gc, 0, 0, width, height);
 	xfi->null_cursor = (Cursor) l_ui_create_cursor(inst, 0, 0, 32, 32, 0, 0, 0);
 	xfi->mod_map = XGetModifierMapping(xfi->display);
-	xf_kb_init(inst);
 	return 0;
 }
 

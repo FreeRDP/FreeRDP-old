@@ -11,7 +11,7 @@
 void
 xf_kb_init(rdpInst * inst)
 {
-	kbd_init();
+	inst->settings->keyboard_layout = kbd_init();
 };
 
 void

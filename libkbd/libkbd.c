@@ -568,14 +568,13 @@ detect_and_load_keyboard()
 		memcpy(keycodeToVkcode, defaultKeycodeToVkcode, sizeof(keycodeToVkcode));
 	}
 
-	return 0;
+	return keyboardLayoutID;
 }
 
-int
+unsigned int
 kbd_init()
 {	
-	detect_and_load_keyboard();
-	return 0;
+	return detect_and_load_keyboard();
 }
 
 
