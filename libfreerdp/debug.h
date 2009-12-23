@@ -7,12 +7,6 @@
 #define DEBUG(fmt, args...) do { } while (0)
 #endif
 
-//#ifdef WITH_DEBUG
-#define NEW_DEBUG(args) do { printf("DBG %s (%d) ", __FUNCTION__, __LINE__); printf args ; } while (0)
-//#else
-//#define NEW_DEBUG(args)
-//#endif
-
 #ifdef WITH_DEBUG_KBD
 #define DEBUG_KBD(fmt, args...) fprintf(stderr, "DBG (KBD) %s (%d): " fmt, __FUNCTION__, __LINE__, ## args)
 #else
