@@ -5,7 +5,9 @@
 #include <locale.h>
 #include <unistd.h>
 #include <sys/socket.h>
+#include <sys/types.h>
 #include <errno.h>
+#include <pwd.h>
 #include "freerdp.h"
 #include "xf_win.h"
 
@@ -37,9 +39,20 @@ static int
 process_params(rdpSet * settings, int argc, char ** argv)
 {
 	int index;
+	int max;
 	char * p;
+	struct passwd * pw;
 
 	set_default_params(settings);
+	pw = getpwuid(getuid());
+	if (pw != 0)
+	{
+		if (pw->pw_name != 0)
+		{
+			max = sizeof(settings->username) - 1;
+			strncpy(settings->username, pw->pw_name, max);
+		}
+	}
 	printf("process_params\n");
 	if (argc < 2)
 	{
