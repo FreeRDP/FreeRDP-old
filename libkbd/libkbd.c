@@ -573,8 +573,15 @@ detect_and_load_keyboard()
 
 unsigned int
 kbd_init()
-{	
-	return detect_and_load_keyboard();
+{
+	unsigned int rv;
+
+	rv = detect_and_load_keyboard();
+	if (rv == 0)
+	{
+		rv = 0x0409;
+	}
+	return rv;
 }
 
 
