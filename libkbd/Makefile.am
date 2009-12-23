@@ -1,18 +1,18 @@
 ## Process this file with automake to produce Makefile.in
 
-# libxkb
-libxkbdir = $(libdir)
+# libkbd
+libkbddir = $(libdir)
 
-libxkb_LTLIBRARIES = libxkb.la
+libkbd_LTLIBRARIES = libkbd.la
 
-libxkb_la_SOURCES = \
+libkbd_la_SOURCES = \
 	keyboard.h \
 	locales.h \
 	xkbkeymap.c xkbkeymap.h
 
-libxkb_la_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include -I$(top_srcdir)/include/freerdp
+libkbd_la_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include -I$(top_srcdir)/include/freerdp
 
-libxkb_la_LDFLAGS =
+libkbd_la_LDFLAGS =
 
 # extra
 EXTRA_DIST =
