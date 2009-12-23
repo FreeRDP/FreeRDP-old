@@ -191,7 +191,7 @@ run_xfreerdp(rdpSet * settings)
 		printf("run_xfreerdp: xf_post_connect failed\n");
 		return 1;
 	}
-	/* programm main loop */
+	/* program main loop */
 	while (1)
 	{
 		read_count = 0;

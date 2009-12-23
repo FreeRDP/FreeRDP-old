@@ -24,14 +24,9 @@
 
 int
 xkbkeymap_init();
-uint16
-xkb_translate_button(uint32 button);
-void
-xkb_handle_special_keys(void * inst, uint32 time, uint16 flags, uint8 keycode);
-void
-xkbkeymap_send_key(uint32 time, uint16 flags, uint8 keycode);
-void
-xkb_handle_focus_in(void * inst, uint32 time);
+
+unsigned int
+detect_and_load_keyboard();
 
 #endif // __XKBKEYMAP_H
 

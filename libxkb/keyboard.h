@@ -27,6 +27,8 @@
 #ifndef __KEYBOARD_H
 #define __KEYBOARD_H
 
+#include "freerdp.h"
+
 /* Mouse buttons */
 
 #define VK_LBUTTON	0x01 // Left mouse button
@@ -356,7 +358,7 @@ typedef struct _virtualKey
 
 } virtualKey;
 
-// Use the virtual key code as an index in this array in order to get its associated scan code
+// Use the virtual key code as an index in this array in order to get its associated scan code		
 
 virtualKey virtualKeyboard[256] =
 {

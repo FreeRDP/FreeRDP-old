@@ -19,23 +19,16 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "rdesktop.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "freerdp.h"
 #include "keyboard.h"
 #include "locales.h"
-#include "rdp.h"
-#include "rdpset.h"
 #include "xkbkeymap.h"
 
-extern rdpRdp * g_rdp; /* in rdesktop.c */
-extern rdpSet g_settings; /* in rdesktop.c */
-
-unsigned char vkcode;
-unsigned char scancode;
-
-int CTRL_KEY_STATE;
-int ALT_KEY_STATE;
-
-uint32
+unsigned int
 find_keyboard_layout_in_xorg_rules(char* layout, char* variant)
 {
 	int i;
@@ -60,7 +53,7 @@ find_keyboard_layout_in_xorg_rules(char* layout, char* variant)
 	return 0;
 }
 
-uint32
+unsigned int
 detect_keyboard_layout_from_xkb()
 {
         FILE* xprop;
@@ -119,7 +112,7 @@ detect_keyboard_layout_from_xkb()
 	return find_keyboard_layout_in_xorg_rules(layout, variant);
 }
 
-uint32
+unsigned int
 detect_keyboard_type_from_xkb(char* xkbfile, int length)
 {
 	char* pch;
@@ -164,7 +157,7 @@ detect_keyboard_type_from_xkb(char* xkbfile, int length)
 	return 0;
 }
 
-uint32
+unsigned int
 detect_keyboard_layout_from_locale()
 {
 	int i;
@@ -252,7 +245,7 @@ detect_keyboard_layout_from_locale()
 	return 0; // Could not detect the current keyboard layout from locale
 }
 
-uint32
+unsigned int
 detect_keyboard_type_and_layout_sunos(char* xkbfile, int length)
 {
         FILE* kbd;
@@ -365,24 +358,22 @@ load_keyboard(char* kbd)
 	// when it is for reading only.
 	if((fp = fopen(xkbfilepath, "r")) == NULL)
 	{
-		// File wasn't found in the local directory, try ~/.rdesktop/ folder
+		// File wasn't found in the local directory, try ~/.freerdp/ folder
 		if((home = getenv("HOME")) == NULL)
 			return 0;
 
-		// Get path to file in ~/.rdesktop/ folder
-		snprintf(xkbfilepath, sizeof(xkbfilepath), "%s/.rdesktop/xkb/%s", home, xkbfile);
+		// Get path to file in ~/.freerdp/ folder
+		snprintf(xkbfilepath, sizeof(xkbfilepath), "%s/.freerdp/xkb/%s", home, xkbfile);
 
 		if((fp = fopen(xkbfilepath, "r")) == NULL)
 		{
-			// Get path to file in KEYMAP_PATH folder
-			strncpy(xkbfilepath, KEYMAP_PATH, strlen(KEYMAP_PATH) - 3);
-			xkbfilepath[strlen(KEYMAP_PATH) - 3] = '\0';
-			sprintf(&xkbfilepath[strlen(KEYMAP_PATH) - 3], "xkb/%s", xkbfile);
+			// Try /usr/share/freerdp folder
+			snprintf(xkbfilepath, sizeof(xkbfilepath), "/usr/share/freerdp/xkb/%s", xkbfile);
 			
 			if((fp = fopen(xkbfilepath, "r")) == NULL)
 			{
-				// Try /usr/share/rdesktop folder
-				snprintf(xkbfilepath, sizeof(xkbfilepath), "/usr/share/rdesktop/xkb/%s", xkbfile);
+				// Try /usr/local/share/freerdp folder
+				snprintf(xkbfilepath, sizeof(xkbfilepath), "/usr/local/share/freerdp/xkb/%s", xkbfile);
 
 				if((fp = fopen(xkbfilepath, "r")) == NULL)
 				{
@@ -491,7 +482,7 @@ load_keyboard(char* kbd)
 	return 1;
 }
 
-uint32
+unsigned int
 detect_and_load_keyboard()
 {
 	int i;
@@ -499,7 +490,11 @@ detect_and_load_keyboard()
 	char* beg;
 	char* end;
 
+	char xkb_layout[64];
+	char xkb_variant[64];
+
 	char xkbfile[256];
+	unsigned int keyboard_layout = 0;
 	unsigned int keyboardLayoutID = 0;
 
 	int keymapLoaded = 0;
@@ -514,35 +509,32 @@ detect_and_load_keyboard()
 		keyboardLayoutID = detect_keyboard_layout_from_xkb();
 	}
 	
-	if(g_settings.xkb_layout != NULL)
-	{
-		g_settings.keyboard_layout = find_keyboard_layout_in_xorg_rules(g_settings.xkb_layout, g_settings.xkb_variant);
+	keyboard_layout = find_keyboard_layout_in_xorg_rules(xkb_layout, xkb_variant);
 		
-		if(g_settings.keyboard_layout != 0)
-			keyboardLayoutID = g_settings.keyboard_layout;
-	}
+	if(keyboard_layout != 0)
+		keyboardLayoutID = keyboard_layout;
 
 	if(keyboardLayoutID == 0)
 		keyboardLayoutID = detect_keyboard_layout_from_locale();
 
-	g_settings.keyboard_layout = keyboardLayoutID;
+	keyboard_layout = keyboardLayoutID;
 
 	for(i = 0; i < sizeof(keyboardLayouts) / sizeof(keyboardLayout); i++)
-		if(keyboardLayouts[i].code == g_settings.keyboard_layout)
+		if(keyboardLayouts[i].code == keyboard_layout)
 		{
 			printf("Using %s (0x%08X)\n", keyboardLayouts[i].name, keyboardLayouts[i].code);
 			break;
 		}
 
 	for(i = 0; i < sizeof(keyboardLayoutVariants) / sizeof(keyboardLayoutVariant); i++)
-		if(keyboardLayoutVariants[i].code == g_settings.keyboard_layout)
+		if(keyboardLayoutVariants[i].code == keyboard_layout)
 		{
 			printf("Using %s (0x%08X)\n", keyboardLayoutVariants[i].name, keyboardLayoutVariants[i].code);
 			break;
 		}
 
 	for(i = 0; i < sizeof(keyboardIMEs) / sizeof(keyboardIME); i++)
-		if(keyboardIMEs[i].code == g_settings.keyboard_layout)
+		if(keyboardIMEs[i].code == keyboard_layout)
 		{
 			printf("Using %s (0x%08X)\n", keyboardIMEs[i].name, keyboardIMEs[i].code);
 			break;
@@ -578,103 +570,8 @@ detect_and_load_keyboard()
 int
 xkbkeymap_init()
 {	
-	CTRL_KEY_STATE = 0; 
-	ALT_KEY_STATE = 0;
-
 	detect_and_load_keyboard();
-
 	return 0;
-}
-
-uint16
-xkb_translate_button(uint32 button)
-{
-	switch (button)
-	{
-		case Button1:	/* left */
-			return MOUSE_FLAG_BUTTON1;
-		case Button2:	/* middle */
-			return MOUSE_FLAG_BUTTON3;
-		case Button3:	/* right */
-			return MOUSE_FLAG_BUTTON2;
-		case Button4:	/* wheel up */
-			return MOUSE_FLAG_BUTTON4;
-		case Button5:	/* wheel down */
-			return MOUSE_FLAG_BUTTON5;
-	}
-
-	return 0;
-}
-
-void
-xkb_handle_special_keys(void * inst, uint32 time, uint16 flags, uint8 keycode)
-{
-	vkcode = keycodeToVkcode[keycode];
-
-	switch(vkcode)
-	{
-		case VK_RETURN:
-			if((CTRL_KEY_STATE > 0) && (ALT_KEY_STATE > 0) &&
-			   ((flags & KBD_FLAG_UP) == 0))
-				xwin_toggle_fullscreen(inst);
-			break;
-		case VK_CONTROL:
-		case VK_LCONTROL:
-		case VK_RCONTROL:
-			CTRL_KEY_STATE = (flags & KBD_FLAG_UP) ? 0 : 1;
-			break;
-		case VK_MENU:
-		case VK_LMENU:
-		case VK_RMENU:
-			ALT_KEY_STATE = (flags & KBD_FLAG_UP) ? 0 : 1;
-			break;
-		default:
-			break;
-	}
-}
-
-void
-xkbkeymap_send_key(uint32 time, uint16 flags, uint8 keycode)
-{
-	vkcode = keycodeToVkcode[keycode];
-	if(vkcode == VK_PAUSE)
-	{
-		/* This is a special key the actually sends two scancodes to the
-		   server.  It looks like Control - NumLock but with special flags. */
-		printf("special VK_PAUSE\n");
-		if(flags & KBD_FLAG_UP)
-		{
-			rdp_send_input(g_rdp, time, RDP_INPUT_SCANCODE, 0x8200, 0x1d, 0);
-			rdp_send_input(g_rdp, time, RDP_INPUT_SCANCODE, 0x8000, 0x45, 0);
-		}
-		else
-		{
-			rdp_send_input(g_rdp, time, RDP_INPUT_SCANCODE, 0x0200, 0x1d, 0);
-			rdp_send_input(g_rdp, time, RDP_INPUT_SCANCODE, 0x0000, 0x45, 0);
-		}
-	}
-	else
-	{
-		flags |= virtualKeyboard[vkcode].flags;
-		rdp_send_input(g_rdp, time, RDP_INPUT_SCANCODE, flags, virtualKeyboard[vkcode].scancode, 0);
-		printf("scancode %2.2X\tflags %4.4X\tname %s\n", virtualKeyboard[vkcode].scancode,
-		       flags, virtualKeyboard[vkcode].name);
-	}
-}
-
-void
-xkb_handle_focus_in(void * inst, uint32 time)
-{
-	uint32 toggleFlags;
-	uint32 scancode;
-
-	/* on focus in send a tab up like mstsc.exe */
-	scancode = virtualKeyboard[VK_TAB].scancode;
-	rdp_send_input(g_rdp, time, RDP_INPUT_SCANCODE, KBD_FLAG_UP, scancode, 0);
-	/* sync num, caps, scroll, kana lock */
-	toggleFlags = ui_get_toggle_keys_state(inst);
-	// printf("toggleFlags: %X\n", toggleFlags);
-	rdp_sync_input(g_rdp, time, toggleFlags);
 }
 
 
