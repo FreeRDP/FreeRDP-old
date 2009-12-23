@@ -947,7 +947,7 @@ AC_CONFIG_FILES([
 Makefile
 libfreerdp/Makefile
 include/Makefile
-libxkb/Makefile
+libkbd/Makefile
 xkb/Makefile
 X11/Makefile
 ])
