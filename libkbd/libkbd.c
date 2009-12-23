@@ -311,7 +311,7 @@ load_keyboard(char* kbd)
 	char* home;
 	char buffer[1024] = "";
 	char xkbfile[256] = "";
-	char xkbfilepath[256] = "";
+	char xkbfilepath[512] = "";
 	char xkbmap[256] = "";
 	char xkbinc[256] = "";
 
@@ -346,8 +346,8 @@ load_keyboard(char* kbd)
 		strcpy(xkbmap, kbd);
 	}
 
-	// Get path to file relative to rdesktop's directory
-	snprintf(xkbfilepath, sizeof(xkbfilepath), "xkb/%s", xkbfile);
+	// Get path to file relative to freerdp's directory
+	snprintf(xkbfilepath, sizeof(xkbfilepath), "keymaps/%s", xkbfile);
 
 	// Open the file for reading only
 	// It can happen that the same file is opened twice at the same time
@@ -356,27 +356,33 @@ load_keyboard(char* kbd)
 	// when it is for reading only.
 	if((fp = fopen(xkbfilepath, "r")) == NULL)
 	{
-		// File wasn't found in the local directory, try ~/.freerdp/ folder
-		if((home = getenv("HOME")) == NULL)
-			return 0;
-
-		// Get path to file in ~/.freerdp/ folder
-		snprintf(xkbfilepath, sizeof(xkbfilepath), "%s/.freerdp/xkb/%s", home, xkbfile);
+		/* If ran from the source tree, the keymaps will be in the parent directory */
+		snprintf(xkbfilepath, sizeof(xkbfilepath), "../keymaps/%s", xkbfile);
 
 		if((fp = fopen(xkbfilepath, "r")) == NULL)
 		{
-			// Try /usr/share/freerdp folder
-			snprintf(xkbfilepath, sizeof(xkbfilepath), "/usr/share/freerdp/xkb/%s", xkbfile);
-			
+			// File wasn't found in the source tree, try ~/.freerdp/ folder
+			if((home = getenv("HOME")) == NULL)
+				return 0;
+
+			// Get path to file in ~/.freerdp/ folder
+			snprintf(xkbfilepath, sizeof(xkbfilepath), "%s/.freerdp/keymaps/%s", home, xkbfile);
+
 			if((fp = fopen(xkbfilepath, "r")) == NULL)
 			{
-				// Try /usr/local/share/freerdp folder
-				snprintf(xkbfilepath, sizeof(xkbfilepath), "/usr/local/share/freerdp/xkb/%s", xkbfile);
-
+				// Try /usr/share/freerdp folder
+				snprintf(xkbfilepath, sizeof(xkbfilepath), "/usr/share/freerdp/keymaps/%s", xkbfile);
+			
 				if((fp = fopen(xkbfilepath, "r")) == NULL)
 				{
-					// Error: Could not find keymap
-					return 0;
+					// Try /usr/local/share/freerdp folder
+					snprintf(xkbfilepath, sizeof(xkbfilepath), "/usr/local/share/freerdp/keymaps/%s", xkbfile);
+
+					if((fp = fopen(xkbfilepath, "r")) == NULL)
+					{
+						// Error: Could not find keymap
+						return 0;
+					}
 				}
 			}
 		}

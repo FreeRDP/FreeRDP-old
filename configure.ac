@@ -948,7 +948,7 @@ Makefile
 libfreerdp/Makefile
 include/Makefile
 libkbd/Makefile
-xkb/Makefile
+keymaps/Makefile
 X11/Makefile
 ])
 
