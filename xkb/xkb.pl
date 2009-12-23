@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-# rdesktop: A Remote Desktop Protocol client.
+# FreeRDP: A Remote Desktop Protocol client.
 # User interface services - XKB Configuration Files Exporter
 
 # Copyright (C) Marc-Andre Moreau <marcandre.moreau@gmail.com> 2009
