@@ -127,7 +127,7 @@ rdp_send_data(rdpRdp * rdp, STREAM s, uint8 data_pdu_type)
 	uint16 length;
 
 	s_pop_layer(s, rdp_hdr);
-	length = s->end - s->p;
+	length = (int) (s->end - s->p);
 
 	out_uint16_le(s, length);
 	out_uint16_le(s, (RDP_PDU_DATA | 0x10));
@@ -749,13 +749,13 @@ rdp_send_confirm_active(rdpRdp * rdp)
 		numberCapabilities += 2;
 		rdp_out_rail_capset(caps);
 		rdp_out_window_capset(caps);
-        }
+	}
 	s_mark_end(caps);
 	caplen = (int) (caps->end - caps->data);
 
 	s = sec_init(rdp->sec, sec_flags, 6 + 14 + caplen + 4 + sizeof(RDP_SOURCE));
 
-	out_uint16_le(s, 2 + 14 + caplen + sizeof(RDP_SOURCE));
+	out_uint16_le(s, (2 + 14 + caplen + sizeof(RDP_SOURCE)) - 4);
 	out_uint16_le(s, (RDP_PDU_CONFIRM_ACTIVE | 0x10));	/* Version 1 */
 	out_uint16_le(s, (rdp->sec->mcs->mcs_userid + 1001));
 
