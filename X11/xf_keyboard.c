@@ -5,14 +5,13 @@
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include "freerdp.h"
+#include "libkbd.h"
 #include "xf_event.h"
-#include "xkbkeymap.h"
-#include "keyboard.h"
 
 void
 xf_kb_init(rdpInst * inst)
 {
-	xkbkeymap_init();
+	kbd_init();
 };
 
 void
