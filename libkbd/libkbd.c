@@ -32,6 +32,8 @@ find_keyboard_layout_in_xorg_rules(char* layout, char* variant)
 	int i;
 	int j;
 
+	printf("xkbLayout: %s\txkbVariant: %s\n", layout, variant);
+
 	for(i = 0; i < sizeof(xkbLayouts) / sizeof(xkbLayout); i++)
 	{
 		if(strcmp(xkbLayouts[i].layout, layout) == 0)
@@ -207,7 +209,7 @@ detect_keyboard_layout_from_locale()
 			break;
 	}
 
-	// printf("Found locale : %s_%s\n", locales[i].language, locales[i].country);
+	printf("Found locale : %s_%s\n", locales[i].language, locales[i].country);
 
 	for(j = 0; j < sizeof(defaultKeyboardLayouts) / sizeof(localeAndKeyboardLayout); j++)
 	{
