@@ -32,6 +32,9 @@ find_keyboard_layout_in_xorg_rules(char* layout, char* variant)
 	int i;
 	int j;
 
+	if(layout == NULL)
+		return 0;
+
 	printf("xkbLayout: %s\txkbVariant: %s\n", layout, variant);
 
 	for(i = 0; i < sizeof(xkbLayouts) / sizeof(xkbLayout); i++)
