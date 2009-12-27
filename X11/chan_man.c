@@ -28,6 +28,27 @@ static int g_num_libs;
 static struct chan_data g_chans[CHANNEL_MAX_COUNT];
 static int g_num_chans;
 
+/* control for entry into MyVirtualChannelInit */
+static int g_can_call_init;
+
+/* returns struct chan_data for the channel name passed in */
+static struct chan_data *
+chan_man_find_chan_data(const char * chan_name)
+{
+	int index;
+	struct chan_data * lchan;
+
+	for (index = 0; index < g_num_chans; index++)
+	{
+		lchan = g_chans + index;
+		if (strcmp(chan_name, lchan->name) == 0)
+		{
+			return lchan;
+		}
+	}
+	return 0;
+}
+
 /* must be called by same thread that calls chan_man_load_plugin
    according to MS docs */
 static uint32
@@ -41,11 +62,40 @@ MyVirtualChannelInit(void ** ppInitHandle, PCHANNEL_DEF pChannel,
 	PCHANNEL_DEF lchan_def;
 
 	printf("MyVirtualChannelInit:\n");
+	if (!g_can_call_init)
+	{
+		printf("MyVirtualChannelInit: error not in entry\n");
+		return CHANNEL_RC_NOT_IN_VIRTUALCHANNELENTRY;
+	}
+	if (pChannelInitEventProc == 0)
+	{
+		printf("MyVirtualChannelInit: error bad proc\n");
+		return CHANNEL_RC_BAD_PROC;
+	}
+	if (ppInitHandle == 0)
+	{
+		printf("MyVirtualChannelInit: error bad pphan\n");
+		return CHANNEL_RC_BAD_INIT_HANDLE;
+	}
 	if (g_num_chans + channelCount >= CHANNEL_MAX_COUNT)
 	{
+		printf("MyVirtualChannelInit: error too many channels\n");
 		return CHANNEL_RC_TOO_MANY_CHANNELS;
 	}
-	/* TODO check for duplicate name */
+	if (pChannel == 0)
+	{
+		printf("MyVirtualChannelInit: error bad pchan\n");
+		return CHANNEL_RC_BAD_CHANNEL;
+	}
+	for (index = 0; index < channelCount; index++)
+	{
+		lchan_def = pChannel + index;
+		if (chan_man_find_chan_data(lchan_def->name) != 0)
+		{
+			printf("MyVirtualChannelInit: error channel already used\n");
+			return CHANNEL_RC_ALREADY_CONNECTED;
+		}
+	}
 	llib = g_libs + g_num_libs;
 	*ppInitHandle = llib;
 	llib->init_event_proc = pChannelInitEventProc;
@@ -112,6 +162,7 @@ chan_man_init(void)
 	memset(g_chans, 0, sizeof(g_chans));
 	g_num_libs = 0;
 	g_num_chans = 0;
+	g_can_call_init = 0;
 	return 0;
 }
 
@@ -121,6 +172,7 @@ chan_man_load_plugin(rdpSet * settings, const char * filename)
 {
 	struct lib_data * lib;
 	CHANNEL_ENTRY_POINTS ep;
+	int ok;
 
 	printf("chan_man_load_plugin: filename %s\n", filename);
 	if (g_num_libs + 1 >= CHANNEL_MAX_COUNT)
@@ -149,7 +201,10 @@ chan_man_load_plugin(rdpSet * settings, const char * filename)
 	ep.pVirtualChannelOpen = MyVirtualChannelOpen;
 	ep.pVirtualChannelClose = MyVirtualChannelClose;
 	ep.pVirtualChannelWrite = MyVirtualChannelWrite;
-	if (!lib->entry(&ep))
+	g_can_call_init = 1;
+	ok = lib->entry(&ep);
+	g_can_call_init = 0;
+	if (!ok)
 	{
 		printf("chan_man_load_plugin: export function call failed\n");
 		dlclose(lib->han);
