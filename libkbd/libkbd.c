@@ -235,7 +235,7 @@ detect_keyboard_layout_from_locale()
 			// If we skip the ENGLISH_UNITED_STATES keyboard layout but there are no
 			// other possible keyboard layout for the locale, we end up here with k > 1
 
-			if(k > 1)
+			if(k >= 1)
 				return ENGLISH_UNITED_STATES;
 			else
 				return 0;
