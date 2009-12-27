@@ -1,3 +1,36 @@
+/*
+   Copyright (c) 2009 Jay Sorg
+
+   Permission is hereby granted, free of charge, to any person obtaining a
+   copy of this software and associated documentation files (the "Software"),
+   to deal in the Software without restriction, including without limitation
+   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+   and/or sell copies of the Software, and to permit persons to whom the
+   Software is furnished to do so, subject to the following conditions:
+
+   The above copyright notice and this permission notice shall be included
+   in all copies or substantial portions of the Software.
+
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+   OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+   DEALINGS IN THE SOFTWARE.
+
+   MS compatible plugin interface
+   reference:
+   http://msdn.microsoft.com/en-us/library/aa383580(VS.85).aspx
+
+   Notes on threads:
+   Many virtual channel plugins are built using threads.
+   Non main threads may call MyVirtualChannelOpen,
+   MyVirtualChannelClose, or MyVirtualChannelWrite.
+   Since the plugin's VirtualChannelEntry function is called
+   from the main thread, MyVirtualChannelInit has to be called
+   from the main thread.
+*/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -6,6 +39,10 @@
 #include "freerdp.h"
 #include "chan_man.h"
 #include "vchan.h"
+
+/* this is just so we don't have a zero handle */
+#define INDEX_TO_DWORD_HANDLE(_in) ((_in) + 0xffff)
+#define DWORD_HANDLE_TO_INDEX(_in) ((_in) - 0xffff)
 
 struct lib_data
 {
@@ -23,6 +60,12 @@ struct chan_data
 	struct lib_data * lib;
 };
 
+/* Only the main thread alters these arrays, before any
+   library thread is allowed in(post_connect is called)
+   so no need to use mutex locking
+   After post_connect, each library thread can only access it's
+   own array items
+   ie, no two threads can access index 0, ... */
 static struct lib_data g_libs[CHANNEL_MAX_COUNT];
 static int g_num_libs;
 static struct chan_data g_chans[CHANNEL_MAX_COUNT];
@@ -58,7 +101,8 @@ chan_man_find_chan_data(const char * chan_name, int * pindex)
 }
 
 /* must be called by same thread that calls chan_man_load_plugin
-   according to MS docs */
+   according to MS docs
+   only called from main thread */
 static uint32
 MyVirtualChannelInit(void ** ppInitHandle, PCHANNEL_DEF pChannel,
 	int channelCount, uint32 versionRequested,
@@ -133,13 +177,15 @@ MyVirtualChannelInit(void ** ppInitHandle, PCHANNEL_DEF pChannel,
 		}
 		else
 		{
-			printf("MyVirtualChannelInit: more than 16 channels\n");
+			printf("MyVirtualChannelInit: warning more than 16 channels\n");
 		}
 		g_num_chans++;
 	}
 	return CHANNEL_RC_OK;
 }
 
+/* can be called from any thread
+   thread safe because no 2 threads can have the same channel name registered */
 static uint32
 MyVirtualChannelOpen(void * pInitHandle, uint32 * pOpenHandle,
 	char * pChannelName, PCHANNEL_OPEN_EVENT_FN pChannelOpenEventProc)
@@ -183,37 +229,80 @@ MyVirtualChannelOpen(void * pInitHandle, uint32 * pOpenHandle,
 	lchan->flags = 2; /* open */
 	lchan->lib = llib;
 	lchan->open_event_proc = pChannelOpenEventProc;
-	*pOpenHandle = index;
+	*pOpenHandle = INDEX_TO_DWORD_HANDLE(index);
 	return CHANNEL_RC_OK;
 }
 
+/* can be called from any thread
+   thread safe because no 2 threads can have the same openHandle */
 static uint32
 MyVirtualChannelClose(uint32 openHandle)
 {
 	struct chan_data * lchan;
+	int index;
 
-	if (openHandle >= CHANNEL_MAX_COUNT)
+	index = DWORD_HANDLE_TO_INDEX(openHandle);
+	if ((index < 0) || (index >= CHANNEL_MAX_COUNT))
 	{
+		printf("MyVirtualChannelClose: error bad chanhan\n");
 		return CHANNEL_RC_BAD_CHANNEL_HANDLE;
 	}
-	lchan = g_chans + openHandle;
+	if (!g_is_connected)
+	{
+		printf("MyVirtualChannelClose: error not connected\n");
+		return CHANNEL_RC_NOT_CONNECTED;
+	}
+	lchan = g_chans + index;
 	if (lchan->flags != 2)
 	{
+		printf("MyVirtualChannelClose: error not open\n");
 		return CHANNEL_RC_NOT_OPEN;
 	}
 	lchan->flags = 0;
 	return CHANNEL_RC_OK;
 }
 
+/* can be called from any thread */
 static uint32
 MyVirtualChannelWrite(uint32 openHandle, void * pData, uint32 dataLength,
 	void * pUserData)
 {
+	struct chan_data * lchan;
+	int index;
+
+	index = DWORD_HANDLE_TO_INDEX(openHandle);
+	if ((index < 0) || (index >= CHANNEL_MAX_COUNT))
+	{
+		printf("MyVirtualChannelWrite: error bad chanhan\n");
+		return CHANNEL_RC_BAD_CHANNEL_HANDLE;
+	}
+	if (!g_is_connected)
+	{
+		printf("MyVirtualChannelWrite: error not connected\n");
+		return CHANNEL_RC_NOT_CONNECTED;
+	}
+	if (pData == 0)
+	{
+		printf("MyVirtualChannelWrite: error bad pData\n");
+		return CHANNEL_RC_NULL_DATA;
+	}
+	if (dataLength == 0)
+	{
+		printf("MyVirtualChannelWrite: error bad dataLength\n");
+		return CHANNEL_RC_ZERO_LENGTH;
+	}
+	lchan = g_chans + index;
+	if (lchan->flags != 2)
+	{
+		printf("MyVirtualChannelWrite: error not open\n");
+		return CHANNEL_RC_NOT_OPEN;
+	}
 	return CHANNEL_RC_OK;
 }
 
 /* this is called shortly after the application starts and
-   before any other function in the file */
+   before any other function in the file
+   called only from main thread */
 int
 chan_man_init(void)
 {
@@ -227,7 +316,8 @@ chan_man_init(void)
 	return 0;
 }
 
-/* this is called when processing the command line parameters */
+/* this is called when processing the command line parameters
+   called only from main thread */
 int
 chan_man_load_plugin(rdpSet * settings, const char * filename)
 {
@@ -278,6 +368,7 @@ chan_man_load_plugin(rdpSet * settings, const char * filename)
 	return 0;
 }
 
+/* called only from main thread */
 int
 chan_man_pre_connect(struct rdp_inst * inst)
 {
@@ -285,6 +376,8 @@ chan_man_pre_connect(struct rdp_inst * inst)
 	return 0;
 }
 
+/* go through and inform all the libraries that we are connected
+   called only from main thread */
 int
 chan_man_post_connect(struct rdp_inst * inst)
 {
@@ -293,7 +386,8 @@ chan_man_post_connect(struct rdp_inst * inst)
 	return 0;
 }
 
-/* data comming from the server to the client */
+/* data comming from the server to the client
+   called only from main thread */
 int
 chan_man_data(struct rdp_inst * inst, int chan_id, char * data,
 	int data_size, int flags, int total_size)
