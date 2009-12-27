@@ -27,6 +27,8 @@
 #ifndef __VCHAN_H
 #define __VCHAN_H
 
+#define CHANNEL_EXPORT_FUNC_NAME "VirtualChannelEntry"
+
 #define CHANNEL_CHUNK_LENGTH 1600
 #define CHANNEL_PDU_LENGTH (CHANNEL_CHUNK_LENGTH + sizeof(CHANNEL_PDU_HEADER))
 
