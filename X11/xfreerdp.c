@@ -10,6 +10,7 @@
 #include <pwd.h>
 #include "freerdp.h"
 #include "xf_win.h"
+#include "chan_man.h"
 
 static int
 set_default_params(rdpSet * settings)
@@ -148,6 +149,15 @@ process_params(rdpSet * settings, int argc, char ** argv)
 				settings->rdp5_performanceflags = strtol(argv[index], 0, 16);
 			}
 		}
+		else if (strcmp("-plugin", argv[index]) == 0)
+		{
+			index++;
+			if (index == argc)
+			{
+				return 1;
+			}
+			chan_man_load_plugin(settings, argv[index]);
+		}
 		else
 		{
 			strncpy(settings->server, argv[index], 63);
@@ -193,11 +203,21 @@ run_xfreerdp(rdpSet * settings)
 		printf("run_xfreerdp: xf_pre_connect failed\n");
 		return 1;
 	}
+	if (chan_man_pre_connect(inst) != 0)
+	{
+		printf("run_xfreerdp: chan_man_pre_connect failed\n");
+		return 1;
+	}
 	/* call connect */
 	printf("keyboard_layout: %X\n", inst->settings->keyboard_layout);
 	if (inst->rdp_connect(inst) != 0)
 	{
 		printf("run_xfreerdp: inst->rdp_connect failed\n");
+		return 1;
+	}
+	if (chan_man_post_connect(inst) != 0)
+	{
+		printf("run_xfreerdp: chan_man_post_connect failed\n");
 		return 1;
 	}
 	if (xf_post_connect(inst) != 0)
