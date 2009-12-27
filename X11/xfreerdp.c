@@ -285,6 +285,7 @@ main(int argc, char ** argv)
 	rdpSet settings;
 
 	setlocale(LC_CTYPE, "");
+	chan_man_init();
 	if (process_params(&settings, argc, argv) != 0)
 	{
 		return 1;

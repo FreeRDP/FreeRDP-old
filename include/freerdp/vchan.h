@@ -119,16 +119,16 @@ typedef uint32 (*PVIRTUALCHANNELINIT)(void ** ppInitHandle,
                                int channelCount,
                                uint32 versionRequested,
                                PCHANNEL_INIT_EVENT_FN pChannelInitEventProc);
-typedef uint32 (*PVIRTUALCHANNELOPEN(void * pInitHandle,
-                                     uint32 * pOpenHandle,
-                                     char * pChannelName,
-                                     PCHANNEL_OPEN_EVENT_FN pChannelOpenEventProc);
+typedef uint32 (*PVIRTUALCHANNELOPEN)(void * pInitHandle,
+                               uint32 * pOpenHandle,
+                               char * pChannelName,
+                               PCHANNEL_OPEN_EVENT_FN pChannelOpenEventProc);
 typedef uint32 (*PVIRTUALCHANNELCLOSE)(uint32 openHandle);
 
-typedef uint32 (*PVIRTUALCHANNELWRITE(uint32  openHandle,
-                                      void *  pData,
-                                      uint32  dataLength,
-                                      void *  pUserData);
+typedef uint32 (*PVIRTUALCHANNELWRITE)(uint32  openHandle,
+                               void *  pData,
+                               uint32  dataLength,
+                               void *  pUserData);
 
 struct _CHANNEL_ENTRY_POINTS
 {
