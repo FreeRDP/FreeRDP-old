@@ -95,17 +95,17 @@ static int g_sync_index;
 static struct chan_data *
 chan_man_find_chan_data_by_name(const char * chan_name, int * pindex)
 {
-	int index;
+	int lindex;
 	struct chan_data * lchan_data;
 
-	for (index = 0; index < g_num_chans; index++)
+	for (lindex = 0; lindex < g_num_chans; lindex++)
 	{
-		lchan_data = g_chans + index;
+		lchan_data = g_chans + lindex;
 		if (strcmp(chan_name, lchan_data->name) == 0)
 		{
 			if (pindex != 0)
 			{
-				*pindex = index;
+				*pindex = lindex;
 			}
 			return lchan_data;
 		}
@@ -117,19 +117,19 @@ chan_man_find_chan_data_by_name(const char * chan_name, int * pindex)
 static struct rdp_chan *
 chan_man_find_rdp_chan_by_id(rdpSet * settings, int chan_id, int * pindex)
 {
-	int index;
-	int count;
+	int lindex;
+	int lcount;
 	struct rdp_chan * lrdp_chan;
 
-	count = settings->num_channels;
-	for (index = 0; index < count; index++)
+	lcount = settings->num_channels;
+	for (lindex = 0; lindex < lcount; lindex++)
 	{
-		lrdp_chan = settings->channels + index;
+		lrdp_chan = settings->channels + lindex;
 		if (lrdp_chan->chan_id == chan_id)
 		{
 			if (pindex != 0)
 			{
-				*pindex = index;
+				*pindex = lindex;
 			}
 			return lrdp_chan;
 		}
@@ -141,19 +141,19 @@ chan_man_find_rdp_chan_by_id(rdpSet * settings, int chan_id, int * pindex)
 static struct rdp_chan *
 chan_man_find_rdp_chan_by_name(rdpSet * settings, const char * chan_name, int * pindex)
 {
-	int index;
-	int count;
+	int lindex;
+	int lcount;
 	struct rdp_chan * lrdp_chan;
 
-	count = settings->num_channels;
-	for (index = 0; index < count; index++)
+	lcount = settings->num_channels;
+	for (lindex = 0; lindex < lcount; lindex++)
 	{
-		lrdp_chan = settings->channels + index;
+		lrdp_chan = settings->channels + lindex;
 		if (strcmp(chan_name, lrdp_chan->name) == 0)
 		{
 			if (pindex != 0)
 			{
-				*pindex = index;
+				*pindex = lindex;
 			}
 			return lrdp_chan;
 		}
@@ -404,6 +404,7 @@ MyVirtualChannelWrite(uint32 openHandle, void * pData, uint32 dataLength,
 	g_sync_data_length = dataLength;
 	g_sync_user_data = pUserData;
 	g_sync_index = index;
+	/* set the event */
 	chan_man_set_ev();
 	return CHANNEL_RC_OK;
 }
@@ -425,7 +426,7 @@ chan_man_init(void)
 	g_is_connected = 0;
 	g_sem = (sem_t *) malloc(sizeof(sem_t));
 	memset(g_sem, 0, sizeof(sem_t));
-	sem_init(g_sem, 0, 1);
+	sem_init(g_sem, 0, 1); /* start at 1 */
 	g_sock = socket(PF_UNIX, SOCK_DGRAM, 0);
 	if (g_sock < 0)
 	{
@@ -578,9 +579,9 @@ chan_man_data(struct rdp_inst * inst, int chan_id, char * data,
 		printf("chan_man_data: could not find channel name\n");
 		return 1;
 	}
-	open_handle = INDEX_TO_DWORD_HANDLE(index);
 	if (lchan_data->open_event_proc != 0)
 	{
+		open_handle = INDEX_TO_DWORD_HANDLE(index);
 		lchan_data->open_event_proc(open_handle,
 			CHANNEL_EVENT_DATA_RECEIVED,
 			data, data_size, total_size, flags);
@@ -607,14 +608,14 @@ chan_man_process_sync(rdpInst * inst)
 	sem_post(g_sem); /* release g_sync* vars */
 	lchan_data = g_chans + lindex;
 	lrdp_chan = chan_man_find_rdp_chan_by_name(inst->settings,
-		lchan_data->name, &index);
+		lchan_data->name, &lindex);
 	if (lrdp_chan != 0)
 	{
 	    inst->rdp_channel_data(inst, lrdp_chan->chan_id, ldata, ldata_len);
 	}
-	lhandle = INDEX_TO_DWORD_HANDLE(index);
 	if (lchan_data->open_event_proc != 0)
 	{
+		lhandle = INDEX_TO_DWORD_HANDLE(lindex);
 		lchan_data->open_event_proc(lhandle, CHANNEL_EVENT_WRITE_COMPLETE,
 			luser_data, sizeof(void *), sizeof(void *), 0);
 	}
