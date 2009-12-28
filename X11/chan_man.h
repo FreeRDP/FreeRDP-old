@@ -28,6 +28,8 @@
 int
 chan_man_init(void);
 int
+chan_man_deinit(void);
+int
 chan_man_load_plugin(rdpSet * settings, const char * filename);
 int
 chan_man_pre_connect(struct rdp_inst * inst);
@@ -36,5 +38,10 @@ chan_man_post_connect(struct rdp_inst * inst);
 int
 chan_man_data(struct rdp_inst * inst, int chan_id, char * data,
 	int data_size, int flags, int total_size);
+int
+chan_man_get_fds(rdpInst * inst, void ** read_fds, int * read_count,
+	void ** write_fds, int * write_count);
+int
+chan_man_check_fds(rdpInst * inst);
 
 #endif

@@ -1,3 +1,24 @@
+/*
+   Copyright (c) 2009 Jay Sorg
+
+   Permission is hereby granted, free of charge, to any person obtaining a
+   copy of this software and associated documentation files (the "Software"),
+   to deal in the Software without restriction, including without limitation
+   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+   and/or sell copies of the Software, and to permit persons to whom the
+   Software is furnished to do so, subject to the following conditions:
+
+   The above copyright notice and this permission notice shall be included
+   in all copies or substantial portions of the Software.
+
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+   OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+   DEALINGS IN THE SOFTWARE.
+*/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -242,6 +263,12 @@ run_xfreerdp(rdpSet * settings)
 			printf("run_xfreerdp: xf_get_fds failed\n");
 			break;
 		}
+		/* get channel fds */
+		if (chan_man_get_fds(inst, read_fds, &read_count, write_fds, &write_count) != 0)
+		{
+			printf("run_xfreerdp: chan_man_get_fds failed\n");
+			break;
+		}
 		max_sck = 0;
 		/* setup read fds */
 		FD_ZERO(&rfds);
@@ -292,6 +319,12 @@ run_xfreerdp(rdpSet * settings)
 			printf("run_xfreerdp: xf_check_fds failed\n");
 			break;
 		}
+		/* check channel fds */
+		if (chan_man_check_fds(inst) != 0)
+		{
+			printf("run_xfreerdp: chan_man_check_fds failed\n");
+			break;
+		}
 	}
 	/* cleanup */
 	xf_deinit(inst);
@@ -303,16 +336,15 @@ int
 main(int argc, char ** argv)
 {
 	rdpSet settings;
+	int rv;
 
 	setlocale(LC_CTYPE, "");
 	chan_man_init();
-	if (process_params(&settings, argc, argv) != 0)
+	rv = process_params(&settings, argc, argv);
+	if (rv == 0)
 	{
-		return 1;
+		rv = run_xfreerdp(&settings);
 	}
-	if (run_xfreerdp(&settings) != 0)
-	{
-		return 1;
-	}
-	return 0;
+	chan_man_deinit();
+	return rv;
 }

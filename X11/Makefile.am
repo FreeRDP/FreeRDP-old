@@ -12,6 +12,6 @@ xfreerdp_SOURCES = \
 
 xfreerdp_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include -I$(top_srcdir)/include/freerdp -I$(top_srcdir)/libkbd
 
-xfreerdp_LDADD = ../libfreerdp/libfreerdp.la ../libkbd/libkbd.la -lX11 -lXcursor
+xfreerdp_LDADD = ../libfreerdp/libfreerdp.la ../libkbd/libkbd.la -lX11 -lXcursor -lpthread
 
 
