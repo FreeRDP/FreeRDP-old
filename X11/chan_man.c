@@ -327,7 +327,8 @@ chan_man_set_ev(void)
 {
 	int len;
 
-	len = sendto(g_sock, "sig", 4, 0, (struct sockaddr*)&g_sa, sizeof(g_sa));
+	len = sendto(g_sock, "sig", 4, 0, (struct sockaddr*)&g_sa,
+		sizeof(g_sa));
 	if (len != 4)
 	{
 		printf("chan_man_set_ev: error\n");
@@ -338,14 +339,14 @@ static int
 chan_man_is_ev_set(void)
 {
 	fd_set rfds;
-	int i;
+	int num_set;
 	struct timeval time;
 
 	FD_ZERO(&rfds);
 	FD_SET(g_sock, &rfds);
 	memset(&time, 0, sizeof(time));
-	i = select(g_sock + 1, &rfds, 0, 0, &time);
-	return (i == 1);
+	num_set = select(g_sock + 1, &rfds, 0, 0, &time);
+	return (num_set == 1);
 }
 
 static void
@@ -578,8 +579,12 @@ chan_man_data(struct rdp_inst * inst, int chan_id, char * data,
 		return 1;
 	}
 	open_handle = INDEX_TO_DWORD_HANDLE(index);
-	lchan_data->open_event_proc(open_handle, CHANNEL_EVENT_DATA_RECEIVED,
-		data, data_size, total_size, flags);
+	if (lchan_data->open_event_proc != 0)
+	{
+		lchan_data->open_event_proc(open_handle,
+			CHANNEL_EVENT_DATA_RECEIVED,
+			data, data_size, total_size, flags);
+	}
 	return 0;
 }
 
@@ -590,27 +595,27 @@ chan_man_process_sync(rdpInst * inst)
 	void * ldata;
 	uint32 ldata_len;
 	void * luser_data;
-	int index;
-	int handle;
+	int lindex;
+	int lhandle;
 	struct chan_data * lchan_data;
 	struct rdp_chan * lrdp_chan;
 
 	ldata = g_sync_data;
 	ldata_len = g_sync_data_length;
 	luser_data = g_sync_user_data;
-	index = g_sync_index;
+	lindex = g_sync_index;
 	sem_post(g_sem); /* release g_sync* vars */
-	lchan_data = g_chans + index;
+	lchan_data = g_chans + lindex;
 	lrdp_chan = chan_man_find_rdp_chan_by_name(inst->settings,
 		lchan_data->name, &index);
 	if (lrdp_chan != 0)
 	{
 	    inst->rdp_channel_data(inst, lrdp_chan->chan_id, ldata, ldata_len);
 	}
-	handle = INDEX_TO_DWORD_HANDLE(index);
+	lhandle = INDEX_TO_DWORD_HANDLE(index);
 	if (lchan_data->open_event_proc != 0)
 	{
-		lchan_data->open_event_proc(handle, CHANNEL_EVENT_WRITE_COMPLETE,
+		lchan_data->open_event_proc(lhandle, CHANNEL_EVENT_WRITE_COMPLETE,
 			luser_data, sizeof(void *), sizeof(void *), 0);
 	}
 }
