@@ -235,6 +235,7 @@ MyVirtualChannelInit(void ** ppInitHandle, PCHANNEL_DEF pChannel,
 			lrdp_chan = g_settings->channels + g_settings->num_channels;
 			strncpy(lrdp_chan->name, lchan_def->name, 7);
 			lrdp_chan->flags = lchan_def->options;
+			g_settings->num_channels++;
 		}
 		else
 		{
@@ -255,6 +256,7 @@ MyVirtualChannelOpen(void * pInitHandle, uint32 * pOpenHandle,
 	struct lib_data * llib;
 	struct chan_data * lchan;
 
+	printf("MyVirtualChannelOpen:\n");
 	llib = (struct lib_data *) pInitHandle;
 	if (llib == 0)
 	{
@@ -427,18 +429,24 @@ chan_man_init(void)
 	g_sem = (sem_t *) malloc(sizeof(sem_t));
 	memset(g_sem, 0, sizeof(sem_t));
 	sem_init(g_sem, 0, 1); /* start at 1 */
+	memset(&g_sa, 0, sizeof(g_sa));
 	g_sock = socket(PF_UNIX, SOCK_DGRAM, 0);
 	if (g_sock < 0)
 	{
 		printf("chan_man_init: g_sock failed\n");
 	}
-	memset(&g_sa, 0, sizeof(g_sa));
-	g_sa.sun_family = AF_UNIX;
-	sprintf(g_sa.sun_path, "/tmp/freerdpchan%8.8x", getpid());
-	len = sizeof(g_sa);
-	if (bind(g_sock, (struct sockaddr*)&g_sa, len) < 0)
+	else
 	{
-		printf("chan_man_init: bind failed\n");
+		g_sa.sun_family = AF_UNIX;
+		sprintf(g_sa.sun_path, "/tmp/freerdpchan%8.8x", getpid());
+		len = sizeof(g_sa);
+		if (bind(g_sock, (struct sockaddr*)&g_sa, len) < 0)
+		{
+			printf("chan_man_init: bind failed\n");
+			close(g_sock);
+			g_sock = -1;
+			unlink(g_sa.sun_path);
+		}
 	}
 	return 0;
 }
@@ -448,7 +456,11 @@ chan_man_deinit(void)
 {
 	sem_destroy(g_sem);
 	free(g_sem);
-	close(g_sock);
+	if (g_sock != -1)
+	{
+		close(g_sock);
+		g_sock = -1;
+	}
 	unlink(g_sa.sun_path);
 	return 0;
 }
@@ -626,6 +638,10 @@ int
 chan_man_get_fds(rdpInst * inst, void ** read_fds, int * read_count,
 	void ** write_fds, int * write_count)
 {
+	if (g_sock == -1)
+	{
+		return 0;
+	}
 	read_fds[*read_count] = (void *) g_sock;
 	(*read_count)++;
 	return 0;
@@ -635,6 +651,10 @@ chan_man_get_fds(rdpInst * inst, void ** read_fds, int * read_count,
 int
 chan_man_check_fds(rdpInst * inst)
 {
+	if (g_sock == -1)
+	{
+		return 0;
+	}
 	if (chan_man_is_ev_set())
 	{
 		printf("chan_man_check_fds: 1\n");
