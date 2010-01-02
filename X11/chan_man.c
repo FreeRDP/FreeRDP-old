@@ -454,6 +454,18 @@ chan_man_init(void)
 int
 chan_man_deinit(void)
 {
+	int index;
+	struct lib_data * llib;
+
+	for (index = 0; index < g_num_libs; index++)
+	{
+		llib = g_libs + index;
+		if (llib->init_event_proc != 0)
+		{
+			llib->init_event_proc(llib, CHANNEL_EVENT_TERMINATED,
+				0, 0);
+		}
+	}
 	sem_destroy(g_sem);
 	free(g_sem);
 	if (g_sock != -1)
