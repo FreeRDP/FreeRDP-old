@@ -8,7 +8,7 @@
 #include <sys/un.h>
 #include "types_ui.h"
 #include "vchan.h"
-#include "chan_arch.h"
+#include "chan_stream.h"
 
 #define SNDC_CLOSE         1
 #define SNDC_WAVE          2
