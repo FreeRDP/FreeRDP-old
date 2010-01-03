@@ -1,7 +1,7 @@
 
 OBJS = rdpsnd_main.o
 
-CFLAGS = -O2 -Wall -I../../include/freerdp
+CFLAGS = -O2 -Wall -I../../include/freerdp -I../common
 
 LDFLAGS = -lpthread
 
