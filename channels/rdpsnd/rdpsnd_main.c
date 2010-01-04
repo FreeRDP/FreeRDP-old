@@ -28,6 +28,12 @@
 #define TSSNDCAPS_VOLUME 2
 #define TSSNDCAPS_PITCH  4
 
+#define LOG_LEVEL 1
+#define LLOG(_level, _args) \
+  do { if (_level < LOG_LEVEL) { printf _args ; } } while (0)
+#define LLOGLN(_level, _args) \
+  do { if (_level < LOG_LEVEL) { printf _args ; printf("\n"); } } while (0)
+
 struct wait_obj
 {
 	int sock;
@@ -66,6 +72,7 @@ static int g_waveDataSize;
 static uint32 g_wTimeStamp; /* server timestamp */
 static uint32 g_local_time_stamp; /* client timestamp */
 
+/* implementations are in the hardware file */
 int
 wave_out_open(void);
 int
@@ -99,7 +106,7 @@ init_wait_obj(struct wait_obj * obj, const char * name)
 	obj->sock = socket(PF_UNIX, SOCK_DGRAM, 0);
 	if (obj->sock < 0)
 	{
-		printf("init_wait_obj: socket failed\n");
+		LLOGLN(0, ("init_wait_obj: socket failed"));
 		return 1;
 	}
 	obj->sa.sun_family = AF_UNIX;
@@ -109,7 +116,7 @@ init_wait_obj(struct wait_obj * obj, const char * name)
 	size = sizeof(obj->sa);
 	if (bind(obj->sock, (struct sockaddr*)(&(obj->sa)), size) < 0)
 	{
-		printf("init_wait_obj: bind failed\n");
+		LLOGLN(0, ("init_wait_obj: bind failed"));
 		close(obj->sock);
 		obj->sock = -1;
 		unlink(obj->sa.sun_path);
@@ -139,7 +146,7 @@ set_wait_obj(struct wait_obj * obj)
 		sizeof(obj->sa));
 	if (len != 4)
 	{
-		printf("set_wait_obj: error\n");
+		LLOGLN(0, ("set_wait_obj: error"));
 		return 1;
 	}
 	return 0;
@@ -169,7 +176,7 @@ clear_wait_obj(struct wait_obj * obj)
 		len = recvfrom(obj->sock, &len, 4, 0, 0, 0);
 		if (len != 4)
 		{
-			printf("chan_man_clear_ev: error\n");
+			LLOGLN(0, ("chan_man_clear_ev: error"));
 			return 1;
 		}
 	}
@@ -275,15 +282,15 @@ thread_process_message_formats(char * data, int data_size)
 	format_count = GET_UINT16(data, 14); /* wNumberOfFormats */
 	if ((format_count < 1) || (format_count > 1000))
 	{
-		printf("thread_process_message_formats: bad format_count %d\n",
-			format_count);
+		LLOGLN(0, ("thread_process_message_formats: bad format_count %d",
+			format_count));
 		return 1;
 	}
 	g_cBlockNo = GET_UINT8(data, 16); /* cLastBlockConfirmed */
 	version = GET_UINT16(data, 17); /* wVersion */
 	if (version < 2)
 	{
-		printf("thread_process_message_formats: warning, old server\n");
+		LLOGLN(0, ("thread_process_message_formats: warning, old server"));
 	}
 	/* skip:
 		bPad (1 byte) */
@@ -315,8 +322,8 @@ thread_process_message_formats(char * data, int data_size)
 	}
 	else
 	{
-		printf("thread_process_message_formats: error, "
-			"no formats supported\n");
+		LLOGLN(0, ("thread_process_message_formats: error, "
+			"no formats supported"));
 	}
 	size = 24 + out_format_size;
 	SET_UINT8(out_data, 0, SNDC_FORMATS); /* Header (4 bytes) */
@@ -335,8 +342,8 @@ thread_process_message_formats(char * data, int data_size)
 		out_data, size, out_data);
 	if (error != CHANNEL_RC_OK)
 	{
-		printf("thread_process_message_formats: VirtualChannelWrite "
-			"failed %d\n", error);
+		LLOGLN(0, ("thread_process_message_formats: VirtualChannelWrite "
+			"failed %d", error));
 		return 1;
 	}
 	return 0;
@@ -359,9 +366,9 @@ thread_process_message_training(char * data, int data_size)
 	{
 		if ((wPackSize - 4) != data_size)
 		{
-			printf("thread_process_message_training: size error "
-				"wPackSize %d data_size %d\n",
-				wPackSize, data_size);
+			LLOGLN(0, ("thread_process_message_training: size error "
+				"wPackSize %d data_size %d",
+				wPackSize, data_size));
 			return 1;
 		}
 	}
@@ -376,8 +383,8 @@ thread_process_message_training(char * data, int data_size)
 		out_data, size, out_data);
 	if (error != CHANNEL_RC_OK)
 	{
-		printf("thread_process_message_training: VirtualChannelWrite "
-			"failed %d\n", error);
+		LLOGLN(0, ("thread_process_message_training: VirtualChannelWrite "
+			"failed %d", error));
 		return 1;
 	}
 	return 0;
@@ -390,7 +397,7 @@ set_format(void)
 	int size;
 	int index;
 
-	printf("set_format:\n");
+	LLOGLN(10, ("set_format:"));
 	snd_format = g_supported_formats;
 	size = 18 + GET_UINT16(snd_format, 16);
 	index = 0;
@@ -413,9 +420,8 @@ thread_process_message_wave_info(char * data, int data_size)
 	g_wTimeStamp = GET_UINT16(data, 0); /* time in ms */
 	g_local_time_stamp = get_mstime(); /* time in ms */
 	wFormatNo = GET_UINT16(data, 2);
-	//printf("thread_process_message_wave_info: data_size %d "
-	//	"wFormatNo %d\n",
-	//	data_size, wFormatNo);
+	LLOGLN(10, ("thread_process_message_wave_info: data_size %d "
+		"wFormatNo %d", data_size, wFormatNo));
 	g_cBlockNo = GET_UINT8(data, 4);
 	g_waveDataSize = data_size - 8;
 	g_waveData = (char *) malloc(g_waveDataSize);
@@ -448,8 +454,8 @@ thread_process_message_wave(char * data, int data_size)
 	SET_UINT8(out_data, 1, 0);
 	SET_UINT16(out_data, 2, size - 4);
 	time_delta = get_mstime() - g_local_time_stamp;
-	//printf("thread_process_message_wave: data_size %d time_delta %d\n",
-	//	data_size, time_delta);
+	LLOGLN(10, ("thread_process_message_wave: data_size %d time_delta %d",
+		data_size, time_delta));
 	wTimeStamp = g_wTimeStamp + time_delta;
 	SET_UINT16(out_data, 4, wTimeStamp);
 	SET_UINT8(out_data, 6, g_cBlockNo);
@@ -458,8 +464,8 @@ thread_process_message_wave(char * data, int data_size)
 		out_data, size, out_data);
 	if (error != CHANNEL_RC_OK)
 	{
-		printf("thread_process_message_wave: VirtualChannelWrite "
-			"failed %d\n", error);
+		LLOGLN(0, ("thread_process_message_wave: VirtualChannelWrite "
+			"failed %d", error));
 		return 1;
 	}
 	return 0;
@@ -468,7 +474,7 @@ thread_process_message_wave(char * data, int data_size)
 static int
 thread_process_message_close(char * data, int data_size)
 {
-	//printf("thread_process_message_close: data_size %d\n", data_size);
+	LLOGLN(10, ("thread_process_message_close: data_size %d", data_size));
 	wave_out_close();
 	return 0;
 }
@@ -478,7 +484,7 @@ thread_process_message_setvolume(char * data, int data_size)
 {
 	uint32 dwVolume;
 
-	//printf("thread_process_message_setvolume:\n");
+	LLOGLN(10, ("thread_process_message_setvolume:"));
 	dwVolume = GET_UINT32(data, 0);
 	wave_out_set_volume(dwVolume);
 	return 0;
@@ -498,8 +504,8 @@ thread_process_message(char * data, int data_size)
 	}
 	opcode = GET_UINT8(data, 0);
 	size = GET_UINT16(data, 2);
-	//printf("thread_process_message: data_size %d opcode %d size %d\n",
-	//	data_size, opcode, size);
+	LLOGLN(10, ("thread_process_message: data_size %d opcode %d size %d",
+		data_size, opcode, size));
 	switch (opcode)
 	{
 		case SNDC_FORMATS:
@@ -518,7 +524,7 @@ thread_process_message(char * data, int data_size)
 			thread_process_message_setvolume(data + 4, size);
 			break;
 		default:
-			printf("thread_process_message: unknown opcode\n");
+			LLOGLN(0, ("thread_process_message: unknown opcode"));
 			break;
 	}
 	return 0;
@@ -568,7 +574,7 @@ thread_func(void * arg)
 	int listr[2];
 	int numr;
 
-	printf("thread_func: in\n");
+	LLOGLN(10, ("thread_func: in"));
 	while (1)
 	{
 		listr[0] = g_term_event.sock;
@@ -587,7 +593,7 @@ thread_func(void * arg)
 		}
 	}
 	set_wait_obj(&g_thread_done_event);
-	printf("thread_func: out\n");
+	LLOGLN(10, ("thread_func: out"));
 	return 0;
 }
 
@@ -598,9 +604,9 @@ OpenEventProcessReceived(uint32 openHandle, void * pData, uint32 dataLength,
 	int index;
 
 	index = (openHandle == g_open_handle[0]) ? 0 : 1;
-	//printf("OpenEventProcessReceived: receive openHandle %d dataLength %d "
-	//	"totalLength %d dataFlags %d\n",
-	//	openHandle, dataLength, totalLength, dataFlags);
+	LLOGLN(10, ("OpenEventProcessReceived: receive openHandle %d dataLength %d "
+		"totalLength %d dataFlags %d",
+		openHandle, dataLength, totalLength, dataFlags));
 	if (dataFlags & CHANNEL_FLAG_FIRST)
 	{
 		g_data_in_read[index] = 0;
@@ -617,7 +623,7 @@ OpenEventProcessReceived(uint32 openHandle, void * pData, uint32 dataLength,
 	{
 		if (g_data_in_read[index] != g_data_in_size[index])
 		{
-			printf("OpenEventProcessReceived: read error\n");
+			LLOGLN(0, ("OpenEventProcessReceived: read error"));
 		}
 		if (index == 0)
 		{
@@ -630,7 +636,7 @@ static void
 OpenEvent(uint32 openHandle, uint32 event, void * pData, uint32 dataLength,
 	uint32 totalLength, uint32 dataFlags)
 {
-	//printf("OpenEvent: event %d\n", event);
+	LLOGLN(10, ("OpenEvent: event %d", event));
 	switch (event)
 	{
 		case CHANNEL_EVENT_DATA_RECEIVED:
@@ -651,19 +657,19 @@ InitEventProcessConnected(void * pInitHandle, void * pData, uint32 dataLength)
 
 	if (pInitHandle != g_han)
 	{
-		printf("InitEventProcessConnected: error no match\n");
+		LLOGLN(0, ("InitEventProcessConnected: error no match"));
 	}
 	error = g_ep.pVirtualChannelOpen(g_han, &(g_open_handle[0]),
 		"rdpsnd", OpenEvent);
 	if (error != CHANNEL_RC_OK)
 	{
-		printf("InitEventProcessConnected: Open failed\n");
+		LLOGLN(0, ("InitEventProcessConnected: Open failed"));
 	}
 	error = g_ep.pVirtualChannelOpen(g_han, &(g_open_handle[1]),
 		"snddbg", OpenEvent);
 	if (error != CHANNEL_RC_OK)
 	{
-		printf("InitEventProcessConnected: Open failed\n");
+		LLOGLN(0, ("InitEventProcessConnected: Open failed"));
 	}
 	pthread_create(&thread, 0, thread_func, 0);
 	pthread_detach(thread);
@@ -685,7 +691,7 @@ InitEventProcessTerminated(void)
 static void
 InitEvent(void * pInitHandle, uint32 event, void * pData, uint32 dataLength)
 {
-	printf("InitEvent: event %d\n", event);
+	LLOGLN(10, ("InitEvent: event %d", event));
 	switch (event)
 	{
 		case CHANNEL_EVENT_CONNECTED:
@@ -703,7 +709,7 @@ InitEvent(void * pInitHandle, uint32 event, void * pData, uint32 dataLength)
 int
 VirtualChannelEntry(PCHANNEL_ENTRY_POINTS pEntryPoints)
 {
-	printf("VirtualChannelEntry:\n");
+	LLOGLN(10, ("VirtualChannelEntry:"));
 	g_data_in_size[0] = 0;
 	g_data_in_size[1] = 0;
 	g_data_in[0] = 0;
