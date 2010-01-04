@@ -6,6 +6,7 @@
 #include <netdb.h>
 #include <unistd.h>
 #include <sys/un.h>
+#include <sys/time.h>
 #include "types_ui.h"
 #include "vchan.h"
 #include "chan_stream.h"
@@ -26,19 +27,6 @@
 #define TSSNDCAPS_ALIVE  1
 #define TSSNDCAPS_VOLUME 2
 #define TSSNDCAPS_PITCH  4
-
-struct _RD_WAVEFORMATEX
-{
-	uint16 wFormatTag;
-	uint16 nChannels;
-	uint32 nSamplesPerSec;
-	uint32 nAvgBytesPerSec;
-	uint16 nBlockAlign;
-	uint16 wBitsPerSample;
-	uint16 cbSize;
-};
-typedef struct _RD_WAVEFORMATEX RD_WAVEFORMATEX;
-
 
 struct wait_obj
 {
@@ -69,6 +57,37 @@ static struct data_in_item * volatile g_list_tail;
 static pthread_mutex_t * g_mutex;
 
 static int g_cBlockNo;
+static char * g_supported_formats;
+static int g_supported_formats_size;
+static int g_current_format;
+static int g_expectingWave; /* boolean */
+static char * g_waveData;
+static int g_waveDataSize;
+static uint32 g_wTimeStamp; /* server timestamp */
+static uint32 g_local_time_stamp; /* client timestamp */
+
+int
+wave_out_open(void);
+int
+wave_out_close(void);
+int
+wave_out_format_supported(char * snd_format, int size);
+int
+wave_out_set_format(char * snd_format, int size);
+int
+wave_out_set_volume(uint32 value);
+int
+wave_out_play(char * data, int size);
+
+/* get time in milliseconds */
+static uint32
+get_mstime(void)
+{
+	struct timeval tp;
+
+	gettimeofday(&tp, 0);
+	return (tp.tv_sec * 1000) + (tp.tv_usec / 1000);
+}
 
 static int
 init_wait_obj(struct wait_obj * obj, const char * name)
@@ -218,18 +237,34 @@ signal_data_in(void)
 	set_wait_obj(&g_data_in_event);
 }
 
+/*
+	wFormatTag      2 byte offset 0
+	nChannels       2 byte offset 2
+	nSamplesPerSec  4 byte offset 4
+	nAvgBytesPerSec 4 byte offset 8
+	nBlockAlign     2 byte offset 12
+	wBitsPerSample  2 byte offset 14
+	cbSize          2 byte offset 16
+	data            variable offset 18
+*/
+
+/* called by worker thread
+   receives a list of server supported formats and returns a list
+   of client supported formats */
 static int
 thread_process_message_formats(char * data, int data_size)
 {
 	int index;
 	int format_count;
-	int wf_size;
 	int out_format_count;
+	int out_format_size;
 	int size;
+	int flags;
+	int version;
 	char * ldata;
 	char * out_data;
-	RD_WAVEFORMATEX * formats;
-	RD_WAVEFORMATEX wf;
+	char * out_formats;
+	char * lout_formats;
 	uint32 error;
 
 	/* skip:
@@ -245,67 +280,57 @@ thread_process_message_formats(char * data, int data_size)
 		return 1;
 	}
 	g_cBlockNo = GET_UINT8(data, 16); /* cLastBlockConfirmed */
+	version = GET_UINT16(data, 17); /* wVersion */
+	if (version < 2)
+	{
+		printf("thread_process_message_formats: warning, old server\n");
+	}
 	/* skip:
-		wVersion (2 bytes)
 		bPad (1 byte) */
+	/* setup output buffer */
+	size = 32 + data_size;
+	out_data = (char *) malloc(size);
+	out_formats = out_data + 24;
+	lout_formats = out_formats;
 	/* remainder is sndFormats (variable) */
 	ldata = data + 20;
 	out_format_count = 0;
-	wf_size = 18; /* packed size of wf */
-	size = sizeof(RD_WAVEFORMATEX) * format_count;
-	formats = (RD_WAVEFORMATEX *) malloc(size);
-	memset(&wf, 0, sizeof(wf));
 	for (index = 0; index < format_count; index++)
 	{
-		if ((ldata + wf_size) > (data + data_size))
+		size = 18 + GET_UINT16(ldata, 16);
+		if (wave_out_format_supported(ldata, size))
 		{
-			printf("thread_process_message_formats: error\n");
-			break;
-		}
-		wf.wFormatTag = GET_UINT16(ldata, 0);
-		wf.nChannels = GET_UINT16(ldata, 2);
-		wf.nSamplesPerSec = GET_UINT32(ldata, 4);
-		wf.nAvgBytesPerSec = GET_UINT32(ldata, 8);
-		wf.nBlockAlign = GET_UINT16(ldata, 12);
-		wf.wBitsPerSample = GET_UINT16(ldata, 14);
-		wf.cbSize = GET_UINT16(ldata, 16);
-		ldata += wf.cbSize;
-		ldata += wf_size;
-		//if (alsa_format_supported(&wf))
-		if (index == 0)
-		{
-			formats[out_format_count] = wf;
+			memcpy(lout_formats, ldata, size);
+			lout_formats += size;
 			out_format_count++;
 		}
+		ldata += size;
 	}
-	size = 24 + out_format_count * wf_size;
-	out_data = (char *) malloc(size + 16);
+	out_format_size = (int) (lout_formats - out_formats);
+	if ((out_format_size > 0) && (out_format_count > 0))
+	{
+		g_supported_formats = (char *) malloc(out_format_size);
+		memcpy(g_supported_formats, out_formats, out_format_size);
+		g_supported_formats_size = out_format_size;
+	}
+	else
+	{
+		printf("thread_process_message_formats: error, "
+			"no formats supported\n");
+	}
+	size = 24 + out_format_size;
 	SET_UINT8(out_data, 0, SNDC_FORMATS); /* Header (4 bytes) */
 	SET_UINT8(out_data, 1, 0);
 	SET_UINT16(out_data, 2, size - 4);
-	SET_UINT32(out_data, 4, TSSNDCAPS_ALIVE | TSSNDCAPS_VOLUME); /* dwFlags */
+	flags = TSSNDCAPS_ALIVE | TSSNDCAPS_VOLUME;
+	SET_UINT32(out_data, 4, flags); /* dwFlags */
 	SET_UINT32(out_data, 8, 0xffffffff); /* dwVolume */
 	SET_UINT32(out_data, 12, 0); /* dwPitch */
 	SET_UINT16(out_data, 16, 0); /* wDGramPort */
 	SET_UINT16(out_data, 18, out_format_count); /* wNumberOfFormats */
-	SET_UINT8(out_data, 20, 0); /* padding */
-	SET_UINT16(out_data, 21, 2); /* version */
-	SET_UINT8(out_data, 23, 0); /* padding */
-	ldata = out_data + 24;
-	for (index = 0; index < out_format_count; index++)
-	{
-		wf = formats[index];
-		SET_UINT16(ldata, 0, wf.wFormatTag);
-		SET_UINT16(ldata, 2, wf.nChannels);
-		SET_UINT32(ldata, 4, wf.nSamplesPerSec);
-		SET_UINT32(ldata, 8, wf.nAvgBytesPerSec);
-		SET_UINT16(ldata, 12, wf.nBlockAlign);
-		SET_UINT16(ldata, 14, wf.wBitsPerSample);
-		SET_UINT16(ldata, 16, wf.cbSize);
-		ldata += wf.cbSize;
-		ldata += wf_size;
-	}
-	free(formats);
+	SET_UINT8(out_data, 20, 0); /* cLastBlockConfirmed */
+	SET_UINT16(out_data, 21, 2); /* wVersion */
+	SET_UINT8(out_data, 23, 0); /* bPad */
 	error = g_ep.pVirtualChannelWrite(g_open_handle[0],
 		out_data, size, out_data);
 	if (error != CHANNEL_RC_OK)
@@ -317,6 +342,8 @@ thread_process_message_formats(char * data, int data_size)
 	return 0;
 }
 
+/* called by worker thread
+   server is getting a feel of the round trip time */
 static int
 thread_process_message_training(char * data, int data_size)
 {
@@ -328,16 +355,23 @@ thread_process_message_training(char * data, int data_size)
 
 	wTimeStamp = GET_UINT16(data, 0);
 	wPackSize = GET_UINT16(data, 2);
-	if (wPackSize != data_size - 4)
+	if (wPackSize != 0)
 	{
-		printf("thread_process_message_training: size error\n");
+		if ((wPackSize - 4) != data_size)
+		{
+			printf("thread_process_message_training: size error "
+				"wPackSize %d data_size %d\n",
+				wPackSize, data_size);
+			return 1;
+		}
 	}
 	size = 8;
 	out_data = (char *) malloc(size);
-	SET_UINT16(out_data, 0, SNDC_TRAINING | 0x2300);
+	SET_UINT8(out_data, 0, SNDC_TRAINING);
+	SET_UINT8(out_data, 1, 0);
 	SET_UINT16(out_data, 2, size - 4);
 	SET_UINT16(out_data, 4, wTimeStamp);
-	SET_UINT16(out_data, 6, 0);
+	SET_UINT16(out_data, 6, wPackSize);
 	error = g_ep.pVirtualChannelWrite(g_open_handle[0],
 		out_data, size, out_data);
 	if (error != CHANNEL_RC_OK)
@@ -350,20 +384,103 @@ thread_process_message_training(char * data, int data_size)
 }
 
 static int
+set_format(void)
+{
+	char * snd_format;
+	int size;
+	int index;
+
+	printf("set_format:\n");
+	snd_format = g_supported_formats;
+	size = 18 + GET_UINT16(snd_format, 16);
+	index = 0;
+	while (index < g_current_format)
+	{
+		snd_format += size;
+		size = 18 + GET_UINT16(snd_format, 16);
+		index++;
+	}
+	wave_out_set_format(snd_format, size);
+	return 0;
+}
+
+static int
+thread_process_message_wave_info(char * data, int data_size)
+{
+	int wFormatNo;
+
+	wave_out_open();
+	g_wTimeStamp = GET_UINT16(data, 0); /* time in ms */
+	g_local_time_stamp = get_mstime(); /* time in ms */
+	wFormatNo = GET_UINT16(data, 2);
+	//printf("thread_process_message_wave_info: data_size %d "
+	//	"wFormatNo %d\n",
+	//	data_size, wFormatNo);
+	g_cBlockNo = GET_UINT8(data, 4);
+	g_waveDataSize = data_size - 8;
+	g_waveData = (char *) malloc(g_waveDataSize);
+	memcpy(g_waveData + 0, data + 8, 4);
+	if (wFormatNo != g_current_format)
+	{
+		g_current_format = wFormatNo;
+		set_format();
+	}
+	g_expectingWave = 1;
+	return 0;
+}
+
+/* header is not removed from data in this function */
+static int
 thread_process_message_wave(char * data, int data_size)
 {
+	int size;
+	int wTimeStamp;
+	int time_delta;
+	char * out_data;
+	uint32 error;
+
+	g_expectingWave = 0;
+	memcpy(g_waveData + 4, data + 4, data_size - 4);
+	wave_out_play(g_waveData, g_waveDataSize);
+	size = 8;
+	out_data = (char *) malloc(size);
+	SET_UINT8(out_data, 0, SNDC_WAVECONFIRM);
+	SET_UINT8(out_data, 1, 0);
+	SET_UINT16(out_data, 2, size - 4);
+	time_delta = get_mstime() - g_local_time_stamp;
+	//printf("thread_process_message_wave: data_size %d time_delta %d\n",
+	//	data_size, time_delta);
+	wTimeStamp = g_wTimeStamp + time_delta;
+	SET_UINT16(out_data, 4, wTimeStamp);
+	SET_UINT8(out_data, 6, g_cBlockNo);
+	SET_UINT8(out_data, 7, 0);
+	error = g_ep.pVirtualChannelWrite(g_open_handle[0],
+		out_data, size, out_data);
+	if (error != CHANNEL_RC_OK)
+	{
+		printf("thread_process_message_wave: VirtualChannelWrite "
+			"failed %d\n", error);
+		return 1;
+	}
 	return 0;
 }
 
 static int
 thread_process_message_close(char * data, int data_size)
 {
+	//printf("thread_process_message_close: data_size %d\n", data_size);
+	wave_out_close();
 	return 0;
 }
 
 static int
 thread_process_message_setvolume(char * data, int data_size)
 {
+	uint32 dwVolume;
+
+	//printf("thread_process_message_setvolume:\n");
+	dwVolume = GET_UINT32(data, 0);
+	wave_out_set_volume(dwVolume);
 	return 0;
 }
 
@@ -373,10 +490,16 @@ thread_process_message(char * data, int data_size)
 	int opcode;
 	int size;
 
+	if (g_expectingWave)
+	{
+		thread_process_message_wave(data, data_size);
+		g_expectingWave = 0;
+		return 0;
+	}
 	opcode = GET_UINT8(data, 0);
 	size = GET_UINT16(data, 2);
-	printf("thread_process_message: data_size %d opcode %d size %d\n",
-		data_size, opcode, size);
+	//printf("thread_process_message: data_size %d opcode %d size %d\n",
+	//	data_size, opcode, size);
 	switch (opcode)
 	{
 		case SNDC_FORMATS:
@@ -386,7 +509,7 @@ thread_process_message(char * data, int data_size)
 			thread_process_message_training(data + 4, size);
 			break;
 		case SNDC_WAVE:
-			thread_process_message_wave(data + 4, size);
+			thread_process_message_wave_info(data + 4, size);
 			break;
 		case SNDC_CLOSE:
 			thread_process_message_close(data + 4, size);
@@ -475,9 +598,9 @@ OpenEventProcessReceived(uint32 openHandle, void * pData, uint32 dataLength,
 	int index;
 
 	index = (openHandle == g_open_handle[0]) ? 0 : 1;
-	printf("OpenEventProcessReceived: receive openHandle %d dataLength %d "
-		"totalLength %d dataFlags %d\n",
-		openHandle, dataLength, totalLength, dataFlags);
+	//printf("OpenEventProcessReceived: receive openHandle %d dataLength %d "
+	//	"totalLength %d dataFlags %d\n",
+	//	openHandle, dataLength, totalLength, dataFlags);
 	if (dataFlags & CHANNEL_FLAG_FIRST)
 	{
 		g_data_in_read[index] = 0;
@@ -507,7 +630,7 @@ static void
 OpenEvent(uint32 openHandle, uint32 event, void * pData, uint32 dataLength,
 	uint32 totalLength, uint32 dataFlags)
 {
-	printf("OpenEvent: event %d\n", event);
+	//printf("OpenEvent: event %d\n", event);
 	switch (event)
 	{
 		case CHANNEL_EVENT_DATA_RECEIVED:
@@ -600,6 +723,8 @@ VirtualChannelEntry(PCHANNEL_ENTRY_POINTS pEntryPoints)
 	init_wait_obj(&g_term_event, "freerdprdpsndterm");
 	init_wait_obj(&g_data_in_event, "freerdprdpsnddatain");
 	init_wait_obj(&g_thread_done_event, "freerdprdpsndtdone");
+	g_expectingWave = 0;
+	g_current_format = -1;
 	g_ep.pVirtualChannelInit(&g_han, g_channel_def, 2,
 		VIRTUAL_CHANNEL_VERSION_WIN2000, InitEvent);
 	return 1;

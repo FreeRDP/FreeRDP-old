@@ -1,9 +1,9 @@
 
-OBJS = rdpsnd_main.o
+OBJS = rdpsnd_main.o rdpsnd_alsa.o
 
 CFLAGS = -O2 -Wall -I../../include/freerdp -I../common
 
-LDFLAGS = -lpthread
+LDFLAGS = -lpthread -lasound
 
 librdpsnd.so: $(OBJS)
 	$(CC) -shared -o librdpsnd.so $(OBJS) $(LDFLAGS)
