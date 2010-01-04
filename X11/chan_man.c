@@ -457,6 +457,7 @@ chan_man_deinit(void)
 	int index;
 	struct lib_data * llib;
 
+	/* tell all libraries we are shutting down */
 	for (index = 0; index < g_num_libs; index++)
 	{
 		llib = g_libs + index;
@@ -589,7 +590,7 @@ chan_man_data(struct rdp_inst * inst, int chan_id, char * data,
 	int open_handle;
 	int index;
 
-	printf("chan_man_data:\n");
+	//printf("chan_man_data:\n");
 	lrdp_chan = chan_man_find_rdp_chan_by_id(inst->settings,
 		chan_id, &index);
 	if (lrdp_chan == 0)
@@ -669,7 +670,7 @@ chan_man_check_fds(rdpInst * inst)
 	}
 	if (chan_man_is_ev_set())
 	{
-		printf("chan_man_check_fds: 1\n");
+		//printf("chan_man_check_fds: 1\n");
 		chan_man_clear_ev();
 		chan_man_process_sync(inst);
 	}

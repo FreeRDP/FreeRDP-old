@@ -834,8 +834,8 @@ static void
 l_ui_channel_data(struct rdp_inst * inst, int chan_id, char * data, int data_size,
 	int flags, int total_size)
 {
-	printf("ui_channel_data: chan_id %d, data_size %d flags %d total_size %d\n",
-		chan_id, data_size, flags, total_size);
+	//printf("ui_channel_data: chan_id %d, data_size %d flags %d total_size %d\n",
+	//	chan_id, data_size, flags, total_size);
 	chan_man_data(inst, chan_id, data, data_size, flags, total_size);
 }
 
