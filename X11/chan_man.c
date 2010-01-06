@@ -40,7 +40,7 @@
 #include <netdb.h>
 #include <unistd.h>
 #include <sys/un.h>
-#include <sys/types.h> 
+#include <sys/types.h>
 #include "freerdp.h"
 #include "chan_man.h"
 #include "vchan.h"
@@ -324,19 +324,6 @@ MyVirtualChannelClose(uint32 openHandle)
 	return CHANNEL_RC_OK;
 }
 
-static void
-chan_man_set_ev(void)
-{
-	int len;
-
-	len = sendto(g_sock, "sig", 4, 0, (struct sockaddr*)&g_sa,
-		sizeof(g_sa));
-	if (len != 4)
-	{
-		printf("chan_man_set_ev: error\n");
-	}
-}
-
 static int
 chan_man_is_ev_set(void)
 {
@@ -349,6 +336,23 @@ chan_man_is_ev_set(void)
 	memset(&time, 0, sizeof(time));
 	num_set = select(g_sock + 1, &rfds, 0, 0, &time);
 	return (num_set == 1);
+}
+
+static void
+chan_man_set_ev(void)
+{
+	int len;
+
+	if (chan_man_is_ev_set())
+	{
+		return 0;
+	}
+	len = sendto(g_sock, "sig", 4, 0, (struct sockaddr*)&g_sa,
+		sizeof(g_sa));
+	if (len != 4)
+	{
+		printf("chan_man_set_ev: error\n");
+	}
 }
 
 static void
@@ -636,7 +640,7 @@ chan_man_process_sync(rdpInst * inst)
 		lchan_data->name, &lindex);
 	if (lrdp_chan != 0)
 	{
-	    inst->rdp_channel_data(inst, lrdp_chan->chan_id, ldata, ldata_len);
+		inst->rdp_channel_data(inst, lrdp_chan->chan_id, ldata, ldata_len);
 	}
 	if (lchan_data->open_event_proc != 0)
 	{

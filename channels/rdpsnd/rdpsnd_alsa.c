@@ -8,7 +8,7 @@
 #include "types_ui.h"
 #include "chan_stream.h"
 
-#define LOG_LEVEL 11
+#define LOG_LEVEL 1
 #define LLOG(_level, _args) \
   do { if (_level < LOG_LEVEL) { printf _args ; } } while (0)
 #define LLOGLN(_level, _args) \
@@ -20,17 +20,50 @@ int
 wave_out_open(void)
 {
 	int error;
+	unsigned int rrate = 22050;
+	snd_pcm_hw_params_t * hw_params;
+	snd_pcm_uframes_t buffer_size = 1024 * 32;
+	snd_pcm_uframes_t period_size = 64;
+	snd_pcm_sw_params_t * sw_params;
 
-	if (g_out_handle == 0)
+	if (g_out_handle != 0)
 	{
-		LLOGLN(10, ("wave_out_open:"));
-		error = snd_pcm_open(&g_out_handle, "default",
-				SND_PCM_STREAM_PLAYBACK, 0);
-		if (error < 0)
-		{
-			LLOGLN(0, ("wave_out_open: snd_pcm_open failed"));
-		}
+		return 0;
 	}
+	LLOGLN(0, ("wave_out_open:"));
+	error = snd_pcm_open(&g_out_handle, "default",
+		SND_PCM_STREAM_PLAYBACK, 0);
+	if (error < 0)
+	{
+		LLOGLN(0, ("wave_out_open: snd_pcm_open failed"));
+		return 1;
+	}
+	error = snd_pcm_hw_params_malloc(&hw_params);
+	if (error < 0)
+	{
+		LLOGLN(0, ("wave_out_open: snd_pcm_hw_params_malloc failed"));
+		return 1;
+	}
+	snd_pcm_hw_params_any(g_out_handle, hw_params);
+	snd_pcm_hw_params_set_access(g_out_handle, hw_params, SND_PCM_ACCESS_RW_INTERLEAVED);
+	snd_pcm_hw_params_set_format(g_out_handle, hw_params, SND_PCM_FORMAT_S16_LE);
+	snd_pcm_hw_params_set_rate_near(g_out_handle, hw_params, &rrate, NULL);
+	if (rrate != 22050)
+	{
+		LLOGLN(0, ("wave_out_open: rrate error"));
+	}
+	snd_pcm_hw_params_set_channels(g_out_handle, hw_params, 2);
+	snd_pcm_hw_params_set_buffer_size_near(g_out_handle, hw_params, &buffer_size);
+	snd_pcm_hw_params_set_period_size_near(g_out_handle, hw_params, &period_size, NULL);
+	snd_pcm_hw_params(g_out_handle, hw_params);
+	snd_pcm_hw_params_free(hw_params);
+	snd_pcm_sw_params_malloc(&sw_params);
+	snd_pcm_sw_params_current(g_out_handle, sw_params);
+	snd_pcm_sw_params_set_start_threshold(g_out_handle, sw_params, buffer_size - period_size);
+	snd_pcm_sw_params_set_avail_min(g_out_handle, sw_params, period_size);
+	snd_pcm_sw_params(g_out_handle, sw_params);
+	snd_pcm_sw_params_free(sw_params);
+	snd_pcm_prepare(g_out_handle);
 	return 0;
 }
 
@@ -39,7 +72,7 @@ wave_out_close(void)
 {
 	if (g_out_handle != 0)
 	{
-		LLOGLN(10, ("wave_out_close:"));
+		LLOGLN(0, ("wave_out_close:"));
 		snd_pcm_close(g_out_handle);
 		g_out_handle = 0;
 	}
@@ -86,9 +119,43 @@ int
 wave_out_play(char * data, int size)
 {
 	int len;
+	int error;
+	char * p;
+	char * e;
 
-	len = snd_pcm_writei(g_out_handle, data, 1);
-	LLOGLN(10, ("wave_out_play: len %d", len));
+	LLOGLN(10, ("wave_out_play: size %d", size));
+	p = data;
+	e = p + size;
+	while (p < e)
+	{
+		len = e - p;
+		if (len > 1024 * 32)
+		{
+			len = 1024 * 32;
+		}
+		if ((len % 4) != 0)
+		{
+			LLOGLN(0, ("wave_out_play: error len mod 4"));
+			break;
+		}
+		error = snd_pcm_writei(g_out_handle, p, len / 4);
+		if (error < 0)
+		{
+			LLOGLN(0, ("wave_out_play: error len %d", error));
+			break;
+		}
+		if (error != len / 4)
+		{
+			LLOGLN(0, ("wave_out_play: error %d %d", len, error));
+			break;
+		}
+		p += len;
+	}
+	error = snd_pcm_wait(g_out_handle, -1);
+	if (error < 0)
+	{
+		LLOGLN(0, ("wave_out_play: error"));
+	}
 	LLOGLN(10, ("-EBADFD %d -EPIPE %d -ESTRPIPE %d",
 		-EBADFD, -EPIPE, -ESTRPIPE));
 	return 0;

@@ -138,21 +138,6 @@ deinit_wait_obj(struct wait_obj * obj)
 }
 
 static int
-set_wait_obj(struct wait_obj * obj)
-{
-	int len;
-
-	len = sendto(obj->sock, "sig", 4, 0, (struct sockaddr*)(&(obj->sa)),
-		sizeof(obj->sa));
-	if (len != 4)
-	{
-		LLOGLN(0, ("set_wait_obj: error"));
-		return 1;
-	}
-	return 0;
-}
-
-static int
 is_wait_obj_set(struct wait_obj * obj)
 {
 	fd_set rfds;
@@ -164,6 +149,25 @@ is_wait_obj_set(struct wait_obj * obj)
 	memset(&time, 0, sizeof(time));
 	num_set = select(obj->sock + 1, &rfds, 0, 0, &time);
 	return (num_set == 1);
+}
+
+static int
+set_wait_obj(struct wait_obj * obj)
+{
+	int len;
+
+	if (is_wait_obj_set(obj))
+	{
+		return 0;
+	}
+	len = sendto(obj->sock, "sig", 4, 0, (struct sockaddr*)(&(obj->sa)),
+		sizeof(obj->sa));
+	if (len != 4)
+	{
+		LLOGLN(0, ("set_wait_obj: error"));
+		return 1;
+	}
+	return 0;
 }
 
 static int
