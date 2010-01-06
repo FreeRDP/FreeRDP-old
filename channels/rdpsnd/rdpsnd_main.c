@@ -56,7 +56,6 @@ static int g_data_in_size[2];
 static int g_data_in_read[2];
 static struct wait_obj g_term_event;
 static struct wait_obj g_data_in_event;
-static struct wait_obj g_thread_done_event;
 static struct data_in_item * volatile g_list_head;
 static struct data_in_item * volatile g_list_tail;
 /* for locking the linked list */
@@ -71,6 +70,7 @@ static char * g_waveData;
 static int g_waveDataSize;
 static uint32 g_wTimeStamp; /* server timestamp */
 static uint32 g_local_time_stamp; /* client timestamp */
+static volatile int g_thread_status;
 
 /* implementations are in the hardware file */
 int
@@ -574,6 +574,7 @@ thread_func(void * arg)
 	int listr[2];
 	int numr;
 
+	g_thread_status = 1;
 	LLOGLN(10, ("thread_func: in"));
 	while (1)
 	{
@@ -592,8 +593,8 @@ thread_func(void * arg)
 			thread_process_data();
 		}
 	}
-	set_wait_obj(&g_thread_done_event);
 	LLOGLN(10, ("thread_func: out"));
+	g_thread_status = -1;
 	return 0;
 }
 
@@ -678,14 +679,17 @@ InitEventProcessConnected(void * pInitHandle, void * pData, uint32 dataLength)
 static void
 InitEventProcessTerminated(void)
 {
-	int listr[1];
+	int index;
 
 	set_wait_obj(&g_term_event);
-	listr[0] = g_thread_done_event.sock;
-	wait(-1, 1, listr);
+	index = 0;
+	while ((g_thread_status > 0) && (index < 100))
+	{
+		index++;
+		usleep(250 * 1000);
+	}
 	deinit_wait_obj(&g_term_event);
 	deinit_wait_obj(&g_data_in_event);
-	deinit_wait_obj(&g_thread_done_event);
 }
 
 static void
@@ -728,9 +732,9 @@ VirtualChannelEntry(PCHANNEL_ENTRY_POINTS pEntryPoints)
 	g_list_tail = 0;
 	init_wait_obj(&g_term_event, "freerdprdpsndterm");
 	init_wait_obj(&g_data_in_event, "freerdprdpsnddatain");
-	init_wait_obj(&g_thread_done_event, "freerdprdpsndtdone");
 	g_expectingWave = 0;
 	g_current_format = -1;
+	g_thread_status = 0;
 	g_ep.pVirtualChannelInit(&g_han, g_channel_def, 2,
 		VIRTUAL_CHANNEL_VERSION_WIN2000, InitEvent);
 	return 1;
