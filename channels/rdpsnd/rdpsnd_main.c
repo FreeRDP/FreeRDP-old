@@ -66,7 +66,7 @@ static char * g_supported_formats;
 static int g_supported_formats_size;
 static int g_current_format;
 static int g_expectingWave; /* boolean */
-static char * g_waveData;
+static char g_waveData[4];
 static int g_waveDataSize;
 static uint32 g_wTimeStamp; /* server timestamp */
 static uint32 g_local_time_stamp; /* client timestamp */
@@ -346,7 +346,8 @@ thread_process_message_formats(char * data, int data_size)
 		out_data, size, out_data);
 	if (error != CHANNEL_RC_OK)
 	{
-		LLOGLN(0, ("thread_process_message_formats: VirtualChannelWrite "
+		LLOGLN(0, ("thread_process_message_formats: "
+			"VirtualChannelWrite "
 			"failed %d", error));
 		return 1;
 	}
@@ -428,8 +429,7 @@ thread_process_message_wave_info(char * data, int data_size)
 		"wFormatNo %d", data_size, wFormatNo));
 	g_cBlockNo = GET_UINT8(data, 4);
 	g_waveDataSize = data_size - 8;
-	g_waveData = (char *) malloc(g_waveDataSize);
-	memcpy(g_waveData + 0, data + 8, 4);
+	memcpy(g_waveData, data + 8, 4);
 	if (wFormatNo != g_current_format)
 	{
 		g_current_format = wFormatNo;
@@ -448,18 +448,30 @@ thread_process_message_wave(char * data, int data_size)
 	int time_delta;
 	char * out_data;
 	uint32 error;
+	uint32 cur_time;
 
 	g_expectingWave = 0;
-	memcpy(g_waveData + 4, data + 4, data_size - 4);
-	wave_out_play(g_waveData, g_waveDataSize);
+	memcpy(data, g_waveData, 4);
+	if (data_size != g_waveDataSize)
+	{
+		LLOGLN(0, ("thread_process_message_wave: "
+			"size error"));
+	}
+	wave_out_play(data, data_size);
 	size = 8;
 	out_data = (char *) malloc(size);
 	SET_UINT8(out_data, 0, SNDC_WAVECONFIRM);
 	SET_UINT8(out_data, 1, 0);
 	SET_UINT16(out_data, 2, size - 4);
-	time_delta = get_mstime() - g_local_time_stamp;
-	LLOGLN(10, ("thread_process_message_wave: data_size %d time_delta %d",
-		data_size, time_delta));
+	cur_time = get_mstime();
+	time_delta = cur_time - g_local_time_stamp;
+	if (time_delta > 10)
+	{
+		time_delta -= 10;
+	}
+	LLOGLN(0, ("thread_process_message_wave: "
+		"data_size %d time_delta %d cur_time %u",
+		data_size, time_delta, cur_time));
 	wTimeStamp = g_wTimeStamp + time_delta;
 	SET_UINT16(out_data, 4, wTimeStamp);
 	SET_UINT8(out_data, 6, g_cBlockNo);
@@ -468,7 +480,8 @@ thread_process_message_wave(char * data, int data_size)
 		out_data, size, out_data);
 	if (error != CHANNEL_RC_OK)
 	{
-		LLOGLN(0, ("thread_process_message_wave: VirtualChannelWrite "
+		LLOGLN(0, ("thread_process_message_wave: "
+			"VirtualChannelWrite "
 			"failed %d", error));
 		return 1;
 	}
@@ -478,7 +491,8 @@ thread_process_message_wave(char * data, int data_size)
 static int
 thread_process_message_close(char * data, int data_size)
 {
-	LLOGLN(10, ("thread_process_message_close: data_size %d", data_size));
+	LLOGLN(10, ("thread_process_message_close: "
+		"data_size %d", data_size));
 	wave_out_close();
 	return 0;
 }
