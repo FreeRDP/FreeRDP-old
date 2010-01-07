@@ -679,13 +679,13 @@ InitEventProcessConnected(void * pInitHandle, void * pData, uint32 dataLength)
 		LLOGLN(0, ("InitEventProcessConnected: error no match"));
 	}
 	error = g_ep.pVirtualChannelOpen(g_han, &(g_open_handle[0]),
-		"rdpsnd", OpenEvent);
+		g_channel_def[0].name, OpenEvent);
 	if (error != CHANNEL_RC_OK)
 	{
 		LLOGLN(0, ("InitEventProcessConnected: Open failed"));
 	}
 	error = g_ep.pVirtualChannelOpen(g_han, &(g_open_handle[1]),
-		"snddbg", OpenEvent);
+		g_channel_def[1].name, OpenEvent);
 	if (error != CHANNEL_RC_OK)
 	{
 		LLOGLN(0, ("InitEventProcessConnected: Open failed"));
@@ -743,7 +743,7 @@ VirtualChannelEntry(PCHANNEL_ENTRY_POINTS pEntryPoints)
 	strcpy(g_channel_def[0].name, "rdpsnd");
 	g_channel_def[1].options = CHANNEL_OPTION_INITIALIZED |
 		CHANNEL_OPTION_ENCRYPT_RDP;
-	strcpy(g_channel_def[1].name, "snddbg");
+	strcpy(g_channel_def[1].name, "rdpdr");
 	g_mutex = (pthread_mutex_t *) malloc(sizeof(pthread_mutex_t));
 	pthread_mutex_init(g_mutex, 0);
 	g_list_head = 0;
