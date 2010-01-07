@@ -465,10 +465,6 @@ thread_process_message_wave(char * data, int data_size)
 	SET_UINT16(out_data, 2, size - 4);
 	cur_time = get_mstime();
 	time_delta = cur_time - g_local_time_stamp;
-	if (time_delta > 10)
-	{
-		time_delta -= 10;
-	}
 	LLOGLN(0, ("thread_process_message_wave: "
 		"data_size %d time_delta %d cur_time %u",
 		data_size, time_delta, cur_time));
@@ -573,9 +569,9 @@ thread_process_data(void)
 			g_list_tail = 0;
 		}
 		pthread_mutex_unlock(g_mutex);
-		thread_process_message(data, data_size);
 		if (data != 0)
 		{
+			thread_process_message(data, data_size);
 			free(data);
 		}
 		if (item != 0)

@@ -7,7 +7,7 @@ librdpsnd_LTLIBRARIES = librdpsnd.la
 
 librdpsnd_la_SOURCES = \
 	rdpsnd_main.c \
-	rdpsnd_alsa.c
+	rdpsnd_pulse.c
 
 librdpsnd_la_CFLAGS = -I../../include/freerdp -I../common
 
