@@ -204,10 +204,10 @@ xf_handle_event(rdpInst * inst, xfInfo * xfi, XEvent * xevent)
 		case FocusOut:
 			break;
 		case EnterNotify:
-			printf("xf_handle_event: EnterNotify\n");
+			/*printf("xf_handle_event: EnterNotify\n");*/
 			break;
 		case LeaveNotify:
-			printf("xf_handle_event: LeaveNotify\n");
+			/*printf("xf_handle_event: LeaveNotify\n");*/
 			break;
 		case NoExpose:
 			printf("xf_handle_event: NoExpose\n");
