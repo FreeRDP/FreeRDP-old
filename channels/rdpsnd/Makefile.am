@@ -6,8 +6,11 @@ librdpsnddir = $(libdir)
 librdpsnd_LTLIBRARIES = librdpsnd.la
 
 librdpsnd_la_SOURCES = \
-	rdpsnd_main.c \
-	rdpsnd_alsa.c
+	rdpsnd_main.c
+
+if FOUND_ALSA
+librdpsnd_la_SOURCES += rdpsnd_alsa.c
+endif
 
 #	rdpsnd_pulse.c
 

@@ -265,6 +265,7 @@ AC_ARG_ENABLE(static-libsamplerate,
 if test -n "$PKG_CONFIG"; then
     PKG_CHECK_MODULES(LIBAO, ao, [HAVE_LIBAO=1], [HAVE_LIBAO=0])
     PKG_CHECK_MODULES(ALSA, alsa, [HAVE_ALSA=1], [HAVE_ALSA=0])
+    AM_CONDITIONAL(FOUND_ALSA, test x$HAVE_ALSA = x1)
     AC_ARG_WITH(libsamplerate,
         [  --without-libsamplerate disable libsamplerate support])
     if test "x$with_libsamplerate" != "xno"; then
