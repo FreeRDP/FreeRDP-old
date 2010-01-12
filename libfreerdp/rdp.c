@@ -755,7 +755,7 @@ rdp_send_confirm_active(rdpRdp * rdp)
 
 	s = sec_init(rdp->sec, sec_flags, 6 + 14 + caplen + 4 + sizeof(RDP_SOURCE));
 
-	out_uint16_le(s, (2 + 14 + caplen + sizeof(RDP_SOURCE)) - 4);
+	out_uint16_le(s, (2 + 14 + caplen + sizeof(RDP_SOURCE)) + 4);
 	out_uint16_le(s, (RDP_PDU_CONFIRM_ACTIVE | 0x10));	/* Version 1 */
 	out_uint16_le(s, (rdp->sec->mcs->mcs_userid + 1001));
 
