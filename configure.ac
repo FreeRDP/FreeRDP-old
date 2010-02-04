@@ -952,6 +952,7 @@ libkbd/Makefile
 keymaps/Makefile
 X11/Makefile
 channels/rdpsnd/Makefile
+channels/rdpdr/Makefile
 ])
 
 AC_OUTPUT
