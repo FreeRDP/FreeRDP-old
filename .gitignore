@@ -9,6 +9,13 @@ config.log
 config.sub
 configure
 libtool
+aclocal.m4
+compile
+depcomp
+install-sh
+ltmain.sh
+missing
+stamp-h1
 /libfreerdp/Makefile
 /libfreerdp/Makefile.in
 /libfreerdp/*.o
@@ -25,6 +32,7 @@ libtool
 /libkbd/.libs
 /X11/Makefile
 /X11/Makefile.in
+/X11/xfreerdp
 /X11/*.o
 /X11/*.lo
 /X11/*.la
