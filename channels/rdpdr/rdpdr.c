@@ -48,6 +48,7 @@
 #include "constants.h"
 #include "capabilities.h"
 #include "mem.h"
+#include "disk.h"
 
 #include "rdpdr.h"
 #include "irp.h"
@@ -131,7 +132,7 @@ convert_to_unix_filename(char *filename)
 	}
 }
 
-static RD_BOOL
+RD_BOOL
 rdpdr_handle_ok(int device, int handle)
 {
 	switch (g_rdpdr_device[device].device_type)
@@ -152,7 +153,7 @@ rdpdr_handle_ok(int device, int handle)
 }
 
 /* Add a new io request to the table containing pending io requests so it won't block rdesktop */
-static RD_BOOL
+RD_BOOL
 add_async_iorequest(uint32 device, uint32 file, uint32 id, uint32 major, uint32 length,
 		    DEVICE_FNS * fns, uint32 total_timeout, uint32 interval_timeout, uint8 * buffer,
 		    uint32 offset)
@@ -203,7 +204,7 @@ rdpdr_send_client_announce_reply()
 {
 	STREAM s;
 
-	s = channel_init(g_rdp->sec->mcs->chan, rdpdr_channel, 12);
+	s = channel_init(g_rdp->sec->mcs->chan, rdpdr_channel, 32);
 
 	out_uint16_le(s, RDPDR_COMPONENT_TYPE_CORE);
 	out_uint16_le(s, PAKID_CORE_CLIENTID_CONFIRM);
@@ -211,6 +212,8 @@ rdpdr_send_client_announce_reply()
 	out_uint16_le(s, 1); // versionMajor, must be set to 1
 	out_uint16_le(s, g_rdpdr_version_minor); // versionMinor
 	out_uint32_be(s, g_rdpdr_clientid); // clientID, given by the server in a Server Announce Request
+
+	printf("rdpdr_send_client_announce_reply\n");
 
 	s_mark_end(s);
 	channel_send(g_rdp->sec->mcs->chan, s, rdpdr_channel);
@@ -225,8 +228,32 @@ rdpdr_process_server_announce_request(STREAM s)
 	in_uint16_le(s, versionMinor); // versionMinor
 	in_uint32_le(s, g_rdpdr_clientid); // clientID
 
-	if(versionMinor < g_rdpdr_version_minor)
-		g_rdpdr_version_minor = versionMinor;
+	printf("Version Minor: %d\n", versionMinor);
+
+	switch(versionMinor)
+	{
+		case 0x000C:
+			printf("Windows Vista, Windows Vista SP1, Windows Server 2008, Windows 7, and Windows Server 2008 R2\n");
+			break;
+
+		case 0x000A:
+			printf("Windows Server 2003 SP2\n");
+			break;
+
+		case 0x0006:
+			printf("Windows XP SP3\n");
+			break;
+
+		case 0x0005:
+			printf("Windows XP, Windows XP SP1, Windows XP SP2, Windows Server 2003, and Windows Server 2003 SP1\n");
+			break;
+
+		case 0x0002:
+			printf("Windows 2000\n");
+			break;
+	}
+
+	g_rdpdr_version_minor = versionMinor;
 }
 
 static void
@@ -250,6 +277,8 @@ rdpdr_send_client_name_request()
 	out_uint32(s, 0); // codePage, must be set to zero
 	out_uint32_le(s, hostlen); // computerNameLen
 	rdp_out_unistr(g_rdp, s, g_rdpdr_clientname, hostlen - 2); // computerName
+
+	printf("rdpdr_send_client_name_request\n");
 
 	s_mark_end(s);
 	channel_send(g_rdp->sec->mcs->chan, s, rdpdr_channel);
@@ -337,7 +366,7 @@ rdpdr_send_device_list(void)
 	STREAM s;
 	PRINTER *printerinfo;
 
-	s = channel_init(g_rdp->sec->mcs->chan, rdpdr_channel, announcedata_size());
+	s = channel_init(g_rdp->sec->mcs->chan, rdpdr_channel, announcedata_size() + 50);
 
 	out_uint16_le(s, RDPDR_COMPONENT_TYPE_CORE);
 	out_uint16_le(s, PAKID_CORE_DEVICELIST_ANNOUNCE);
@@ -405,6 +434,8 @@ rdpdr_send_device_list(void)
 	out_uint32(s, 0);
 #endif
 
+	printf("rdpdr_send_device_list\n");
+
 	s_mark_end(s);
 	channel_send(g_rdp->sec->mcs->chan, s, rdpdr_channel);
 }
@@ -435,7 +466,7 @@ rdpdr_send_completion(uint32 device, uint32 id, uint32 status, uint32 result, ui
 }
 
 static void
-dr_process_irp(STREAM s)
+rdpdr_process_irp(STREAM s)
 {
 	IRP irp;
 	memset((void*)&irp, '\0', sizeof(IRP));
@@ -478,16 +509,19 @@ dr_process_irp(STREAM s)
 			return;
 	}
 
+	printf("IRP MAJOR: %d MINOR: %d\n", irp.majorFunction, irp.minorFunction);
 	switch(irp.majorFunction)
 	{
 		case IRP_MJ_CREATE:
 			printf("IRP_MJ_CREATE\n");
 			irp_process_create_request(s, &irp);
+			irp_send_create_response(&irp);
 			break;
 
 		case IRP_MJ_CLOSE:
 			printf("IRP_MJ_CLOSE\n");
 			irp_process_close_request(s, &irp);
+			irp_send_close_response(&irp);
 			break;
 
 		case IRP_MJ_READ:
@@ -503,6 +537,7 @@ dr_process_irp(STREAM s)
 		case IRP_MJ_QUERY_INFORMATION:
 			printf("IRP_MJ_QUERY_INFORMATION\n");
 			irp_process_query_information_request(s, &irp);
+			irp_send_query_information_response(&irp);
 			break;
 
 		case IRP_MJ_SET_INFORMATION:
@@ -534,10 +569,14 @@ dr_process_irp(STREAM s)
 			ui_unimpl(NULL, "IRP majorFunction=0x%x minorFunction=0x%x\n", irp.majorFunction, irp.minorFunction);
 			return;
 	}
+
+	if (irp.buffer)
+		xfree(irp.buffer);
 }
 
+#if 0
 static void
-rdpdr_process_irp(STREAM s)
+dr_process_irp(STREAM s)
 {
 	uint32 result = 0,
 		length = 0,
@@ -927,6 +966,8 @@ rdpdr_process_irp(STREAM s)
 		xfree(buffer);
 	buffer = NULL;
 }
+#endif
+
 
 static void
 rdpdr_send_capabilities(void)
@@ -946,6 +987,8 @@ rdpdr_send_capabilities(void)
 	rdp_out_dr_port_capset(s);
 	rdp_out_dr_drive_capset(s);
 	rdp_out_dr_smartcard_capset(s);
+
+	printf("rdpdr_send_capabilities\n");
 
 	s_mark_end(s);
 	channel_send(g_rdp->sec->mcs->chan, s, rdpdr_channel);
@@ -997,9 +1040,11 @@ rdpdr_process_capabilities(STREAM s)
 static void
 rdpdr_process(STREAM s)
 {
-	uint32 handle;
 	uint16 component;
 	uint16 packetID;
+
+	uint32 deviceID;
+	uint32 status;
 
 	DEBUG_RDP5("--- rdpdr_process ---\n");
 #if WITH_DEBUG_RDP5
@@ -1010,33 +1055,40 @@ rdpdr_process(STREAM s)
 
 	if (component == RDPDR_COMPONENT_TYPE_CORE)
 	{
-		
+		printf("RDPDR_COMPONENT_TYPE_CORE\n");
 		switch (packetID)
 		{
 			case PAKID_CORE_SERVER_ANNOUNCE:
+				printf("PAKID_CORE_SERVER_ANNOUNCE\n");
 				rdpdr_process_server_announce_request(s);
 				rdpdr_send_client_announce_reply();
 				rdpdr_send_client_name_request();
 				break;
 
 			case PAKID_CORE_CLIENTID_CONFIRM:
-				rdpdr_send_capabilities();
+				printf("PAKID_CORE_CLIENTID_CONFIRM\n");
 				rdpdr_send_device_list();
 				break;
 
 			case PAKID_CORE_DEVICE_REPLY:
 				/* connect to a specific resource */
-				in_uint32(s, handle);
+				printf("PAKID_CORE_DEVICE_REPLY\n");
+				in_uint32(s, deviceID);
+				in_uint32(s, status);
+				printf("NTSTATUS: %d\n", status);
 				DEBUG_RDP5("RDPDR: Server connected to resource %d\n", handle);
 				break;
 
 			case PAKID_CORE_DEVICE_IOREQUEST:
+				printf("PAKID_CORE_DEVICE_IOREQUEST\n");
 				rdpdr_process_irp(s);
 				break;
 
 			case PAKID_CORE_SERVER_CAPABILITY:
 				/* server capabilities */
+				printf("PAKID_CORE_SERVER_CAPABILITY\n");
 				rdpdr_process_capabilities(s);
+				rdpdr_send_capabilities();
 				break;
 
 			default:
@@ -1047,9 +1099,11 @@ rdpdr_process(STREAM s)
 	}
 	else if (component == RDPDR_COMPONENT_TYPE_PRINTING)
 	{
+		printf("RDPDR_COMPONENT_TYPE_PRINTING\n");
 		switch (packetID)
 		{
 			case PAKID_PRN_CACHE_DATA:
+				printf("PAKID_PRN_CACHE_DATA\n");
 				printercache_process(s);
 				break;
 

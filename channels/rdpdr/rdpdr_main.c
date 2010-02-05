@@ -32,6 +32,7 @@
 #include "types_ui.h"
 #include "vchan.h"
 #include "chan_stream.h"
+#include "constants_rdpdr.h"
 
 #define LOG_LEVEL 1
 #define LLOG(_level, _args) \
@@ -67,15 +68,6 @@ static struct data_in_item * volatile g_list_tail;
 static pthread_mutex_t * g_mutex;
 static volatile int g_thread_status;
 
-/* get time in milliseconds */
-static uint32
-get_mstime(void)
-{
-	struct timeval tp;
-
-	gettimeofday(&tp, 0);
-	return (tp.tv_sec * 1000) + (tp.tv_usec / 1000);
-}
 
 static int
 init_wait_obj(struct wait_obj * obj, const char * name)
@@ -232,6 +224,76 @@ signal_data_in(void)
 static int
 thread_process_message(char * data, int data_size)
 {
+	uint16 component;
+	uint16 packetID;
+	uint32 deviceID;
+	uint32 status;
+
+	component = GET_UINT16(data, 0);
+	packetID = GET_UINT16(data, 2);
+
+	if (component == RDPDR_COMPONENT_TYPE_CORE)
+	{
+		LLOGLN(0, ("RDPDR_COMPONENT_TYPE_CORE"));
+		switch (packetID)
+		{
+			case PAKID_CORE_SERVER_ANNOUNCE:
+				LLOGLN(0, ("PAKID_CORE_SERVER_ANNOUNCE"));
+				//rdpdr_process_server_announce_request(s);
+				//rdpdr_send_client_announce_reply();
+				//rdpdr_send_client_name_request();
+				break;
+
+			case PAKID_CORE_CLIENTID_CONFIRM:
+				LLOGLN(0, ("PAKID_CORE_CLIENTID_CONFIRM"));
+				//rdpdr_send_device_list();
+				break;
+
+			case PAKID_CORE_DEVICE_REPLY:
+				/* connect to a specific resource */
+				LLOGLN(0, ("PAKID_CORE_DEVICE_REPLY"));
+				deviceID = GET_UINT32(data, 4);
+				status = GET_UINT32(data, 8);
+				//printf("NTSTATUS: %d\n", status);
+				//DEBUG_RDP5("RDPDR: Server connected to resource %d\n", handle);
+				break;
+
+			case PAKID_CORE_DEVICE_IOREQUEST:
+				LLOGLN(0, ("PAKID_CORE_DEVICE_IOREQUEST"));
+				//rdpdr_process_irp(s);
+				break;
+
+			case PAKID_CORE_SERVER_CAPABILITY:
+				/* server capabilities */
+				LLOGLN(0, ("PAKID_CORE_SERVER_CAPABILITY"));
+				//rdpdr_process_capabilities(s);
+				//rdpdr_send_capabilities();
+				break;
+
+			default:
+				//ui_unimpl(NULL, "RDPDR core component, packetID: 0x%02X\n", packetID);
+				break;
+
+		}
+	}
+	else if (component == RDPDR_COMPONENT_TYPE_PRINTING)
+	{
+		LLOGLN(0, ("RDPDR_COMPONENT_TYPE_PRINTING"));
+
+		switch (packetID)
+		{
+			case PAKID_PRN_CACHE_DATA:
+				LLOGLN(0, ("PAKID_PRN_CACHE_DATA"));
+				//printercache_process(s);
+				break;
+
+			default:
+				//ui_unimpl(NULL, "RDPDR printer component, packetID: 0x%02X\n", packetID);
+				break;
+		}
+	}
+	//else
+		//ui_unimpl(NULL, "RDPDR component: 0x%02X packetID: 0x%02X\n", component, packetID);
 
 	return 0;
 }
@@ -275,6 +337,7 @@ thread_process_data(void)
 			free(item);
 		}
 	}
+
 	return 0;
 }
 
@@ -444,8 +507,8 @@ VirtualChannelEntry(PCHANNEL_ENTRY_POINTS pEntryPoints)
 	g_list_head = 0;
 	g_list_tail = 0;
 
-	init_wait_obj(&g_term_event, "freerdprdpsndterm");
-	init_wait_obj(&g_data_in_event, "freerdprdpsnddatain");
+	init_wait_obj(&g_term_event, "freerdprdpdrterm");
+	init_wait_obj(&g_data_in_event, "freerdprdpdrdatain");
 
 	g_thread_status = 0;
 

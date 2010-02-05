@@ -22,6 +22,69 @@
 #ifndef __IRP_H
 #define __IRP_H
 
+#include "parse.h"
+#include "disk.h"
+#include "rdpdr.h"
+
+enum FILE_INFORMATION_CLASS
+{
+	FileDirectoryInformation = 1,
+	FileFullDirectoryInformation,
+	FileBothDirectoryInformation,
+	FileBasicInformation,
+	FileStandardInformation,
+	FileInternalInformation,
+	FileEaInformation,
+	FileAccessInformation,
+	FileNameInformation,
+	FileRenameInformation,
+	FileLinkInformation,
+	FileNamesInformation,
+	FileDispositionInformation,
+	FilePositionInformation,
+	FileFullEaInformation,
+	FileModeInformation,
+	FileAlignmentInformation,
+	FileAllInformation,
+	FileAllocationInformation,
+	FileEndOfFileInformation,
+	FileAlternateNameInformation,
+	FileStreamInformation,
+	FilePipeInformation,
+	FilePipeLocalInformation,
+	FilePipeRemoteInformation,
+	FileMailslotQueryInformation,
+	FileMailslotSetInformation,
+	FileCompressionInformation,
+	FileCopyOnWriteInformation,
+	FileCompletionInformation,
+	FileMoveClusterInformation,
+	FileOleClassIdInformation,
+	FileOleStateBitsInformation,
+	FileNetworkOpenInformation,
+	FileObjectIdInformation,
+	FileOleAllInformation,
+	FileOleDirectoryInformation,
+	FileContentIndexInformation,
+	FileInheritContentIndexInformation,
+	FileOleInformation,
+	FileMaximumInformation
+};
+
+enum FS_INFORMATION_CLASS
+{
+	FileFsVolumeInformation = 1,
+	FileFsLabelInformation,
+	FileFsSizeInformation,
+	FileFsDeviceInformation,
+	FileFsAttributeInformation,
+	FileFsControlInformation,
+	FileFsFullSizeInformation,
+	FileFsObjectIdInformation,
+	FileFsDriverPathInformation,
+	FileFsMaximumInformation
+};
+
 typedef struct _IRP
 {
 	uint32 deviceID;
@@ -31,18 +94,24 @@ typedef struct _IRP
 	uint32 minorFunction;
 	DEVICE_FNS* fns;
 	RD_BOOL rwBlocking;
-	uint32 ioStatus;
+	RD_NTHANDLE ioStatus;
+	STREAM buffer;
+	int infoClass;
 }
 IRP;
 
 void
 irp_process_create_request(STREAM s, IRP* irp);
 void
-irp_send_create_response(IRP* irp, uint32 fileID, uint8 information);
+irp_send_create_response(IRP* irp);
 void
 irp_process_close_request(STREAM s, IRP* irp);
 void
+irp_send_close_response(IRP* irp);
+void
 irp_process_read_request(STREAM s, IRP* irp);
+void
+irp_send_read_response(IRP* irp);
 void
 irp_process_write_request(STREAM s, IRP* irp);
 void
@@ -52,7 +121,7 @@ irp_process_set_volume_information_request(STREAM s, IRP* irp);
 void
 irp_process_query_information_request(STREAM s, IRP* irp);
 void
-irp_send_query_information_response(STREAM s, IRP* irp);
+irp_send_query_information_response(IRP* irp);
 void
 irp_process_set_information_request(STREAM s, IRP* irp);
 void
@@ -63,6 +132,8 @@ void
 irp_process_file_lock_control_request(STREAM s, IRP* irp);
 void
 irp_process_query_directory_request(STREAM s, IRP* irp);
+void
+irp_send_query_directory_response(IRP* irp);
 void
 irp_process_notify_change_directory_request(STREAM s, IRP* irp);
 

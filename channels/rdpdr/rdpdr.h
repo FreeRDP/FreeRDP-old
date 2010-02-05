@@ -28,6 +28,12 @@ void
 dr_out_device_io_completion_header(STREAM s, uint32 deviceID, uint32 completionID, uint32 ioStatus);
 void
 convert_to_unix_filename(char *filename);
+RD_BOOL
+rdpdr_handle_ok(int device, int handle);
+RD_BOOL
+add_async_iorequest(uint32 device, uint32 file, uint32 id, uint32 major, uint32 length,
+		    DEVICE_FNS * fns, uint32 total_timeout, uint32 interval_timeout, uint8 * buffer,
+		    uint32 offset);
 
 #endif // __RDPDR_H
 

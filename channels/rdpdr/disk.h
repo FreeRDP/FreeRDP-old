@@ -22,6 +22,24 @@
 #ifndef __DISK_H
 #define __DISK_H
 
+#include "rdesktop.h"
+#include "parse.h"
+#include "types.h"
+#include "irp.h"
+
+int disk_enum_devices(uint32 * id, char *optarg);
+//RD_NTSTATUS disk_query_information(IRP* irp);
+RD_NTSTATUS disk_set_information(RD_NTHANDLE handle, uint32 info_class, STREAM in, STREAM out);
+RD_NTSTATUS disk_check_notify(RD_NTHANDLE handle);
+RD_NTSTATUS disk_create_notify(RD_NTHANDLE handle, uint32 info_class);
+RD_NTSTATUS disk_query_volume_information(RD_NTHANDLE handle, uint32 info_class, STREAM out);
+//RD_NTSTATUS disk_query_directory(RD_NTHANDLE handle, uint32 info_class, char *pattern, STREAM out);
+
+void
+disk_query_information(IRP* irp);
+void
+disk_query_directory(IRP* irp, uint8 initialQuery, char* path);
+
 #define FILE_ATTRIBUTE_READONLY			0x00000001
 #define FILE_ATTRIBUTE_HIDDEN			0x00000002
 #define FILE_ATTRIBUTE_SYSTEM			0x00000004
@@ -83,65 +101,6 @@
 #define ERROR_ALREADY_EXISTS			183L
 
 #define	MAX_OPEN_FILES	0x100
-
-typedef enum _FILE_INFORMATION_CLASS
-{
-	FileDirectoryInformation = 1,
-	FileFullDirectoryInformation,
-	FileBothDirectoryInformation,
-	FileBasicInformation,
-	FileStandardInformation,
-	FileInternalInformation,
-	FileEaInformation,
-	FileAccessInformation,
-	FileNameInformation,
-	FileRenameInformation,
-	FileLinkInformation,
-	FileNamesInformation,
-	FileDispositionInformation,
-	FilePositionInformation,
-	FileFullEaInformation,
-	FileModeInformation,
-	FileAlignmentInformation,
-	FileAllInformation,
-	FileAllocationInformation,
-	FileEndOfFileInformation,
-	FileAlternateNameInformation,
-	FileStreamInformation,
-	FilePipeInformation,
-	FilePipeLocalInformation,
-	FilePipeRemoteInformation,
-	FileMailslotQueryInformation,
-	FileMailslotSetInformation,
-	FileCompressionInformation,
-	FileCopyOnWriteInformation,
-	FileCompletionInformation,
-	FileMoveClusterInformation,
-	FileOleClassIdInformation,
-	FileOleStateBitsInformation,
-	FileNetworkOpenInformation,
-	FileObjectIdInformation,
-	FileOleAllInformation,
-	FileOleDirectoryInformation,
-	FileContentIndexInformation,
-	FileInheritContentIndexInformation,
-	FileOleInformation,
-	FileMaximumInformation
-} FILE_INFORMATION_CLASS, *PFILE_INFORMATION_CLASS;
-
-typedef enum _FSINFOCLASS
-{
-	FileFsVolumeInformation = 1,
-	FileFsLabelInformation,
-	FileFsSizeInformation,
-	FileFsDeviceInformation,
-	FileFsAttributeInformation,
-	FileFsControlInformation,
-	FileFsFullSizeInformation,
-	FileFsObjectIdInformation,
-	FileFsDriverPathInformation,
-	FileFsMaximumInformation
-} FS_INFORMATION_CLASS, *PFS_INFORMATION_CLASS;
 
 #endif // __DISK_H
 

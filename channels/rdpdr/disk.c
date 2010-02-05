@@ -18,7 +18,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "rdesktop.h"
 #include "disk.h"
 
 #include <sys/types.h>
@@ -73,8 +72,10 @@
 #include <sys/mount.h>
 #endif
 
+#include "rdesktop.h"
 #include "rdp.h"
 #include "mem.h"
+#include "irp.h"
 
 extern rdpRdp * g_rdp;
 
@@ -405,7 +406,7 @@ disk_create(uint32 device_id, uint32 accessmask, uint32 sharemode, uint32 create
 			break;
 	}
 
-	// printf("Open: \"%s\"  flags: %X, accessmask: %X sharemode: %X create disp: %X\n", path, flags_and_attributes, accessmask, sharemode, create_disposition);
+	printf("Open: \"%s\"  flags: %X, accessmask: %X sharemode: %X create disp: %X\n", path, flags_and_attributes, accessmask, sharemode, create_disposition);
 
 	/* Get information about file and set that flag ourselfs */
 	if ((stat(path, &filestat) == 0) && (S_ISDIR(filestat.st_mode)))
@@ -631,23 +632,23 @@ disk_write(RD_NTHANDLE handle, uint8 * data, uint32 length, uint32 offset, uint3
 	return RD_STATUS_SUCCESS;
 }
 
-#if 0
-
-RD_NTSTATUS
-disk_query_information2(RD_NTHANDLE handle, uint32 info_class)
+void
+disk_query_information(IRP* irp)
 {
 	char* path;
 	char* filename;
 	struct stat filestat;
 	uint32 fileAttributes;
+	FILE_BASIC_INFORMATION fileBasicInfo;
+	FILE_STANDARD_INFORMATION fileStandardInfo;
 
-	path = g_fileinfo[handle].path;
+	path = g_fileinfo[irp->fileID].path;
 
 	/* Get information about file */
-	if (fstat(handle, &filestat) != 0)
+	if (fstat(irp->fileID, &filestat) != 0)
 	{
 		perror("stat");
-		return RD_STATUS_ACCESS_DENIED;
+		irp->ioStatus = RD_STATUS_ACCESS_DENIED;
 	}
 
 	/* Set file attributes */
@@ -666,11 +667,30 @@ disk_query_information2(RD_NTHANDLE handle, uint32 info_class)
 	if (!(filestat.st_mode & S_IWUSR))
 		fileAttributes |= FILE_ATTRIBUTE_READONLY;
 
-	switch (info_class)
+	printf("infoClass: %d\n", irp->infoClass);
+	switch (irp->infoClass)
 	{
+
+#if 0
+		case FileFsDeviceInformation:
+
+			printf("FileFsDeviceInformation\n");
+
+			irp->ioStatus = RD_STATUS_SUCCESS;
+			irp->buffer = xmalloc(sizeof(struct stream));
+			irp->buffer->size = 8;
+			irp->buffer->data = xmalloc(irp->buffer->size);
+			irp->buffer->p = irp->buffer->data;
+			irp->buffer->end = irp->buffer->p + irp->buffer->size;
+
+			out_uint32_le(irp->buffer, FILE_DEVICE_DISK);
+			out_uint32_le(irp->buffer, FILE_REMOTE_DEVICE | FILE_DEVICE_IS_MOUNTED | FILE_CHARACTERISTIC_TS_DEVICE);
+
+			break;
+#endif
 		case FileBasicInformation:
 
-			FILE_BASIC_INFORMATION fileBasicInfo;
+			printf("FileBasicInformation\n");
 			memset((void*)&fileBasicInfo, '\0', sizeof(FILE_BASIC_INFORMATION));
 
 			seconds_since_1970_to_filetime(get_create_time(&filestat),
@@ -690,12 +710,40 @@ disk_query_information2(RD_NTHANDLE handle, uint32 info_class)
 				&(fileBasicInfo.changeTime.dwLowDateTime));
 
 			fileBasicInfo.fileAttributes = fileAttributes;
+			fileBasicInfo.reserved = 0;
+
+			irp->ioStatus = RD_STATUS_SUCCESS;
+
+			irp->buffer = xmalloc(sizeof(struct stream));
+			irp->buffer->size = 36;
+			irp->buffer->data = xmalloc(irp->buffer->size);
+			irp->buffer->p = irp->buffer->data;
+			irp->buffer->end = irp->buffer->p + irp->buffer->size;
+
+			out_uint32_le(irp->buffer, fileBasicInfo.creationTime.dwLowDateTime);
+			out_uint32_le(irp->buffer, fileBasicInfo.creationTime.dwHighDateTime);
+			out_uint32_le(irp->buffer, fileBasicInfo.lastAccessTime.dwLowDateTime);
+			out_uint32_le(irp->buffer, fileBasicInfo.lastAccessTime.dwHighDateTime);
+			out_uint32_le(irp->buffer, fileBasicInfo.lastWriteTime.dwLowDateTime);
+			out_uint32_le(irp->buffer, fileBasicInfo.lastWriteTime.dwHighDateTime);
+			out_uint32_le(irp->buffer, fileBasicInfo.changeTime.dwLowDateTime);
+			out_uint32_le(irp->buffer, fileBasicInfo.changeTime.dwHighDateTime);
+			out_uint32_le(irp->buffer, fileBasicInfo.fileAttributes);
+
+			/*
+			 * Don't get fooled by [MS-FSCC] that says there's a reserved field of
+			 * four bytes at the end... as if you try to send it the server won't
+			 * interpret this packet correctly. I spent hours trying to figure out
+			 * where it was broken, all because of this silly reserved field.
+			 */
+			
+			/* out_uint32_le(irp->buffer, fileBasicInfo.reserved); */
 
 			break;
 
 		case FileStandardInformation:
 
-			FILE_STANDARD_INFORMATION fileStandardInfo;
+			printf("FileStandardInformation\n");
 			memset((void*)&fileStandardInfo, '\0', sizeof(FILE_STANDARD_INFORMATION));
 
 			fileStandardInfo.allocationSizeLow = filestat.st_size;
@@ -705,22 +753,252 @@ disk_query_information2(RD_NTHANDLE handle, uint32 info_class)
 			fileStandardInfo.numberOfLinks = filestat.st_nlink;
 			fileStandardInfo.deletePending = 0;
 			fileStandardInfo.directory = S_ISDIR(filestat.st_mode) ? 1 : 0;
+			fileStandardInfo.reserved = 0;
+
+			irp->ioStatus = RD_STATUS_SUCCESS;
+
+			irp->buffer = xmalloc(sizeof(struct stream));
+			irp->buffer->size = 24;
+			irp->buffer->data = xmalloc(irp->buffer->size);
+			irp->buffer->p = irp->buffer->data;
+			irp->buffer->end = irp->buffer->p + irp->buffer->size;
+
+			out_uint32_le(irp->buffer, fileStandardInfo.allocationSizeLow);
+			out_uint32_le(irp->buffer, fileStandardInfo.allocationSizeHigh);
+			out_uint32_le(irp->buffer, fileStandardInfo.endOfFileLow);
+			out_uint32_le(irp->buffer, fileStandardInfo.endOfFileHigh);
+			out_uint32_le(irp->buffer, fileStandardInfo.numberOfLinks);
+			out_uint8(irp->buffer, fileStandardInfo.deletePending);
+			out_uint8(irp->buffer, fileStandardInfo.directory);
+			out_uint16_le(irp->buffer, fileStandardInfo.reserved);
 
 			break;
 
 		case FileObjectIdInformation:
+
+			printf("FileObjectIdInformation\n");
+			irp->ioStatus = RD_STATUS_SUCCESS;
+			irp->buffer = xmalloc(sizeof(struct stream));
+			irp->buffer->size = 4;
+			irp->buffer->data = xmalloc(irp->buffer->size);
+			irp->buffer->p = irp->buffer->data;
+			irp->buffer->end = irp->buffer->p + irp->buffer->size;
+
+			out_uint32_le(irp->buffer, fileAttributes); /* File Attributes */
+			out_uint32_le(irp->buffer, 0); /* Reparse Tag */
+			
 			break;
 
 		default:
-
-			ui_unimpl(NULL, "IRP Query (File) Information class: 0x%x\n", fsInformationClass);
-			return RD_STATUS_INVALID_PARAMETER;
+			ui_unimpl(NULL, "IRP Query (File) Information class: 0x%x\n", irp->infoClass);
+			break;
 	}
-	
-	return RD_STATUS_SUCCESS;
 }
 
+void
+disk_query_directory(IRP* irp, uint8 initialQuery, char* path)
+{
+	DIR *pdir;
+	char *dirname;
+	char fullpath[PATH_MAX];
+	struct dirent *pdirent;
+	struct stat filestat;
+	struct fileinfo *pfinfo;
+	FILE_BOTH_DIR_INFORMATION fileBothDirInformation;
+
+	pfinfo = &(g_fileinfo[irp->fileID]);
+	pdir = pfinfo->pdir;
+	dirname = pfinfo->path;
+
+	switch (irp->infoClass)
+	{
+		case FileDirectoryInformation:
+			printf("FileDirectoryInformation\n");
+			break;
+
+		case FileFullDirectoryInformation:
+			printf("FileFullDirectoryInformation\n");
+			break;
+
+		case FileBothDirectoryInformation:
+			printf("FileBothDirectoryInformation\n");
+
+			memset((void*)&fileBothDirInformation, '\0', sizeof(FILE_BOTH_DIR_INFORMATION));
+
+			printf("path: %s\n", path);
+
+			/* If a search pattern is received, remember this pattern, and restart search */
+			if (initialQuery != 0)
+			{
+				strncpy(pfinfo->pattern, 1 + strrchr((char*)path, '/'), PATH_MAX - 1);
+				rewinddir(pdir);
+			}
+
+			/* find next dirent matching pattern */
+			pdirent = readdir(pdir);
+			while (pdirent && fnmatch(pfinfo->pattern, pdirent->d_name, 0) != 0)
+				pdirent = readdir(pdir);
+
+			if (pdirent == NULL)
+				irp->ioStatus = RD_STATUS_NO_MORE_FILES;
+
+			/* Get information for directory entry */
+			if(dirname[strlen(dirname) - 1] != '/')
+				sprintf(fullpath, "%s/%s", dirname, pdirent->d_name);
+			else
+				sprintf(fullpath, "%s%s", dirname, pdirent->d_name);
+
+			if (stat(fullpath, &filestat))
+			{
+				switch (errno)
+				{
+					case ENOENT:
+					case ELOOP:
+					case EACCES:
+						/* These are non-fatal errors. */
+						memset(&filestat, 0, sizeof(filestat));
+						break;
+					default:
+						/* Fatal error. By returning STATUS_NO_SUCH_FILE,
+						   the directory list operation will be aborted */
+						perror(fullpath);
+						irp->ioStatus = RD_STATUS_NO_SUCH_FILE;
+				}
+			}
+
+			if (S_ISDIR(filestat.st_mode))
+				fileBothDirInformation.fileAttributes |= FILE_ATTRIBUTE_DIRECTORY;
+			if (pdirent->d_name[0] == '.')
+				fileBothDirInformation.fileAttributes |= FILE_ATTRIBUTE_HIDDEN;
+			if (!fileBothDirInformation.fileAttributes)
+				fileBothDirInformation.fileAttributes |= FILE_ATTRIBUTE_NORMAL;
+			if (!(filestat.st_mode & S_IWUSR))
+				fileBothDirInformation.fileAttributes |= FILE_ATTRIBUTE_READONLY;
+
+			fileBothDirInformation.nextEntryOffset = 0;
+			fileBothDirInformation.fileIndex = 0;
+
+			seconds_since_1970_to_filetime(get_create_time(&filestat),
+				&(fileBothDirInformation.creationTime.dwHighDateTime),
+				&(fileBothDirInformation.creationTime.dwLowDateTime));
+
+			seconds_since_1970_to_filetime(filestat.st_atime,
+				&(fileBothDirInformation.lastAccessTime.dwHighDateTime),
+				&(fileBothDirInformation.lastAccessTime.dwLowDateTime));
+
+			seconds_since_1970_to_filetime(filestat.st_mtime,
+				&(fileBothDirInformation.lastWriteTime.dwHighDateTime),
+				&(fileBothDirInformation.lastWriteTime.dwLowDateTime));
+
+			seconds_since_1970_to_filetime(filestat.st_ctime,
+				&(fileBothDirInformation.changeTime.dwHighDateTime),
+				&(fileBothDirInformation.changeTime.dwLowDateTime));
+
+			fileBothDirInformation.endOfFileLow = filestat.st_size;
+			fileBothDirInformation.endOfFileHigh = 0;
+
+			fileBothDirInformation.allocationSizeLow = filestat.st_size;
+			fileBothDirInformation.allocationSizeHigh = 0;
+
+			fileBothDirInformation.fileNameLength = 2 * strlen(pdirent->d_name);
+			fileBothDirInformation.eaSize = 0;
+			fileBothDirInformation.shortNameLength = 0;
+			fileBothDirInformation.reserved = 0;
+
+			irp->ioStatus = RD_STATUS_SUCCESS;
+			irp->buffer = xmalloc(sizeof(struct stream));
+			
+			irp->buffer->size = 95 +
+				fileBothDirInformation.fileNameLength +
+				fileBothDirInformation.shortNameLength;
+
+			irp->buffer->data = xmalloc(irp->buffer->size);
+			irp->buffer->p = irp->buffer->data;
+			irp->buffer->end = irp->buffer->p + irp->buffer->size;
+
+			out_uint32_le(irp->buffer, fileBothDirInformation.nextEntryOffset);
+			out_uint32_le(irp->buffer, fileBothDirInformation.fileIndex);
+
+			out_uint32_le(irp->buffer, fileBothDirInformation.creationTime.dwLowDateTime);
+			out_uint32_le(irp->buffer, fileBothDirInformation.creationTime.dwHighDateTime);
+
+			out_uint32_le(irp->buffer, fileBothDirInformation.lastAccessTime.dwLowDateTime);
+			out_uint32_le(irp->buffer, fileBothDirInformation.lastAccessTime.dwHighDateTime);
+
+			out_uint32_le(irp->buffer, fileBothDirInformation.lastWriteTime.dwLowDateTime);
+			out_uint32_le(irp->buffer, fileBothDirInformation.lastWriteTime.dwHighDateTime);
+
+			out_uint32_le(irp->buffer, fileBothDirInformation.changeTime.dwLowDateTime);
+			out_uint32_le(irp->buffer, fileBothDirInformation.changeTime.dwHighDateTime);
+
+			out_uint32_le(irp->buffer, fileBothDirInformation.endOfFileLow);
+			out_uint32_le(irp->buffer, fileBothDirInformation.endOfFileHigh);
+
+			out_uint32_le(irp->buffer, fileBothDirInformation.allocationSizeLow);
+			out_uint32_le(irp->buffer, fileBothDirInformation.allocationSizeHigh);
+
+			out_uint32_le(irp->buffer, fileBothDirInformation.fileAttributes);
+
+			out_uint8(irp->buffer, 2 * strlen(pdirent->d_name) + 2);	/* unicode length */
+			out_uint8s(irp->buffer, 7);	/* pad? */
+			out_uint8(irp->buffer, 0);	/* 8.3 file length */
+			out_uint8s(irp->buffer, 2 * 12);	/* 8.3 unicode length */
+			printf("0mg h4x: %s\n", pdirent->d_name);
+			rdp_out_unistr(g_rdp, irp->buffer, pdirent->d_name, 2 * strlen(pdirent->d_name));
+			s_mark_end(irp->buffer);
+			break;
+
+#if 0
+			out_uint32_le(irp->buffer, fileBothDirInformation.fileNameLength + 2);
+			out_uint32_le(irp->buffer, fileBothDirInformation.eaSize);
+			
+			out_uint8(irp->buffer, fileBothDirInformation.shortNameLength);
+			out_uint8s(irp->buffer, 2 * 12);
+			out_uint8(irp->buffer, fileBothDirInformation.reserved);
+			rdp_out_unistr(g_rdp, irp->buffer, pdirent->d_name, fileBothDirInformation.fileNameLength);
+			s_mark_end(irp->buffer);
 #endif
+#if 0
+			/* Return requested information */
+			out_uint8s(out, 8);	/* unknown zero */
+
+			seconds_since_1970_to_filetime(get_create_time(&filestat), &ft_high,
+						       &ft_low);
+			out_uint32_le(out, ft_low);	/* create time */
+			out_uint32_le(out, ft_high);
+
+			seconds_since_1970_to_filetime(filestat.st_atime, &ft_high, &ft_low);
+			out_uint32_le(out, ft_low);	/* last_access_time */
+			out_uint32_le(out, ft_high);
+
+			seconds_since_1970_to_filetime(filestat.st_mtime, &ft_high, &ft_low);
+			out_uint32_le(out, ft_low);	/* last_write_time */
+			out_uint32_le(out, ft_high);
+
+			seconds_since_1970_to_filetime(filestat.st_ctime, &ft_high, &ft_low);
+			out_uint32_le(out, ft_low);	/* change_write_time */
+			out_uint32_le(out, ft_high);
+
+			out_uint32_le(out, filestat.st_size);	/* filesize low */
+			out_uint32_le(out, 0);	/* filesize high */
+			out_uint32_le(out, filestat.st_size);	/* filesize low */
+			out_uint32_le(out, 0);	/* filesize high */
+			out_uint32_le(out, file_attributes);
+			out_uint8(out, 2 * strlen(pdirent->d_name) + 2);	/* unicode length */
+			out_uint8s(out, 7);	/* pad? */
+			out_uint8(out, 0);	/* 8.3 file length */
+			out_uint8s(out, 2 * 12);	/* 8.3 unicode length */
+			rdp_out_unistr(g_rdp, out, pdirent->d_name, 2 * strlen(pdirent->d_name));
+#endif
+			break;
+
+		case FileNamesInformation:
+			printf("FileBothDirectoryInformation\n");
+			break;
+	}
+}
+
+#if 0
 
 RD_NTSTATUS
 disk_query_information(RD_NTHANDLE handle, uint32 info_class, STREAM out)
@@ -805,6 +1083,8 @@ disk_query_information(RD_NTHANDLE handle, uint32 info_class, STREAM out)
 	}
 	return RD_STATUS_SUCCESS;
 }
+
+#endif
 
 RD_NTSTATUS
 disk_set_information(RD_NTHANDLE handle, uint32 info_class, STREAM in, STREAM out)
@@ -1160,6 +1440,8 @@ disk_query_volume_information(RD_NTHANDLE handle, uint32 info_class, STREAM out)
 	struct fileinfo *pfinfo;
 	FsInfoType *fsinfo;
 
+	printf("disk_query_volume_information\n");
+
 	pfinfo = &(g_fileinfo[handle]);
 
 	if (STATFS_FN(pfinfo->path, &stat_fs) != 0)
@@ -1226,6 +1508,8 @@ disk_query_volume_information(RD_NTHANDLE handle, uint32 info_class, STREAM out)
 	}
 	return RD_STATUS_SUCCESS;
 }
+
+#if 0
 
 RD_NTSTATUS
 disk_query_directory(RD_NTHANDLE handle, uint32 info_class, char *pattern, STREAM out)
@@ -1338,7 +1622,7 @@ disk_query_directory(RD_NTHANDLE handle, uint32 info_class, char *pattern, STREA
 
 	return RD_STATUS_SUCCESS;
 }
-
+#endif
 
 
 static RD_NTSTATUS
