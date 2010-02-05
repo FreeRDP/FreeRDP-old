@@ -16,6 +16,7 @@ install-sh
 ltmain.sh
 missing
 stamp-h1
+*~
 /libfreerdp/Makefile
 /libfreerdp/Makefile.in
 /libfreerdp/*.o
@@ -30,6 +31,7 @@ stamp-h1
 /libkbd/*.la
 /libkbd/.deps
 /libkbd/.libs
+/libkbd/*~
 /X11/Makefile
 /X11/Makefile.in
 /X11/xfreerdp
@@ -38,6 +40,7 @@ stamp-h1
 /X11/*.la
 /X11/*.deps
 /X11/*.libs
+/X11/*~
 /channels/rdpsnd/*.o
 /channels/rdpsnd/*.lo
 /channels/rdpsnd/*.la
@@ -45,6 +48,7 @@ stamp-h1
 /channels/rdpsnd/Makefile.in
 /channels/rdpsnd/.deps
 /channels/rdpsnd/.libs
+/channels/rdpsnd/*~
 /channels/rdpdr/*.o
 /channels/rdpdr/*.lo
 /channels/rdpdr/*.la
@@ -52,3 +56,5 @@ stamp-h1
 /channels/rdpdr/Makefile.in
 /channels/rdpdr/.deps
 /channels/rdpdr/.libs
+/channels/rdpdr/*~
+

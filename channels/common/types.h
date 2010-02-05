@@ -30,14 +30,14 @@ typedef struct _DEVICE_FNS
 			    uint32 * result);
 	RD_NTSTATUS(*write) (RD_NTHANDLE handle, uint8 * data, uint32 length, uint32 offset,
 			     uint32 * result);
-	RD_NTSTATUS(*device_control) (RD_NTHANDLE handle, uint32 request, STREAM in, STREAM out);
+	//RD_NTSTATUS(*device_control) (RD_NTHANDLE handle, uint32 request, STREAM in, STREAM out);
 }
 DEVICE_FNS;
 
 
 typedef struct rdpdr_device_info
 {
-	uint32 device_type;
+	uint32 deviceType;
 	RD_NTHANDLE handle;
 	char name[8];
 	char *local_path;
@@ -107,7 +107,7 @@ typedef struct fileinfo
 {
 	uint32 device_id, flags_and_attributes, accessmask;
 	char path[PATH_MAX];
-	DIR *pdir;
+	//DIR *pdir;
 	struct dirent *pdirent;
 	char pattern[PATH_MAX];
 	RD_BOOL delete_on_close;

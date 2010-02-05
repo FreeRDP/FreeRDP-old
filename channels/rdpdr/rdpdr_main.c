@@ -30,6 +30,7 @@
 #include <sys/un.h>
 #include <sys/time.h>
 #include "types_ui.h"
+#include "types.h"
 #include "vchan.h"
 #include "chan_stream.h"
 #include "constants_rdpdr.h"
@@ -68,6 +69,10 @@ static struct data_in_item * volatile g_list_tail;
 static pthread_mutex_t * g_mutex;
 static volatile int g_thread_status;
 
+static uint16 g_versionMinor;
+static uint16 g_clientID;
+static uint16 g_deviceCount;
+RDPDR_DEVICE g_device[RDPDR_MAX_DEVICES];
 
 static int
 init_wait_obj(struct wait_obj * obj, const char * name)
@@ -221,6 +226,164 @@ signal_data_in(void)
 	set_wait_obj(&g_data_in_event);
 }
 
+static void
+rdpdr_process_server_announce_request(char* data, int data_size)
+{
+	/* versionMajor, must be 1 */
+	g_versionMinor = GET_UINT16(data, 2); /* versionMinor */
+	g_clientID = GET_UINT32(data, 4); /* clientID */
+
+	LLOGLN(0, ("Version Minor: %d\n", g_versionMinor));
+
+	switch(g_versionMinor)
+	{
+		case 0x000C:
+			LLOGLN(0, ("Windows Vista, Windows Vista SP1, Windows Server 2008, Windows 7, and Windows Server 2008 R2"));
+			break;
+
+		case 0x000A:
+			LLOGLN(0, ("Windows Server 2003 SP2"));
+			break;
+
+		case 0x0006:
+			LLOGLN(0, ("Windows XP SP3"));
+			break;
+
+		case 0x0005:
+			LLOGLN(0, ("Windows XP, Windows XP SP1, Windows XP SP2, Windows Server 2003, and Windows Server 2003 SP1"));
+			break;
+
+		case 0x0002:
+			LLOGLN(0, ("Windows 2000"));
+			break;
+	}
+}
+
+static int
+rdpdr_send_client_announce_reply()
+{
+	uint32 error;
+	char* out_data = malloc(12);
+
+	SET_UINT16(out_data, 0, RDPDR_COMPONENT_TYPE_CORE);
+	SET_UINT16(out_data, 2, PAKID_CORE_CLIENTID_CONFIRM);
+
+	SET_UINT16(out_data, 4, 1); /* versionMajor, must be set to 1 */
+	SET_UINT16(out_data, 6, g_versionMinor); /* versionMinor */
+	SET_UINT32(out_data, 8, g_clientID); /* clientID, given by the server in a Server Announce Request */
+
+	error = g_ep.pVirtualChannelWrite(g_open_handle[0], out_data, 12, out_data);
+
+	if (error != CHANNEL_RC_OK)
+	{
+		LLOGLN(0, ("thread_process_message_formats: "
+			"VirtualChannelWrite failed %d", error));
+		return 1;
+	}
+
+	return 0;
+}
+
+static int
+rdpdr_send_client_name_request()
+{
+	char* out_data;
+	int out_data_size;
+	uint32 error;
+	uint32 computerNameLen;
+
+	computerNameLen = 1;
+	out_data_size = 16 + computerNameLen * 2;
+	out_data = malloc(out_data_size);
+
+	SET_UINT16(out_data, 0, RDPDR_COMPONENT_TYPE_CORE);
+	SET_UINT16(out_data, 2, PAKID_CORE_CLIENT_NAME);
+
+	SET_UINT32(out_data, 4, 1); // unicodeFlag, 0 for ASCII and 1 for Unicode
+	SET_UINT32(out_data, 8, 0); // codePage, must be set to zero
+
+	/* this part is a hardcoded test, while waiting for a unicode string output function */
+	/* we also need to figure out a way of passing settings from the freerdp core */
+
+	SET_UINT32(out_data, 12, computerNameLen); /* computerNameLen */
+	SET_UINT16(out_data, 16, 0x0041); /* computerName */
+
+	error = g_ep.pVirtualChannelWrite(g_open_handle[0], out_data, out_data_size, out_data);
+
+	if (error != CHANNEL_RC_OK)
+	{
+		LLOGLN(0, ("thread_process_message_formats: "
+			"VirtualChannelWrite failed %d", error));
+		return 1;
+	}
+
+	return 0;
+}
+
+static int
+rdpdr_send_device_list_announce_request()
+{
+	char* out_data;
+	int out_data_size;
+
+	int i;
+	uint32 error;
+	int offset = 0;
+	
+	out_data = malloc(64);
+
+	SET_UINT16(out_data, 0, RDPDR_COMPONENT_TYPE_CORE);
+	SET_UINT16(out_data, 2, PAKID_CORE_DEVICELIST_ANNOUNCE);
+	SET_UINT16(out_data, 4, g_deviceCount); // deviceCount
+	offset += 6;
+
+	for (i = 0; i < g_deviceCount; i++)
+	{
+		SET_UINT16(out_data, offset, g_device[i].deviceType); /* deviceType */
+		SET_UINT16(out_data, offset, i); /* deviceID */
+		//out_uint8p(s, g_device[i].name, 8); // preferredDosName, Max 8 characters, may not be null terminated
+		offset += 12;
+
+		switch (g_device[i].deviceType)
+		{
+			case DEVICE_TYPE_PRINTER:
+
+				break;
+
+			case DEVICE_TYPE_DISK:
+
+				break;
+
+			case DEVICE_TYPE_SMARTCARD:
+
+				/*
+				 * According to [MS-RDPEFS] the deviceDataLength field for
+				 * the smart card device type must be set to zero
+				 */
+				
+				SET_UINT32(out_data, offset, 0); // deviceDataLength
+				offset += 4;
+				break;
+
+			default:
+				SET_UINT32(out_data, offset, 0);
+				offset += 4;
+		}
+	}
+
+	out_data_size = offset;
+	error = g_ep.pVirtualChannelWrite(g_open_handle[0], out_data, out_data_size, out_data);
+
+	if (error != CHANNEL_RC_OK)
+	{
+		LLOGLN(0, ("thread_process_message_formats: "
+			"VirtualChannelWrite failed %d", error));
+		return 1;
+	}
+
+	return 0;
+}
+
 static int
 thread_process_message(char * data, int data_size)
 {
@@ -239,9 +402,9 @@ thread_process_message(char * data, int data_size)
 		{
 			case PAKID_CORE_SERVER_ANNOUNCE:
 				LLOGLN(0, ("PAKID_CORE_SERVER_ANNOUNCE"));
-				//rdpdr_process_server_announce_request(s);
-				//rdpdr_send_client_announce_reply();
-				//rdpdr_send_client_name_request();
+				rdpdr_process_server_announce_request(&data[4], data_size - 4);
+				rdpdr_send_client_announce_reply();
+				rdpdr_send_client_name_request();
 				break;
 
 			case PAKID_CORE_CLIENTID_CONFIRM:
@@ -254,8 +417,6 @@ thread_process_message(char * data, int data_size)
 				LLOGLN(0, ("PAKID_CORE_DEVICE_REPLY"));
 				deviceID = GET_UINT32(data, 4);
 				status = GET_UINT32(data, 8);
-				//printf("NTSTATUS: %d\n", status);
-				//DEBUG_RDP5("RDPDR: Server connected to resource %d\n", handle);
 				break;
 
 			case PAKID_CORE_DEVICE_IOREQUEST:
