@@ -29,8 +29,10 @@
 #include <unistd.h>
 #include <sys/un.h>
 #include <sys/time.h>
-#include "types_ui.h"
+
+#include "irp.h"
 #include "types.h"
+#include "types_ui.h"
 #include "vchan.h"
 #include "chan_stream.h"
 #include "constants_rdpdr.h"
@@ -54,7 +56,7 @@ struct data_in_item
 	int data_size;
 };
 
-static CHANNEL_ENTRY_POINTS g_ep;
+CHANNEL_ENTRY_POINTS g_ep;
 static void * g_han;
 static CHANNEL_DEF g_channel_def[2];
 static uint32 g_open_handle[2];
@@ -382,6 +384,125 @@ rdpdr_send_device_list_announce_request()
 	}
 
 	return 0;
+}
+
+static void
+rdpdr_process_irp(char* data, int data_size)
+{
+	IRP irp;
+	memset((void*)&irp, '\0', sizeof(IRP));
+
+	irp.ioStatus = RD_STATUS_SUCCESS;
+
+	/* Device I/O Request Header */
+	irp.deviceID = GET_UINT32(data, 0); /* deviceID */
+	irp.fileID = GET_UINT32(data, 4); /* fileID */
+	irp.completionID = GET_UINT32(data, 8); /* completionID */
+	irp.majorFunction = GET_UINT32(data, 12); /* majorFunction */
+	irp.minorFunction = GET_UINT32(data, 16); /* minorFunction */
+
+	/* In the end, devices will be registered by each sub-module, and this
+	 * step won't be necessary anymore. Ideally, there would be a linked list
+	 * of currently registered devices, with information such as device type
+	 * and callbacks to different functions abstracting the device. The linked
+	 * list is necessary because it will make dynamic registering and unregistering
+	 * of devices easier, such as when a user connects a usb drive to his computer
+	 * while the RDP session is already initiated.
+	 */
+
+	switch(g_device[irp.deviceID].deviceType)
+	{
+		case DEVICE_TYPE_SERIAL:
+			//irp.fns = &serial_fns;
+			//irp.rwBlocking = False;
+			break;
+
+		case DEVICE_TYPE_PARALLEL:
+			//irp.fns = &parallel_fns;
+			//irp.rwBlocking = False;
+			break;
+
+		case DEVICE_TYPE_PRINTER:
+			//irp.fns = &printer_fns;
+			//irp.rwBlocking = False;
+			break;
+
+		case DEVICE_TYPE_DISK:
+			//irp.fns = &disk_fns;
+			//irp.rwBlocking = False;
+			break;
+
+		case DEVICE_TYPE_SMARTCARD:
+
+		default:
+			//ui_error(NULL, "IRP bad deviceID %ld\n", irp.deviceID);
+			return;
+	}
+
+	LLOGLN(0, ("IRP MAJOR: %d MINOR: %d\n", irp.majorFunction, irp.minorFunction));
+
+	switch(irp.majorFunction)
+	{
+		case IRP_MJ_CREATE:
+			LLOGLN(0, ("IRP_MJ_CREATE\n"));
+			irp_process_create_request(&data[20], data_size - 20, &irp);
+			irp_send_create_response(&irp);
+			break;
+
+		case IRP_MJ_CLOSE:
+			LLOGLN(0, ("IRP_MJ_CLOSE\n"));
+			irp_process_close_request(&data[20], data_size - 20, &irp);
+			irp_send_close_response(&irp);
+			break;
+
+		case IRP_MJ_READ:
+			LLOGLN(0, ("IRP_MJ_READ\n"));
+			irp_process_read_request(&data[20], data_size - 20, &irp);
+			break;
+
+		case IRP_MJ_WRITE:
+			LLOGLN(0, ("IRP_MJ_WRITE\n"));
+			irp_process_write_request(&data[20], data_size - 20, &irp);
+			break;
+
+		case IRP_MJ_QUERY_INFORMATION:
+			LLOGLN(0, ("IRP_MJ_QUERY_INFORMATION\n"));
+			irp_process_query_information_request(&data[20], data_size - 20, &irp);
+			irp_send_query_information_response(&irp);
+			break;
+
+		case IRP_MJ_SET_INFORMATION:
+			LLOGLN(0, ("IRP_MJ_SET_INFORMATION\n"));
+			irp_process_set_volume_information_request(&data[20], data_size - 20, &irp);
+			break;
+
+		case IRP_MJ_QUERY_VOLUME_INFORMATION:
+			LLOGLN(0, ("IRP_MJ_QUERY_VOLUME_INFORMATION\n"));
+			irp_process_query_volume_information_request(&data[20], data_size - 20, &irp);
+			break;
+
+		case IRP_MJ_DIRECTORY_CONTROL:
+			LLOGLN(0, ("IRP_MJ_DIRECTORY_CONTROL\n"));
+			irp_process_directory_control_request(&data[20], data_size - 20, &irp);
+			break;
+
+		case IRP_MJ_DEVICE_CONTROL:
+			LLOGLN(0, ("IRP_MJ_DEVICE_CONTROL\n"));
+			irp_process_device_control_request(&data[20], data_size - 20, &irp);
+			break;
+
+		case IRP_MJ_LOCK_CONTROL:
+			LLOGLN(0, ("IRP_MJ_LOCK_CONTROL\n"));
+			irp_process_file_lock_control_request(&data[20], data_size - 20, &irp);
+			break;
+
+		default:
+			//ui_unimpl(NULL, "IRP majorFunction=0x%x minorFunction=0x%x\n", irp.majorFunction, irp.minorFunction);
+			return;
+	}
+
+	if (irp.buffer)
+		free(irp.buffer);
 }
 
 static int

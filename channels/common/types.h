@@ -1,4 +1,6 @@
 
+#ifndef __TYPES_H
+#define __TYPES_H
 
 #define MAX_CBSIZE 256
 
@@ -14,26 +16,6 @@ typedef struct _RD_WAVEFORMATEX
 	uint16 cbSize;
 	uint8 cb[MAX_CBSIZE];
 } RD_WAVEFORMATEX;
-
-
-/* RDPDR */
-typedef uint32 RD_NTSTATUS;
-typedef uint32 RD_NTHANDLE;
-
-typedef struct _DEVICE_FNS
-{
-	RD_NTSTATUS(*create) (uint32 device, uint32 desired_access, uint32 share_mode,
-			      uint32 create_disposition, uint32 flags_and_attributes,
-			      char *filename, RD_NTHANDLE * handle);
-	RD_NTSTATUS(*close) (RD_NTHANDLE handle);
-	RD_NTSTATUS(*read) (RD_NTHANDLE handle, uint8 * data, uint32 length, uint32 offset,
-			    uint32 * result);
-	RD_NTSTATUS(*write) (RD_NTHANDLE handle, uint8 * data, uint32 length, uint32 offset,
-			     uint32 * result);
-	//RD_NTSTATUS(*device_control) (RD_NTHANDLE handle, uint32 request, STREAM in, STREAM out);
-}
-DEVICE_FNS;
-
 
 typedef struct rdpdr_device_info
 {
@@ -262,3 +244,6 @@ typedef struct _FILE_NETWORK_OPEN_INFORMATION
 	uint32 reserved;
 }
 FILE_NETWORK_OPEN_INFORMATION;
+
+#endif // __TYPES_H
+

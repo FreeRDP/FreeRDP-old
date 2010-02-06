@@ -22,9 +22,24 @@
 #ifndef __IRP_H
 #define __IRP_H
 
-#include "parse.h"
-#include "disk.h"
-#include "rdpdr.h"
+#include "types_ui.h"
+
+typedef uint32 RD_NTSTATUS;
+typedef uint32 RD_NTHANDLE;
+
+typedef struct _DEVICE_FNS
+{
+	RD_NTSTATUS(*create) (uint32 device, uint32 desired_access, uint32 share_mode,
+			      uint32 create_disposition, uint32 flags_and_attributes,
+			      char *filename, RD_NTHANDLE * handle);
+	RD_NTSTATUS(*close) (RD_NTHANDLE handle);
+	RD_NTSTATUS(*read) (RD_NTHANDLE handle, uint8 * data, uint32 length, uint32 offset,
+			    uint32 * result);
+	RD_NTSTATUS(*write) (RD_NTHANDLE handle, uint8 * data, uint32 length, uint32 offset,
+			     uint32 * result);
+	//RD_NTSTATUS(*device_control) (RD_NTHANDLE handle, uint32 request, STREAM in, STREAM out);
+}
+DEVICE_FNS;
 
 enum FILE_INFORMATION_CLASS
 {
@@ -95,46 +110,50 @@ typedef struct _IRP
 	DEVICE_FNS* fns;
 	RD_BOOL rwBlocking;
 	RD_NTHANDLE ioStatus;
-	STREAM buffer;
+	char* buffer;
+	int buffer_size;
 	int infoClass;
 }
 IRP;
 
 void
-irp_process_create_request(STREAM s, IRP* irp);
+irp_output_device_io_completion_header(char* data, int data_size, uint32 deviceID, uint32 completionID, uint32 ioStatus);
+void
+irp_process_create_request(char* data, int data_size, IRP* irp);
 void
 irp_send_create_response(IRP* irp);
 void
-irp_process_close_request(STREAM s, IRP* irp);
+irp_process_close_request(char* data, int data_size, IRP* irp);
 void
 irp_send_close_response(IRP* irp);
 void
-irp_process_read_request(STREAM s, IRP* irp);
+irp_process_read_request(char* data, int data_size, IRP* irp);
 void
 irp_send_read_response(IRP* irp);
 void
-irp_process_write_request(STREAM s, IRP* irp);
+irp_process_write_request(char* data, int data_size, IRP* irp);
 void
-irp_process_query_volume_information_request(STREAM s, IRP* irp);
+irp_process_query_volume_information_request(char* data, int data_size, IRP* irp);
 void
-irp_process_set_volume_information_request(STREAM s, IRP* irp);
+irp_process_set_volume_information_request(char* data, int data_size, IRP* irp);
 void
-irp_process_query_information_request(STREAM s, IRP* irp);
+irp_process_query_information_request(char* data, int data_size, IRP* irp);
 void
 irp_send_query_information_response(IRP* irp);
 void
-irp_process_set_information_request(STREAM s, IRP* irp);
+irp_process_set_information_request(char* data, int data_size, IRP* irp);
 void
-irp_process_directory_control_request(STREAM s, IRP* irp);
+irp_process_directory_control_request(char* data, int data_size, IRP* irp);
 void
-irp_process_device_control_request(STREAM s, IRP* irp);
+irp_process_device_control_request(char* data, int data_size, IRP* irp);
 void
-irp_process_file_lock_control_request(STREAM s, IRP* irp);
+irp_process_file_lock_control_request(char* data, int data_size, IRP* irp);
 void
-irp_process_query_directory_request(STREAM s, IRP* irp);
+irp_process_query_directory_request(char* data, int data_size, IRP* irp);
 void
 irp_send_query_directory_response(IRP* irp);
 void
-irp_process_notify_change_directory_request(STREAM s, IRP* irp);
+irp_process_notify_change_directory_request(char* data, int data_size, IRP* irp);
 
 #endif // __IRP_H
+
