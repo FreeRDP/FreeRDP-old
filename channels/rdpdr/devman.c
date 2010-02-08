@@ -2,7 +2,7 @@
    FreeRDP: A Remote Desktop Protocol client.
    Redirected Device Manager
 
-   Copyright (C) Marc-Andre Moreau <marcandre.moreau@gmail.com> 2009
+   Copyright (C) Marc-Andre Moreau <marcandre.moreau@gmail.com> 2010
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -38,14 +38,80 @@ devman_init()
 	dev_count = 0;
 }
 
+SERVICE*
+devman_register_service(uint32 type)
+{
+	SERVICE* service = (SERVICE*)malloc(sizeof(SERVICE));	
+
+	switch (type)
+	{
+		case DEVICE_TYPE_SERIAL:
+			service->type = DEVICE_TYPE_SERIAL;
+			break;
+
+		case DEVICE_TYPE_PARALLEL:
+			service->type = DEVICE_TYPE_PARALLEL;
+			break;
+
+		case DEVICE_TYPE_PRINTER:
+			service->type = DEVICE_TYPE_PRINTER;
+			break;
+
+		case DEVICE_TYPE_DISK:
+			service->type = DEVICE_TYPE_DISK;
+			break;
+
+		case DEVICE_TYPE_SMARTCARD:
+			service->type = DEVICE_TYPE_SMARTCARD;
+			break;
+
+		default:
+			/* unknown device service type */
+			free(service);
+			return NULL;
+			break;
+	}
+
+	service->create = NULL;
+	service->close = NULL;
+	service->read = NULL;
+	service->write = NULL;
+	service->control = NULL;
+
+	return service;
+}
+
+int
+devman_unregister_service(SERVICE* service)
+{
+	/* unregister all devices depending on the service */
+
+	devman_rewind();
+
+	while (devman_has_next() != 0)
+	{
+		pdev = devman_get_next();
+
+		if (pdev->service == service)
+		{
+			devman_unregister_device(pdev);
+			devman_rewind();
+		}
+	}
+
+	/* unregister service */
+	free(service);
+
+	return 1;
+}
+
 DEVICE*
-devman_register_device(uint32 deviceType)
+devman_register_device(SERVICE* service)
 {
 	pdev = (DEVICE*)malloc(sizeof(DEVICE));
-
-	pdev->deviceType = deviceType;
 	pdev->prev = NULL;
 	pdev->next = NULL;
+	pdev->service = service;
 
 	if (head_dev == tail_dev)
 	{

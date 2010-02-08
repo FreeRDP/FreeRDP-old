@@ -2,7 +2,7 @@
    FreeRDP: A Remote Desktop Protocol client.
    Redirected Device Manager
 
-   Copyright (C) Marc-Andre Moreau <marcandre.moreau@gmail.com> 2009
+   Copyright (C) Marc-Andre Moreau <marcandre.moreau@gmail.com> 2010
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -24,9 +24,21 @@
 
 #include "types_ui.h"
 
+typedef struct service
+{
+	uint32 type;
+	int(*create) (void);
+	int(*close) (void);
+	int(*read) (void);
+	int(*write) (void);
+	int(*control) (void);
+}
+SERVICE;
+
 typedef struct device
 {
-	uint32 deviceType;
+	SERVICE* service;
+	void* info;
 	void* prev;
 	void* next;
 }
@@ -34,8 +46,12 @@ DEVICE;
 
 void
 devman_init();
+SERVICE*
+devman_register_service(uint32 type);
+int
+devman_unregister_service(SERVICE* service);
 DEVICE*
-devman_register_device(uint32 deviceType);
+devman_register_device(SERVICE* service);
 int
 devman_unregister_device(DEVICE* dev);
 void
