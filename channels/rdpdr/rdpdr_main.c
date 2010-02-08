@@ -31,6 +31,7 @@
 #include <sys/time.h>
 
 #include "irp.h"
+#include "devman.h"
 #include "types.h"
 #include "types_ui.h"
 #include "vchan.h"
