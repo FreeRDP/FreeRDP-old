@@ -236,9 +236,23 @@ devman_get_next(DEVMAN* devman)
 	return pdev;
 }
 
-int
-devman_get_count(DEVMAN* devman)
+DEVICE*
+devman_get_device_by_id(DEVMAN* devman, uint32 id)
 {
-	return devman->count;
+	DEVICE* pdev;
+
+	devman_rewind(devman);
+
+	while (devman_has_next(devman) != 0)
+	{
+		pdev = devman_get_next(devman);
+
+		/* device with given ID was found */
+		if (pdev->id == id)
+			return pdev;
+	}
+
+	/* no device with the given ID was found */
+	return NULL;
 }
 

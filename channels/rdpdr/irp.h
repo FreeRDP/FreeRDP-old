@@ -22,11 +22,13 @@
 #ifndef __IRP_H
 #define __IRP_H
 
+#include "devman.h"
 #include "types_ui.h"
 
 typedef uint32 RD_NTSTATUS;
 typedef uint32 RD_NTHANDLE;
 
+#if 0
 typedef struct _DEVICE_FNS
 {
 	RD_NTSTATUS(*create) (uint32 device, uint32 desired_access, uint32 share_mode,
@@ -40,6 +42,7 @@ typedef struct _DEVICE_FNS
 	//RD_NTSTATUS(*device_control) (RD_NTHANDLE handle, uint32 request, STREAM in, STREAM out);
 }
 DEVICE_FNS;
+#endif
 
 enum FILE_INFORMATION_CLASS
 {
@@ -102,12 +105,11 @@ enum FS_INFORMATION_CLASS
 
 typedef struct _IRP
 {
-	uint32 deviceID;
+	DEVICE* dev;
 	uint32 fileID;
 	uint32 completionID;
 	uint32 majorFunction;
 	uint32 minorFunction;
-	DEVICE_FNS* fns;
 	RD_BOOL rwBlocking;
 	RD_NTHANDLE ioStatus;
 	char* buffer;

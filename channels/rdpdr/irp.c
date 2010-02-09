@@ -37,7 +37,6 @@
 extern rdpRdp * g_rdp;
 extern VCHANNEL *rdpdr_channel;
 extern CHANNEL_ENTRY_POINTS g_ep;
-extern RDPDR_DEVICE g_device[RDPDR_MAX_DEVICES];
 
 void
 irp_output_device_io_completion_header(char* data, int data_size, uint32 deviceID, uint32 completionID, uint32 ioStatus)

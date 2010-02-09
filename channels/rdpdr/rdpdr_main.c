@@ -74,8 +74,7 @@ static volatile int g_thread_status;
 
 static uint16 g_versionMinor;
 static uint16 g_clientID;
-static uint16 g_deviceCount;
-RDPDR_DEVICE g_device[RDPDR_MAX_DEVICES];
+DEVMAN* g_devman;
 
 static int
 init_wait_obj(struct wait_obj * obj, const char * name)
@@ -329,25 +328,29 @@ rdpdr_send_device_list_announce_request()
 	char* out_data;
 	int out_data_size;
 
-	int i;
 	uint32 error;
 	int offset = 0;
-	
+	DEVICE* pdev;	
+
 	out_data = malloc(64);
 
 	SET_UINT16(out_data, 0, RDPDR_COMPONENT_TYPE_CORE);
 	SET_UINT16(out_data, 2, PAKID_CORE_DEVICELIST_ANNOUNCE);
-	SET_UINT16(out_data, 4, g_deviceCount); // deviceCount
+	SET_UINT16(out_data, 4, g_devman->count); // deviceCount
 	offset += 6;
 
-	for (i = 0; i < g_deviceCount; i++)
+	devman_rewind(g_devman);
+
+	while (devman_has_next(g_devman) != 0)
 	{
-		SET_UINT16(out_data, offset, g_device[i].deviceType); /* deviceType */
-		SET_UINT16(out_data, offset, i); /* deviceID */
+		pdev = devman_get_next(g_devman);
+
+		SET_UINT16(out_data, offset, pdev->service->type); /* deviceType */
+		SET_UINT16(out_data, offset, pdev->id); /* deviceID */
 		//out_uint8p(s, g_device[i].name, 8); // preferredDosName, Max 8 characters, may not be null terminated
 		offset += 12;
 
-		switch (g_device[i].deviceType)
+		switch (pdev->service->type)
 		{
 			case DEVICE_TYPE_PRINTER:
 
@@ -371,7 +374,7 @@ rdpdr_send_device_list_announce_request()
 			default:
 				SET_UINT32(out_data, offset, 0);
 				offset += 4;
-		}
+		}		
 	}
 
 	out_data_size = offset;
@@ -391,54 +394,20 @@ static void
 rdpdr_process_irp(char* data, int data_size)
 {
 	IRP irp;
+	int deviceID;
+
 	memset((void*)&irp, '\0', sizeof(IRP));
 
 	irp.ioStatus = RD_STATUS_SUCCESS;
 
 	/* Device I/O Request Header */
-	irp.deviceID = GET_UINT32(data, 0); /* deviceID */
+	deviceID = GET_UINT32(data, 0); /* deviceID */
 	irp.fileID = GET_UINT32(data, 4); /* fileID */
 	irp.completionID = GET_UINT32(data, 8); /* completionID */
 	irp.majorFunction = GET_UINT32(data, 12); /* majorFunction */
 	irp.minorFunction = GET_UINT32(data, 16); /* minorFunction */
 
-	/* In the end, devices will be registered by each sub-module, and this
-	 * step won't be necessary anymore. Ideally, there would be a linked list
-	 * of currently registered devices, with information such as device type
-	 * and callbacks to different functions abstracting the device. The linked
-	 * list is necessary because it will make dynamic registering and unregistering
-	 * of devices easier, such as when a user connects a usb drive to his computer
-	 * while the RDP session is already initiated.
-	 */
-
-	switch(g_device[irp.deviceID].deviceType)
-	{
-		case DEVICE_TYPE_SERIAL:
-			//irp.fns = &serial_fns;
-			//irp.rwBlocking = False;
-			break;
-
-		case DEVICE_TYPE_PARALLEL:
-			//irp.fns = &parallel_fns;
-			//irp.rwBlocking = False;
-			break;
-
-		case DEVICE_TYPE_PRINTER:
-			//irp.fns = &printer_fns;
-			//irp.rwBlocking = False;
-			break;
-
-		case DEVICE_TYPE_DISK:
-			//irp.fns = &disk_fns;
-			//irp.rwBlocking = False;
-			break;
-
-		case DEVICE_TYPE_SMARTCARD:
-
-		default:
-			//ui_error(NULL, "IRP bad deviceID %ld\n", irp.deviceID);
-			return;
-	}
+	irp.dev = devman_get_device_by_id(g_devman, deviceID);
 
 	LLOGLN(0, ("IRP MAJOR: %d MINOR: %d\n", irp.majorFunction, irp.minorFunction));
 
@@ -531,7 +500,7 @@ thread_process_message(char * data, int data_size)
 
 			case PAKID_CORE_CLIENTID_CONFIRM:
 				LLOGLN(0, ("PAKID_CORE_CLIENTID_CONFIRM"));
-				//rdpdr_send_device_list();
+				rdpdr_send_device_list();
 				break;
 
 			case PAKID_CORE_DEVICE_REPLY:
@@ -543,7 +512,7 @@ thread_process_message(char * data, int data_size)
 
 			case PAKID_CORE_DEVICE_IOREQUEST:
 				LLOGLN(0, ("PAKID_CORE_DEVICE_IOREQUEST"));
-				//rdpdr_process_irp(s);
+				rdpdr_process_irp(&data[4], data_size - 4);
 				break;
 
 			case PAKID_CORE_SERVER_CAPABILITY:
@@ -794,6 +763,7 @@ VirtualChannelEntry(PCHANNEL_ENTRY_POINTS pEntryPoints)
 	init_wait_obj(&g_data_in_event, "freerdprdpdrdatain");
 
 	g_thread_status = 0;
+	g_devman = devman_init();
 
 	g_ep.pVirtualChannelInit(&g_han, g_channel_def, 2,
 		VIRTUAL_CHANNEL_VERSION_WIN2000, InitEvent);

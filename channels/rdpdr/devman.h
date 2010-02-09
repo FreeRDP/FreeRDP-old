@@ -37,16 +37,17 @@ SERVICE;
 
 typedef struct device
 {
-	SERVICE* service;
+	uint32 id;
 	void* info;
 	void* prev;
 	void* next;
+	SERVICE* service;
 }
 DEVICE;
 
 typedef struct devman
 {
-	int dev_count; /* device count */
+	int count; /* device count */
 	DEVICE* idev; /* iterator device */
 	DEVICE* head; /* head device in linked list */
 	DEVICE* tail; /* tail device in linked list */
@@ -71,8 +72,8 @@ int
 devman_has_next(DEVMAN* devman);
 DEVICE*
 devman_get_next(DEVMAN* devman);
-int
-devman_get_count(DEVMAN* devman);
+DEVICE*
+devman_get_device_by_id(DEVMAN* devman, uint32 id);
 
 #endif // __DEVMAN_H
 
