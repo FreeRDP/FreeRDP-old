@@ -6,7 +6,9 @@ librdpdrdir = $(libdir)
 librdpdr_LTLIBRARIES = librdpdr.la
 
 librdpdr_la_SOURCES = \
-	rdpdr_main.c
+	rdpdr_main.c \
+	devman.c \
+	irp.c
 
 librdpdr_la_CFLAGS = -I../../include/freerdp -I../common
 

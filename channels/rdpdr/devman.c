@@ -19,8 +19,11 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#include <stdlib.h>
+
 #include "devman.h"
 #include "types_ui.h"
+#include "constants_rdpdr.h"
 
 DEVMAN*
 devman_init()
@@ -231,7 +234,7 @@ devman_get_next(DEVMAN* devman)
 	DEVICE* pdev;
 
 	pdev = devman->idev;
-	devman->idev = (DEVICE*)idev->next;
+	devman->idev = (DEVICE*)devman->idev->next;
 
 	return pdev;
 }

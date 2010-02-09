@@ -19,28 +19,24 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/time.h>
-#include "disk.h"
-#include "rdp.h"
-#include "rdpset.h"
-#include "rdpdr.h"
-#include "constants.h"
-#include "mcs.h"
-#include "channels.h"
-#include "secure.h"
-#include "mem.h"
+#include <stdlib.h>
+
+#include "devman.h"
+#include "types_ui.h"
+#include "vchan.h"
+#include "chan_stream.h"
+#include "constants_rdpdr.h"
 
 #include "irp.h"
 
-extern rdpRdp * g_rdp;
-extern VCHANNEL *rdpdr_channel;
-extern CHANNEL_ENTRY_POINTS g_ep;
+//extern rdpRdp * g_rdp;
+//extern VCHANNEL *rdpdr_channel;
+//extern CHANNEL_ENTRY_POINTS g_ep;
 
 void
 irp_output_device_io_completion_header(char* data, int data_size, uint32 deviceID, uint32 completionID, uint32 ioStatus)
 {
+#if 0
 	if(data_size < 16)
 		return;
 
@@ -49,11 +45,13 @@ irp_output_device_io_completion_header(char* data, int data_size, uint32 deviceI
 	SET_UINT32(data, 4, deviceID); /* deviceID */
 	SET_UINT32(data, 8, completionID); /* completionID */
 	SET_UINT32(data, 12, ioStatus); /* ioStatus */
+#endif
 }
 
 void
 irp_process_create_request(char* data, int data_size, IRP* irp)
 {
+#if 0
 	uint32 desiredAccess;
 	uint32 allocationSizeHigh;
 	uint32 allocationSizeLow;
@@ -87,13 +85,15 @@ irp_process_create_request(char* data, int data_size, IRP* irp)
 		irp->ioStatus = RD_STATUS_NOT_SUPPORTED;
 	}
 
-	irp->ioStatus =
-		irp->fns->create(irp->deviceID, desiredAccess, sharedAccess, createDisposition, createOptions, path, &(irp->fileID));
+	//irp->ioStatus =
+	//	irp->fns->create(irp->deviceID, desiredAccess, sharedAccess, createDisposition, createOptions, path, &(irp->fileID));
+#endif
 }
 
 void
 irp_send_create_response(IRP* irp)
 {
+#if 0
 	int error;
 	char* data = malloc(26);
 
@@ -111,22 +111,25 @@ irp_send_create_response(IRP* irp)
 			"VirtualChannelWrite failed %d", error));
 		return 1;
 	}
+#endif
 }
 
 void
 irp_process_close_request(char* data, int data_size, IRP* irp)
 {
 	/* 32-byte pad */
-
+#if 0
 	if (!irp->fns->close)
 		irp->ioStatus = RD_STATUS_NOT_SUPPORTED;
 
 	irp->ioStatus = irp->fns->close(irp->fileID);
+#endif
 }
 
 void
 irp_send_close_response(IRP* irp)
 {
+#if 0
 	int error;
 	char* data = malloc(21);
 
@@ -143,11 +146,13 @@ irp_send_close_response(IRP* irp)
 			"VirtualChannelWrite failed %d", error));
 		return 1;
 	}
+#endif
 }
 
 void
 irp_process_read_request(char* data, int data_size, IRP* irp)
 {
+#if 0
 	uint32 length;
 	uint32 offsetLow;
 	uint32 offsetHigh;
@@ -200,11 +205,13 @@ irp_process_read_request(char* data, int data_size, IRP* irp)
 	{
 		irp->ioStatus = RD_STATUS_CANCELLED;
 	}
+#endif
 }
 
 void
 irp_send_read_response(IRP* irp)
 {
+#if 0
 	int error;
 	int data_size = 16 + irp->buffer_size;
 	char* data = malloc(data_size);
@@ -222,11 +229,13 @@ irp_send_read_response(IRP* irp)
 			"VirtualChannelWrite failed %d", error));
 		return 1;
 	}
+#endif
 }
 
 void
 irp_process_write_request(char* data, int data_size, IRP* irp)
 {
+#if 0
 	uint32 length;
 	uint32 offsetLow;
 	uint32 offsetHigh;
@@ -237,11 +246,13 @@ irp_process_write_request(char* data, int data_size, IRP* irp)
 	/* 20-byte pad */
 
 	/* writeData */
+#endif
 }
 
 void
 irp_process_query_volume_information_request(char* data, int data_size, IRP* irp)
 {
+#if 0
 	uint32 fsInformationClass;
 	uint32 length;
 
@@ -250,11 +261,13 @@ irp_process_query_volume_information_request(char* data, int data_size, IRP* irp
 	/* 24-byte pad */
 	
 	/* queryVolumeBuffer */
+#endif
 }
 
 void
 irp_process_set_volume_information_request(char* data, int data_size, IRP* irp)
 {
+#if 0
 	uint32 fsInformationClass;
 	uint32 length;
 
@@ -263,11 +276,13 @@ irp_process_set_volume_information_request(char* data, int data_size, IRP* irp)
 	/* 24-byte pad */
 	
 	/* setVolumeBuffer */
+#endif
 }
 
 void
 irp_process_query_information_request(char* data, int data_size, IRP* irp)
 {
+#if 0
 	uint32 length;
 	char* queryBuffer;
 
@@ -288,11 +303,13 @@ irp_process_query_information_request(char* data, int data_size, IRP* irp)
 	}
 
 	//disk_query_information(irp);
+#endif
 }
 
 void
 irp_send_query_information_response(IRP* irp)
 {
+#if 0
 	int error;
 	int data_size = 16 + irp->buffer_size;
 	char* data = malloc(data_size);
@@ -311,11 +328,13 @@ irp_send_query_information_response(IRP* irp)
 			"VirtualChannelWrite failed %d", error));
 		return 1;
 	}
+#endif
 }
 
 void
 irp_process_set_information_request(char* data, int data_size, IRP* irp)
 {
+#if 0
 	uint32 fsInformationClass;
 	uint32 length;
 
@@ -324,11 +343,13 @@ irp_process_set_information_request(char* data, int data_size, IRP* irp)
 	/* 24-byte pad */
 	
 	/* setBuffer */
+#endif
 }
 
 void
 irp_process_directory_control_request(char* data, int data_size, IRP* irp)
 {
+#if 0
 	switch(irp->minorFunction)
 	{
 		case IRP_MN_QUERY_DIRECTORY:
@@ -346,11 +367,13 @@ irp_process_directory_control_request(char* data, int data_size, IRP* irp)
 			//ui_unimpl(NULL, "IRP majorFunction=0x%x minorFunction=0x%x\n", irp->majorFunction, irp->minorFunction);
 			return;
 	}
+#endif
 }
 
 void
 irp_process_device_control_request(char* data, int data_size, IRP* irp)
 {
+#if 0
 	uint32 outputBufferLength;
 	uint32 inputBufferLength;
 	uint32 ioControlCode;
@@ -361,11 +384,13 @@ irp_process_device_control_request(char* data, int data_size, IRP* irp)
 	/* 20-byte pad */
 
 	/* inputBuffer */
+#endif
 }
 
 void
 irp_process_file_lock_control_request(char* data, int data_size, IRP* irp)
 {
+#if 0
 	uint8 f;
 	uint32 numLocks;
 	uint32 operation;
@@ -377,11 +402,13 @@ irp_process_file_lock_control_request(char* data, int data_size, IRP* irp)
 	/* 20-byte pad */
 
 	/* locks */
+#endif
 }
 
 void
 irp_process_query_directory_request(char* data, int data_size, IRP* irp)
 {
+#if 0
 	uint8 initialQuery;	
 	uint32 pathLength;
 	char* path = NULL;
@@ -399,11 +426,13 @@ irp_process_query_directory_request(char* data, int data_size, IRP* irp)
 	}
 
 	//disk_query_directory(irp, initialQuery, path);
+#endif
 }
 
 void
 irp_send_query_directory_response(IRP* irp)
 {
+#if 0
 	int error;
 	int data_size = 16 + irp->buffer_size;
 	char* data = malloc(data_size);
@@ -422,17 +451,20 @@ irp_send_query_directory_response(IRP* irp)
 			"VirtualChannelWrite failed %d", error));
 		return 1;
 	}
+#endif
 }
 
 void
 irp_process_notify_change_directory_request(char* data, int data_size, IRP* irp)
 {
+#if 0
 	uint8 watchQuery;	
 	uint32 completionQuery;
 
 	watchQuery = GET_UINT8(data, 0); /* watchQuery */
 	completionQuery = GET_UINT32(data, 1); /* completionQuery */
 	/* 27-byte pad */
+#endif
 }
 
 
