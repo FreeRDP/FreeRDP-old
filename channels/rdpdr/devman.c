@@ -22,123 +22,148 @@
 #include "devman.h"
 #include "types_ui.h"
 
-int dev_count; /* device count */
-DEVICE* pdev; /* pointer to a device */
-DEVICE* idev; /* iterator device */
-DEVICE* head_dev; /* head device in linked list */
-DEVICE* tail_dev; /* tail device in linked list */
-
-void
+DEVMAN*
 devman_init()
 {
-	pdev = NULL;
-	idev = NULL;
-	head_dev = NULL;
-	tail_dev = NULL;
-	dev_count = 0;
+	DEVMAN* devman = (DEVMAN*)malloc(sizeof(DEVMAN));
+
+	devman->idev = NULL;
+	devman->head = NULL;
+	devman->tail = NULL;
+	devman->count = 0;
+
+	return devman;
+}
+
+int
+devman_uninit(DEVMAN* devman)
+{
+	DEVICE* pdev;
+
+	/* unregister all services, which will in turn unregister all devices */
+
+	devman_rewind(devman);
+
+	while (devman_has_next(devman) != 0)
+	{
+		pdev = devman_get_next(devman);
+		devman_unregister_service(devman, pdev->service);
+		devman_rewind(devman);
+	}
+
+	/* free devman */
+	free(devman);
+
+	return 1;
 }
 
 SERVICE*
-devman_register_service(uint32 type)
+devman_register_service(DEVMAN* devman, uint32 type)
 {
-	SERVICE* service = (SERVICE*)malloc(sizeof(SERVICE));	
+	SERVICE* srv = (SERVICE*)malloc(sizeof(SERVICE));	
 
 	switch (type)
 	{
 		case DEVICE_TYPE_SERIAL:
-			service->type = DEVICE_TYPE_SERIAL;
+			srv->type = DEVICE_TYPE_SERIAL;
 			break;
 
 		case DEVICE_TYPE_PARALLEL:
-			service->type = DEVICE_TYPE_PARALLEL;
+			srv->type = DEVICE_TYPE_PARALLEL;
 			break;
 
 		case DEVICE_TYPE_PRINTER:
-			service->type = DEVICE_TYPE_PRINTER;
+			srv->type = DEVICE_TYPE_PRINTER;
 			break;
 
 		case DEVICE_TYPE_DISK:
-			service->type = DEVICE_TYPE_DISK;
+			srv->type = DEVICE_TYPE_DISK;
 			break;
 
 		case DEVICE_TYPE_SMARTCARD:
-			service->type = DEVICE_TYPE_SMARTCARD;
+			srv->type = DEVICE_TYPE_SMARTCARD;
 			break;
 
 		default:
 			/* unknown device service type */
-			free(service);
+			free(srv);
 			return NULL;
 			break;
 	}
 
-	service->create = NULL;
-	service->close = NULL;
-	service->read = NULL;
-	service->write = NULL;
-	service->control = NULL;
+	srv->create = NULL;
+	srv->close = NULL;
+	srv->read = NULL;
+	srv->write = NULL;
+	srv->control = NULL;
 
-	return service;
+	return srv;
 }
 
 int
-devman_unregister_service(SERVICE* service)
+devman_unregister_service(DEVMAN* devman, SERVICE* srv)
 {
+	DEVICE* pdev;
+
 	/* unregister all devices depending on the service */
 
-	devman_rewind();
+	devman_rewind(devman);
 
-	while (devman_has_next() != 0)
+	while (devman_has_next(devman) != 0)
 	{
-		pdev = devman_get_next();
+		pdev = devman_get_next(devman);
 
-		if (pdev->service == service)
+		if (pdev->service == srv)
 		{
-			devman_unregister_device(pdev);
-			devman_rewind();
+			devman_unregister_device(devman, pdev);
+			devman_rewind(devman);
 		}
 	}
 
 	/* unregister service */
-	free(service);
+	free(srv);
 
 	return 1;
 }
 
 DEVICE*
-devman_register_device(SERVICE* service)
+devman_register_device(DEVMAN* devman, SERVICE* srv)
 {
+	DEVICE* pdev;
+
 	pdev = (DEVICE*)malloc(sizeof(DEVICE));
 	pdev->prev = NULL;
 	pdev->next = NULL;
-	pdev->service = service;
+	pdev->service = srv;
 
-	if (head_dev == tail_dev)
+	if (devman->head == devman->tail)
 	{
 		/* linked list is empty */
-		head_dev = pdev;
-		tail_dev = pdev;
+		devman->head = pdev;
+		devman->tail = pdev;
 	}
 	else
 	{
 		/* append device to the end of the linked list */
-		tail_dev->next = (void*)pdev;
-		pdev->prev = (void*)tail_dev;
-		tail_dev = pdev;
+		devman->tail->next = (void*)pdev;
+		pdev->prev = (void*)devman->tail;
+		devman->tail = pdev;
 	}
 
-	dev_count++;
+	devman->count++;
 	return pdev;
 }
 
 int
-devman_unregister_device(DEVICE* dev)
+devman_unregister_device(DEVMAN* devman, DEVICE* dev)
 {
-	devman_rewind();
+	DEVICE* pdev;
 
-	while (devman_has_next() != 0)
+	devman_rewind(devman);
+
+	while (devman_has_next(devman) != 0)
 	{
-		pdev = devman_get_next();
+		pdev = devman_get_next(devman);
 		
 		if (pdev == dev) /* device exists */
 		{
@@ -152,8 +177,8 @@ devman_unregister_device(DEVICE* dev)
 			}
 			else
 			{
-				/* unregistered device is the head, update head_dev */
-				head_dev = (DEVICE*)dev->next;
+				/* unregistered device is the head, update head */
+				devman->head = (DEVICE*)dev->next;
 			}
 			
 			/* set next device to point to previous device */
@@ -166,11 +191,11 @@ devman_unregister_device(DEVICE* dev)
 			}
 			else
 			{
-				/* unregistered device is the tail, update tail_dev */
-				tail_dev = (DEVICE*)dev->prev;
+				/* unregistered device is the tail, update tail */
+				devman->tail = (DEVICE*)dev->prev;
 			}
 
-			dev_count--;
+			devman->count--;
 
 			free(dev); /* free memory for unregistered device */
 			return 1; /* unregistration successful */
@@ -182,35 +207,38 @@ devman_unregister_device(DEVICE* dev)
 }
 
 void
-devman_rewind()
+devman_rewind(DEVMAN* devman)
 {
-	idev = head_dev;
+	devman->idev = devman->head;
 }
 
 int
-devman_has_next()
+devman_has_next(DEVMAN* devman)
 {
-	if (idev == NULL)
+	if (devman->idev == NULL)
 		return 0;
-	else if (idev == head_dev)
+	else if (devman->idev == devman->head)
 		return 1;
-	else if (idev->next != NULL)
+	else if (devman->idev->next != NULL)
 		return 1;
 	else
 		return 0;
 }
 
 DEVICE*
-devman_get_next()
+devman_get_next(DEVMAN* devman)
 {
-	pdev = idev;
-	idev = (DEVICE*)idev->next;
+	DEVICE* pdev;
+
+	pdev = devman->idev;
+	devman->idev = (DEVICE*)idev->next;
+
 	return pdev;
 }
 
 int
-devman_get_count()
+devman_get_count(DEVMAN* devman)
 {
-	return dev_count;
+	return devman->count;
 }
 

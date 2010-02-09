@@ -44,24 +44,35 @@ typedef struct device
 }
 DEVICE;
 
-void
+typedef struct devman
+{
+	int dev_count; /* device count */
+	DEVICE* idev; /* iterator device */
+	DEVICE* head; /* head device in linked list */
+	DEVICE* tail; /* tail device in linked list */
+}
+DEVMAN;
+
+DEVMAN*
 devman_init();
+int
+devman_uninit(DEVMAN* devman);
 SERVICE*
-devman_register_service(uint32 type);
+devman_register_service(DEVMAN* devman, uint32 type);
 int
-devman_unregister_service(SERVICE* service);
+devman_unregister_service(DEVMAN* devman, SERVICE* srv);
 DEVICE*
-devman_register_device(SERVICE* service);
+devman_register_device(DEVMAN* devman, SERVICE* srv);
 int
-devman_unregister_device(DEVICE* dev);
+devman_unregister_device(DEVMAN* devman, DEVICE* dev);
 void
-devman_rewind();
+devman_rewind(DEVMAN* devman);
 int
-devman_has_next();
+devman_has_next(DEVMAN* devman);
 DEVICE*
-devman_get_next();
+devman_get_next(DEVMAN* devman);
 int
-devman_get_count();
+devman_get_count(DEVMAN* devman);
 
 #endif // __DEVMAN_H
 
