@@ -950,6 +950,7 @@ libfreerdp/Makefile
 include/Makefile
 libkbd/Makefile
 keymaps/Makefile
+libchanman/Makefile
 X11/Makefile
 channels/rdpsnd/Makefile
 channels/rdpdr/Makefile

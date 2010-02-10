@@ -57,4 +57,10 @@ stamp-h1
 /channels/rdpdr/.deps
 /channels/rdpdr/.libs
 /channels/rdpdr/*~
-
+/libchanman/*.o
+/libchanman/*.lo
+/libchanman/*.la
+/libchanman/Makefile
+/libchanman/Makefile.in
+/libchanman/.deps
+/libchanman/.libs
