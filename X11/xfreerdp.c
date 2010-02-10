@@ -31,7 +31,7 @@
 #include <pwd.h>
 #include "freerdp.h"
 #include "xf_win.h"
-#include "chan_man.h"
+#include "libchanman.h"
 
 static int
 set_default_params(rdpSet * settings)
@@ -58,7 +58,7 @@ set_default_params(rdpSet * settings)
 }
 
 static int
-process_params(rdpSet * settings, int argc, char ** argv)
+process_params(rdpSet * settings, rdpChanMan * chan_man, int argc, char ** argv)
 {
 	int index;
 	int max;
@@ -177,7 +177,7 @@ process_params(rdpSet * settings, int argc, char ** argv)
 			{
 				return 1;
 			}
-			chan_man_load_plugin(settings, argv[index]);
+			chan_man_load_plugin(chan_man, settings, argv[index]);
 		}
 		else
 		{
@@ -189,7 +189,7 @@ process_params(rdpSet * settings, int argc, char ** argv)
 }
 
 static int
-run_xfreerdp(rdpSet * settings)
+run_xfreerdp(rdpSet * settings, rdpChanMan * chan_man)
 {
 	rdpInst * inst;
 	void * read_fds[32];
@@ -224,7 +224,7 @@ run_xfreerdp(rdpSet * settings)
 		printf("run_xfreerdp: xf_pre_connect failed\n");
 		return 1;
 	}
-	if (chan_man_pre_connect(inst) != 0)
+	if (chan_man_pre_connect(chan_man, inst) != 0)
 	{
 		printf("run_xfreerdp: chan_man_pre_connect failed\n");
 		return 1;
@@ -236,7 +236,7 @@ run_xfreerdp(rdpSet * settings)
 		printf("run_xfreerdp: inst->rdp_connect failed\n");
 		return 1;
 	}
-	if (chan_man_post_connect(inst) != 0)
+	if (chan_man_post_connect(chan_man, inst) != 0)
 	{
 		printf("run_xfreerdp: chan_man_post_connect failed\n");
 		return 1;
@@ -264,7 +264,7 @@ run_xfreerdp(rdpSet * settings)
 			break;
 		}
 		/* get channel fds */
-		if (chan_man_get_fds(inst, read_fds, &read_count, write_fds, &write_count) != 0)
+		if (chan_man_get_fds(chan_man, inst, read_fds, &read_count, write_fds, &write_count) != 0)
 		{
 			printf("run_xfreerdp: chan_man_get_fds failed\n");
 			break;
@@ -320,7 +320,7 @@ run_xfreerdp(rdpSet * settings)
 			break;
 		}
 		/* check channel fds */
-		if (chan_man_check_fds(inst) != 0)
+		if (chan_man_check_fds(chan_man, inst) != 0)
 		{
 			printf("run_xfreerdp: chan_man_check_fds failed\n");
 			break;
@@ -336,15 +336,18 @@ int
 main(int argc, char ** argv)
 {
 	rdpSet settings;
+	rdpChanMan * chan_man;
 	int rv;
 
 	setlocale(LC_CTYPE, "");
 	chan_man_init();
-	rv = process_params(&settings, argc, argv);
+	chan_man = chan_man_new();
+	rv = process_params(&settings, chan_man, argc, argv);
 	if (rv == 0)
 	{
-		rv = run_xfreerdp(&settings);
+		rv = run_xfreerdp(&settings, chan_man);
 	}
+	chan_man_free(chan_man);
 	chan_man_deinit();
 	return rv;
 }

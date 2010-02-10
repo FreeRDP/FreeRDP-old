@@ -36,7 +36,7 @@
 #include "xf_event.h"
 #include "xf_colour.h"
 #include "xf_keyboard.h"
-#include "chan_man.h"
+#include "libchanman.h"
 
 static uint8 g_hatch_patterns[] = {
 	0x00, 0x00, 0x00, 0xff, 0x00, 0x00, 0x00, 0x00, /* 0 - bsHorizontal */

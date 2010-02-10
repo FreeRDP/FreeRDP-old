@@ -8,10 +8,12 @@ xfreerdp_SOURCES = \
 	xf_event.c  xf_event.h \
 	xf_keyboard.c xf_keyboard.h \
 	xf_win.h xf_win.c \
-	xfreerdp.c chan_man.c
+	xfreerdp.c
 
-xfreerdp_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include -I$(top_srcdir)/include/freerdp -I$(top_srcdir)/libkbd
+xfreerdp_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include -I$(top_srcdir)/include/freerdp \
+	-I$(top_srcdir)/libkbd -I$(top_srcdir)/libchanman
 
-xfreerdp_LDADD = ../libfreerdp/libfreerdp.la ../libkbd/libkbd.la -lX11 -lXcursor -lpthread
+xfreerdp_LDADD = ../libfreerdp/libfreerdp.la ../libkbd/libkbd.la ../libchanman/libchanman.la \
+	-lX11 -lXcursor -lpthread
 
 
