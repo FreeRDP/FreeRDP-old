@@ -52,7 +52,7 @@ licence_generate_hwid(rdpLicence * licence, uint8 * hwid)
 	strncpy((char *) (hwid + 4), licence->sec->rdp->settings->hostname, LICENCE_HWID_SIZE - 4);
 }
 
-/* Present an existing licence to the server */
+/* Send a Licensing packet with Client License Information */
 static void
 licence_present(rdpLicence * licence, uint8 * client_random, uint8 * rsa_data,
 		uint8 * licence_data, int licence_size, uint8 * hwid, uint8 * signature)
@@ -65,35 +65,41 @@ licence_present(rdpLicence * licence, uint8 * client_random, uint8 * rsa_data,
 
 	s = sec_init(licence->sec, sec_flags, length + 4);
 
-	out_uint8(s, LICENCE_TAG_PRESENT);
-	out_uint8(s, 2);	/* version */
+	/* Licensing Preamble (LICENSE_PREAMBLE) */
+	out_uint8(s, LICENCE_TAG_PRESENT);	/* bMsgType LICENSE_INFO */
+	out_uint8(s, 2);	/* bVersion PREAMBLE_VERSION_2_0 */
 	out_uint16_le(s, length);
 
-	out_uint32_le(s, 1);
-	out_uint16(s, 0);
-	out_uint16_le(s, 0x0201);
+	/* Client License Information: */
+	out_uint32_le(s, 1);	/* PreferredKeyExchangeAlg KEY_EXCHANGE_ALG_RSA */
+	out_uint16(s, 0);	/* PlatformId, unknown platform and ISV */
+	out_uint16_le(s, 0x0201);	/* PlatformId, build/version */
 
-	out_uint8p(s, client_random, SEC_RANDOM_SIZE);
-	out_uint16(s, 0);
-	out_uint16_le(s, (SEC_MODULUS_SIZE + SEC_PADDING_SIZE));
-	out_uint8p(s, rsa_data, SEC_MODULUS_SIZE);
+	out_uint8p(s, client_random, SEC_RANDOM_SIZE);	/* ClientRandom */
+
+	/* Licensing Binary Blob with EncryptedPreMasterSecret: */
+	out_uint16(s, 0);	/* wBlobType should be 0x0002 (BB_RANDOM_BLOB) */
+	out_uint16_le(s, (SEC_MODULUS_SIZE + SEC_PADDING_SIZE));	/* wBlobLen */
+	out_uint8p(s, rsa_data, SEC_MODULUS_SIZE);	/* 48 bit random number encrypted for server */
 	out_uint8s(s, SEC_PADDING_SIZE);
 
-	out_uint16_le(s, 1);
-	out_uint16_le(s, licence_size);
-	out_uint8p(s, licence_data, licence_size);
+	/* Licensing Binary Blob with LicenseInfo: */
+	out_uint16_le(s, 1);	/* wBlobType BB_DATA_BLOB */
+	out_uint16_le(s, licence_size);	/* wBlobLen */
+	out_uint8p(s, licence_data, licence_size);	/* CAL issued by servers license server */
 
-	out_uint16_le(s, 1);
-	out_uint16_le(s, LICENCE_HWID_SIZE);
-	out_uint8p(s, hwid, LICENCE_HWID_SIZE);
+	/* Licensing Binary Blob with EncryptedHWID */
+	out_uint16_le(s, 1);	/* wBlobType BB_DATA_BLOB */
+	out_uint16_le(s, LICENCE_HWID_SIZE);	/* wBlobLen */
+	out_uint8p(s, hwid, LICENCE_HWID_SIZE);	/* RC4-encrypted Client Hardware Identification */
 
-	out_uint8p(s, signature, LICENCE_SIGNATURE_SIZE);
+	out_uint8p(s, signature, LICENCE_SIGNATURE_SIZE);	/* MACData */
 
 	s_mark_end(s);
 	sec_send(licence->sec, s, sec_flags);
 }
 
-/* Send a licence request packet */
+/* Send a Licensing packet with Client New License Request */
 static void
 licence_send_request(rdpLicence * licence, uint8 * client_random, uint8 * rsa_data, char *user,
 		     char *host)
@@ -106,33 +112,38 @@ licence_send_request(rdpLicence * licence, uint8 * client_random, uint8 * rsa_da
 
 	s = sec_init(licence->sec, sec_flags, length + 2);
 
-	out_uint8(s, LICENCE_TAG_REQUEST);
-	out_uint8(s, 2);	/* version */
+	/* Licensing Preamble (LICENSE_PREAMBLE) */
+	out_uint8(s, LICENCE_TAG_REQUEST);	/* NEW_LICENSE_REQUEST */
+	out_uint8(s, 2);	/* PREAMBLE_VERSION_2_0 */
 	out_uint16_le(s, length);
 
-	out_uint32_le(s, 1);
-	out_uint16(s, 0);
-	out_uint16_le(s, 0xff01);
+	out_uint32_le(s, 1);	/* PreferredKeyExchangeAlg KEY_EXCHANGE_ALG_RSA */
+	out_uint16(s, 0);	/* PlatformId, unknown platform and ISV */
+	out_uint16_le(s, 0xff01);	/* PlatformId, build/version */
 
-	out_uint8p(s, client_random, SEC_RANDOM_SIZE);
-	out_uint16(s, 0);
-	out_uint16_le(s, (SEC_MODULUS_SIZE + SEC_PADDING_SIZE));
-	out_uint8p(s, rsa_data, SEC_MODULUS_SIZE);
+	out_uint8p(s, client_random, SEC_RANDOM_SIZE);	/* ClientRandom */
+
+	/* Licensing Binary Blob with EncryptedPreMasterSecret: */
+	out_uint16(s, 0);	/* wBlobType should be 0x0002 (BB_RANDOM_BLOB) */
+	out_uint16_le(s, (SEC_MODULUS_SIZE + SEC_PADDING_SIZE));	/* wBlobLen */
+	out_uint8p(s, rsa_data, SEC_MODULUS_SIZE);	/* 48 bit random number encrypted for server */
 	out_uint8s(s, SEC_PADDING_SIZE);
 
-	out_uint16_le(s, LICENCE_TAG_USER);
-	out_uint16_le(s, userlen);
+	/* Licensing Binary Blob with ClientUserName: */
+	out_uint16_le(s, LICENCE_TAG_USER);	/* wBlobType BB_CLIENT_USER_NAME_BLOB */
+	out_uint16_le(s, userlen);	/* wBlobLen */
 	out_uint8p(s, user, userlen);
 
-	out_uint16_le(s, LICENCE_TAG_HOST);
-	out_uint16_le(s, hostlen);
+	/* Licensing Binary Blob with ClientMachineName: */
+	out_uint16_le(s, LICENCE_TAG_HOST);	/* wBlobType BB_CLIENT_MACHINE_NAME_BLOB */
+	out_uint16_le(s, hostlen);	/* wBlobLen */
 	out_uint8p(s, host, hostlen);
 
 	s_mark_end(s);
 	sec_send(licence->sec, s, sec_flags);
 }
 
-/* Process a licence demand packet */
+/* Process a Server License Request packet */
 static void
 licence_process_demand(rdpLicence * licence, STREAM s)
 {
@@ -145,7 +156,8 @@ licence_process_demand(rdpLicence * licence, STREAM s)
 	SSL_RC4 crypt_key;
 
 	/* Retrieve the server random from the incoming packet */
-	in_uint8p(s, server_random, SEC_RANDOM_SIZE);
+	in_uint8p(s, server_random, SEC_RANDOM_SIZE);	/* ServerRandom */
+	/* Ignoring: ProductInfo, KeyExchangeList, ServerCertificate & ScopeList */
 
 	/* We currently use null client keys. This is a bit naughty but, hey,
 	   the security of licence negotiation isn't exactly paramount. */
@@ -174,7 +186,7 @@ licence_process_demand(rdpLicence * licence, STREAM s)
 			     licence->sec->rdp->settings->hostname);
 }
 
-/* Send an authentication response packet */
+/* Send a Licensing packet with Platform Challenge Response */
 static void
 licence_send_authresp(rdpLicence * licence, uint8 * token, uint8 * crypt_hwid, uint8 * signature)
 {
@@ -184,46 +196,51 @@ licence_send_authresp(rdpLicence * licence, uint8 * token, uint8 * crypt_hwid, u
 
 	s = sec_init(licence->sec, sec_flags, length + 2);
 
-	out_uint8(s, LICENCE_TAG_AUTHRESP);
-	out_uint8(s, 2);	/* version */
+	/* Licensing Preamble (LICENSE_PREAMBLE) */
+	out_uint8(s, LICENCE_TAG_AUTHRESP);	/* PLATFORM_CHALLENGE_RESPONSE */
+	out_uint8(s, 2);	/* PREAMBLE_VERSION_2_0 */
 	out_uint16_le(s, length);
 
-	out_uint16_le(s, 1);
-	out_uint16_le(s, LICENCE_TOKEN_SIZE);
-	out_uint8p(s, token, LICENCE_TOKEN_SIZE);
+	/* Licensing Binary BLOB with EncryptedPlatformChallengeResponse: */
+	out_uint16_le(s, 1);	/* wBlobType should be 0x0009 (BB_ENCRYPTED_DATA_BLOB) */
+	out_uint16_le(s, LICENCE_TOKEN_SIZE);	/* wBlobLen */
+	out_uint8p(s, token, LICENCE_TOKEN_SIZE);	/* RC4-encrypted challenge data */
 
-	out_uint16_le(s, 1);
-	out_uint16_le(s, LICENCE_HWID_SIZE);
-	out_uint8p(s, crypt_hwid, LICENCE_HWID_SIZE);
+	/* Licensing Binary BLOB with EncryptedHWID: */
+	out_uint16_le(s, 1);	/* wBlobType should be 0x0009 (BB_ENCRYPTED_DATA_BLOB) */
+	out_uint16_le(s, LICENCE_HWID_SIZE);	/* wBlobLen */
+	out_uint8p(s, crypt_hwid, LICENCE_HWID_SIZE);	/* RC4-encrypted Client Hardware Identification */
 
-	out_uint8p(s, signature, LICENCE_SIGNATURE_SIZE);
+	out_uint8p(s, signature, LICENCE_SIGNATURE_SIZE);	/* MACData */
 
 	s_mark_end(s);
 	sec_send(licence->sec, s, sec_flags);
 }
 
-/* Parse an authentication request packet */
+/* Parse a Server Platform Challenge packet */
 static RD_BOOL
 licence_parse_authreq(rdpLicence * licence, STREAM s, uint8 ** token, uint8 ** signature)
 {
 	uint16 tokenlen;
 
-	in_uint8s(s, 6);	/* unknown: f8 3d 15 00 04 f6 */
+	in_uint8s(s, 4);	/* ConnectFlags (unused) */
 
-	in_uint16_le(s, tokenlen);
+	/* Licensing Binary BLOB with EncryptedPlatformChallenge: */
+	in_uint8s(s, 2);	/* wBlobType (unused) */
+	in_uint16_le(s, tokenlen);	/* wBlobLen */
 	if (tokenlen != LICENCE_TOKEN_SIZE)
 	{
 		ui_error(licence->sec->rdp->inst, "token len %d\n", tokenlen);
 		return False;
 	}
+	in_uint8p(s, *token, tokenlen);	/* RC4-encrypted challenge data */
 
-	in_uint8p(s, *token, tokenlen);
-	in_uint8p(s, *signature, LICENCE_SIGNATURE_SIZE);
+	in_uint8p(s, *signature, LICENCE_SIGNATURE_SIZE);	/* MACData for decrypted challenge data */
 
 	return s_check_end(s);
 }
 
-/* Process an authentication request packet */
+/* Process a Server Platform Challenge packet */
 static void
 licence_process_authreq(rdpLicence * licence, STREAM s)
 {
@@ -255,70 +272,73 @@ licence_process_authreq(rdpLicence * licence, STREAM s)
 	licence_send_authresp(licence, out_token, crypt_hwid, out_sig);
 }
 
-/* Process an licence issue packet */
+/* Process a Server New (or Upgrade) License packet */
 static void
 licence_process_issue(rdpLicence * licence, STREAM s)
 {
 	SSL_RC4 crypt_key;
 	uint32 length;
-	uint16 check;
+	uint32 os_major;
+	uint32 os_minor;
 	int i;
 
-	in_uint8s(s, 2);	/* 3d 45 - unknown */
-	in_uint16_le(s, length);
+	/* Licensing Binary BLOB with EncryptedLicenseInfo: */
+	in_uint8s(s, 2);	/* wBlobType should be 0x0009 (BB_ENCRYPTED_DATA_BLOB) */
+	in_uint16_le(s, length);	/* wBlobLen */
+	/* RC4-encrypted New License Information */
 	if (!s_check_rem(s, length))
 		return;
-
 	ssl_rc4_set_key(&crypt_key, licence->licence_key, 16);
-	ssl_rc4_crypt(&crypt_key, s->p, s->p, length);
+	ssl_rc4_crypt(&crypt_key, s->p, s->p, length);	/* decrypt in place */
 
-	in_uint16(s, check);
-	if (check != 0)
-		return;
-
-	licence->licence_issued = True;
-
-	in_uint8s(s, 2);	/* pad */
-
-	/* advance to fourth string */
-	length = 0;
-	for (i = 0; i < 4; i++)
+	/* dwVersion */
+	in_uint16_le(s, os_major)	/* OS major version */
+	in_uint16_le(s, os_minor)	/* OS minor version */
+	/* Skip Scope, CompanyName and ProductId */
+	for (i = 0; i < 3; i++)
 	{
-		in_uint8s(s, length);
 		in_uint32_le(s, length);
 		if (!s_check_rem(s, length))
 			return;
+		in_uint8s(s, length);
 	}
 
+	/* LicenseInfo - CAL from license server */
+	in_uint32_le(s, length);
+	if (!s_check_rem(s, length))
+		return;
 	licence->licence_issued = True;
 	save_licence(s->p, length);
 }
 
-/* Process a licence packet */
+/* Process a Licensing packet */
 void
 licence_process(rdpLicence * licence, STREAM s)
 {
 	uint8 tag;
 
-	in_uint8(s, tag);
-	in_uint8s(s, 3);	/* version, length */
+	/* Licensing Preamble */
+	in_uint8(s, tag);	/* bMsgType */
+	in_uint8s(s, 1);	/* Ignoring bVersion */
+	in_uint8s(s, 2);	/* Ignoring wMsgSize */
+	/* Now pointing at LicensingMessage */
 
 	switch (tag)
 	{
-		case LICENCE_TAG_DEMAND:
+		case LICENCE_TAG_DEMAND:	/* LICENSE_REQUEST */
 			licence_process_demand(licence, s);
 			break;
 
-		case LICENCE_TAG_AUTHREQ:
+		case LICENCE_TAG_AUTHREQ:	/* PLATFORM_CHALLENGE */
 			licence_process_authreq(licence, s);
 			break;
 
-		case LICENCE_TAG_ISSUE:
+		case LICENCE_TAG_ISSUE:	/* NEW_LICENSE */
 			licence_process_issue(licence, s);
 			break;
 
-		case LICENCE_TAG_REISSUE:
-		case LICENCE_TAG_RESULT:
+		case LICENCE_TAG_REISSUE:	/* UPGRADE_LICENSE */
+		case LICENCE_TAG_RESULT:	/* ERROR_ALERT */
 			break;
 
 		default:
@@ -327,9 +347,9 @@ licence_process(rdpLicence * licence, STREAM s)
 }
 
 rdpLicence *
-licence_setup(struct rdp_sec * sec)
+licence_setup(struct rdp_sec *sec)
 {
-	rdpLicence * self;
+	rdpLicence *self;
 
 	self = (rdpLicence *) xmalloc(sizeof(rdpLicence));
 	if (self != NULL)
