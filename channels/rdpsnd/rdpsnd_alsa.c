@@ -242,7 +242,13 @@ wave_out_play(void * device_data, char * data, int size)
 		}
 		frames = len / bytes_per_frame;
 		error = snd_pcm_writei(alsa_data->out_handle, pindex, frames);
-		if (error < 0)
+		if (error == -EPIPE)
+		{
+			LLOGLN(0, ("wave_out_play: underrun occurred"));
+			snd_pcm_recover(alsa_data->out_handle, error, 0);
+			error = 0;
+		}
+		else if (error < 0)
 		{
 			LLOGLN(0, ("wave_out_play: error len %d", error));
 			break;
