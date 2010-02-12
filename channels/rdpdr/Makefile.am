@@ -12,7 +12,7 @@ librdpdr_la_SOURCES = \
 
 librdpdr_la_CFLAGS = -I../../include/freerdp -I../common
 
-librdpdr_la_LDFLAGS =
+librdpdr_la_LDFLAGS = -avoid-version -module
 
 # extra
 EXTRA_DIST =

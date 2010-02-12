@@ -17,7 +17,7 @@ endif
 
 librdpsnd_la_CFLAGS = -I../../include/freerdp -I../common
 
-librdpsnd_la_LDFLAGS =
+librdpsnd_la_LDFLAGS = -avoid-version -module
 
 # extra
 EXTRA_DIST =
