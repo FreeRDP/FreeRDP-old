@@ -36,14 +36,17 @@
 #define LLOGLN(_level, _args) \
   do { if (_level < LOG_LEVEL) { printf _args ; printf("\n"); } } while (0)
 
-static snd_pcm_t * g_out_handle = 0;
-static uint32 g_rrate = 22050;
-static snd_pcm_format_t g_format = SND_PCM_FORMAT_S16_LE;
-static int g_num_channels = 2;
-static int g_bytes_per_channel = 2;
+struct alsa_device_data
+{
+	snd_pcm_t * out_handle;
+	uint32 rrate;
+	snd_pcm_format_t format;
+	int num_channels;
+	int bytes_per_channel;
+};
 
 static int
-set_params(void)
+set_params(struct alsa_device_data * alsa_data)
 {
 	snd_pcm_hw_params_t * hw_params;
 	int error;
@@ -54,49 +57,78 @@ set_params(void)
 		LLOGLN(0, ("set_params: snd_pcm_hw_params_malloc failed"));
 		return 1;
 	}
-	snd_pcm_hw_params_any(g_out_handle, hw_params);
-	snd_pcm_hw_params_set_access(g_out_handle, hw_params,
+	snd_pcm_hw_params_any(alsa_data->out_handle, hw_params);
+	snd_pcm_hw_params_set_access(alsa_data->out_handle, hw_params,
 		SND_PCM_ACCESS_RW_INTERLEAVED);
-	snd_pcm_hw_params_set_format(g_out_handle, hw_params,
-		g_format);
-	snd_pcm_hw_params_set_rate_near(g_out_handle, hw_params,
-		&g_rrate, NULL);
-	snd_pcm_hw_params_set_channels(g_out_handle, hw_params, g_num_channels);
-	snd_pcm_hw_params(g_out_handle, hw_params);
+	snd_pcm_hw_params_set_format(alsa_data->out_handle, hw_params,
+		alsa_data->format);
+	snd_pcm_hw_params_set_rate_near(alsa_data->out_handle, hw_params,
+		&alsa_data->rrate, NULL);
+	snd_pcm_hw_params_set_channels(alsa_data->out_handle, hw_params, alsa_data->num_channels);
+	snd_pcm_hw_params(alsa_data->out_handle, hw_params);
 	snd_pcm_hw_params_free(hw_params);
-	snd_pcm_prepare(g_out_handle);
+	snd_pcm_prepare(alsa_data->out_handle);
 	return 0;
 }
 
-int
-wave_out_open(void)
+void *
+wave_out_init(void)
 {
+	struct alsa_device_data * alsa_data;
+
+	alsa_data = (struct alsa_device_data *) malloc(sizeof(struct alsa_device_data));
+	memset(alsa_data, 0, sizeof(struct alsa_device_data));
+
+	alsa_data->out_handle = 0;
+	alsa_data->rrate = 22050;
+	alsa_data->format = SND_PCM_FORMAT_S16_LE;
+	alsa_data->num_channels = 2;
+	alsa_data->bytes_per_channel = 2;
+
+	return (void *) alsa_data;
+}
+
+void
+wave_out_deinit(void * device_data)
+{
+	free(device_data);
+}
+
+int
+wave_out_open(void * device_data)
+{
+	struct alsa_device_data * alsa_data;
 	int error;
 
-	if (g_out_handle != 0)
+	alsa_data = (struct alsa_device_data *) device_data;
+
+	if (alsa_data->out_handle != 0)
 	{
 		return 0;
 	}
 	LLOGLN(0, ("wave_out_open:"));
-	error = snd_pcm_open(&g_out_handle, "default",
+	error = snd_pcm_open(&alsa_data->out_handle, "default",
 		SND_PCM_STREAM_PLAYBACK, 0);
 	if (error < 0)
 	{
 		LLOGLN(0, ("wave_out_open: snd_pcm_open failed"));
 		return 1;
 	}
-	set_params();
+	set_params(alsa_data);
 	return 0;
 }
 
 int
-wave_out_close(void)
+wave_out_close(void * device_data)
 {
-	if (g_out_handle != 0)
+	struct alsa_device_data * alsa_data;
+
+	alsa_data = (struct alsa_device_data *) device_data;
+	if (alsa_data->out_handle != 0)
 	{
 		LLOGLN(0, ("wave_out_close:"));
-		snd_pcm_close(g_out_handle);
-		g_out_handle = 0;
+		snd_pcm_close(alsa_data->out_handle);
+		alsa_data->out_handle = 0;
 	}
 	return 0;
 }
@@ -114,13 +146,16 @@ wave_out_close(void)
 
 /* returns boolean */
 int
-wave_out_format_supported(char * snd_format, int size)
+wave_out_format_supported(void * device_data, char * snd_format, int size)
 {
+	struct alsa_device_data * alsa_data;
 	int nChannels;
 	int wBitsPerSample;
 	int nSamplesPerSec;
 	int cbSize;
 	int wFormatTag;
+
+	alsa_data = (struct alsa_device_data *) device_data;
 
 	LLOGLN(10, ("wave_out_format_supported: size %d", size));
 	wFormatTag = GET_UINT16(snd_format, 0);
@@ -141,11 +176,14 @@ wave_out_format_supported(char * snd_format, int size)
 }
 
 int
-wave_out_set_format(char * snd_format, int size)
+wave_out_set_format(void * device_data, char * snd_format, int size)
 {
+	struct alsa_device_data * alsa_data;
 	int nChannels;
 	int wBitsPerSample;
 	int nSamplesPerSec;
+
+	alsa_data = (struct alsa_device_data *) device_data;
 
 	nChannels = GET_UINT16(snd_format, 2);
 	nSamplesPerSec = GET_UINT32(snd_format, 4);
@@ -153,33 +191,34 @@ wave_out_set_format(char * snd_format, int size)
 	LLOGLN(0, ("wave_out_set_format: nChannels %d "
 		"nSamplesPerSec %d wBitsPerSample %d",
 		nChannels, nSamplesPerSec, wBitsPerSample));
-	g_rrate = nSamplesPerSec;
-	g_num_channels = nChannels;
+	alsa_data->rrate = nSamplesPerSec;
+	alsa_data->num_channels = nChannels;
 	switch (wBitsPerSample)
 	{
 		case 8:
-			g_format = SND_PCM_FORMAT_S8;
-			g_bytes_per_channel = 1;
+			alsa_data->format = SND_PCM_FORMAT_S8;
+			alsa_data->bytes_per_channel = 1;
 			break;
 		case 16:
-			g_format = SND_PCM_FORMAT_S16_LE;
-			g_bytes_per_channel = 2;
+			alsa_data->format = SND_PCM_FORMAT_S16_LE;
+			alsa_data->bytes_per_channel = 2;
 			break;
 	}
-	set_params();
+	set_params(alsa_data);
 	return 0;
 }
 
 int
-wave_out_set_volume(uint32 value)
+wave_out_set_volume(void * device_data, uint32 value)
 {
 	LLOGLN(0, ("wave_out_set_volume: %8.8x", value));
 	return 0;
 }
 
 int
-wave_out_play(char * data, int size)
+wave_out_play(void * device_data, char * data, int size)
 {
+	struct alsa_device_data * alsa_data;
 	int len;
 	int error;
 	int frames;
@@ -187,20 +226,22 @@ wave_out_play(char * data, int size)
 	char * pindex;
 	char * end;
 
+	alsa_data = (struct alsa_device_data *) device_data;
+
 	LLOGLN(10, ("wave_out_play: size %d", size));
 	pindex = data;
 	end = pindex + size;
 	while (pindex < end)
 	{
 		len = end - pindex;
-		bytes_per_frame = g_num_channels * g_bytes_per_channel;
+		bytes_per_frame = alsa_data->num_channels * alsa_data->bytes_per_channel;
 		if ((len % bytes_per_frame) != 0)
 		{
 			LLOGLN(0, ("wave_out_play: error len mod"));
 			break;
 		}
 		frames = len / bytes_per_frame;
-		error = snd_pcm_writei(g_out_handle, pindex, frames);
+		error = snd_pcm_writei(alsa_data->out_handle, pindex, frames);
 		if (error < 0)
 		{
 			LLOGLN(0, ("wave_out_play: error len %d", error));

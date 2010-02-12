@@ -32,6 +32,7 @@
 #include "types_ui.h"
 #include "vchan.h"
 #include "chan_stream.h"
+#include "chan_plugin.h"
 
 #define SNDC_CLOSE         1
 #define SNDC_WAVE          2
@@ -69,44 +70,56 @@ struct data_in_item
 	int data_size;
 };
 
-static CHANNEL_ENTRY_POINTS g_ep;
-static void * g_han;
-static CHANNEL_DEF g_channel_def[2];
-static uint32 g_open_handle[2];
-static char * g_data_in[2];
-static int g_data_in_size[2];
-static int g_data_in_read[2];
-static struct wait_obj g_term_event;
-static struct wait_obj g_data_in_event;
-static struct data_in_item * volatile g_list_head;
-static struct data_in_item * volatile g_list_tail;
-/* for locking the linked list */
-static pthread_mutex_t * g_mutex;
+typedef struct rdpsnd_plugin rdpsndPlugin;
+struct rdpsnd_plugin
+{
+	rdpChanPlugin chan_plugin;
 
-static int g_cBlockNo;
-static char * g_supported_formats;
-static int g_supported_formats_size;
-static int g_current_format;
-static int g_expectingWave; /* boolean */
-static char g_waveData[4];
-static int g_waveDataSize;
-static uint32 g_wTimeStamp; /* server timestamp */
-static uint32 g_local_time_stamp; /* client timestamp */
-static volatile int g_thread_status;
+	CHANNEL_ENTRY_POINTS ep;
+	CHANNEL_DEF channel_def[2];
+	uint32 open_handle[2];
+	char * data_in[2];
+	int data_in_size[2];
+	int data_in_read[2];
+	struct wait_obj term_event;
+	struct wait_obj data_in_event;
+	struct data_in_item * list_head;
+	struct data_in_item * list_tail;
+	/* for locking the linked list */
+	pthread_mutex_t * mutex;
+
+	int cBlockNo;
+	char * supported_formats;
+	int supported_formats_size;
+	int current_format;
+	int expectingWave; /* boolean */
+	char waveData[4];
+	int waveDataSize;
+	uint32 wTimeStamp; /* server timestamp */
+	uint32 local_time_stamp; /* client timestamp */
+	int thread_status;
+
+	/* Device specific data */
+	void * device_data;
+};
 
 /* implementations are in the hardware file */
+void *
+wave_out_init(void);
+void
+wave_out_deinit(void * device_data);
 int
-wave_out_open(void);
+wave_out_open(void * device_data);
 int
-wave_out_close(void);
+wave_out_close(void * device_data);
 int
-wave_out_format_supported(char * snd_format, int size);
+wave_out_format_supported(void * device_data, char * snd_format, int size);
 int
-wave_out_set_format(char * snd_format, int size);
+wave_out_set_format(void * device_data, char * snd_format, int size);
 int
-wave_out_set_volume(uint32 value);
+wave_out_set_volume(void * device_data, uint32 value);
 int
-wave_out_play(char * data, int size);
+wave_out_play(void * device_data, char * data, int size);
 
 /* get time in milliseconds */
 static uint32
@@ -245,29 +258,29 @@ wait(int timeout, int numr, int * listr)
 /* called by main thread
    add item to linked list and inform worker thread that there is data */
 static void
-signal_data_in(void)
+signal_data_in(rdpsndPlugin * plugin)
 {
 	struct data_in_item * item;
 
 	item = (struct data_in_item *) malloc(sizeof(struct data_in_item));
 	item->next = 0;
-	item->data = g_data_in[0];
-	g_data_in[0] = 0;
-	item->data_size = g_data_in_size[0];
-	g_data_in_size[0] = 0;
-	pthread_mutex_lock(g_mutex);
-	if (g_list_tail == 0)
+	item->data = plugin->data_in[0];
+	plugin->data_in[0] = 0;
+	item->data_size = plugin->data_in_size[0];
+	plugin->data_in_size[0] = 0;
+	pthread_mutex_lock(plugin->mutex);
+	if (plugin->list_tail == 0)
 	{
-		g_list_head = item;
-		g_list_tail = item;
+		plugin->list_head = item;
+		plugin->list_tail = item;
 	}
 	else
 	{
-		g_list_tail->next = item;
-		g_list_tail = item;
+		plugin->list_tail->next = item;
+		plugin->list_tail = item;
 	}
-	pthread_mutex_unlock(g_mutex);
-	set_wait_obj(&g_data_in_event);
+	pthread_mutex_unlock(plugin->mutex);
+	set_wait_obj(&plugin->data_in_event);
 }
 
 /*
@@ -285,7 +298,7 @@ signal_data_in(void)
    receives a list of server supported formats and returns a list
    of client supported formats */
 static int
-thread_process_message_formats(char * data, int data_size)
+thread_process_message_formats(rdpsndPlugin * plugin, char * data, int data_size)
 {
 	int index;
 	int format_count;
@@ -312,7 +325,7 @@ thread_process_message_formats(char * data, int data_size)
 			format_count));
 		return 1;
 	}
-	g_cBlockNo = GET_UINT8(data, 16); /* cLastBlockConfirmed */
+	plugin->cBlockNo = GET_UINT8(data, 16); /* cLastBlockConfirmed */
 	version = GET_UINT16(data, 17); /* wVersion */
 	if (version < 2)
 	{
@@ -331,7 +344,7 @@ thread_process_message_formats(char * data, int data_size)
 	for (index = 0; index < format_count; index++)
 	{
 		size = 18 + GET_UINT16(ldata, 16);
-		if (wave_out_format_supported(ldata, size))
+		if (wave_out_format_supported(plugin->device_data, ldata, size))
 		{
 			memcpy(lout_formats, ldata, size);
 			lout_formats += size;
@@ -342,9 +355,9 @@ thread_process_message_formats(char * data, int data_size)
 	out_format_size = (int) (lout_formats - out_formats);
 	if ((out_format_size > 0) && (out_format_count > 0))
 	{
-		g_supported_formats = (char *) malloc(out_format_size);
-		memcpy(g_supported_formats, out_formats, out_format_size);
-		g_supported_formats_size = out_format_size;
+		plugin->supported_formats = (char *) malloc(out_format_size);
+		memcpy(plugin->supported_formats, out_formats, out_format_size);
+		plugin->supported_formats_size = out_format_size;
 	}
 	else
 	{
@@ -364,7 +377,7 @@ thread_process_message_formats(char * data, int data_size)
 	SET_UINT8(out_data, 20, 0); /* cLastBlockConfirmed */
 	SET_UINT16(out_data, 21, 2); /* wVersion */
 	SET_UINT8(out_data, 23, 0); /* bPad */
-	error = g_ep.pVirtualChannelWrite(g_open_handle[0],
+	error = plugin->ep.pVirtualChannelWrite(plugin->open_handle[0],
 		out_data, size, out_data);
 	if (error != CHANNEL_RC_OK)
 	{
@@ -379,7 +392,7 @@ thread_process_message_formats(char * data, int data_size)
 /* called by worker thread
    server is getting a feel of the round trip time */
 static int
-thread_process_message_training(char * data, int data_size)
+thread_process_message_training(rdpsndPlugin * plugin, char * data, int data_size)
 {
 	int wTimeStamp;
 	int wPackSize;
@@ -406,7 +419,7 @@ thread_process_message_training(char * data, int data_size)
 	SET_UINT16(out_data, 2, size - 4);
 	SET_UINT16(out_data, 4, wTimeStamp);
 	SET_UINT16(out_data, 6, wPackSize);
-	error = g_ep.pVirtualChannelWrite(g_open_handle[0],
+	error = plugin->ep.pVirtualChannelWrite(plugin->open_handle[0],
 		out_data, size, out_data);
 	if (error != CHANNEL_RC_OK)
 	{
@@ -418,52 +431,52 @@ thread_process_message_training(char * data, int data_size)
 }
 
 static int
-set_format(void)
+set_format(rdpsndPlugin * plugin)
 {
 	char * snd_format;
 	int size;
 	int index;
 
 	LLOGLN(10, ("set_format:"));
-	snd_format = g_supported_formats;
+	snd_format = plugin->supported_formats;
 	size = 18 + GET_UINT16(snd_format, 16);
 	index = 0;
-	while (index < g_current_format)
+	while (index < plugin->current_format)
 	{
 		snd_format += size;
 		size = 18 + GET_UINT16(snd_format, 16);
 		index++;
 	}
-	wave_out_set_format(snd_format, size);
+	wave_out_set_format(plugin->device_data, snd_format, size);
 	return 0;
 }
 
 static int
-thread_process_message_wave_info(char * data, int data_size)
+thread_process_message_wave_info(rdpsndPlugin * plugin, char * data, int data_size)
 {
 	int wFormatNo;
 
-	wave_out_open();
-	g_wTimeStamp = GET_UINT16(data, 0); /* time in ms */
-	g_local_time_stamp = get_mstime(); /* time in ms */
+	wave_out_open(plugin->device_data);
+	plugin->wTimeStamp = GET_UINT16(data, 0); /* time in ms */
+	plugin->local_time_stamp = get_mstime(); /* time in ms */
 	wFormatNo = GET_UINT16(data, 2);
 	LLOGLN(10, ("thread_process_message_wave_info: data_size %d "
 		"wFormatNo %d", data_size, wFormatNo));
-	g_cBlockNo = GET_UINT8(data, 4);
-	g_waveDataSize = data_size - 8;
-	memcpy(g_waveData, data + 8, 4);
-	if (wFormatNo != g_current_format)
+	plugin->cBlockNo = GET_UINT8(data, 4);
+	plugin->waveDataSize = data_size - 8;
+	memcpy(plugin->waveData, data + 8, 4);
+	if (wFormatNo != plugin->current_format)
 	{
-		g_current_format = wFormatNo;
-		set_format();
+		plugin->current_format = wFormatNo;
+		set_format(plugin);
 	}
-	g_expectingWave = 1;
+	plugin->expectingWave = 1;
 	return 0;
 }
 
 /* header is not removed from data in this function */
 static int
-thread_process_message_wave(char * data, int data_size)
+thread_process_message_wave(rdpsndPlugin * plugin, char * data, int data_size)
 {
 	int size;
 	int wTimeStamp;
@@ -472,29 +485,29 @@ thread_process_message_wave(char * data, int data_size)
 	uint32 error;
 	uint32 cur_time;
 
-	g_expectingWave = 0;
-	memcpy(data, g_waveData, 4);
-	if (data_size != g_waveDataSize)
+	plugin->expectingWave = 0;
+	memcpy(data, plugin->waveData, 4);
+	if (data_size != plugin->waveDataSize)
 	{
 		LLOGLN(0, ("thread_process_message_wave: "
 			"size error"));
 	}
-	wave_out_play(data, data_size);
+	wave_out_play(plugin->device_data, data, data_size);
 	size = 8;
 	out_data = (char *) malloc(size);
 	SET_UINT8(out_data, 0, SNDC_WAVECONFIRM);
 	SET_UINT8(out_data, 1, 0);
 	SET_UINT16(out_data, 2, size - 4);
 	cur_time = get_mstime();
-	time_delta = cur_time - g_local_time_stamp;
+	time_delta = cur_time - plugin->local_time_stamp;
 	LLOGLN(0, ("thread_process_message_wave: "
 		"data_size %d time_delta %d cur_time %u",
 		data_size, time_delta, cur_time));
-	wTimeStamp = g_wTimeStamp + time_delta;
+	wTimeStamp = plugin->wTimeStamp + time_delta;
 	SET_UINT16(out_data, 4, wTimeStamp);
-	SET_UINT8(out_data, 6, g_cBlockNo);
+	SET_UINT8(out_data, 6, plugin->cBlockNo);
 	SET_UINT8(out_data, 7, 0);
-	error = g_ep.pVirtualChannelWrite(g_open_handle[0],
+	error = plugin->ep.pVirtualChannelWrite(plugin->open_handle[0],
 		out_data, size, out_data);
 	if (error != CHANNEL_RC_OK)
 	{
@@ -507,35 +520,35 @@ thread_process_message_wave(char * data, int data_size)
 }
 
 static int
-thread_process_message_close(char * data, int data_size)
+thread_process_message_close(rdpsndPlugin * plugin, char * data, int data_size)
 {
 	LLOGLN(10, ("thread_process_message_close: "
 		"data_size %d", data_size));
-	wave_out_close();
+	wave_out_close(plugin->device_data);
 	return 0;
 }
 
 static int
-thread_process_message_setvolume(char * data, int data_size)
+thread_process_message_setvolume(rdpsndPlugin * plugin, char * data, int data_size)
 {
 	uint32 dwVolume;
 
 	LLOGLN(10, ("thread_process_message_setvolume:"));
 	dwVolume = GET_UINT32(data, 0);
-	wave_out_set_volume(dwVolume);
+	wave_out_set_volume(plugin->device_data, dwVolume);
 	return 0;
 }
 
 static int
-thread_process_message(char * data, int data_size)
+thread_process_message(rdpsndPlugin * plugin, char * data, int data_size)
 {
 	int opcode;
 	int size;
 
-	if (g_expectingWave)
+	if (plugin->expectingWave)
 	{
-		thread_process_message_wave(data, data_size);
-		g_expectingWave = 0;
+		thread_process_message_wave(plugin, data, data_size);
+		plugin->expectingWave = 0;
 		return 0;
 	}
 	opcode = GET_UINT8(data, 0);
@@ -545,19 +558,19 @@ thread_process_message(char * data, int data_size)
 	switch (opcode)
 	{
 		case SNDC_FORMATS:
-			thread_process_message_formats(data + 4, size);
+			thread_process_message_formats(plugin, data + 4, size);
 			break;
 		case SNDC_TRAINING:
-			thread_process_message_training(data + 4, size);
+			thread_process_message_training(plugin, data + 4, size);
 			break;
 		case SNDC_WAVE:
-			thread_process_message_wave_info(data + 4, size);
+			thread_process_message_wave_info(plugin, data + 4, size);
 			break;
 		case SNDC_CLOSE:
-			thread_process_message_close(data + 4, size);
+			thread_process_message_close(plugin, data + 4, size);
 			break;
 		case SNDC_SETVOLUME:
-			thread_process_message_setvolume(data + 4, size);
+			thread_process_message_setvolume(plugin, data + 4, size);
 			break;
 		default:
 			LLOGLN(0, ("thread_process_message: unknown opcode"));
@@ -568,7 +581,7 @@ thread_process_message(char * data, int data_size)
 
 /* process the linked list of data that has come in */
 static int
-thread_process_data(void)
+thread_process_data(rdpsndPlugin * plugin)
 {
 	char * data;
 	int data_size;
@@ -576,24 +589,24 @@ thread_process_data(void)
 
 	while (1)
 	{
-		pthread_mutex_lock(g_mutex);
-		if (g_list_head == 0)
+		pthread_mutex_lock(plugin->mutex);
+		if (plugin->list_head == 0)
 		{
-			pthread_mutex_unlock(g_mutex);
+			pthread_mutex_unlock(plugin->mutex);
 			break;
 		}
-		data = g_list_head->data;
-		data_size = g_list_head->data_size;
-		item = g_list_head;
-		g_list_head = g_list_head->next;
-		if (g_list_head == 0)
+		data = plugin->list_head->data;
+		data_size = plugin->list_head->data_size;
+		item = plugin->list_head;
+		plugin->list_head = plugin->list_head->next;
+		if (plugin->list_head == 0)
 		{
-			g_list_tail = 0;
+			plugin->list_tail = 0;
 		}
-		pthread_mutex_unlock(g_mutex);
+		pthread_mutex_unlock(plugin->mutex);
 		if (data != 0)
 		{
-			thread_process_message(data, data_size);
+			thread_process_message(plugin, data, data_size);
 			free(data);
 		}
 		if (item != 0)
@@ -607,30 +620,33 @@ thread_process_data(void)
 static void *
 thread_func(void * arg)
 {
+	rdpsndPlugin * plugin;
 	int listr[2];
 	int numr;
 
-	g_thread_status = 1;
+	plugin = (rdpsndPlugin *) arg;
+
+	plugin->thread_status = 1;
 	LLOGLN(10, ("thread_func: in"));
 	while (1)
 	{
-		listr[0] = g_term_event.sock;
-		listr[1] = g_data_in_event.sock;
+		listr[0] = plugin->term_event.sock;
+		listr[1] = plugin->data_in_event.sock;
 		numr = 2;
 		wait(-1, numr, listr);
-		if (is_wait_obj_set(&g_term_event))
+		if (is_wait_obj_set(&plugin->term_event))
 		{
 			break;
 		}
-		if (is_wait_obj_set(&g_data_in_event))
+		if (is_wait_obj_set(&plugin->data_in_event))
 		{
-			clear_wait_obj(&g_data_in_event);
+			clear_wait_obj(&plugin->data_in_event);
 			/* process data in */
-			thread_process_data();
+			thread_process_data(plugin);
 		}
 	}
 	LLOGLN(10, ("thread_func: out"));
-	g_thread_status = -1;
+	plugin->thread_status = -1;
 	return 0;
 }
 
@@ -638,33 +654,36 @@ static void
 OpenEventProcessReceived(uint32 openHandle, void * pData, uint32 dataLength,
 	uint32 totalLength, uint32 dataFlags)
 {
+	rdpsndPlugin * plugin;
 	int index;
 
-	index = (openHandle == g_open_handle[0]) ? 0 : 1;
+	plugin = (rdpsndPlugin *) chan_plugin_find_by_open_handle(openHandle);
+
+	index = (openHandle == plugin->open_handle[0]) ? 0 : 1;
 	LLOGLN(10, ("OpenEventProcessReceived: receive openHandle %d dataLength %d "
 		"totalLength %d dataFlags %d",
 		openHandle, dataLength, totalLength, dataFlags));
 	if (dataFlags & CHANNEL_FLAG_FIRST)
 	{
-		g_data_in_read[index] = 0;
-		if (g_data_in[index] != 0)
+		plugin->data_in_read[index] = 0;
+		if (plugin->data_in[index] != 0)
 		{
-			free(g_data_in[index]);
+			free(plugin->data_in[index]);
 		}
-		g_data_in[index] = (char *) malloc(totalLength);
-		g_data_in_size[index] = totalLength;
+		plugin->data_in[index] = (char *) malloc(totalLength);
+		plugin->data_in_size[index] = totalLength;
 	}
-	memcpy(g_data_in[index] + g_data_in_read[index], pData, dataLength);
-	g_data_in_read[index] += dataLength;
+	memcpy(plugin->data_in[index] + plugin->data_in_read[index], pData, dataLength);
+	plugin->data_in_read[index] += dataLength;
 	if (dataFlags & CHANNEL_FLAG_LAST)
 	{
-		if (g_data_in_read[index] != g_data_in_size[index])
+		if (plugin->data_in_read[index] != plugin->data_in_size[index])
 		{
 			LLOGLN(0, ("OpenEventProcessReceived: read error"));
 		}
 		if (index == 0)
 		{
-			signal_data_in();
+			signal_data_in(plugin);
 		}
 	}
 }
@@ -689,43 +708,65 @@ OpenEvent(uint32 openHandle, uint32 event, void * pData, uint32 dataLength,
 static void
 InitEventProcessConnected(void * pInitHandle, void * pData, uint32 dataLength)
 {
+	rdpsndPlugin * plugin;
 	uint32 error;
 	pthread_t thread;
 
-	if (pInitHandle != g_han)
+	plugin = (rdpsndPlugin *) chan_plugin_find_by_init_handle(pInitHandle);
+	if (plugin == NULL)
 	{
 		LLOGLN(0, ("InitEventProcessConnected: error no match"));
+		return;
 	}
-	error = g_ep.pVirtualChannelOpen(g_han, &(g_open_handle[0]),
-		g_channel_def[0].name, OpenEvent);
+
+	error = plugin->ep.pVirtualChannelOpen(pInitHandle, &(plugin->open_handle[0]),
+		plugin->channel_def[0].name, OpenEvent);
 	if (error != CHANNEL_RC_OK)
 	{
 		LLOGLN(0, ("InitEventProcessConnected: Open failed"));
+		return;
 	}
-	error = g_ep.pVirtualChannelOpen(g_han, &(g_open_handle[1]),
-		g_channel_def[1].name, OpenEvent);
+	chan_plugin_register_open_handle((rdpChanPlugin *) plugin, plugin->open_handle[0]);
+
+	error = plugin->ep.pVirtualChannelOpen(pInitHandle, &(plugin->open_handle[1]),
+		plugin->channel_def[1].name, OpenEvent);
 	if (error != CHANNEL_RC_OK)
 	{
 		LLOGLN(0, ("InitEventProcessConnected: Open failed"));
+		return;
 	}
-	pthread_create(&thread, 0, thread_func, 0);
+	chan_plugin_register_open_handle((rdpChanPlugin *) plugin, plugin->open_handle[1]);
+
+	pthread_create(&thread, 0, thread_func, plugin);
 	pthread_detach(thread);
 }
 
 static void
-InitEventProcessTerminated(void)
+InitEventProcessTerminated(void * pInitHandle)
 {
+	rdpsndPlugin * plugin;
 	int index;
 
-	set_wait_obj(&g_term_event);
+	plugin = (rdpsndPlugin *) chan_plugin_find_by_init_handle(pInitHandle);
+	if (plugin == NULL)
+	{
+		LLOGLN(0, ("InitEventProcessConnected: error no match"));
+		return;
+	}
+
+	set_wait_obj(&plugin->term_event);
 	index = 0;
-	while ((g_thread_status > 0) && (index < 100))
+	while ((plugin->thread_status > 0) && (index < 100))
 	{
 		index++;
 		usleep(250 * 1000);
 	}
-	deinit_wait_obj(&g_term_event);
-	deinit_wait_obj(&g_data_in_event);
+	deinit_wait_obj(&plugin->term_event);
+	deinit_wait_obj(&plugin->data_in_event);
+
+	wave_out_deinit(plugin->device_data);
+	chan_plugin_deinit((rdpChanPlugin *) plugin);
+	free(plugin);
 }
 
 static void
@@ -740,7 +781,7 @@ InitEvent(void * pInitHandle, uint32 event, void * pData, uint32 dataLength)
 		case CHANNEL_EVENT_DISCONNECTED:
 			break;
 		case CHANNEL_EVENT_TERMINATED:
-			InitEventProcessTerminated();
+			InitEventProcessTerminated(pInitHandle);
 			break;
 	}
 }
@@ -749,29 +790,38 @@ InitEvent(void * pInitHandle, uint32 event, void * pData, uint32 dataLength)
 int
 VirtualChannelEntry(PCHANNEL_ENTRY_POINTS pEntryPoints)
 {
+	rdpsndPlugin * plugin;
+
 	LLOGLN(10, ("VirtualChannelEntry:"));
-	g_data_in_size[0] = 0;
-	g_data_in_size[1] = 0;
-	g_data_in[0] = 0;
-	g_data_in[1] = 0;
-	g_ep = *pEntryPoints;
-	memset(&(g_channel_def[0]), 0, sizeof(g_channel_def));
-	g_channel_def[0].options = CHANNEL_OPTION_INITIALIZED |
+
+	plugin = (rdpsndPlugin *) malloc(sizeof(rdpsndPlugin));
+	memset(plugin, 0, sizeof(rdpsndPlugin));
+
+	chan_plugin_init((rdpChanPlugin *) plugin);
+
+	plugin->data_in_size[0] = 0;
+	plugin->data_in_size[1] = 0;
+	plugin->data_in[0] = 0;
+	plugin->data_in[1] = 0;
+	plugin->ep = *pEntryPoints;
+	memset(&(plugin->channel_def[0]), 0, sizeof(plugin->channel_def));
+	plugin->channel_def[0].options = CHANNEL_OPTION_INITIALIZED |
 		CHANNEL_OPTION_ENCRYPT_RDP;
-	strcpy(g_channel_def[0].name, "rdpsnd");
-	g_channel_def[1].options = CHANNEL_OPTION_INITIALIZED |
+	strcpy(plugin->channel_def[0].name, "rdpsnd");
+	plugin->channel_def[1].options = CHANNEL_OPTION_INITIALIZED |
 		CHANNEL_OPTION_ENCRYPT_RDP;
-	strcpy(g_channel_def[1].name, "rdpdr");
-	g_mutex = (pthread_mutex_t *) malloc(sizeof(pthread_mutex_t));
-	pthread_mutex_init(g_mutex, 0);
-	g_list_head = 0;
-	g_list_tail = 0;
-	init_wait_obj(&g_term_event, "freerdprdpsndterm");
-	init_wait_obj(&g_data_in_event, "freerdprdpsnddatain");
-	g_expectingWave = 0;
-	g_current_format = -1;
-	g_thread_status = 0;
-	g_ep.pVirtualChannelInit(&g_han, g_channel_def, 2,
+	strcpy(plugin->channel_def[1].name, "rdpdr");
+	plugin->mutex = (pthread_mutex_t *) malloc(sizeof(pthread_mutex_t));
+	pthread_mutex_init(plugin->mutex, 0);
+	plugin->list_head = 0;
+	plugin->list_tail = 0;
+	init_wait_obj(&plugin->term_event, "freerdprdpsndterm");
+	init_wait_obj(&plugin->data_in_event, "freerdprdpsnddatain");
+	plugin->expectingWave = 0;
+	plugin->current_format = -1;
+	plugin->thread_status = 0;
+	plugin->ep.pVirtualChannelInit(&plugin->chan_plugin.init_handle, plugin->channel_def, 2,
 		VIRTUAL_CHANNEL_VERSION_WIN2000, InitEvent);
+	plugin->device_data = wave_out_init();
 	return 1;
 }
