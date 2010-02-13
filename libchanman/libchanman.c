@@ -534,6 +534,7 @@ chan_man_deinit(void)
 rdpChanMan *
 chan_man_new(void)
 {
+	static int chan_man_seq = 0;
 	rdpChanMan * chan_man;
 	rdpChanManList * list;
 	int len;
@@ -553,7 +554,7 @@ chan_man_new(void)
 	else
 	{
 		chan_man->sa.sun_family = AF_UNIX;
-		sprintf(chan_man->sa.sun_path, "/tmp/freerdpchan%8.8x", getpid());
+		sprintf(chan_man->sa.sun_path, "/tmp/freerdpchan%8.8x.%d", getpid(), chan_man_seq++);
 		len = sizeof(chan_man->sa);
 		if (bind(chan_man->sock, (struct sockaddr*)&chan_man->sa, len) < 0)
 		{

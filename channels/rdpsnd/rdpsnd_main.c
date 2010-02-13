@@ -134,6 +134,7 @@ get_mstime(void)
 static int
 init_wait_obj(struct wait_obj * obj, const char * name)
 {
+	static int init_wait_obj_seq = 0;
 	int pid;
 	int size;
 
@@ -146,7 +147,7 @@ init_wait_obj(struct wait_obj * obj, const char * name)
 	}
 	obj->sa.sun_family = AF_UNIX;
 	size = sizeof(obj->sa.sun_path) - 1;
-	snprintf(obj->sa.sun_path, size, "/tmp/%s%8.8x", name, pid);
+	snprintf(obj->sa.sun_path, size, "/tmp/%s%8.8x.%d", name, pid, init_wait_obj_seq++);
 	obj->sa.sun_path[size] = 0;
 	size = sizeof(obj->sa);
 	if (bind(obj->sock, (struct sockaddr*)(&(obj->sa)), size) < 0)
