@@ -36,6 +36,7 @@
 #include "types_ui.h"
 #include "vchan.h"
 #include "chan_stream.h"
+#include "chan_plugin.h"
 #include "constants_rdpdr.h"
 
 #define LOG_LEVEL 1
@@ -57,28 +58,34 @@ struct data_in_item
 	int data_size;
 };
 
-CHANNEL_ENTRY_POINTS g_ep;
-static void * g_han;
-static CHANNEL_DEF g_channel_def[2];
-static uint32 g_open_handle[2];
-static char * g_data_in[2];
-static int g_data_in_size[2];
-static int g_data_in_read[2];
-static struct wait_obj g_term_event;
-static struct wait_obj g_data_in_event;
-static struct data_in_item * volatile g_list_head;
-static struct data_in_item * volatile g_list_tail;
-/* for locking the linked list */
-static pthread_mutex_t * g_mutex;
-static volatile int g_thread_status;
+typedef struct rdpdr_plugin rdpdrPlugin;
+struct rdpdr_plugin
+{
+	rdpChanPlugin chan_plugin;
 
-static uint16 g_versionMinor;
-static uint16 g_clientID;
-DEVMAN* g_devman;
+	CHANNEL_ENTRY_POINTS ep;
+	CHANNEL_DEF channel_def[2];
+	uint32 open_handle[2];
+	char * data_in[2];
+	int data_in_size[2];
+	int data_in_read[2];
+	struct wait_obj term_event;
+	struct wait_obj data_in_event;
+	struct data_in_item * volatile list_head;
+	struct data_in_item * volatile list_tail;
+	/* for locking the linked list */
+	pthread_mutex_t * mutex;
+	volatile int thread_status;
+
+	uint16 versionMinor;
+	uint16 clientID;
+	DEVMAN* devman;
+};
 
 static int
 init_wait_obj(struct wait_obj * obj, const char * name)
 {
+	static int init_wait_obj_seq = 0;
 	int pid;
 	int size;
 
@@ -91,7 +98,7 @@ init_wait_obj(struct wait_obj * obj, const char * name)
 	}
 	obj->sa.sun_family = AF_UNIX;
 	size = sizeof(obj->sa.sun_path) - 1;
-	snprintf(obj->sa.sun_path, size, "/tmp/%s%8.8x", name, pid);
+	snprintf(obj->sa.sun_path, size, "/tmp/%s%8.8x.%d", name, pid, init_wait_obj_seq++);
 	obj->sa.sun_path[size] = 0;
 	size = sizeof(obj->sa);
 	if (bind(obj->sock, (struct sockaddr*)(&(obj->sa)), size) < 0)
@@ -203,41 +210,41 @@ wait(int timeout, int numr, int * listr)
 /* called by main thread
    add item to linked list and inform worker thread that there is data */
 static void
-signal_data_in(void)
+signal_data_in(rdpdrPlugin * plugin)
 {
 	struct data_in_item * item;
 
 	item = (struct data_in_item *) malloc(sizeof(struct data_in_item));
 	item->next = 0;
-	item->data = g_data_in[0];
-	g_data_in[0] = 0;
-	item->data_size = g_data_in_size[0];
-	g_data_in_size[0] = 0;
-	pthread_mutex_lock(g_mutex);
-	if (g_list_tail == 0)
+	item->data = plugin->data_in[0];
+	plugin->data_in[0] = 0;
+	item->data_size = plugin->data_in_size[0];
+	plugin->data_in_size[0] = 0;
+	pthread_mutex_lock(plugin->mutex);
+	if (plugin->list_tail == 0)
 	{
-		g_list_head = item;
-		g_list_tail = item;
+		plugin->list_head = item;
+		plugin->list_tail = item;
 	}
 	else
 	{
-		g_list_tail->next = item;
-		g_list_tail = item;
+		plugin->list_tail->next = item;
+		plugin->list_tail = item;
 	}
-	pthread_mutex_unlock(g_mutex);
-	set_wait_obj(&g_data_in_event);
+	pthread_mutex_unlock(plugin->mutex);
+	set_wait_obj(&plugin->data_in_event);
 }
 
 static void
-rdpdr_process_server_announce_request(char* data, int data_size)
+rdpdr_process_server_announce_request(rdpdrPlugin * plugin, char* data, int data_size)
 {
 	/* versionMajor, must be 1 */
-	g_versionMinor = GET_UINT16(data, 2); /* versionMinor */
-	g_clientID = GET_UINT32(data, 4); /* clientID */
+	plugin->versionMinor = GET_UINT16(data, 2); /* versionMinor */
+	plugin->clientID = GET_UINT32(data, 4); /* clientID */
 
-	LLOGLN(0, ("Version Minor: %d\n", g_versionMinor));
+	LLOGLN(0, ("Version Minor: %d\n", plugin->versionMinor));
 
-	switch(g_versionMinor)
+	switch(plugin->versionMinor)
 	{
 		case 0x000C:
 			LLOGLN(0, ("Windows Vista, Windows Vista SP1, Windows Server 2008, Windows 7, and Windows Server 2008 R2"));
@@ -262,7 +269,7 @@ rdpdr_process_server_announce_request(char* data, int data_size)
 }
 
 static int
-rdpdr_send_client_announce_reply()
+rdpdr_send_client_announce_reply(rdpdrPlugin * plugin)
 {
 	uint32 error;
 	char* out_data = malloc(12);
@@ -271,10 +278,10 @@ rdpdr_send_client_announce_reply()
 	SET_UINT16(out_data, 2, PAKID_CORE_CLIENTID_CONFIRM);
 
 	SET_UINT16(out_data, 4, 1); /* versionMajor, must be set to 1 */
-	SET_UINT16(out_data, 6, g_versionMinor); /* versionMinor */
-	SET_UINT32(out_data, 8, g_clientID); /* clientID, given by the server in a Server Announce Request */
+	SET_UINT16(out_data, 6, plugin->versionMinor); /* versionMinor */
+	SET_UINT32(out_data, 8, plugin->clientID); /* clientID, given by the server in a Server Announce Request */
 
-	error = g_ep.pVirtualChannelWrite(g_open_handle[0], out_data, 12, out_data);
+	error = plugin->ep.pVirtualChannelWrite(plugin->open_handle[0], out_data, 12, out_data);
 
 	if (error != CHANNEL_RC_OK)
 	{
@@ -287,7 +294,7 @@ rdpdr_send_client_announce_reply()
 }
 
 static int
-rdpdr_send_client_name_request()
+rdpdr_send_client_name_request(rdpdrPlugin * plugin)
 {
 	char* out_data;
 	int out_data_size;
@@ -310,7 +317,7 @@ rdpdr_send_client_name_request()
 	SET_UINT32(out_data, 12, computerNameLen); /* computerNameLen */
 	SET_UINT16(out_data, 16, 0x0041); /* computerName */
 
-	error = g_ep.pVirtualChannelWrite(g_open_handle[0], out_data, out_data_size, out_data);
+	error = plugin->ep.pVirtualChannelWrite(plugin->open_handle[0], out_data, out_data_size, out_data);
 
 	if (error != CHANNEL_RC_OK)
 	{
@@ -323,7 +330,7 @@ rdpdr_send_client_name_request()
 }
 
 static int
-rdpdr_send_device_list_announce_request()
+rdpdr_send_device_list_announce_request(rdpdrPlugin * plugin)
 {
 	char* out_data;
 	int out_data_size;
@@ -336,18 +343,18 @@ rdpdr_send_device_list_announce_request()
 
 	SET_UINT16(out_data, 0, RDPDR_COMPONENT_TYPE_CORE);
 	SET_UINT16(out_data, 2, PAKID_CORE_DEVICELIST_ANNOUNCE);
-	SET_UINT16(out_data, 4, g_devman->count); // deviceCount
+	SET_UINT16(out_data, 4, plugin->devman->count); // deviceCount
 	offset += 6;
 
-	devman_rewind(g_devman);
+	devman_rewind(plugin->devman);
 
-	while (devman_has_next(g_devman) != 0)
+	while (devman_has_next(plugin->devman) != 0)
 	{
-		pdev = devman_get_next(g_devman);
+		pdev = devman_get_next(plugin->devman);
 
 		SET_UINT16(out_data, offset, pdev->service->type); /* deviceType */
 		SET_UINT16(out_data, offset, pdev->id); /* deviceID */
-		//out_uint8p(s, g_device[i].name, 8); // preferredDosName, Max 8 characters, may not be null terminated
+		//out_uint8p(s, plugin->device[i].name, 8); // preferredDosName, Max 8 characters, may not be null terminated
 		offset += 12;
 
 		switch (pdev->service->type)
@@ -378,7 +385,7 @@ rdpdr_send_device_list_announce_request()
 	}
 
 	out_data_size = offset;
-	error = g_ep.pVirtualChannelWrite(g_open_handle[0], out_data, out_data_size, out_data);
+	error = plugin->ep.pVirtualChannelWrite(plugin->open_handle[0], out_data, out_data_size, out_data);
 
 	if (error != CHANNEL_RC_OK)
 	{
@@ -391,7 +398,7 @@ rdpdr_send_device_list_announce_request()
 }
 
 static void
-rdpdr_process_irp(char* data, int data_size)
+rdpdr_process_irp(rdpdrPlugin * plugin, char* data, int data_size)
 {
 	IRP irp;
 	int deviceID;
@@ -407,7 +414,7 @@ rdpdr_process_irp(char* data, int data_size)
 	irp.majorFunction = GET_UINT32(data, 12); /* majorFunction */
 	irp.minorFunction = GET_UINT32(data, 16); /* minorFunction */
 
-	irp.dev = devman_get_device_by_id(g_devman, deviceID);
+	irp.dev = devman_get_device_by_id(plugin->devman, deviceID);
 
 	LLOGLN(0, ("IRP MAJOR: %d MINOR: %d\n", irp.majorFunction, irp.minorFunction));
 
@@ -476,7 +483,7 @@ rdpdr_process_irp(char* data, int data_size)
 }
 
 static int
-thread_process_message(char * data, int data_size)
+thread_process_message(rdpdrPlugin * plugin, char * data, int data_size)
 {
 	uint16 component;
 	uint16 packetID;
@@ -493,14 +500,14 @@ thread_process_message(char * data, int data_size)
 		{
 			case PAKID_CORE_SERVER_ANNOUNCE:
 				LLOGLN(0, ("PAKID_CORE_SERVER_ANNOUNCE"));
-				rdpdr_process_server_announce_request(&data[4], data_size - 4);
-				rdpdr_send_client_announce_reply();
-				rdpdr_send_client_name_request();
+				rdpdr_process_server_announce_request(plugin, &data[4], data_size - 4);
+				rdpdr_send_client_announce_reply(plugin);
+				rdpdr_send_client_name_request(plugin);
 				break;
 
 			case PAKID_CORE_CLIENTID_CONFIRM:
 				LLOGLN(0, ("PAKID_CORE_CLIENTID_CONFIRM"));
-				rdpdr_send_device_list();
+				rdpdr_send_device_list_announce_request(plugin);
 				break;
 
 			case PAKID_CORE_DEVICE_REPLY:
@@ -512,14 +519,14 @@ thread_process_message(char * data, int data_size)
 
 			case PAKID_CORE_DEVICE_IOREQUEST:
 				LLOGLN(0, ("PAKID_CORE_DEVICE_IOREQUEST"));
-				rdpdr_process_irp(&data[4], data_size - 4);
+				rdpdr_process_irp(plugin, &data[4], data_size - 4);
 				break;
 
 			case PAKID_CORE_SERVER_CAPABILITY:
 				/* server capabilities */
 				LLOGLN(0, ("PAKID_CORE_SERVER_CAPABILITY"));
-				//rdpdr_process_capabilities(s);
-				//rdpdr_send_capabilities();
+				//rdpdr_process_capabilities(plugin, s);
+				//rdpdr_send_capabilities(plugin);
 				break;
 
 			default:
@@ -552,7 +559,7 @@ thread_process_message(char * data, int data_size)
 
 /* process the linked list of data that has come in */
 static int
-thread_process_data(void)
+thread_process_data(rdpdrPlugin * plugin)
 {
 	char * data;
 	int data_size;
@@ -560,28 +567,28 @@ thread_process_data(void)
 
 	while (1)
 	{
-		pthread_mutex_lock(g_mutex);
+		pthread_mutex_lock(plugin->mutex);
 
-		if (g_list_head == 0)
+		if (plugin->list_head == 0)
 		{
-			pthread_mutex_unlock(g_mutex);
+			pthread_mutex_unlock(plugin->mutex);
 			break;
 		}
 
-		data = g_list_head->data;
-		data_size = g_list_head->data_size;
-		item = g_list_head;
-		g_list_head = g_list_head->next;
+		data = plugin->list_head->data;
+		data_size = plugin->list_head->data_size;
+		item = plugin->list_head;
+		plugin->list_head = plugin->list_head->next;
 
-		if (g_list_head == 0)
+		if (plugin->list_head == 0)
 		{
-			g_list_tail = 0;
+			plugin->list_tail = 0;
 		}
 
-		pthread_mutex_unlock(g_mutex);
+		pthread_mutex_unlock(plugin->mutex);
 		if (data != 0)
 		{
-			thread_process_message(data, data_size);
+			thread_process_message(plugin, data, data_size);
 			free(data);
 		}
 		if (item != 0)
@@ -596,33 +603,36 @@ thread_process_data(void)
 static void *
 thread_func(void * arg)
 {
+	rdpdrPlugin * plugin;
 	int listr[2];
 	int numr;
 
-	g_thread_status = 1;
+	plugin = (rdpdrPlugin *) arg;
+
+	plugin->thread_status = 1;
 	LLOGLN(10, ("thread_func: in"));
 
 	while (1)
 	{
-		listr[0] = g_term_event.sock;
-		listr[1] = g_data_in_event.sock;
+		listr[0] = plugin->term_event.sock;
+		listr[1] = plugin->data_in_event.sock;
 		numr = 2;
 		wait(-1, numr, listr);
 
-		if (is_wait_obj_set(&g_term_event))
+		if (is_wait_obj_set(&plugin->term_event))
 		{
 			break;
 		}
-		if (is_wait_obj_set(&g_data_in_event))
+		if (is_wait_obj_set(&plugin->data_in_event))
 		{
-			clear_wait_obj(&g_data_in_event);
+			clear_wait_obj(&plugin->data_in_event);
 			/* process data in */
-			thread_process_data();
+			thread_process_data(plugin);
 		}
 	}
 
 	LLOGLN(10, ("thread_func: out"));
-	g_thread_status = -1;
+	plugin->thread_status = -1;
 	return 0;
 }
 
@@ -630,8 +640,11 @@ static void
 OpenEventProcessReceived(uint32 openHandle, void * pData, uint32 dataLength,
 	uint32 totalLength, uint32 dataFlags)
 {
+	rdpdrPlugin * plugin;
 	int index;
-	index = (openHandle == g_open_handle[0]) ? 0 : 1;
+
+	plugin = (rdpdrPlugin *) chan_plugin_find_by_open_handle(openHandle);
+	index = (openHandle == plugin->open_handle[0]) ? 0 : 1;
 
 	LLOGLN(10, ("OpenEventProcessReceived: receive openHandle %d dataLength %d "
 		"totalLength %d dataFlags %d",
@@ -639,27 +652,27 @@ OpenEventProcessReceived(uint32 openHandle, void * pData, uint32 dataLength,
 
 	if (dataFlags & CHANNEL_FLAG_FIRST)
 	{
-		g_data_in_read[index] = 0;
-		if (g_data_in[index] != 0)
+		plugin->data_in_read[index] = 0;
+		if (plugin->data_in[index] != 0)
 		{
-			free(g_data_in[index]);
+			free(plugin->data_in[index]);
 		}
-		g_data_in[index] = (char *) malloc(totalLength);
-		g_data_in_size[index] = totalLength;
+		plugin->data_in[index] = (char *) malloc(totalLength);
+		plugin->data_in_size[index] = totalLength;
 	}
 
-	memcpy(g_data_in[index] + g_data_in_read[index], pData, dataLength);
-	g_data_in_read[index] += dataLength;
+	memcpy(plugin->data_in[index] + plugin->data_in_read[index], pData, dataLength);
+	plugin->data_in_read[index] += dataLength;
 
 	if (dataFlags & CHANNEL_FLAG_LAST)
 	{
-		if (g_data_in_read[index] != g_data_in_size[index])
+		if (plugin->data_in_read[index] != plugin->data_in_size[index])
 		{
 			LLOGLN(0, ("OpenEventProcessReceived: read error"));
 		}
 		if (index == 0)
 		{
-			signal_data_in();
+			signal_data_in(plugin);
 		}
 	}
 }
@@ -684,43 +697,62 @@ OpenEvent(uint32 openHandle, uint32 event, void * pData, uint32 dataLength,
 static void
 InitEventProcessConnected(void * pInitHandle, void * pData, uint32 dataLength)
 {
+	rdpdrPlugin * plugin;
 	uint32 error;
 	pthread_t thread;
 
-	if (pInitHandle != g_han)
+	plugin = (rdpdrPlugin *) chan_plugin_find_by_init_handle(pInitHandle);
+	if (plugin == NULL)
 	{
 		LLOGLN(0, ("InitEventProcessConnected: error no match"));
 	}
-	error = g_ep.pVirtualChannelOpen(g_han, &(g_open_handle[0]),
-		g_channel_def[0].name, OpenEvent);
+
+	error = plugin->ep.pVirtualChannelOpen(pInitHandle, &(plugin->open_handle[0]),
+		plugin->channel_def[0].name, OpenEvent);
 	if (error != CHANNEL_RC_OK)
 	{
 		LLOGLN(0, ("InitEventProcessConnected: Open failed"));
 	}
-	error = g_ep.pVirtualChannelOpen(g_han, &(g_open_handle[1]),
-		g_channel_def[1].name, OpenEvent);
+	chan_plugin_register_open_handle((rdpChanPlugin *) plugin, plugin->open_handle[0]);
+
+	error = plugin->ep.pVirtualChannelOpen(pInitHandle, &(plugin->open_handle[1]),
+		plugin->channel_def[1].name, OpenEvent);
 	if (error != CHANNEL_RC_OK)
 	{
 		LLOGLN(0, ("InitEventProcessConnected: Open failed"));
 	}
-	pthread_create(&thread, 0, thread_func, 0);
+	chan_plugin_register_open_handle((rdpChanPlugin *) plugin, plugin->open_handle[1]);
+
+	pthread_create(&thread, 0, thread_func, plugin);
 	pthread_detach(thread);
 }
 
 static void
-InitEventProcessTerminated(void)
+InitEventProcessTerminated(void * pInitHandle)
 {
+	rdpdrPlugin * plugin;
 	int index;
 
-	set_wait_obj(&g_term_event);
+	plugin = (rdpdrPlugin *) chan_plugin_find_by_init_handle(pInitHandle);
+	if (plugin == NULL)
+	{
+		LLOGLN(0, ("InitEventProcessConnected: error no match"));
+		return;
+	}
+
+	set_wait_obj(&plugin->term_event);
 	index = 0;
-	while ((g_thread_status > 0) && (index < 100))
+	while ((plugin->thread_status > 0) && (index < 100))
 	{
 		index++;
 		usleep(250 * 1000);
 	}
-	deinit_wait_obj(&g_term_event);
-	deinit_wait_obj(&g_data_in_event);
+	deinit_wait_obj(&plugin->term_event);
+	deinit_wait_obj(&plugin->data_in_event);
+
+	devman_uninit(plugin->devman);
+	chan_plugin_deinit((rdpChanPlugin *) plugin);
+	free(plugin);
 }
 
 static void
@@ -735,7 +767,7 @@ InitEvent(void * pInitHandle, uint32 event, void * pData, uint32 dataLength)
 		case CHANNEL_EVENT_DISCONNECTED:
 			break;
 		case CHANNEL_EVENT_TERMINATED:
-			InitEventProcessTerminated();
+			InitEventProcessTerminated(pInitHandle);
 			break;
 	}
 }
@@ -743,29 +775,37 @@ InitEvent(void * pInitHandle, uint32 event, void * pData, uint32 dataLength)
 int
 VirtualChannelEntry(PCHANNEL_ENTRY_POINTS pEntryPoints)
 {
+	rdpdrPlugin * plugin;
+
 	LLOGLN(10, ("VirtualChannelEntry:"));
-	g_data_in_size[0] = 0;
-	g_data_in_size[1] = 0;
-	g_data_in[0] = 0;
-	g_data_in[1] = 0;
-	g_ep = *pEntryPoints;
 
-	memset(&(g_channel_def[0]), 0, sizeof(g_channel_def));
-	g_channel_def[0].options = CHANNEL_OPTION_INITIALIZED | CHANNEL_OPTION_ENCRYPT_RDP;
-	strcpy(g_channel_def[0].name, "rdpdr");
+	plugin = (rdpdrPlugin *) malloc(sizeof(rdpdrPlugin));
+	memset(plugin, 0, sizeof(rdpdrPlugin));
 
-	g_mutex = (pthread_mutex_t *) malloc(sizeof(pthread_mutex_t));
-	pthread_mutex_init(g_mutex, 0);
-	g_list_head = 0;
-	g_list_tail = 0;
+	chan_plugin_init((rdpChanPlugin *) plugin);
 
-	init_wait_obj(&g_term_event, "freerdprdpdrterm");
-	init_wait_obj(&g_data_in_event, "freerdprdpdrdatain");
+	plugin->data_in_size[0] = 0;
+	plugin->data_in_size[1] = 0;
+	plugin->data_in[0] = 0;
+	plugin->data_in[1] = 0;
+	plugin->ep = *pEntryPoints;
 
-	g_thread_status = 0;
-	g_devman = devman_init();
+	memset(&(plugin->channel_def[0]), 0, sizeof(plugin->channel_def));
+	plugin->channel_def[0].options = CHANNEL_OPTION_INITIALIZED | CHANNEL_OPTION_ENCRYPT_RDP;
+	strcpy(plugin->channel_def[0].name, "rdpdr");
 
-	g_ep.pVirtualChannelInit(&g_han, g_channel_def, 2,
+	plugin->mutex = (pthread_mutex_t *) malloc(sizeof(pthread_mutex_t));
+	pthread_mutex_init(plugin->mutex, 0);
+	plugin->list_head = 0;
+	plugin->list_tail = 0;
+
+	init_wait_obj(&plugin->term_event, "freerdprdpdrterm");
+	init_wait_obj(&plugin->data_in_event, "freerdprdpdrdatain");
+
+	plugin->thread_status = 0;
+	plugin->devman = devman_init();
+
+	plugin->ep.pVirtualChannelInit(&plugin->chan_plugin.init_handle, plugin->channel_def, 2,
 		VIRTUAL_CHANNEL_VERSION_WIN2000, InitEvent);
 
 	return 1;
