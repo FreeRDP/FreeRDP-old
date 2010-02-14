@@ -516,7 +516,7 @@ chan_man_init(void)
 }
 
 int
-chan_man_deinit(void)
+chan_man_uninit(void)
 {
 	while (g_chan_man_list)
 	{

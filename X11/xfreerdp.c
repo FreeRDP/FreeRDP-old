@@ -348,6 +348,6 @@ main(int argc, char ** argv)
 		rv = run_xfreerdp(&settings, chan_man);
 	}
 	chan_man_free(chan_man);
-	chan_man_deinit();
+	chan_man_uninit();
 	return rv;
 }

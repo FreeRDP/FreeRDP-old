@@ -31,7 +31,7 @@ typedef struct rdp_chan_man rdpChanMan;
 int
 chan_man_init(void);
 int
-chan_man_deinit(void);
+chan_man_uninit(void);
 rdpChanMan *
 chan_man_new(void);
 void
