@@ -343,7 +343,7 @@ iso_reset_state(rdpIso * iso)
 }
 
 rdpIso *
-iso_setup(struct rdp_mcs * mcs)
+iso_new(struct rdp_mcs * mcs)
 {
 	rdpIso * self;
 
@@ -353,7 +353,7 @@ iso_setup(struct rdp_mcs * mcs)
 	{
 		memset(self, 0, sizeof (rdpIso));
 		self->mcs = mcs;
-		self->tcp = tcp_setup(self);
+		self->tcp = tcp_new(self);
 		self->nla = 0;
 	}
 	
@@ -361,11 +361,11 @@ iso_setup(struct rdp_mcs * mcs)
 }
 
 void
-iso_cleanup(rdpIso * iso)
+iso_free(rdpIso * iso)
 {
 	if (iso != NULL)
 	{
-		tcp_cleanup(iso->tcp);
+		tcp_free(iso->tcp);
 		xfree(iso);
 	}
 }

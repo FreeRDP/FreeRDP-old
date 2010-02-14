@@ -74,8 +74,8 @@ cache_get_brush_data(rdpCache * cache, uint8 colour_code, uint8 idx);
 void
 cache_put_brush_data(rdpCache * cache, uint8 colour_code, uint8 idx, RD_BRUSHDATA * brush_data);
 rdpCache *
-cache_setup(struct rdp_rdp * rdp);
+cache_new(struct rdp_rdp * rdp);
 void
-cache_cleanup(rdpCache * cache);
+cache_free(rdpCache * cache);
 
 #endif

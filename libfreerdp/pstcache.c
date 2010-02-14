@@ -204,7 +204,7 @@ pstcache_init(rdpPcache * pcache, uint8 cache_id)
 }
 
 rdpPcache *
-pcache_setup(struct rdp_rdp * rdp)
+pcache_new(struct rdp_rdp * rdp)
 {
 	rdpPcache * self;
 
@@ -218,7 +218,7 @@ pcache_setup(struct rdp_rdp * rdp)
 }
 
 void
-pcache_cleanup(rdpPcache * pcache)
+pcache_free(rdpPcache * pcache)
 {
 	if (pcache != NULL)
 	{

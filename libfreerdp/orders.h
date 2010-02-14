@@ -30,7 +30,7 @@ typedef struct rdp_orders rdpOrders;
 
 void process_orders(rdpOrders * orders, STREAM s, uint16 num_orders);
 void reset_order_state(rdpOrders * orders);
-rdpOrders *orders_setup(struct rdp_rdp *rdp);
-void orders_cleanup(rdpOrders * orders);
+rdpOrders *orders_new(struct rdp_rdp *rdp);
+void orders_free(rdpOrders * orders);
 
 #endif

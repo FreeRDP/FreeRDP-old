@@ -945,7 +945,7 @@ sec_reset_state(rdpSec * sec)
 }
 
 rdpSec *
-sec_setup(struct rdp_rdp * rdp)
+sec_new(struct rdp_rdp * rdp)
 {
 	rdpSec * self;
 
@@ -954,19 +954,19 @@ sec_setup(struct rdp_rdp * rdp)
 	{
 		memset(self, 0, sizeof(rdpSec));
 		self->rdp = rdp;
-		self->mcs = mcs_setup(self);
-		self->licence = licence_setup(self);
+		self->mcs = mcs_new(self);
+		self->licence = licence_new(self);
 	}
 	return self;
 }
 
 void
-sec_cleanup(rdpSec * sec)
+sec_free(rdpSec * sec)
 {
 	if (sec != NULL)
 	{
-		licence_cleanup(sec->licence);
-		mcs_cleanup(sec->mcs);
+		licence_free(sec->licence);
+		mcs_free(sec->mcs);
 		xfree(sec);
 	}
 }

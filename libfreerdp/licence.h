@@ -33,8 +33,8 @@ typedef struct rdp_licence rdpLicence;
 void
 licence_process(rdpLicence * licence, STREAM s);
 rdpLicence *
-licence_setup(struct rdp_sec * secure);
+licence_new(struct rdp_sec * secure);
 void
-licence_cleanup(rdpLicence * licence);
+licence_free(rdpLicence * licence);
 
 #endif

@@ -409,7 +409,7 @@ mcs_reset_state(rdpMcs * mcs)
 }
 
 rdpMcs *
-mcs_setup(struct rdp_sec * sec)
+mcs_new(struct rdp_sec * sec)
 {
 	rdpMcs * self;
 
@@ -418,19 +418,19 @@ mcs_setup(struct rdp_sec * sec)
 	{
 		memset(self, 0, sizeof(rdpMcs));
 		self->sec = sec;
-		self->iso = iso_setup(self);
-		self->chan = channel_setup(self);
+		self->iso = iso_new(self);
+		self->chan = channel_new(self);
 	}
 	return self;
 }
 
 void
-mcs_cleanup(rdpMcs * mcs)
+mcs_free(rdpMcs * mcs)
 {
 	if (mcs != NULL)
 	{
-		channel_cleanup(mcs->chan);
-		iso_cleanup(mcs->iso);
+		channel_free(mcs->chan);
+		iso_free(mcs->iso);
 		xfree(mcs);
 	}
 }

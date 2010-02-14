@@ -47,8 +47,8 @@ iso_disconnect(rdpIso * iso);
 void
 iso_reset_state(rdpIso * iso);
 rdpIso *
-iso_setup(struct rdp_mcs * mcs);
+iso_new(struct rdp_mcs * mcs);
 void
-iso_cleanup(rdpIso * iso);
+iso_free(rdpIso * iso);
 
 #endif

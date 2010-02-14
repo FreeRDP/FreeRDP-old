@@ -100,8 +100,8 @@ rdp_reset_state(rdpRdp * rdp);
 void
 rdp_disconnect(rdpRdp * rdp);
 rdpRdp *
-rdp_setup(struct rdp_set * settings);
+rdp_new(struct rdp_set * settings);
 void
-rdp_cleanup(rdpRdp * rdp);
+rdp_free(rdpRdp * rdp);
 
 #endif

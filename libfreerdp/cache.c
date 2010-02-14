@@ -406,7 +406,7 @@ cache_put_brush_data(rdpCache * cache, uint8 colour_code, uint8 idx, RD_BRUSHDAT
 }
 
 rdpCache *
-cache_setup(struct rdp_rdp * rdp)
+cache_new(struct rdp_rdp * rdp)
 {
 	rdpCache * self;
 
@@ -426,7 +426,7 @@ cache_setup(struct rdp_rdp * rdp)
 }
 
 void
-cache_cleanup(rdpCache * cache)
+cache_free(rdpCache * cache)
 {
 	if (cache != NULL)
 	{

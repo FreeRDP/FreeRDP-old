@@ -17,8 +17,8 @@ channel_send(rdpChannels * chan, int mcs_id, char * data, int total_length);
 void
 channel_process(rdpChannels * chan, STREAM s, int mcs_id);
 rdpChannels *
-channel_setup(struct rdp_mcs * mcs);
+channel_new(struct rdp_mcs * mcs);
 void
-channel_cleanup(rdpChannels * chan);
+channel_free(rdpChannels * chan);
 
 #endif

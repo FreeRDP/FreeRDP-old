@@ -639,7 +639,7 @@ freerdp_init(rdpSet * settings)
 	rdpInst * inst;
 	rdpRdp * rdp;
 
-	rdp = rdp_setup(settings);
+	rdp = rdp_new(settings);
 	inst = (rdpInst *) xmalloc(sizeof(rdpInst));
 	inst->version = FREERDP_INTERFACE_VERSION;
 	inst->size = sizeof(rdpInst);
@@ -660,7 +660,7 @@ freerdp_deinit(rdpInst * inst)
 {
 	if (inst != NULL)
 	{
-		rdp_cleanup(inst->rdp);
+		rdp_free(inst->rdp);
 		xfree(inst);
 	}
 }

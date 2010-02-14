@@ -347,7 +347,7 @@ licence_process(rdpLicence * licence, STREAM s)
 }
 
 rdpLicence *
-licence_setup(struct rdp_sec *sec)
+licence_new(struct rdp_sec *sec)
 {
 	rdpLicence *self;
 
@@ -361,7 +361,7 @@ licence_setup(struct rdp_sec *sec)
 }
 
 void
-licence_cleanup(rdpLicence * licence)
+licence_free(rdpLicence * licence)
 {
 	if (licence != NULL)
 	{

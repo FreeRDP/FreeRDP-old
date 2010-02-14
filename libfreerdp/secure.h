@@ -76,8 +76,8 @@ sec_disconnect(rdpSec * sec);
 void
 sec_reset_state(rdpSec * sec);
 rdpSec *
-sec_setup(struct rdp_rdp * rdp);
+sec_new(struct rdp_rdp * rdp);
 void
-sec_cleanup(rdpSec * sec);
+sec_free(rdpSec * sec);
 
 #endif

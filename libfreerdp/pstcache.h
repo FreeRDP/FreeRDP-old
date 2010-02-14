@@ -43,8 +43,8 @@ pstcache_enumerate(rdpPcache * pcache, uint8 id, HASH_KEY * keylist);
 RD_BOOL
 pstcache_init(rdpPcache * pcache, uint8 cache_id);
 rdpPcache *
-pcache_setup(struct rdp_rdp * rdp);
+pcache_new(struct rdp_rdp * rdp);
 void
-pcache_cleanup(rdpPcache * pcache);
+pcache_free(rdpPcache * pcache);
 
 #endif

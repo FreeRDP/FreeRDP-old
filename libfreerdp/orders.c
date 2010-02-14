@@ -1674,7 +1674,7 @@ reset_order_state(rdpOrders * orders)
 }
 
 rdpOrders *
-orders_setup(struct rdp_rdp * rdp)
+orders_new(struct rdp_rdp * rdp)
 {
 	rdpOrders * self;
 
@@ -1691,7 +1691,7 @@ orders_setup(struct rdp_rdp * rdp)
 }
 
 void
-orders_cleanup(rdpOrders * orders)
+orders_free(rdpOrders * orders)
 {
 	if (orders != NULL)
 	{

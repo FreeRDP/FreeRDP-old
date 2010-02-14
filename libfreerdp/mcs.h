@@ -47,8 +47,8 @@ mcs_disconnect(rdpMcs * mcs);
 void
 mcs_reset_state(rdpMcs * mcs);
 rdpMcs *
-mcs_setup(struct rdp_sec * secure);
+mcs_new(struct rdp_sec * secure);
 void
-mcs_cleanup(rdpMcs * mcs);
+mcs_free(rdpMcs * mcs);
 
 #endif

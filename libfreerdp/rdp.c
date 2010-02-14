@@ -1430,7 +1430,7 @@ rdp_disconnect(rdpRdp * rdp)
 }
 
 rdpRdp *
-rdp_setup(struct rdp_set *settings)
+rdp_new(struct rdp_set *settings)
 {
 	rdpRdp *self;
 
@@ -1443,23 +1443,23 @@ rdp_setup(struct rdp_set *settings)
 		self->iconv_works = True;
 		self->in_iconv_h = (void *) (-1);
 		self->out_iconv_h = (void *) (-1);
-		self->sec = sec_setup(self);
-		self->orders = orders_setup(self);
-		self->pcache = pcache_setup(self);
-		self->cache = cache_setup(self);
+		self->sec = sec_new(self);
+		self->orders = orders_new(self);
+		self->pcache = pcache_new(self);
+		self->cache = cache_new(self);
 	}
 	return self;
 }
 
 void
-rdp_cleanup(rdpRdp * rdp)
+rdp_free(rdpRdp * rdp)
 {
 	if (rdp != NULL)
 	{
-		cache_cleanup(rdp->cache);
-		pcache_cleanup(rdp->pcache);
-		orders_cleanup(rdp->orders);
-		sec_cleanup(rdp->sec);
+		cache_free(rdp->cache);
+		pcache_free(rdp->pcache);
+		orders_free(rdp->orders);
+		sec_free(rdp->sec);
 		xfree(rdp);
 	}
 }
