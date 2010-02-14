@@ -26,7 +26,7 @@
 #include "constants_rdpdr.h"
 
 DEVMAN*
-devman_init()
+devman_new()
 {
 	DEVMAN* devman = (DEVMAN*)malloc(sizeof(DEVMAN));
 
@@ -39,7 +39,7 @@ devman_init()
 }
 
 int
-devman_uninit(DEVMAN* devman)
+devman_free(DEVMAN* devman)
 {
 	DEVICE* pdev;
 

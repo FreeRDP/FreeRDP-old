@@ -750,7 +750,7 @@ InitEventProcessTerminated(void * pInitHandle)
 	deinit_wait_obj(&plugin->term_event);
 	deinit_wait_obj(&plugin->data_in_event);
 
-	devman_uninit(plugin->devman);
+	devman_free(plugin->devman);
 	chan_plugin_uninit((rdpChanPlugin *) plugin);
 	free(plugin);
 }
@@ -803,7 +803,7 @@ VirtualChannelEntry(PCHANNEL_ENTRY_POINTS pEntryPoints)
 	init_wait_obj(&plugin->data_in_event, "freerdprdpdrdatain");
 
 	plugin->thread_status = 0;
-	plugin->devman = devman_init();
+	plugin->devman = devman_new();
 
 	plugin->ep.pVirtualChannelInit(&plugin->chan_plugin.init_handle, plugin->channel_def, 2,
 		VIRTUAL_CHANNEL_VERSION_WIN2000, InitEvent);

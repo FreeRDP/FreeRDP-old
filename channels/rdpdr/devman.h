@@ -55,9 +55,9 @@ typedef struct devman
 DEVMAN;
 
 DEVMAN*
-devman_init();
+devman_new();
 int
-devman_uninit(DEVMAN* devman);
+devman_free(DEVMAN* devman);
 SERVICE*
 devman_register_service(DEVMAN* devman, uint32 type);
 int
