@@ -105,9 +105,9 @@ struct rdpsnd_plugin
 
 /* implementations are in the hardware file */
 void *
-wave_out_init(void);
+wave_out_new(void);
 void
-wave_out_deinit(void * device_data);
+wave_out_free(void * device_data);
 int
 wave_out_open(void * device_data);
 int
@@ -765,7 +765,7 @@ InitEventProcessTerminated(void * pInitHandle)
 	deinit_wait_obj(&plugin->term_event);
 	deinit_wait_obj(&plugin->data_in_event);
 
-	wave_out_deinit(plugin->device_data);
+	wave_out_free(plugin->device_data);
 	chan_plugin_uninit((rdpChanPlugin *) plugin);
 	free(plugin);
 }
@@ -823,6 +823,6 @@ VirtualChannelEntry(PCHANNEL_ENTRY_POINTS pEntryPoints)
 	plugin->thread_status = 0;
 	plugin->ep.pVirtualChannelInit(&plugin->chan_plugin.init_handle, plugin->channel_def, 2,
 		VIRTUAL_CHANNEL_VERSION_WIN2000, InitEvent);
-	plugin->device_data = wave_out_init();
+	plugin->device_data = wave_out_new();
 	return 1;
 }

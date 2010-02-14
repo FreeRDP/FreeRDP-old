@@ -72,7 +72,7 @@ set_params(struct alsa_device_data * alsa_data)
 }
 
 void *
-wave_out_init(void)
+wave_out_new(void)
 {
 	struct alsa_device_data * alsa_data;
 
@@ -89,7 +89,7 @@ wave_out_init(void)
 }
 
 void
-wave_out_deinit(void * device_data)
+wave_out_free(void * device_data)
 {
 	free(device_data);
 }
