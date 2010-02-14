@@ -1016,7 +1016,7 @@ xf_post_connect(rdpInst * inst)
 }
 
 void
-xf_deinit(rdpInst * inst)
+xf_uninit(rdpInst * inst)
 {
 	xfInfo * xfi;
 
