@@ -25,7 +25,7 @@
 #include "secure.h"
 #include "rdp.h"
 #include "mem.h"
-
+#include "frdp.h"
 #include "asn1.h"
 
 /* Parse an ASN.1 BER header */
