@@ -1187,7 +1187,7 @@ xclip_init(void)
 }
 
 void
-xclip_deinit(void)
+xclip_uninit(void)
 {
 	if (XGetSelectionOwner(g_display, primary_atom) == g_wnd)
 		XSetSelectionOwner(g_display, primary_atom, None, acquire_time);
