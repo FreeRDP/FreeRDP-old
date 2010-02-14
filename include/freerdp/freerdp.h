@@ -110,8 +110,8 @@ struct rdp_inst
 typedef struct rdp_inst rdpInst;
 
 rdpInst *
-freerdp_init(rdpSet * settings);
+freerdp_new(rdpSet * settings);
 void
-freerdp_deinit(rdpInst * inst);
+freerdp_free(rdpInst * inst);
 
 #endif

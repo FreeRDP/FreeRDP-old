@@ -204,16 +204,16 @@ run_xfreerdp(rdpSet * settings, rdpChanMan * chan_man)
 
 	printf("run_xfreerdp:\n");
 	/* create an instance of the library */
-	inst = freerdp_init(settings);
+	inst = freerdp_new(settings);
 	if (inst == NULL)
 	{
-		printf("run_xfreerdp: freerdp_init failed\n");
+		printf("run_xfreerdp: freerdp_new failed\n");
 		return 1;
 	}
 	if ((inst->version != FREERDP_INTERFACE_VERSION) ||
 	    (inst->size != sizeof(rdpInst)))
 	{
-		printf("run_xfreerdp: freerdp_init size, version / size do not "
+		printf("run_xfreerdp: freerdp_new size, version / size do not "
 		       "match expecting v %d s %d got v %d s %d\n",
 		       FREERDP_INTERFACE_VERSION, sizeof(rdpInst),
 		       inst->version, inst->size);
@@ -328,7 +328,7 @@ run_xfreerdp(rdpSet * settings, rdpChanMan * chan_man)
 	}
 	/* cleanup */
 	xf_deinit(inst);
-	freerdp_deinit(inst);
+	freerdp_free(inst);
 	return 0;
 }
 

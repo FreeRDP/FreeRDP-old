@@ -634,7 +634,7 @@ l_rdp_channel_data(struct rdp_inst * inst, int chan_id, char * data, int data_si
 }
 
 rdpInst *
-freerdp_init(rdpSet * settings)
+freerdp_new(rdpSet * settings)
 {
 	rdpInst * inst;
 	rdpRdp * rdp;
@@ -656,7 +656,7 @@ freerdp_init(rdpSet * settings)
 }
 
 void
-freerdp_deinit(rdpInst * inst)
+freerdp_free(rdpInst * inst)
 {
 	if (inst != NULL)
 	{
