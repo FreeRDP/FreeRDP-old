@@ -35,7 +35,7 @@ struct rdp_chan_plugin
 void
 chan_plugin_init(rdpChanPlugin * chan_plugin);
 void
-chan_plugin_deinit(rdpChanPlugin * chan_plugin);
+chan_plugin_uninit(rdpChanPlugin * chan_plugin);
 int
 chan_plugin_register_open_handle(rdpChanPlugin * chan_plugin,
 	int open_handle);

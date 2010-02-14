@@ -751,7 +751,7 @@ InitEventProcessTerminated(void * pInitHandle)
 	deinit_wait_obj(&plugin->data_in_event);
 
 	devman_uninit(plugin->devman);
-	chan_plugin_deinit((rdpChanPlugin *) plugin);
+	chan_plugin_uninit((rdpChanPlugin *) plugin);
 	free(plugin);
 }
 

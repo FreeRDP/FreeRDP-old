@@ -766,7 +766,7 @@ InitEventProcessTerminated(void * pInitHandle)
 	deinit_wait_obj(&plugin->data_in_event);
 
 	wave_out_deinit(plugin->device_data);
-	chan_plugin_deinit((rdpChanPlugin *) plugin);
+	chan_plugin_uninit((rdpChanPlugin *) plugin);
 	free(plugin);
 }
 
