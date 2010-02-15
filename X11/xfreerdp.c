@@ -29,6 +29,7 @@
 #include <sys/types.h>
 #include <errno.h>
 #include <pwd.h>
+#include <pthread.h>
 #include "freerdp.h"
 #include "xf_win.h"
 #include "libchanman.h"
@@ -58,9 +59,8 @@ set_default_params(rdpSet * settings)
 }
 
 static int
-process_params(rdpSet * settings, rdpChanMan * chan_man, int argc, char ** argv)
+process_params(rdpSet * settings, rdpChanMan * chan_man, int argc, char ** argv, int * pindex)
 {
-	int index;
 	int max;
 	char * p;
 	struct passwd * pw;
@@ -76,50 +76,50 @@ process_params(rdpSet * settings, rdpChanMan * chan_man, int argc, char ** argv)
 		}
 	}
 	printf("process_params\n");
-	if (argc < 2)
+	if (argc < *pindex + 1)
 	{
 		return 1;
 	}
-	for (index = 1; index < argc; index++)
+	while (*pindex < argc)
 	{
-		if (strcmp("-a", argv[index]) == 0)
+		if (strcmp("-a", argv[*pindex]) == 0)
 		{
-			index++;
-			if (index == argc)
+			*pindex = *pindex + 1;
+			if (*pindex == argc)
 			{
 				return 1;
 			}
-			settings->server_depth = atoi(argv[index]);
+			settings->server_depth = atoi(argv[*pindex]);
 		}
-		else if (strcmp("-u", argv[index]) == 0)
+		else if (strcmp("-u", argv[*pindex]) == 0)
 		{
-			index++;
-			if (index == argc)
+			*pindex = *pindex + 1;
+			if (*pindex == argc)
 			{
 				return 1;
 			}
-			strncpy(settings->username, argv[index], 255);
+			strncpy(settings->username, argv[*pindex], 255);
 			settings->username[255] = 0;
 		}
-		else if (strcmp("-p", argv[index]) == 0)
+		else if (strcmp("-p", argv[*pindex]) == 0)
 		{
-			index++;
-			if (index == argc)
+			*pindex = *pindex + 1;
+			if (*pindex == argc)
 			{
 				return 1;
 			}
-			strncpy(settings->password, argv[index], 63);
+			strncpy(settings->password, argv[*pindex], 63);
 			settings->password[63] = 0;
 			settings->autologin = 1;
 		}
-		else if (strcmp("-g", argv[index]) == 0)
+		else if (strcmp("-g", argv[*pindex]) == 0)
 		{
-			index++;
-			if (index == argc)
+			*pindex = *pindex + 1;
+			if (*pindex == argc)
 			{
 				return 1;
 			}
-			settings->width = strtol(argv[index], &p, 10);
+			settings->width = strtol(argv[*pindex], &p, 10);
 			if (*p == 'x')
 			{
 				settings->height = strtol(p + 1, &p, 10);
@@ -131,61 +131,66 @@ process_params(rdpSet * settings, rdpChanMan * chan_man, int argc, char ** argv)
 				return 1;
 			}
 		}
-		else if (strcmp("-t", argv[index]) == 0)
+		else if (strcmp("-t", argv[*pindex]) == 0)
 		{
-			index++;
-			if (index == argc)
+			*pindex = *pindex + 1;
+			if (*pindex == argc)
 			{
 				return 1;
 			}
-			settings->tcp_port_rdp = atoi(argv[index]);
+			settings->tcp_port_rdp = atoi(argv[*pindex]);
 		}
-		else if (strcmp("-z", argv[index]) == 0)
+		else if (strcmp("-z", argv[*pindex]) == 0)
 		{
 			settings->bulk_compression = 1;
 		}
-		else if (strcmp("-x", argv[index]) == 0)
+		else if (strcmp("-x", argv[*pindex]) == 0)
 		{
-			index++;
-			if (index == argc)
+			*pindex = *pindex + 1;
+			if (*pindex == argc)
 			{
 				return 1;
 			}
-			if (strncmp("m", argv[index], 1) == 0) /* modem */
+			if (strncmp("m", argv[*pindex], 1) == 0) /* modem */
 			{
 				settings->rdp5_performanceflags = RDP5_NO_WALLPAPER |
 					RDP5_NO_FULLWINDOWDRAG |  RDP5_NO_MENUANIMATIONS |
 					RDP5_NO_THEMING;
 			}
-			else if (strncmp("b", argv[index], 1) == 0) /* broadband */
+			else if (strncmp("b", argv[*pindex], 1) == 0) /* broadband */
 			{
 				settings->rdp5_performanceflags = RDP5_NO_WALLPAPER;
 			}
-			else if (strncmp("l", argv[index], 1) == 0) /* lan */
+			else if (strncmp("l", argv[*pindex], 1) == 0) /* lan */
 			{
 				settings->rdp5_performanceflags = RDP5_DISABLE_NOTHING;
 			}
 			else
 			{
-				settings->rdp5_performanceflags = strtol(argv[index], 0, 16);
+				settings->rdp5_performanceflags = strtol(argv[*pindex], 0, 16);
 			}
 		}
-		else if (strcmp("-plugin", argv[index]) == 0)
+		else if (strcmp("-plugin", argv[*pindex]) == 0)
 		{
-			index++;
-			if (index == argc)
+			*pindex = *pindex + 1;
+			if (*pindex == argc)
 			{
 				return 1;
 			}
-			chan_man_load_plugin(chan_man, settings, argv[index]);
+			chan_man_load_plugin(chan_man, settings, argv[*pindex]);
 		}
 		else
 		{
-			strncpy(settings->server, argv[index], 63);
+			strncpy(settings->server, argv[*pindex], 63);
 			settings->server[63] = 0;
+			/* server is the last argument for the current session. arguments
+			   followed will be parsed for the next session. */
+			*pindex = *pindex + 1;
+			return 0;
 		}
+		*pindex = *pindex + 1;
 	}
-	return 0;
+	return 1;
 }
 
 static int
@@ -332,22 +337,66 @@ run_xfreerdp(rdpSet * settings, rdpChanMan * chan_man)
 	return 0;
 }
 
+static int g_thread_count = 0;
+
+struct thread_data
+{
+	rdpSet * settings;
+	rdpChanMan * chan_man;
+};
+
+static void *
+thread_func(void * arg)
+{
+	struct thread_data * data;
+
+	data = (struct thread_data *) arg;
+	run_xfreerdp(data->settings, data->chan_man);
+	free(data->settings);
+	chan_man_free(data->chan_man);
+	free(data);
+
+	g_thread_count--;
+
+	return NULL;
+}
+
 int
 main(int argc, char ** argv)
 {
-	rdpSet settings;
-	rdpChanMan * chan_man;
+	struct thread_data * data;
 	int rv;
+	pthread_t thread;
+	int index = 1;
 
 	setlocale(LC_CTYPE, "");
 	chan_man_init();
-	chan_man = chan_man_new();
-	rv = process_params(&settings, chan_man, argc, argv);
-	if (rv == 0)
+
+	while (1)
 	{
-		rv = run_xfreerdp(&settings, chan_man);
+		data = (struct thread_data *) malloc(sizeof(struct thread_data));
+		data->settings = (rdpSet *) malloc(sizeof(rdpSet));
+		data->chan_man = chan_man_new();
+		rv = process_params(data->settings, data->chan_man, argc, argv, &index);
+		if (rv == 0)
+		{
+			g_thread_count++;
+			pthread_create(&thread, 0, thread_func, data);
+		}
+		else
+		{
+			free(data->settings);
+			chan_man_free(data->chan_man);
+			free(data);
+			break;
+		}
 	}
-	chan_man_free(chan_man);
+
+	while (g_thread_count > 0)
+	{
+		sleep(1);
+	}
+
 	chan_man_uninit();
-	return rv;
+	return 0;
 }
