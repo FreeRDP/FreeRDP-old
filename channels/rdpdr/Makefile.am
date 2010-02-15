@@ -6,6 +6,7 @@ librdpdrdir = $(libdir)
 librdpdr_LTLIBRARIES = librdpdr.la
 
 librdpdr_la_SOURCES = \
+	../common/wait_obj.c \
 	../common/chan_plugin.c \
 	rdpdr_main.c \
 	devman.c \

@@ -25,9 +25,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
-#include <netdb.h>
 #include <unistd.h>
-#include <sys/un.h>
 #include <sys/time.h>
 
 #include "irp.h"
@@ -37,6 +35,7 @@
 #include "vchan.h"
 #include "chan_stream.h"
 #include "chan_plugin.h"
+#include "wait_obj.h"
 #include "constants_rdpdr.h"
 
 #define LOG_LEVEL 1
@@ -44,12 +43,6 @@
   do { if (_level < LOG_LEVEL) { printf _args ; } } while (0)
 #define LLOGLN(_level, _args) \
   do { if (_level < LOG_LEVEL) { printf _args ; printf("\n"); } } while (0)
-
-struct wait_obj
-{
-	int sock;
-	struct sockaddr_un sa;
-};
 
 struct data_in_item
 {
@@ -69,8 +62,8 @@ struct rdpdr_plugin
 	char * data_in[2];
 	int data_in_size[2];
 	int data_in_read[2];
-	struct wait_obj term_event;
-	struct wait_obj data_in_event;
+	struct wait_obj * term_event;
+	struct wait_obj * data_in_event;
 	struct data_in_item * volatile list_head;
 	struct data_in_item * volatile list_tail;
 	/* for locking the linked list */
@@ -81,131 +74,6 @@ struct rdpdr_plugin
 	uint16 clientID;
 	DEVMAN* devman;
 };
-
-static int
-init_wait_obj(struct wait_obj * obj, const char * name)
-{
-	static int init_wait_obj_seq = 0;
-	int pid;
-	int size;
-
-	pid = getpid();
-	obj->sock = socket(PF_UNIX, SOCK_DGRAM, 0);
-	if (obj->sock < 0)
-	{
-		LLOGLN(0, ("init_wait_obj: socket failed"));
-		return 1;
-	}
-	obj->sa.sun_family = AF_UNIX;
-	size = sizeof(obj->sa.sun_path) - 1;
-	snprintf(obj->sa.sun_path, size, "/tmp/%s%8.8x.%d", name, pid, init_wait_obj_seq++);
-	obj->sa.sun_path[size] = 0;
-	size = sizeof(obj->sa);
-	if (bind(obj->sock, (struct sockaddr*)(&(obj->sa)), size) < 0)
-	{
-		LLOGLN(0, ("init_wait_obj: bind failed"));
-		close(obj->sock);
-		obj->sock = -1;
-		unlink(obj->sa.sun_path);
-		return 1;
-	}
-	return 0;
-}
-
-static int
-deinit_wait_obj(struct wait_obj * obj)
-{
-	if (obj->sock != -1)
-	{
-		close(obj->sock);
-		obj->sock = -1;
-		unlink(obj->sa.sun_path);
-	}
-	return 0;
-}
-
-static int
-is_wait_obj_set(struct wait_obj * obj)
-{
-	fd_set rfds;
-	int num_set;
-	struct timeval time;
-
-	FD_ZERO(&rfds);
-	FD_SET(obj->sock, &rfds);
-	memset(&time, 0, sizeof(time));
-	num_set = select(obj->sock + 1, &rfds, 0, 0, &time);
-	return (num_set == 1);
-}
-
-static int
-set_wait_obj(struct wait_obj * obj)
-{
-	int len;
-
-	if (is_wait_obj_set(obj))
-	{
-		return 0;
-	}
-	len = sendto(obj->sock, "sig", 4, 0, (struct sockaddr*)(&(obj->sa)),
-		sizeof(obj->sa));
-	if (len != 4)
-	{
-		LLOGLN(0, ("set_wait_obj: error"));
-		return 1;
-	}
-	return 0;
-}
-
-static int
-clear_wait_obj(struct wait_obj * obj)
-{
-	int len;
-
-	while (is_wait_obj_set(obj))
-	{
-		len = recvfrom(obj->sock, &len, 4, 0, 0, 0);
-		if (len != 4)
-		{
-			LLOGLN(0, ("chan_man_clear_ev: error"));
-			return 1;
-		}
-	}
-	return 0;
-}
-
-static int
-wait(int timeout, int numr, int * listr)
-{
-	int max;
-	int rv;
-	int index;
-	int sock;
-	struct timeval time;
-	struct timeval * ptime;
-	fd_set fds;
-
-	ptime = 0;
-	if (timeout >= 0)
-	{
-		time.tv_sec = timeout / 1000;
-		time.tv_usec = (timeout * 1000) % 1000000;
-		ptime = &time;
-	}
-	max = 0;
-	FD_ZERO(&fds);
-	for (index = 0; index < numr; index++)
-	{
-		sock = listr[index];
-		FD_SET(sock, &fds);
-		if (sock > max)
-		{
-			max = sock;
-		}
-	}
-	rv = select(max + 1, &fds, 0, 0, ptime);
-	return rv;
-}
 
 /* called by main thread
    add item to linked list and inform worker thread that there is data */
@@ -232,7 +100,7 @@ signal_data_in(rdpdrPlugin * plugin)
 		plugin->list_tail = item;
 	}
 	pthread_mutex_unlock(plugin->mutex);
-	set_wait_obj(&plugin->data_in_event);
+	wait_obj_set(plugin->data_in_event);
 }
 
 static void
@@ -604,8 +472,8 @@ static void *
 thread_func(void * arg)
 {
 	rdpdrPlugin * plugin;
-	int listr[2];
-	int numr;
+	struct wait_obj * listobj[2];
+	int numobj;
 
 	plugin = (rdpdrPlugin *) arg;
 
@@ -614,18 +482,18 @@ thread_func(void * arg)
 
 	while (1)
 	{
-		listr[0] = plugin->term_event.sock;
-		listr[1] = plugin->data_in_event.sock;
-		numr = 2;
-		wait(-1, numr, listr);
+		listobj[0] = plugin->term_event;
+		listobj[1] = plugin->data_in_event;
+		numobj = 2;
+		wait_obj_select(listobj, numobj, NULL, 0, -1);
 
-		if (is_wait_obj_set(&plugin->term_event))
+		if (wait_obj_is_set(plugin->term_event))
 		{
 			break;
 		}
-		if (is_wait_obj_set(&plugin->data_in_event))
+		if (wait_obj_is_set(plugin->data_in_event))
 		{
-			clear_wait_obj(&plugin->data_in_event);
+			wait_obj_clear(plugin->data_in_event);
 			/* process data in */
 			thread_process_data(plugin);
 		}
@@ -740,15 +608,15 @@ InitEventProcessTerminated(void * pInitHandle)
 		return;
 	}
 
-	set_wait_obj(&plugin->term_event);
+	wait_obj_set(plugin->term_event);
 	index = 0;
 	while ((plugin->thread_status > 0) && (index < 100))
 	{
 		index++;
 		usleep(250 * 1000);
 	}
-	deinit_wait_obj(&plugin->term_event);
-	deinit_wait_obj(&plugin->data_in_event);
+	wait_obj_free(plugin->term_event);
+	wait_obj_free(plugin->data_in_event);
 
 	devman_free(plugin->devman);
 	chan_plugin_uninit((rdpChanPlugin *) plugin);
@@ -799,8 +667,8 @@ VirtualChannelEntry(PCHANNEL_ENTRY_POINTS pEntryPoints)
 	plugin->list_head = 0;
 	plugin->list_tail = 0;
 
-	init_wait_obj(&plugin->term_event, "freerdprdpdrterm");
-	init_wait_obj(&plugin->data_in_event, "freerdprdpdrdatain");
+	plugin->term_event = wait_obj_new("freerdprdpdrterm");
+	plugin->data_in_event = wait_obj_new("freerdprdpdrdatain");
 
 	plugin->thread_status = 0;
 	plugin->devman = devman_new();

@@ -6,6 +6,7 @@ librdpsnddir = $(libdir)
 librdpsnd_LTLIBRARIES = librdpsnd.la
 
 librdpsnd_la_SOURCES = \
+	../common/wait_obj.c \
 	../common/chan_plugin.c \
 	rdpsnd_main.c
 
