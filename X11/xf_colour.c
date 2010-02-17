@@ -1,5 +1,5 @@
 /*
-   Copyright (c) 2009 Jay Sorg
+   Copyright (c) 2009-2010 Jay Sorg
 
    Permission is hereby granted, free of charge, to any person obtaining a
    copy of this software and associated documentation files (the "Software"),
@@ -37,6 +37,12 @@
 #include "xf_win.h"
 #include "xf_event.h"
 
+#define SPLIT32BGR(_alpha, _red, _green, _blue, _pixel) \
+  _red = _pixel & 0xff; \
+  _green = (_pixel & 0xff00) >> 8; \
+  _blue = (_pixel & 0xff0000) >> 16; \
+  _alpha = (_pixel & 0xff000000) >> 24;
+
 #define SPLIT24BGR(_red, _green, _blue, _pixel) \
   _red = _pixel & 0xff; \
   _green = (_pixel & 0xff00) >> 8; \
@@ -57,7 +63,11 @@
   _green = ((_pixel >> 2) & 0xf8) | ((_pixel >> 8) & 0x7); \
   _blue = ((_pixel << 3) & 0xf8) | ((_pixel >> 2) & 0x7);
 
-#define MAKE32RGB(_red, _green, _blue) (_red << 16) | (_green << 8) | _blue;
+#define MAKE32RGB(_alpha, _red, _green, _blue) \
+  (_alpha << 24) | (_red << 16) | (_green << 8) | _blue;
+
+#define MAKE24RGB(_red, _green, _blue) \
+  (_red << 16) | (_green << 8) | _blue;
 
 #define MAKE15RGB(_red, _green, _blue) \
   (((_red & 0xff) >> 3) << 10) | \
@@ -99,7 +109,7 @@ get_pixel(uint8 * data, int x, int y, int width, int height, int bpp)
 			red = data[0];
 			green = data[1];
 			blue = data[2];
-			return MAKE32RGB(red, green, blue);
+			return MAKE24RGB(red, green, blue);
 		case 32:
 			s32 = (uint32 *) data;
 			return s32[y * width + x];
@@ -145,11 +155,13 @@ set_pixel(uint8 * data, int x, int y, int width, int height, int bpp, int pixel)
 static int
 xf_colour(xfInfo * xfi, int in_colour, int in_bpp, int out_bpp)
 {
+	int alpha;
 	int red;
 	int green;
 	int blue;
 	int rv;
 
+	alpha = 0xff;
 	red = 0;
 	green = 0;
 	blue = 0;
@@ -157,6 +169,8 @@ xf_colour(xfInfo * xfi, int in_colour, int in_bpp, int out_bpp)
 	switch (in_bpp)
 	{
 		case 32:
+			SPLIT32BGR(alpha, red, green, blue, in_colour);
+			break;
 		case 24:
 			SPLIT24BGR(red, green, blue, in_colour);
 			break;
@@ -185,8 +199,10 @@ xf_colour(xfInfo * xfi, int in_colour, int in_bpp, int out_bpp)
 	switch (out_bpp)
 	{
 		case 32:
+			rv = MAKE32RGB(alpha, red, green, blue);
+			break;
 		case 24:
-			rv = MAKE32RGB(red, green, blue);
+			rv = MAKE24RGB(red, green, blue);
 			break;
 		case 16:
 			rv = MAKE16RGB(red, green, blue);
@@ -238,7 +254,7 @@ xf_image_convert(xfInfo * xfi, rdpSet * settings, int width, int height,
 			blue = *(src8++);
 			green = *(src8++);
 			red = *(src8++);
-			pixel = MAKE32RGB(red, green, blue);
+			pixel = MAKE24RGB(red, green, blue);
 			*dst32 = pixel;
 			dst32++;
 		}
@@ -254,7 +270,7 @@ xf_image_convert(xfInfo * xfi, rdpSet * settings, int width, int height,
 			pixel = *src16;
 			src16++;
 			SPLIT16RGB(red, green, blue, pixel);
-			pixel = MAKE32RGB(red, green, blue);
+			pixel = MAKE24RGB(red, green, blue);
 			*dst32 = pixel;
 			dst32++;
 		}
@@ -270,7 +286,7 @@ xf_image_convert(xfInfo * xfi, rdpSet * settings, int width, int height,
 			pixel = *src16;
 			src16++;
 			SPLIT15RGB(red, green, blue, pixel);
-			pixel = MAKE32RGB(red, green, blue);
+			pixel = MAKE24RGB(red, green, blue);
 			*dst32 = pixel;
 			dst32++;
 		}
@@ -366,7 +382,7 @@ xf_create_colourmap(xfInfo * xfi, rdpSet * settings, RD_COLOURMAP * colours)
 		red = colours->colours[index].red;
 		green = colours->colours[index].green;
 		blue = colours->colours[index].blue;
-		colourmap[index] = MAKE32RGB(red, green, blue);
+		colourmap[index] = MAKE24RGB(red, green, blue);
 	}
 	return (RD_HCOLOURMAP) colourmap;
 }
@@ -399,7 +415,7 @@ xf_cursor_convert_mono(xfInfo * xfi, uint8 * src_data, uint8 * msk_data,
 		for (i = 0; i < width; i++)
 		{
 			xpixel = get_pixel(xormask, i, jj, width, height, bpp);
-			xpixel = xf_colour(xfi, xpixel, bpp, 32);
+			xpixel = xf_colour(xfi, xpixel, bpp, 24);
 			apixel = get_pixel(andmask, i, jj, width, height, 1);
 			if ((xpixel == 0xffffff) && (apixel != 0))
 			{
@@ -438,16 +454,19 @@ xf_cursor_convert_alpha(xfInfo * xfi, uint8 * alpha_data,
 			xpixel = get_pixel(xormask, i, jj, width, height, bpp);
 			xpixel = xf_colour(xfi, xpixel, bpp, 32);
 			apixel = get_pixel(andmask, i, jj, width, height, 1);
-			if ((xpixel == 0xffffff) && (apixel != 0))
+			if (apixel != 0)
 			{
-				/* use pattern(not solid black) for xor area */
-				xpixel = (i & 1) == (j & 1);
-				xpixel = xpixel ? 0xffffff : 0;
-				xpixel |= 0xff000000;
-			}
-			else
-			{
-				xpixel |= apixel ? 0 : 0xff000000;
+				if ((xpixel & 0xffffff) == 0xffffff)
+				{
+					/* use pattern(not solid black) for xor area */
+					xpixel = (i & 1) == (j & 1);
+					xpixel = xpixel ? 0xffffff : 0;
+					xpixel |= 0xff000000;
+				}
+				else if (xpixel == 0xff000000)
+				{
+					xpixel = 0;
+				}
 			}
 			set_pixel(alpha_data, i, j, width, height, 32, xpixel);
 		}
