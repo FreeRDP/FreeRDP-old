@@ -32,10 +32,14 @@ typedef struct rdp_mcs rdpMcs;
 
 STREAM
 mcs_init(rdpMcs * mcs, int length);
+STREAM
+mcs_fp_init(rdpMcs * mcs, int length);
 void
 mcs_send_to_channel(rdpMcs * mcs, STREAM s, uint16 channel);
 void
 mcs_send(rdpMcs * mcs, STREAM s);
+void
+mcs_fp_send(rdpMcs * mcs, STREAM s, uint32 flags);
 STREAM
 mcs_recv(rdpMcs * mcs, uint16 * channel, uint8 * rdpver);
 RD_BOOL

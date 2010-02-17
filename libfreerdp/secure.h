@@ -59,10 +59,14 @@ void
 sec_decrypt(rdpSec * sec, uint8 * data, int length);
 STREAM
 sec_init(rdpSec * sec, uint32 flags, int maxlen);
+STREAM
+sec_fp_init(rdpSec * sec, uint32 flags, int maxlen);
 void
 sec_send_to_channel(rdpSec * sec, STREAM s, uint32 flags, uint16 channel);
 void
 sec_send(rdpSec * sec, STREAM s, uint32 flags);
+void
+sec_fp_send(rdpSec * sec, STREAM s, uint32 flags);
 void
 sec_process_mcs_data(rdpSec * sec, STREAM s);
 STREAM

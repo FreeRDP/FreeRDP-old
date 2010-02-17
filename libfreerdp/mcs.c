@@ -241,6 +241,16 @@ mcs_init(rdpMcs * mcs, int length)
 	return s;
 }
 
+/* Initialise a fast path data packet */
+STREAM
+mcs_fp_init(rdpMcs * mcs, int length)
+{
+	STREAM s;
+
+	s = iso_fp_init(mcs->iso, length);
+	return s;
+}
+
 /* Send an MCS transport data packet to a specific channel */
 void
 mcs_send_to_channel(rdpMcs * mcs, STREAM s, uint16 channel)
@@ -265,6 +275,13 @@ void
 mcs_send(rdpMcs * mcs, STREAM s)
 {
 	mcs_send_to_channel(mcs, s, MCS_GLOBAL_CHANNEL);
+}
+
+/* Send a fast path data packet to the global channel */
+void
+mcs_fp_send(rdpMcs * mcs, STREAM s, uint32 flags)
+{
+	iso_fp_send(mcs->iso, s, flags);
 }
 
 /* Receive an MCS transport data packet */

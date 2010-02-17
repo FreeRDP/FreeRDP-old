@@ -49,7 +49,8 @@ struct rdp_rdp
 	char redirect_username[256];
 	char redirect_cookie[128];
 	int redirect_flags;
-	
+	int input_flags;
+	int use_input_fast_path;
 	struct rdp_inst * inst;
 };
 typedef struct rdp_rdp rdpRdp;

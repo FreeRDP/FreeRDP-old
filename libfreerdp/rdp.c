@@ -120,6 +120,16 @@ rdp_init_data(rdpRdp * rdp, int maxlen)
 	return s;
 }
 
+/* Initialise a fast path RDP data packet */
+static STREAM
+rdp_fp_init(rdpRdp * rdp, int maxlen)
+{
+	STREAM s;
+
+	s = sec_fp_init(rdp->sec, rdp->settings->encryption ? SEC_ENCRYPT : 0, maxlen);
+	return s;
+}
+
 /* Send an RDP data packet */
 static void
 rdp_send_data(rdpRdp * rdp, STREAM s, uint8 data_pdu_type)
@@ -142,6 +152,13 @@ rdp_send_data(rdpRdp * rdp, STREAM s, uint8 data_pdu_type)
 	out_uint16(s, 0);	/* compress_len */
 
 	sec_send(rdp->sec, s, rdp->settings->encryption ? SEC_ENCRYPT : 0);
+}
+
+/* Send a fast path RDP data packet */
+static void
+rdp_fp_send(rdpRdp * rdp, STREAM s)
+{
+	sec_fp_send(rdp->sec, s, rdp->settings->encryption ? SEC_ENCRYPT : 0);
 }
 
 /* Output a string in Unicode */
@@ -555,20 +572,62 @@ rdp_send_input(rdpRdp * rdp, time_t time, uint16 message_type, uint16 device_fla
 	       uint16 param2)
 {
 	STREAM s;
+	int fp_flags;
 
-	s = rdp_init_data(rdp, 16);
-
-	out_uint16_le(s, 1);	/* number of events */
-	out_uint16(s, 0);	/* pad */
-
-	out_uint32_le(s, time);
-	out_uint16_le(s, message_type);
-	out_uint16_le(s, device_flags);
-	out_uint16_le(s, param1);
-	out_uint16_le(s, param2);
-
-	s_mark_end(s);
-	rdp_send_data(rdp, s, RDP_DATA_PDU_INPUT);
+	if (rdp->use_input_fast_path)
+	{
+		switch (message_type)
+		{
+			case RDP_INPUT_SCANCODE:
+				fp_flags = 0 << 5; /* FASTPATH_INPUT_EVENT_SCANCODE */
+				if (device_flags & KBD_FLAG_UP)
+				{
+					fp_flags |= 1; /* FASTPATH_INPUT_KBDFLAGS_RELEASE */
+				}
+				if (device_flags & KBD_FLAG_EXT)
+				{
+					fp_flags |= 2; /* FASTPATH_INPUT_KBDFLAGS_EXTENDED */
+				}
+				s = rdp_fp_init(rdp, 2);
+				out_uint8(s, fp_flags);
+				out_uint8(s, param1);
+				s_mark_end(s);
+				rdp_fp_send(rdp, s);
+				break;
+			case RDP_INPUT_MOUSE:
+				fp_flags = 1 << 5; /* FASTPATH_INPUT_EVENT_MOUSE */
+				s = rdp_fp_init(rdp, 7);
+				out_uint8(s, fp_flags);
+				out_uint16_le(s, device_flags);
+				out_uint16_le(s, param1);
+				out_uint16_le(s, param2);
+				s_mark_end(s);
+				rdp_fp_send(rdp, s);
+				break;
+			case RDP_INPUT_MOUSEX:
+				fp_flags = 2 << 5; /* FASTPATH_INPUT_EVENT_MOUSEX */
+				ui_unimpl(rdp->inst, "rdp_send_input: TS_FP_INPUT_EVENT "
+					"FASTPATH_INPUT_EVENT_MOUSEX\n");
+				break;
+			default:
+				ui_unimpl(rdp->inst, "rdp_send_input: TS_FP_INPUT_EVENT %x\n",
+					message_type);
+				break;
+		}
+	}
+	else
+	{
+		s = rdp_init_data(rdp, 16);
+		out_uint16_le(s, 1); /* number of events */
+		out_uint16(s, 0); /* pad */
+		out_uint32_le(s, time);
+		out_uint16_le(s, message_type);
+		out_uint16_le(s, device_flags);
+		out_uint16_le(s, param1);
+		out_uint16_le(s, param2);
+		s_mark_end(s);
+		rdp_send_data(rdp, s, RDP_DATA_PDU_INPUT);
+	}
 }
 
 /* Send a single keyboard synchronize event */
@@ -576,19 +635,33 @@ void
 rdp_sync_input(rdpRdp * rdp, time_t time, uint32 toggle_keys_state)
 {
 	STREAM s;
+	int fp_flags;
 
-	s = rdp_init_data(rdp, 16);
-
-	out_uint16_le(s, 1);	/* number of events */
-	out_uint16(s, 0);	/* pad */
-
-	out_uint32_le(s, time);	// eventTime
-	out_uint16_le(s, RDP_INPUT_SYNC);	// messageType
-	out_uint16_le(s, 0);	// pad
-	out_uint32_le(s, toggle_keys_state);	// toggleFlags
-
-	s_mark_end(s);
-	rdp_send_data(rdp, s, RDP_DATA_PDU_INPUT);
+	if (rdp->use_input_fast_path)
+	{
+		fp_flags = 3 << 5; /* FASTPATH_INPUT_EVENT_SYNC */
+		fp_flags |= toggle_keys_state & 0xf;
+		/* FASTPATH_INPUT_SYNC_SCROLL_LOCK = KBD_SYNC_SCROLL_LOCK = 1
+		   FASTPATH_INPUT_SYNC_NUM_LOCK    = KBD_SYNC_NUM_LOCK    = 2
+		   FASTPATH_INPUT_SYNC_CAPS_LOCK   = KBD_SYNC_CAPS_LOCK   = 4
+		   FASTPATH_INPUT_SYNC_KANA_LOCK   = KBD_SYNC_KANA_LOCK   = 8 */
+		s = rdp_fp_init(rdp, 1);
+		out_uint8(s, fp_flags);
+		s_mark_end(s);
+		rdp_fp_send(rdp, s);
+	}
+	else
+	{
+		s = rdp_init_data(rdp, 16);
+		out_uint16_le(s, 1); /* number of events */
+		out_uint16(s, 0); /* pad */
+		out_uint32_le(s, time); /* eventTime */
+		out_uint16_le(s, RDP_INPUT_SYNC); /* messageType */
+		out_uint16_le(s, 0); /* pad */
+		out_uint32_le(s, toggle_keys_state); /* toggleFlags */
+		s_mark_end(s);
+		rdp_send_data(rdp, s, RDP_DATA_PDU_INPUT);
+	}
 }
 
 /* Send a single unicode character input event */
@@ -596,20 +669,30 @@ void
 rdp_unicode_input(rdpRdp * rdp, time_t time, uint16 unicode_character)
 {
 	STREAM s;
+	int fp_flags;
 
-	s = rdp_init_data(rdp, 16);
-
-	out_uint16_le(s, 1);	/* number of events */
-	out_uint16(s, 0);	/* pad */
-
-	out_uint32_le(s, time);	// eventTime
-	out_uint16_le(s, RDP_INPUT_UNICODE);	// messageType
-	out_uint16_le(s, 0);	// pad
-	out_uint16_le(s, unicode_character);	// Unicode character
-	out_uint16_le(s, 0);	// pad
-
-	s_mark_end(s);
-	rdp_send_data(rdp, s, RDP_DATA_PDU_INPUT);
+	if (rdp->use_input_fast_path)
+	{
+		fp_flags = 4 << 5; /* FASTPATH_INPUT_EVENT_UNICODE */
+		s = rdp_fp_init(rdp, 3);
+		out_uint8(s, fp_flags);
+		out_uint16_le(s, unicode_character);
+		s_mark_end(s);
+		rdp_fp_send(rdp, s);
+	}
+	else
+	{
+		s = rdp_init_data(rdp, 16);
+		out_uint16_le(s, 1); /* number of events */
+		out_uint16(s, 0); /* pad */
+		out_uint32_le(s, time); /* eventTime */
+		out_uint16_le(s, RDP_INPUT_UNICODE); /* messageType */
+		out_uint16_le(s, 0); /* pad */
+		out_uint16_le(s, unicode_character); /* Unicode character */
+		out_uint16_le(s, 0); /* pad */
+		s_mark_end(s);
+		rdp_send_data(rdp, s, RDP_DATA_PDU_INPUT);
+	}
 }
 
 /* Send a client window information PDU */

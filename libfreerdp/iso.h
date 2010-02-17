@@ -34,8 +34,12 @@ typedef struct rdp_iso rdpIso;
 
 STREAM
 iso_init(rdpIso * iso, int length);
+STREAM
+iso_fp_init(rdpIso * iso, int length);
 void
 iso_send(rdpIso * iso, STREAM s);
+void
+iso_fp_send(rdpIso * iso, STREAM s, uint32 flags);
 STREAM
 iso_recv(rdpIso * iso, uint8 * rdpver);
 RD_BOOL

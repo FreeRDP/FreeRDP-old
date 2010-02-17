@@ -231,6 +231,17 @@ iso_init(rdpIso * iso, int length)
 	return s;
 }
 
+/* Initialise fast path data packet */
+STREAM
+iso_fp_init(rdpIso * iso, int length)
+{
+	STREAM s;
+
+	s = tcp_init(iso->tcp, length + 3);
+	s_push_layer(s, iso_hdr, 3);
+	return s;
+}
+
 /* Send an ISO data PDU */
 void
 iso_send(rdpIso * iso, STREAM s)
@@ -248,6 +259,40 @@ iso_send(rdpIso * iso, STREAM s)
 	out_uint8(s, ISO_PDU_DT); /* code */
 	out_uint8(s, 0x80); /* eot */
 
+	tcp_send(iso->tcp, s);
+}
+
+/* Send an fast path data PDU */
+void
+iso_fp_send(rdpIso * iso, STREAM s, uint32 flags)
+{
+	int fp_flags;
+	int len;
+	int index;
+
+	fp_flags = (1 << 2) | 0; /* one event, fast path */
+	if (flags & SEC_ENCRYPT)
+	{
+		fp_flags |= 2 << 6; /* FASTPATH_INPUT_ENCRYPTED */
+	}
+	s_pop_layer(s, iso_hdr);
+	len = (int) (s->end - s->p);
+	out_uint8(s, fp_flags);
+	if (len >= 128)
+	{
+		out_uint16_be(s, len | 0x8000);
+	}
+	else
+	{
+		/* copy the bits up to pack and save 1 byte */
+		for (index = 3; index < len; index++)
+		{
+			s->data[index - 1] = s->data[index];
+		}
+		len--;
+		s->end--;
+		out_uint8(s, len);
+	}
 	tcp_send(iso->tcp, s);
 }
 

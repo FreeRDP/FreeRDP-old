@@ -275,6 +275,19 @@ sec_init(rdpSec * sec, uint32 flags, int maxlen)
 	return s;
 }
 
+/* Initialise fast path secure transport packet */
+STREAM
+sec_fp_init(rdpSec * sec, uint32 flags, int maxlen)
+{
+	int hdrlen;
+	STREAM s;
+
+	hdrlen = (flags & SEC_ENCRYPT) ? 8 : 0;
+	s = mcs_fp_init(sec->mcs, maxlen + hdrlen);
+	s_push_layer(s, sec_hdr, hdrlen);
+	return s;
+}
+
 /* Transmit secure transport packet over specified channel */
 void
 sec_send_to_channel(rdpSec * sec, STREAM s, uint32 flags, uint16 channel)
@@ -310,6 +323,21 @@ sec_send(rdpSec * sec, STREAM s, uint32 flags)
 	sec_send_to_channel(sec, s, flags, MCS_GLOBAL_CHANNEL);
 }
 
+/* Transmit secure fast path packet */
+void
+sec_fp_send(rdpSec * sec, STREAM s, uint32 flags)
+{
+	int datalen;
+
+	s_pop_layer(s, sec_hdr);
+	if (flags & SEC_ENCRYPT)
+	{
+		datalen = ((int) (s->end - s->p)) - 8;
+		sec_sign(s->p, 8, sec->sec_sign_key, sec->rc4_key_len, s->p + 8, datalen);
+		sec_encrypt(sec, s->p + 8, datalen);
+	}
+	mcs_fp_send(sec->mcs, s, flags);
+}
 
 /* Transfer the client random to the server */
 static void

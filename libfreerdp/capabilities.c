@@ -334,9 +334,15 @@ void
 rdp_out_input_capset(rdpRdp * rdp, STREAM s)
 {
 	uint8 * header;
+	uint32 flags;
 
 	header = rdp_skip_capset_header(s, 4);
-	out_uint16_le(s, INPUT_FLAG_SCANCODES | INPUT_FLAG_MOUSEX | INPUT_FLAG_UNICODE); // inputFlags
+	flags = INPUT_FLAG_SCANCODES | INPUT_FLAG_MOUSEX | INPUT_FLAG_UNICODE;
+	if (rdp->use_input_fast_path)
+	{
+		flags |= rdp->input_flags & (INPUT_FLAG_FASTPATH_INPUT | INPUT_FLAG_FASTPATH_INPUT2);
+	}
+	out_uint16_le(s, flags); // inputFlags
 	out_uint16(s, 0); // pad
         out_uint32_le(s, rdp->settings->keyboard_layout); // keyboardLayout
 	out_uint32_le(s, rdp->settings->keyboard_type); // keyboardType
@@ -353,13 +359,17 @@ rdp_out_input_capset(rdpRdp * rdp, STREAM s)
 void
 rdp_process_input_capset(rdpRdp * rdp, STREAM s)
 {
-	uint16 inputFlags;
 	uint32 keyboardLayout;
 	uint32 keyboardType;
 	uint32 keyboardSubType;
 	uint32 keyboardFunctionKeys;
 
-	in_uint16_le(s, inputFlags); // inputFlags
+	in_uint16_le(s, rdp->input_flags); // inputFlags
+	if ((rdp->input_flags & INPUT_FLAG_FASTPATH_INPUT) ||
+		(rdp->input_flags & INPUT_FLAG_FASTPATH_INPUT2))
+	{
+		rdp->use_input_fast_path = 1;
+	}
 	in_uint8s(s, 2); // pad
 	in_uint32_le(s, keyboardLayout); // keyboardLayout
 	in_uint32_le(s, keyboardType); // keyboardType
