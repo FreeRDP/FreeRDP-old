@@ -914,55 +914,55 @@ rdp_process_server_caps(rdpRdp * rdp, STREAM s, uint16 length)
 				rdp_process_bitmap_capset(rdp, s);
 				break;
 
-                        case CAPSET_TYPE_POINTER:
-                                rdp_process_pointer_capset(rdp, s);
-                                break;
+			case CAPSET_TYPE_POINTER:
+				rdp_process_pointer_capset(rdp, s);
+				break;
 
-                        case CAPSET_TYPE_SHARE:
-                                rdp_process_share_capset(rdp, s);
-                                break;
+			case CAPSET_TYPE_SHARE:
+				rdp_process_share_capset(rdp, s);
+				break;
 
-                        case CAPSET_TYPE_COLORCACHE:
-                                rdp_process_colorcache_capset(rdp, s);
-                                break;
+			case CAPSET_TYPE_COLORCACHE:
+				rdp_process_colorcache_capset(rdp, s);
+				break;
 
-                        case CAPSET_TYPE_INPUT:
-                                rdp_process_input_capset(rdp, s);
-                                break;
+			case CAPSET_TYPE_INPUT:
+				rdp_process_input_capset(rdp, s);
+				break;
 
-                        case CAPSET_TYPE_FONT:
-                                rdp_process_font_capset(rdp, s);
-                                break;
+			case CAPSET_TYPE_FONT:
+				rdp_process_font_capset(rdp, s);
+				break;
 
-                        case CAPSET_TYPE_BITMAPCACHE_HOSTSUPPORT:
-                                rdp_process_bitmapcache_hostsupport_capset(rdp, s);
-                                break;
+			case CAPSET_TYPE_BITMAPCACHE_HOSTSUPPORT:
+				rdp_process_bitmapcache_hostsupport_capset(rdp, s);
+				break;
 
-                        case CAPSET_TYPE_VIRTUALCHANNEL:
-                                rdp_process_virtualchannel_capset(rdp, s);
-                                break;
+			case CAPSET_TYPE_VIRTUALCHANNEL:
+				rdp_process_virtualchannel_capset(rdp, s);
+				break;
 
-                        case CAPSET_TYPE_DRAWGDIPLUS:
-                                rdp_process_draw_gdiplus_capset(rdp, s);
-                                break;
+			case CAPSET_TYPE_DRAWGDIPLUS:
+				rdp_process_draw_gdiplus_capset(rdp, s);
+				break;
 
-                        case CAPSET_TYPE_RAIL:
-                                rdp_process_rail_capset(rdp, s);
-                                break;
+			case CAPSET_TYPE_RAIL:
+				rdp_process_rail_capset(rdp, s);
+				break;
 
-                        case CAPSET_TYPE_WINDOW:
-                                rdp_process_window_capset(rdp, s);
-                                break;
+			case CAPSET_TYPE_WINDOW:
+				rdp_process_window_capset(rdp, s);
+				break;
 
-                        case CAPSET_TYPE_COMPDESK:
-                                rdp_process_compdesk_capset(rdp, s);
-                                break;
+			case CAPSET_TYPE_COMPDESK:
+				rdp_process_compdesk_capset(rdp, s);
+				break;
 
-                        case CAPSET_TYPE_MULTIFRAGMENTUPDATE:
-                                rdp_process_multifragmentupdate_capset(rdp, s);
-                                break;
+			case CAPSET_TYPE_MULTIFRAGMENTUPDATE:
+				rdp_process_multifragmentupdate_capset(rdp, s);
+				break;
 
-                        default:
+			default:
 				ui_unimpl(rdp->inst, "Capability set 0x%02X processing\n", capabilitySetType);
 				break;
 		}

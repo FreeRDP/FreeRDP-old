@@ -48,8 +48,8 @@ struct rdp_set
 	char xkb_layout[32];
 	char xkb_variant[32];
 	int encryption;
-        int rdp_version;
-        int remote_app;
+	int rdp_version;
+	int remote_app;
 	int console_session;
 	int server_depth;
 	int bitmap_cache;
