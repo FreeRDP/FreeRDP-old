@@ -19,13 +19,13 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#include "frdp.h"
 #include "iso.h"
 #include "mcs.h"
 #include "chan.h"
 #include "secure.h"
 #include "rdp.h"
 #include "mem.h"
-#include "frdp.h"
 #include "asn1.h"
 
 /* Parse an ASN.1 BER header */

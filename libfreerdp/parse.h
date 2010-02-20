@@ -21,6 +21,10 @@
 #ifndef __PARSE_H
 #define __PARSE_H
 
+#if !(defined(L_ENDIAN) || defined(B_ENDIAN))
+#warning no endian defined
+#endif
+
 /* Parser state */
 struct stream
 {
