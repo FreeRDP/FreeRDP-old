@@ -57,14 +57,8 @@ AC_PATH_PROG(PKG_CONFIG, pkg-config)
 AC_SEARCH_LIBS(socket, socket)
 AC_SEARCH_LIBS(inet_aton, resolv)
 
-AC_CHECK_HEADERS_ONCE(
-	sys/select.h
-	sys/modem.h
-	sys/filio.h
-	sys/strtio.h
-	locale.h
-	langinfo.h
-)
+AC_CHECK_HEADERS(sys/select.h sys/modem.h sys/filio.h sys/strtio.h)
+AC_CHECK_HEADERS(locale.h langinfo.h)
 
 AC_CHECK_TOOL(STRIP, strip, :)
 
