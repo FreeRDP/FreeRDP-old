@@ -204,15 +204,12 @@ libfreerdp is the core of FreeRDP.
 placement H
 wide false
 sideways false
-status collapsed
+status open
 
 \begin_layout Plain Layout
-
-\end_layout
-
-\begin_layout Plain Layout
+\align center
 \begin_inset Graphics
-	filename overview.svg
+	filename diagrams/overview.svg
 	lyxscale 50
 	scale 50
 
@@ -312,11 +309,12 @@ Keyboard Input Systems
 placement H
 wide false
 sideways false
-status collapsed
+status open
 
 \begin_layout Plain Layout
+\align center
 \begin_inset Graphics
-	filename kbd_win32.svg
+	filename diagrams/kbd_win32.svg
 	lyxscale 50
 	scale 50
 
@@ -351,11 +349,12 @@ Keyboard Input in Windows
 placement H
 wide false
 sideways false
-status collapsed
+status open
 
 \begin_layout Plain Layout
+\align center
 \begin_inset Graphics
-	filename kbd_X11_XKB.svg
+	filename diagrams/kbd_X11_XKB.svg
 	lyxscale 50
 	scale 50
 
@@ -390,11 +389,12 @@ Keyboard Input in X11 with XKB
 placement H
 wide false
 sideways false
-status collapsed
+status open
 
 \begin_layout Plain Layout
+\align center
 \begin_inset Graphics
-	filename kbd_X11.svg
+	filename diagrams/kbd_X11.svg
 	lyxscale 50
 	scale 50
 
