@@ -25,6 +25,7 @@
 #include <string.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
+#include <X11/keysym.h>
 #include "freerdp.h"
 #include "libkbd.h"
 #include "xf_event.h"

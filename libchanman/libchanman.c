@@ -42,6 +42,7 @@
 #include <unistd.h>
 #include <sys/un.h>
 #include <sys/types.h>
+#include <sys/socket.h>
 #include <pthread.h>
 #include "freerdp.h"
 #include "libchanman.h"
