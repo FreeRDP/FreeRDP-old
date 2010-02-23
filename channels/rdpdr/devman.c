@@ -19,6 +19,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#include <dlfcn.h>
 #include <stdlib.h>
 
 #include "devman.h"
@@ -259,3 +260,18 @@ devman_get_device_by_id(DEVMAN* devman, uint32 id)
 	return NULL;
 }
 
+int
+devman_load_device_service(DEVMAN* devman, char* filename)
+{
+	void* dl;
+	PDEVICE_SERVICE_INIT dev_srv_init;
+
+	dl = dlopen(filename, RTLD_LOCAL | RTLD_LAZY);
+
+	dev_srv_init = (PDEVICE_SERVICE_INIT)dlsym(dl, "device_service_init");
+
+	if(dev_srv_init != NULL)
+		dev_srv_init();
+
+	return 0;
+}

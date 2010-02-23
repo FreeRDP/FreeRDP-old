@@ -24,6 +24,8 @@
 
 #include "types_ui.h"
 
+typedef int (*PDEVICE_SERVICE_INIT)(void);
+
 typedef struct service
 {
 	uint32 type;
@@ -74,6 +76,8 @@ DEVICE*
 devman_get_next(DEVMAN* devman);
 DEVICE*
 devman_get_device_by_id(DEVMAN* devman, uint32 id);
+int
+devman_load_device_service(DEVMAN* devman, char* filename);
 
 #endif // __DEVMAN_H
 
