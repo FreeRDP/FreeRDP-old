@@ -27,6 +27,7 @@
 #include <netdb.h>
 #include <unistd.h>
 #include <sys/un.h>
+#include <sys/socket.h>
 #include "wait_obj.h"
 
 #define LOG_LEVEL 1
