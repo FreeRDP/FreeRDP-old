@@ -592,7 +592,7 @@ chan_man_free(rdpChanMan * chan_man)
 		llib = chan_man->libs + index;
 		if (llib->init_event_proc != 0)
 		{
-			llib->init_event_proc(llib, CHANNEL_EVENT_TERMINATED,
+			llib->init_event_proc(chan_man, CHANNEL_EVENT_TERMINATED,
 				0, 0);
 		}
 	}
@@ -706,7 +706,7 @@ chan_man_pre_connect(rdpChanMan * chan_man, rdpInst * inst)
 		llib = chan_man->libs + index;
 		if (llib->init_event_proc != 0)
 		{
-			llib->init_event_proc(llib, CHANNEL_EVENT_INITIALIZED,
+			llib->init_event_proc(chan_man, CHANNEL_EVENT_INITIALIZED,
 				0, 0);
 		}
 	}
@@ -734,7 +734,7 @@ chan_man_post_connect(rdpChanMan * chan_man, rdpInst * inst)
 		llib = chan_man->libs + index;
 		if (llib->init_event_proc != 0)
 		{
-			llib->init_event_proc(llib, CHANNEL_EVENT_CONNECTED,
+			llib->init_event_proc(chan_man, CHANNEL_EVENT_CONNECTED,
 				server_name, server_name_len);
 		}
 	}
