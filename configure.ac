@@ -948,6 +948,7 @@ libchanman/Makefile
 X11/Makefile
 channels/rdpsnd/Makefile
 channels/rdpdr/Makefile
+channels/rdpdr/disk/Makefile
 ])
 
 AC_OUTPUT

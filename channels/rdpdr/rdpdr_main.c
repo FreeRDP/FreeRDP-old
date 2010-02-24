@@ -28,6 +28,7 @@
 #include <unistd.h>
 #include <sys/time.h>
 
+#include "rdpdr.h"
 #include "irp.h"
 #include "devman.h"
 #include "types.h"
@@ -672,6 +673,8 @@ VirtualChannelEntry(PCHANNEL_ENTRY_POINTS pEntryPoints)
 
 	plugin->thread_status = 0;
 	plugin->devman = devman_new();
+
+	/*devman_load_device_service(plugin->devman, "channels/rdpdr/disk/.libs/libdisk.so");*/
 
 	plugin->ep.pVirtualChannelInit(&plugin->chan_plugin.init_handle, plugin->channel_def, 2,
 		VIRTUAL_CHANNEL_VERSION_WIN2000, InitEvent);

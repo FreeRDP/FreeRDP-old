@@ -264,14 +264,16 @@ int
 devman_load_device_service(DEVMAN* devman, char* filename)
 {
 	void* dl;
-	PDEVICE_SERVICE_INIT dev_srv_init;
+	PDEVICE_SERVICE_ENTRY pDeviceServiceEntry;
 
 	dl = dlopen(filename, RTLD_LOCAL | RTLD_LAZY);
 
-	dev_srv_init = (PDEVICE_SERVICE_INIT)dlsym(dl, "device_service_init");
+	pDeviceServiceEntry = (PDEVICE_SERVICE_ENTRY)dlsym(dl, "DeviceServiceEntry");
 
-	if(dev_srv_init != NULL)
-		dev_srv_init();
+	if(pDeviceServiceEntry != NULL)
+	{
+		pDeviceServiceEntry();
+	}
 
 	return 0;
 }

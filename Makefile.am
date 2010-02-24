@@ -7,7 +7,8 @@ SUBDIRS = \
 	libchanman \
 	X11 \
 	channels/rdpsnd \
-	channels/rdpdr
+	channels/rdpdr \
+	channels/rdpdr/disk
 
 EXTRA_DIST = autogen.sh indent-all.sh
 

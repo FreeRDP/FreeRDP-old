@@ -1,6 +1,6 @@
 /* -*- c-basic-offset: 8 -*-
    FreeRDP: A Remote Desktop Protocol client.
-   Device Redirection
+   Redirected Disk Device Service
 
    Copyright (C) Marc-Andre Moreau <marcandre.moreau@gmail.com> 2010
 
@@ -19,3 +19,12 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#include "rdpdr.h"
+
+int
+DeviceServiceEntry()
+{
+	/* empty */
+
+	return 1;
+}

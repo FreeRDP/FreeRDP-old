@@ -58,6 +58,14 @@ autom4te.cache
 /channels/rdpdr/.deps
 /channels/rdpdr/.libs
 /channels/rdpdr/*~
+/channels/rdpdr/disk/*.o
+/channels/rdpdr/disk/*.lo
+/channels/rdpdr/disk/*.la
+/channels/rdpdr/disk/Makefile
+/channels/rdpdr/disk/Makefile.in
+/channels/rdpdr/disk/.deps
+/channels/rdpdr/disk/.libs
+/channels/rdpdr/disk/*~
 /libchanman/*.o
 /libchanman/*.lo
 /libchanman/*.la

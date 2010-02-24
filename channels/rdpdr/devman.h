@@ -24,7 +24,7 @@
 
 #include "types_ui.h"
 
-typedef int (*PDEVICE_SERVICE_INIT)(void);
+typedef int (*PDEVICE_SERVICE_ENTRY)(void);
 
 typedef struct service
 {

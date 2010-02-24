@@ -21,6 +21,8 @@
 #ifndef __RDP_H
 #define __RDP_H
 
+#include <time.h>
+
 #include "types.h"
 #include "types_ui.h"
 
