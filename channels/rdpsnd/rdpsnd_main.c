@@ -63,6 +63,14 @@ struct data_in_item
 	int data_size;
 };
 
+struct data_out_item
+{
+	struct data_out_item * next;
+	char * data;
+	int data_size;
+	uint32 out_time_stamp;
+};
+
 typedef struct rdpsnd_plugin rdpsndPlugin;
 struct rdpsnd_plugin
 {
@@ -76,10 +84,18 @@ struct rdpsnd_plugin
 	int data_in_read[2];
 	struct wait_obj * term_event;
 	struct wait_obj * data_in_event;
-	struct data_in_item * list_head;
-	struct data_in_item * list_tail;
+	struct data_in_item * in_list_head;
+	struct data_in_item * in_list_tail;
 	/* for locking the linked list */
-	pthread_mutex_t * mutex;
+	pthread_mutex_t * in_mutex;
+
+	char * data_out;
+	int data_out_size;
+	int delay_ms;
+	struct data_out_item * out_list_head;
+	struct data_out_item * out_list_tail;
+	/* for locking the linked list */
+	pthread_mutex_t * out_mutex;
 
 	int cBlockNo;
 	char * supported_formats;
@@ -112,7 +128,7 @@ wave_out_set_format(void * device_data, char * snd_format, int size);
 int
 wave_out_set_volume(void * device_data, uint32 value);
 int
-wave_out_play(void * device_data, char * data, int size);
+wave_out_play(void * device_data, char * data, int size, int * delay_ms);
 
 /* get time in milliseconds */
 static uint32
@@ -137,19 +153,103 @@ signal_data_in(rdpsndPlugin * plugin)
 	plugin->data_in[0] = 0;
 	item->data_size = plugin->data_in_size[0];
 	plugin->data_in_size[0] = 0;
-	pthread_mutex_lock(plugin->mutex);
-	if (plugin->list_tail == 0)
+	pthread_mutex_lock(plugin->in_mutex);
+	if (plugin->in_list_tail == 0)
 	{
-		plugin->list_head = item;
-		plugin->list_tail = item;
+		plugin->in_list_head = item;
+		plugin->in_list_tail = item;
 	}
 	else
 	{
-		plugin->list_tail->next = item;
-		plugin->list_tail = item;
+		plugin->in_list_tail->next = item;
+		plugin->in_list_tail = item;
 	}
-	pthread_mutex_unlock(plugin->mutex);
+	pthread_mutex_unlock(plugin->in_mutex);
 	wait_obj_set(plugin->data_in_event);
+}
+
+static void
+queue_data_out(rdpsndPlugin * plugin)
+{
+	struct data_out_item * item;
+
+	LLOGLN(10, ("queue_data_out: "));
+	item = (struct data_out_item *) malloc(sizeof(struct data_out_item));
+	item->next = 0;
+	item->data = plugin->data_out;
+	plugin->data_out = 0;
+	item->data_size = plugin->data_out_size;
+	plugin->data_out_size = 0;
+	item->out_time_stamp = plugin->local_time_stamp + plugin->delay_ms;
+	pthread_mutex_lock(plugin->out_mutex);
+	if (plugin->out_list_tail == 0)
+	{
+		plugin->out_list_head = item;
+		plugin->out_list_tail = item;
+	}
+	else
+	{
+		plugin->out_list_tail->next = item;
+		plugin->out_list_tail = item;
+	}
+	pthread_mutex_unlock(plugin->out_mutex);
+}
+
+/* process the linked list of data that has queued to be sent */
+static int
+thread_process_data_out(rdpsndPlugin * plugin)
+{
+	char * data;
+	int data_size;
+	struct data_out_item * item;
+	uint32 cur_time;
+	uint32 error;
+
+	LLOGLN(10, ("thread_process_data_out: "));
+	while (1)
+	{
+		if (wait_obj_is_set(plugin->term_event))
+		{
+			break;
+		}
+		pthread_mutex_lock(plugin->out_mutex);
+		if (plugin->out_list_head == 0)
+		{
+			pthread_mutex_unlock(plugin->out_mutex);
+			break;
+		}
+		cur_time = get_mstime();
+		if (cur_time <= plugin->out_list_head->out_time_stamp)
+		{
+			pthread_mutex_unlock(plugin->out_mutex);
+			break;
+		}
+		data = plugin->out_list_head->data;
+		data_size = plugin->out_list_head->data_size;
+		item = plugin->out_list_head;
+		plugin->out_list_head = plugin->out_list_head->next;
+		if (plugin->out_list_head == 0)
+		{
+			plugin->out_list_tail = 0;
+		}
+		pthread_mutex_unlock(plugin->out_mutex);
+
+		error = plugin->ep.pVirtualChannelWrite(plugin->open_handle[0],
+			data, data_size, data);
+		if (error != CHANNEL_RC_OK)
+		{
+			LLOGLN(0, ("thread_process_data_out: "
+				"VirtualChannelWrite "
+				"failed %d", error));
+		}
+		LLOGLN(10, ("thread_process_data_out: confirm sent"));
+
+		if (item != 0)
+		{
+			free(item);
+		}
+	}
+	return 0;
 }
 
 /*
@@ -349,10 +449,7 @@ thread_process_message_wave(rdpsndPlugin * plugin, char * data, int data_size)
 {
 	int size;
 	int wTimeStamp;
-	int time_delta;
 	char * out_data;
-	uint32 error;
-	uint32 cur_time;
 
 	plugin->expectingWave = 0;
 	memcpy(data, plugin->waveData, 4);
@@ -361,30 +458,22 @@ thread_process_message_wave(rdpsndPlugin * plugin, char * data, int data_size)
 		LLOGLN(0, ("thread_process_message_wave: "
 			"size error"));
 	}
-	wave_out_play(plugin->device_data, data, data_size);
+	wave_out_play(plugin->device_data, data, data_size, &plugin->delay_ms);
 	size = 8;
 	out_data = (char *) malloc(size);
 	SET_UINT8(out_data, 0, SNDC_WAVECONFIRM);
 	SET_UINT8(out_data, 1, 0);
 	SET_UINT16(out_data, 2, size - 4);
-	cur_time = get_mstime();
-	time_delta = cur_time - plugin->local_time_stamp;
 	LLOGLN(0, ("thread_process_message_wave: "
-		"data_size %d time_delta %d cur_time %u",
-		data_size, time_delta, cur_time));
-	wTimeStamp = plugin->wTimeStamp + time_delta;
+		"data_size %d delay %d local_time %u",
+		data_size, plugin->delay_ms, plugin->local_time_stamp));
+	wTimeStamp = plugin->wTimeStamp + plugin->delay_ms;
 	SET_UINT16(out_data, 4, wTimeStamp);
 	SET_UINT8(out_data, 6, plugin->cBlockNo);
 	SET_UINT8(out_data, 7, 0);
-	error = plugin->ep.pVirtualChannelWrite(plugin->open_handle[0],
-		out_data, size, out_data);
-	if (error != CHANNEL_RC_OK)
-	{
-		LLOGLN(0, ("thread_process_message_wave: "
-			"VirtualChannelWrite "
-			"failed %d", error));
-		return 1;
-	}
+	plugin->data_out = out_data;
+	plugin->data_out_size = size;
+	queue_data_out(plugin);
 	return 0;
 }
 
@@ -450,7 +539,7 @@ thread_process_message(rdpsndPlugin * plugin, char * data, int data_size)
 
 /* process the linked list of data that has come in */
 static int
-thread_process_data(rdpsndPlugin * plugin)
+thread_process_data_in(rdpsndPlugin * plugin)
 {
 	char * data;
 	int data_size;
@@ -458,21 +547,25 @@ thread_process_data(rdpsndPlugin * plugin)
 
 	while (1)
 	{
-		pthread_mutex_lock(plugin->mutex);
-		if (plugin->list_head == 0)
+		if (wait_obj_is_set(plugin->term_event))
 		{
-			pthread_mutex_unlock(plugin->mutex);
 			break;
 		}
-		data = plugin->list_head->data;
-		data_size = plugin->list_head->data_size;
-		item = plugin->list_head;
-		plugin->list_head = plugin->list_head->next;
-		if (plugin->list_head == 0)
+		pthread_mutex_lock(plugin->in_mutex);
+		if (plugin->in_list_head == 0)
 		{
-			plugin->list_tail = 0;
+			pthread_mutex_unlock(plugin->in_mutex);
+			break;
 		}
-		pthread_mutex_unlock(plugin->mutex);
+		data = plugin->in_list_head->data;
+		data_size = plugin->in_list_head->data_size;
+		item = plugin->in_list_head;
+		plugin->in_list_head = plugin->in_list_head->next;
+		if (plugin->in_list_head == 0)
+		{
+			plugin->in_list_tail = 0;
+		}
+		pthread_mutex_unlock(plugin->in_mutex);
 		if (data != 0)
 		{
 			thread_process_message(plugin, data, data_size);
@@ -481,6 +574,11 @@ thread_process_data(rdpsndPlugin * plugin)
 		if (item != 0)
 		{
 			free(item);
+		}
+
+		if (plugin->out_list_head != 0)
+		{
+			thread_process_data_out(plugin);
 		}
 	}
 	return 0;
@@ -502,7 +600,7 @@ thread_func(void * arg)
 		listobj[0] = plugin->term_event;
 		listobj[1] = plugin->data_in_event;
 		numobj = 2;
-		wait_obj_select(listobj, numobj, NULL, 0, -1);
+		wait_obj_select(listobj, numobj, NULL, 0, 500);
 
 		if (wait_obj_is_set(plugin->term_event))
 		{
@@ -512,7 +610,11 @@ thread_func(void * arg)
 		{
 			wait_obj_clear(plugin->data_in_event);
 			/* process data in */
-			thread_process_data(plugin);
+			thread_process_data_in(plugin);
+		}
+		if (plugin->out_list_head != 0)
+		{
+			thread_process_data_out(plugin);
 		}
 	}
 	LLOGLN(10, ("thread_func: out"));
@@ -616,6 +718,8 @@ InitEventProcessTerminated(void * pInitHandle)
 {
 	rdpsndPlugin * plugin;
 	int index;
+	struct data_in_item * in_item;
+	struct data_out_item * out_item;
 
 	plugin = (rdpsndPlugin *) chan_plugin_find_by_init_handle(pInitHandle);
 	if (plugin == NULL)
@@ -633,6 +737,27 @@ InitEventProcessTerminated(void * pInitHandle)
 	}
 	wait_obj_free(plugin->term_event);
 	wait_obj_free(plugin->data_in_event);
+
+	pthread_mutex_destroy(plugin->in_mutex);
+	free(plugin->in_mutex);
+	pthread_mutex_destroy(plugin->out_mutex);
+	free(plugin->out_mutex);
+
+	/* free the un-processed in/out queue */
+	while (plugin->in_list_head != 0)
+	{
+		in_item = plugin->in_list_head;
+		plugin->in_list_head = in_item->next;
+		free(in_item->data);
+		free(in_item);
+	}
+	while (plugin->out_list_head != 0)
+	{
+		out_item = plugin->out_list_head;
+		plugin->out_list_head = out_item->next;
+		free(out_item->data);
+		free(out_item);
+	}
 
 	wave_out_free(plugin->device_data);
 	chan_plugin_uninit((rdpChanPlugin *) plugin);
@@ -681,10 +806,14 @@ VirtualChannelEntry(PCHANNEL_ENTRY_POINTS pEntryPoints)
 	plugin->channel_def[1].options = CHANNEL_OPTION_INITIALIZED |
 		CHANNEL_OPTION_ENCRYPT_RDP;
 	strcpy(plugin->channel_def[1].name, "rdpdr");
-	plugin->mutex = (pthread_mutex_t *) malloc(sizeof(pthread_mutex_t));
-	pthread_mutex_init(plugin->mutex, 0);
-	plugin->list_head = 0;
-	plugin->list_tail = 0;
+	plugin->in_mutex = (pthread_mutex_t *) malloc(sizeof(pthread_mutex_t));
+	pthread_mutex_init(plugin->in_mutex, 0);
+	plugin->out_mutex = (pthread_mutex_t *) malloc(sizeof(pthread_mutex_t));
+	pthread_mutex_init(plugin->out_mutex, 0);
+	plugin->in_list_head = 0;
+	plugin->in_list_tail = 0;
+	plugin->out_list_head = 0;
+	plugin->out_list_tail = 0;
 	plugin->term_event = wait_obj_new("freerdprdpsndterm");
 	plugin->data_in_event = wait_obj_new("freerdprdpsnddatain");
 	plugin->expectingWave = 0;

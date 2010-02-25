@@ -216,7 +216,7 @@ wave_out_set_volume(void * device_data, uint32 value)
 }
 
 int
-wave_out_play(void * device_data, char * data, int size)
+wave_out_play(void * device_data, char * data, int size, int * delay_ms)
 {
 	struct alsa_device_data * alsa_data;
 	int len;
@@ -225,21 +225,24 @@ wave_out_play(void * device_data, char * data, int size)
 	int bytes_per_frame;
 	char * pindex;
 	char * end;
+	snd_pcm_sframes_t delay_frames = 0;
 
 	alsa_data = (struct alsa_device_data *) device_data;
 
 	LLOGLN(10, ("wave_out_play: size %d", size));
+
+	bytes_per_frame = alsa_data->num_channels * alsa_data->bytes_per_channel;
+	if ((size % bytes_per_frame) != 0)
+	{
+		LLOGLN(0, ("wave_out_play: error len mod"));
+		return 1;
+	}
+
 	pindex = data;
 	end = pindex + size;
 	while (pindex < end)
 	{
 		len = end - pindex;
-		bytes_per_frame = alsa_data->num_channels * alsa_data->bytes_per_channel;
-		if ((len % bytes_per_frame) != 0)
-		{
-			LLOGLN(0, ("wave_out_play: error len mod"));
-			break;
-		}
 		frames = len / bytes_per_frame;
 		error = snd_pcm_writei(alsa_data->out_handle, pindex, frames);
 		if (error == -EPIPE)
@@ -255,5 +258,16 @@ wave_out_play(void * device_data, char * data, int size)
 		}
 		pindex += error * bytes_per_frame;
 	}
+
+	if (snd_pcm_delay(alsa_data->out_handle, &delay_frames) < 0)
+	{
+		delay_frames = size / bytes_per_frame;
+	}
+	if (delay_frames < 0)
+	{
+		delay_frames = 0;
+	}
+	*delay_ms = delay_frames * (1000000 / alsa_data->rrate) / 1000;
+
 	return 0;
 }
