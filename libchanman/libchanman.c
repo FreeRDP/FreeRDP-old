@@ -263,11 +263,6 @@ MyVirtualChannelInit(void ** ppInitHandle, PCHANNEL_DEF pChannel,
 		printf("MyVirtualChannelInit: error not in entry\n");
 		return CHANNEL_RC_NOT_IN_VIRTUALCHANNELENTRY;
 	}
-	if (pChannelInitEventProc == 0)
-	{
-		printf("MyVirtualChannelInit: error bad proc\n");
-		return CHANNEL_RC_BAD_PROC;
-	}
 	if (ppInitHandle == 0)
 	{
 		printf("MyVirtualChannelInit: error bad pphan\n");
@@ -698,9 +693,34 @@ chan_man_pre_connect(rdpChanMan * chan_man, rdpInst * inst)
 {
 	int index;
 	struct lib_data * llib;
+	CHANNEL_DEF lchannel_def;
+	void * dummy;
 
 	printf("chan_man_pre_connect:\n");
 	chan_man->inst = inst;
+
+	/* If rdpsnd is registered but not rdpdr, it's necessary to register a fake
+	   rdpdr channel to make sound work. This is a workaround for Window 7 and
+	   Windows 2008 */
+	if (chan_man_find_chan_data_by_name(chan_man, "rdpsnd", 0) != 0 &&
+		chan_man_find_chan_data_by_name(chan_man, "rdpdr", 0) == 0)
+	{
+		lchannel_def.options = CHANNEL_OPTION_INITIALIZED |
+			CHANNEL_OPTION_ENCRYPT_RDP;
+		strcpy(lchannel_def.name, "rdpdr");
+		chan_man->can_call_init = 1;
+		chan_man->settings = inst->settings;
+		pthread_mutex_lock(g_mutex_init);
+		g_init_chan_man = chan_man;
+		MyVirtualChannelInit(&dummy, &lchannel_def, 1,
+			VIRTUAL_CHANNEL_VERSION_WIN2000, 0);
+		g_init_chan_man = NULL;
+		pthread_mutex_unlock(g_mutex_init);
+		chan_man->can_call_init = 0;
+		chan_man->settings = 0;
+		printf("chan_man_pre_connect: registered fake rdpdr for rdpsnd.\n");
+	}
+
 	for (index = 0; index < chan_man->num_libs; index++)
 	{
 		llib = chan_man->libs + index;
