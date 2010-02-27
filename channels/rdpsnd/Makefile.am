@@ -1,5 +1,7 @@
 ## Process this file with automake to produce Makefile.in
 
+if WITH_RDPSND
+
 # librdpsnd
 librdpsnddir = $(libdir)
 
@@ -10,18 +12,24 @@ librdpsnd_la_SOURCES = \
 	../common/chan_plugin.c \
 	rdpsnd_main.c
 
-if FOUND_ALSA
-librdpsnd_la_SOURCES += rdpsnd_alsa.c
-endif
-
-#	rdpsnd_pulse.c
-
 librdpsnd_la_CFLAGS = -I../../include/freerdp -I../common
 
 librdpsnd_la_LDFLAGS = -avoid-version -module
+
+librdpsnd_la_LIBADD =
+
+if RDPSND_ALSA
+librdpsnd_la_SOURCES += rdpsnd_alsa.c
+librdpsnd_la_CFLAGS += @ALSA_CFLAGS@
+librdpsnd_la_LIBADD += @ALSA_LIBS@
+endif
+
+#	rdpsnd_pulse.c
 
 # extra
 EXTRA_DIST =
 
 DISTCLEANFILES = 
+
+endif
 

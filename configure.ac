@@ -15,12 +15,6 @@ AH_TEMPLATE(EGD_SOCKET, [EGD])
 AH_TEMPLATE(HAVE_LIBSAMPLERATE, [Define if you have libsamplerate])
 AH_TEMPLATE(IPv6, [IPv6])
 AH_TEMPLATE(NEED_ALIGN, [Alignment])
-AH_TEMPLATE(RDPSND_ALSA, [ALSA sound module])
-AH_TEMPLATE(RDPSND_LIBAO, [libao sound module])
-AH_TEMPLATE(RDPSND_OSS, [OSS sound module])
-AH_TEMPLATE(RDPSND_SGI, [SGI sound module])
-AH_TEMPLATE(RDPSND_SUN, [SUN sound module])
-AH_TEMPLATE(WITH_RDPSND, [Define if sound is enabled])
 AH_TEMPLATE(WITH_SCARD, [Define if smartcard is enabled])
 AH_TEMPLATE(WITH_DEBUG, [Turn on debugging messages])
 AH_TEMPLATE(WITH_DEBUG_CHANNEL, [Turn on debugging messages])
@@ -259,7 +253,6 @@ AC_ARG_ENABLE(static-libsamplerate,
 if test -n "$PKG_CONFIG"; then
     PKG_CHECK_MODULES(LIBAO, ao, [HAVE_LIBAO=1], [HAVE_LIBAO=0])
     PKG_CHECK_MODULES(ALSA, alsa, [HAVE_ALSA=1], [HAVE_ALSA=0])
-    AM_CONDITIONAL(FOUND_ALSA, test x$HAVE_ALSA = x1)
     AC_ARG_WITH(libsamplerate,
         [  --without-libsamplerate disable libsamplerate support])
     if test "x$with_libsamplerate" != "xno"; then
@@ -275,44 +268,25 @@ if test -n "$PKG_CONFIG"; then
     fi
 fi
 
-if test "$sound" != "no"; then
-    CFLAGS="$CFLAGS $LIBSAMPLERATE_CFLAGS"
-    LIBS="$LIBS $LIBSAMPLERATE_LIBS"
-    AC_DEFINE(WITH_RDPSND)
-fi
+AM_CONDITIONAL(WITH_RDPSND, [test "$sound" != "no"])
+AM_CONDITIONAL(RDPSND_OSS, false)
+AM_CONDITIONAL(RDPSND_SGI, false)
+AM_CONDITIONAL(RDPSND_SUN, false)
+AM_CONDITIONAL(RDPSND_ALSA, false)
+AM_CONDITIONAL(RDPSND_LIBAO, false)
 
 case $sound in
     yes)
-        if test x"$HAVE_OSS" = "x1"; then
-            AC_DEFINE(RDPSND_OSS)
-        fi
-
-        if test x"$HAVE_SGI" = "x1"; then
-            LIBS="$LIBS -laudio"
-            AC_DEFINE(RDPSND_SGI)
-        fi
-
-        if test x"$HAVE_SUN" = "x1"; then
-            AC_DEFINE(RDPSND_SUN)
-        fi
-
-        if test x"$HAVE_ALSA" = "x1"; then
-            CFLAGS="$CFLAGS $ALSA_CFLAGS"
-            LIBS="$LIBS $ALSA_LIBS"
-            AC_DEFINE(RDPSND_ALSA)
-        fi
-
-        if test x"$HAVE_LIBAO" = "x1"; then
-            CFLAGS="$CFLAGS $LIBAO_CFLAGS"
-            LIBS="$LIBS $LIBAO_LIBS"
-            AC_DEFINE(RDPSND_LIBAO)
-        fi
-
+        AM_CONDITIONAL(RDPSND_OSS, [test x"$HAVE_OSS" = "x1"])
+        AM_CONDITIONAL(RDPSND_SGI, [test x"$HAVE_SGI" = "x1"])
+        AM_CONDITIONAL(RDPSND_SUN, [test x"$HAVE_SUN" = "x1"])
+        AM_CONDITIONAL(RDPSND_ALSA, [test x"$HAVE_ALSA" = "x1"])
+        AM_CONDITIONAL(RDPSND_LIBAO, [test x"$HAVE_LIBAO" = "x1"])
         ;;
 
     oss)
         if test x"$HAVE_OSS" = "x1"; then
-            AC_DEFINE(RDPSND_OSS)
+            AM_CONDITIONAL(RDPSND_OSS, true)
         else
             AC_MSG_ERROR([Selected sound system is not available.])
         fi
@@ -320,8 +294,7 @@ case $sound in
 
     sgi)
         if test x"$HAVE_SGI" = "x1"; then
-            LIBS="$LIBS -laudio"
-            AC_DEFINE(RDPSND_SGI)
+            AM_CONDITIONAL(RDPSND_SGI, true)
         else
             AC_MSG_ERROR([Selected sound system is not available.])
         fi
@@ -329,7 +302,7 @@ case $sound in
 
     sun)
         if test x"$HAVE_SUN" = "x1"; then
-            AC_DEFINE(RDPSND_SUN)
+            AM_CONDITIONAL(RDPSND_SUN, true)
         else
             AC_MSG_ERROR([Selected sound system is not available.])
         fi
@@ -337,9 +310,7 @@ case $sound in
 
     alsa)
         if test x"$HAVE_ALSA" = "x1"; then
-            CFLAGS="$CFLAGS $ALSA_CFLAGS"
-            LIBS="$LIBS $ALSA_LIBS"
-            AC_DEFINE(RDPSND_ALSA)
+            AM_CONDITIONAL(RDPSND_ALSA, true)
         else
             AC_MSG_ERROR([Selected sound system is not available.])
         fi
@@ -347,9 +318,7 @@ case $sound in
 
     libao)
         if test x"$HAVE_LIBAO" = "x1"; then
-            CFLAGS="$CFLAGS $LIBAO_CFLAGS"
-            LIBS="$LIBS $LIBAO_LIBS"
-            AC_DEFINE(RDPSND_LIBAO)
+            AM_CONDITIONAL(RDPSND_LIBAO, true)
         else
             AC_MSG_ERROR([Selected sound system is not available.])
         fi
