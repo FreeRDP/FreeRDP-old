@@ -26,30 +26,38 @@
 
 #include "freerdp.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct rdp_chan_man rdpChanMan;
 
-int
+FREERDP_API int
 chan_man_init(void);
-int
+FREERDP_API int
 chan_man_uninit(void);
-rdpChanMan *
+FREERDP_API rdpChanMan *
 chan_man_new(void);
-void
+FREERDP_API void
 chan_man_free(rdpChanMan * chan_man);
-int
+FREERDP_API int
 chan_man_load_plugin(rdpChanMan * chan_man, rdpSet * settings,
 	const char * filename);
-int
+FREERDP_API int
 chan_man_pre_connect(rdpChanMan * chan_man, rdpInst * inst);
-int
+FREERDP_API int
 chan_man_post_connect(rdpChanMan * chan_man, rdpInst * inst);
-int
+FREERDP_API int
 chan_man_data(rdpInst * inst, int chan_id, char * data, int data_size,
 	int flags, int total_size);
-int
+FREERDP_API int
 chan_man_get_fds(rdpChanMan * chan_man, rdpInst * inst, void ** read_fds,
 	int * read_count, void ** write_fds, int * write_count);
-int
+FREERDP_API int
 chan_man_check_fds(rdpChanMan * chan_man, rdpInst * inst);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

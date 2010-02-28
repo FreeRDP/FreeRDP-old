@@ -35,6 +35,10 @@
 #define FREERDP_API
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct rdp_inst
 {
 	int version;
@@ -119,5 +123,9 @@ FREERDP_API rdpInst *
 freerdp_new(rdpSet * settings);
 FREERDP_API void
 freerdp_free(rdpInst * inst);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
