@@ -590,7 +590,7 @@ rdp_send_input(rdpRdp * rdp, time_t time, uint16 message_type, uint16 device_fla
 				}
 				s = rdp_fp_init(rdp, 2);
 				out_uint8(s, fp_flags);
-				out_uint8(s, param1);
+				out_uint8(s, (uint8)param1);
 				s_mark_end(s);
 				rdp_fp_send(rdp, s);
 				break;
@@ -620,7 +620,7 @@ rdp_send_input(rdpRdp * rdp, time_t time, uint16 message_type, uint16 device_fla
 		s = rdp_init_data(rdp, 16);
 		out_uint16_le(s, 1); /* number of events */
 		out_uint16(s, 0); /* pad */
-		out_uint32_le(s, time);
+		out_uint32_le(s, (uint32)time);
 		out_uint16_le(s, message_type);
 		out_uint16_le(s, device_flags);
 		out_uint16_le(s, param1);
@@ -655,7 +655,7 @@ rdp_sync_input(rdpRdp * rdp, time_t time, uint32 toggle_keys_state)
 		s = rdp_init_data(rdp, 16);
 		out_uint16_le(s, 1); /* number of events */
 		out_uint16(s, 0); /* pad */
-		out_uint32_le(s, time); /* eventTime */
+		out_uint32_le(s, (uint32)time); /* eventTime */
 		out_uint16_le(s, RDP_INPUT_SYNC); /* messageType */
 		out_uint16_le(s, 0); /* pad */
 		out_uint32_le(s, toggle_keys_state); /* toggleFlags */
@@ -685,7 +685,7 @@ rdp_unicode_input(rdpRdp * rdp, time_t time, uint16 unicode_character)
 		s = rdp_init_data(rdp, 16);
 		out_uint16_le(s, 1); /* number of events */
 		out_uint16(s, 0); /* pad */
-		out_uint32_le(s, time); /* eventTime */
+		out_uint32_le(s, (uint32)time); /* eventTime */
 		out_uint16_le(s, RDP_INPUT_UNICODE); /* messageType */
 		out_uint16_le(s, 0); /* pad */
 		out_uint16_le(s, unicode_character); /* Unicode character */

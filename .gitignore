@@ -73,3 +73,6 @@ autom4te.cache
 /libchanman/Makefile.in
 /libchanman/.deps
 /libchanman/.libs
+/win/*.ncb
+/win/*.suo
+/win/*.user
