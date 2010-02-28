@@ -29,6 +29,12 @@
 
 #define FREERDP_INTERFACE_VERSION 2
 
+#if defined _WINDOWS
+#define FREERDP_API _declspec(dllexport)
+#else
+#define FREERDP_API
+#endif
+
 struct rdp_inst
 {
 	int version;
@@ -109,9 +115,9 @@ struct rdp_inst
 };
 typedef struct rdp_inst rdpInst;
 
-rdpInst *
+FREERDP_API rdpInst *
 freerdp_new(rdpSet * settings);
-void
+FREERDP_API void
 freerdp_free(rdpInst * inst);
 
 #endif
