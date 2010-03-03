@@ -76,3 +76,9 @@ autom4te.cache
 /win/*.ncb
 /win/*.suo
 /win/*.user
+/win/Debug*
+/win/Release*
+/win/wfreerdp/*.user
+/win/wfreerdp/Debug*
+/win/wfreerdp/Release*
+
