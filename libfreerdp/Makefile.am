@@ -11,19 +11,15 @@ libfreerdp_la_SOURCES = \
 	cache.c cache.h \
 	capabilities.c capabilities.h \
 	chan.c chan.h \
-	constants.h \
 	freerdp.c \
 	iso.c iso.h \
-	keyboard.h \
 	licence.c licence.h \
-	locales.h \
 	mcs.c mcs.h \
 	mem.c mem.h \
 	mppc.c \
 	orders.c orders.h \
 	orderstypes.h \
 	parse.h \
-	proto.h \
 	pstcache.c pstcache.h \
 	rail.c rail.h \
 	rdp.c rdp.h \
