@@ -49,7 +49,7 @@ wf_event_proc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 		BitBlt(hdc, ps.rcPaint.left, ps.rcPaint.top,
 			ps.rcPaint.right - ps.rcPaint.left,
 			ps.rcPaint.bottom - ps.rcPaint.top,
-			wfi->hdc, ps.rcPaint.left, ps.rcPaint.top,
+			wfi->backstore->hdc, ps.rcPaint.left, ps.rcPaint.top,
 			SRCCOPY);
 		EndPaint(hWnd, &ps);
 		break;

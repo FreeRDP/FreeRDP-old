@@ -29,13 +29,19 @@
 #define SET_WFI(_inst, _wfi) (_inst)->param1 = _wfi
 #define GET_WFI(_inst) ((wfInfo *) ((_inst)->param1))
 
+struct wf_bitmap
+{
+	HDC hdc;
+	HBITMAP bitmap;
+	HBITMAP org_bitmap;
+};
+
 struct wf_info
 {
 	HWND hwnd;
 	rdpInst * inst;
-	HDC hdc;
-	HBITMAP org_bitmap;
-	HBITMAP bitmap;
+	struct wf_bitmap * backstore;
+	struct wf_bitmap * drw;
 	uint8 * colourmap;
 	int bgcolour;
 	int fgcolour;

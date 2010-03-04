@@ -32,13 +32,6 @@
 extern LPCTSTR g_wnd_class_name;
 extern HINSTANCE g_hInstance;
 
-struct wf_bitmap
-{
-	HDC hdc;
-	HBITMAP bitmap;
-	HBITMAP org_bitmap;
-};
-
 static int
 wf_convert_rop3(int rop3)
 {
@@ -135,6 +128,35 @@ wf_invalidate_region(wfInfo * wfi, int x1, int y1, int x2, int y2)
 	}
 }
 
+static struct wf_bitmap *
+wf_bitmap_new(struct rdp_inst * inst, int width, int height)
+{
+	wfInfo * wfi;
+	struct wf_bitmap *bm;
+	HDC hdc;
+
+	wfi = GET_WFI(inst);
+	hdc = GetDC(NULL);
+	bm = (struct wf_bitmap *) malloc(sizeof(struct wf_bitmap));
+	bm->hdc = CreateCompatibleDC(hdc);
+	bm->bitmap = CreateCompatibleBitmap(hdc, width, height);
+	bm->org_bitmap = (HBITMAP)SelectObject(bm->hdc, bm->bitmap);
+	ReleaseDC(NULL, hdc);
+	return bm;
+}
+
+static void
+wf_bitmap_free(struct wf_bitmap * bm)
+{
+	if (bm != 0)
+	{
+		SelectObject(bm->hdc, bm->org_bitmap);
+		DeleteObject(bm->bitmap);
+		DeleteDC(bm->hdc);
+		free(bm);
+	}
+}
+
 static void
 l_ui_error(struct rdp_inst * inst, char * text)
 {
@@ -156,13 +178,13 @@ l_ui_unimpl(struct rdp_inst * inst, char * text)
 static void
 l_ui_begin_update(struct rdp_inst * inst)
 {
-	printf("ui_begin_update\n");
+	//printf("ui_begin_update\n");
 }
 
 static void
 l_ui_end_update(struct rdp_inst * inst)
 {
-	printf("ui_end_update\n");
+	//printf("ui_end_update\n");
 }
 
 static void
@@ -247,7 +269,7 @@ l_ui_paint_bitmap(struct rdp_inst * inst, int x, int y, int cx, int cy, int widt
 
 	wfi = GET_WFI(inst);
 	bm = (struct wf_bitmap *) l_ui_create_bitmap(inst, width, height, data);
-	BitBlt(wfi->hdc, x, y, cx, cy, bm->hdc, 0, 0, SRCCOPY);
+	BitBlt(wfi->drw->hdc, x, y, cx, cy, bm->hdc, 0, 0, SRCCOPY);
 	l_ui_destroy_bitmap(inst, (RD_HBITMAP)bm);
 	wf_invalidate_region(wfi, x, y, x + cx, y + cy);
 }
@@ -277,7 +299,7 @@ l_ui_rect(struct rdp_inst * inst, int x, int y, int cx, int cy, int colour)
 	rect.right = x + cx;
 	rect.bottom = y + cy;
 	brush = CreateSolidBrush(colour);
-	FillRect(wfi->hdc, &rect, brush);
+	FillRect(wfi->drw->hdc, &rect, brush);
 	DeleteObject(brush);
 	wf_invalidate_region(wfi, rect.left, rect.top, rect.right, rect.bottom);
 }
@@ -322,29 +344,23 @@ l_ui_draw_glyph(struct rdp_inst * inst, int x, int y, int cx, int cy,
 {
 	wfInfo * wfi;
 	uint8 * data;
-	HDC hdc;
-	HBITMAP bitmap;
-	HBITMAP org_bitmap;
+	struct wf_bitmap * bm;
 	BITMAPINFO bmi = {0};
 
 	wfi = GET_WFI(inst);
 	data = wf_glyph_generate(wfi, cx, cy, (uint8 *) glyph);
-	hdc = CreateCompatibleDC(wfi->hdc);
-	bitmap = CreateCompatibleBitmap(wfi->hdc, cx, cy);
-	org_bitmap = (HBITMAP)SelectObject(hdc, bitmap);
+	bm = wf_bitmap_new(inst, cx, cy);
 	bmi.bmiHeader.biSize = sizeof(BITMAPINFO);
 	bmi.bmiHeader.biWidth = cx;
 	bmi.bmiHeader.biHeight = cy;
 	bmi.bmiHeader.biPlanes = 1;
 	bmi.bmiHeader.biCompression = BI_RGB;
 	bmi.bmiHeader.biBitCount = 32;
-	SetDIBits(hdc, bitmap, 0, cy, data, &bmi, 0);
-	BitBlt(wfi->hdc, x, y, cx, cy, hdc, 0, 0, SRCCOPY);
+	SetDIBits(bm->hdc, bm->bitmap, 0, cy, data, &bmi, 0);
+	BitBlt(wfi->drw->hdc, x, y, cx, cy, bm->hdc, 0, 0, SRCCOPY);
 
 	free(data);
-	SelectObject(hdc, org_bitmap);
-	DeleteObject(bitmap);
-	DeleteDC(hdc);
+	wf_bitmap_free(bm);
 
 	wf_invalidate_region(wfi, x, y, x + cx, y + cy);
 }
@@ -409,7 +425,7 @@ l_ui_memblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy,
 	wfi = GET_WFI(inst);
 	bm = (struct wf_bitmap *) src;
 	//printf("ui_memblt %i %i %i %i %i %i %i\n", x, y, cx, cy, srcx, srcy, opcode);
-	BitBlt(wfi->hdc, x, y, cx, cy, bm->hdc, srcx, srcy, wf_convert_rop3(opcode));
+	BitBlt(wfi->drw->hdc, x, y, cx, cy, bm->hdc, srcx, srcy, wf_convert_rop3(opcode));
 	wf_invalidate_region(wfi, x, y, x + cx, y + cy);
 }
 
@@ -437,9 +453,9 @@ l_ui_set_clip(struct rdp_inst * inst, int x, int y, int cx, int cy)
 	HRGN hrgn;
 
 	wfi = GET_WFI(inst);
-	printf("ui_set_clip %i %i %i %i\n", x, y, cx, cy);
+	//printf("ui_set_clip %i %i %i %i\n", x, y, cx, cy);
 	hrgn = CreateRectRgn(x, y, x + cx, y + cy);
-	SelectClipRgn(wfi->hdc, hrgn);
+	SelectClipRgn(wfi->drw->hdc, hrgn);
 	DeleteObject(hrgn);
 }
 
@@ -449,8 +465,8 @@ l_ui_reset_clip(struct rdp_inst * inst)
 	wfInfo * wfi;
 
 	wfi = GET_WFI(inst);
-	printf("ui_reset_clip\n");
-	SelectClipRgn(wfi->hdc, NULL);
+	//printf("ui_reset_clip\n");
+	SelectClipRgn(wfi->drw->hdc, NULL);
 }
 
 static void
@@ -537,10 +553,22 @@ static RD_HBITMAP
 l_ui_create_surface(struct rdp_inst * inst, int width, int height, RD_HBITMAP old_surface)
 {
 	wfInfo * wfi;
+	struct wf_bitmap * bm;
+	struct wf_bitmap * old_bm;
 
 	wfi = GET_WFI(inst);
-	//TODO
-	return NULL;
+	bm = wf_bitmap_new(inst, width, height);
+	old_bm = (struct wf_bitmap *) old_surface;
+	if (old_bm != 0)
+	{
+		BitBlt(bm->hdc, 0, 0, width, height, old_bm->hdc, 0, 0, SRCCOPY);
+		wf_bitmap_free(old_bm);
+	}
+	if (wfi->drw == old_bm)
+	{
+		wfi->drw = bm;
+	}
+	return (RD_HBITMAP)bm;
 }
 
 static void
@@ -549,7 +577,14 @@ l_ui_set_surface(struct rdp_inst * inst, RD_HBITMAP surface)
 	wfInfo * wfi;
 
 	wfi = GET_WFI(inst);
-	//TODO
+	if (surface != 0)
+	{
+		wfi->drw = (struct wf_bitmap *) surface;
+	}
+	else
+	{
+		wfi->drw = wfi->backstore;
+	}
 }
 
 static void
@@ -558,7 +593,15 @@ l_ui_destroy_surface(struct rdp_inst * inst, RD_HBITMAP surface)
 	wfInfo * wfi;
 
 	wfi = GET_WFI(inst);
-	//TODO
+	if (wfi->drw == surface)
+	{
+		l_ui_warning(inst, "ui_destroy_surface: freeing active surface!\n");
+		wfi->drw = wfi->backstore;
+	}
+	if (surface != 0)
+	{
+		wf_bitmap_free((struct wf_bitmap *)surface);
+	}
 }
 
 static void
@@ -640,21 +683,22 @@ wf_post_connect(rdpInst * inst)
 	wfInfo * wfi;
 	int width;
 	int height;
-	HDC hdc;
+	RECT rc_client, rc_wnd;
+	POINT diff;
 
 	wfi = GET_WFI(inst);
 	width = inst->settings->width;
 	height = inst->settings->height;
 
-	hdc = GetDC(NULL);
-	wfi->hdc = CreateCompatibleDC(hdc);
-	wfi->bitmap = CreateCompatibleBitmap(hdc, width, height);
-	wfi->org_bitmap = (HBITMAP)SelectObject(wfi->hdc, wfi->bitmap);
-	BitBlt(wfi->hdc, 0, 0, width, height, NULL, 0, 0, BLACKNESS);
+	wfi->backstore = wf_bitmap_new(inst, width, height);
+	BitBlt(wfi->backstore->hdc, 0, 0, width, height, NULL, 0, 0, BLACKNESS);
+	wfi->drw = wfi->backstore;
 
-	ReleaseDC(NULL, hdc);
-
-	MoveWindow(wfi->hwnd, 0, 0, width, height, FALSE);
+	GetClientRect(wfi->hwnd, &rc_client);
+	GetWindowRect(wfi->hwnd, &rc_wnd);
+	diff.x = (rc_wnd.right - rc_wnd.left) - rc_client.right;
+	diff.y = (rc_wnd.bottom - rc_wnd.top) - rc_client.bottom;
+	MoveWindow(wfi->hwnd, rc_wnd.left, rc_wnd.top, width + diff.x, height + diff.y, FALSE);
 	ShowWindow(wfi->hwnd, SW_SHOWNORMAL);
 	UpdateWindow(wfi->hwnd);
 
@@ -683,12 +727,10 @@ wf_uninit(rdpInst * inst)
 
 	wfi = GET_WFI(inst);
 	CloseWindow(wfi->hwnd);
-	if (wfi->hdc)
+	wf_bitmap_free(wfi->backstore);
+	if (wfi->colourmap != 0)
 	{
-		SelectObject(wfi->hdc, wfi->org_bitmap);
-		DeleteObject(wfi->bitmap);
-		DeleteDC(wfi->hdc);
-	}
-	
+		free(wfi->colourmap);
+	}	
 	free(wfi);
 }
