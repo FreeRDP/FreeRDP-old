@@ -34,59 +34,92 @@ LRESULT CALLBACK
 wf_event_proc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 {
 	wfInfo * wfi;
+	LONG ptr;
 	HDC hdc;
 	PAINTSTRUCT ps;
 
-	wfi = (wfInfo *) GetWindowLongPtr(hWnd, GWLP_USERDATA);
+	ptr = GetWindowLongPtr(hWnd, GWLP_USERDATA);
+	if (ptr == -1)
+	{
+		SetWindowLongPtr(hWnd, GWLP_USERDATA, 0);
+		DestroyWindow(hWnd);
+		return 0;
+	}
+	wfi = (wfInfo *) ptr;
 	switch(Msg)
 	{
 	case WM_DESTROY:
+		/* TODO: Should be multi-session aware */
 		PostQuitMessage(WM_QUIT);
 		break;
 
 	case WM_PAINT:
-		hdc = BeginPaint(hWnd, &ps);
-		BitBlt(hdc, ps.rcPaint.left, ps.rcPaint.top,
-			ps.rcPaint.right - ps.rcPaint.left,
-			ps.rcPaint.bottom - ps.rcPaint.top,
-			wfi->backstore->hdc, ps.rcPaint.left, ps.rcPaint.top,
-			SRCCOPY);
-		EndPaint(hWnd, &ps);
+		if (wfi != NULL)
+		{
+			hdc = BeginPaint(hWnd, &ps);
+			BitBlt(hdc, ps.rcPaint.left, ps.rcPaint.top,
+				ps.rcPaint.right - ps.rcPaint.left,
+				ps.rcPaint.bottom - ps.rcPaint.top,
+				wfi->backstore->hdc, ps.rcPaint.left, ps.rcPaint.top,
+				SRCCOPY);
+			EndPaint(hWnd, &ps);
+		}
 		break;
 
 	case WM_LBUTTONDOWN:
-		wfi->inst->rdp_send_input(wfi->inst, RDP_INPUT_MOUSE,
-			PTRFLAGS_DOWN | PTRFLAGS_BUTTON1, X_POS, Y_POS);
+		if (wfi != NULL)
+		{
+			wfi->inst->rdp_send_input(wfi->inst, RDP_INPUT_MOUSE,
+				PTRFLAGS_DOWN | PTRFLAGS_BUTTON1, X_POS, Y_POS);
+		}
 		break;
 
 	case WM_LBUTTONUP:
-		wfi->inst->rdp_send_input(wfi->inst, RDP_INPUT_MOUSE,
-			PTRFLAGS_BUTTON1, X_POS, Y_POS);
+		if (wfi != NULL)
+		{
+			wfi->inst->rdp_send_input(wfi->inst, RDP_INPUT_MOUSE,
+				PTRFLAGS_BUTTON1, X_POS, Y_POS);
+		}
 		break;
 
 	case WM_RBUTTONDOWN:
-		wfi->inst->rdp_send_input(wfi->inst, RDP_INPUT_MOUSE,
-			PTRFLAGS_DOWN | PTRFLAGS_BUTTON2, X_POS, Y_POS);
+		if (wfi != NULL)
+		{
+			wfi->inst->rdp_send_input(wfi->inst, RDP_INPUT_MOUSE,
+				PTRFLAGS_DOWN | PTRFLAGS_BUTTON2, X_POS, Y_POS);
+		}
 		break;
 
 	case WM_RBUTTONUP:
-		wfi->inst->rdp_send_input(wfi->inst, RDP_INPUT_MOUSE,
-			PTRFLAGS_BUTTON2, X_POS, Y_POS);
+		if (wfi != NULL)
+		{
+			wfi->inst->rdp_send_input(wfi->inst, RDP_INPUT_MOUSE,
+				PTRFLAGS_BUTTON2, X_POS, Y_POS);
+		}
 		break;
 
 	case WM_MOUSEMOVE:
-		wfi->inst->rdp_send_input(wfi->inst, RDP_INPUT_MOUSE,
-			PTRFLAGS_MOVE, X_POS, Y_POS);
+		if (wfi != NULL)
+		{
+			wfi->inst->rdp_send_input(wfi->inst, RDP_INPUT_MOUSE,
+				PTRFLAGS_MOVE, X_POS, Y_POS);
+		}
 		break;
 
 	case WM_KEYDOWN:
-		wfi->inst->rdp_send_input(wfi->inst, RDP_INPUT_SCANCODE,
-			RDP_KEYPRESS, SCANCODE, 0);
+		if (wfi != NULL)
+		{
+			wfi->inst->rdp_send_input(wfi->inst, RDP_INPUT_SCANCODE,
+				RDP_KEYPRESS, SCANCODE, 0);
+		}
 		break;
 
 	case WM_KEYUP:
-		wfi->inst->rdp_send_input(wfi->inst, RDP_INPUT_SCANCODE,
-			RDP_KEYRELEASE, SCANCODE, 0);
+		if (wfi != NULL)
+		{
+			wfi->inst->rdp_send_input(wfi->inst, RDP_INPUT_SCANCODE,
+				RDP_KEYRELEASE, SCANCODE, 0);
+		}
 		break;
 
 	default:

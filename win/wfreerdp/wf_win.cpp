@@ -726,6 +726,8 @@ wf_uninit(rdpInst * inst)
 	wfInfo * wfi;
 
 	wfi = GET_WFI(inst);
+	/* Inform the main thread to destroy the window */
+	SetWindowLongPtr(wfi->hwnd, GWLP_USERDATA, -1);
 	CloseWindow(wfi->hwnd);
 	wf_bitmap_free(wfi->backstore);
 	if (wfi->colourmap != 0)
