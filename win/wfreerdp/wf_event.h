@@ -47,6 +47,7 @@ struct wf_info
 	int fgcolour;
 	RECT update_rect;
 	int update_pending;
+	HCURSOR cursor;
 };
 typedef struct wf_info wfInfo;
 

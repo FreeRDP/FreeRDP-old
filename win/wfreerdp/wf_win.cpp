@@ -31,6 +31,7 @@
 
 extern LPCTSTR g_wnd_class_name;
 extern HINSTANCE g_hInstance;
+extern HCURSOR g_default_cursor;
 
 static int
 wf_convert_rop3(int rop3)
@@ -42,15 +43,13 @@ wf_convert_rop3(int rop3)
 		case 0x05: /* ~(P | D) - DPon */
 			return NOTSRCERASE;
 		case 0x0a: /* ~P & D - DPna */
-			//XSetFunction(xfi->display, xfi->gc, GXandInverted);
-			break;
+			return 0x00220326;
 		case 0x0f: /* ~P - Pn */
 			return NOTSRCCOPY;
 		case 0x11: /* ~(S | D) - DSon */
 			return NOTSRCERASE;
 		case 0x22: /* ~S & D - DSna */
-			//XSetFunction(xfi->display, xfi->gc, GXandInverted);
-			break;
+			return 0x00220326;
 		case 0x33: /* ~S - Sn */
 			return NOTSRCCOPY;
 		case 0x44: /* S & ~D - SDna */
@@ -62,25 +61,21 @@ wf_convert_rop3(int rop3)
 		case 0x5a: /* D ^ P - DPx */
 			return SRCINVERT;
 		case 0x5f: /* ~(P & D) - DPan */
-			//XSetFunction(xfi->display, xfi->gc, GXnand);
-			break;
+			return 0x007700E6;
 		case 0x66: /* D ^ S - DSx */
 			return SRCINVERT;
 		case 0x77: /* ~(S & D) - DSan */
-			//XSetFunction(xfi->display, xfi->gc, GXnand);
-			break;
+			return 0x007700E6;
 		case 0x88: /* D & S - DSa */
 			return SRCAND;
 		case 0x99: /* ~(S ^ D) - DSxn */
-			//XSetFunction(xfi->display, xfi->gc, GXequiv);
-			break;
+			return 0x00990066;
 		case 0xa0: /* P & D - DPa */
 			return SRCAND;
 		case 0xa5: /* ~(P ^ D) - PDxn */
-			//XSetFunction(xfi->display, xfi->gc, GXequiv);
-			break;
+			return 0x00990066;
 		case 0xaa: /* D - D */
-			break;
+			return 0x00AA0029;
 		case 0xaf: /* ~P | D - DPno */
 			return MERGEPAINT;
 		case 0xbb: /* ~S | D - DSno */
@@ -88,15 +83,13 @@ wf_convert_rop3(int rop3)
 		case 0xcc: /* S - S */
 			return SRCCOPY;
 		case 0xdd: /* S | ~D - SDno */
-			//XSetFunction(xfi->display, xfi->gc, GXorReverse);
-			break;
+			return 0x00DD0228;
 		case 0xee: /* D | S - DSo */
 			return SRCPAINT;
 		case 0xf0: /* P - P */
 			return SRCCOPY;
 		case 0xf5: /* P | ~D - PDno */
-			//XSetFunction(xfi->display, xfi->gc, GXorReverse);
-			break;
+			return 0x00DD0228;
 		case 0xfa: /* P | D - DPo */
 			return SRCPAINT;
 		case 0xff: /* 1 - 1 */
@@ -223,15 +216,9 @@ l_ui_create_bitmap(struct rdp_inst * inst, int width, int height, uint8 * data)
 	struct wf_bitmap * bm;
 	BITMAPINFO bmi = {0};
 	uint8 * cdata;
-	HDC hdc;
 
 	wfi = GET_WFI(inst);
-	bm = (struct wf_bitmap *) malloc(sizeof(struct wf_bitmap));
-	hdc = GetDC(NULL);
-	bm->hdc = CreateCompatibleDC(hdc);
-	bm->bitmap = CreateCompatibleBitmap(hdc, width, height);
-	ReleaseDC(NULL, hdc);
-	bm->org_bitmap = (HBITMAP)SelectObject(bm->hdc, bm->bitmap);
+	bm = wf_bitmap_new(inst, width, height);
 	bmi.bmiHeader.biSize = sizeof(BITMAPINFO);
 	bmi.bmiHeader.biWidth = width;
 	bmi.bmiHeader.biHeight = height;
@@ -251,13 +238,7 @@ l_ui_create_bitmap(struct rdp_inst * inst, int width, int height, uint8 * data)
 static void
 l_ui_destroy_bitmap(struct rdp_inst * inst, RD_HBITMAP bmp)
 {
-	struct wf_bitmap * bm;
-
-	bm = (struct wf_bitmap *) bmp;
-	SelectObject(bm->hdc, bm->org_bitmap);
-	DeleteObject(bm->bitmap);
-	DeleteDC(bm->hdc);
-	free(bm);
+	wf_bitmap_free((struct wf_bitmap *) bmp);
 }
 
 static void
@@ -270,7 +251,7 @@ l_ui_paint_bitmap(struct rdp_inst * inst, int x, int y, int cx, int cy, int widt
 	wfi = GET_WFI(inst);
 	bm = (struct wf_bitmap *) l_ui_create_bitmap(inst, width, height, data);
 	BitBlt(wfi->drw->hdc, x, y, cx, cy, bm->hdc, 0, 0, SRCCOPY);
-	l_ui_destroy_bitmap(inst, (RD_HBITMAP)bm);
+	wf_bitmap_free(bm);
 	wf_invalidate_region(wfi, x, y, x + cx, y + cy);
 }
 
@@ -481,7 +462,8 @@ l_ui_set_cursor(struct rdp_inst * inst, RD_HCURSOR cursor)
 	wfInfo * wfi;
 
 	wfi = GET_WFI(inst);
-	//TODO
+	wfi->cursor = (HCURSOR)cursor;
+	PostMessage(wfi->hwnd, WM_SETCURSOR, 0, 0);
 }
 
 static void
@@ -490,18 +472,19 @@ l_ui_destroy_cursor(struct rdp_inst * inst, RD_HCURSOR cursor)
 	wfInfo * wfi;
 
 	wfi = GET_WFI(inst);
-	//TODO
+	if (wfi->cursor == (HCURSOR)cursor)
+	{
+		wfi->cursor = g_default_cursor;
+		PostMessage(wfi->hwnd, WM_SETCURSOR, 0, 0);
+	}
+	DestroyCursor((HCURSOR)cursor);
 }
 
 static RD_HCURSOR
 l_ui_create_cursor(struct rdp_inst * inst, uint32 x, uint32 y,
 	int width, int height, uint8 * andmask, uint8 * xormask, int bpp)
 {
-	wfInfo * wfi;
-
-	wfi = GET_WFI(inst);
-	//TODO
-	return NULL;
+	return (RD_HCURSOR) CreateCursor(g_hInstance, x, y, width, height, andmask, xormask);
 }
 
 static void
@@ -510,7 +493,8 @@ l_ui_set_null_cursor(struct rdp_inst * inst)
 	wfInfo * wfi;
 
 	wfi = GET_WFI(inst);
-	//TODO
+	wfi->cursor = NULL;
+	PostMessage(wfi->hwnd, WM_SETCURSOR, 0, 0);
 }
 
 static void
@@ -519,7 +503,8 @@ l_ui_set_default_cursor(struct rdp_inst * inst)
 	wfInfo * wfi;
 
 	wfi = GET_WFI(inst);
-	//TODO
+	wfi->cursor = g_default_cursor;
+	PostMessage(wfi->hwnd, WM_SETCURSOR, 0, 0);
 }
 
 static RD_HCOLOURMAP
@@ -672,6 +657,7 @@ wf_pre_connect(rdpInst * inst, HWND hwnd)
 
 	wfi->hwnd = hwnd;
 	wfi->inst = inst;
+	wfi->cursor = g_default_cursor;
 	SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)wfi);
 
 	return 0;

@@ -33,6 +33,7 @@
 
 LPCTSTR g_wnd_class_name = L"wfreerdp";
 HINSTANCE g_hInstance;
+HCURSOR g_default_cursor;
 
 struct thread_data
 {
@@ -354,6 +355,7 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdS
 		return 1;
 	}
 	create_console();
+	g_default_cursor = LoadCursor(NULL, IDC_ARROW);
 
 	wnd_cls.cbSize        = sizeof(WNDCLASSEX);
 	wnd_cls.style         = CS_HREDRAW | CS_VREDRAW;
@@ -361,7 +363,7 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdS
 	wnd_cls.cbClsExtra    = 0;
 	wnd_cls.cbWndExtra    = 0;
 	wnd_cls.hIcon         = LoadIcon(NULL, IDI_APPLICATION);
-	wnd_cls.hCursor       = LoadCursor(NULL, IDC_ARROW);
+	wnd_cls.hCursor       = g_default_cursor;
 	wnd_cls.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
 	wnd_cls.lpszMenuName  = NULL;
 	wnd_cls.lpszClassName = g_wnd_class_name;

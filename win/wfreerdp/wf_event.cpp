@@ -26,6 +26,8 @@
 #include "freerdp.h"
 #include "wf_event.h"
 
+extern HCURSOR g_default_cursor;
+
 #define X_POS (lParam & 0xffff)
 #define Y_POS ((lParam >> 16) & 0xffff)
 #define SCANCODE ((lParam >> 16) & 0xff)
@@ -119,6 +121,17 @@ wf_event_proc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 		{
 			wfi->inst->rdp_send_input(wfi->inst, RDP_INPUT_SCANCODE,
 				RDP_KEYRELEASE, SCANCODE, 0);
+		}
+		break;
+
+	case WM_SETCURSOR:
+		if (wfi != NULL)
+		{
+			SetCursor(wfi->cursor);
+		}
+		else
+		{
+			SetCursor(g_default_cursor);
 		}
 		break;
 
