@@ -61,7 +61,6 @@ set_default_params(rdpSet * settings)
 static int
 process_params(rdpSet * settings, rdpChanMan * chan_man, int argc, char ** argv, int * pindex)
 {
-	int max;
 	char * p;
 	struct passwd * pw;
 
@@ -71,8 +70,7 @@ process_params(rdpSet * settings, rdpChanMan * chan_man, int argc, char ** argv,
 	{
 		if (pw->pw_name != 0)
 		{
-			max = sizeof(settings->username) - 1;
-			strncpy(settings->username, pw->pw_name, max);
+			strncpy(settings->username, pw->pw_name, sizeof(settings->username) - 1);
 		}
 	}
 	printf("process_params\n");
@@ -102,8 +100,8 @@ process_params(rdpSet * settings, rdpChanMan * chan_man, int argc, char ** argv,
 				printf("missing username\n");
 				return 1;
 			}
-			strncpy(settings->username, argv[*pindex], 255);
-			settings->username[255] = 0;
+			strncpy(settings->username, argv[*pindex], sizeof(settings->username) - 1);
+			settings->username[sizeof(settings->username) - 1] = 0;
 		}
 		else if (strcmp("-p", argv[*pindex]) == 0)
 		{
@@ -113,9 +111,20 @@ process_params(rdpSet * settings, rdpChanMan * chan_man, int argc, char ** argv,
 				printf("missing password\n");
 				return 1;
 			}
-			strncpy(settings->password, argv[*pindex], 63);
-			settings->password[63] = 0;
+			strncpy(settings->password, argv[*pindex], sizeof(settings->password) - 1);
+			settings->password[sizeof(settings->password) - 1] = 0;
 			settings->autologin = 1;
+		}
+		else if (strcmp("-d", argv[*pindex]) == 0)
+		{
+			*pindex = *pindex + 1;
+			if (*pindex == argc)
+			{
+				printf("missing domain\n");
+				return 1;
+			}
+			strncpy(settings->domain, argv[*pindex], sizeof(settings->domain) - 1);
+			settings->domain[sizeof(settings->domain) - 1] = 0;
 		}
 		else if (strcmp("-g", argv[*pindex]) == 0)
 		{
@@ -190,8 +199,8 @@ process_params(rdpSet * settings, rdpChanMan * chan_man, int argc, char ** argv,
 		}
 		else
 		{
-			strncpy(settings->server, argv[*pindex], 63);
-			settings->server[63] = 0;
+			strncpy(settings->server, argv[*pindex], sizeof(settings->server) - 1);
+			settings->server[sizeof(settings->server) - 1] = 0;
 			p = strchr(settings->server, ':');
 			if (p)
 			{
