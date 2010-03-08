@@ -192,6 +192,12 @@ process_params(rdpSet * settings, rdpChanMan * chan_man, int argc, char ** argv,
 		{
 			strncpy(settings->server, argv[*pindex], 63);
 			settings->server[63] = 0;
+			p = strchr(settings->server, ':');
+			if (p)
+			{
+				*p = 0;
+				settings->tcp_port_rdp = atoi(p + 1);
+			}
 			/* server is the last argument for the current session. arguments
 			   followed will be parsed for the next session. */
 			*pindex = *pindex + 1;
