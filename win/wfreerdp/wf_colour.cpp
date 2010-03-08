@@ -140,8 +140,8 @@ set_pixel(uint8 * data, int x, int y, int width, int height, int bpp, int pixel)
 	}
 }
 
-static int
-wf_colour(wfInfo * wfi, int in_colour, int in_bpp)
+int
+wf_colour_convert(wfInfo * wfi, int in_colour, int in_bpp)
 {
 	int alpha;
 	int red;
@@ -170,9 +170,9 @@ wf_colour(wfInfo * wfi, int in_colour, int in_bpp)
 			break;
 		case 8:
 			in_colour &= 0xff;
-			blue = *(wfi->colourmap + in_colour * 4);
-			green = *(wfi->colourmap + in_colour * 4 + 1);
-			red = *(wfi->colourmap + in_colour * 4 + 2);
+			blue = *(wfi->colourmap + in_colour * 3);
+			green = *(wfi->colourmap + in_colour * 3 + 1);
+			red = *(wfi->colourmap + in_colour * 3 + 2);
 			break;
 		case 1:
 			if (in_colour != 0)
@@ -190,15 +190,9 @@ wf_colour(wfInfo * wfi, int in_colour, int in_bpp)
 	return rv;
 }
 
-int
-wf_colour_convert(wfInfo * wfi, rdpSet * settings, int colour)
-{
-	return wf_colour(wfi, colour, settings->server_depth);
-}
-
 uint8 *
-wf_image_convert(wfInfo * wfi, rdpSet * settings, int width, int height,
-	uint8 * in_data)
+wf_image_convert(wfInfo * wfi, int width, int height, int bpp,
+	int reverse, uint8 * in_data, uint8 * out_data)
 {
 	int red;
 	int green;
@@ -206,36 +200,48 @@ wf_image_convert(wfInfo * wfi, rdpSet * settings, int width, int height,
 	int indexx;
 	int indexy;
 	int pixel;
-	uint8 * out_data;
+	int bytes_per_line;
 	uint8 * src8;
 	uint16 * src16;
 	uint8 * dst8;
 
-	if (settings->server_depth == 24)
+	if (out_data == NULL)
 	{
-		out_data = (uint8 *) malloc(width * height * 4);
+		out_data = (uint8 *) malloc(width * height * 3);
+	}
+	bytes_per_line = width * 3;
+	bytes_per_line = ((bytes_per_line + 3) / 4) * 4;
+	if (bpp == 32)
+	{
 		src8 = in_data;
-		dst8 = out_data;
-		for (indexy = height - 1; indexy >= 0; indexy--)
+		for (indexy = 0; indexy < height; indexy++)
 		{
-			dst8 = out_data + (indexy * width * 4);
+			dst8 = out_data + ((reverse ? height - indexy - 1 : indexy) * bytes_per_line);
 			for (indexx = 0; indexx < width; indexx++)
 			{
 				*dst8++ = *src8++;
 				*dst8++ = *src8++;
 				*dst8++ = *src8++;
-				*dst8++ = 0;
+				src8++;
 			}
 		}
-		return out_data;
 	}
-	else if (settings->server_depth == 16)
+	else if (bpp == 24)
 	{
-		out_data = (uint8 *) malloc(width * height * 4);
-		src16 = (uint16 *) in_data;
-		for (indexy = height - 1; indexy >= 0; indexy--)
+		src8 = in_data;
+		for (indexy = 0; indexy < height; indexy++)
 		{
-			dst8 = out_data + (indexy * width * 4);
+			dst8 = out_data + ((reverse ? height - indexy - 1 : indexy) * bytes_per_line);
+			memcpy(dst8, src8, width * 3);
+			src8 += width * 3;
+		}
+	}
+	else if (bpp == 16)
+	{
+		src16 = (uint16 *) in_data;
+		for (indexy = 0; indexy < height; indexy++)
+		{
+			dst8 = out_data + ((reverse ? height - indexy - 1 : indexy) * bytes_per_line);
 			for (indexx = 0; indexx < width; indexx++)
 			{
 				pixel = *src16;
@@ -245,18 +251,15 @@ wf_image_convert(wfInfo * wfi, rdpSet * settings, int width, int height,
 				*dst8++ = blue;
 				*dst8++ = green;
 				*dst8++ = red;
-				*dst8++ = 0;
 			}
 		}
-		return out_data;
 	}
-	else if (settings->server_depth == 15)
+	else if (bpp == 15)
 	{
-		out_data = (uint8 *) malloc(width * height * 4);
 		src16 = (uint16 *) in_data;
-		for (indexy = height - 1; indexy >= 0; indexy--)
+		for (indexy = 0; indexy < height; indexy++)
 		{
-			dst8 = out_data + (indexy * width * 4);
+			dst8 = out_data + ((reverse ? height - indexy - 1 : indexy) * bytes_per_line);
 			for (indexx = 0; indexx < width; indexx++)
 			{
 				pixel = *src16;
@@ -266,40 +269,36 @@ wf_image_convert(wfInfo * wfi, rdpSet * settings, int width, int height,
 				*dst8++ = blue;
 				*dst8++ = green;
 				*dst8++ = red;
-				*dst8++ = 0;
 			}
 		}
-		return out_data;
 	}
-	else if (settings->server_depth == 8)
+	else if (bpp == 8)
 	{
-		out_data = (uint8 *) malloc(width * height * 4);
 		src8 = in_data;
-		for (indexy = height - 1; indexy >= 0; indexy--)
+		for (indexy = 0; indexy < height; indexy++)
 		{
-			dst8 = out_data + (indexy * width * 4);
+			dst8 = out_data + ((reverse ? height - indexy - 1 : indexy) * bytes_per_line);
 			for (indexx = 0; indexx < width; indexx++)
 			{
 				pixel = *src8++;
-				memcpy(dst8, wfi->colourmap + pixel * 4, 4);
-				dst8 += 4;
+				memcpy(dst8, wfi->colourmap + pixel * 3, 3);
+				dst8 += 3;
 			}
 		}
-		return out_data;
 	}
-	return in_data;
+	return out_data;
 }
 
 RD_HCOLOURMAP
-wf_create_colourmap(wfInfo * wfi, rdpSet * settings, RD_COLOURMAP * colours)
+wf_create_colourmap(wfInfo * wfi, RD_COLOURMAP * colours)
 {
 	uint8 * colourmap;
 	uint8 * dst;
 	int index;
 	int count;
 
-	colourmap = (uint8 *) malloc(4 * 256);
-	memset(colourmap, 0, 4 * 256);
+	colourmap = (uint8 *) malloc(3 * 256);
+	memset(colourmap, 0, 3 * 256);
 	count = colours->ncolours;
 	if (count > 256)
 	{
@@ -311,13 +310,12 @@ wf_create_colourmap(wfInfo * wfi, rdpSet * settings, RD_COLOURMAP * colours)
 		*dst++ = colours->colours[index].blue;
 		*dst++ = colours->colours[index].green;
 		*dst++ = colours->colours[index].red;
-		*dst++ = 0;
 	}
 	return (RD_HCOLOURMAP) colourmap;
 }
 
 int
-wf_set_colourmap(wfInfo * wfi, rdpSet * settings, RD_HCOLOURMAP map)
+wf_set_colourmap(wfInfo * wfi, RD_HCOLOURMAP map)
 {
 	if (wfi->colourmap != NULL)
 	{
@@ -333,20 +331,27 @@ wf_glyph_convert(wfInfo * wfi, int width, int height, uint8 * data)
 	uint8 * cdata;
 	uint8 * src;
 	uint8 * dst;
+	int src_bytes_per_row;
+	int dst_bytes_per_row;
 	int indexx;
 	int indexy;
 
-	cdata = (uint8 *) malloc(width * height);
+	src_bytes_per_row = (width + 7) / 8;
+	dst_bytes_per_row = src_bytes_per_row + (src_bytes_per_row % 2);
+	cdata = (uint8 *) malloc(dst_bytes_per_row * height);
 	src = data;
-	for (indexy = height - 1; indexy >= 0; indexy--)
+	for (indexy = 0; indexy < height; indexy++)
 	{
-		dst = cdata + indexy * width;
-		for (indexx = 0; indexx < width; indexx++)
+		dst = cdata + indexy * dst_bytes_per_row;
+		for (indexx = 0; indexx < dst_bytes_per_row; indexx++)
 		{
-			*dst++ = ((*src & (0x80 >> (indexx % 8))) ? 1 : 0);
-			if ((indexx % 8) == 7 || indexx == width - 1)
+			if (indexx < src_bytes_per_row)
 			{
-				src++;
+				*dst++ = *src++;
+			}
+			else
+			{
+				*dst++ = 0;
 			}
 		}
 	}
@@ -354,33 +359,20 @@ wf_glyph_convert(wfInfo * wfi, int width, int height, uint8 * data)
 }
 
 uint8 *
-wf_glyph_generate(wfInfo * wfi, int width, int height, uint8 * glyph)
+wf_cursor_mask_convert(wfInfo * wfi, int width, int height, uint8 * data)
 {
+	int indexy;
+	uint8 * cdata;
 	uint8 * src;
-	uint8 * data;
 	uint8 * dst;
-	int index;
 
-	src = (uint8 *) glyph;
-	data = (uint8 *) malloc(width * height * 4);
-	dst = data;
-	for (index = width * height; index > 0; index--)
+	cdata = (uint8 *) malloc(width * height / 8);
+	src = data;
+	for (indexy = height - 1; indexy >= 0; indexy--)
 	{
-		if (*src)
-		{
-			*dst++ = ((wfi->fgcolour >> 16) & 0xff);
-			*dst++ = ((wfi->fgcolour >> 8) & 0xff);
-			*dst++ = (wfi->fgcolour & 0xff);
-			*dst++ = 0;
-		}
-		else
-		{
-			*dst++ = ((wfi->bgcolour >> 16) & 0xff);
-			*dst++ = ((wfi->bgcolour >> 8) & 0xff);
-			*dst++ = (wfi->bgcolour & 0xff);
-			*dst++ = 0;
-		}
-		src++;
+		dst = cdata + (indexy * width / 8);
+		memcpy(dst, src, width / 8);
+		src += width / 8;
 	}
-	return data;
+	return cdata;
 }
