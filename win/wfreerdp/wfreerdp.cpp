@@ -223,6 +223,10 @@ run_wfreerdp(LPVOID lpParam)
 		       inst->version, inst->size);
 		return 1;
 	}
+
+	inst->settings->keyboard_layout = (int)GetKeyboardLayout(0) & 0x0000FFFF;
+	printf("keyboard_layout: 0x%08X\n", inst->settings->keyboard_layout);
+
 	if (wf_pre_connect(inst, data->hwnd) != 0)
 	{
 		printf("run_wfreerdp: wf_pre_connect failed\n");
@@ -234,7 +238,6 @@ run_wfreerdp(LPVOID lpParam)
 		return 1;
 	}*/
 	/* call connect */
-	printf("keyboard_layout: %X\n", inst->settings->keyboard_layout);
 	if (inst->rdp_connect(inst) != 0)
 	{
 		printf("run_wfreerdp: inst->rdp_connect failed\n");
