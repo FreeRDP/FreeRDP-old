@@ -541,11 +541,11 @@ unsigned int
 detect_and_load_keyboard()
 {
 	int i;
-	char* pch;
-	char* beg;
-	char* end;
 
 	char xkbfile[256];
+	char* xkbfileEnd;
+	char* kbd;
+	int kbdlen;
 	unsigned int keyboard_layout = 0;
 	unsigned int keyboardLayoutID = 0;
 
@@ -596,23 +596,21 @@ detect_and_load_keyboard()
 			break;
 		}
 
-	beg = xkbfile;
-	pch = beg + strlen(xkbfile);
+	kbd = xkbfile;
+	xkbfileEnd = xkbfile + strlen(xkbfile);
 
 	do
 	{
 		// Multiple maps are separated by '+'
-		end = strcspn(beg + 1, "+") + beg + 1;
-
-		strncpy(xkbfile, beg, end - beg);
-		xkbfile[end - beg] = '\0';
+		kbdlen = strcspn(kbd + 1, "+") + 1;
+		kbd[kbdlen] = '\0';
 
 		// Load keyboard map
-		keymapLoaded += load_keyboard(xkbfile);
+		keymapLoaded += load_keyboard(kbd);
 
-		beg = end + 1;
+		kbd += kbdlen + 1;
 	}
-	while(pch > end);
+	while(kbd < xkbfileEnd);
 
 	if(keymapLoaded <= 0)
 	{

@@ -33,6 +33,7 @@
 
 LPCTSTR g_wnd_class_name = L"wfreerdp";
 HINSTANCE g_hInstance;
+HCURSOR g_default_cursor;
 
 struct thread_data
 {
@@ -222,6 +223,10 @@ run_wfreerdp(LPVOID lpParam)
 		       inst->version, inst->size);
 		return 1;
 	}
+
+	inst->settings->keyboard_layout = (int)GetKeyboardLayout(0) & 0x0000FFFF;
+	printf("keyboard_layout: 0x%08X\n", inst->settings->keyboard_layout);
+
 	if (wf_pre_connect(inst, data->hwnd) != 0)
 	{
 		printf("run_wfreerdp: wf_pre_connect failed\n");
@@ -233,7 +238,6 @@ run_wfreerdp(LPVOID lpParam)
 		return 1;
 	}*/
 	/* call connect */
-	printf("keyboard_layout: %X\n", inst->settings->keyboard_layout);
 	if (inst->rdp_connect(inst) != 0)
 	{
 		printf("run_wfreerdp: inst->rdp_connect failed\n");
@@ -354,6 +358,7 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdS
 		return 1;
 	}
 	create_console();
+	g_default_cursor = LoadCursor(NULL, IDC_ARROW);
 
 	wnd_cls.cbSize        = sizeof(WNDCLASSEX);
 	wnd_cls.style         = CS_HREDRAW | CS_VREDRAW;
@@ -361,7 +366,7 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdS
 	wnd_cls.cbClsExtra    = 0;
 	wnd_cls.cbWndExtra    = 0;
 	wnd_cls.hIcon         = LoadIcon(NULL, IDI_APPLICATION);
-	wnd_cls.hCursor       = LoadCursor(NULL, IDC_ARROW);
+	wnd_cls.hCursor       = g_default_cursor;
 	wnd_cls.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
 	wnd_cls.lpszMenuName  = NULL;
 	wnd_cls.lpszClassName = g_wnd_class_name;

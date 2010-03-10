@@ -43,10 +43,11 @@ struct wf_info
 	struct wf_bitmap * backstore;
 	struct wf_bitmap * drw;
 	uint8 * colourmap;
-	int bgcolour;
-	int fgcolour;
 	RECT update_rect;
 	int update_pending;
+	HCURSOR cursor;
+	HBRUSH brush;
+	HBRUSH org_brush;
 };
 typedef struct wf_info wfInfo;
 

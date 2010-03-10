@@ -61,7 +61,6 @@ set_default_params(rdpSet * settings)
 static int
 process_params(rdpSet * settings, rdpChanMan * chan_man, int argc, char ** argv, int * pindex)
 {
-	int max;
 	char * p;
 	struct passwd * pw;
 
@@ -71,13 +70,14 @@ process_params(rdpSet * settings, rdpChanMan * chan_man, int argc, char ** argv,
 	{
 		if (pw->pw_name != 0)
 		{
-			max = sizeof(settings->username) - 1;
-			strncpy(settings->username, pw->pw_name, max);
+			strncpy(settings->username, pw->pw_name, sizeof(settings->username) - 1);
 		}
 	}
 	printf("process_params\n");
 	if (argc < *pindex + 1)
 	{
+		if (*pindex == 1)
+			printf("no parameters specified\n");
 		return 1;
 	}
 	while (*pindex < argc)
@@ -87,6 +87,7 @@ process_params(rdpSet * settings, rdpChanMan * chan_man, int argc, char ** argv,
 			*pindex = *pindex + 1;
 			if (*pindex == argc)
 			{
+				printf("missing server depth\n");
 				return 1;
 			}
 			settings->server_depth = atoi(argv[*pindex]);
@@ -96,27 +97,41 @@ process_params(rdpSet * settings, rdpChanMan * chan_man, int argc, char ** argv,
 			*pindex = *pindex + 1;
 			if (*pindex == argc)
 			{
+				printf("missing username\n");
 				return 1;
 			}
-			strncpy(settings->username, argv[*pindex], 255);
-			settings->username[255] = 0;
+			strncpy(settings->username, argv[*pindex], sizeof(settings->username) - 1);
+			settings->username[sizeof(settings->username) - 1] = 0;
 		}
 		else if (strcmp("-p", argv[*pindex]) == 0)
 		{
 			*pindex = *pindex + 1;
 			if (*pindex == argc)
 			{
+				printf("missing password\n");
 				return 1;
 			}
-			strncpy(settings->password, argv[*pindex], 63);
-			settings->password[63] = 0;
+			strncpy(settings->password, argv[*pindex], sizeof(settings->password) - 1);
+			settings->password[sizeof(settings->password) - 1] = 0;
 			settings->autologin = 1;
+		}
+		else if (strcmp("-d", argv[*pindex]) == 0)
+		{
+			*pindex = *pindex + 1;
+			if (*pindex == argc)
+			{
+				printf("missing domain\n");
+				return 1;
+			}
+			strncpy(settings->domain, argv[*pindex], sizeof(settings->domain) - 1);
+			settings->domain[sizeof(settings->domain) - 1] = 0;
 		}
 		else if (strcmp("-g", argv[*pindex]) == 0)
 		{
 			*pindex = *pindex + 1;
 			if (*pindex == argc)
 			{
+				printf("missing width\n");
 				return 1;
 			}
 			settings->width = strtol(argv[*pindex], &p, 10);
@@ -127,7 +142,7 @@ process_params(rdpSet * settings, rdpChanMan * chan_man, int argc, char ** argv,
 			if ((settings->width < 16) || (settings->height < 16) ||
 				(settings->width > 4096) || (settings->height > 4096))
 			{
-				printf("invalid parameter\n");
+				printf("invalid dimensions\n");
 				return 1;
 			}
 		}
@@ -136,6 +151,7 @@ process_params(rdpSet * settings, rdpChanMan * chan_man, int argc, char ** argv,
 			*pindex = *pindex + 1;
 			if (*pindex == argc)
 			{
+				printf("missing port number\n");
 				return 1;
 			}
 			settings->tcp_port_rdp = atoi(argv[*pindex]);
@@ -149,6 +165,7 @@ process_params(rdpSet * settings, rdpChanMan * chan_man, int argc, char ** argv,
 			*pindex = *pindex + 1;
 			if (*pindex == argc)
 			{
+				printf("missing performance flag\n");
 				return 1;
 			}
 			if (strncmp("m", argv[*pindex], 1) == 0) /* modem */
@@ -175,14 +192,21 @@ process_params(rdpSet * settings, rdpChanMan * chan_man, int argc, char ** argv,
 			*pindex = *pindex + 1;
 			if (*pindex == argc)
 			{
+				printf("missing plugin name\n");
 				return 1;
 			}
 			chan_man_load_plugin(chan_man, settings, argv[*pindex]);
 		}
 		else
 		{
-			strncpy(settings->server, argv[*pindex], 63);
-			settings->server[63] = 0;
+			strncpy(settings->server, argv[*pindex], sizeof(settings->server) - 1);
+			settings->server[sizeof(settings->server) - 1] = 0;
+			p = strchr(settings->server, ':');
+			if (p)
+			{
+				*p = 0;
+				settings->tcp_port_rdp = atoi(p + 1);
+			}
 			/* server is the last argument for the current session. arguments
 			   followed will be parsed for the next session. */
 			*pindex = *pindex + 1;
@@ -190,6 +214,7 @@ process_params(rdpSet * settings, rdpChanMan * chan_man, int argc, char ** argv,
 		}
 		*pindex = *pindex + 1;
 	}
+	printf("missing server name\n");
 	return 1;
 }
 
@@ -381,6 +406,8 @@ main(int argc, char ** argv)
 		if (rv == 0)
 		{
 			g_thread_count++;
+			printf("starting thread %d to %s:%d\n", g_thread_count,
+				data->settings->server, data->settings->tcp_port_rdp);
 			pthread_create(&thread, 0, thread_func, data);
 		}
 		else
