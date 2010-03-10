@@ -19,3 +19,52 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#ifndef __RDPDR_H
+#define __RDPDR_H
+
+#include "irp.h"
+#include "devman.h"
+#include "types.h"
+#include "types_ui.h"
+#include "vchan.h"
+#include "chan_stream.h"
+#include "chan_plugin.h"
+
+#define LOG_LEVEL 1
+#define LLOG(_level, _args) \
+  do { if (_level < LOG_LEVEL) { printf _args ; } } while (0)
+#define LLOGLN(_level, _args) \
+  do { if (_level < LOG_LEVEL) { printf _args ; printf("\n"); } } while (0)
+
+struct data_in_item
+{
+	struct data_in_item * next;
+	char * data;
+	int data_size;
+};
+
+typedef struct rdpdr_plugin rdpdrPlugin;
+struct rdpdr_plugin
+{
+	rdpChanPlugin chan_plugin;
+
+	CHANNEL_ENTRY_POINTS ep;
+	CHANNEL_DEF channel_def[2];
+	uint32 open_handle[2];
+	char * data_in[2];
+	int data_in_size[2];
+	int data_in_read[2];
+	struct wait_obj * term_event;
+	struct wait_obj * data_in_event;
+	struct data_in_item * volatile list_head;
+	struct data_in_item * volatile list_tail;
+	/* for locking the linked list */
+	pthread_mutex_t * mutex;
+	volatile int thread_status;
+
+	uint16 versionMinor;
+	uint16 clientID;
+	DEVMAN* devman;
+};
+
+#endif /* __RDPDR_H */

@@ -24,9 +24,7 @@
 
 #include "types_ui.h"
 
-typedef int (*PDEVICE_SERVICE_ENTRY)(void);
-
-typedef struct service
+struct _SERVICE
 {
 	uint32 type;
 	int(*create) (void);
@@ -34,38 +32,60 @@ typedef struct service
 	int(*read) (void);
 	int(*write) (void);
 	int(*control) (void);
-}
-SERVICE;
+};
+typedef struct _SERVICE SERVICE;
+typedef SERVICE * PSERVICE;
 
-typedef struct device
+struct _DEVICE
 {
 	uint32 id;
+        char* name;
 	void* info;
 	void* prev;
 	void* next;
 	SERVICE* service;
-}
-DEVICE;
+};
+typedef struct _DEVICE DEVICE;
+typedef DEVICE * PDEVICE;
 
-typedef struct devman
+struct _DEVMAN
 {
 	int count; /* device count */
 	DEVICE* idev; /* iterator device */
 	DEVICE* head; /* head device in linked list */
 	DEVICE* tail; /* tail device in linked list */
-}
-DEVMAN;
+        void* pDevmanEntryPoints; /* entry points for device services */
+};
+typedef struct _DEVMAN DEVMAN;
+typedef DEVMAN * PDEVMAN;
+
+typedef PSERVICE (*PDEVMAN_REGISTER_SERVICE)(PDEVMAN devman);
+typedef int (*PDEVMAN_UNREGISTER_SERVICE)(PDEVMAN devman, PSERVICE srv);
+typedef PDEVICE (*PDEVMAN_REGISTER_DEVICE)(PDEVMAN devman, PSERVICE srv, char* name);
+typedef int (*PDEVMAN_UNREGISTER_DEVICE)(PDEVMAN devman, PDEVICE dev);
+
+struct _DEVMAN_ENTRY_POINTS
+{
+    PDEVMAN_REGISTER_SERVICE pDevmanRegisterService;
+    PDEVMAN_UNREGISTER_SERVICE pDevmanUnregisterService;
+    PDEVMAN_REGISTER_DEVICE pDevmanRegisterDevice;
+    PDEVMAN_UNREGISTER_DEVICE pDevmanUnregisterDevice;
+};
+typedef struct _DEVMAN_ENTRY_POINTS DEVMAN_ENTRY_POINTS;
+typedef DEVMAN_ENTRY_POINTS * PDEVMAN_ENTRY_POINTS;
+
+typedef int (*PDEVICE_SERVICE_ENTRY)(PDEVMAN, PDEVMAN_ENTRY_POINTS);
 
 DEVMAN*
 devman_new();
 int
 devman_free(DEVMAN* devman);
 SERVICE*
-devman_register_service(DEVMAN* devman, uint32 type);
+devman_register_service(DEVMAN* devman);
 int
 devman_unregister_service(DEVMAN* devman, SERVICE* srv);
 DEVICE*
-devman_register_device(DEVMAN* devman, SERVICE* srv);
+devman_register_device(DEVMAN* devman, SERVICE* srv, char* name);
 int
 devman_unregister_device(DEVMAN* devman, DEVICE* dev);
 void

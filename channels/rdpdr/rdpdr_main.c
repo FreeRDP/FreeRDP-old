@@ -38,43 +38,7 @@
 #include "chan_plugin.h"
 #include "wait_obj.h"
 #include "constants_rdpdr.h"
-
-#define LOG_LEVEL 1
-#define LLOG(_level, _args) \
-  do { if (_level < LOG_LEVEL) { printf _args ; } } while (0)
-#define LLOGLN(_level, _args) \
-  do { if (_level < LOG_LEVEL) { printf _args ; printf("\n"); } } while (0)
-
-struct data_in_item
-{
-	struct data_in_item * next;
-	char * data;
-	int data_size;
-};
-
-typedef struct rdpdr_plugin rdpdrPlugin;
-struct rdpdr_plugin
-{
-	rdpChanPlugin chan_plugin;
-
-	CHANNEL_ENTRY_POINTS ep;
-	CHANNEL_DEF channel_def[2];
-	uint32 open_handle[2];
-	char * data_in[2];
-	int data_in_size[2];
-	int data_in_read[2];
-	struct wait_obj * term_event;
-	struct wait_obj * data_in_event;
-	struct data_in_item * volatile list_head;
-	struct data_in_item * volatile list_tail;
-	/* for locking the linked list */
-	pthread_mutex_t * mutex;
-	volatile int thread_status;
-
-	uint16 versionMinor;
-	uint16 clientID;
-	DEVMAN* devman;
-};
+#include "rdpdr_capabilities.h"
 
 /* called by main thread
    add item to linked list and inform worker thread that there is data */
@@ -111,8 +75,9 @@ rdpdr_process_server_announce_request(rdpdrPlugin * plugin, char* data, int data
 	plugin->versionMinor = GET_UINT16(data, 2); /* versionMinor */
 	plugin->clientID = GET_UINT32(data, 4); /* clientID */
 
-	LLOGLN(0, ("Version Minor: %d\n", plugin->versionMinor));
+	LLOGLN(0, ("Version Minor: %d", plugin->versionMinor));
 
+#if 0
 	switch(plugin->versionMinor)
 	{
 		case 0x000C:
@@ -135,6 +100,7 @@ rdpdr_process_server_announce_request(rdpdrPlugin * plugin, char* data, int data
 			LLOGLN(0, ("Windows 2000"));
 			break;
 	}
+#endif
 }
 
 static int
@@ -162,31 +128,46 @@ rdpdr_send_client_announce_reply(rdpdrPlugin * plugin)
 	return 0;
 }
 
+static void
+rdpdr_process_server_clientid_confirm(rdpdrPlugin * plugin, char* data, int data_size)
+{
+	uint16 versionMinor;
+	uint32 clientID;
+
+	/* versionMajor, must be 1 */
+	versionMinor = GET_UINT16(data, 2); /* versionMinor */
+	clientID = GET_UINT32(data, 4); /* clientID */
+
+	if (clientID != plugin->clientID)
+		plugin->clientID = clientID;
+
+	if (versionMinor != plugin->versionMinor)
+		plugin->versionMinor = versionMinor;
+}
+
 static int
 rdpdr_send_client_name_request(rdpdrPlugin * plugin)
 {
-	char* out_data;
-	int out_data_size;
+	char* data;
+	int size;
 	uint32 error;
 	uint32 computerNameLen;
 
-	computerNameLen = 1;
-	out_data_size = 16 + computerNameLen * 2;
-	out_data = malloc(out_data_size);
+	computerNameLen = 5;
+	size = 16 + computerNameLen * 2;
+	data = malloc(size);
 
-	SET_UINT16(out_data, 0, RDPDR_COMPONENT_TYPE_CORE);
-	SET_UINT16(out_data, 2, PAKID_CORE_CLIENT_NAME);
+	SET_UINT16(data, 0, RDPDR_COMPONENT_TYPE_CORE);
+	SET_UINT16(data, 2, PAKID_CORE_CLIENT_NAME);
 
-	SET_UINT32(out_data, 4, 1); // unicodeFlag, 0 for ASCII and 1 for Unicode
-	SET_UINT32(out_data, 8, 0); // codePage, must be set to zero
+	SET_UINT32(data, 4, 1); // unicodeFlag, 0 for ASCII and 1 for Unicode
+	SET_UINT32(data, 8, 0); // codePage, must be set to zero
 
-	/* this part is a hardcoded test, while waiting for a unicode string output function */
-	/* we also need to figure out a way of passing settings from the freerdp core */
+	SET_UINT32(data, 12, computerNameLen * 2); /* computerNameLen */
+	set_wstr(&data[16], size - 16, "comp", computerNameLen); /* computerName */
 
-	SET_UINT32(out_data, 12, computerNameLen); /* computerNameLen */
-	SET_UINT16(out_data, 16, 0x0041); /* computerName */
-
-	error = plugin->ep.pVirtualChannelWrite(plugin->open_handle[0], out_data, out_data_size, out_data);
+	error = plugin->ep.pVirtualChannelWrite(plugin->open_handle[0],
+				data, size, NULL);
 
 	if (error != CHANNEL_RC_OK)
 	{
@@ -205,15 +186,17 @@ rdpdr_send_device_list_announce_request(rdpdrPlugin * plugin)
 	int out_data_size;
 
 	uint32 error;
-	int offset = 0;
-	DEVICE* pdev;	
+	DEVICE* pdev;
+	int offset = 0;	
 
-	out_data = malloc(64);
+	out_data = malloc(256);
 
 	SET_UINT16(out_data, 0, RDPDR_COMPONENT_TYPE_CORE);
 	SET_UINT16(out_data, 2, PAKID_CORE_DEVICELIST_ANNOUNCE);
-	SET_UINT16(out_data, 4, plugin->devman->count); // deviceCount
-	offset += 6;
+	SET_UINT32(out_data, 4, plugin->devman->count); /* deviceCount */
+	offset = 8;
+
+	LLOGLN(0, ("%d device(s) registered", plugin->devman->count));
 
 	devman_rewind(plugin->devman);
 
@@ -221,10 +204,16 @@ rdpdr_send_device_list_announce_request(rdpdrPlugin * plugin)
 	{
 		pdev = devman_get_next(plugin->devman);
 
-		SET_UINT16(out_data, offset, pdev->service->type); /* deviceType */
-		SET_UINT16(out_data, offset, pdev->id); /* deviceID */
-		//out_uint8p(s, plugin->device[i].name, 8); // preferredDosName, Max 8 characters, may not be null terminated
-		offset += 12;
+		SET_UINT32(out_data, offset, pdev->service->type); /* deviceType */
+		SET_UINT32(out_data, offset + 4, pdev->id); /* deviceID */
+		offset += 8;
+
+		/* preferredDosName, Max 8 characters, may not be null terminated */
+		memcpy((void*)&out_data[offset],
+			(void*)pdev->name, strlen(pdev->name));
+		offset += 8;
+
+		LLOGLN(0, ("registered device: %s", pdev->name));
 
 		switch (pdev->service->type)
 		{
@@ -233,6 +222,8 @@ rdpdr_send_device_list_announce_request(rdpdrPlugin * plugin)
 				break;
 
 			case DEVICE_TYPE_DISK:
+				SET_UINT32(out_data, offset, 0); // deviceDataLength
+				offset += 4;
 
 				break;
 
@@ -254,7 +245,8 @@ rdpdr_send_device_list_announce_request(rdpdrPlugin * plugin)
 	}
 
 	out_data_size = offset;
-	error = plugin->ep.pVirtualChannelWrite(plugin->open_handle[0], out_data, out_data_size, out_data);
+	error = plugin->ep.pVirtualChannelWrite(plugin->open_handle[0],
+			out_data, out_data_size, NULL);
 
 	if (error != CHANNEL_RC_OK)
 	{
@@ -352,6 +344,46 @@ rdpdr_process_irp(rdpdrPlugin * plugin, char* data, int data_size)
 }
 
 static int
+rdpdr_send_capabilities(rdpdrPlugin * plugin)
+{
+	int size;
+	int offset;
+	char* data;
+	uint32 error;
+
+	size = 256;
+	data = (char*)malloc(size);
+
+	SET_UINT16(data, 0, RDPDR_COMPONENT_TYPE_CORE);
+	SET_UINT16(data, 2, PAKID_CORE_CLIENT_CAPABILITY);
+
+	SET_UINT16(data, 4, 5); /* numCapabilities */
+	SET_UINT16(data, 6, 0); /* pad */
+
+	offset = 8;
+
+	offset += rdpdr_out_general_capset(&data[offset], size - offset);
+	offset += rdpdr_out_printer_capset(&data[offset], size - offset);
+	offset += rdpdr_out_port_capset(&data[offset], size - offset);
+	offset += rdpdr_out_drive_capset(&data[offset], size - offset);
+	offset += rdpdr_out_smartcard_capset(&data[offset], size - offset);
+
+	error = plugin->ep.pVirtualChannelWrite(plugin->open_handle[0],
+			data, offset, NULL);
+	free(data);
+
+	if (error != CHANNEL_RC_OK)
+	{
+		LLOGLN(0, ("thread_process_message_formats: "
+			"VirtualChannelWrite failed %d", error));
+
+		return -1;
+	}
+
+	return 0;
+}
+
+static int
 thread_process_message(rdpdrPlugin * plugin, char * data, int data_size)
 {
 	uint16 component;
@@ -376,6 +408,7 @@ thread_process_message(rdpdrPlugin * plugin, char * data, int data_size)
 
 			case PAKID_CORE_CLIENTID_CONFIRM:
 				LLOGLN(0, ("PAKID_CORE_CLIENTID_CONFIRM"));
+				rdpdr_process_server_clientid_confirm(plugin, &data[4], data_size - 4);
 				rdpdr_send_device_list_announce_request(plugin);
 				break;
 
@@ -394,12 +427,12 @@ thread_process_message(rdpdrPlugin * plugin, char * data, int data_size)
 			case PAKID_CORE_SERVER_CAPABILITY:
 				/* server capabilities */
 				LLOGLN(0, ("PAKID_CORE_SERVER_CAPABILITY"));
-				//rdpdr_process_capabilities(plugin, s);
-				//rdpdr_send_capabilities(plugin);
+				rdpdr_process_capabilities(&data[4], data_size - 4);
+				rdpdr_send_capabilities(plugin);
 				break;
 
 			default:
-				//ui_unimpl(NULL, "RDPDR core component, packetID: 0x%02X\n", packetID);
+				LLOGLN(0, ("unknown packetID: 0x%02X", packetID));
 				break;
 
 		}
@@ -674,7 +707,7 @@ VirtualChannelEntry(PCHANNEL_ENTRY_POINTS pEntryPoints)
 	plugin->thread_status = 0;
 	plugin->devman = devman_new();
 
-	/*devman_load_device_service(plugin->devman, "channels/rdpdr/disk/.libs/libdisk.so");*/
+	devman_load_device_service(plugin->devman, "../channels/rdpdr/disk/.libs/libdisk.so");
 
 	plugin->ep.pVirtualChannelInit(&plugin->chan_plugin.init_handle, plugin->channel_def, 2,
 		VIRTUAL_CHANNEL_VERSION_WIN2000, InitEvent);

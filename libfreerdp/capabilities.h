@@ -106,28 +106,5 @@ rdp_process_compdesk_capset(rdpRdp * rdp, STREAM s);
 void
 rdp_process_multifragmentupdate_capset(rdpRdp * rdp, STREAM s);
 
-/* Device redirection capability sets */
-void
-rdp_out_dr_general_capset(STREAM s);
-void
-rdp_out_dr_printer_capset(STREAM s);
-void
-rdp_out_dr_port_capset(STREAM s);
-void
-rdp_out_dr_drive_capset(STREAM s);
-void
-rdp_out_dr_smartcard_capset(STREAM s);
-
-void
-rdp_process_dr_general_capset(STREAM s);
-void
-rdp_process_dr_printer_capset(STREAM s);
-void
-rdp_process_dr_port_capset(STREAM s);
-void
-rdp_process_dr_drive_capset(STREAM s);
-void
-rdp_process_dr_smartcard_capset(STREAM s);
-
 #endif // __CAPABILITIES_H
 

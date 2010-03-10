@@ -10,4 +10,7 @@
 #define SET_UINT16(_p1, _offset, _value) *((uint16 *) (((uint8 *) _p1) + _offset)) = _value
 #define SET_UINT32(_p1, _offset, _value) *((uint32 *) (((uint8 *) _p1) + _offset)) = _value
 
+int
+set_wstr(char* dst, int dstlen, char* src, int srclen);
+
 #endif

@@ -19,12 +19,72 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "rdpdr.h"
+#include "devman.h"
+#include "constants_rdpdr.h"
+
+PDEVMAN devman;
+DEVICE* disk_device;
+SERVICE* disk_service;
+
+PDEVMAN_REGISTER_SERVICE DevmanRegisterService;
+PDEVMAN_UNREGISTER_SERVICE DevmanUnregisterService;
+PDEVMAN_REGISTER_DEVICE DevmanRegisterDevice;
+PDEVMAN_UNREGISTER_DEVICE DevmanUnregisterDevice;
+
+int disk_create()
+{
+	printf("disk_create\n");
+	return 0;
+}
+
+int disk_close()
+{
+	printf("disk_close\n");
+	return 0;
+}
+
+int disk_read()
+{
+	printf("disk_read\n");
+	return 0;
+}
+
+int disk_write()
+{
+	printf("disk_write\n");
+	return 0;
+}
+
+int disk_control()
+{
+	printf("disk_control\n");
+	return 0;
+}
 
 int
-DeviceServiceEntry()
+DeviceServiceEntry(PDEVMAN pDevman, PDEVMAN_ENTRY_POINTS pEntryPoints)
 {
-	/* empty */
+	devman = pDevman;
+	DevmanRegisterService = pEntryPoints->pDevmanRegisterService;
+	DevmanUnregisterService = pEntryPoints->pDevmanUnregisterService;
+	DevmanRegisterDevice = pEntryPoints->pDevmanRegisterDevice;
+	DevmanUnregisterDevice = pEntryPoints->pDevmanUnregisterDevice;
+
+	disk_service = DevmanRegisterService(devman);
+
+	disk_service->create = disk_create;
+	disk_service->close = disk_close;
+	disk_service->read = disk_read;
+	disk_service->write = disk_write;
+	disk_service->control = disk_control;
+	disk_service->type = DEVICE_TYPE_DISK;
+
+	disk_device = DevmanRegisterDevice(devman, disk_service, "disk");
 
 	return 1;
 }

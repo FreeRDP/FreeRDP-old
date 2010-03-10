@@ -21,20 +21,38 @@
 
 #include <dlfcn.h>
 #include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 
 #include "devman.h"
 #include "types_ui.h"
 #include "constants_rdpdr.h"
 
+#define LOG_LEVEL 1
+#define LLOG(_level, _args) \
+  do { if (_level < LOG_LEVEL) { printf _args ; } } while (0)
+#define LLOGLN(_level, _args) \
+  do { if (_level < LOG_LEVEL) { printf _args ; printf("\n"); } } while (0)
+
 DEVMAN*
 devman_new()
 {
-	DEVMAN* devman = (DEVMAN*)malloc(sizeof(DEVMAN));
+	DEVMAN* devman;
+	PDEVMAN_ENTRY_POINTS pDevmanEntryPoints;
+
+	devman = (PDEVMAN)malloc(sizeof(DEVMAN));
+	pDevmanEntryPoints = (PDEVMAN_ENTRY_POINTS)malloc(sizeof(DEVMAN_ENTRY_POINTS));
 
 	devman->idev = NULL;
 	devman->head = NULL;
 	devman->tail = NULL;
 	devman->count = 0;
+
+	pDevmanEntryPoints->pDevmanRegisterService = devman_register_service;
+	pDevmanEntryPoints->pDevmanUnregisterService = devman_unregister_service;
+	pDevmanEntryPoints->pDevmanRegisterDevice = devman_register_device;
+	pDevmanEntryPoints->pDevmanUnregisterDevice = devman_unregister_device;
+	devman->pDevmanEntryPoints = (void*)pDevmanEntryPoints;
 
 	return devman;
 }
@@ -62,44 +80,16 @@ devman_free(DEVMAN* devman)
 }
 
 SERVICE*
-devman_register_service(DEVMAN* devman, uint32 type)
+devman_register_service(DEVMAN* devman)
 {
-	SERVICE* srv = (SERVICE*)malloc(sizeof(SERVICE));	
-
-	switch (type)
-	{
-		case DEVICE_TYPE_SERIAL:
-			srv->type = DEVICE_TYPE_SERIAL;
-			break;
-
-		case DEVICE_TYPE_PARALLEL:
-			srv->type = DEVICE_TYPE_PARALLEL;
-			break;
-
-		case DEVICE_TYPE_PRINTER:
-			srv->type = DEVICE_TYPE_PRINTER;
-			break;
-
-		case DEVICE_TYPE_DISK:
-			srv->type = DEVICE_TYPE_DISK;
-			break;
-
-		case DEVICE_TYPE_SMARTCARD:
-			srv->type = DEVICE_TYPE_SMARTCARD;
-			break;
-
-		default:
-			/* unknown device service type */
-			free(srv);
-			return NULL;
-			break;
-	}
+	SERVICE* srv = (SERVICE*)malloc(sizeof(SERVICE));
 
 	srv->create = NULL;
 	srv->close = NULL;
 	srv->read = NULL;
 	srv->write = NULL;
 	srv->control = NULL;
+	srv->type = 0;
 
 	return srv;
 }
@@ -131,7 +121,7 @@ devman_unregister_service(DEVMAN* devman, SERVICE* srv)
 }
 
 DEVICE*
-devman_register_device(DEVMAN* devman, SERVICE* srv)
+devman_register_device(DEVMAN* devman, SERVICE* srv, char* name)
 {
 	DEVICE* pdev;
 
@@ -139,6 +129,9 @@ devman_register_device(DEVMAN* devman, SERVICE* srv)
 	pdev->prev = NULL;
 	pdev->next = NULL;
 	pdev->service = srv;
+
+	pdev->name = malloc(strlen(name));
+	strcpy(pdev->name, name);
 
 	if (devman->head == devman->tail)
 	{
@@ -264,7 +257,7 @@ int
 devman_load_device_service(DEVMAN* devman, char* filename)
 {
 	void* dl;
-	PDEVICE_SERVICE_ENTRY pDeviceServiceEntry;
+	PDEVICE_SERVICE_ENTRY pDeviceServiceEntry = NULL;
 
 	dl = dlopen(filename, RTLD_LOCAL | RTLD_LAZY);
 
@@ -272,7 +265,8 @@ devman_load_device_service(DEVMAN* devman, char* filename)
 
 	if(pDeviceServiceEntry != NULL)
 	{
-		pDeviceServiceEntry();
+		pDeviceServiceEntry(devman, devman->pDevmanEntryPoints);
+		LLOGLN(0, ("loaded device service: %s", filename));
 	}
 
 	return 0;

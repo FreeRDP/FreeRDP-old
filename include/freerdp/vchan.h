@@ -146,4 +146,17 @@ typedef CHANNEL_ENTRY_POINTS * PCHANNEL_ENTRY_POINTS;
 
 typedef int (*PVIRTUALCHANNELENTRY)(PCHANNEL_ENTRY_POINTS pEntryPoints);
 
+struct _CHANNEL_ENTRY_POINTS_EX
+{
+    uint32 cbSize;
+    uint32 protocolVersion;
+    PVIRTUALCHANNELINIT  pVirtualChannelInit;
+    PVIRTUALCHANNELOPEN  pVirtualChannelOpen;
+    PVIRTUALCHANNELCLOSE pVirtualChannelClose;
+    PVIRTUALCHANNELWRITE pVirtualChannelWrite;
+    void* pExtendedData; /* extended data field to pass initial parameters */
+};
+typedef struct _CHANNEL_ENTRY_POINTS CHANNEL_ENTRY_POINTS_EX;
+typedef CHANNEL_ENTRY_POINTS_EX * PCHANNEL_ENTRY_POINTS_EX;
+
 #endif
