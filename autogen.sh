@@ -1,10 +1,9 @@
 #! /bin/sh
 
-aclocal
-autoheader --force
-libtoolize -c --automake --force
-automake --add-missing --copy --include-deps
-autoconf
+aclocal || exit 1
+autoheader --force || exit 2
+libtoolize -c --automake --force || exit 3
+automake --add-missing --copy --include-deps || exit 4
+autoconf || exit 5
 
 rm -rf autom4te.cache
-

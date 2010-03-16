@@ -6,9 +6,10 @@ SUBDIRS = \
 	keymaps \
 	libchanman \
 	X11 \
+	channels/common \
 	channels/rdpsnd \
 	channels/rdpdr \
 	channels/rdpdr/disk
 
-EXTRA_DIST = autogen.sh indent-all.sh
-
+EXTRA_DIST = autogen.sh indent-all.sh freerdp.spec \
+	AUTHORS ChangeLog COPYING INSTALL NEWS README doc

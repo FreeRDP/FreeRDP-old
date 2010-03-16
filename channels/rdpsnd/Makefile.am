@@ -10,6 +10,7 @@ librdpsnd_LTLIBRARIES = librdpsnd.la
 librdpsnd_la_SOURCES = \
 	../common/wait_obj.c \
 	../common/chan_plugin.c \
+	rdpsnd_dsp.h rdpsnd.h \
 	rdpsnd_main.c
 
 librdpsnd_la_CFLAGS = -I../../include/freerdp -I../common

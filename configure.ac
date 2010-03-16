@@ -1,4 +1,4 @@
-AC_INIT(freerdp, 1.6.0)
+AC_INIT(freerdp, 0.0.1)
 AM_INIT_AUTOMAKE
 AM_CONFIG_HEADER([config.h])
 AC_CONFIG_SRCDIR([libfreerdp/freerdp.c])
@@ -116,17 +116,17 @@ AC_DEFINE_UNQUOTED(ssldir, "$ssldir")
 
 dnl Add OpenSSL includes and libraries
 CFLAGS="$CFLAGS -I$ssldir/include"
-AC_ARG_ENABLE(static-openssl, 
+AC_ARG_ENABLE(static-openssl,
              [  --enable-static-openssl link OpenSSL statically],
-             [ 
-LIBS="$LIBS $ssldir/lib/libcrypto.a" 
+             [
+LIBS="$LIBS $ssldir/lib/libcrypto.a"
              ],
-             [ 
-LIBS="$LIBS -L$ssldir/lib -lcrypto -lssl" 
+             [
+LIBS="$LIBS -L$ssldir/lib -lcrypto -lssl"
 rpath="$rpath:$ssldir/lib"
              ])
 
-AC_ARG_ENABLE(smartcard, 
+AC_ARG_ENABLE(smartcard,
              [  --enable-smartcard	  Enables smart-card support.
 	     ],
              [
@@ -189,11 +189,11 @@ int main(int argc, char **argv)
 		return 1;
 	}
 	return 0;
-}], 
- [AC_MSG_RESULT(no)], 
- [AC_MSG_RESULT(yes) 
-  AC_DEFINE(NEED_ALIGN)], 
- [AC_MSG_RESULT(assuming yes) 
+}],
+ [AC_MSG_RESULT(no)],
+ [AC_MSG_RESULT(yes)
+  AC_DEFINE(NEED_ALIGN)],
+ [AC_MSG_RESULT(assuming yes)
   AC_DEFINE(NEED_ALIGN)])
 
 
@@ -218,7 +218,7 @@ AC_ARG_WITH(libvncserver-config,
 )
 AC_ARG_WITH(libvncserver,
     [  --with-libvncserver     make rdp2vnc],
-    [ 
+    [
     VNCINC=`$vncserverconfig --cflags`
     AC_SUBST(VNCINC)
     LDVNC=`$vncserverconfig --libs`
@@ -237,17 +237,17 @@ AC_ARG_WITH(libvncserver,
 sound="yes"
 AC_ARG_WITH(sound,
     [  --with-sound            select sound system ("oss", "sgi", "sun", "alsa" or "libao") ],
-    [ 
-    sound="$withval" 
+    [
+    sound="$withval"
     ])
 
 AC_CHECK_HEADER(sys/soundcard.h, [HAVE_OSS=1], [HAVE_OSS=0])
 AC_CHECK_HEADER(dmedia/audio.h, [HAVE_SGI=1], [HAVE_SGI=0])
 AC_CHECK_HEADER(sys/audioio.h, [HAVE_SUN=1], [HAVE_SUN=0])
 
-AC_ARG_ENABLE(static-libsamplerate, 
-    [  --enable-static-libsamplerate link libsamplerate statically], 
-    [static_libsamplerate=yes], 
+AC_ARG_ENABLE(static-libsamplerate,
+    [  --enable-static-libsamplerate link libsamplerate statically],
+    [static_libsamplerate=yes],
     [static_libsamplerate=no])
 
 if test -n "$PKG_CONFIG"; then
@@ -790,7 +790,7 @@ AC_CHECK_FUNCS(setmntent)
 #
 AC_ARG_WITH(ipv6,
     [  --with-ipv6             enable IPv6-support],
-    [ 
+    [
         if test $withval != "no";
         then
 	    AC_DEFINE(IPv6,1)
@@ -805,7 +805,7 @@ AC_ARG_WITH(debug,
     [  --with-debug            enable protocol debugging output],
     [
         if test $withval != "no";
-        then 
+        then
             AC_DEFINE(WITH_DEBUG,1)
 	fi
     ])
@@ -814,7 +814,7 @@ AC_ARG_WITH(debug-kbd,
     [  --with-debug-kbd        enable debugging of keyboard handling],
     [
         if test $withval != "no";
-        then 
+        then
             AC_DEFINE(WITH_DEBUG_KBD,1)
 	fi
     ])
@@ -823,7 +823,7 @@ AC_ARG_WITH(debug-rdp5,
     [  --with-debug-rdp5       enable debugging of RDP5 code],
     [
         if test $withval != "no";
-        then 
+        then
             AC_DEFINE(WITH_DEBUG_RDP5,1)
 	fi
     ])
@@ -832,7 +832,7 @@ AC_ARG_WITH(debug-clipboard,
     [  --with-debug-clipboard  enable debugging of clipboard code],
     [
         if test $withval != "no";
-        then 
+        then
             AC_DEFINE(WITH_DEBUG_CLIPBOARD,1)
 	fi
     ])
@@ -841,7 +841,7 @@ AC_ARG_WITH(debug-sound,
     [  --with-debug-sound  enable debugging of sound code],
     [
         if test $withval != "no";
-        then 
+        then
             AC_DEFINE(WITH_DEBUG_SOUND,1)
 	fi
     ])
@@ -850,7 +850,7 @@ AC_ARG_WITH(debug-channel,
     [  --with-debug-channel  enable debugging of virtual channel code],
     [
         if test $withval != "no";
-        then 
+        then
             AC_DEFINE(WITH_DEBUG_CHANNEL,1)
 	fi
     ])
@@ -859,7 +859,7 @@ AC_ARG_WITH(debug-seamless,
     [  --with-debug-seamless  enable debugging of SeamlessRDP code],
     [
         if test $withval != "no";
-        then 
+        then
             AC_DEFINE(WITH_DEBUG_SEAMLESS,1)
 	fi
     ])
@@ -915,6 +915,7 @@ libkbd/Makefile
 keymaps/Makefile
 libchanman/Makefile
 X11/Makefile
+channels/common/Makefile
 channels/rdpsnd/Makefile
 channels/rdpdr/Makefile
 channels/rdpdr/disk/Makefile
