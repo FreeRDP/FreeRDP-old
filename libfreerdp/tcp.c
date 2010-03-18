@@ -314,6 +314,8 @@ tcp_connect(rdpTcp * tcp, char * server, int port)
 	{
 		u_long arg = 1;
 		ioctlsocket(tcp->sock, FIONBIO, &arg);
+		tcp->wsa_event = WSACreateEvent();
+		WSAEventSelect(tcp->sock, tcp->wsa_event, FD_READ);
 	}
 #else
 	option_value = fcntl(tcp->sock, F_GETFL);
@@ -350,6 +352,13 @@ void
 tcp_disconnect(rdpTcp * tcp)
 {
 	TCP_CLOSE(tcp->sock);
+#ifdef _WIN32
+	if (tcp->wsa_event)
+	{
+		WSACloseEvent(tcp->wsa_event);
+		tcp->wsa_event = 0;
+	}
+#endif
 }
 
 char *

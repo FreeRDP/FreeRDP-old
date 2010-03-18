@@ -200,10 +200,8 @@ run_wfreerdp(LPVOID lpParam)
 	int read_count;
 	int write_count;
 	int index;
-	int sck;
-	int max_sck;
-	fd_set rfds;
-	fd_set wfds;
+	HANDLE fds[64];
+	int fds_count;
 
 	printf("run_wfreerdp:\n");
 	/* create an instance of the library */
@@ -271,41 +269,28 @@ run_wfreerdp(LPVOID lpParam)
 			printf("run_wfreerdp: chan_man_get_fds failed\n");
 			break;
 		}*/
-		max_sck = 0;
+		fds_count = 0;
 		/* setup read fds */
-		FD_ZERO(&rfds);
 		for (index = 0; index < read_count; index++)
 		{
-			sck = (int) (read_fds[index]);
-			if (sck > max_sck)
-				max_sck = sck;
-			FD_SET(sck, &rfds);
+			fds[fds_count++] = read_fds[index];
 		}
 		/* setup write fds */
-		FD_ZERO(&wfds);
 		for (index = 0; index < write_count; index++)
 		{
-			sck = (int) (write_fds[index]);
-			if (sck > max_sck)
-				max_sck = sck;
-			FD_SET(sck, &wfds);
+			fds[fds_count++] = write_fds[index];
 		}
 		/* exit if nothing to do */
-		if (max_sck == 0)
+		if (fds_count == 0)
 		{
-			printf("run_wfreerdp: max_sck is zero\n");
+			printf("run_wfreerdp: fds_count is zero\n");
 			break;
 		}
 		/* do the wait */
-		if (select(max_sck + 1, &rfds, &wfds, NULL, NULL) == -1)
+		if (WaitForMultipleObjects(fds_count, fds, FALSE, INFINITE) == WAIT_FAILED)
 		{
-			/* these are not really errors */
-			if (!((errno == EAGAIN) ||
-				(errno == EINTR))) /* signal occurred */
-			{
-				printf("run_wfreerdp: select failed\n");
-				break;
-			}
+			printf("run_wfreerdp: WaitForMultipleObjects failed\n");
+			break;
 		}
 		/* check the libfreerdp fds */
 		if (inst->rdp_check_fds(inst) != 0)

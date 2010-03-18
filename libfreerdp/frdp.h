@@ -34,8 +34,8 @@
 #include "types_ui.h"
 #include "types.h"
 
-#ifdef WIN32
-#include "winsock.h"
+#ifdef _WIN32
+#include "winsock2.h"
 #define snprintf sprintf_s
 #define strdup _strdup
 #endif

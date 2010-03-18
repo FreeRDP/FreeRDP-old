@@ -33,6 +33,9 @@ struct rdp_tcp
 	struct stream out;
 	int tcp_port_rdp;
 	char ipaddr[32];
+#ifdef _WIN32
+	WSAEVENT wsa_event;
+#endif
 };
 typedef struct rdp_tcp rdpTcp;
 

@@ -579,7 +579,11 @@ l_rdp_get_fds(struct rdp_inst * inst, void ** read_fds, int * read_count,
 	rdpRdp * rdp;
 
 	rdp = (rdpRdp *) (inst->rdp);
+#ifdef _WIN32
+	read_fds[*read_count] = (void *) (rdp->sec->mcs->iso->tcp->wsa_event);
+#else
 	read_fds[*read_count] = (void *) (rdp->sec->mcs->iso->tcp->sock);
+#endif
 	(*read_count)++;
 	return 0;
 }
@@ -592,6 +596,9 @@ l_rdp_check_fds(struct rdp_inst * inst)
 	uint32 ext_disc_reason;
 
 	rdp = (rdpRdp *) (inst->rdp);
+#ifdef _WIN32
+	WSAResetEvent(rdp->sec->mcs->iso->tcp->wsa_event);
+#endif
 	if (tcp_can_recv(rdp->sec->mcs->iso->tcp->sock, 0))
 	{
 		if (!rdp_loop(rdp, &deactivated, &ext_disc_reason))
