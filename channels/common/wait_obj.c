@@ -26,8 +26,6 @@
 #include <string.h>
 #include <netdb.h>
 #include <unistd.h>
-#include <sys/un.h>
-#include <sys/socket.h>
 #include "wait_obj.h"
 
 #define LOG_LEVEL 1
@@ -36,41 +34,23 @@
 #define LLOGLN(_level, _args) \
   do { if (_level < LOG_LEVEL) { printf _args ; printf("\n"); } } while (0)
 
-static int g_wait_obj_seq = 0;
-
 struct wait_obj
 {
-	int sock;
-	struct sockaddr_un sa;
+	int pipe_fd[2];
 };
 
 struct wait_obj *
 wait_obj_new(const char * name)
 {
 	struct wait_obj * obj;
-	int pid;
-	int size;
 
 	obj = (struct wait_obj *) malloc(sizeof(struct wait_obj));
 
-	pid = getpid();
-	obj->sock = socket(PF_UNIX, SOCK_DGRAM, 0);
-	if (obj->sock < 0)
+	obj->pipe_fd[0] = -1;
+	obj->pipe_fd[1] = -1;
+	if (pipe(obj->pipe_fd) < 0)
 	{
-		LLOGLN(0, ("init_wait_obj: socket failed"));
-		free(obj);
-		return NULL;
-	}
-	obj->sa.sun_family = AF_UNIX;
-	size = sizeof(obj->sa.sun_path) - 1;
-	snprintf(obj->sa.sun_path, size, "/tmp/%s%8.8x.%d", name, pid, g_wait_obj_seq++);
-	obj->sa.sun_path[size] = 0;
-	size = sizeof(obj->sa);
-	if (bind(obj->sock, (struct sockaddr*)(&(obj->sa)), size) < 0)
-	{
-		LLOGLN(0, ("init_wait_obj: bind failed"));
-		close(obj->sock);
-		unlink(obj->sa.sun_path);
+		LLOGLN(0, ("init_wait_obj: pipe failed"));
 		free(obj);
 		return NULL;
 	}
@@ -82,11 +62,15 @@ wait_obj_free(struct wait_obj * obj)
 {
 	if (obj)
 	{
-		if (obj->sock != -1)
+		if (obj->pipe_fd[0] != -1)
 		{
-			close(obj->sock);
-			obj->sock = -1;
-			unlink(obj->sa.sun_path);
+			close(obj->pipe_fd[0]);
+			obj->pipe_fd[0] = -1;
+		}
+		if (obj->pipe_fd[1] != -1)
+		{
+			close(obj->pipe_fd[1]);
+			obj->pipe_fd[1] = -1;
 		}
 		free(obj);
 	}
@@ -101,9 +85,9 @@ wait_obj_is_set(struct wait_obj * obj)
 	struct timeval time;
 
 	FD_ZERO(&rfds);
-	FD_SET(obj->sock, &rfds);
+	FD_SET(obj->pipe_fd[0], &rfds);
 	memset(&time, 0, sizeof(time));
-	num_set = select(obj->sock + 1, &rfds, 0, 0, &time);
+	num_set = select(obj->pipe_fd[0] + 1, &rfds, 0, 0, &time);
 	return (num_set == 1);
 }
 
@@ -116,8 +100,7 @@ wait_obj_set(struct wait_obj * obj)
 	{
 		return 0;
 	}
-	len = sendto(obj->sock, "sig", 4, 0, (struct sockaddr*)(&(obj->sa)),
-		sizeof(obj->sa));
+	len = write(obj->pipe_fd[1], "sig", 4);
 	if (len != 4)
 	{
 		LLOGLN(0, ("set_wait_obj: error"));
@@ -133,7 +116,7 @@ wait_obj_clear(struct wait_obj * obj)
 
 	while (wait_obj_is_set(obj))
 	{
-		len = recvfrom(obj->sock, &len, 4, 0, 0, 0);
+		len = read(obj->pipe_fd[0], &len, 4);
 		if (len != 4)
 		{
 			LLOGLN(0, ("chan_man_clear_ev: error"));
@@ -168,7 +151,7 @@ wait_obj_select(struct wait_obj ** listobj, int numobj, int * listr, int numr,
 	{
 		for (index = 0; index < numobj; index++)
 		{
-			sock = listobj[index]->sock;
+			sock = listobj[index]->pipe_fd[0];
 			FD_SET(sock, &fds);
 			if (sock > max)
 			{

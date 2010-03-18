@@ -40,9 +40,6 @@
 #include <semaphore.h>
 #include <netdb.h>
 #include <unistd.h>
-#include <sys/un.h>
-#include <sys/types.h>
-#include <sys/socket.h>
 #include <pthread.h>
 #include "freerdp.h"
 #include "libchanman.h"
@@ -111,8 +108,8 @@ struct rdp_chan_man
 
 	/* used for sync write */
 	sem_t * sem;
-	int sock;
-	struct sockaddr_un sa;
+	int pipe_fd[2];
+
 	void * sync_data;
 	uint32 sync_data_length;
 	void * sync_user_data;
@@ -410,9 +407,9 @@ chan_man_is_ev_set(rdpChanMan * chan_man)
 	struct timeval time;
 
 	FD_ZERO(&rfds);
-	FD_SET(chan_man->sock, &rfds);
+	FD_SET(chan_man->pipe_fd[0], &rfds);
 	memset(&time, 0, sizeof(time));
-	num_set = select(chan_man->sock + 1, &rfds, 0, 0, &time);
+	num_set = select(chan_man->pipe_fd[0] + 1, &rfds, 0, 0, &time);
 	return (num_set == 1);
 }
 
@@ -425,8 +422,7 @@ chan_man_set_ev(rdpChanMan * chan_man)
 	{
 		return;
 	}
-	len = sendto(chan_man->sock, "sig", 4, 0, (struct sockaddr*)&chan_man->sa,
-		sizeof(chan_man->sa));
+	len = write(chan_man->pipe_fd[1], "sig", 4);
 	if (len != 4)
 	{
 		printf("chan_man_set_ev: error\n");
@@ -440,7 +436,7 @@ chan_man_clear_ev(rdpChanMan * chan_man)
 
 	while (chan_man_is_ev_set(chan_man))
 	{
-		len = recvfrom(chan_man->sock, &len, 4, 0, 0, 0);
+		len = read(chan_man->pipe_fd[0], &len, 4);
 		if (len != 4)
 		{
 			printf("chan_man_clear_ev: error\n");
@@ -530,10 +526,8 @@ chan_man_uninit(void)
 rdpChanMan *
 chan_man_new(void)
 {
-	static int chan_man_seq = 0;
 	rdpChanMan * chan_man;
 	rdpChanManList * list;
-	int len;
 
 	chan_man = (rdpChanMan *) malloc(sizeof(rdpChanMan));
 	memset(chan_man, 0, sizeof(rdpChanMan));
@@ -541,24 +535,11 @@ chan_man_new(void)
 	chan_man->sem = (sem_t *) malloc(sizeof(sem_t));
 	memset(chan_man->sem, 0, sizeof(sem_t));
 	sem_init(chan_man->sem, 0, 1); /* start at 1 */
-	memset(&chan_man->sa, 0, sizeof(chan_man->sa));
-	chan_man->sock = socket(PF_UNIX, SOCK_DGRAM, 0);
-	if (chan_man->sock < 0)
+	chan_man->pipe_fd[0] = -1;
+	chan_man->pipe_fd[1] = -1;
+	if (pipe(chan_man->pipe_fd) < 0)
 	{
-		printf("chan_man_init: chan_man->sock failed\n");
-	}
-	else
-	{
-		chan_man->sa.sun_family = AF_UNIX;
-		sprintf(chan_man->sa.sun_path, "/tmp/freerdpchan%8.8x.%d", getpid(), chan_man_seq++);
-		len = sizeof(chan_man->sa);
-		if (bind(chan_man->sock, (struct sockaddr*)&chan_man->sa, len) < 0)
-		{
-			printf("chan_man_init: bind failed\n");
-			close(chan_man->sock);
-			chan_man->sock = -1;
-			unlink(chan_man->sa.sun_path);
-		}
+		printf("chan_man_init: pipe failed\n");
 	}
 
 	/* Add it to the global list */
@@ -593,12 +574,16 @@ chan_man_free(rdpChanMan * chan_man)
 	}
 	sem_destroy(chan_man->sem);
 	free(chan_man->sem);
-	if (chan_man->sock != -1)
+	if (chan_man->pipe_fd[0] != -1)
 	{
-		close(chan_man->sock);
-		chan_man->sock = -1;
+		close(chan_man->pipe_fd[0]);
+		chan_man->pipe_fd[0] = -1;
 	}
-	unlink(chan_man->sa.sun_path);
+	if (chan_man->pipe_fd[1] != -1)
+	{
+		close(chan_man->pipe_fd[1]);
+		chan_man->pipe_fd[1] = -1;
+	}
 
 	/* Remove from global list */
 	pthread_mutex_lock(g_mutex_list);
@@ -839,11 +824,11 @@ int
 chan_man_get_fds(rdpChanMan * chan_man, rdpInst * inst, void ** read_fds,
 	int * read_count, void ** write_fds, int * write_count)
 {
-	if (chan_man->sock == -1)
+	if (chan_man->pipe_fd[0] == -1)
 	{
 		return 0;
 	}
-	read_fds[*read_count] = (void *) chan_man->sock;
+	read_fds[*read_count] = (void *) chan_man->pipe_fd[0];
 	(*read_count)++;
 	return 0;
 }
@@ -852,7 +837,7 @@ chan_man_get_fds(rdpChanMan * chan_man, rdpInst * inst, void ** read_fds,
 int
 chan_man_check_fds(rdpChanMan * chan_man, rdpInst * inst)
 {
-	if (chan_man->sock == -1)
+	if (chan_man->pipe_fd[0] == -1)
 	{
 		return 0;
 	}
