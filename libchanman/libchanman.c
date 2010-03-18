@@ -36,11 +36,41 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef _WIN32
+#include <windows.h>
+#define MUTEX HANDLE
+#define MUTEX_INIT(m) m = CreateMutex(NULL, FALSE, NULL)
+#define MUTEX_LOCK(m) WaitForSingleObject(m, INFINITE)
+#define MUTEX_UNLOCK(m) ReleaseMutex(m)
+#define MUTEX_DESTROY(m) CloseHandle(m)
+#define SEMAPHORE HANDLE
+#define SEMAPHORE_INIT(s, i, m) s = CreateSemaphore(NULL, i, m, NULL)
+#define SEMAPHORE_WAIT(s) WaitForSingleObject(s, INFINITE)
+#define SEMAPHORE_POST(s) ReleaseSemaphore(s, 1, NULL)
+#define SEMAPHORE_DESTROY(s) CloseHandle(s)
+#define DLOPEN(f) LoadLibrary(f)
+#define DLSYM(f, n) GetProcAddress(f, n)
+#define DLCLOSE(f) FreeLibrary(f)
+#else
 #include <dlfcn.h>
 #include <semaphore.h>
 #include <netdb.h>
 #include <unistd.h>
 #include <pthread.h>
+#define MUTEX pthread_mutex_t
+#define MUTEX_INIT(m) pthread_mutex_init(&m, 0)
+#define MUTEX_LOCK(m) pthread_mutex_lock(&m)
+#define MUTEX_UNLOCK(m) pthread_mutex_unlock(&m)
+#define MUTEX_DESTROY(m) pthread_mutex_destroy(&m)
+#define SEMAPHORE sem_t
+#define SEMAPHORE_INIT(s, i, m) sem_init(&s, i, m)
+#define SEMAPHORE_WAIT(s) sem_wait(&s)
+#define SEMAPHORE_POST(s) sem_post(&s)
+#define SEMAPHORE_DESTROY(s) sem_destroy(&s)
+#define DLOPEN(f) dlopen(f, RTLD_LOCAL | RTLD_LAZY)
+#define DLSYM(f, n) dlsym(f, n)
+#define DLCLOSE(f) dlclose(f)
+#endif
 #include "freerdp.h"
 #include "libchanman.h"
 #include "vchan.h"
@@ -63,8 +93,8 @@ static rdpChanManList * g_chan_man_list;
 static int g_open_handle_sequence;
 
 /* For locking the global resources */
-static pthread_mutex_t * g_mutex_init;
-static pthread_mutex_t * g_mutex_list;
+static MUTEX g_mutex_init;
+static MUTEX g_mutex_list;
 
 /* The channel manager stuff */
 struct lib_data
@@ -107,8 +137,12 @@ struct rdp_chan_man
 	rdpInst * inst;
 
 	/* used for sync write */
-	sem_t * sem;
+	SEMAPHORE sem;
+#ifdef _WIN32
+	HANDLE chan_event;
+#else
 	int pipe_fd[2];
+#endif
 
 	void * sync_data;
 	uint32 sync_data_length;
@@ -124,7 +158,7 @@ chan_man_find_by_open_handle(int open_handle, int * pindex)
 	rdpChanMan * chan_man;
 	int lindex;
 
-	pthread_mutex_lock(g_mutex_list);
+	MUTEX_LOCK(g_mutex_list);
 	for (list = g_chan_man_list; list; list = list->next)
 	{
 		chan_man = list->chan_man;
@@ -132,13 +166,13 @@ chan_man_find_by_open_handle(int open_handle, int * pindex)
 		{
 			if (chan_man->chans[lindex].open_handle == open_handle)
 			{
-				pthread_mutex_unlock(g_mutex_list);
+				MUTEX_UNLOCK(g_mutex_list);
 				*pindex = lindex;
 				return chan_man;
 			}
 		}
 	}
-	pthread_mutex_unlock(g_mutex_list);
+	MUTEX_UNLOCK(g_mutex_list);
 	return NULL;
 }
 
@@ -149,17 +183,17 @@ chan_man_find_by_rdp_inst(rdpInst * inst)
 	rdpChanManList * list;
 	rdpChanMan * chan_man;
 
-	pthread_mutex_lock(g_mutex_list);
+	MUTEX_LOCK(g_mutex_list);
 	for (list = g_chan_man_list; list; list = list->next)
 	{
 		chan_man = list->chan_man;
 		if (chan_man->inst == inst)
 		{
-			pthread_mutex_unlock(g_mutex_list);
+			MUTEX_UNLOCK(g_mutex_list);
 			return chan_man;
 		}
 	}
-	pthread_mutex_unlock(g_mutex_list);
+	MUTEX_UNLOCK(g_mutex_list);
 	return NULL;
 }
 
@@ -301,9 +335,9 @@ MyVirtualChannelInit(void ** ppInitHandle, PCHANNEL_DEF pChannel,
 		lchan_def = pChannel + index;
 		lchan = chan_man->chans + chan_man->num_chans;
 
-		pthread_mutex_lock(g_mutex_list);
+		MUTEX_LOCK(g_mutex_list);
 		lchan->open_handle = g_open_handle_sequence++;
-		pthread_mutex_unlock(g_mutex_list);
+		MUTEX_UNLOCK(g_mutex_list);
 
 		lchan->flags = 1; /* init */
 		strncpy(lchan->name, lchan_def->name, CHANNEL_NAME_LEN);
@@ -402,6 +436,9 @@ MyVirtualChannelClose(uint32 openHandle)
 static int
 chan_man_is_ev_set(rdpChanMan * chan_man)
 {
+#ifdef _WIN32
+	return (WaitForSingleObject(chan_man->chan_event, 0) == WAIT_OBJECT_0);
+#else
 	fd_set rfds;
 	int num_set;
 	struct timeval time;
@@ -411,11 +448,15 @@ chan_man_is_ev_set(rdpChanMan * chan_man)
 	memset(&time, 0, sizeof(time));
 	num_set = select(chan_man->pipe_fd[0] + 1, &rfds, 0, 0, &time);
 	return (num_set == 1);
+#endif
 }
 
 static void
 chan_man_set_ev(rdpChanMan * chan_man)
 {
+#ifdef _WIN32
+	SetEvent(chan_man->chan_event);
+#else
 	int len;
 
 	if (chan_man_is_ev_set(chan_man))
@@ -427,11 +468,15 @@ chan_man_set_ev(rdpChanMan * chan_man)
 	{
 		printf("chan_man_set_ev: error\n");
 	}
+#endif
 }
 
 static void
 chan_man_clear_ev(rdpChanMan * chan_man)
 {
+#ifdef _WIN32
+	ResetEvent(chan_man->chan_event);
+#else
 	int len;
 
 	while (chan_man_is_ev_set(chan_man))
@@ -442,6 +487,7 @@ chan_man_clear_ev(rdpChanMan * chan_man)
 			printf("chan_man_clear_ev: error\n");
 		}
 	}
+#endif
 }
 
 /* can be called from any thread */
@@ -480,7 +526,7 @@ MyVirtualChannelWrite(uint32 openHandle, void * pData, uint32 dataLength,
 		printf("MyVirtualChannelWrite: error not open\n");
 		return CHANNEL_RC_NOT_OPEN;
 	}
-	sem_wait(chan_man->sem); /* lock chan_man->sync* vars */
+	SEMAPHORE_WAIT(chan_man->sem); /* lock chan_man->sync* vars */
 	chan_man->sync_data = pData;
 	chan_man->sync_data_length = dataLength;
 	chan_man->sync_user_data = pUserData;
@@ -499,10 +545,8 @@ chan_man_init(void)
 	g_init_chan_man = NULL;
 	g_chan_man_list = NULL;
 	g_open_handle_sequence = 1;
-	g_mutex_init = (pthread_mutex_t *) malloc(sizeof(pthread_mutex_t));
-	pthread_mutex_init(g_mutex_init, 0);
-	g_mutex_list = (pthread_mutex_t *) malloc(sizeof(pthread_mutex_t));
-	pthread_mutex_init(g_mutex_list, 0);
+	MUTEX_INIT(g_mutex_init);
+	MUTEX_INIT(g_mutex_list);
 
 	return 0;
 }
@@ -515,10 +559,8 @@ chan_man_uninit(void)
 		chan_man_free(g_chan_man_list->chan_man);
 	}
 
-	pthread_mutex_destroy(g_mutex_init);
-	free(g_mutex_init);
-	pthread_mutex_destroy(g_mutex_list);
-	free(g_mutex_list);
+	MUTEX_DESTROY(g_mutex_init);
+	MUTEX_DESTROY(g_mutex_list);
 
 	return 0;
 }
@@ -532,24 +574,26 @@ chan_man_new(void)
 	chan_man = (rdpChanMan *) malloc(sizeof(rdpChanMan));
 	memset(chan_man, 0, sizeof(rdpChanMan));
 
-	chan_man->sem = (sem_t *) malloc(sizeof(sem_t));
-	memset(chan_man->sem, 0, sizeof(sem_t));
-	sem_init(chan_man->sem, 0, 1); /* start at 1 */
+	SEMAPHORE_INIT(chan_man->sem, 0, 1); /* start at 1 */
+#ifdef _WIN32
+	chan_man->chan_event = CreateEvent(NULL, TRUE, FALSE, NULL);
+#else
 	chan_man->pipe_fd[0] = -1;
 	chan_man->pipe_fd[1] = -1;
 	if (pipe(chan_man->pipe_fd) < 0)
 	{
 		printf("chan_man_init: pipe failed\n");
 	}
+#endif
 
 	/* Add it to the global list */
 	list = (rdpChanManList *) malloc(sizeof(rdpChanManList));
 	list->chan_man = chan_man;
 
-	pthread_mutex_lock(g_mutex_list);
+	MUTEX_LOCK(g_mutex_list);
 	list->next = g_chan_man_list;
 	g_chan_man_list = list;
-	pthread_mutex_unlock(g_mutex_list);
+	MUTEX_UNLOCK(g_mutex_list);
 
 	return chan_man;
 }
@@ -572,8 +616,14 @@ chan_man_free(rdpChanMan * chan_man)
 				0, 0);
 		}
 	}
-	sem_destroy(chan_man->sem);
-	free(chan_man->sem);
+	SEMAPHORE_DESTROY(chan_man->sem);
+#ifdef _WIN32
+	if (chan_man->chan_event)
+	{
+		CloseHandle(chan_man->chan_event);
+		chan_man->chan_event = 0;
+	}
+#else
 	if (chan_man->pipe_fd[0] != -1)
 	{
 		close(chan_man->pipe_fd[0]);
@@ -584,9 +634,10 @@ chan_man_free(rdpChanMan * chan_man)
 		close(chan_man->pipe_fd[1]);
 		chan_man->pipe_fd[1] = -1;
 	}
+#endif
 
 	/* Remove from global list */
-	pthread_mutex_lock(g_mutex_list);
+	MUTEX_LOCK(g_mutex_list);
 	for (prev = NULL, list = g_chan_man_list; list; prev = list, list = list->next)
 	{
 		if (list->chan_man == chan_man)
@@ -606,7 +657,7 @@ chan_man_free(rdpChanMan * chan_man)
 		}
 		free(list);
 	}
-	pthread_mutex_unlock(g_mutex_list);
+	MUTEX_UNLOCK(g_mutex_list);
 
 	free(chan_man);
 }
@@ -615,7 +666,7 @@ chan_man_free(rdpChanMan * chan_man)
    called only from main thread */
 int
 chan_man_load_plugin(rdpChanMan * chan_man, rdpSet * settings,
-	const char * filename)
+	const CHR * filename)
 {
 	struct lib_data * lib;
 	CHANNEL_ENTRY_POINTS ep;
@@ -628,18 +679,18 @@ chan_man_load_plugin(rdpChanMan * chan_man, rdpSet * settings,
 		return 1;
 	}
 	lib = chan_man->libs + chan_man->num_libs;
-	lib->han = dlopen(filename, RTLD_LOCAL | RTLD_LAZY);
+	lib->han = DLOPEN(filename);
 	if (lib->han == 0)
 	{
 		printf("chan_man_load_plugin: failed to load library\n");
 		return 1;
 	}
 	lib->entry = (PVIRTUALCHANNELENTRY)
-		dlsym(lib->han, CHANNEL_EXPORT_FUNC_NAME);
+		DLSYM(lib->han, CHANNEL_EXPORT_FUNC_NAME);
 	if (lib->entry == 0)
 	{
 		printf("chan_man_load_plugin: failed to find export function\n");
-		dlclose(lib->han);
+		DLCLOSE(lib->han);
 		return 1;
 	}
 	ep.cbSize = sizeof(ep);
@@ -653,11 +704,11 @@ chan_man_load_plugin(rdpChanMan * chan_man, rdpSet * settings,
 	chan_man->can_call_init = 1;
 	chan_man->settings = settings;
 
-	pthread_mutex_lock(g_mutex_init);
+	MUTEX_LOCK(g_mutex_init);
 	g_init_chan_man = chan_man;
 	ok = lib->entry(&ep);
 	g_init_chan_man = NULL;
-	pthread_mutex_unlock(g_mutex_init);
+	MUTEX_UNLOCK(g_mutex_init);
 
 	/* disable MyVirtualChannelInit */
 	chan_man->settings = 0;
@@ -665,7 +716,7 @@ chan_man_load_plugin(rdpChanMan * chan_man, rdpSet * settings,
 	if (!ok)
 	{
 		printf("chan_man_load_plugin: export function call failed\n");
-		dlclose(lib->han);
+		DLCLOSE(lib->han);
 		return 1;
 	}
 	return 0;
@@ -695,12 +746,12 @@ chan_man_pre_connect(rdpChanMan * chan_man, rdpInst * inst)
 		strcpy(lchannel_def.name, "rdpdr");
 		chan_man->can_call_init = 1;
 		chan_man->settings = inst->settings;
-		pthread_mutex_lock(g_mutex_init);
+		MUTEX_LOCK(g_mutex_init);
 		g_init_chan_man = chan_man;
 		MyVirtualChannelInit(&dummy, &lchannel_def, 1,
 			VIRTUAL_CHANNEL_VERSION_WIN2000, 0);
 		g_init_chan_man = NULL;
-		pthread_mutex_unlock(g_mutex_init);
+		MUTEX_UNLOCK(g_mutex_init);
 		chan_man->can_call_init = 0;
 		chan_man->settings = 0;
 		printf("chan_man_pre_connect: registered fake rdpdr for rdpsnd.\n");
@@ -803,7 +854,7 @@ chan_man_process_sync(rdpChanMan * chan_man, rdpInst * inst)
 	ldata_len = chan_man->sync_data_length;
 	luser_data = chan_man->sync_user_data;
 	lindex = chan_man->sync_index;
-	sem_post(chan_man->sem); /* release chan_man->sync* vars */
+	SEMAPHORE_POST(chan_man->sem); /* release chan_man->sync* vars */
 	lchan_data = chan_man->chans + lindex;
 	lrdp_chan = chan_man_find_rdp_chan_by_name(chan_man, inst->settings,
 		lchan_data->name, &lindex);
@@ -824,11 +875,15 @@ int
 chan_man_get_fds(rdpChanMan * chan_man, rdpInst * inst, void ** read_fds,
 	int * read_count, void ** write_fds, int * write_count)
 {
+#ifdef _WIN32
+	read_fds[*read_count] = (void *) chan_man->chan_event;
+#else
 	if (chan_man->pipe_fd[0] == -1)
 	{
 		return 0;
 	}
 	read_fds[*read_count] = (void *) chan_man->pipe_fd[0];
+#endif
 	(*read_count)++;
 	return 0;
 }
@@ -837,7 +892,11 @@ chan_man_get_fds(rdpChanMan * chan_man, rdpInst * inst, void ** read_fds,
 int
 chan_man_check_fds(rdpChanMan * chan_man, rdpInst * inst)
 {
+#ifdef _WIN32
+	if (chan_man->chan_event == NULL)
+#else
 	if (chan_man->pipe_fd[0] == -1)
+#endif
 	{
 		return 0;
 	}

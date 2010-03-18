@@ -26,34 +26,62 @@
 
 #include "freerdp.h"
 
+#if defined _WIN32 || defined __CYGWIN__
+  #ifdef LIBCHANMAN_EXPORTS
+    #ifdef __GNUC__
+      #define LIBCHANMAN_API __attribute__((dllexport))
+    #else
+      #define LIBCHANMAN_API __declspec(dllexport)
+    #endif
+  #else
+    #ifdef __GNUC__
+      #define LIBCHANMAN_API __attribute__((dllimport))
+    #else
+      #define LIBCHANMAN_API __declspec(dllimport)
+    #endif
+  #endif
+#else
+  #if __GNUC__ >= 4
+    #define LIBCHANMAN_API   __attribute__ ((visibility("default")))
+  #else
+    #define LIBCHANMAN_API
+  #endif
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+#ifdef _WIN32
+#define CHR TCHAR
+#else
+#define CHR char
+#endif
+
 typedef struct rdp_chan_man rdpChanMan;
 
-FREERDP_API int
+LIBCHANMAN_API int
 chan_man_init(void);
-FREERDP_API int
+LIBCHANMAN_API int
 chan_man_uninit(void);
-FREERDP_API rdpChanMan *
+LIBCHANMAN_API rdpChanMan *
 chan_man_new(void);
-FREERDP_API void
+LIBCHANMAN_API void
 chan_man_free(rdpChanMan * chan_man);
-FREERDP_API int
+LIBCHANMAN_API int
 chan_man_load_plugin(rdpChanMan * chan_man, rdpSet * settings,
-	const char * filename);
-FREERDP_API int
+	const CHR * filename);
+LIBCHANMAN_API int
 chan_man_pre_connect(rdpChanMan * chan_man, rdpInst * inst);
-FREERDP_API int
+LIBCHANMAN_API int
 chan_man_post_connect(rdpChanMan * chan_man, rdpInst * inst);
-FREERDP_API int
+LIBCHANMAN_API int
 chan_man_data(rdpInst * inst, int chan_id, char * data, int data_size,
 	int flags, int total_size);
-FREERDP_API int
+LIBCHANMAN_API int
 chan_man_get_fds(rdpChanMan * chan_man, rdpInst * inst, void ** read_fds,
 	int * read_count, void ** write_fds, int * write_count);
-FREERDP_API int
+LIBCHANMAN_API int
 chan_man_check_fds(rdpChanMan * chan_man, rdpInst * inst);
 
 #ifdef __cplusplus

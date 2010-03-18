@@ -28,6 +28,7 @@
 #include <sys/types.h>
 #include <errno.h>
 #include "freerdp.h"
+#include "libchanman.h"
 #include "wf_event.h"
 #include "wf_win.h"
 
@@ -38,6 +39,7 @@ HCURSOR g_default_cursor;
 struct thread_data
 {
 	rdpSet * settings;
+	rdpChanMan * chan_man;
 	HWND hwnd;
 };
 
@@ -66,7 +68,7 @@ set_default_params(rdpSet * settings)
 }
 
 static int
-process_params(rdpSet * settings, int argc, LPWSTR * argv, int * pindex)
+process_params(rdpSet * settings, rdpChanMan * chan_man, int argc, LPWSTR * argv, int * pindex)
 {
 	WCHAR * p;
 
@@ -167,7 +169,7 @@ process_params(rdpSet * settings, int argc, LPWSTR * argv, int * pindex)
 				settings->rdp5_performanceflags = wcstol(argv[*pindex], 0, 16);
 			}
 		}
-/*		else if (strcmp("-plugin", argv[*pindex]) == 0)
+		else if (wcscmp(L"-plugin", argv[*pindex]) == 0)
 		{
 			*pindex = *pindex + 1;
 			if (*pindex == argc)
@@ -175,7 +177,7 @@ process_params(rdpSet * settings, int argc, LPWSTR * argv, int * pindex)
 				return 1;
 			}
 			chan_man_load_plugin(chan_man, settings, argv[*pindex]);
-		}*/
+		}
 		else
 		{
 			WideCharToMultiByte(CP_ACP, 0, argv[*pindex], -1, settings->server, 63, NULL, NULL);
@@ -230,22 +232,22 @@ run_wfreerdp(LPVOID lpParam)
 		printf("run_wfreerdp: wf_pre_connect failed\n");
 		return 1;
 	}
-	/*if (chan_man_pre_connect(chan_man, inst) != 0)
+	if (chan_man_pre_connect(data->chan_man, inst) != 0)
 	{
 		printf("run_wfreerdp: chan_man_pre_connect failed\n");
 		return 1;
-	}*/
+	}
 	/* call connect */
 	if (inst->rdp_connect(inst) != 0)
 	{
 		printf("run_wfreerdp: inst->rdp_connect failed\n");
 		return 1;
 	}
-	/*if (chan_man_post_connect(chan_man, inst) != 0)
+	if (chan_man_post_connect(data->chan_man, inst) != 0)
 	{
 		printf("run_wfreerdp: chan_man_post_connect failed\n");
 		return 1;
-	}*/
+	}
 	if (wf_post_connect(inst) != 0)
 	{
 		printf("run_wfreerdp: wf_post_connect failed\n");
@@ -264,11 +266,11 @@ run_wfreerdp(LPVOID lpParam)
 			break;
 		}
 		/* get channel fds */
-		/*if (chan_man_get_fds(chan_man, inst, read_fds, &read_count, write_fds, &write_count) != 0)
+		if (chan_man_get_fds(data->chan_man, inst, read_fds, &read_count, write_fds, &write_count) != 0)
 		{
 			printf("run_wfreerdp: chan_man_get_fds failed\n");
 			break;
-		}*/
+		}
 		fds_count = 0;
 		/* setup read fds */
 		for (index = 0; index < read_count; index++)
@@ -299,18 +301,19 @@ run_wfreerdp(LPVOID lpParam)
 			break;
 		}
 		/* check channel fds */
-		/*if (chan_man_check_fds(chan_man, inst) != 0)
+		if (chan_man_check_fds(data->chan_man, inst) != 0)
 		{
 			printf("run_wfreerdp: chan_man_check_fds failed\n");
 			break;
-		}*/
+		}
 		wf_update_window(inst);
 	}
 	/* cleanup */
-	wf_uninit(inst);
-	freerdp_free(inst);
+	chan_man_free(data->chan_man);
 	free(data->settings);
 	free(data);
+	wf_uninit(inst);
+	freerdp_free(inst);
 	return 0;
 }
 
@@ -343,6 +346,7 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdS
 		return 1;
 	}
 	create_console();
+	chan_man_init();
 	g_default_cursor = LoadCursor(NULL, IDC_ARROW);
 
 	wnd_cls.cbSize        = sizeof(WNDCLASSEX);
@@ -368,9 +372,10 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdS
 	{
 		data = (struct thread_data *) malloc(sizeof(struct thread_data));
 		data->settings = (rdpSet *) malloc(sizeof(rdpSet));
+		data->chan_man = chan_man_new();
 		data->hwnd = NULL;
 
-		rv = process_params(data->settings, argc, argv, &index);
+		rv = process_params(data->settings, data->chan_man, argc, argv, &index);
 		if (rv == 0)
 		{
 			data->hwnd = CreateWindowEx(0, g_wnd_class_name, L"wfreerdp",
@@ -382,6 +387,7 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdS
 		}
 		else
 		{
+			chan_man_free(data->chan_man);
 			free(data->settings);
 			free(data);
 			break;
@@ -394,6 +400,7 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdS
 		DispatchMessage(&msg);
 	}
 
+	chan_man_uninit();
 	WSACleanup();
 	return 0;
 }
