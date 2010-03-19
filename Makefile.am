@@ -4,7 +4,7 @@ SUBDIRS = \
 	include \
 	libfreerdpkbd \
 	keymaps \
-	libchanman \
+	libfreerdpchanman \
 	X11 \
 	channels/common \
 	channels/rdpsnd \

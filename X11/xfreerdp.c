@@ -30,9 +30,9 @@
 #include <errno.h>
 #include <pwd.h>
 #include <pthread.h>
-#include "freerdp.h"
+#include <freerdp/freerdp.h>
+#include <freerdp/chanman.h>
 #include "xf_win.h"
-#include "libchanman.h"
 
 static int
 set_default_params(rdpSet * settings)
@@ -195,7 +195,7 @@ process_params(rdpSet * settings, rdpChanMan * chan_man, int argc, char ** argv,
 				printf("missing plugin name\n");
 				return 1;
 			}
-			chan_man_load_plugin(chan_man, settings, argv[*pindex]);
+			freerdp_chanman_load_plugin(chan_man, settings, argv[*pindex]);
 		}
 		else
 		{
@@ -254,9 +254,9 @@ run_xfreerdp(rdpSet * settings, rdpChanMan * chan_man)
 		printf("run_xfreerdp: xf_pre_connect failed\n");
 		return 1;
 	}
-	if (chan_man_pre_connect(chan_man, inst) != 0)
+	if (freerdp_chanman_pre_connect(chan_man, inst) != 0)
 	{
-		printf("run_xfreerdp: chan_man_pre_connect failed\n");
+		printf("run_xfreerdp: freerdp_chanman_pre_connect failed\n");
 		return 1;
 	}
 	/* call connect */
@@ -266,9 +266,9 @@ run_xfreerdp(rdpSet * settings, rdpChanMan * chan_man)
 		printf("run_xfreerdp: inst->rdp_connect failed\n");
 		return 1;
 	}
-	if (chan_man_post_connect(chan_man, inst) != 0)
+	if (freerdp_chanman_post_connect(chan_man, inst) != 0)
 	{
-		printf("run_xfreerdp: chan_man_post_connect failed\n");
+		printf("run_xfreerdp: freerdp_chanman_post_connect failed\n");
 		return 1;
 	}
 	if (xf_post_connect(inst) != 0)
@@ -294,9 +294,9 @@ run_xfreerdp(rdpSet * settings, rdpChanMan * chan_man)
 			break;
 		}
 		/* get channel fds */
-		if (chan_man_get_fds(chan_man, inst, read_fds, &read_count, write_fds, &write_count) != 0)
+		if (freerdp_chanman_get_fds(chan_man, inst, read_fds, &read_count, write_fds, &write_count) != 0)
 		{
-			printf("run_xfreerdp: chan_man_get_fds failed\n");
+			printf("run_xfreerdp: freerdp_chanman_get_fds failed\n");
 			break;
 		}
 		max_sck = 0;
@@ -350,9 +350,9 @@ run_xfreerdp(rdpSet * settings, rdpChanMan * chan_man)
 			break;
 		}
 		/* check channel fds */
-		if (chan_man_check_fds(chan_man, inst) != 0)
+		if (freerdp_chanman_check_fds(chan_man, inst) != 0)
 		{
-			printf("run_xfreerdp: chan_man_check_fds failed\n");
+			printf("run_xfreerdp: freerdp_chanman_check_fds failed\n");
 			break;
 		}
 	}
@@ -378,7 +378,7 @@ thread_func(void * arg)
 	data = (struct thread_data *) arg;
 	run_xfreerdp(data->settings, data->chan_man);
 	free(data->settings);
-	chan_man_free(data->chan_man);
+	freerdp_chanman_free(data->chan_man);
 	free(data);
 
 	g_thread_count--;
@@ -395,13 +395,13 @@ main(int argc, char ** argv)
 	int index = 1;
 
 	setlocale(LC_CTYPE, "");
-	chan_man_init();
+	freerdp_chanman_init();
 
 	while (1)
 	{
 		data = (struct thread_data *) malloc(sizeof(struct thread_data));
 		data->settings = (rdpSet *) malloc(sizeof(rdpSet));
-		data->chan_man = chan_man_new();
+		data->chan_man = freerdp_chanman_new();
 		rv = process_params(data->settings, data->chan_man, argc, argv, &index);
 		if (rv == 0)
 		{
@@ -413,7 +413,7 @@ main(int argc, char ** argv)
 		else
 		{
 			free(data->settings);
-			chan_man_free(data->chan_man);
+			freerdp_chanman_free(data->chan_man);
 			free(data);
 			break;
 		}
@@ -424,6 +424,6 @@ main(int argc, char ** argv)
 		sleep(1);
 	}
 
-	chan_man_uninit();
+	freerdp_chanman_uninit();
 	return 0;
 }

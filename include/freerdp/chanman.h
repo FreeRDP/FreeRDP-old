@@ -21,30 +21,30 @@
    DEALINGS IN THE SOFTWARE.
 */
 
-#ifndef __CHAN_MAN_H
-#define __CHAN_MAN_H
+#ifndef __FREERDP_CHANMAN_H
+#define __FREERDP_CHANMAN_H
 
-#include "freerdp.h"
+#include <freerdp/freerdp.h>
 
 #if defined _WIN32 || defined __CYGWIN__
-  #ifdef LIBCHANMAN_EXPORTS
+  #ifdef LIBFREERDPCHANMAN_EXPORTS
     #ifdef __GNUC__
-      #define LIBCHANMAN_API __attribute__((dllexport))
+      #define LIBFREERDPCHANMAN_API __attribute__((dllexport))
     #else
-      #define LIBCHANMAN_API __declspec(dllexport)
+      #define LIBFREERDPCHANMAN_API __declspec(dllexport)
     #endif
   #else
     #ifdef __GNUC__
-      #define LIBCHANMAN_API __attribute__((dllimport))
+      #define LIBFREERDPCHANMAN_API __attribute__((dllimport))
     #else
-      #define LIBCHANMAN_API __declspec(dllimport)
+      #define LIBFREERDPCHANMAN_API __declspec(dllimport)
     #endif
   #endif
 #else
   #if __GNUC__ >= 4
-    #define LIBCHANMAN_API   __attribute__ ((visibility("default")))
+    #define LIBFREERDPCHANMAN_API   __attribute__ ((visibility("default")))
   #else
-    #define LIBCHANMAN_API
+    #define LIBFREERDPCHANMAN_API
   #endif
 #endif
 
@@ -60,29 +60,29 @@ extern "C" {
 
 typedef struct rdp_chan_man rdpChanMan;
 
-LIBCHANMAN_API int
-chan_man_init(void);
-LIBCHANMAN_API int
-chan_man_uninit(void);
-LIBCHANMAN_API rdpChanMan *
-chan_man_new(void);
-LIBCHANMAN_API void
-chan_man_free(rdpChanMan * chan_man);
-LIBCHANMAN_API int
-chan_man_load_plugin(rdpChanMan * chan_man, rdpSet * settings,
+LIBFREERDPCHANMAN_API int
+freerdp_chanman_init(void);
+LIBFREERDPCHANMAN_API int
+freerdp_chanman_uninit(void);
+LIBFREERDPCHANMAN_API rdpChanMan *
+freerdp_chanman_new(void);
+LIBFREERDPCHANMAN_API void
+freerdp_chanman_free(rdpChanMan * chan_man);
+LIBFREERDPCHANMAN_API int
+freerdp_chanman_load_plugin(rdpChanMan * chan_man, rdpSet * settings,
 	const CHR * filename);
-LIBCHANMAN_API int
-chan_man_pre_connect(rdpChanMan * chan_man, rdpInst * inst);
-LIBCHANMAN_API int
-chan_man_post_connect(rdpChanMan * chan_man, rdpInst * inst);
-LIBCHANMAN_API int
-chan_man_data(rdpInst * inst, int chan_id, char * data, int data_size,
+LIBFREERDPCHANMAN_API int
+freerdp_chanman_pre_connect(rdpChanMan * chan_man, rdpInst * inst);
+LIBFREERDPCHANMAN_API int
+freerdp_chanman_post_connect(rdpChanMan * chan_man, rdpInst * inst);
+LIBFREERDPCHANMAN_API int
+freerdp_chanman_data(rdpInst * inst, int chan_id, char * data, int data_size,
 	int flags, int total_size);
-LIBCHANMAN_API int
-chan_man_get_fds(rdpChanMan * chan_man, rdpInst * inst, void ** read_fds,
+LIBFREERDPCHANMAN_API int
+freerdp_chanman_get_fds(rdpChanMan * chan_man, rdpInst * inst, void ** read_fds,
 	int * read_count, void ** write_fds, int * write_count);
-LIBCHANMAN_API int
-chan_man_check_fds(rdpChanMan * chan_man, rdpInst * inst);
+LIBFREERDPCHANMAN_API int
+freerdp_chanman_check_fds(rdpChanMan * chan_man, rdpInst * inst);
 
 #ifdef __cplusplus
 }

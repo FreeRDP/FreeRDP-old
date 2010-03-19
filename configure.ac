@@ -913,7 +913,7 @@ libfreerdp/Makefile
 include/Makefile
 libfreerdpkbd/Makefile
 keymaps/Makefile
-libchanman/Makefile
+libfreerdpchanman/Makefile
 X11/Makefile
 channels/common/Makefile
 channels/rdpsnd/Makefile

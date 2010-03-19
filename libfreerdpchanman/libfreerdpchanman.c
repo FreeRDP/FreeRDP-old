@@ -71,9 +71,9 @@
 #define DLSYM(f, n) dlsym(f, n)
 #define DLCLOSE(f) dlclose(f)
 #endif
-#include "freerdp.h"
-#include "libchanman.h"
-#include "vchan.h"
+#include <freerdp/freerdp.h>
+#include <freerdp/chanman.h>
+#include <freerdp/vchan.h>
 
 /* The current channel manager reference passes from VirtualChannelEntry to
    VirtualChannelInit for the pInitHandle. */
@@ -130,7 +130,7 @@ struct rdp_chan_man
 	int can_call_init;
 	rdpSet * settings;
 
-	/* true once chan_man_post_connect is called */
+	/* true once freerdp_chanman_post_connect is called */
 	int is_connected;
 
 	/* used for locating the chan_man for a given instance */
@@ -152,7 +152,7 @@ struct rdp_chan_man
 
 /* returns the chan_man for the open handle passed in */
 static rdpChanMan *
-chan_man_find_by_open_handle(int open_handle, int * pindex)
+freerdp_chanman_find_by_open_handle(int open_handle, int * pindex)
 {
 	rdpChanManList * list;
 	rdpChanMan * chan_man;
@@ -178,7 +178,7 @@ chan_man_find_by_open_handle(int open_handle, int * pindex)
 
 /* returns the chan_man for the rdp instance passed in */
 static rdpChanMan *
-chan_man_find_by_rdp_inst(rdpInst * inst)
+freerdp_chanman_find_by_rdp_inst(rdpInst * inst)
 {
 	rdpChanManList * list;
 	rdpChanMan * chan_man;
@@ -199,7 +199,7 @@ chan_man_find_by_rdp_inst(rdpInst * inst)
 
 /* returns struct chan_data for the channel name passed in */
 static struct chan_data *
-chan_man_find_chan_data_by_name(rdpChanMan * chan_man, const char * chan_name,
+freerdp_chanman_find_chan_data_by_name(rdpChanMan * chan_man, const char * chan_name,
 	int * pindex)
 {
 	int lindex;
@@ -222,7 +222,7 @@ chan_man_find_chan_data_by_name(rdpChanMan * chan_man, const char * chan_name,
 
 /* returns struct rdp_chan for the channel id passed in */
 static struct rdp_chan *
-chan_man_find_rdp_chan_by_id(rdpChanMan * chan_man, rdpSet * settings,
+freerdp_chanman_find_rdp_chan_by_id(rdpChanMan * chan_man, rdpSet * settings,
 	int chan_id, int * pindex)
 {
 	int lindex;
@@ -247,7 +247,7 @@ chan_man_find_rdp_chan_by_id(rdpChanMan * chan_man, rdpSet * settings,
 
 /* returns struct rdp_chan for the channel name passed in */
 static struct rdp_chan *
-chan_man_find_rdp_chan_by_name(rdpChanMan * chan_man, rdpSet * settings,
+freerdp_chanman_find_rdp_chan_by_name(rdpChanMan * chan_man, rdpSet * settings,
 	const char * chan_name, int * pindex)
 {
 	int lindex;
@@ -270,7 +270,7 @@ chan_man_find_rdp_chan_by_name(rdpChanMan * chan_man, rdpSet * settings,
 	return 0;
 }
 
-/* must be called by same thread that calls chan_man_load_plugin
+/* must be called by same thread that calls freerdp_chanman_load_plugin
    according to MS docs
    only called from main thread */
 static uint32
@@ -321,7 +321,7 @@ MyVirtualChannelInit(void ** ppInitHandle, PCHANNEL_DEF pChannel,
 	for (index = 0; index < channelCount; index++)
 	{
 		lchan_def = pChannel + index;
-		if (chan_man_find_chan_data_by_name(chan_man, lchan_def->name, 0) != 0)
+		if (freerdp_chanman_find_chan_data_by_name(chan_man, lchan_def->name, 0) != 0)
 		{
 			printf("MyVirtualChannelInit: error channel already used\n");
 			return CHANNEL_RC_BAD_CHANNEL;
@@ -385,7 +385,7 @@ MyVirtualChannelOpen(void * pInitHandle, uint32 * pOpenHandle,
 		printf("MyVirtualChannelOpen: error not connected\n");
 		return CHANNEL_RC_NOT_CONNECTED;
 	}
-	lchan = chan_man_find_chan_data_by_name(chan_man, pChannelName, &index);
+	lchan = freerdp_chanman_find_chan_data_by_name(chan_man, pChannelName, &index);
 	if (lchan == 0)
 	{
 		printf("MyVirtualChannelOpen: error chan name\n");
@@ -412,7 +412,7 @@ MyVirtualChannelClose(uint32 openHandle)
 	struct chan_data * lchan;
 	int index;
 
-	chan_man = chan_man_find_by_open_handle(openHandle, &index);
+	chan_man = freerdp_chanman_find_by_open_handle(openHandle, &index);
 	if ((chan_man == NULL) || (index < 0) || (index >= CHANNEL_MAX_COUNT))
 	{
 		printf("MyVirtualChannelClose: error bad chanhan\n");
@@ -434,7 +434,7 @@ MyVirtualChannelClose(uint32 openHandle)
 }
 
 static int
-chan_man_is_ev_set(rdpChanMan * chan_man)
+freerdp_chanman_is_ev_set(rdpChanMan * chan_man)
 {
 #ifdef _WIN32
 	return (WaitForSingleObject(chan_man->chan_event, 0) == WAIT_OBJECT_0);
@@ -452,39 +452,39 @@ chan_man_is_ev_set(rdpChanMan * chan_man)
 }
 
 static void
-chan_man_set_ev(rdpChanMan * chan_man)
+freerdp_chanman_set_ev(rdpChanMan * chan_man)
 {
 #ifdef _WIN32
 	SetEvent(chan_man->chan_event);
 #else
 	int len;
 
-	if (chan_man_is_ev_set(chan_man))
+	if (freerdp_chanman_is_ev_set(chan_man))
 	{
 		return;
 	}
 	len = write(chan_man->pipe_fd[1], "sig", 4);
 	if (len != 4)
 	{
-		printf("chan_man_set_ev: error\n");
+		printf("freerdp_chanman_set_ev: error\n");
 	}
 #endif
 }
 
 static void
-chan_man_clear_ev(rdpChanMan * chan_man)
+freerdp_chanman_clear_ev(rdpChanMan * chan_man)
 {
 #ifdef _WIN32
 	ResetEvent(chan_man->chan_event);
 #else
 	int len;
 
-	while (chan_man_is_ev_set(chan_man))
+	while (freerdp_chanman_is_ev_set(chan_man))
 	{
 		len = read(chan_man->pipe_fd[0], &len, 4);
 		if (len != 4)
 		{
-			printf("chan_man_clear_ev: error\n");
+			printf("freerdp_chanman_clear_ev: error\n");
 		}
 	}
 #endif
@@ -499,7 +499,7 @@ MyVirtualChannelWrite(uint32 openHandle, void * pData, uint32 dataLength,
 	struct chan_data * lchan;
 	int index;
 
-	chan_man = chan_man_find_by_open_handle(openHandle, &index);
+	chan_man = freerdp_chanman_find_by_open_handle(openHandle, &index);
 	if ((chan_man == NULL) || (index < 0) || (index >= CHANNEL_MAX_COUNT))
 	{
 		printf("MyVirtualChannelWrite: error bad chanhan\n");
@@ -532,7 +532,7 @@ MyVirtualChannelWrite(uint32 openHandle, void * pData, uint32 dataLength,
 	chan_man->sync_user_data = pUserData;
 	chan_man->sync_index = index;
 	/* set the event */
-	chan_man_set_ev(chan_man);
+	freerdp_chanman_set_ev(chan_man);
 	return CHANNEL_RC_OK;
 }
 
@@ -540,7 +540,7 @@ MyVirtualChannelWrite(uint32 openHandle, void * pData, uint32 dataLength,
    before any other function in the file
    called only from main thread */
 int
-chan_man_init(void)
+freerdp_chanman_init(void)
 {
 	g_init_chan_man = NULL;
 	g_chan_man_list = NULL;
@@ -552,11 +552,11 @@ chan_man_init(void)
 }
 
 int
-chan_man_uninit(void)
+freerdp_chanman_uninit(void)
 {
 	while (g_chan_man_list)
 	{
-		chan_man_free(g_chan_man_list->chan_man);
+		freerdp_chanman_free(g_chan_man_list->chan_man);
 	}
 
 	MUTEX_DESTROY(g_mutex_init);
@@ -566,7 +566,7 @@ chan_man_uninit(void)
 }
 
 rdpChanMan *
-chan_man_new(void)
+freerdp_chanman_new(void)
 {
 	rdpChanMan * chan_man;
 	rdpChanManList * list;
@@ -582,7 +582,7 @@ chan_man_new(void)
 	chan_man->pipe_fd[1] = -1;
 	if (pipe(chan_man->pipe_fd) < 0)
 	{
-		printf("chan_man_init: pipe failed\n");
+		printf("freerdp_chanman_init: pipe failed\n");
 	}
 #endif
 
@@ -599,7 +599,7 @@ chan_man_new(void)
 }
 
 void
-chan_man_free(rdpChanMan * chan_man)
+freerdp_chanman_free(rdpChanMan * chan_man)
 {
 	rdpChanManList * list;
 	rdpChanManList * prev;
@@ -665,31 +665,31 @@ chan_man_free(rdpChanMan * chan_man)
 /* this is called when processing the command line parameters
    called only from main thread */
 int
-chan_man_load_plugin(rdpChanMan * chan_man, rdpSet * settings,
+freerdp_chanman_load_plugin(rdpChanMan * chan_man, rdpSet * settings,
 	const CHR * filename)
 {
 	struct lib_data * lib;
 	CHANNEL_ENTRY_POINTS ep;
 	int ok;
 
-	printf("chan_man_load_plugin: filename %s\n", filename);
+	printf("freerdp_chanman_load_plugin: filename %s\n", filename);
 	if (chan_man->num_libs + 1 >= CHANNEL_MAX_COUNT)
 	{
-		printf("chan_man_load_plugin: too many channels\n");
+		printf("freerdp_chanman_load_plugin: too many channels\n");
 		return 1;
 	}
 	lib = chan_man->libs + chan_man->num_libs;
 	lib->han = DLOPEN(filename);
 	if (lib->han == 0)
 	{
-		printf("chan_man_load_plugin: failed to load library\n");
+		printf("freerdp_chanman_load_plugin: failed to load library\n");
 		return 1;
 	}
 	lib->entry = (PVIRTUALCHANNELENTRY)
 		DLSYM(lib->han, CHANNEL_EXPORT_FUNC_NAME);
 	if (lib->entry == 0)
 	{
-		printf("chan_man_load_plugin: failed to find export function\n");
+		printf("freerdp_chanman_load_plugin: failed to find export function\n");
 		DLCLOSE(lib->han);
 		return 1;
 	}
@@ -715,7 +715,7 @@ chan_man_load_plugin(rdpChanMan * chan_man, rdpSet * settings,
 	chan_man->can_call_init = 0;
 	if (!ok)
 	{
-		printf("chan_man_load_plugin: export function call failed\n");
+		printf("freerdp_chanman_load_plugin: export function call failed\n");
 		DLCLOSE(lib->han);
 		return 1;
 	}
@@ -725,21 +725,21 @@ chan_man_load_plugin(rdpChanMan * chan_man, rdpSet * settings,
 /* go through and inform all the libraries that we are initialized
    called only from main thread */
 int
-chan_man_pre_connect(rdpChanMan * chan_man, rdpInst * inst)
+freerdp_chanman_pre_connect(rdpChanMan * chan_man, rdpInst * inst)
 {
 	int index;
 	struct lib_data * llib;
 	CHANNEL_DEF lchannel_def;
 	void * dummy;
 
-	printf("chan_man_pre_connect:\n");
+	printf("freerdp_chanman_pre_connect:\n");
 	chan_man->inst = inst;
 
 	/* If rdpsnd is registered but not rdpdr, it's necessary to register a fake
 	   rdpdr channel to make sound work. This is a workaround for Window 7 and
 	   Windows 2008 */
-	if (chan_man_find_chan_data_by_name(chan_man, "rdpsnd", 0) != 0 &&
-		chan_man_find_chan_data_by_name(chan_man, "rdpdr", 0) == 0)
+	if (freerdp_chanman_find_chan_data_by_name(chan_man, "rdpsnd", 0) != 0 &&
+		freerdp_chanman_find_chan_data_by_name(chan_man, "rdpdr", 0) == 0)
 	{
 		lchannel_def.options = CHANNEL_OPTION_INITIALIZED |
 			CHANNEL_OPTION_ENCRYPT_RDP;
@@ -754,7 +754,7 @@ chan_man_pre_connect(rdpChanMan * chan_man, rdpInst * inst)
 		MUTEX_UNLOCK(g_mutex_init);
 		chan_man->can_call_init = 0;
 		chan_man->settings = 0;
-		printf("chan_man_pre_connect: registered fake rdpdr for rdpsnd.\n");
+		printf("freerdp_chanman_pre_connect: registered fake rdpdr for rdpsnd.\n");
 	}
 
 	for (index = 0; index < chan_man->num_libs; index++)
@@ -773,7 +773,7 @@ chan_man_pre_connect(rdpChanMan * chan_man, rdpInst * inst)
    this will tell the libraries that its ok to call MyVirtualChannelOpen
    called only from main thread */
 int
-chan_man_post_connect(rdpChanMan * chan_man, rdpInst * inst)
+freerdp_chanman_post_connect(rdpChanMan * chan_man, rdpInst * inst)
 {
 	int index;
 	int server_name_len;
@@ -783,7 +783,7 @@ chan_man_post_connect(rdpChanMan * chan_man, rdpInst * inst)
 	chan_man->is_connected = 1;
 	server_name = inst->settings->server;
 	server_name_len = strlen(server_name);
-	printf("chan_man_post_connect: server name [%s] chan_man->num_libs [%d]\n",
+	printf("freerdp_chanman_post_connect: server name [%s] chan_man->num_libs [%d]\n",
 		server_name, chan_man->num_libs);
 	for (index = 0; index < chan_man->num_libs; index++)
 	{
@@ -800,7 +800,7 @@ chan_man_post_connect(rdpChanMan * chan_man, rdpInst * inst)
 /* data comming from the server to the client
    called only from main thread */
 int
-chan_man_data(rdpInst * inst, int chan_id, char * data, int data_size,
+freerdp_chanman_data(rdpInst * inst, int chan_id, char * data, int data_size,
 	int flags, int total_size)
 {
 	rdpChanMan * chan_man;
@@ -808,26 +808,26 @@ chan_man_data(rdpInst * inst, int chan_id, char * data, int data_size,
 	struct chan_data * lchan_data;
 	int index;
 
-	chan_man = chan_man_find_by_rdp_inst(inst);
+	chan_man = freerdp_chanman_find_by_rdp_inst(inst);
 	if (chan_man == 0)
 	{
-		printf("chan_man_data: could not find channel manager\n");
+		printf("freerdp_chanman_data: could not find channel manager\n");
 		return 1;
 	}
 
-	//printf("chan_man_data:\n");
-	lrdp_chan = chan_man_find_rdp_chan_by_id(chan_man, inst->settings,
+	//printf("freerdp_chanman_data:\n");
+	lrdp_chan = freerdp_chanman_find_rdp_chan_by_id(chan_man, inst->settings,
 		chan_id, &index);
 	if (lrdp_chan == 0)
 	{
-		printf("chan_man_data: could not find channel id\n");
+		printf("freerdp_chanman_data: could not find channel id\n");
 		return 1;
 	}
-	lchan_data = chan_man_find_chan_data_by_name(chan_man, lrdp_chan->name,
+	lchan_data = freerdp_chanman_find_chan_data_by_name(chan_man, lrdp_chan->name,
 		&index);
 	if (lchan_data == 0)
 	{
-		printf("chan_man_data: could not find channel name\n");
+		printf("freerdp_chanman_data: could not find channel name\n");
 		return 1;
 	}
 	if (lchan_data->open_event_proc != 0)
@@ -841,7 +841,7 @@ chan_man_data(rdpInst * inst, int chan_id, char * data, int data_size,
 
 /* called only from main thread */
 static void
-chan_man_process_sync(rdpChanMan * chan_man, rdpInst * inst)
+freerdp_chanman_process_sync(rdpChanMan * chan_man, rdpInst * inst)
 {
 	void * ldata;
 	uint32 ldata_len;
@@ -856,7 +856,7 @@ chan_man_process_sync(rdpChanMan * chan_man, rdpInst * inst)
 	lindex = chan_man->sync_index;
 	SEMAPHORE_POST(chan_man->sem); /* release chan_man->sync* vars */
 	lchan_data = chan_man->chans + lindex;
-	lrdp_chan = chan_man_find_rdp_chan_by_name(chan_man, inst->settings,
+	lrdp_chan = freerdp_chanman_find_rdp_chan_by_name(chan_man, inst->settings,
 		lchan_data->name, &lindex);
 	if (lrdp_chan != 0)
 	{
@@ -872,7 +872,7 @@ chan_man_process_sync(rdpChanMan * chan_man, rdpInst * inst)
 
 /* called only from main thread */
 int
-chan_man_get_fds(rdpChanMan * chan_man, rdpInst * inst, void ** read_fds,
+freerdp_chanman_get_fds(rdpChanMan * chan_man, rdpInst * inst, void ** read_fds,
 	int * read_count, void ** write_fds, int * write_count)
 {
 #ifdef _WIN32
@@ -890,7 +890,7 @@ chan_man_get_fds(rdpChanMan * chan_man, rdpInst * inst, void ** read_fds,
 
 /* called only from main thread */
 int
-chan_man_check_fds(rdpChanMan * chan_man, rdpInst * inst)
+freerdp_chanman_check_fds(rdpChanMan * chan_man, rdpInst * inst)
 {
 #ifdef _WIN32
 	if (chan_man->chan_event == NULL)
@@ -900,11 +900,11 @@ chan_man_check_fds(rdpChanMan * chan_man, rdpInst * inst)
 	{
 		return 0;
 	}
-	if (chan_man_is_ev_set(chan_man))
+	if (freerdp_chanman_is_ev_set(chan_man))
 	{
-		//printf("chan_man_check_fds: 1\n");
-		chan_man_clear_ev(chan_man);
-		chan_man_process_sync(chan_man, inst);
+		//printf("freerdp_chanman_check_fds: 1\n");
+		freerdp_chanman_clear_ev(chan_man);
+		freerdp_chanman_process_sync(chan_man, inst);
 	}
 	return 0;
 }

@@ -32,11 +32,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <freerdp/chanman.h>
 #include "xf_win.h"
 #include "xf_event.h"
 #include "xf_colour.h"
 #include "xf_keyboard.h"
-#include "libchanman.h"
 
 static uint8 g_hatch_patterns[] = {
 	0x00, 0x00, 0x00, 0xff, 0x00, 0x00, 0x00, 0x00, /* 0 - bsHorizontal */
@@ -836,7 +836,7 @@ l_ui_channel_data(struct rdp_inst * inst, int chan_id, char * data, int data_siz
 {
 	//printf("ui_channel_data: chan_id %d, data_size %d flags %d total_size %d\n",
 	//	chan_id, data_size, flags, total_size);
-	chan_man_data(inst, chan_id, data, data_size, flags, total_size);
+	freerdp_chanman_data(inst, chan_id, data, data_size, flags, total_size);
 }
 
 static int
