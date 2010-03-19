@@ -23,8 +23,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "freerdp.h"
-#include "libkbd.h"
+#include <freerdp/freerdp.h>
+#include <freerdp/kbd.h>
 
 unsigned int
 find_keyboard_layout_in_xorg_rules(char* layout, char* variant)
@@ -622,7 +622,7 @@ detect_and_load_keyboard()
 }
 
 unsigned int
-kbd_init()
+freerdp_kbd_init()
 {
 	unsigned int rv;
 

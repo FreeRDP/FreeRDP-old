@@ -15,7 +15,7 @@ include_HEADERS = \
 	freerdp/freerdp.h \
 	freerdp/keyboard.h \
 	freerdp/libchanman.h \
-	freerdp/libkbd.h \
+	freerdp/kbd.h \
 	freerdp/locales.h \
 	freerdp/rdpset.h \
 	freerdp/types_ui.h \

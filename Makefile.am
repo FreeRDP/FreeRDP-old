@@ -2,7 +2,7 @@
 SUBDIRS = \
 	libfreerdp \
 	include \
-	libkbd \
+	libfreerdpkbd \
 	keymaps \
 	libchanman \
 	X11 \

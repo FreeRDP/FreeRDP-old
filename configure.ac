@@ -911,7 +911,7 @@ AC_CONFIG_FILES([
 Makefile
 libfreerdp/Makefile
 include/Makefile
-libkbd/Makefile
+libfreerdpkbd/Makefile
 keymaps/Makefile
 libchanman/Makefile
 X11/Makefile

@@ -26,15 +26,15 @@
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/keysym.h>
-#include "freerdp.h"
-#include "libkbd.h"
+#include <freerdp/freerdp.h>
+#include <freerdp/kbd.h>
 #include "xf_event.h"
 
 void
 xf_kb_init(rdpInst * inst)
 {
-	inst->settings->keyboard_layout = kbd_init();
-	printf("kbd_init: %X\n", inst->settings->keyboard_layout);
+	inst->settings->keyboard_layout = freerdp_kbd_init();
+	printf("freerdp_kbd_init: %X\n", inst->settings->keyboard_layout);
 };
 
 void

@@ -19,14 +19,14 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#ifndef __LIBKBD_H
-#define	__LIBKBD_H
+#ifndef __FREERDP_KBD_H
+#define	__FREERDP_KBD_H
 
-#include "locales.h"
-#include "keyboard.h"
+#include <freerdp/locales.h>
+#include <freerdp/keyboard.h>
 
 unsigned int
-kbd_init();
+freerdp_kbd_init();
 
-#endif // __LIBKBD_H
+#endif // __FREERDP_KBD_H
 
