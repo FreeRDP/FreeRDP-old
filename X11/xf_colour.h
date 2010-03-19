@@ -2,7 +2,7 @@
 #ifndef __XF_COLOUR_H
 #define __XF_COLOUR_H
 
-#include "freerdp.h"
+#include <freerdp/freerdp.h>
 
 int
 xf_colour_convert(xfInfo * xfi, rdpSet * settings, int colour);

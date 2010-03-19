@@ -22,6 +22,7 @@
 #ifndef __FREERDP_KBD_H
 #define	__FREERDP_KBD_H
 
+#include <freerdp/freerdp.h>
 #include <freerdp/locales.h>
 #include <freerdp/keyboard.h>
 

@@ -27,24 +27,24 @@
 #include <freerdp/freerdp.h>
 
 #if defined _WIN32 || defined __CYGWIN__
-  #ifdef LIBFREERDPCHANMAN_EXPORTS
+  #ifdef FREERDP_CHANMAN_EXPORTS
     #ifdef __GNUC__
-      #define LIBFREERDPCHANMAN_API __attribute__((dllexport))
+      #define FREERDP_CHANMAN_API __attribute__((dllexport))
     #else
-      #define LIBFREERDPCHANMAN_API __declspec(dllexport)
+      #define FREERDP_CHANMAN_API __declspec(dllexport)
     #endif
   #else
     #ifdef __GNUC__
-      #define LIBFREERDPCHANMAN_API __attribute__((dllimport))
+      #define FREERDP_CHANMAN_API __attribute__((dllimport))
     #else
-      #define LIBFREERDPCHANMAN_API __declspec(dllimport)
+      #define FREERDP_CHANMAN_API __declspec(dllimport)
     #endif
   #endif
 #else
   #if __GNUC__ >= 4
-    #define LIBFREERDPCHANMAN_API   __attribute__ ((visibility("default")))
+    #define FREERDP_CHANMAN_API   __attribute__ ((visibility("default")))
   #else
-    #define LIBFREERDPCHANMAN_API
+    #define FREERDP_CHANMAN_API
   #endif
 #endif
 
@@ -60,28 +60,28 @@ extern "C" {
 
 typedef struct rdp_chan_man rdpChanMan;
 
-LIBFREERDPCHANMAN_API int
+FREERDP_CHANMAN_API int
 freerdp_chanman_init(void);
-LIBFREERDPCHANMAN_API int
+FREERDP_CHANMAN_API int
 freerdp_chanman_uninit(void);
-LIBFREERDPCHANMAN_API rdpChanMan *
+FREERDP_CHANMAN_API rdpChanMan *
 freerdp_chanman_new(void);
-LIBFREERDPCHANMAN_API void
+FREERDP_CHANMAN_API void
 freerdp_chanman_free(rdpChanMan * chan_man);
-LIBFREERDPCHANMAN_API int
+FREERDP_CHANMAN_API int
 freerdp_chanman_load_plugin(rdpChanMan * chan_man, rdpSet * settings,
 	const CHR * filename);
-LIBFREERDPCHANMAN_API int
+FREERDP_CHANMAN_API int
 freerdp_chanman_pre_connect(rdpChanMan * chan_man, rdpInst * inst);
-LIBFREERDPCHANMAN_API int
+FREERDP_CHANMAN_API int
 freerdp_chanman_post_connect(rdpChanMan * chan_man, rdpInst * inst);
-LIBFREERDPCHANMAN_API int
+FREERDP_CHANMAN_API int
 freerdp_chanman_data(rdpInst * inst, int chan_id, char * data, int data_size,
 	int flags, int total_size);
-LIBFREERDPCHANMAN_API int
+FREERDP_CHANMAN_API int
 freerdp_chanman_get_fds(rdpChanMan * chan_man, rdpInst * inst, void ** read_fds,
 	int * read_count, void ** write_fds, int * write_count);
-LIBFREERDPCHANMAN_API int
+FREERDP_CHANMAN_API int
 freerdp_chanman_check_fds(rdpChanMan * chan_man, rdpInst * inst);
 
 #ifdef __cplusplus

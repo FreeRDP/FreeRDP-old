@@ -27,8 +27,6 @@
 #ifndef __KEYBOARD_H
 #define __KEYBOARD_H
 
-#include "freerdp.h"
-
 /* Mouse buttons */
 
 #define VK_LBUTTON	0x01 // Left mouse button

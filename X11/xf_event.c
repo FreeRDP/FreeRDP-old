@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "freerdp.h"
+#include <freerdp/freerdp.h>
 #include "xf_event.h"
 #include "xf_keyboard.h"
 

@@ -2,7 +2,7 @@
 #ifndef __XF_EVENT_H
 #define __XF_EVENT_H
 
-#include "freerdp.h"
+#include <freerdp/freerdp.h>
 
 #define SET_XFI(_inst, _xfi) (_inst)->param1 = _xfi
 #define GET_XFI(_inst) ((xfInfo *) ((_inst)->param1))

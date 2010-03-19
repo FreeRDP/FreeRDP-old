@@ -2,7 +2,7 @@
 #ifndef __XF_KEYBOARD_H
 #define __XF_KEYBOARD_H
 
-#include "freerdp.h"
+#include <freerdp/freerdp.h>
 
 void
 xf_kb_init(rdpInst * inst);

@@ -23,9 +23,9 @@
 #ifndef __FREERDP_H
 #define __FREERDP_H
 
-#include "rdpset.h"
-#include "types_ui.h"
-#include "constants_ui.h"
+#include <freerdp/rdpset.h>
+#include <freerdp/types_ui.h>
+#include <freerdp/constants_ui.h>
 
 #define FREERDP_INTERFACE_VERSION 2
 

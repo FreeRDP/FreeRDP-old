@@ -10,7 +10,7 @@ xfreerdp_SOURCES = \
 	xf_win.h xf_win.c \
 	xfreerdp.c
 
-xfreerdp_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include -I$(top_srcdir)/include/freerdp
+xfreerdp_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include
 
 xfreerdp_LDADD = \
 	../libfreerdp/libfreerdp.la \
