@@ -8,7 +8,8 @@ libfreerdpchanman_LTLIBRARIES = libfreerdpchanman.la
 libfreerdpchanman_la_SOURCES = \
 	libfreerdpchanman.c
 
-libfreerdpchanman_la_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include
+libfreerdpchanman_la_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include \
+	-DPLUGIN_PATH=\"$(PLUGIN_PATH)\"
 
 libfreerdpchanman_la_LDFLAGS = 
 

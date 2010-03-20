@@ -51,6 +51,10 @@
 #define DLOPEN(f) LoadLibrary(f)
 #define DLSYM(f, n) GetProcAddress(f, n)
 #define DLCLOSE(f) FreeLibrary(f)
+#define PATH_SEPARATOR L'\\'
+#define PLUGIN_EXT L"dll"
+#define STRCHR wcschr
+#define SNPRINTF swprintf
 #else
 #include <dlfcn.h>
 #include <semaphore.h>
@@ -70,6 +74,10 @@
 #define DLOPEN(f) dlopen(f, RTLD_LOCAL | RTLD_LAZY)
 #define DLSYM(f, n) dlsym(f, n)
 #define DLCLOSE(f) dlclose(f)
+#define PATH_SEPARATOR '/'
+#define PLUGIN_EXT "so"
+#define STRCHR strchr
+#define SNPRINTF snprintf
 #endif
 #include <freerdp/freerdp.h>
 #include <freerdp/chanman.h>
@@ -671,6 +679,7 @@ freerdp_chanman_load_plugin(rdpChanMan * chan_man, rdpSet * settings,
 	struct lib_data * lib;
 	CHANNEL_ENTRY_POINTS ep;
 	int ok;
+	CHR path[255];
 
 	printf("freerdp_chanman_load_plugin: filename %s\n", filename);
 	if (chan_man->num_libs + 1 >= CHANNEL_MAX_COUNT)
@@ -679,7 +688,16 @@ freerdp_chanman_load_plugin(rdpChanMan * chan_man, rdpSet * settings,
 		return 1;
 	}
 	lib = chan_man->libs + chan_man->num_libs;
-	lib->han = DLOPEN(filename);
+	if (STRCHR(filename, PATH_SEPARATOR) == NULL)
+	{
+		SNPRINTF(path, sizeof(path), PLUGIN_PATH "/%s." PLUGIN_EXT, filename);
+		lib->han = DLOPEN(path);
+		printf("freerdp_chanman_load_plugin: %s\n", path);
+	}
+	else
+	{
+		lib->han = DLOPEN(filename);
+	}
 	if (lib->han == 0)
 	{
 		printf("freerdp_chanman_load_plugin: failed to load library\n");
