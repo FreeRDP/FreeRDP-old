@@ -71,6 +71,10 @@ dnl Define keymap path
 KEYMAP_PATH="${datadir}/freerdp/xkb"
 AC_SUBST(KEYMAP_PATH)
 
+dnl Difine plugin path
+PLUGIN_PATH='${libdir}/freerdp'
+AC_SUBST(PLUGIN_PATH)
+
 #
 # OpenSSL detection borrowed from stunnel
 #

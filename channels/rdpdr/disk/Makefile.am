@@ -1,16 +1,19 @@
 ## Process this file with automake to produce Makefile.in
 
-# libdisk
-libdiskdir = $(libdir)
+# disk
+diskdir = $(PLUGIN_PATH)
 
-libdisk_LTLIBRARIES = libdisk.la
+disk_LTLIBRARIES = disk.la
 
-libdisk_la_SOURCES = \
+disk_la_SOURCES = \
 	disk_main.c
 
-libdisk_la_CFLAGS = -I../../../include/freerdp -I../../common -I../
+disk_la_CFLAGS = -I../../../include/freerdp -I../../common -I../ \
+	-DPLUGIN_PATH=\"$(PLUGIN_PATH)\"
 
-libdisk_la_LDFLAGS = -avoid-version -module
+disk_la_LDFLAGS = -avoid-version -module
+
+disk_la_LIBADD = 
 
 # extra
 EXTRA_DIST =

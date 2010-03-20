@@ -1,11 +1,11 @@
 ## Process this file with automake to produce Makefile.in
 
 # librdpdr
-librdpdrdir = $(libdir)
+rdpdrdir = $(PLUGIN_PATH)
 
-librdpdr_LTLIBRARIES = librdpdr.la
+rdpdr_LTLIBRARIES = rdpdr.la
 
-librdpdr_la_SOURCES = \
+rdpdr_la_SOURCES = \
 	../common/wait_obj.c \
 	../common/chan_plugin.c \
 	../common/chan_stream.c \
@@ -15,9 +15,12 @@ librdpdr_la_SOURCES = \
 	devman.c devman.h \
 	irp.c irp.h
 
-librdpdr_la_CFLAGS = -I../../include/freerdp -I../common -I.
+rdpdr_la_CFLAGS = -I../../include/freerdp -I../common -I. \
+	-DPLUGIN_PATH=\"$(PLUGIN_PATH)\"
 
-librdpdr_la_LDFLAGS = -avoid-version -module
+rdpdr_la_LDFLAGS = -avoid-version -module
+
+rdpdr_la_LIBADD = 
 
 # extra
 EXTRA_DIST =
