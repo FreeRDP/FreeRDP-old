@@ -41,7 +41,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="../../include;../../include/freerdp"
+				AdditionalIncludeDirectories="../../include"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -168,7 +168,7 @@
 	<References>
 		<ProjectReference
 			ReferencedProjectIdentifier="{3D13BDCD-2E1D-45C0-AA5B-61A6330DED81}"
-			RelativePathToProject=".\freerdp.vcproj"
+			RelativePathToProject=".\libfreerdp.vcproj"
 		/>
 	</References>
 	<Files>

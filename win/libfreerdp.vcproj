@@ -41,7 +41,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\include\freerdp;C:\OpenSSL\include"
+				AdditionalIncludeDirectories="..\include;..\include\freerdp;C:\OpenSSL\include"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;FREERDP_EXPORTS;_CRT_SECURE_NO_WARNINGS;L_ENDIAN"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"

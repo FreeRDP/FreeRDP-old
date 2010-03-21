@@ -23,7 +23,7 @@
 
 #include <windows.h>
 #include <stdio.h>
-#include "freerdp.h"
+#include <freerdp/freerdp.h>
 #include "wf_event.h"
 
 extern HCURSOR g_default_cursor;

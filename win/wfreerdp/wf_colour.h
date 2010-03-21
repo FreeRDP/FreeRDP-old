@@ -2,8 +2,6 @@
 #ifndef __WF_COLOUR_H
 #define __WF_COLOUR_H
 
-#include "freerdp.h"
-
 int
 wf_colour_convert(wfInfo * wfi, int in_colour, int in_bpp);
 uint8 *

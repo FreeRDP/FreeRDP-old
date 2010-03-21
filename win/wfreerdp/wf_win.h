@@ -24,7 +24,7 @@
 #ifndef __WF_WIN_H
 #define __WF_WIN_H
 
-#include "freerdp.h"
+#include <freerdp/freerdp.h>
 
 int
 wf_pre_connect(rdpInst * inst, HWND hwnd);

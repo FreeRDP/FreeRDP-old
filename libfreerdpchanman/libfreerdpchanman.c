@@ -54,7 +54,6 @@
 #define PATH_SEPARATOR L'\\'
 #define PLUGIN_EXT L"dll"
 #define STRCHR wcschr
-#define SNPRINTF swprintf
 #else
 #include <dlfcn.h>
 #include <semaphore.h>
@@ -77,7 +76,6 @@
 #define PATH_SEPARATOR '/'
 #define PLUGIN_EXT "so"
 #define STRCHR strchr
-#define SNPRINTF snprintf
 #endif
 #include <freerdp/freerdp.h>
 #include <freerdp/chanman.h>
@@ -690,7 +688,11 @@ freerdp_chanman_load_plugin(rdpChanMan * chan_man, rdpSet * settings,
 	lib = chan_man->libs + chan_man->num_libs;
 	if (STRCHR(filename, PATH_SEPARATOR) == NULL)
 	{
-		SNPRINTF(path, sizeof(path), PLUGIN_PATH "/%s." PLUGIN_EXT, filename);
+#ifdef _WIN32
+		swprintf(path, sizeof(path), L"./%s." PLUGIN_EXT, filename);
+#else
+		snprintf(path, sizeof(path), PLUGIN_PATH "/%s." PLUGIN_EXT, filename);
+#endif
 		lib->han = DLOPEN(path);
 		printf("freerdp_chanman_load_plugin: %s\n", path);
 	}

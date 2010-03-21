@@ -27,8 +27,8 @@
 #include <string.h>
 #include <sys/types.h>
 #include <errno.h>
-#include "freerdp.h"
-#include "libchanman.h"
+#include <freerdp/freerdp.h>
+#include <freerdp/chanman.h>
 #include "wf_event.h"
 #include "wf_win.h"
 
@@ -176,7 +176,7 @@ process_params(rdpSet * settings, rdpChanMan * chan_man, int argc, LPWSTR * argv
 			{
 				return 1;
 			}
-			chan_man_load_plugin(chan_man, settings, argv[*pindex]);
+			freerdp_chanman_load_plugin(chan_man, settings, argv[*pindex]);
 		}
 		else
 		{
@@ -232,9 +232,9 @@ run_wfreerdp(LPVOID lpParam)
 		printf("run_wfreerdp: wf_pre_connect failed\n");
 		return 1;
 	}
-	if (chan_man_pre_connect(data->chan_man, inst) != 0)
+	if (freerdp_chanman_pre_connect(data->chan_man, inst) != 0)
 	{
-		printf("run_wfreerdp: chan_man_pre_connect failed\n");
+		printf("run_wfreerdp: freerdp_chanman_pre_connect failed\n");
 		return 1;
 	}
 	/* call connect */
@@ -243,9 +243,9 @@ run_wfreerdp(LPVOID lpParam)
 		printf("run_wfreerdp: inst->rdp_connect failed\n");
 		return 1;
 	}
-	if (chan_man_post_connect(data->chan_man, inst) != 0)
+	if (freerdp_chanman_post_connect(data->chan_man, inst) != 0)
 	{
-		printf("run_wfreerdp: chan_man_post_connect failed\n");
+		printf("run_wfreerdp: freerdp_chanman_post_connect failed\n");
 		return 1;
 	}
 	if (wf_post_connect(inst) != 0)
@@ -266,9 +266,9 @@ run_wfreerdp(LPVOID lpParam)
 			break;
 		}
 		/* get channel fds */
-		if (chan_man_get_fds(data->chan_man, inst, read_fds, &read_count, write_fds, &write_count) != 0)
+		if (freerdp_chanman_get_fds(data->chan_man, inst, read_fds, &read_count, write_fds, &write_count) != 0)
 		{
-			printf("run_wfreerdp: chan_man_get_fds failed\n");
+			printf("run_wfreerdp: freerdp_chanman_get_fds failed\n");
 			break;
 		}
 		fds_count = 0;
@@ -301,15 +301,15 @@ run_wfreerdp(LPVOID lpParam)
 			break;
 		}
 		/* check channel fds */
-		if (chan_man_check_fds(data->chan_man, inst) != 0)
+		if (freerdp_chanman_check_fds(data->chan_man, inst) != 0)
 		{
-			printf("run_wfreerdp: chan_man_check_fds failed\n");
+			printf("run_wfreerdp: freerdp_chanman_check_fds failed\n");
 			break;
 		}
 		wf_update_window(inst);
 	}
 	/* cleanup */
-	chan_man_free(data->chan_man);
+	freerdp_chanman_free(data->chan_man);
 	free(data->settings);
 	free(data);
 	wf_uninit(inst);
@@ -346,7 +346,7 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdS
 		return 1;
 	}
 	create_console();
-	chan_man_init();
+	freerdp_chanman_init();
 	g_default_cursor = LoadCursor(NULL, IDC_ARROW);
 
 	wnd_cls.cbSize        = sizeof(WNDCLASSEX);
@@ -372,7 +372,7 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdS
 	{
 		data = (struct thread_data *) malloc(sizeof(struct thread_data));
 		data->settings = (rdpSet *) malloc(sizeof(rdpSet));
-		data->chan_man = chan_man_new();
+		data->chan_man = freerdp_chanman_new();
 		data->hwnd = NULL;
 
 		rv = process_params(data->settings, data->chan_man, argc, argv, &index);
@@ -387,7 +387,7 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdS
 		}
 		else
 		{
-			chan_man_free(data->chan_man);
+			freerdp_chanman_free(data->chan_man);
 			free(data->settings);
 			free(data);
 			break;
@@ -400,7 +400,7 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdS
 		DispatchMessage(&msg);
 	}
 
-	chan_man_uninit();
+	freerdp_chanman_uninit();
 	WSACleanup();
 	return 0;
 }

@@ -8,7 +8,10 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "wfreerdp", "wfreerdp\wfreer
 		{B64C0469-B9E5-4712-9800-D0F4A8DF20F9} = {B64C0469-B9E5-4712-9800-D0F4A8DF20F9}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libchanman", "libchanman.vcproj", "{B64C0469-B9E5-4712-9800-D0F4A8DF20F9}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libfreerdpchanman", "libfreerdpchanman.vcproj", "{B64C0469-B9E5-4712-9800-D0F4A8DF20F9}"
+	ProjectSection(ProjectDependencies) = postProject
+		{3D13BDCD-2E1D-45C0-AA5B-61A6330DED81} = {3D13BDCD-2E1D-45C0-AA5B-61A6330DED81}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

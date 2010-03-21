@@ -24,7 +24,7 @@
 #ifndef __WF_EVENT_H
 #define __WF_EVENT_H
 
-#include "freerdp.h"
+#include <freerdp/freerdp.h>
 
 #define SET_WFI(_inst, _wfi) (_inst)->param1 = _wfi
 #define GET_WFI(_inst) ((wfInfo *) ((_inst)->param1))

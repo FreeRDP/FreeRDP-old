@@ -335,6 +335,7 @@ wf_create_dib(wfInfo * wfi, int width, int height, int bpp, int reverse, uint8 *
 		wf_image_convert(wfi, width, height, bpp, reverse, data, cdata);
 	}
 	ReleaseDC(NULL, hdc);
+	GdiFlush();
 	return bitmap;
 }
 
