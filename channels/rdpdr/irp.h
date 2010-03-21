@@ -22,8 +22,8 @@
 #ifndef __IRP_H
 #define __IRP_H
 
+#include <freerdp/types_ui.h>
 #include "devman.h"
-#include "types_ui.h"
 
 typedef uint32 RD_NTSTATUS;
 typedef uint32 RD_NTHANDLE;

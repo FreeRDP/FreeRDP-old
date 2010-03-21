@@ -22,7 +22,7 @@
 #ifndef __DEVMAN_H
 #define __DEVMAN_H
 
-#include "types_ui.h"
+#include <freerdp/types_ui.h>
 
 struct _SERVICE
 {

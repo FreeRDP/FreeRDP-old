@@ -22,11 +22,11 @@
 #ifndef __RDPDR_H
 #define __RDPDR_H
 
+#include <freerdp/types_ui.h>
+#include <freerdp/vchan.h>
 #include "irp.h"
 #include "devman.h"
 #include "types.h"
-#include "types_ui.h"
-#include "vchan.h"
 #include "chan_stream.h"
 #include "chan_plugin.h"
 

@@ -15,7 +15,7 @@ rdpdr_la_SOURCES = \
 	devman.c devman.h \
 	irp.c irp.h
 
-rdpdr_la_CFLAGS = -I../../include/freerdp -I../common -I. \
+rdpdr_la_CFLAGS = -I../../include -I../common -I. \
 	-DPLUGIN_PATH=\"$(PLUGIN_PATH)\"
 
 rdpdr_la_LDFLAGS = -avoid-version -module

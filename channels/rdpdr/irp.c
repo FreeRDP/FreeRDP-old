@@ -20,12 +20,12 @@
 */
 
 #include <stdlib.h>
+#include <freerdp/types_ui.h>
+#include <freerdp/vchan.h>
+#include <freerdp/constants_rdpdr.h>
 
 #include "devman.h"
-#include "types_ui.h"
-#include "vchan.h"
 #include "chan_stream.h"
-#include "constants_rdpdr.h"
 
 #include "irp.h"
 

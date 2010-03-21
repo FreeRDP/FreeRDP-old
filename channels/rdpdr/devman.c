@@ -23,10 +23,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <freerdp/types_ui.h>
+#include <freerdp/constants_rdpdr.h>
 
 #include "devman.h"
-#include "types_ui.h"
-#include "constants_rdpdr.h"
 
 #define LOG_LEVEL 1
 #define LLOG(_level, _args) \

@@ -27,8 +27,8 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <sys/time.h>
-#include "types_ui.h"
-#include "vchan.h"
+#include <freerdp/types_ui.h>
+#include <freerdp/vchan.h>
 #include "chan_stream.h"
 #include "chan_plugin.h"
 #include "wait_obj.h"

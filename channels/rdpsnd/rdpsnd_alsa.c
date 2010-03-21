@@ -27,7 +27,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <alsa/asoundlib.h>
-#include "types_ui.h"
+#include <freerdp/types_ui.h>
 #include "chan_stream.h"
 
 #define LOG_LEVEL 1

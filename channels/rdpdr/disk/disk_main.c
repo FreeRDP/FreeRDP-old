@@ -22,10 +22,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <freerdp/constants_rdpdr.h>
 
 #include "rdpdr.h"
 #include "devman.h"
-#include "constants_rdpdr.h"
 
 PDEVMAN devman;
 DEVICE* disk_device;

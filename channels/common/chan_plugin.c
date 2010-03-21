@@ -25,8 +25,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
-#include "types_ui.h"
-#include "vchan.h"
+#include <freerdp/types_ui.h>
+#include <freerdp/vchan.h>
 #include "chan_plugin.h"
 
 /* The list of all plugin instances. */
