@@ -1,4 +1,5 @@
-AC_INIT(freerdp, 0.0.1)
+AC_INIT(freerdp, m4_esyscmd([build-aux/git-version-gen .tarball-version]),
+        [freerdp-devel@lists.sourceforge.net])
 AM_INIT_AUTOMAKE
 AM_CONFIG_HEADER([config.h])
 AC_CONFIG_SRCDIR([libfreerdp/freerdp.c])

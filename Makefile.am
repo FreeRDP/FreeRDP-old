@@ -13,3 +13,10 @@ SUBDIRS = \
 
 EXTRA_DIST = autogen.sh indent-all.sh freerdp.spec \
 	AUTHORS ChangeLog COPYING INSTALL NEWS README doc
+
+## Support version extraction from GIT tree
+BUILT_SOURCES = $(top_srcdir)/.version
+$(top_srcdir)/.version:
+	echo $(VERSION) > $@-t && mv $@-t $@
+dist-hook:
+	echo $(VERSION) > $(distdir)/.tarball-version

@@ -1,4 +1,5 @@
-
+.version
+.tarball-version
 Makefile
 Makefile.in
 config.status
