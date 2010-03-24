@@ -28,6 +28,42 @@
 
 #include <openssl/ssl.h>
 
+/* output TPKT header */
+
+static void
+output_tpkt_header(STREAM s, int length)
+{
+	out_uint8(s, 3);		/* version */
+	out_uint8(s, 0);		/* reserved */
+	out_uint16_be(s, length);	/* length */
+}
+
+static uint16
+input_tpkt_header(STREAM s, uint8 * rdpver)
+{
+	uint8 version;
+	uint8 reserved;
+	uint16 length;
+
+	in_uint8(s, version);		/* version */
+	in_uint8(s, reserved);		/* reserved */
+	in_uint16_be(s, length);	/* length */
+
+	if (rdpver != NULL)
+		*rdpver = version;
+
+	if (version == 3 && reserved == 0)
+	{
+		return length;
+	}
+	else
+	{
+		/* not a TPKT header, revert changes */
+		s->p -= 4;
+		return 0;
+	}
+}
+
 /* Send a self-contained ISO PDU */
 static void
 iso_send_msg(rdpIso * iso, uint8 code)
@@ -36,55 +72,53 @@ iso_send_msg(rdpIso * iso, uint8 code)
 
 	s = tcp_init(iso->tcp, 11);
 
-	out_uint8(s, 3); /* version */
-	out_uint8(s, 0); /* reserved */
-	out_uint16_be(s, 11); /* length */
+	output_tpkt_header(s, 11);
 
-	out_uint8(s, 6); /* hdrlen */
+	out_uint8(s, 6);	/* hdrlen */
 	out_uint8(s, code);
-	out_uint16(s, 0); /* dst_ref */
-	out_uint16(s, 0); /* src_ref */
-	out_uint8(s, 0); /* class */
+	out_uint16(s, 0);	/* dst_ref */
+	out_uint16(s, 0);	/* src_ref */
+	out_uint8(s, 0);	/* class */
 
 	s_mark_end(s);
 	tcp_send(iso->tcp, s);
 }
 
 static void
-iso_send_connection_request(rdpIso * iso, char * username)
+iso_send_connection_request(rdpIso * iso, char *username)
 {
 	STREAM s;
 	int length = 30 + strlen(username);
 
-	if(iso->nla)
+	if (iso->nla)
 		length += 8;
 
 	s = tcp_init(iso->tcp, length);
 
-	out_uint8(s, 3); /* version */
-	out_uint8(s, 0); /* reserved */
-	out_uint16_be(s, length); /* length */
+	output_tpkt_header(s, length);
 
-	out_uint8(s, length - 5); /* hdrlen */
+	/* X.224 Connection Request (CR) TPDU */
+	out_uint8(s, length - 5);	/* hdrlen */
 	out_uint8(s, ISO_PDU_CR);
-	out_uint16(s, 0); /* dst_ref */
-	out_uint16(s, 0); /* src_ref */
-	out_uint8(s, 0); /* class */
+	out_uint16(s, 0);	/* dst_ref */
+	out_uint16(s, 0);	/* src_ref */
+	out_uint8(s, 0);	/* class */
 
+	/* cookie */
 	out_uint8p(s, "Cookie: mstshash=", strlen("Cookie: mstshash="));
 	out_uint8p(s, username, strlen(username));
 
 	/* routingToken */
-	out_uint8(s, 0x0D); /* Unknown */
-	out_uint8(s, 0x0A); /* Unknown */
+	out_uint8(s, 0x0D);	/* CR */
+	out_uint8(s, 0x0A);	/* LF */
 
-	if(iso->nla)
+	if (iso->nla)
 	{
 		/* When using NLA, the RDP_NEG_DATA field should be present */
-		out_uint8(s, 0x01); /* TYPE_RDP_NEG_REQ */
-		out_uint8(s, 0x00); /* flags, must be set to zero */
-		out_uint16(s, 8); /* RDP_NEG_DATA length (8) */
-		out_uint32(s, 0x00000003); /* requestedProtocols, PROTOCOL_HYBRID_FLAG | PROTOCOL_SSL_FLAG */
+		out_uint8(s, 0x01);	/* TYPE_RDP_NEG_REQ */
+		out_uint8(s, 0x00);	/* flags, must be set to zero */
+		out_uint16(s, 8);	/* RDP_NEG_DATA length (8) */
+		out_uint32(s, 0x00000003);	/* requestedProtocols, PROTOCOL_HYBRID_FLAG | PROTOCOL_SSL_FLAG */
 	}
 
 	s_mark_end(s);
@@ -103,7 +137,7 @@ rdp_process_negotiation_response(rdpIso * iso, STREAM s)
 	in_uint16_le(s, length);
 	in_uint32_le(s, selectedProtocol);
 
-	if(iso->nla)
+	if (iso->nla)
 	{
 		switch (selectedProtocol)
 		{
@@ -135,7 +169,7 @@ rdp_process_negotiation_failure(rdpIso * iso, STREAM s)
 	in_uint16_le(s, length);
 	in_uint32_le(s, failureCode);
 
-	if(iso->nla)
+	if (iso->nla)
 	{
 		switch (failureCode)
 		{
@@ -161,62 +195,139 @@ rdp_process_negotiation_failure(rdpIso * iso, STREAM s)
 	}
 }
 
-/* Receive a message on the ISO layer, return code */
+/* Receive an X.224 TPDU */
 static STREAM
-iso_recv_msg(rdpIso * iso, uint8 * code, uint8 * rdpver)
+x224_recv(rdpIso * iso, STREAM s, int length, uint8* pcode)
 {
-	STREAM s;
-	uint16 length;
-	uint8 version;
+	uint8 lengthIndicator;
+	uint8 code;
+	uint8 subcode;
 	uint8 type;
 
-	s = tcp_recv(iso->tcp, NULL, 4);
-	if (s == NULL)
-		return NULL;
-	in_uint8(s, version);
-	if (rdpver != NULL)
-		*rdpver = version;
-	if (version == 3) {
-		in_uint8s(s, 1); /* pad */
-		in_uint16_be(s, length);
-	} else {
-		in_uint8(s, length);
-		if (length & 0x80) {
-			length &= ~0x80;
-			next_be(s, length);
-		}
-	}
-	if (length < 4) {
-		ui_error(iso->mcs->sec->rdp->inst, "Bad packet header\n");
-		return NULL;
-	}
 	s = tcp_recv(iso->tcp, s, length - 4);
+
 	if (s == NULL)
 		return NULL;
-	if (version != 3)
-		return s;
-	in_uint8s(s, 1); /* hdrlen */
-	in_uint8(s, *code);
-	
-	if (*code == ISO_PDU_DT) {
-		in_uint8s(s, 1); /* eot */
+
+	/* X.224 TPDU Header */
+	in_uint8(s, lengthIndicator);
+	in_uint8(s, code);
+
+	subcode = code & 0x0F; /* get the lower nibble */
+	code &= 0xF0; /* take out lower nibble */
+
+	*pcode = code;
+
+	if (code == ISO_PDU_DT)
+	{
+		in_uint8s(s, 1); /* EOT */
 		return s;
 	}
-	in_uint8s(s, 5); /* dst_ref, src_ref, class */
+
+	/* dst-ref (2 bytes) */
+	/* src-ref (2 bytes) */
+	/* class option (1 byte) */
+	in_uint8s(s, 5);
 
 	in_uint8(s, type); /* Type */
+
+	switch (code)
+	{
+		/* Connection Request */
+		case ISO_PDU_CR:
+			printf("ISO_PDU_CR\n");
+			break;
+
+		/* Connection Confirm */
+		case ISO_PDU_CC:
+			printf("ISO_PDU_CC\n");
+			break;
+
+		/* Disconnect Request */
+		case ISO_PDU_DR:
+			printf("ISO_PDU_DR\n");
+			break;
+
+		/* Data */
+		case ISO_PDU_DT:
+			printf("ISO_PDU_DT\n");
+			break;
+
+		/* Error */
+		case ISO_PDU_ER:
+			printf("ISO_PDU_ER\n");
+			break;
+	}
 
 	switch (type)
 	{
 		case TYPE_RDP_NEG_RSP:
+			printf("TYPE_RDP_NEG_RSP\n");
 			rdp_process_negotiation_response(iso, s);
 			break;
 		case TYPE_RDP_NEG_FAILURE:
+			printf("TYPE_RDP_NEG_FAILURE\n");
 			rdp_process_negotiation_failure(iso, s);
 			break;
 	}
 
 	return s;
+}
+
+/* Receive a packet with a TPKT header */
+static STREAM
+tpkt_recv(rdpIso * iso, uint8* pcode, uint8* rdpver)
+{
+	STREAM s;
+	uint8 version;
+	uint16 length;
+
+	s = tcp_recv(iso->tcp, NULL, 4);
+
+	if (s == NULL)
+		return NULL;
+
+	length = input_tpkt_header(s, &version);
+
+	if (rdpver != NULL)
+		*rdpver = version;
+
+	if (version == 3)
+	{
+		/* Valid TPKT header, payload is X.224 TPDU */
+		return x224_recv(iso, s, length, pcode);
+	}
+	else
+	{
+		/* not a TPKT header */
+		printf("not a valid TPKT header\n");
+
+		/* nasty hack from previous spaghetti code */
+		in_uint8s(s, 1);
+		in_uint8(s, length);
+
+		if (length & 0x80)
+		{
+			length &= ~0x80;
+			next_be(s, length);
+		}
+
+		printf("length: %d\n", length);
+
+		s = tcp_recv(iso->tcp, s, length - 4);
+
+		if (s == NULL)
+			return NULL;
+	}
+
+	return s;
+}
+
+/* Receive a message on the ISO layer, return code */
+static STREAM
+iso_recv_msg(rdpIso * iso, uint8 * code, uint8 * rdpver)
+{	
+	return tpkt_recv(iso, code, rdpver);
 }
 
 /* Initialise ISO transport data packet */
@@ -251,13 +362,13 @@ iso_send(rdpIso * iso, STREAM s)
 	s_pop_layer(s, iso_hdr);
 	length = s->end - s->p;
 
-	out_uint8(s, 3); /* version */
-	out_uint8(s, 0); /* reserved */
+	out_uint8(s, 3);	/* version */
+	out_uint8(s, 0);	/* reserved */
 	out_uint16_be(s, length);
 
-	out_uint8(s, 2); /* hdrlen */
-	out_uint8(s, ISO_PDU_DT); /* code */
-	out_uint8(s, 0x80); /* eot */
+	out_uint8(s, 2);	/* hdrlen */
+	out_uint8(s, ISO_PDU_DT);	/* code */
+	out_uint8(s, 0x80);	/* eot */
 
 	tcp_send(iso->tcp, s);
 }
@@ -270,10 +381,10 @@ iso_fp_send(rdpIso * iso, STREAM s, uint32 flags)
 	int len;
 	int index;
 
-	fp_flags = (1 << 2) | 0; /* one event, fast path */
+	fp_flags = (1 << 2) | 0;	/* one event, fast path */
 	if (flags & SEC_ENCRYPT)
 	{
-		fp_flags |= 2 << 6; /* FASTPATH_INPUT_ENCRYPTED */
+		fp_flags |= 2 << 6;	/* FASTPATH_INPUT_ENCRYPTED */
 	}
 	s_pop_layer(s, iso_hdr);
 	len = (int) (s->end - s->p);
@@ -304,21 +415,26 @@ iso_recv(rdpIso * iso, uint8 * rdpver)
 	uint8 code = 0;
 
 	s = iso_recv_msg(iso, &code, rdpver);
+
 	if (s == NULL)
 		return NULL;
+
 	if (rdpver != NULL)
 		if (*rdpver != 3)
 			return s;
-	if (code != ISO_PDU_DT) {
+
+	if (code != ISO_PDU_DT)
+	{
 		ui_error(iso->mcs->sec->rdp->inst, "expected DT, got 0x%x\n", code);
 		return NULL;
 	}
+
 	return s;
 }
 
 /* Establish a connection up to the ISO layer */
 RD_BOOL
-iso_connect(rdpIso * iso, char * server, char * username, int port)
+iso_connect(rdpIso * iso, char *server, char *username, int port)
 {
 	uint8 code = 0;
 
@@ -330,12 +446,13 @@ iso_connect(rdpIso * iso, char * server, char * username, int port)
 	if (iso_recv_msg(iso, &code, NULL) == NULL)
 		return False;
 
-	if(iso->nla)
+	if (iso->nla)
 	{
 		tls_connect(iso->tcp->sock, server);
 	}
 
-	if (code != ISO_PDU_CC) {
+	if (code != ISO_PDU_CC)
+	{
 		ui_error(iso->mcs->sec->rdp->inst, "expected CC, got 0x%x\n", code);
 		tcp_disconnect(iso->tcp);
 		return False;
@@ -346,7 +463,7 @@ iso_connect(rdpIso * iso, char * server, char * username, int port)
 
 /* Establish a reconnection up to the ISO layer */
 RD_BOOL
-iso_reconnect(rdpIso * iso, char * server, int port)
+iso_reconnect(rdpIso * iso, char *server, int port)
 {
 	uint8 code = 0;
 
@@ -358,12 +475,13 @@ iso_reconnect(rdpIso * iso, char * server, int port)
 	if (iso_recv_msg(iso, &code, NULL) == NULL)
 		return False;
 
-	if(iso->nla)
+	if (iso->nla)
 	{
 		tls_connect(iso->tcp->sock, server);
 	}
 
-	if (code != ISO_PDU_CC) {
+	if (code != ISO_PDU_CC)
+	{
 		ui_error(iso->mcs->sec->rdp->inst, "expected CC, got 0x%x\n", code);
 		tcp_disconnect(iso->tcp);
 		return False;
@@ -388,20 +506,20 @@ iso_reset_state(rdpIso * iso)
 }
 
 rdpIso *
-iso_new(struct rdp_mcs * mcs)
+iso_new(struct rdp_mcs *mcs)
 {
-	rdpIso * self;
+	rdpIso *self;
 
-	self = (rdpIso *) xmalloc(sizeof (rdpIso));
+	self = (rdpIso *) xmalloc(sizeof(rdpIso));
 
 	if (self != NULL)
 	{
-		memset(self, 0, sizeof (rdpIso));
+		memset(self, 0, sizeof(rdpIso));
 		self->mcs = mcs;
 		self->tcp = tcp_new(self);
 		self->nla = 0;
 	}
-	
+
 	return self;
 }
 
