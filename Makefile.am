@@ -8,6 +8,7 @@ SUBDIRS = \
 	X11 \
 	channels/common \
 	channels/rdpsnd \
+	channels/cliprdr \
 	channels/rdpdr \
 	channels/rdpdr/disk
 
