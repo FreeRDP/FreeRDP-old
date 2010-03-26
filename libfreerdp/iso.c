@@ -90,8 +90,16 @@ iso_send_connection_request(rdpIso * iso, char *username)
 	STREAM s;
 	int length = 30 + strlen(username);
 
-	if (iso->nla)
+	if (iso->mcs->sec->nla)
 		length += 8;
+
+	/*
+	 * negotiation_state is used so that tcp_recv() will be able to make
+	 * the distinction between an unexpected disconnection and a
+	 * disconnection that is to be expected if negotation fails, such as
+	 * when the client claims to support TLS with NLA but the server only
+	 * supports the legacy encryption.
+	 */
 
 	s = tcp_init(iso->tcp, length);
 
@@ -112,7 +120,7 @@ iso_send_connection_request(rdpIso * iso, char *username)
 	out_uint8(s, 0x0D);	/* CR */
 	out_uint8(s, 0x0A);	/* LF */
 
-	if (iso->nla)
+	if (iso->mcs->sec->nla)
 	{
 		/* When using NLA, the RDP_NEG_DATA field should be present */
 		out_uint8(s, 0x01);	/* TYPE_RDP_NEG_REQ */
@@ -126,7 +134,7 @@ iso_send_connection_request(rdpIso * iso, char *username)
 }
 
 /* Process Negotiation Response */
-void
+uint32
 rdp_process_negotiation_response(rdpIso * iso, STREAM s)
 {
 	uint8 flags;
@@ -137,7 +145,7 @@ rdp_process_negotiation_response(rdpIso * iso, STREAM s)
 	in_uint16_le(s, length);
 	in_uint32_le(s, selectedProtocol);
 
-	if (iso->nla)
+	if (iso->mcs->sec->nla)
 	{
 		switch (selectedProtocol)
 		{
@@ -155,6 +163,8 @@ rdp_process_negotiation_response(rdpIso * iso, STREAM s)
 				break;
 		}
 	}
+
+	return selectedProtocol;
 }
 
 /* Process Negotiation Failure */
@@ -169,7 +179,7 @@ rdp_process_negotiation_failure(rdpIso * iso, STREAM s)
 	in_uint16_le(s, length);
 	in_uint32_le(s, failureCode);
 
-	if (iso->nla)
+	if (iso->mcs->sec->nla)
 	{
 		switch (failureCode)
 		{
@@ -300,7 +310,6 @@ tpkt_recv(rdpIso * iso, uint8* pcode, uint8* rdpver)
 	else
 	{
 		/* not a TPKT header */
-		printf("not a valid TPKT header\n");
 
 		/* nasty hack from previous spaghetti code */
 		in_uint8s(s, 1);
@@ -312,8 +321,6 @@ tpkt_recv(rdpIso * iso, uint8* pcode, uint8* rdpver)
 			next_be(s, length);
 		}
 
-		printf("length: %d\n", length);
-
 		s = tcp_recv(iso->tcp, s, length - 4);
 
 		if (s == NULL)
@@ -321,6 +328,54 @@ tpkt_recv(rdpIso * iso, uint8* pcode, uint8* rdpver)
 	}
 
 	return s;
+}
+
+static RD_BOOL
+iso_negotiate_encryption(rdpIso * iso, char *username)
+{
+	uint8 code;
+	uint8 version;
+
+	if (iso->mcs->sec->nla == 0)
+	{
+		/* We do no use NLA, so we won't attempt to negotiate */
+
+		iso->mcs->sec->negotiation_state = 2;
+		iso_send_connection_request(iso, username);
+
+		/* Receive negotiation response */
+		if (tpkt_recv(iso, &code, &version) == NULL)
+			return False;
+	}
+	else
+	{
+		/* first negotiation attempt */
+		iso->mcs->sec->negotiation_state = 1;
+
+		iso_send_connection_request(iso, username);
+
+		/* Attempt to receive negotiation response */
+		if (tpkt_recv(iso, &code, &version) == NULL)
+		{
+			if (iso->mcs->sec->negotiation_state == -1)
+			{
+				/* Negotiation failure, downgrade encryption and try again */
+
+				iso->mcs->sec->nla = 0;
+
+				/* second negotiation attempt */
+				iso->mcs->sec->negotiation_state = 2;
+
+				iso_send_connection_request(iso, username);
+
+				/* Receive negotiation response */
+				if (tpkt_recv(iso, &code, &version) == NULL)
+					return False;
+			}
+		}
+	}
+
+	return True;
 }
 
 /* Receive a message on the ISO layer, return code */
@@ -436,29 +491,12 @@ iso_recv(rdpIso * iso, uint8 * rdpver)
 RD_BOOL
 iso_connect(rdpIso * iso, char *server, char *username, int port)
 {
-	uint8 code = 0;
-
 	if (!tcp_connect(iso->tcp, server, port))
 		return False;
 
-	iso_send_connection_request(iso, username);
+	/* iso->mcs->sec->nla = 1; */
 
-	if (iso_recv_msg(iso, &code, NULL) == NULL)
-		return False;
-
-	if (iso->nla)
-	{
-		tls_connect(iso->tcp->sock, server);
-	}
-
-	if (code != ISO_PDU_CC)
-	{
-		ui_error(iso->mcs->sec->rdp->inst, "expected CC, got 0x%x\n", code);
-		tcp_disconnect(iso->tcp);
-		return False;
-	}
-
-	return True;
+	return iso_negotiate_encryption(iso, username);
 }
 
 /* Establish a reconnection up to the ISO layer */
@@ -475,7 +513,7 @@ iso_reconnect(rdpIso * iso, char *server, int port)
 	if (iso_recv_msg(iso, &code, NULL) == NULL)
 		return False;
 
-	if (iso->nla)
+	if (iso->mcs->sec->nla)
 	{
 		tls_connect(iso->tcp->sock, server);
 	}
@@ -517,7 +555,6 @@ iso_new(struct rdp_mcs *mcs)
 		memset(self, 0, sizeof(rdpIso));
 		self->mcs = mcs;
 		self->tcp = tcp_new(self);
-		self->nla = 0;
 	}
 
 	return self;
