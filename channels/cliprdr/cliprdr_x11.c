@@ -58,6 +58,7 @@ struct clipboard_data
 
 	Display * display;
 	Atom clipboard_atom;
+	Atom property_atom;
 	Window window;
 	uint32 * format_ids;
 	int num_formats;
@@ -68,10 +69,11 @@ struct clipboard_data
 
 	struct clipboard_format_mapping format_mappings[10];
 	int num_format_mappings;
+	int request_index;
 };
 
 static int
-clipboard_select_format_mapping(struct clipboard_data * cdata, Atom target)
+clipboard_select_format_by_atom(struct clipboard_data * cdata, Atom target)
 {
 	int i;
 	int j;
@@ -97,6 +99,21 @@ clipboard_select_format_mapping(struct clipboard_data * cdata, Atom target)
 	return -1;
 }
 
+static int
+clipboard_select_format_by_id(struct clipboard_data * cdata, uint32 format_id)
+{
+	int i;
+
+	for (i = 0; i < cdata->num_format_mappings; i++)
+	{
+		if (cdata->format_mappings[i].format_id == format_id)
+		{
+			return i;
+		}
+	}
+	return -1;
+}
+
 static void
 clipboard_provide_data(struct clipboard_data * cdata, XEvent * respond)
 {
@@ -110,6 +127,25 @@ clipboard_provide_data(struct clipboard_data * cdata, XEvent * respond)
 			(unsigned char *) cdata->data, cdata->data_length);
 		pthread_mutex_unlock(cdata->mutex);
 	}
+}
+
+static void
+clipboard_send_format_list(struct clipboard_data * cdata)
+{
+	char * s;
+	int size;
+	int i;
+
+	size = 36 * cdata->num_format_mappings;
+	s = (char *) malloc(size);
+	memset(s, 0, size);
+	for (i = 0; i < cdata->num_format_mappings; i++)
+	{
+		SET_UINT32(s, i * 36, cdata->format_mappings[i].format_id);
+	}
+	cliprdr_send_packet(cdata->plugin, CB_FORMAT_LIST,
+		0, s, size);
+	free(s);
 }
 
 static void
@@ -132,8 +168,8 @@ thread_process_selection_request(struct clipboard_data * cdata,
 	respond->xselection.selection =req->selection;
 	respond->xselection.target = req->target;
 	respond->xselection.time = req->time;
-	i = clipboard_select_format_mapping(cdata, req->target);
-	if (i >= 0)
+	i = clipboard_select_format_by_atom(cdata, req->target);
+	if (i >= 0 && req->requestor != cdata->window)
 	{
 		format = cdata->format_mappings[i].format_id;
 		LLOGLN(10, ("clipboard_x11 selection_request: provide format 0x%04x", format));
@@ -179,6 +215,185 @@ thread_process_selection_request(struct clipboard_data * cdata,
 	}
 }
 
+static char *
+lf2crlf(char * data, int * length)
+{
+	char * outbuf;
+	char * out;
+	char * in_end;
+	char * in;
+	char c;
+	int size;
+
+	size = (*length) * 2;
+	outbuf = (char *) malloc(size);
+	memset(outbuf, 0, size);
+	out = outbuf;
+	in = data;
+	in_end = data + (*length);
+	while (in < in_end)
+	{
+		c = *in++;
+		if (c == '\n')
+		{
+			*out++ = '\r';
+			*out++ = '\n';
+		}
+		else
+		{
+			*out++ = c;
+		}
+	}
+	*length = out - outbuf;
+	return outbuf;
+}
+
+static char *
+clipboard_get_requested_unicodetext(struct clipboard_data * cdata,
+	char * data, int * length)
+{
+	iconv_t cd;
+	size_t avail;
+	size_t in_size;
+	char * outbuf;
+	char * out;
+
+	cd = iconv_open("UTF-16LE", "UTF-8");
+	if (cd == (iconv_t) - 1)
+	{
+		LLOGLN(0, ("clipboard_handle_unicodetext: iconv_open failed."));
+		return NULL;
+	}
+	avail = (*length) * 2;
+	outbuf = malloc(avail + 2);
+	memset(outbuf, 0, avail + 2);
+	in_size = (size_t)(*length);
+	out = outbuf;
+	iconv(cd, &data, &in_size, &out, &avail);
+	iconv_close(cd);
+	*length = out - outbuf + 2;
+	return outbuf;
+}
+
+static char *
+clipboard_get_requested_text(struct clipboard_data * cdata,
+	char * data, int * length)
+{
+	char * outbuf;
+
+	outbuf = (char *) malloc(*length);
+	memcpy(outbuf, data, *length);
+	return outbuf;
+}
+
+static int
+clipboard_get_requested_data(struct clipboard_data * cdata, Atom target)
+{
+	Atom type;
+	int format, result;
+	unsigned long len, bytes_left, dummy;
+	char * data = NULL;
+	char * outbuf;
+	int length = 0;
+
+	LLOGLN(10, ("clipboard_get_requested_data: target=%d", (int)target));
+
+	if (cdata->request_index < 0 ||
+		cdata->format_mappings[cdata->request_index].target_format != target)
+	{
+		LLOGLN(0, ("clipboard_get_requested_data: invalid target"));
+		cliprdr_send_packet(cdata->plugin, CB_FORMAT_DATA_RESPONSE,
+			CB_RESPONSE_FAIL, NULL, 0);
+		return 1;
+	}
+
+	pthread_mutex_lock(cdata->mutex);
+	XGetWindowProperty(cdata->display, cdata->window,
+		cdata->property_atom, 0, 0, 0, target,
+		&type, &format,	&len, &bytes_left, (unsigned char **)&data);
+	if (bytes_left <= 0)
+	{
+		LLOGLN(0, ("clipboard_get_requested_data: no data"));
+		result = 1;
+	}
+	else
+	{
+		if (XGetWindowProperty(cdata->display, cdata->window,
+			cdata->property_atom, 0, bytes_left, 0, target,
+			&type, &format, &len, &dummy, (unsigned char **)&data) == Success)
+		{
+			result = 0;
+		}
+		else
+		{
+			LLOGLN(0, ("clipboard_get_requested_data: XGetWindowProperty failed"));
+			result = 1;
+		}
+	}
+	pthread_mutex_unlock(cdata->mutex);
+	if (result != 0 || data == NULL)
+	{
+		cliprdr_send_packet(cdata->plugin, CB_FORMAT_DATA_RESPONSE,
+			CB_RESPONSE_FAIL, NULL, 0);
+		if (data)
+		{
+			XFree(data);
+		}
+		return 1;
+	}
+	else
+	{
+		length = (int)bytes_left;
+		outbuf = lf2crlf(data, &length);
+		XFree(data);
+		data = outbuf;
+		outbuf = NULL;
+		switch (cdata->format_mappings[cdata->request_index].format_id)
+		{
+		case CF_UNICODETEXT:
+			outbuf = clipboard_get_requested_unicodetext(cdata,
+				data, &length);
+			break;
+		case CF_TEXT:
+			outbuf = clipboard_get_requested_text(cdata,
+				data, &length);
+			break;
+		}
+		free(data);
+		if (outbuf)
+		{
+			cliprdr_send_packet(cdata->plugin, CB_FORMAT_DATA_RESPONSE,
+				CB_RESPONSE_OK, outbuf, length);
+			free(outbuf);
+		}
+		else
+		{
+			cliprdr_send_packet(cdata->plugin, CB_FORMAT_DATA_RESPONSE,
+				CB_RESPONSE_FAIL, NULL, 0);
+		}
+		/* Less chance of failure if we delay a short while */
+		usleep(100000);
+		clipboard_send_format_list(cdata);
+		return 0;
+	}
+}
+
+static int
+clipboard_get_xevent(struct clipboard_data * cdata, XEvent * xev)
+{
+	int pending;
+
+	memset(xev, 0, sizeof(XEvent));
+	pthread_mutex_lock(cdata->mutex);
+	pending = XPending(cdata->display);
+	if (pending)
+	{
+		XNextEvent(cdata->display, xev);
+	}
+	pthread_mutex_unlock(cdata->mutex);
+	return pending;
+}
+
 static void *
 thread_func(void * arg)
 {
@@ -198,17 +413,23 @@ thread_func(void * arg)
 		{
 			break;
 		}
-		while (XPending(cdata->display))
+		while (clipboard_get_xevent(cdata, &xevent))
 		{
-			memset(&xevent, 0, sizeof(xevent));
-			pthread_mutex_lock(cdata->mutex);
-			XNextEvent(cdata->display, &xevent);
-			pthread_mutex_unlock(cdata->mutex);
-			if (xevent.type == SelectionRequest &&
-				xevent.xselectionrequest.owner == cdata->window)
+			switch (xevent.type)
 			{
-				thread_process_selection_request(cdata,
-					&(xevent.xselectionrequest));
+			case SelectionRequest:
+				if (xevent.xselectionrequest.owner == cdata->window)
+				{
+					thread_process_selection_request(cdata,
+						&(xevent.xselectionrequest));
+				}
+				break;
+			case SelectionClear:
+				clipboard_send_format_list(cdata);
+				break;
+			case SelectionNotify:
+				clipboard_get_requested_data(cdata, xevent.xselection.target);
+				break;
 			}
 		}
 	}
@@ -256,6 +477,8 @@ clipboard_new(cliprdrPlugin * plugin)
 		cdata->format_mappings[1].target_format = XInternAtom(cdata->display, "UTF8_STRING", False);
 		cdata->format_mappings[1].format_id = CF_TEXT;
 		cdata->num_format_mappings = 2;
+
+		cdata->property_atom = XInternAtom(cdata->display, "_FREERDP_CLIPRDR", False);
 	}
 	pthread_create(&thread, 0, thread_func, cdata);
 	pthread_detach(thread);
@@ -266,21 +489,11 @@ int
 clipboard_sync(void * device_data)
 {
 	struct clipboard_data * cdata;
-	char * s;
-	int size;
 
 	LLOGLN(10, ("clipboard_sync"));
 
 	cdata = (struct clipboard_data *) device_data;
-
-	size = 72;
-	s = (char *) malloc(size);
-	memset(s, 0, size);
-	SET_UINT32(s, 0, (uint32)CF_UNICODETEXT);
-	SET_UINT32(s, 36, (uint32)CF_TEXT);
-	cliprdr_send_packet(cdata->plugin, CB_FORMAT_LIST,
-		0, s, size);
-	free(s);
+	clipboard_send_format_list(cdata);
 	return 0;
 }
 
@@ -338,13 +551,51 @@ clipboard_format_list(void * device_data, int flag,
 }
 
 int
-clipboard_request_data(void * device_data, int format)
+clipboard_format_list_response(void * device_data, int flag)
 {
 	struct clipboard_data * cdata;
 
-	LLOGLN(10, ("clipboard_request_data: format=%d", format));
 	cdata = (struct clipboard_data *) device_data;
+	if (flag & CB_RESPONSE_FAIL)
+	{
+		clipboard_send_format_list(cdata);
+	}
 	return 0;
+}
+
+int
+clipboard_request_data(void * device_data, uint32 format)
+{
+	struct clipboard_data * cdata;
+	int i;
+
+	LLOGLN(10, ("clipboard_request_data: format=0x%04x", format));
+	cdata = (struct clipboard_data *) device_data;
+	i = clipboard_select_format_by_id(cdata, format);
+	cdata->request_index = i;
+	if (i < 0)
+	{
+		LLOGLN(0, ("clipboard_request_data: unsupported format 0x%04x requested",
+			format));
+	}
+	else
+	{
+		LLOGLN(10, ("clipboard_request_data: target=%d",
+			(int)cdata->format_mappings[i].target_format));
+		pthread_mutex_lock(cdata->mutex);
+		XConvertSelection(cdata->display, cdata->clipboard_atom,
+			cdata->format_mappings[i].target_format, cdata->property_atom,
+			cdata->window, CurrentTime);
+		XFlush(cdata->display);
+		pthread_mutex_unlock(cdata->mutex);
+		/* After this point, we expect a SelectionNotify event from the
+		 * clipboard owner.
+		 */
+		return 0;
+	}
+	cliprdr_send_packet(cdata->plugin, CB_FORMAT_DATA_RESPONSE,
+		CB_RESPONSE_FAIL, NULL, 0);
+	return 1;
 }
 
 static void
@@ -371,7 +622,7 @@ clipboard_handle_unicodetext(struct clipboard_data * cdata,
 		LLOGLN(0, ("clipboard_handle_unicodetext: iconv_open failed."));
 		return;
 	}
-	cdata->data_length = length * 2;
+	cdata->data_length = length * 3 / 2 + 2;
 	cdata->data = malloc(cdata->data_length);
 	memset(cdata->data, 0, cdata->data_length);
 	in_size = (size_t)length;
@@ -379,6 +630,7 @@ clipboard_handle_unicodetext(struct clipboard_data * cdata,
 	out = cdata->data;
 	iconv(cd, &data, &in_size, &out, &avail);
 	iconv_close(cd);
+	cdata->data_length = out - cdata->data + 2;
 }
 
 int

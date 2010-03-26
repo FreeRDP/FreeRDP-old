@@ -159,6 +159,7 @@ thread_process_message(cliprdrPlugin * plugin, char * data, int data_size)
 				CB_RESPONSE_OK, NULL, 0);
 			break;
 		case CB_FORMAT_LIST_RESPONSE:
+			clipboard_format_list_response(plugin->device_data, flag);
 			break;
 		case CB_FORMAT_DATA_REQUEST:
 			format = GET_UINT32(data, 8);
