@@ -1,10 +1,11 @@
 # ./autogen.sh
+# ./configure
 # make dist # creates freerdp-0.0.1.tar.gz
-# rpmbuild -ta freerdp-0.0.1.tar.gz
+# rpmbuild -ta freerdp-UNKNOWN.tar.gz
 
 Summary: Remote Desktop Protocol functionality
 Name: freerdp
-Version: 0.0.1
+Version: UNKNOWN
 Release: 1%{?dist}
 License: GPLv2
 Group: Applications/Communications
@@ -26,7 +27,6 @@ Microsoft products.
 
 %package libs
 Summary: Core libraries implementing the RDP protocol
-Requires: %{name} = %{version}-%{release}
 %description libs
 libfreerdp can be embedded in applications.
 
@@ -45,7 +45,7 @@ sync, disk/printer redirection, etc.
 
 %package devel
 Summary: Libraries and header files for embedding and extending freerdp
-Requires: %{name} = %{version}-%{release}
+Requires: %{name}-libs = %{version}-%{release}
 %description devel
 Header files and unversioned libraries for libfreerdp, libfreerdpchanman and
 libfreerdpkbd.
