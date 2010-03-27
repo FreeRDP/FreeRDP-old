@@ -248,6 +248,28 @@ lf2crlf(char * data, int * length)
 	return outbuf;
 }
 
+static void
+crlf2lf(char * data, int * length)
+{
+	char * out;
+	char * in;
+	char * in_end;
+	char c;
+
+	out = data;
+	in = data;
+	in_end = data + (*length);
+	while (in < in_end)
+	{
+		c = *in++;
+		if (c != '\r')
+		{
+			*out++ = c;
+		}
+	}
+	*length = out - data;
+}
+
 static char *
 clipboard_get_requested_unicodetext(struct clipboard_data * cdata,
 	char * data, int * length)
@@ -255,6 +277,8 @@ clipboard_get_requested_unicodetext(struct clipboard_data * cdata,
 	iconv_t cd;
 	size_t avail;
 	size_t in_size;
+	char * inbuf;
+	char * in;
 	char * outbuf;
 	char * out;
 
@@ -264,13 +288,16 @@ clipboard_get_requested_unicodetext(struct clipboard_data * cdata,
 		LLOGLN(0, ("clipboard_handle_unicodetext: iconv_open failed."));
 		return NULL;
 	}
+	inbuf = lf2crlf(data, length);
 	avail = (*length) * 2;
 	outbuf = malloc(avail + 2);
 	memset(outbuf, 0, avail + 2);
 	in_size = (size_t)(*length);
 	out = outbuf;
-	iconv(cd, &data, &in_size, &out, &avail);
+	in = inbuf;
+	iconv(cd, &in, &in_size, &out, &avail);
 	iconv_close(cd);
+	free(inbuf);
 	*length = out - outbuf + 2;
 	return outbuf;
 }
@@ -279,10 +306,13 @@ static char *
 clipboard_get_requested_text(struct clipboard_data * cdata,
 	char * data, int * length)
 {
+	char * inbuf;
 	char * outbuf;
 
+	inbuf = lf2crlf(data, length);
 	outbuf = (char *) malloc(*length);
-	memcpy(outbuf, data, *length);
+	memcpy(outbuf, inbuf, *length);
+	free(inbuf);
 	return outbuf;
 }
 
@@ -344,10 +374,6 @@ clipboard_get_requested_data(struct clipboard_data * cdata, Atom target)
 	else
 	{
 		length = (int)bytes_left;
-		outbuf = lf2crlf(data, &length);
-		XFree(data);
-		data = outbuf;
-		outbuf = NULL;
 		switch (cdata->format_mappings[cdata->request_index].format_id)
 		{
 		case CF_UNICODETEXT:
@@ -359,7 +385,7 @@ clipboard_get_requested_data(struct clipboard_data * cdata, Atom target)
 				data, &length);
 			break;
 		}
-		free(data);
+		XFree(data);
 		if (outbuf)
 		{
 			cliprdr_send_packet(cdata->plugin, CB_FORMAT_DATA_RESPONSE,
@@ -605,6 +631,7 @@ clipboard_handle_text(struct clipboard_data * cdata,
 	cdata->data = (char *) malloc(length);
 	memcpy(cdata->data, data, length);
 	cdata->data_length = length;
+	crlf2lf(cdata->data, &cdata->data_length);
 }
 
 static void
@@ -631,6 +658,7 @@ clipboard_handle_unicodetext(struct clipboard_data * cdata,
 	iconv(cd, &data, &in_size, &out, &avail);
 	iconv_close(cd);
 	cdata->data_length = out - cdata->data + 2;
+	crlf2lf(cdata->data, &cdata->data_length);
 }
 
 int
