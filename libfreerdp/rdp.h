@@ -45,11 +45,15 @@ struct rdp_rdp
 	struct rdp_app * app; // RemoteApp
 	/* Session Directory redirection */
 	int redirect;
+	uint32 redirect_session_id;
 	char redirect_server[64];
 	char redirect_domain[16];
-	char redirect_password[64];
+	char redirect_password[256];
 	char redirect_username[256];
 	char redirect_cookie[128];
+	char redirect_target_fqdn[256];
+	char redirect_target_netbios_name[256];
+	char redirect_target_net_addresses[1024];
 	int redirect_flags;
 	int input_flags;
 	int use_input_fast_path;

@@ -569,6 +569,16 @@ l_rdp_connect(struct rdp_inst * inst)
 	{
 		return 0;
 	}
+	if (rdp->redirect)
+	{
+		if (rdp_reconnect(rdp, rdp->redirect_server, rdp->redirect_flags,
+			rdp->redirect_domain, rdp->redirect_password, s->shell,
+			s->directory, rdp->redirect_cookie, s->tcp_port_rdp,
+			rdp->redirect_username))
+		{
+			return 0;
+		}
+	}
 	return 1;
 }
 
