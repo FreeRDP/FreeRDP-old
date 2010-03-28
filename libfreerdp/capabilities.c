@@ -24,7 +24,7 @@
 #include "rdpset.h"
 #include "pstcache.h"
 #include "capabilities.h"
-#include "parse.h"
+#include "stream.h"
 
 static uint8 *
 rdp_skip_capset_header(STREAM s, int size)
@@ -61,8 +61,8 @@ rdp_out_general_capset(rdpRdp * rdp, STREAM s)
 	out_uint16_le(s, OS_MAJOR_TYPE_WINDOWS); // osMajorType, should we lie?
 	out_uint16_le(s, OS_MINOR_TYPE_WINDOWS_NT); // osMinorType
 	out_uint16_le(s, CAPS_PROTOCOL_VERSION); // protocolVersion
-	out_uint16(s, 0); // pad
-	out_uint16(s, 0); // generalCompressionTypes, must be set to 0
+	out_uint16_le(s, 0); // pad
+	out_uint16_le(s, 0); // generalCompressionTypes, must be set to 0
 	flags = 0;
 	if (rdp->settings->rdp_version >= 5)
 	{
@@ -70,9 +70,9 @@ rdp_out_general_capset(rdpRdp * rdp, STREAM s)
 			LONG_CREDENTIALS_SUPPORTED | AUTORECONNECT_SUPPORTED;
 	}
 	out_uint16_le(s, flags); // extraFlags
-	out_uint16(s, 0); // updateCapabilityFlag, must be set to 0
-	out_uint16(s, 0); // remoteUnshareFlag, must be set to 0
-	out_uint16(s, 0); // generalCompressionLevel, must be set to 0
+	out_uint16_le(s, 0); // updateCapabilityFlag, must be set to 0
+	out_uint16_le(s, 0); // remoteUnshareFlag, must be set to 0
+	out_uint16_le(s, 0); // generalCompressionLevel, must be set to 0
 	out_uint8(s, 0); // refreshRectSupport, either TRUE (0x01) or FALSE (0x00)
 	out_uint8(s, 0); // suppressOutputSupport, either TRUE (0x01) or FALSE (0x00)
 	rdp_out_capset_header(s, header, CAPSET_TYPE_GENERAL);
@@ -100,19 +100,19 @@ rdp_out_bitmap_capset(rdpRdp * rdp, STREAM s)
 	{
 		out_uint16_le(s, rdp->settings->server_depth); // preferredBitsPerPixel
 	}
-	
+
 	out_uint16_le(s, 1); // receive1BitPerPixel
 	out_uint16_le(s, 1); // receive4BitsPerPixel
 	out_uint16_le(s, 1); // receive8BitsPerPixel
 	out_uint16_le(s, rdp->settings->width); // desktopWidth
 	out_uint16_le(s, rdp->settings->height); // desktopHeight
-	out_uint16(s, 0); // pad
+	out_uint16_le(s, 0); // pad
 	out_uint16_le(s, 1); // desktopResizeFlag
 	out_uint16_le(s, rdp->settings->bitmap_compression ? 1 : 0); // bitmapCompressionFlag
 	out_uint8(s, 0); // highColorFlags, ignored and should be set to zero
 	out_uint8(s, 1); // drawingFlags, indicating support for 32 bpp bitmaps
 	out_uint16_le(s, 1); // multipleRectangleSupport, must be set to true
-	out_uint16(s, 0); // pad
+	out_uint16_le(s, 0); // pad
 	rdp_out_capset_header(s, header, CAPSET_TYPE_BITMAP);
 }
 
@@ -138,8 +138,8 @@ rdp_process_bitmap_capset(rdpRdp * rdp, STREAM s)
 	in_uint16_le(s, desktopWidth); // desktopWidth
 	in_uint16_le(s, desktopHeight); // desktopHeight
 	in_uint8s(s, 2); // Ignore pad
-	in_uint16(s, desktopResizeFlag); // desktopResizeFlag
-	in_uint16(s, bitmapCompressionFlag); // bitmapCompressionFlag
+	in_uint16_le(s, desktopResizeFlag); // desktopResizeFlag
+	in_uint16_le(s, bitmapCompressionFlag); // bitmapCompressionFlag
 	in_uint8s(s, 1); // Ignore highColorFlags
 	in_uint8(s, drawingFlags); // drawingFlags
 
@@ -196,13 +196,13 @@ rdp_out_order_capset(rdpRdp * rdp, STREAM s)
 	orderSupport[NEG_INDEX_INDEX] = 1;
 
 	out_uint8s(s, 16); // terminalDescriptor, ignored and should all be set to zeros
-	out_uint32(s, 0); // pad
+	out_uint32_le(s, 0); // pad
 	out_uint16_le(s, 1); // desktopSaveXGranularity
 	out_uint16_le(s, 20); // desktopSaveYGranularity
-	out_uint16(s, 0); // pad
+	out_uint16_le(s, 0); // pad
 	out_uint16_le(s, 1); // maximumOrderLevel
 	out_uint16_le(s, 0); // numberFonts, ignored and should be set to zero
-	
+
 	out_uint16_le(s,
 		NEGOTIATEORDERSUPPORT |
 		ZEROBOUNDSDELTASSUPPORT |
@@ -211,14 +211,14 @@ rdp_out_order_capset(rdpRdp * rdp, STREAM s)
 	out_uint8p(s, orderSupport, 32); // orderSupport
 	out_uint16_le(s, 0); // textFlags, must be ignored
 	out_uint16_le(s, 0); // orderSupportExFlags
-	out_uint32(s, 0); // pad
+	out_uint32_le(s, 0); // pad
 	out_uint32_le(s, rdp->settings->desktop_save == False ? 0 : 0x38400); // desktopSaveSize
-	out_uint16(s, 0); // pad
-	out_uint16(s, 0); // pad
+	out_uint16_le(s, 0); // pad
+	out_uint16_le(s, 0); // pad
 
 	/* See [MSDN-CP]: http://msdn.microsoft.com/en-us/library/dd317756(VS.85).aspx */
 	out_uint16_le(s, 0x04E4); // textANSICodePage, 0x04E4 is "ANSI Latin 1 Western European (Windows)"
-	out_uint16(s, 0); // pad
+	out_uint16_le(s, 0); // pad
 
 	rdp_out_capset_header(s, header, CAPSET_TYPE_ORDER);
 }
@@ -314,7 +314,7 @@ rdp_out_bitmapcache_hostsupport_capset(rdpRdp * rdp, STREAM s)
 	header = rdp_skip_capset_header(s, 4);
 	out_uint8(s, BITMAPCACHE_REV2); // cacheVersion, must be set to BITMAPCACHE_REV2
 	out_uint8(s, 0); // pad
-	out_uint16(s, 0); // pad
+	out_uint16_le(s, 0); // pad
 	rdp_out_capset_header(s, header, CAPSET_TYPE_BITMAPCACHE_HOSTSUPPORT);
 }
 
@@ -343,8 +343,8 @@ rdp_out_input_capset(rdpRdp * rdp, STREAM s)
 		flags |= rdp->input_flags & (INPUT_FLAG_FASTPATH_INPUT | INPUT_FLAG_FASTPATH_INPUT2);
 	}
 	out_uint16_le(s, flags); // inputFlags
-	out_uint16(s, 0); // pad
-        out_uint32_le(s, rdp->settings->keyboard_layout); // keyboardLayout
+	out_uint16_le(s, 0); // pad
+	out_uint32_le(s, rdp->settings->keyboard_layout); // keyboardLayout
 	out_uint32_le(s, rdp->settings->keyboard_type); // keyboardType
 	out_uint32_le(s, rdp->settings->keyboard_subtype); // keyboardSubType
 	out_uint32_le(s, rdp->settings->keyboard_functionkeys); // keyboardFunctionKeys
@@ -386,7 +386,7 @@ rdp_out_font_capset(STREAM s)
 
 	header = rdp_skip_capset_header(s, 4);
 	out_uint16_le(s, FONTSUPPORT_FONTLIST); // fontSupportFlags
-	out_uint16(s, 0); // pad
+	out_uint16_le(s, 0); // pad
 	rdp_out_capset_header(s, header, CAPSET_TYPE_FONT);
 }
 
@@ -407,8 +407,8 @@ rdp_out_control_capset(STREAM s)
 	uint8 * header;
 
 	header = rdp_skip_capset_header(s, 4);
-	out_uint16(s, 0); // controlFlags, should be set to zero
-	out_uint16(s, 0); // remoteDetachFlag, should be set to FALSE
+	out_uint16_le(s, 0); // controlFlags, should be set to zero
+	out_uint16_le(s, 0); // remoteDetachFlag, should be set to FALSE
 	out_uint16_le(s, CONTROLPRIORITY_NEVER); // controlInterest
 	out_uint16_le(s, CONTROLPRIORITY_NEVER); // detachInterest
 	rdp_out_capset_header(s, header, CAPSET_TYPE_CONTROL);
@@ -422,10 +422,10 @@ rdp_out_window_activation_capset(STREAM s)
 
 	header = rdp_skip_capset_header(s, 4);
 	/* All of the following should be set to FALSE (0x0) */
-	out_uint16(s, 0); // helpKeyFlag
-	out_uint16(s, 0); // helpKeyIndexFlag
-	out_uint16(s, 0); // helpExtendedKeyFlag
-	out_uint16(s, 0); // windowManagerKeyFlag
+	out_uint16_le(s, 0); // helpKeyFlag
+	out_uint16_le(s, 0); // helpKeyIndexFlag
+	out_uint16_le(s, 0); // helpExtendedKeyFlag
+	out_uint16_le(s, 0); // windowManagerKeyFlag
 	rdp_out_capset_header(s, header, CAPSET_TYPE_ACTIVATION);
 }
 
@@ -458,7 +458,7 @@ rdp_process_pointer_capset(rdpRdp * rdp, STREAM s)
 	uint16 colorPointerCacheSize;
 	// uint16 pointerCacheSize;
 
-	in_uint16(s, colorPointerFlags); // colorPointerFlags (assumed to be always true)
+	in_uint16_le(s, colorPointerFlags); // colorPointerFlags (assumed to be always true)
 	in_uint16_le(s, colorPointerCacheSize); // colorPointerCacheSize
 	// int_uint16_le(s, pointerCacheSize); // pointerCacheSize
 }
@@ -470,8 +470,8 @@ rdp_out_share_capset(STREAM s)
 	uint8 * header;
 
 	header = rdp_skip_capset_header(s, 4);
-	out_uint16(s, 0); // nodeID
-	out_uint16(s, 0); // pad
+	out_uint16_le(s, 0); // nodeID
+	out_uint16_le(s, 0); // pad
 	rdp_out_capset_header(s, header, CAPSET_TYPE_SHARE);
 }
 
@@ -481,7 +481,7 @@ rdp_process_share_capset(rdpRdp * rdp, STREAM s)
 {
 	uint16 nodeID;
 
-	in_uint16(s, nodeID); // nodeID
+	in_uint16_le(s, nodeID); // nodeID
 	// pad
 }
 
@@ -493,7 +493,7 @@ rdp_out_colorcache_capset(STREAM s)
 
 	header = rdp_skip_capset_header(s, 4);
 	out_uint16_le(s, 6);	/* cache size */
-	out_uint16(s, 0);	/* pad */
+	out_uint16_le(s, 0);	/* pad */
 	rdp_out_capset_header(s, header, CAPSET_TYPE_COLORCACHE);
 }
 
@@ -537,7 +537,7 @@ rdp_out_glyphcache_capset(STREAM s)
 		glyphCache (40 bytes):
 		An array of 10 cache definition structures
 		Maximum number of cache entries: 254
-		Maximum size of a cache element: 2048	
+		Maximum size of a cache element: 2048
 	 */
 	rdp_out_cache_definition(s, 0x00FE, 0x0004);
 	rdp_out_cache_definition(s, 0x00FE, 0x0004);
@@ -554,12 +554,12 @@ rdp_out_glyphcache_capset(STREAM s)
 		fragCache (4 bytes):
 		Fragment cache data (one cache definition structure)
 		Maximum number of cache entries: 256
-		Maximum size of a cache element: 256	
+		Maximum size of a cache element: 256
 	*/
 	rdp_out_cache_definition(s, 0x0040, 0x0800); // fragCache
 
 	out_uint16_le(s, GLYPH_SUPPORT_FULL); // glyphSupportLevel
-	out_uint16(s, 0); // pad
+	out_uint16_le(s, 0); // pad
 	rdp_out_capset_header(s, header, CAPSET_TYPE_GLYPHCACHE);
 }
 
@@ -571,7 +571,7 @@ rdp_out_sound_capset(STREAM s)
 
 	header = rdp_skip_capset_header(s, 4);
 	out_uint16_le(s, SOUND_BEEPS_FLAG); // soundFlags
-	out_uint16(s, 0); // pad
+	out_uint16_le(s, 0); // pad
 	rdp_out_capset_header(s, header, CAPSET_TYPE_SOUND);
 }
 
@@ -840,7 +840,7 @@ rdp_out_surface_commands_capset(STREAM s)
 
 	header = rdp_skip_capset_header(s, 4);
 	out_uint32_le(s, SURFCMDS_SETSURFACEBITS); // cmdFlags
-	out_uint32(s, 0); // reserved for future use
+	out_uint32_le(s, 0); // reserved for future use
 	rdp_out_capset_header(s, header, CAPSET_TYPE_SURFACE_COMMANDS);
 }
 

@@ -1415,7 +1415,7 @@ process_set_surface(rdpOrders * orders, STREAM s)
 {
 	sint16 idx;
 
-	in_uint16(s, idx);
+	in_uint16_le(s, idx);
 	ui_set_surface(orders->rdp->inst, idx >= 0 ?
 		cache_get_bitmap(orders->rdp->cache, 255, idx) : NULL);
 }

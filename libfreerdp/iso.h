@@ -18,7 +18,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "parse.h"
+#include "stream.h"
 #include "types_ui.h"
 
 #ifndef __ISO_H

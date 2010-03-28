@@ -1,7 +1,7 @@
 
 #include "chan_stream.h"
 
-int
+void
 set_wstr(char* dst, int dstlen, char* src, int srclen)
 {
 	int i;

@@ -19,6 +19,15 @@ missing
 stamp-h1
 *~
 autom4te.cache
+/asn1/Makefile
+/asn1/Makefile.in
+/asn1/xfreerdp
+/asn1/*.o
+/asn1/*.lo
+/asn1/*.la
+/asn1/*.deps
+/asn1/*.libs
+/asn1/*~
 /libfreerdp/Makefile
 /libfreerdp/Makefile.in
 /libfreerdp/*.o

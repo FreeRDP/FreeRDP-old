@@ -55,7 +55,7 @@ cliprdr_send_packet(uint16 type, uint16 status, uint8 * data, uint32 length)
 	out_uint16_le(s, status);
 	out_uint32_le(s, length);
 	out_uint8p(s, data, length);
-	out_uint32(s, 0);	/* pad? */
+	out_uint32_le(s, 0);	/* pad? */
 	s_mark_end(s);
 	channel_send(g_rdp->sec->mcs->chan, s, cliprdr_channel);
 }

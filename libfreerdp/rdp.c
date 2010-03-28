@@ -161,7 +161,7 @@ rdp_send_data(rdpRdp * rdp, STREAM s, uint8 data_pdu_type)
 	out_uint16_le(s, (length - 14));
 	out_uint8(s, data_pdu_type);
 	out_uint8(s, 0);	/* compress_type */
-	out_uint16(s, 0);	/* compress_len */
+	out_uint16_le(s, 0);	/* compress_len */
 
 	sec_send(rdp->sec, s, rdp->settings->encryption ? SEC_ENCRYPT : 0);
 }
@@ -426,7 +426,7 @@ rdp_send_logon_info(rdpRdp * rdp, uint32 flags, char *domain, char *user,
 		s = sec_init(rdp->sec, sec_flags, 18 + len_domain + len_user + len_password
 			     + len_program + len_directory + 10);
 
-		out_uint32(s, 0);
+		out_uint32_le(s, 0);
 		out_uint32_le(s, flags);
 		out_uint16_le(s, len_domain);
 		out_uint16_le(s, len_user);
@@ -466,7 +466,7 @@ rdp_send_logon_info(rdpRdp * rdp, uint32 flags, char *domain, char *user,
 		s = sec_init(rdp->sec, sec_flags, packetlen);
 		DEBUG_RDP5("Called sec_init with packetlen %d\n", packetlen);
 
-		out_uint32(s, 0);	// Codepage, see http://go.microsoft.com/fwlink/?LinkId=89981
+		out_uint32_le(s, 0);	// Codepage, see http://go.microsoft.com/fwlink/?LinkId=89981
 
 		if(rdp->settings->autologin)
 			flags |= INFO_AUTOLOGON;
@@ -539,9 +539,9 @@ rdp_send_logon_info(rdpRdp * rdp, uint32 flags, char *domain, char *user,
 
 		out_uint32_le(s, 0); // clientSessionId, should be set to zero
 		out_uint32_le(s, rdp->settings->rdp5_performanceflags); // performanceFlags
-		out_uint16(s, 0); // cbAutoReconnectLen
+		out_uint16_le(s, 0); // cbAutoReconnectLen
 		// autoReconnectCookie (length specified by cbAutoReconnectLen)
-		
+
 	}
 	s_mark_end(s);
 	sec_send(rdp->sec, s, sec_flags);
@@ -556,8 +556,8 @@ rdp_send_control(rdpRdp * rdp, uint16 action)
 	s = rdp_init_data(rdp, 8);
 
 	out_uint16_le(s, action); // action
-	out_uint16(s, 0); // grantID
-	out_uint32(s, 0); // controlID
+	out_uint16_le(s, 0); // grantID
+	out_uint32_le(s, 0); // controlID
 
 	s_mark_end(s);
 	rdp_send_data(rdp, s, RDP_DATA_PDU_CONTROL);
@@ -631,7 +631,7 @@ rdp_send_input(rdpRdp * rdp, time_t time, uint16 message_type, uint16 device_fla
 	{
 		s = rdp_init_data(rdp, 16);
 		out_uint16_le(s, 1); /* number of events */
-		out_uint16(s, 0); /* pad */
+		out_uint16_le(s, 0); /* pad */
 		out_uint32_le(s, (uint32)time);
 		out_uint16_le(s, message_type);
 		out_uint16_le(s, device_flags);
@@ -666,7 +666,7 @@ rdp_sync_input(rdpRdp * rdp, time_t time, uint32 toggle_keys_state)
 	{
 		s = rdp_init_data(rdp, 16);
 		out_uint16_le(s, 1); /* number of events */
-		out_uint16(s, 0); /* pad */
+		out_uint16_le(s, 0); /* pad */
 		out_uint32_le(s, (uint32)time); /* eventTime */
 		out_uint16_le(s, RDP_INPUT_SYNC); /* messageType */
 		out_uint16_le(s, 0); /* pad */
@@ -696,7 +696,7 @@ rdp_unicode_input(rdpRdp * rdp, time_t time, uint16 unicode_character)
 	{
 		s = rdp_init_data(rdp, 16);
 		out_uint16_le(s, 1); /* number of events */
-		out_uint16(s, 0); /* pad */
+		out_uint16_le(s, 0); /* pad */
 		out_uint32_le(s, (uint32)time); /* eventTime */
 		out_uint16_le(s, RDP_INPUT_UNICODE); /* messageType */
 		out_uint16_le(s, 0); /* pad */
@@ -789,7 +789,7 @@ rdp_send_fonts(rdpRdp * rdp, uint16 seq)
 
 	s = rdp_init_data(rdp, 8);
 
-	out_uint16(s, 0); // numberFonts, should be set to zero
+	out_uint16_le(s, 0); // numberFonts, should be set to zero
 	out_uint16_le(s, 0); // totalNumFonts, should be set to zero
 	out_uint16_le(s, seq); // listFlags
 	out_uint16_le(s, 0x0032); // entrySize, should be set to 0x0032

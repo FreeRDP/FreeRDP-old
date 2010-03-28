@@ -914,6 +914,7 @@ esac
 
 AC_CONFIG_FILES([
 Makefile
+asn1/Makefile
 libfreerdp/Makefile
 include/Makefile
 libfreerdpkbd/Makefile

@@ -72,13 +72,13 @@ licence_present(rdpLicence * licence, uint8 * client_random, uint8 * rsa_data,
 
 	/* Client License Information: */
 	out_uint32_le(s, 1);	/* PreferredKeyExchangeAlg KEY_EXCHANGE_ALG_RSA */
-	out_uint16(s, 0);	/* PlatformId, unknown platform and ISV */
+	out_uint16_le(s, 0);	/* PlatformId, unknown platform and ISV */
 	out_uint16_le(s, 0x0201);	/* PlatformId, build/version */
 
 	out_uint8p(s, client_random, SEC_RANDOM_SIZE);	/* ClientRandom */
 
 	/* Licensing Binary Blob with EncryptedPreMasterSecret: */
-	out_uint16(s, 0);	/* wBlobType should be 0x0002 (BB_RANDOM_BLOB) */
+	out_uint16_le(s, 0);	/* wBlobType should be 0x0002 (BB_RANDOM_BLOB) */
 	out_uint16_le(s, (SEC_MODULUS_SIZE + SEC_PADDING_SIZE));	/* wBlobLen */
 	out_uint8p(s, rsa_data, SEC_MODULUS_SIZE);	/* 48 bit random number encrypted for server */
 	out_uint8s(s, SEC_PADDING_SIZE);
@@ -118,13 +118,13 @@ licence_send_request(rdpLicence * licence, uint8 * client_random, uint8 * rsa_da
 	out_uint16_le(s, length);
 
 	out_uint32_le(s, 1);	/* PreferredKeyExchangeAlg KEY_EXCHANGE_ALG_RSA */
-	out_uint16(s, 0);	/* PlatformId, unknown platform and ISV */
+	out_uint16_le(s, 0);	/* PlatformId, unknown platform and ISV */
 	out_uint16_le(s, 0xff01);	/* PlatformId, build/version */
 
 	out_uint8p(s, client_random, SEC_RANDOM_SIZE);	/* ClientRandom */
 
 	/* Licensing Binary Blob with EncryptedPreMasterSecret: */
-	out_uint16(s, 0);	/* wBlobType should be 0x0002 (BB_RANDOM_BLOB) */
+	out_uint16_le(s, 0);	/* wBlobType should be 0x0002 (BB_RANDOM_BLOB) */
 	out_uint16_le(s, (SEC_MODULUS_SIZE + SEC_PADDING_SIZE));	/* wBlobLen */
 	out_uint8p(s, rsa_data, SEC_MODULUS_SIZE);	/* 48 bit random number encrypted for server */
 	out_uint8s(s, SEC_PADDING_SIZE);

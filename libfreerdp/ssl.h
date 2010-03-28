@@ -82,8 +82,8 @@ ssl_sig_ok(uint8 * exponent, uint32 exp_len, uint8 * modulus, uint32 mod_len,
 
 /* Functions for TLS */
 
-SSL*
-tls_connect(int fd, char *server);
+void
+tls_connect(SSL *connection, int sock, char *server);
 void
 tls_disconnect(SSL *connection);
 int

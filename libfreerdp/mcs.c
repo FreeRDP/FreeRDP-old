@@ -28,6 +28,7 @@
 #include "asn1.h"
 #include "rdpset.h"
 #include "debug.h"
+#include "tcp.h"
 
 /* Output a DOMAIN_PARAMS structure (ASN.1 BER) */
 static void

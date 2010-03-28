@@ -21,6 +21,10 @@
 
 #include "frdp.h"
 #include "ssl.h"
+#include "secure.h"
+#include "mcs.h"
+#include "iso.h"
+#include "tcp.h"
 
 void
 ssl_sha1_init(SSL_SHA1 * sha1)
@@ -370,11 +374,10 @@ tls_printf(char *func, SSL *connection, int val)
 }
 
 /* Initiate TLS handshake on socket */
-SSL*
-tls_connect(int fd, char *server)
+void
+tls_connect(SSL *connection, int sock, char *server)
 {
 	int ret;
-	SSL *connection;
 
 	if (!ssl_client_context)
 	{
@@ -384,23 +387,24 @@ tls_connect(int fd, char *server)
 		if (!ssl_client_context)
 		{
 			printf("SSL_CTX_new failed\n");
-			return NULL;
+			return;
 		}
 		if (!SSL_CTX_set_default_verify_paths(ssl_client_context))
 			printf("ssl_connect: failed to set default verify path. cannot verify server certificate.\n");
 	}
 
 	connection = SSL_new(ssl_client_context);
+
 	if (!connection)
 	{
 		printf("SSL_new failed\n");
-		return NULL;
+		return;
 	}
 
-	if (!SSL_set_fd(connection, fd))
+	if (!SSL_set_fd(connection, sock))
 	{
 		printf("SSL_set_fd failed\n");
-		return NULL;
+		return;
 	}
 
 	while (True)
@@ -409,14 +413,12 @@ tls_connect(int fd, char *server)
 		if (ret > 0)
 			break;
 		if (tls_printf("ssl_connect", connection, ret))
-			return NULL;
+			return;
 	}
 
 	tls_verify(connection, server);
 
 	printf("SSL connection established\n");
-
-	return connection;
 }
 
 /* Free TLS resources */
