@@ -312,7 +312,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\parse.h"
+				RelativePath="..\libfreerdp\stream.h"
 				>
 			</File>
 			<File

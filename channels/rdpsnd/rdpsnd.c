@@ -288,9 +288,9 @@ rdpsnd_process_negotiate(STREAM in)
 
 	out = rdpsnd_init_packet(RDPSND_NEGOTIATE | 0x200, 20 + 18 * format_count);
 	out_uint32_le(out, 0x00800003);	/* flags */
-	out_uint32(out, 0xffffffff);	/* volume */
-	out_uint32(out, 0);	/* pitch */
-	out_uint16(out, 0);	/* UDP port */
+	out_uint32_le(out, 0xffffffff);	/* volume */
+	out_uint32_le(out, 0);	/* pitch */
+	out_uint16_le(out, 0);	/* UDP port */
 
 	out_uint16_le(out, format_count);
 	out_uint8(out, 0);	/* padding */
@@ -306,7 +306,7 @@ rdpsnd_process_negotiate(STREAM in)
 		out_uint32_le(out, format->nAvgBytesPerSec);
 		out_uint16_le(out, format->nBlockAlign);
 		out_uint16_le(out, format->wBitsPerSample);
-		out_uint16(out, 0);	/* cbSize */
+		out_uint16_le(out, 0);	/* cbSize */
 	}
 
 	s_mark_end(out);
@@ -415,7 +415,7 @@ rdpsnd_process_rec_negotiate(STREAM in)
 		out_uint32_le(out, format->nAvgBytesPerSec);
 		out_uint16_le(out, format->nBlockAlign);
 		out_uint16_le(out, format->wBitsPerSample);
-		out_uint16(out, 0);	/* cbSize */
+		out_uint16_le(out, 0);	/* cbSize */
 	}
 
 	s_mark_end(out);

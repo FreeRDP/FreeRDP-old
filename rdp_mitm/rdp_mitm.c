@@ -314,9 +314,9 @@ void ntlm_recv_challenge_message(STREAM s)
 	char* targetName = NULL;
 	char* targetInfo = NULL;
 
-	in_uint16(s, targetNameLen);
-	in_uint16(s, targetNameMaxLen);
-	in_uint32(s, targetNameBufferOffset);
+	in_uint16_le(s, targetNameLen);
+	in_uint16_le(s, targetNameMaxLen);
+	in_uint32_le(s, targetNameBufferOffset);
 
 	ntlm_recv_negotiate_flags(s, &negotiateFlags);
 	in_uint8a(s, serverChallenge, 8);
@@ -325,9 +325,9 @@ void ntlm_recv_challenge_message(STREAM s)
 	printf("Server Challenge:\n");
 	print_hexdump(serverChallenge, 8);
 
-	in_uint16(s, targetInfoLen);
-	in_uint16(s, targetInfoMaxLen);
-	in_uint32(s, targetInfoBufferOffset);
+	in_uint16_le(s, targetInfoLen);
+	in_uint16_le(s, targetInfoMaxLen);
+	in_uint32_le(s, targetInfoBufferOffset);
 
 	/* Version, VERSION data structure (8 bytes) */
 	/* [MS-NLMP] says it should be ignored */
@@ -400,13 +400,13 @@ void ntlm_recv_authenticate_message(STREAM s)
 	char* workstationName = NULL;
 	char* encryptedRandomSessionKey = NULL;
 
-	in_uint16(s, lmChallengeResponseLen);
-	in_uint16(s, lmChallengeResponseMaxLen);
-	in_uint32(s, lmChallengeResponseBufferOffset);
+	in_uint16_le(s, lmChallengeResponseLen);
+	in_uint16_le(s, lmChallengeResponseMaxLen);
+	in_uint32_le(s, lmChallengeResponseBufferOffset);
 
-	in_uint16(s, ntChallengeResponseLen);
-	in_uint16(s, ntChallengeResponseMaxLen);
-	in_uint32(s, ntChallengeResponseBufferOffset);
+	in_uint16_le(s, ntChallengeResponseLen);
+	in_uint16_le(s, ntChallengeResponseMaxLen);
+	in_uint32_le(s, ntChallengeResponseBufferOffset);
 
 	in_uint16_le(s, domainNameLen);
 	in_uint16_le(s, domainNameMaxLen);
@@ -445,7 +445,7 @@ void ntlm_recv_authenticate_message(STREAM s)
 		in_uint8a(s, ntChallengeResponse, 16);
 		printf("---ntChallengeResponse---\n");
 		print_hexdump(ntChallengeResponse, 16);
-		
+
 	}
 
 	if(negotiateFlags.NTLMSSP_NEGOTIATE_OEM_DOMAIN_SUPPLIED)
@@ -515,7 +515,7 @@ void decode_ts_request(char* bytes, int length)
 		{
 			STREAM s = xmalloc(sizeof(struct stream));
 			nego_token = 0;
-			
+
 			rval = asn_DEF_NegotiationToken.ber_decoder(0, &asn_DEF_NegotiationToken, (void **)&nego_token,
 				ts_request->negoTokens->list.array[i]->negoToken.buf,
 				ts_request->negoTokens->list.array[i]->negoToken.size, 0);
@@ -547,18 +547,18 @@ void print_hexdump(char* bytes, int length)
 	int k;
 	int lineLength;
 	unsigned char b;
-		
+
 	lineLength = 16;
 
 	for(i = 0; i < length; i += k)
 	{
 		k = (lineLength < (length - i)) ? lineLength : (length - i);
-		
+
 		for(j = 0; j < lineLength; j++)
 		{
 			if(j < k)
 			{
-				b = (unsigned char)bytes[i + j];	
+				b = (unsigned char)bytes[i + j];
 				printf("%02X ", b);
 			}
 			else
@@ -571,7 +571,7 @@ void print_hexdump(char* bytes, int length)
 			if(j < k)
 			{
 				b = (unsigned char)bytes[i + j];
-			
+
 				if(b > 31 && b < 128)
 					printf("%c", b);
 				else
@@ -635,7 +635,7 @@ int tls_read_record(SSL* ssl, char* b, int size)
 		case SSL_ERROR_WANT_X509_LOOKUP:
 			printf("SSL_ERROR_WANT_X509_LOOKUP\n");
 			break;
-		
+
 		case SSL_ERROR_SYSCALL:
 			printf("SSL_ERROR_SYSCALL\n");
 			ERR_print_errors_fp(stdout);
@@ -693,7 +693,7 @@ int tls_write_record(SSL* ssl, char* b, int size)
 		case SSL_ERROR_WANT_X509_LOOKUP:
 			printf("SSL_ERROR_WANT_X509_LOOKUP\n");
 			break;
-		
+
 		case SSL_ERROR_SYSCALL:
 			printf("SSL_ERROR_SYSCALL\n");
 			ERR_print_errors_fp(stdout);
@@ -714,7 +714,7 @@ int tls_write_record(SSL* ssl, char* b, int size)
 	if(bytesWritten < size)
 		return bytesWritten += tls_write_record(ssl, &b[bytesWritten], size - bytesWritten);
 	else
-		return bytesWritten;	
+		return bytesWritten;
 }
 
 int main(int argc, char* argv[])
@@ -742,7 +742,7 @@ int main(int argc, char* argv[])
 		exit(0);
 	}
 
-	addr.sin_family = AF_INET; 
+	addr.sin_family = AF_INET;
 	addr.sin_port = htons(listeningPort);
 	addr.sin_addr.s_addr = INADDR_ANY;
 	memset(&(addr.sin_zero), '\0', 8);
@@ -756,9 +756,9 @@ int main(int argc, char* argv[])
 	if(listen(sockfd, 10) == -1)
 	{
 		printf("listen() error\n");
-		exit(0);	
+		exit(0);
 	}
-	
+
 	/* Accept incoming connection from source */
 	srcfd = accept(sockfd, (struct sockaddr*)&srcAddr, &addrSize);
 
@@ -876,7 +876,7 @@ int main(int argc, char* argv[])
 	SSL_CTX_set_options(ctxDst, SSL_OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION);
 
 	sslDst = SSL_new(ctxDst);
-	
+
 	if(sslDst == NULL)
 	{
 		printf("SSL_new() Error\n");
@@ -948,8 +948,8 @@ int main(int argc, char* argv[])
 		{
 			printf("srcfd readable\n");
 			inSrcBuffer = tls_read_record(sslSrc, srcBuffer, BUFFER_SIZE);
-			
-			decode_ts_request(srcBuffer, inSrcBuffer);	
+
+			decode_ts_request(srcBuffer, inSrcBuffer);
 		}
 		if(FD_ISSET(dstfd, &readfds))
 		{

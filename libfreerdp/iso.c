@@ -76,8 +76,8 @@ iso_send_msg(rdpIso * iso, uint8 code)
 
 	out_uint8(s, 6);	/* hdrlen */
 	out_uint8(s, code);
-	out_uint16(s, 0);	/* dst_ref */
-	out_uint16(s, 0);	/* src_ref */
+	out_uint16_le(s, 0);	/* dst_ref */
+	out_uint16_le(s, 0);	/* src_ref */
 	out_uint8(s, 0);	/* class */
 
 	s_mark_end(s);
@@ -108,8 +108,8 @@ iso_send_connection_request(rdpIso * iso, char *username)
 	/* X.224 Connection Request (CR) TPDU */
 	out_uint8(s, length - 5);	/* hdrlen */
 	out_uint8(s, ISO_PDU_CR);
-	out_uint16(s, 0);	/* dst_ref */
-	out_uint16(s, 0);	/* src_ref */
+	out_uint16_le(s, 0);	/* dst_ref */
+	out_uint16_le(s, 0);	/* src_ref */
 	out_uint8(s, 0);	/* class */
 
 	/* cookie */
@@ -125,8 +125,8 @@ iso_send_connection_request(rdpIso * iso, char *username)
 		/* When using NLA, the RDP_NEG_DATA field should be present */
 		out_uint8(s, 0x01);	/* TYPE_RDP_NEG_REQ */
 		out_uint8(s, 0x00);	/* flags, must be set to zero */
-		out_uint16(s, 8);	/* RDP_NEG_DATA length (8) */
-		out_uint32(s, 0x00000003);	/* requestedProtocols, PROTOCOL_HYBRID_FLAG | PROTOCOL_SSL_FLAG */
+		out_uint16_le(s, 8);	/* RDP_NEG_DATA length (8) */
+		out_uint32_le(s, 0x00000003);	/* requestedProtocols, PROTOCOL_HYBRID_FLAG | PROTOCOL_SSL_FLAG */
 	}
 
 	s_mark_end(s);
@@ -381,7 +381,7 @@ iso_negotiate_encryption(rdpIso * iso, char *username)
 /* Receive a message on the ISO layer, return code */
 static STREAM
 iso_recv_msg(rdpIso * iso, uint8 * code, uint8 * rdpver)
-{	
+{
 	return tpkt_recv(iso, code, rdpver);
 }
 

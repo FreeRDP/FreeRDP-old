@@ -23,7 +23,7 @@
 
 #include "constants.h"
 #include "types_ui.h"
-#include "parse.h"
+#include "stream.h"
 
 #ifndef True
 #define True  (1)

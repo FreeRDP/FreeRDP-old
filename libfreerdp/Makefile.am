@@ -19,7 +19,7 @@ libfreerdp_la_SOURCES = \
 	mppc.c \
 	orders.c orders.h \
 	orderstypes.h \
-	parse.h \
+	stream.h \
 	pstcache.c pstcache.h \
 	rail.c rail.h \
 	rdp.c rdp.h \

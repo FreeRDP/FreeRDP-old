@@ -23,7 +23,7 @@
 
 #include "frdp.h"
 #include "types_ui.h"
-#include "parse.h"
+#include "stream.h"
 
 struct rdp_tcp
 {

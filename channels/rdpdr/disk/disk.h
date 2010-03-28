@@ -23,7 +23,7 @@
 #define __DISK_H
 
 #include "rdesktop.h"
-#include "parse.h"
+#include "stream.h"
 #include "types.h"
 #include "irp.h"
 

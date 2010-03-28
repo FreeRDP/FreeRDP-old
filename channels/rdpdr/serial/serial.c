@@ -800,16 +800,16 @@ serial_device_control(RD_NTHANDLE handle, uint32 request, STREAM in, STREAM out)
 				      pser_inf->read_total_timeout_multiplier,
 				      pser_inf->read_total_timeout_constant);
 
-			out_uint32(out, pser_inf->read_interval_timeout);
-			out_uint32(out, pser_inf->read_total_timeout_multiplier);
-			out_uint32(out, pser_inf->read_total_timeout_constant);
-			out_uint32(out, pser_inf->write_total_timeout_multiplier);
-			out_uint32(out, pser_inf->write_total_timeout_constant);
+			out_uint32_le(out, pser_inf->read_interval_timeout);
+			out_uint32_le(out, pser_inf->read_total_timeout_multiplier);
+			out_uint32_le(out, pser_inf->read_total_timeout_constant);
+			out_uint32_le(out, pser_inf->write_total_timeout_multiplier);
+			out_uint32_le(out, pser_inf->write_total_timeout_constant);
 			break;
 		case SERIAL_GET_WAIT_MASK:
 			DEBUG_SERIAL("serial_ioctl -> SERIAL_GET_WAIT_MASK %X\n",
 				      pser_inf->wait_mask);
-			out_uint32(out, pser_inf->wait_mask);
+			out_uint32_le(out, pser_inf->wait_mask);
 			break;
 		case SERIAL_SET_WAIT_MASK:
 			in_uint32(in, pser_inf->wait_mask);

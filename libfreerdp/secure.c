@@ -438,7 +438,7 @@ sec_out_mcs_data(rdpSec * sec, STREAM s)
 	out_uint16_le(s, RNS_UD_COLOR_8BPP); // postBeta2ColorDepth
 	out_uint16_le(s, 1); // clientProductID
 
-	out_uint32(s, 0); // serialNumber (should be initialized to 0)
+	out_uint32_le(s, 0); // serialNumber (should be initialized to 0)
 
 	i = MIN(sec->rdp->settings->server_depth, 24);
 	out_uint16_le(s, i); // highColorDepth
@@ -488,7 +488,7 @@ sec_out_mcs_data(rdpSec * sec, STREAM s)
 		been set. For non-French locale clients, this field MUST be set to 0.
 	*/
 
-	out_uint32(s, 0); // extEncryptionMethods
+	out_uint32_le(s, 0); // extEncryptionMethods
 
 	/* End of Client Security Data */
 
@@ -518,7 +518,7 @@ sec_out_mcs_data(rdpSec * sec, STREAM s)
 	out_uint32_le(s, sec->rdp->settings->console_session ?
 		REDIRECTED_SESSIONID_FIELD_VALID | REDIRECTION_SUPPORTED | REDIRECTION_VERSION3 :
 		REDIRECTION_SUPPORTED | REDIRECTION_VERSION3); // flags
-	out_uint32(s, 0); // RedirectedSessionID
+	out_uint32_le(s, 0); // RedirectedSessionID
 	/* End of Client Cluster Data */
 
 	s_mark_end(s);
@@ -674,7 +674,7 @@ sec_parse_crypt_info(rdpSec * sec, STREAM s, uint32 * rc4_key_size,
 		   "How did I find out about this?  I looked up and saw a
 		   bright light and when I came to I had a scar on my forehead
 		   and knew about X.500"
-		   - Peter Gutman in a early version of 
+		   - Peter Gutman in a early version of
 		   http://www.cs.auckland.ac.nz/~pgut001/pubs/x509guide.txt
 		 */
 		in_uint32_le(s, cacert_len);
@@ -817,7 +817,7 @@ sec_process_mcs_data(rdpSec * sec, STREAM s)
 
 			case SEC_TAG_SRV_CHANNELS:
 				/* FIXME: We should parse this information and
-				   use it to map RDP5 channels to MCS 
+				   use it to map RDP5 channels to MCS
 				   channels */
 				break;
 
