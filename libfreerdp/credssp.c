@@ -22,7 +22,7 @@
 #include "frdp.h"
 #include "ssl.h"
 #include "secure.h"
-#include "parse.h"
+#include "stream.h"
 #include "mem.h"
 #include "tcp.h"
 #include "mcs.h"
