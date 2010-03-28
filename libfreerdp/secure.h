@@ -49,6 +49,16 @@ struct rdp_sec
 };
 typedef struct rdp_sec rdpSec;
 
+enum sec_recv_type
+{
+	SEC_RECV_SHARE_CONTROL,
+	SEC_RECV_REDIRECT,
+	SEC_RECV_LICENSE,
+	SEC_RECV_IOCHANNEL, /* other than SEC_RECV_LICENSE */
+	SEC_RECV_FAST_PATH
+};
+typedef enum sec_recv_type secRecvType;
+
 void
 sec_hash_48(uint8 * out, uint8 * in, uint8 * salt1, uint8 * salt2, uint8 salt);
 void
@@ -73,7 +83,7 @@ sec_fp_send(rdpSec * sec, STREAM s, uint32 flags);
 void
 sec_process_mcs_data(rdpSec * sec, STREAM s);
 STREAM
-sec_recv(rdpSec * sec, uint8 * rdpver);
+sec_recv(rdpSec * sec, secRecvType * type);
 RD_BOOL
 sec_connect(rdpSec * sec, char *server, char *username, int port);
 RD_BOOL

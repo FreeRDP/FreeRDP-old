@@ -831,85 +831,57 @@ sec_process_mcs_data(rdpSec * sec, STREAM s)
 
 /* Receive secure transport packet */
 STREAM
-sec_recv(rdpSec * sec, uint8 * rdpver)
+sec_recv(rdpSec * sec, secRecvType * type)
 {
+	uint8 rdpver;
 	uint32 sec_flags;
 	uint16 channel;
 	STREAM s;
 
-	while ((s = mcs_recv(sec->mcs, &channel, rdpver)) != NULL)
+	while ((s = mcs_recv(sec->mcs, &channel, &rdpver)) != NULL)
 	{
-		if (rdpver != NULL)
+		if (rdpver != 3)
 		{
-			if (*rdpver != 3)
+			*type = SEC_RECV_FAST_PATH;
+			if (rdpver & 0x80)
 			{
-				if (*rdpver & 0x80)
-				{
-					in_uint8s(s, 8);	/* signature */
-					sec_decrypt(sec, s->p, s->end - s->p);
-				}
-				return s;
+				in_uint8s(s, 8);	/* dataSignature */
+				sec_decrypt(sec, s->p, s->end - s->p);
 			}
+			return s;
 		}
 		if (sec->rdp->settings->encryption || !(sec->licence->licence_issued))
 		{
+			/* basicSecurityHeader: */
 			in_uint32_le(s, sec_flags);
 
-			if (sec_flags & SEC_ENCRYPT)
+			if ((sec_flags & SEC_ENCRYPT) || (sec_flags & SEC_REDIRECTION_PKT))
 			{
-				in_uint8s(s, 8);	/* signature */
+				in_uint8s(s, 8);	/* dataSignature */
 				sec_decrypt(sec, s->p, s->end - s->p);
 			}
 
 			if (sec_flags & SEC_LICENCE_NEG)
 			{
+				*type = SEC_RECV_LICENSE;
 				licence_process(sec->licence, s);
 				continue;
 			}
 
-			if (sec_flags & 0x0400)	/* SEC_REDIRECT_ENCRYPT */
+			if (sec_flags & SEC_REDIRECTION_PKT)
 			{
-				uint8 swapbyte;
-
-				in_uint8s(s, 8);	/* signature */
-				sec_decrypt(sec, s->p, s->end - s->p);
-
-				/* Check for a redirect packet, starts with 00 04 */
-				if (s->p[0] == 0 && s->p[1] == 4)
-				{
-					/* for some reason the PDU and the length seem to be swapped.
-					   This isn't good, but we're going to do a byte for byte
-					   swap.  So the first foure value appear as: 00 04 XX YY,
-					   where XX YY is the little endian length. We're going to
-					   use 04 00 as the PDU type, so after our swap this will look
-					   like: XX YY 04 00 */
-					swapbyte = s->p[0];
-					s->p[0] = s->p[2];
-					s->p[2] = swapbyte;
-
-					swapbyte = s->p[1];
-					s->p[1] = s->p[3];
-					s->p[3] = swapbyte;
-
-					swapbyte = s->p[2];
-					s->p[2] = s->p[3];
-					s->p[3] = swapbyte;
-				}
-#ifdef WITH_DEBUG
-				/* warning!  this debug statement will show passwords in the clear! */
-				hexdump(s->p, s->end - s->p);
-#endif
+				*type = SEC_RECV_REDIRECT;
+				return s;
 			}
-
 		}
 
 		if (channel != MCS_GLOBAL_CHANNEL)
 		{
 			channel_process(sec->mcs->chan, s, channel);
-			*rdpver = 0xff;
+			*type = SEC_RECV_IOCHANNEL;
 			return s;
 		}
-
+		*type = SEC_RECV_SHARE_CONTROL;
 		return s;
 	}
 

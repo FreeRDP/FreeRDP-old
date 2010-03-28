@@ -95,7 +95,9 @@ int
 clipboard_format_list(void * device_data, int flag,
 	char * data, int length);
 int
-clipboard_request_data(void * device_data, int format);
+clipboard_format_list_response(void * device_data, int flag);
+int
+clipboard_request_data(void * device_data, uint32 format);
 int
 clipboard_handle_data(void * device_data, int flag,
 	char * data, int length);

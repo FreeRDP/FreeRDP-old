@@ -52,33 +52,42 @@
 
 #define RDP5_FLAG 0x0030
 
+static void
+process_redirect_pdu(rdpRdp * rdp, STREAM s);
 
 /* Receive an RDP packet */
 static STREAM
 rdp_recv(rdpRdp * rdp, uint8 * type)
 {
 	uint16 length, pdu_type;
-	uint8 rdpver;
+	secRecvType sec_type;
 
 	if ((rdp->rdp_s == NULL) || (rdp->next_packet >= rdp->rdp_s->end) ||
 	    (rdp->next_packet == NULL))
 	{
-		rdp->rdp_s = sec_recv(rdp->sec, &rdpver);
+		rdp->rdp_s = sec_recv(rdp->sec, &sec_type);
 		if (rdp->rdp_s == NULL)
 			return NULL;
-		if (rdpver == 0xff)
+		if (sec_type == SEC_RECV_IOCHANNEL)
 		{
 			rdp->next_packet = rdp->rdp_s->end;
 			*type = 0;
 			return rdp->rdp_s;
 		}
-		else if (rdpver != 3)
+		else if (sec_type == SEC_RECV_FAST_PATH)
 		{
 			/* rdp5_process should move rdp->next_packet ok */
 			rdp5_process(rdp, rdp->rdp_s);
 			*type = 0;
 			return rdp->rdp_s;
 		}
+		else if (sec_type == SEC_RECV_REDIRECT)
+		{
+			process_redirect_pdu(rdp, rdp->rdp_s);
+			*type = 0;
+			return rdp->rdp_s;
+		}
+		/* else rdptype == SEC_RECV_SHARE_CONTROL */
 
 		rdp->next_packet = rdp->rdp_s->p;
 	}
@@ -87,17 +96,20 @@ rdp_recv(rdpRdp * rdp, uint8 * type)
 		rdp->rdp_s->p = rdp->next_packet;
 	}
 
+	/* Share Control Header: */
 	in_uint16_le(rdp->rdp_s, length);
-	/* 32k packets are really 8, keepalive fix */
+
+	/* Undocumented!(?): 32k packets are keepalive packages of length 8: */
 	if (length == 0x8000)
 	{
 		rdp->next_packet += 8;
 		*type = 0;
 		return rdp->rdp_s;
 	}
+
 	in_uint16_le(rdp->rdp_s, pdu_type);
-	in_uint8s(rdp->rdp_s, 2);	/* userid */
-	*type = pdu_type & 0xf;
+	in_uint8s(rdp->rdp_s, 2);	/* PDUSource (Watch out: Might be missing for RDP_PDU_DEACTIVATE) */
+	*type = pdu_type & 0xf;	 /* version in high bits */
 
 #if WITH_DEBUG
 	DEBUG("RDP packet #%d, (type %x)\n", ++(rdp->packetno), *type);
@@ -1361,73 +1373,84 @@ process_data_pdu(rdpRdp * rdp, STREAM s, uint32 * ext_disc_reason)
 	return False;
 }
 
-/* Process redirect PDU from Session Directory */
-static RD_BOOL
-process_redirect_pdu(rdpRdp * rdp, STREAM s /*, uint32 * ext_disc_reason */ )
+static uint32
+rdp_in_len_and_bytes(STREAM s, char* p, int maxlen)
 {
+	/* TODO: Allocate dynamically instead of using fixed buffers */
 	uint32 len;
 
-	/* these 2 bytes are unknown, seem to be zeros */
-	in_uint8s(s, 2);
+	in_uint32_le(s, len);
+	DEBUG("len %d\n", len);
+	/* TODO: Check maxlen */
+	in_uint8a(s, p, len);
+	return len;
+}
 
-	/* read connection flags */
+static void
+rdp_in_len_and_unicode(STREAM s, char* p, int maxlen)
+{
+	uint32 len, i;
+
+	len = rdp_in_len_and_bytes(s, p, maxlen);
+	/* TODO: Proper unicode handling */
+	for (i = 1; i < (len / 2); i++)
+	{
+		p[i] = p[i * 2];
+	}
+	p[len / 2] = 0;
+}
+
+/* Process Server Redirection Packet */
+static void
+process_redirect_pdu(rdpRdp * rdp, STREAM s)
+{
+	uint16 length;
+
+	in_uint8s(s, 2);	/* flags, 0x0400 */
+	in_uint16_le(s, length);
+	in_uint32_le(s, rdp->redirect_session_id);
 	in_uint32_le(s, rdp->redirect_flags);
 
-	/* read length of ip string */
-	in_uint32_le(s, len);
-
-	/* read ip string */
-	rdp_in_unistr(rdp, s, rdp->redirect_server, sizeof(rdp->redirect_server), len);
-
-	/* read length of cookie string */
-	in_uint32_le(s, len);
-
-	/* read cookie string (plain ASCII) */
-	if (len > sizeof(rdp->redirect_cookie) - 1)
+	if (rdp->redirect_flags & LB_TARGET_NET_ADDRESS)
 	{
-		uint32 rem = len - (sizeof(rdp->redirect_cookie) - 1);
-		len = sizeof(rdp->redirect_cookie) - 1;
-
-		ui_warning(rdp->inst, "Unexpectedly large redirection cookie\n");
-		in_uint8a(s, rdp->redirect_cookie, len);
-		in_uint8s(s, rem);
+		rdp_in_len_and_unicode(s, rdp->redirect_server, sizeof(rdp->redirect_server));
 	}
-	else
+	if (rdp->redirect_flags & LB_LOAD_BALANCE_INFO)
 	{
-		in_uint8a(s, rdp->redirect_cookie, len);
+		/* TODO: Handle binary data properly */
+		rdp_in_len_and_unicode(s, rdp->redirect_cookie, sizeof(rdp->redirect_cookie));
 	}
-	rdp->redirect_cookie[len] = 0;
-
-	/* read length of username string */
-	in_uint32_le(s, len);
-
-	/* read username string */
-	rdp_in_unistr(rdp, s, rdp->redirect_username, sizeof(rdp->redirect_username), len);
-
-	/* read length of domain string */
-	in_uint32_le(s, len);
-
-	/* read domain string */
-	rdp_in_unistr(rdp, s, rdp->redirect_domain, sizeof(rdp->redirect_domain), len);
-
-	/* read length of password string */
-	in_uint32_le(s, len);
-
-	/* read password string */
-	rdp_in_unistr(rdp, s, rdp->redirect_password, sizeof(rdp->redirect_password), len);
+	if (rdp->redirect_flags & LB_USERNAME)
+	{
+		rdp_in_len_and_unicode(s, rdp->redirect_username, sizeof(rdp->redirect_username));
+	}
+	if (rdp->redirect_flags & LB_DOMAIN)
+	{
+		rdp_in_len_and_unicode(s, rdp->redirect_domain, sizeof(rdp->redirect_domain));
+	}
+	if (rdp->redirect_flags & LB_PASSWORD)
+	{
+		/* TODO: Handle binary data properly */
+		rdp_in_len_and_bytes(s, rdp->redirect_password, sizeof(rdp->redirect_password));
+	}
+	if (rdp->redirect_flags & LB_TARGET_FQDN)
+	{
+		rdp_in_len_and_unicode(s, rdp->redirect_target_fqdn, sizeof(rdp->redirect_target_fqdn));
+	}
+	if (rdp->redirect_flags & LB_TARGET_NETBIOS_NAME)
+	{
+		rdp_in_len_and_unicode(s, rdp->redirect_target_netbios_name, sizeof(rdp->redirect_target_netbios_name));
+	}
+	if (rdp->redirect_flags & LB_TARGET_NET_ADDRESSES)
+	{
+		rdp_in_len_and_bytes(s, rdp->redirect_target_net_addresses, sizeof(rdp->redirect_target_net_addresses));
+	}
+	/* Skip optional padding up to length */
+	rdp->next_packet += length; /* FIXME: Is this correct? */
 
 	rdp->redirect = True;
 
-	return True;
-}
-
-/* Process incoming packets */
-/* nevers gets out of here till app is done */
-void
-rdp_main_loop(rdpRdp * rdp, RD_BOOL * deactivated, uint32 * ext_disc_reason)
-{
-	while (rdp_loop(rdp, deactivated, ext_disc_reason))
-		;
+	DEBUG("Redirecting to %s as %s@%s\n", rdp->redirect_server, rdp->redirect_username, rdp->redirect_domain);
 }
 
 /* used in uiports and rdp_main_loop, processes the rdp packets waiting */
@@ -1454,9 +1477,6 @@ rdp_loop(rdpRdp * rdp, RD_BOOL * deactivated, uint32 * ext_disc_reason)
 				DEBUG("RDP_PDU_DEACTIVATE\n");
 				*deactivated = True;
 				break;
-			case RDP_PDU_REDIRECT:
-				return process_redirect_pdu(rdp, s);
-				break;
 			case RDP_PDU_DATA:
 				disc = process_data_pdu(rdp, s, ext_disc_reason);
 				break;
@@ -1465,7 +1485,7 @@ rdp_loop(rdpRdp * rdp, RD_BOOL * deactivated, uint32 * ext_disc_reason)
 			default:
 				ui_unimpl(rdp->inst, "PDU %d\n", type);
 		}
-		if (disc)
+		if (disc || rdp->redirect)
 			return False;
 		cont = rdp->next_packet < s->end;
 	}
