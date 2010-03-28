@@ -6,46 +6,47 @@ libasn1dir = $(PLUGIN_PATH)
 libasn1_LTLIBRARIES = libasn1.la
 
 libasn1_la_SOURCES = \
-	asn_codecs_prim.c \
-	asn_SEQUENCE_OF.c \
-	asn_SET_OF.c \
-	ber_decoder.c \
-	ber_tlv_length.c \
-	ber_tlv_tag.c \
-	BIT_STRING.c \
-	constraints.c \
-	constr_CHOICE.c \
-	constr_SEQUENCE.c \
-	constr_SEQUENCE_OF.c \
-	constr_SET_OF.c \
-	constr_TYPE.c \
-	ContextFlags.c \
-	der_encoder.c \
-	GeneralString.c \
-	INTEGER.c \
-	MechType.c \
-	MechTypeList.c \
-	NativeEnumerated.c \
-	NativeInteger.c \
-	NegHints.c \
-	NegoData.c \
-	NegotiationToken.c \
-	NegTokenInit2.c \
-	NegTokenInit.c \
-	NegTokenResp.c \
-	OBJECT_IDENTIFIER.c \
-	OCTET_STRING.c \
-	per_decoder.c \
-	per_encoder.c \
-	per_support.c \
-	TSCredentials.c \
-	TSCspDataDetail.c \
-	TSPasswordCreds.c \
-	TSRequest.c \
-	TSSmartCardCreds.c \
-	xer_decoder.c \
-	xer_encoder.c \
-	xer_support.c
+	asn_application.h asn_codecs.h asn_internal.h asn_system.h \
+	asn_codecs_prim.h asn_codecs_prim.c \
+	asn_SEQUENCE_OF.h asn_SEQUENCE_OF.c \
+	asn_SET_OF.h asn_SET_OF.c \
+	ber_decoder.h ber_decoder.c \
+	ber_tlv_length.h ber_tlv_length.c \
+	ber_tlv_tag.h ber_tlv_tag.c \
+	BIT_STRING.h BIT_STRING.c \
+	constraints.h constraints.c \
+	constr_CHOICE.h constr_CHOICE.c \
+	constr_SEQUENCE.h constr_SEQUENCE.c \
+	constr_SEQUENCE_OF.h constr_SEQUENCE_OF.c \
+	constr_SET_OF.h constr_SET_OF.c \
+	constr_TYPE.h constr_TYPE.c \
+	ContextFlags.h ContextFlags.c \
+	der_encoder.h der_encoder.c \
+	GeneralString.h GeneralString.c \
+	INTEGER.h INTEGER.c \
+	MechType.h MechType.c \
+	MechTypeList.h MechTypeList.c \
+	NativeEnumerated.h NativeEnumerated.c \
+	NativeInteger.h NativeInteger.c \
+	NegHints.h NegHints.c \
+	NegoData.h NegoData.c \
+	NegotiationToken.h NegotiationToken.c \
+	NegTokenInit2.h NegTokenInit2.c \
+	NegTokenInit.h NegTokenInit.c \
+	NegTokenResp.h NegTokenResp.c \
+	OBJECT_IDENTIFIER.h OBJECT_IDENTIFIER.c \
+	OCTET_STRING.h OCTET_STRING.c \
+	per_decoder.h per_decoder.c \
+	per_encoder.h per_encoder.c \
+	per_support.h per_support.c \
+	TSCredentials.h TSCredentials.c \
+	TSCspDataDetail.h TSCspDataDetail.c \
+	TSPasswordCreds.h TSPasswordCreds.c \
+	TSRequest.h TSRequest.c \
+	TSSmartCardCreds.h TSSmartCardCreds.c \
+	xer_decoder.h xer_decoder.c \
+	xer_encoder.h xer_encoder.c \
+	xer_support.h xer_support.c
 
 libasn1_la_CFLAGS = -O2 -w -I.
 
