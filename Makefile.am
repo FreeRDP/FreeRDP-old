@@ -1,5 +1,6 @@
 ## Process this file with automake to produce Makefile.in
 SUBDIRS = \
+        asn1 \
 	libfreerdp \
 	include \
 	libfreerdpkbd \

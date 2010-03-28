@@ -19,6 +19,9 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#ifndef __ASN1_H
+#define __ASN1_H
+
 #include "frdp.h"
 #include "iso.h"
 #include "mcs.h"
@@ -93,4 +96,6 @@ ber_out_integer(STREAM s, int value)
 	ber_out_header(s, BER_TAG_INTEGER, 2);
 	out_uint16_be(s, value);
 }
+
+#endif /* __ASN1_H */
 

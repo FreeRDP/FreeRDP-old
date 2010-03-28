@@ -1,8 +1,8 @@
 /* -*- c-basic-offset: 8 -*-
    FreeRDP: A Remote Desktop Protocol client.
-   SPNEGO - Simple and Protected GSS-API Negotiation Mechanism
+   Credential Security Support Provider (CredSSP)
 
-   Copyright (C) Marc-Andre Moreau <marcandre.moreau@gmail.com> 2009
+   Copyright (C) Marc-Andre Moreau <marcandre.moreau@gmail.com> 2010
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -19,14 +19,22 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#ifndef __SPNEGO_H
-#define __SPNEGO_H
+#ifndef __CREDSSP_H
+#define __CREDSSP_H
+
+#include "secure.h"
 
 void
-spnego_send_neg_token_init2(STREAM s);
+credssp_send(rdpSec * sec, STREAM s);
+void
+credssp_recv(rdpSec * sec);
 
 void
-spnego_recv_neg_token_rsp(STREAM s);
+ntlm_send_negotiate_message(rdpSec * sec);
+void
+ntlm_receive_challenge_message(rdpSec * sec);
+void
+ntlm_send_authentication_message(rdpSec * sec);
 
-#endif // __SPNEGO_H
+#endif // __CREDSSP_H
 

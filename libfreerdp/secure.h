@@ -43,6 +43,7 @@ struct rdp_sec
 	int sec_decrypt_use_count;
 	struct rdp_mcs * mcs;
 	struct rdp_licence * licence;
+	SSL * connection;
 	int negotiation_state;
 	int nla;
 };

@@ -22,11 +22,14 @@
 #include "mcs.h"
 #include "chan.h"
 #include "secure.h"
+#include "credssp.h"
 #include "licence.h"
 #include "rdp.h"
 #include "rdpset.h"
+#include "iso.h"
 #include "mem.h"
 #include "debug.h"
+#include "tcp.h"
 
 /* these are read only */
 static uint8 pad_54[40] = {
@@ -918,19 +921,38 @@ RD_BOOL
 sec_connect(rdpSec * sec, char *server, char *username, int port)
 {
 	struct stream mcs_data;
-
-	/* We exchange some RDP data during the MCS-Connect */
 	mcs_data.size = 512;
 	mcs_data.p = mcs_data.data = (uint8 *) xmalloc(mcs_data.size);
 	sec_out_mcs_data(sec, &mcs_data);
+	
+	/* sec->nla = 1; */
 
-	if (!mcs_connect(sec->mcs, server, &mcs_data, username, port))
+	if (!iso_connect(sec->mcs->iso, server, username, port))
 		return False;
 
-	/*      sec_process_mcs_data(&mcs_data); */
-	if (sec->rdp->settings->encryption)
-		sec_establish_key(sec);
-	xfree(mcs_data.data);
+	if(sec->nla)
+	{
+		/* TLS with NLA was successfully negotiated */
+
+		int sockfd = sec->mcs->iso->tcp->sock;
+		tls_connect(sec->connection, sockfd, server);
+
+		ntlm_send_negotiate_message(sec);
+	}
+	else
+	{
+		/* We exchange some RDP data during the MCS-Connect */
+
+		if (!mcs_connect(sec->mcs, server, &mcs_data, username, port))
+			return False;
+
+		/*      sec_process_mcs_data(&mcs_data); */
+		if (sec->rdp->settings->encryption)
+			sec_establish_key(sec);
+		
+		xfree(mcs_data.data);
+	}
+	
 	return True;
 }
 
@@ -984,6 +1006,7 @@ sec_new(struct rdp_rdp * rdp)
 		self->rdp = rdp;
 		self->mcs = mcs_new(self);
 		self->licence = licence_new(self);
+		self->connection = NULL;
 	}
 	return self;
 }

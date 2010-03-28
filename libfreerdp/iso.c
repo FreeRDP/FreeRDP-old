@@ -22,7 +22,7 @@
 #include "iso.h"
 #include "mcs.h"
 #include "secure.h"
-#include "spnego.h"
+#include "credssp.h"
 #include "rdp.h"
 #include "mem.h"
 
@@ -494,8 +494,6 @@ iso_connect(rdpIso * iso, char *server, char *username, int port)
 	if (!tcp_connect(iso->tcp, server, port))
 		return False;
 
-	/* iso->mcs->sec->nla = 1; */
-
 	return iso_negotiate_encryption(iso, username);
 }
 
@@ -512,11 +510,6 @@ iso_reconnect(rdpIso * iso, char *server, int port)
 
 	if (iso_recv_msg(iso, &code, NULL) == NULL)
 		return False;
-
-	if (iso->mcs->sec->nla)
-	{
-		tls_connect(iso->tcp->sock, server);
-	}
 
 	if (code != ISO_PDU_CC)
 	{
