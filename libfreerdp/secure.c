@@ -492,7 +492,7 @@ sec_out_mcs_data(rdpSec * sec, STREAM s)
 
 	/* End of Client Security Data */
 
-	DEBUG_RDP5("num_channels is %d\n", sec->mcs->chan->num_channels);
+	DEBUG_RDP5("num_channels is %d\n", settings->num_channels);
 	if (settings->num_channels > 0)
 	{
 		/* Client Network Data */
