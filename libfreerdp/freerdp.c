@@ -569,16 +569,6 @@ l_rdp_connect(struct rdp_inst * inst)
 	{
 		return 0;
 	}
-	if (rdp->redirect)
-	{
-		if (rdp_reconnect(rdp, rdp->redirect_server, rdp->redirect_flags,
-			rdp->redirect_domain, rdp->redirect_password, s->shell,
-			s->directory, rdp->redirect_cookie, s->tcp_port_rdp,
-			rdp->redirect_username))
-		{
-			return 0;
-		}
-	}
 	return 1;
 }
 
@@ -602,21 +592,35 @@ static int
 l_rdp_check_fds(struct rdp_inst * inst)
 {
 	rdpRdp * rdp;
+	rdpSet * s;
 	RD_BOOL deactivated;
 	uint32 ext_disc_reason;
+	int rv;
 
 	rdp = (rdpRdp *) (inst->rdp);
 #ifdef _WIN32
 	WSAResetEvent(rdp->sec->mcs->iso->tcp->wsa_event);
 #endif
+	rv = 0;
 	if (tcp_can_recv(rdp->sec->mcs->iso->tcp->sock, 0))
 	{
 		if (!rdp_loop(rdp, &deactivated, &ext_disc_reason))
 		{
-			return 1;
+			rv = 1;
 		}
 	}
-	return 0;
+	if ((rv != 0) && rdp->redirect)
+	{
+		s = rdp->settings;
+		if (rdp_reconnect(rdp, rdp->redirect_server, rdp->redirect_flags,
+			rdp->redirect_domain, rdp->redirect_password, s->shell,
+			s->directory, rdp->redirect_cookie, s->tcp_port_rdp,
+			rdp->redirect_username))
+		{
+			rv = 0;
+		}
+	}
+	return rv;
 }
 
 static int
