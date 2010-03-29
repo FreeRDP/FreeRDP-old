@@ -87,7 +87,7 @@ tls_connect(SSL *connection, int sock, char *server);
 void
 tls_disconnect(SSL *connection);
 int
-tls_write(SSL *connection, const void *buf, int num);
+tls_write(SSL* connection, char* b, int size);
 int
 tls_read(SSL *connection, void *buf, int num);
 

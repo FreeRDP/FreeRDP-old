@@ -906,8 +906,7 @@ sec_connect(rdpSec * sec, char *server, char *username, int port)
 	{
 		/* TLS with NLA was successfully negotiated */
 
-		int sockfd = sec->mcs->iso->tcp->sock;
-		tls_connect(sec->connection, sockfd, server);
+		tls_connect(sec->connection, sec->mcs->iso->tcp->sock, server);
 
 		ntlm_send_negotiate_message(sec);
 	}

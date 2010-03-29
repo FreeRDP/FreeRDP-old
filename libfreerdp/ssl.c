@@ -443,19 +443,65 @@ tls_disconnect(SSL *connection)
 }
 
 /* Send data over TLS connection */
-int
-tls_write(SSL *connection, const void *buf, int num)
+int tls_write(SSL* connection, char* b, int size)
 {
-        int ret;
+	int n;
+	int bytesWritten = 0;
 
-	while (True)
+	n = SSL_write(connection, b, size);
+
+	switch(SSL_get_error(connection, n))
 	{
-		ret = SSL_write(connection, buf, num);
-		if (ret > 0)
-			return ret;	/* succes */
-		if (tls_printf("ssl_write", connection, ret))
-			return -1;	/* error */
+		case SSL_ERROR_NONE:
+			bytesWritten += n;
+			break;
+
+		case SSL_ERROR_ZERO_RETURN:
+			printf("Connection with was closed\n");
+			exit(0);
+			break;
+
+		case SSL_ERROR_WANT_READ:
+			printf("SSL_ERROR_WANT_READ\n");
+			break;
+
+		case SSL_ERROR_WANT_WRITE:
+			printf("SSL_ERROR_WANT_WRITE\n");
+			break;
+
+		case SSL_ERROR_WANT_CONNECT:
+			printf("SSL_ERROR_WANT_CONNECT\n");
+			break;
+
+		case SSL_ERROR_WANT_ACCEPT:
+			printf("SSL_ERROR_WANT_ACCEPT\n");
+			break;
+
+		case SSL_ERROR_WANT_X509_LOOKUP:
+			printf("SSL_ERROR_WANT_X509_LOOKUP\n");
+			break;
+
+		case SSL_ERROR_SYSCALL:
+			printf("SSL_ERROR_SYSCALL\n");
+			ERR_print_errors_fp(stdout);
+			exit(0);
+			break;
+
+		case SSL_ERROR_SSL:
+			printf("SSL_ERROR_SSL\n");
+			ERR_print_errors_fp(stdout);
+			break;
+
+		default:
+			printf("SSL_ERROR_UNKNOWN\n");
+			ERR_print_errors_fp(stdout);
+			break;
 	}
+
+	if(bytesWritten < size)
+		return bytesWritten += tls_write(connection, &b[bytesWritten], size - bytesWritten);
+	else
+		return bytesWritten;
 }
 
 /* Receive data over TLS connection */

@@ -27,6 +27,7 @@
 #include "tcp.h"
 #include "mcs.h"
 #include "iso.h"
+#include "unistd.h"
 
 #include "TSRequest.h"
 #include "NegoData.h"
@@ -67,6 +68,13 @@
 
 const char ntlm_signature[] = "NTLMSSP";
 
+static int
+asn1_write(const void *buffer, size_t size, void *fd)
+{
+	/* this is used to get the size of the ASN.1 encoded result */
+	return 0;
+}
+
 void credssp_send(rdpSec * sec, STREAM s)
 {
 	TSRequest_t *ts_request;
@@ -75,8 +83,7 @@ void credssp_send(rdpSec * sec, STREAM s)
 	asn_enc_rval_t enc_rval;
 
 	char* buffer;
-	size_t size = 1024;
-	buffer = xmalloc(size);
+	size_t size;
 
 	ts_request = calloc(1, sizeof(TSRequest_t));
 	ts_request->negoTokens = calloc(1, sizeof(NegoData_t));
@@ -90,12 +97,22 @@ void credssp_send(rdpSec * sec, STREAM s)
 
 	ASN_SEQUENCE_ADD(ts_request->negoTokens, nego_token);
 
-	enc_rval = der_encode_to_buffer(&asn_DEF_TSRequest, ts_request, buffer, size);
+	/* get size of the encoded ASN.1 payload */
+	enc_rval = der_encode(&asn_DEF_TSRequest, ts_request, asn1_write, 0);
 
 	if (enc_rval.encoded != -1)
-		tls_write(sec->connection, buffer, enc_rval.encoded);
-	else
-		printf("ASN.1 encoding failed!\n");
+	{
+		size = enc_rval.encoded;
+		buffer = xmalloc(size);
+
+		enc_rval = der_encode_to_buffer(&asn_DEF_TSRequest, ts_request, buffer, size);
+
+		if (enc_rval.encoded != -1)
+		{
+			/* this causes a segmentation fault... */
+			/* tls_write(sec->connection, buffer, size); */
+		}
+	}
 }
 
 void credssp_recv(rdpSec * sec)
