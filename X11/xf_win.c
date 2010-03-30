@@ -1021,6 +1021,12 @@ xf_uninit(rdpInst * inst)
 	xfInfo * xfi;
 
 	xfi = GET_XFI(inst);
+	XFreeModifiermap(xfi->mod_map);
+	XFreePixmap(xfi->display, xfi->backstore);
+	XFreePixmap(xfi->display, xfi->bitmap_mono);
+	XFreeGC(xfi->display, xfi->gc);
+	XFreeGC(xfi->display, xfi->gc_mono);
+	XFreeGC(xfi->display, xfi->gc_default);
 	XCloseDisplay(xfi->display);
 	free(xfi);
 }

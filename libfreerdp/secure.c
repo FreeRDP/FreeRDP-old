@@ -668,6 +668,7 @@ sec_parse_crypt_info(rdpSec * sec, STREAM s, uint32 * rc4_key_size,
 			DEBUG_RDP5("cert #%d (ignored):\n", certcount);
 			ssl_cert_print_fp(stdout, ignorecert);
 #endif
+			ssl_cert_free(ignorecert);
 		}
 		/* Do da funky X.509 stuffy
 

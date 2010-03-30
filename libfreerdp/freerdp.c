@@ -659,21 +659,18 @@ rdpInst *
 freerdp_new(rdpSet * settings)
 {
 	rdpInst * inst;
-	rdpRdp * rdp;
 
-	rdp = rdp_new(settings);
 	inst = (rdpInst *) xmalloc(sizeof(rdpInst));
 	inst->version = FREERDP_INTERFACE_VERSION;
 	inst->size = sizeof(rdpInst);
 	inst->settings = settings;
-	rdp->inst = inst;
-	inst->rdp = rdp;
 	inst->rdp_connect = l_rdp_connect;
 	inst->rdp_get_fds = l_rdp_get_fds;
 	inst->rdp_check_fds = l_rdp_check_fds;
 	inst->rdp_send_input = l_rdp_send_input;
 	inst->rdp_sync_input = l_rdp_sync_input;
 	inst->rdp_channel_data = l_rdp_channel_data;
+	inst->rdp = rdp_new(settings, inst);
 	return inst;
 }
 

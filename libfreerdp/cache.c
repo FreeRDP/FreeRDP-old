@@ -393,7 +393,7 @@ cache_put_brush_data(rdpCache * cache, uint8 colour_code, uint8 idx, RD_BRUSHDAT
 	if (idx < NUM_ELEMENTS(cache->brushcache[0]))
 	{
 		bd = &(cache->brushcache[colour_code][idx]);
-		if (bd->data != 0)
+		if (bd->data != NULL)
 		{
 			xfree(bd->data);
 		}
@@ -430,6 +430,35 @@ cache_free(rdpCache * cache)
 {
 	if (cache != NULL)
 	{
+		{
+			size_t colour_code, idx;
+			RD_BRUSHDATA *bd;
+
+			for(colour_code = 0; colour_code < NUM_ELEMENTS(cache->brushcache); colour_code++)
+			{
+				for(idx = 0; idx < NUM_ELEMENTS(cache->brushcache[colour_code]); idx++)
+				{
+					bd = &(cache->brushcache[colour_code][idx]);
+					if (bd->data != NULL)
+					{
+						xfree(bd->data);
+					}
+				}
+			}
+		}
+
+		{
+			size_t cache_id;
+			DATABLOB *text;
+
+			for(cache_id = 0; cache_id < NUM_ELEMENTS(cache->textcache); cache_id++)
+			{
+				text = &(cache->textcache[cache_id]);
+				if (text->data != NULL)
+					xfree(text->data);
+			}
+		}
+
 		xfree(cache);
 	}
 }

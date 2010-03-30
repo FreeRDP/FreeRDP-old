@@ -1533,7 +1533,7 @@ rdp_disconnect(rdpRdp * rdp)
 }
 
 rdpRdp *
-rdp_new(struct rdp_set *settings)
+rdp_new(struct rdp_set *settings, struct rdp_inst *inst)
 {
 	rdpRdp *self;
 
@@ -1542,6 +1542,7 @@ rdp_new(struct rdp_set *settings)
 	{
 		memset(self, 0, sizeof(rdpRdp));
 		self->settings = settings;
+		self->inst = inst;
 		self->current_status = 1;
 		self->iconv_works = True;
 		self->in_iconv_h = (void *) (-1);

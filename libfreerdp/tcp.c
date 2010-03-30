@@ -347,12 +347,6 @@ tcp_connect(rdpTcp * tcp, char * server, int port)
 		}
 	}
 
-	tcp->in.size = 4096;
-	tcp->in.data = (uint8 *) xmalloc(tcp->in.size);
-
-	tcp->out.size = 4096;
-	tcp->out.data = (uint8 *) xmalloc(tcp->out.size);
-
 	return True;
 }
 
@@ -392,26 +386,18 @@ tcp_reset_state(rdpTcp * tcp)
 {
 	tcp->sock = -1;		/* reset socket */
 
-	/* Clear the incoming stream */
-	if (tcp->in.data != NULL)
-		xfree(tcp->in.data);
+	/* Clear the incoming stream - put preserve its data store */
 	tcp->in.p = NULL;
 	tcp->in.end = NULL;
-	tcp->in.data = NULL;
-	tcp->in.size = 0;
 	tcp->in.iso_hdr = NULL;
 	tcp->in.mcs_hdr = NULL;
 	tcp->in.sec_hdr = NULL;
 	tcp->in.rdp_hdr = NULL;
 	tcp->in.channel_hdr = NULL;
 
-	/* Clear the outgoing stream */
-	if (tcp->out.data != NULL)
-		xfree(tcp->out.data);
+	/* Clear the outgoing stream - put preserve its data store */
 	tcp->out.p = NULL;
 	tcp->out.end = NULL;
-	tcp->out.data = NULL;
-	tcp->out.size = 0;
 	tcp->out.iso_hdr = NULL;
 	tcp->out.mcs_hdr = NULL;
 	tcp->out.sec_hdr = NULL;
@@ -429,6 +415,12 @@ tcp_new(struct rdp_iso * iso)
 	{
 		memset(self, 0, sizeof(rdpTcp));
 		self->iso = iso;
+
+		self->in.size = 4096;
+		self->in.data = (uint8 *) xmalloc(self->in.size);
+
+		self->out.size = 4096;
+		self->out.data = (uint8 *) xmalloc(self->out.size);
 	}
 	return self;
 }
@@ -438,6 +430,8 @@ tcp_free(rdpTcp * tcp)
 {
 	if (tcp != NULL)
 	{
+		xfree(tcp->in.data);
+		xfree(tcp->out.data);
 		xfree(tcp);
 	}
 }

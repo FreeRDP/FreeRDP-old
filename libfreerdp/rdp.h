@@ -107,7 +107,7 @@ rdp_reset_state(rdpRdp * rdp);
 void
 rdp_disconnect(rdpRdp * rdp);
 rdpRdp *
-rdp_new(struct rdp_set * settings);
+rdp_new(struct rdp_set * settings, struct rdp_inst *inst);
 void
 rdp_free(rdpRdp * rdp);
 

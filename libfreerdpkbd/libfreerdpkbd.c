@@ -67,7 +67,7 @@ detect_keyboard_layout_from_xkb()
 
 	char* layout = NULL;
 	char* variant = NULL;
-	
+
         char buffer[1024];
 	unsigned int keyboard_layout = 0;
 
@@ -166,6 +166,7 @@ detect_keyboard_type_from_xkb(char* xkbfile, int length)
 	char* beg;
 	char* end;
 	char buffer[1024];
+	unsigned int rv = 0;
 
 	FILE* setxkbmap;
 
@@ -196,12 +197,14 @@ detect_keyboard_type_from_xkb(char* xkbfile, int length)
 
 				strncpy(xkbfile, beg, length);
 
-				return 1;
+				rv = 1;
+				break;
 			}
 		}
 	}
 
-	return 0;
+	pclose(setxkbmap);
+	return rv;
 }
 
 unsigned int
@@ -240,7 +243,7 @@ detect_keyboard_layout_from_locale()
 		return ENGLISH_UNITED_STATES; // U.S. Keyboard Layout
 
 	dot = strcspn(envLang, ".");
-	
+
 	// Get country code
 	if(dot > underscore)
 	{
@@ -278,7 +281,7 @@ detect_keyboard_layout_from_locale()
 					return defaultKeyboardLayouts[j].keyboardLayouts[k];
 				}
 			}
-			
+
 			// If we skip the ENGLISH_UNITED_STATES keyboard layout but there are no
 			// other possible keyboard layout for the locale, we end up here with k > 1
 
@@ -306,7 +309,7 @@ detect_keyboard_type_and_layout_sunos(char* xkbfile, int length)
 	char* end;
 
         char buffer[1024];
-        
+
 	/*
 		Sample output for "kbd -t -l" :
 
@@ -348,7 +351,7 @@ detect_keyboard_type_and_layout_sunos(char* xkbfile, int length)
 			}
 		}
 	}
-	
+
 	return 0;
 }
 
@@ -388,7 +391,7 @@ load_keyboard(char* kbd)
 			xkbmap[end - beg] = '\0';
 		}
 	}
-	else	
+	else
 	{
 		// The keyboard name is the same as the file name
 		strcpy(xkbfile, kbd);
@@ -421,7 +424,7 @@ load_keyboard(char* kbd)
 			{
 				// Try /usr/share/freerdp folder
 				snprintf(xkbfilepath, sizeof(xkbfilepath), "/usr/share/freerdp/keymaps/%s", xkbfile);
-			
+
 				if((fp = fopen(xkbfilepath, "r")) == NULL)
 				{
 					// Try /usr/local/share/freerdp folder
@@ -469,10 +472,10 @@ load_keyboard(char* kbd)
 					break;
 				else
 					beg++;
-					
+
 				if((end = strchr(beg, '>')) == NULL)
 					break;
-				
+
 				// We copy the string representing the number in a string
 				strncpy(keycodeString, beg, end - beg);
 				keycodeString[end - beg] = '\0';
@@ -560,9 +563,9 @@ detect_and_load_keyboard()
 		detect_keyboard_type_from_xkb(xkbfile, sizeof(xkbfile));
 		keyboardLayoutID = detect_keyboard_layout_from_xkb();
 	}
-	
+
 	keyboard_layout = detect_keyboard_layout_from_xkb();
-		
+
 	printf("find_keyboard_layout_in_xorg_rules: %X\n", keyboard_layout);
 
 	if(keyboard_layout != 0)

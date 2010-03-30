@@ -381,6 +381,7 @@ thread_func(void * arg)
 	freerdp_chanman_free(data->chan_man);
 	free(data);
 
+	pthread_detach(pthread_self());
 	g_thread_count--;
 
 	return NULL;
