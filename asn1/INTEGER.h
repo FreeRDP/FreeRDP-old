@@ -30,6 +30,8 @@ typedef struct asn_INTEGER_specifics_s {
 	int map_count;				/* Elements in either map */
 	int extension;				/* This map is extensible */
 	int strict_enumeration;			/* Enumeration set is fixed */
+	int field_width;			/* Size of native integer */
+	int field_unsigned;			/* Signed=0, unsigned=1 */
 } asn_INTEGER_specifics_t;
 
 asn_struct_print_f INTEGER_print;
@@ -51,7 +53,9 @@ per_type_encoder_f INTEGER_encode_uper;
  * -1/ENOMEM: Memory allocation failed (in asn_long2INTEGER()).
  */
 int asn_INTEGER2long(const INTEGER_t *i, long *l);
+int asn_INTEGER2ulong(const INTEGER_t *i, unsigned long *l);
 int asn_long2INTEGER(INTEGER_t *i, long l);
+int asn_ulong2INTEGER(INTEGER_t *i, unsigned long l);
 
 /*
  * Convert the integer value into the corresponding enumeration map entry.

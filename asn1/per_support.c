@@ -1,10 +1,35 @@
 /*
- * Copyright (c) 2005, 2006 Lev Walkin <vlm@lionet.info>. All rights reserved.
+ * Copyright (c) 2005, 2006, 2007 Lev Walkin <vlm@lionet.info>.
+ * All rights reserved.
  * Redistribution and modifications are permitted subject to BSD license.
  */
 #include <asn_system.h>
 #include <asn_internal.h>
 #include <per_support.h>
+
+char *
+per_data_string(asn_per_data_t *pd) {
+	static char buf[2][32];
+	static int n;
+	n = (n+1) % 2;
+	snprintf(buf[n], sizeof(buf),
+		"{m=%d span %+d[%d..%d] (%d)}",
+		pd->moved,
+		(((int)pd->buffer) & 0xf),
+		pd->nboff, pd->nbits,
+		pd->nbits - pd->nboff);
+	return buf[n];
+}
+
+void
+per_get_undo(asn_per_data_t *pd, int nbits) {
+	if((ssize_t)pd->nboff < nbits) {
+		assert((ssize_t)pd->nboff < nbits);
+	} else {
+		pd->nboff -= nbits;
+		pd->moved -= nbits;
+	}
+}
 
 /*
  * Extract a small number of bits (<= 31) from the specified PER data pointer.
@@ -12,14 +37,30 @@
 int32_t
 per_get_few_bits(asn_per_data_t *pd, int nbits) {
 	size_t off;	/* Next after last bit offset */
+	ssize_t nleft;	/* Number of bits left in this stream */
 	uint32_t accum;
 	const uint8_t *buf;
 
-	if(nbits < 0 || pd->nboff + nbits > pd->nbits)
+	if(nbits < 0)
 		return -1;
 
-	ASN_DEBUG("[PER get %d bits from %p+%d bits]",
-		nbits, pd->buffer, pd->nboff);
+	nleft = pd->nbits - pd->nboff;
+	if(nbits > nleft) {
+		int32_t tailv, vhead;
+		if(!pd->refill || nbits > 31) return -1;
+		/* Accumulate unused bytes before refill */
+		ASN_DEBUG("Obtain the rest %d bits (want %d)", nleft, nbits);
+		tailv = per_get_few_bits(pd, nleft);
+		if(tailv < 0) return -1;
+		/* Refill (replace pd contents with new data) */
+		if(pd->refill(pd))
+			return -1;
+		nbits -= nleft;
+		vhead = per_get_few_bits(pd, nbits);
+		/* Combine the rest of previous pd with the head of new one */
+		tailv = (tailv << nbits) | vhead;  /* Could == -1 */
+		return tailv;
+	}
 
 	/*
 	 * Normalize position indicator.
@@ -29,7 +70,9 @@ per_get_few_bits(asn_per_data_t *pd, int nbits) {
 		pd->nbits  -= (pd->nboff & ~0x07);
 		pd->nboff  &= 0x07;
 	}
-	off = (pd->nboff += nbits);
+	pd->moved += nbits;
+	pd->nboff += nbits;
+	off = pd->nboff;
 	buf = pd->buffer;
 
 	/*
@@ -47,15 +90,29 @@ per_get_few_bits(asn_per_data_t *pd, int nbits) {
 	else if(nbits <= 31) {
 		asn_per_data_t tpd = *pd;
 		/* Here are we with our 31-bits limit plus 1..7 bits offset. */
-		tpd.nboff -= nbits;
+		per_get_undo(&tpd, nbits);
+		/* The number of available bits in the stream allow
+		 * for the following operations to take place without
+		 * invoking the ->refill() function */
 		accum  = per_get_few_bits(&tpd, nbits - 24) << 24;
 		accum |= per_get_few_bits(&tpd, 24);
 	} else {
-		pd->nboff -= nbits;	/* Oops, revert back */
+		per_get_undo(pd, nbits);
 		return -1;
 	}
 
-	return (accum & (((uint32_t)1 << nbits) - 1));
+	accum &= (((uint32_t)1 << nbits) - 1);
+
+	ASN_DEBUG("  [PER got %2d<=%2d bits => span %d %+d[%d..%d]:%02x (%d) => 0x%x]",
+		nbits, nleft,
+		pd->moved,
+		(((int)pd->buffer) & 0xf),
+		pd->nboff, pd->nbits,
+		pd->buffer[0],
+		pd->nbits - pd->nboff,
+		(int)accum);
+
+	return accum;
 }
 
 /*
@@ -130,6 +187,30 @@ uper_get_length(asn_per_data_t *pd, int ebits, int *repeat) {
 }
 
 /*
+ * Get the normally small length "n".
+ * This procedure used to decode length of extensions bit-maps
+ * for SET and SEQUENCE types.
+ */
+ssize_t
+uper_get_nslength(asn_per_data_t *pd) {
+	ssize_t length;
+
+	ASN_DEBUG("Getting normally small length");
+
+	if(per_get_few_bits(pd, 1) == 0) {
+		length = per_get_few_bits(pd, 6) + 1;
+		if(length <= 0) return -1;
+		ASN_DEBUG("l=%d", length);
+		return length;
+	} else {
+		int repeat;
+		length = uper_get_length(pd, -1, &repeat);
+		if(length >= 0 && !repeat) return length;
+		return -1; /* Error, or do not support >16K extensions */
+	}
+}
+
+/*
  * Get the normally small non-negative whole number.
  * X.691, #10.6
  */
@@ -193,8 +274,8 @@ per_put_few_bits(asn_per_outp_t *po, uint32_t bits, int obits) {
 
 	if(obits <= 0 || obits >= 32) return obits ? -1 : 0;
 
-	ASN_DEBUG("[PER put %d bits to %p+%d bits]",
-			obits, po->buffer, po->nboff);
+	ASN_DEBUG("[PER put %d bits %x to %p+%d bits]",
+			obits, (int)bits, po->buffer, po->nboff);
 
 	/*
 	 * Normalize position indicator.
@@ -210,7 +291,9 @@ per_put_few_bits(asn_per_outp_t *po, uint32_t bits, int obits) {
 	 */
 	if(po->nboff + obits > po->nbits) {
 		int complete_bytes = (po->buffer - po->tmpspace);
-		if(po->outper(po->buffer, complete_bytes, po->op_key) < 0)
+		ASN_DEBUG("[PER output %d complete + %d]",
+			complete_bytes, po->flushed_bytes);
+		if(po->outper(po->tmpspace, complete_bytes, po->op_key) < 0)
 			return -1;
 		if(po->nboff)
 			po->tmpspace[0] = po->buffer[0];
@@ -229,7 +312,8 @@ per_put_few_bits(asn_per_outp_t *po, uint32_t bits, int obits) {
 	/* Clear data of debris before meaningful bits */
 	bits &= (((uint32_t)1 << obits) - 1);
 
-	ASN_DEBUG("[PER out %d %u/%x (t=%d,o=%d) %x&%x=%x]", obits, bits, bits,
+	ASN_DEBUG("[PER out %d %u/%x (t=%d,o=%d) %x&%x=%x]", obits,
+		(int)bits, (int)bits,
 		po->nboff - obits, off, buf[0], omsk&0xff, buf[0] & omsk);
 
 	if(off <= 8)	/* Completely within 1 byte */
@@ -258,7 +342,7 @@ per_put_few_bits(asn_per_outp_t *po, uint32_t bits, int obits) {
 	}
 
 	ASN_DEBUG("[PER out %u/%x => %02x buf+%d]",
-		bits, bits, buf[0], po->buffer - po->tmpspace);
+		(int)bits, (int)bits, buf[0], po->buffer - po->tmpspace);
 
 	return 0;
 }
@@ -314,5 +398,28 @@ uper_put_length(asn_per_outp_t *po, size_t length) {
 
 	return per_put_few_bits(po, 0xC0 | length, 8)
 			? -1 : (ssize_t)(length << 14);
+}
+
+
+/*
+ * Put the normally small length "n" into the stream.
+ * This procedure used to encode length of extensions bit-maps
+ * for SET and SEQUENCE types.
+ */
+int
+uper_put_nslength(asn_per_outp_t *po, size_t length) {
+
+	if(length <= 64) {
+		/* #10.9.3.4 */
+		if(length == 0) return -1;
+		return per_put_few_bits(po, length-1, 7) ? -1 : 0;
+	} else {
+		if(uper_put_length(po, length) != (ssize_t)length) {
+			/* This might happen in case of >16K extensions */
+			return -1;
+		}
+	}
+
+	return 0;
 }
 

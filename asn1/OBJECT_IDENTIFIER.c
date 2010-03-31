@@ -4,6 +4,7 @@
  */
 #include <asn_internal.h>
 #include <OBJECT_IDENTIFIER.h>
+#include <OCTET_STRING.h>
 #include <limits.h>	/* for CHAR_BIT */
 #include <errno.h>
 
@@ -23,7 +24,8 @@ asn_TYPE_descriptor_t asn_DEF_OBJECT_IDENTIFIER = {
 	der_encode_primitive,
 	OBJECT_IDENTIFIER_decode_xer,
 	OBJECT_IDENTIFIER_encode_xer,
-	0, 0,
+	OCTET_STRING_decode_uper,
+	OCTET_STRING_encode_uper,
 	0, /* Use generic outmost tag fetcher */
 	asn_DEF_OBJECT_IDENTIFIER_tags,
 	sizeof(asn_DEF_OBJECT_IDENTIFIER_tags)
@@ -44,14 +46,14 @@ OBJECT_IDENTIFIER_constraint(asn_TYPE_descriptor_t *td, const void *sptr,
 
 	if(st && st->buf) {
 		if(st->size < 1) {
-			_ASN_CTFAIL(app_key, td,
+			_ASN_CTFAIL(app_key, td, sptr,
 				"%s: at least one numerical value "
 				"expected (%s:%d)",
 				td->name, __FILE__, __LINE__);
 			return -1;
 		}
 	} else {
-		_ASN_CTFAIL(app_key, td,
+		_ASN_CTFAIL(app_key, td, sptr,
 			"%s: value not given (%s:%d)",
 			td->name, __FILE__, __LINE__);
 		return -1;
@@ -63,7 +65,7 @@ OBJECT_IDENTIFIER_constraint(asn_TYPE_descriptor_t *td, const void *sptr,
 
 int
 OBJECT_IDENTIFIER_get_single_arc(uint8_t *arcbuf, unsigned int arclen, signed int add, void *rvbufp, unsigned int rvsize) {
-	unsigned LE __attribute__ ((unused)) = 1; /* Little endian (x86) */
+	unsigned LE GCC_NOTUSED = 1; /* Little endian (x86) */
 	uint8_t *arcend = arcbuf + arclen;	/* End of arc */
 	unsigned int cache = 0;	/* No more than 14 significant bits */
 	unsigned char *rvbuf = (unsigned char *)rvbufp;
