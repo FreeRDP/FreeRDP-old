@@ -17,6 +17,10 @@ install-sh
 ltmain.sh
 missing
 stamp-h1
+.anjuta
+.anjuta_sym_db.db
+TODO.tasks
+freerdp.anjuta
 *~
 autom4te.cache
 /asn1/Makefile

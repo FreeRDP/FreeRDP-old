@@ -82,13 +82,15 @@ ssl_sig_ok(uint8 * exponent, uint32 exp_len, uint8 * modulus, uint32 mod_len,
 
 /* Functions for TLS */
 
+SSL_CTX*
+tls_create_context();
+SSL*
+tls_connect(SSL_CTX *ctx, int sockfd, char *server);
 void
-tls_connect(SSL *connection, int sock, char *server);
-void
-tls_disconnect(SSL *connection);
+tls_disconnect(SSL *ssl);
 int
-tls_write(SSL* connection, char* b, int size);
+tls_write(SSL *ssl, char* b, int size);
 int
-tls_read(SSL *connection, void *buf, int num);
+tls_read(SSL *ssl, char* b, int size);
 
 #endif

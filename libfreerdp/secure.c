@@ -907,8 +907,8 @@ sec_connect(rdpSec * sec, char *server, char *username, int port)
 	{
 		/* TLS with NLA was successfully negotiated */
 
-		tls_connect(sec->connection, sec->mcs->iso->tcp->sock, server);
-
+		sec->ctx = tls_create_context();
+		sec->ssl = tls_connect(sec->ctx, sec->mcs->iso->tcp->sock, server);
 		ntlm_send_negotiate_message(sec);
 	}
 	else
@@ -978,7 +978,6 @@ sec_new(struct rdp_rdp * rdp)
 		self->rdp = rdp;
 		self->mcs = mcs_new(self);
 		self->licence = licence_new(self);
-		self->connection = NULL;
 	}
 	return self;
 }

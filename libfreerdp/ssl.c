@@ -230,7 +230,6 @@ ssl_sig_ok(uint8 * exponent, uint32 exp_len, uint8 * modulus, uint32 mod_len,
 /* Functions for Transport Layer Security (TLS) */
 
 /* TODO: Implement SSL verify enforcement, disconnect when verify fails */
-static SSL_CTX *ssl_client_context;
 
 /* check the identity in a certificate against a hostname */
 static RD_BOOL
@@ -354,12 +353,14 @@ tls_printf(char *func, SSL *connection, int val)
 			printf("%s: Server closed TLS connection\n", func);
 			return True;
 		case SSL_ERROR_WANT_READ:
+			printf("SSL_ERROR_WANT_READ\n");
 			//if (!ui_select(SSL_get_fd(connection)))
 				/* User quit */
 				//return True;
 			return False;
 		case SSL_ERROR_WANT_WRITE:
 			//tcp_can_send(SSL_get_fd(connection), 100);
+			printf("SSL_ERROR_WANT_WRITE\n");
 			return False;
 		case SSL_ERROR_SYSCALL:
 			printf("%s: I/O error\n", func);
@@ -373,149 +374,139 @@ tls_printf(char *func, SSL *connection, int val)
 	}
 }
 
-/* Initiate TLS handshake on socket */
-void
-tls_connect(SSL *connection, int sock, char *server)
+/* Create TLS context */
+SSL_CTX*
+tls_create_context()
 {
-	int ret;
+	SSL_CTX* ctx;
 
-	if (!ssl_client_context)
+	SSL_load_error_strings();
+	SSL_library_init();
+			
+	ctx = SSL_CTX_new(TLSv1_client_method());
+			
+	if (ctx == NULL)
 	{
-		SSL_load_error_strings();
-		SSL_library_init();
-		ssl_client_context = SSL_CTX_new(TLSv1_client_method());
-		if (!ssl_client_context)
-		{
-			printf("SSL_CTX_new failed\n");
-			return;
-		}
-		if (!SSL_CTX_set_default_verify_paths(ssl_client_context))
-			printf("ssl_connect: failed to set default verify path. cannot verify server certificate.\n");
+		printf("SSL_CTX_new failed\n");
+		return NULL;
 	}
 
-	connection = SSL_new(ssl_client_context);
+	SSL_CTX_set_options(ctx, SSL_OP_ALL);
+	//SSL_CTX_set_options(ctx, SSL_OP_NO_TICKET);
+	//SSL_CTX_set_options(ctx, SSL_OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION);
 
-	if (!connection)
+	return ctx;
+}
+
+/* Initiate TLS handshake on socket */
+SSL*
+tls_connect(SSL_CTX *ctx, int sockfd, char *server)
+{
+	SSL *ssl;
+	int connection_status;
+
+	ssl = SSL_new(ctx);
+
+	if (ssl == NULL)
 	{
 		printf("SSL_new failed\n");
-		return;
+		return NULL;
 	}
 
-	if (!SSL_set_fd(connection, sock))
+	if (SSL_set_fd(ssl, sockfd) < 1)
 	{
 		printf("SSL_set_fd failed\n");
-		return;
+		return NULL;
 	}
 
-	while (True)
+	do
 	{
-		ret = SSL_connect(connection);
-		if (ret > 0)
-			break;
-		if (tls_printf("ssl_connect", connection, ret))
-			return;
+		/* SSL_WANT_READ errors are normal, just try again if it happens */
+		connection_status = SSL_connect(ssl);
 	}
+	while(SSL_get_error(ssl, connection_status) == SSL_ERROR_WANT_READ);
 
-	tls_verify(connection, server);
+	if (connection_status < 0)
+	{
+		if (tls_printf("SSL_connect", ssl, connection_status))
+			return NULL;
+	}
+		
+	tls_verify(ssl, server);
 
-	printf("SSL connection established\n");
+	printf("TLS connection established\n");
+
+	return ssl;
 }
 
 /* Free TLS resources */
 void
-tls_disconnect(SSL *connection)
+tls_disconnect(SSL *ssl)
 {
 	int ret;
 
-        if (!connection)
+        if (!ssl)
 		return;
 
 	while (True)
 	{
-		ret = SSL_shutdown(connection);
+		ret = SSL_shutdown(ssl);
 		if (ret > 0)
 			break;
-		if (tls_printf("ssl_disconnect", connection, ret))
+		if (tls_printf("ssl_disconnect", ssl, ret))
 			break;
 	}
-	SSL_free(connection);
-	connection = NULL;
+	SSL_free(ssl);
+	ssl = NULL;
 }
 
 /* Send data over TLS connection */
-int tls_write(SSL* connection, char* b, int size)
+int tls_write(SSL *ssl, char* b, int size)
 {
-	int n;
+	int write_status;
 	int bytesWritten = 0;
 
-	n = SSL_write(connection, b, size);
+	write_status = SSL_write(ssl, b, size);
 
-	switch(SSL_get_error(connection, n))
+	switch (SSL_get_error(ssl, write_status))
 	{
 		case SSL_ERROR_NONE:
-			bytesWritten += n;
-			break;
-
-		case SSL_ERROR_ZERO_RETURN:
-			printf("Connection with was closed\n");
-			exit(0);
-			break;
-
-		case SSL_ERROR_WANT_READ:
-			printf("SSL_ERROR_WANT_READ\n");
-			break;
-
-		case SSL_ERROR_WANT_WRITE:
-			printf("SSL_ERROR_WANT_WRITE\n");
-			break;
-
-		case SSL_ERROR_WANT_CONNECT:
-			printf("SSL_ERROR_WANT_CONNECT\n");
-			break;
-
-		case SSL_ERROR_WANT_ACCEPT:
-			printf("SSL_ERROR_WANT_ACCEPT\n");
-			break;
-
-		case SSL_ERROR_WANT_X509_LOOKUP:
-			printf("SSL_ERROR_WANT_X509_LOOKUP\n");
-			break;
-
-		case SSL_ERROR_SYSCALL:
-			printf("SSL_ERROR_SYSCALL\n");
-			ERR_print_errors_fp(stdout);
-			exit(0);
-			break;
-
-		case SSL_ERROR_SSL:
-			printf("SSL_ERROR_SSL\n");
-			ERR_print_errors_fp(stdout);
+			bytesWritten += write_status;
 			break;
 
 		default:
-			printf("SSL_ERROR_UNKNOWN\n");
-			ERR_print_errors_fp(stdout);
+			tls_printf("SSL_write", ssl, write_status);
 			break;
 	}
 
 	if(bytesWritten < size)
-		return bytesWritten += tls_write(connection, &b[bytesWritten], size - bytesWritten);
+		return bytesWritten += tls_write(ssl, &b[bytesWritten], size - bytesWritten);
 	else
 		return bytesWritten;
 }
 
 /* Receive data over TLS connection */
-int
-tls_read(SSL *connection, void *buf, int num)
+int tls_read(SSL *ssl, char* b, int size)
 {
-	int ret = 0;
+	int read_status;
+	int bytesRead = 0;
 
-	while (True)
+	read_status = SSL_read(ssl, b, size);
+
+	switch(SSL_get_error(ssl, read_status))
 	{
-		ret = SSL_read(connection, buf, num);
-		if (ret > 0)
-			return ret;	/* succes */
-		if (tls_printf("ssl_read", connection, ret))
-			return -1;	/* error */
+		case SSL_ERROR_NONE:
+			bytesRead += read_status;
+			break;
+
+		case SSL_ERROR_WANT_READ:
+			bytesRead += tls_read(ssl, &b[bytesRead], size - bytesRead);
+			break;
+
+		default:
+			tls_printf("SSL_read", ssl, read_status);
+			break;
 	}
+
+	return bytesRead;
 }

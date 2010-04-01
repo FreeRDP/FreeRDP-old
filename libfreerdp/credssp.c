@@ -93,7 +93,7 @@ void credssp_send(rdpSec * sec, STREAM s)
 	ts_request->version = 2;
 
 	nego_token->buf = s->data;
-	nego_token->size = s->size;
+	nego_token->size = s->end - s->data;
 
 	ASN_SEQUENCE_ADD(ts_request->negoTokens, nego_token);
 
@@ -109,15 +109,17 @@ void credssp_send(rdpSec * sec, STREAM s)
 
 		if (enc_rval.encoded != -1)
 		{
-			/* this causes a segmentation fault... */
-			/* tls_write(sec->connection, buffer, size); */
+			tls_write(sec->ssl, buffer, size);
 		}
+			
+		xfree(buffer);
 	}
 }
 
 void credssp_recv(rdpSec * sec)
 {
-
+	char* recv_buffer = xmalloc(4096);
+	tls_read(sec->ssl, recv_buffer, 4096);
 }
 
 static void ntlm_output_version(STREAM s)
@@ -139,6 +141,7 @@ void ntlm_send_negotiate_message(rdpSec * sec)
 	s = tcp_init(sec->mcs->iso->tcp, 20);
 
 	out_uint8a(s, ntlm_signature, 8); /* Signature (8 bytes) */
+	out_uint32_le(s, 1); /* MessageType */
 
 	negotiateFlags |= NTLMSSP_NEGOTIATE_KEY_EXCH;
 	negotiateFlags |= NTLMSSP_NEGOTIATE_VERSION;
@@ -151,9 +154,25 @@ void ntlm_send_negotiate_message(rdpSec * sec)
 	
 	out_uint32_be(s, negotiateFlags); /* NegotiateFlags (4 bytes) */
 
+	/* only set if NTLMSSP_NEGOTIATE_OEM_DOMAIN_SUPPLIED is set*/
+
+	/* DomainNameFields (8 bytes) */
+	out_uint16_le(s, 0); /* DomainNameLen */
+	out_uint16_le(s, 0); /* DomainNameMaxLen */
+	out_uint32_le(s, 0); /* DomainNameBufferOffset */
+
+	/* only set if NTLMSSP_NEGOTIATE_OEM_WORKSTATION_SUPPLIED is set*/
+
+	/* WorkstationFields (8 bytes) */
+	out_uint16_le(s, 0); /* WorkstationLen */
+	out_uint16_le(s, 0); /* WorkstationMaxLen */
+	out_uint32_le(s, 0); /* WorkstationBufferOffset */
+		
 	/* Version is present because NTLMSSP_NEGOTIATE_VERSION is set */
 	ntlm_output_version(s); /* Version (8 bytes) */
 
+	s_mark_end(s);
+		
 	credssp_send(sec, s);
 }
 
