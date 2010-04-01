@@ -391,9 +391,16 @@ tls_create_context()
 		return NULL;
 	}
 
+	/*
+	 * This is necessary, because the Microsoft TLS implementation is not perfect.
+	 * SSL_OP_ALL enables a couple of workarounds for buggy TLS implementations,
+	 * but the most important workaround being SSL_OP_TLS_BLOCK_PADDING_BUG.
+	 * As the size of the encrypted payload may give hints about its contents,
+	 * block padding is normally used, but the Microsoft TLS implementation
+	 * won't recognize it and will disconnect you after sending a TLS alert.
+	 */
+		
 	SSL_CTX_set_options(ctx, SSL_OP_ALL);
-	//SSL_CTX_set_options(ctx, SSL_OP_NO_TICKET);
-	//SSL_CTX_set_options(ctx, SSL_OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION);
 
 	return ctx;
 }
@@ -500,6 +507,14 @@ int tls_read(SSL *ssl, char* b, int size)
 			break;
 
 		case SSL_ERROR_WANT_READ:
+					
+			if (size - bytesRead < 128)
+			{
+					/* the buffer is almost full, allocate more memory */
+					size += 1024;
+					xrealloc(b, size);
+			}
+					
 			bytesRead += tls_read(ssl, &b[bytesRead], size - bytesRead);
 			break;
 

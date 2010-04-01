@@ -910,6 +910,8 @@ sec_connect(rdpSec * sec, char *server, char *username, int port)
 		sec->ctx = tls_create_context();
 		sec->ssl = tls_connect(sec->ctx, sec->mcs->iso->tcp->sock, server);
 		ntlm_send_negotiate_message(sec);
+		credssp_recv(sec);
+		exit(0);
 	}
 	else
 	{

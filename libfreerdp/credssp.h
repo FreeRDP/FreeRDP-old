@@ -32,9 +32,11 @@ credssp_recv(rdpSec * sec);
 void
 ntlm_send_negotiate_message(rdpSec * sec);
 void
-ntlm_receive_challenge_message(rdpSec * sec);
+ntlm_recv_challenge_message(rdpSec * sec, STREAM s);
 void
 ntlm_send_authentication_message(rdpSec * sec);
+void
+ntlm_recv(rdpSec * sec, STREAM s);
 
 #endif // __CREDSSP_H
 

@@ -111,15 +111,56 @@ void credssp_send(rdpSec * sec, STREAM s)
 		{
 			tls_write(sec->ssl, buffer, size);
 		}
-			
+
+		asn_DEF_TSRequest.free_struct(&asn_DEF_TSRequest, ts_request, 0);
 		xfree(buffer);
 	}
 }
 
 void credssp_recv(rdpSec * sec)
 {
-	char* recv_buffer = xmalloc(4096);
-	tls_read(sec->ssl, recv_buffer, 4096);
+	TSRequest_t *ts_request = 0;
+	NegotiationToken_t *negotiation_token = 0;
+	asn_dec_rval_t dec_rval;
+		
+	int size = 2048;
+	int bytes_read;
+	char* recv_buffer;
+
+	recv_buffer = xmalloc(size);
+		
+	bytes_read = tls_read(sec->ssl, recv_buffer, size);
+
+	dec_rval = ber_decode(0, &asn_DEF_TSRequest, (void **)&ts_request, recv_buffer, bytes_read);
+		
+	if(dec_rval.code == RC_OK)
+	{
+		int i;
+		asn_fprint(stdout, &asn_DEF_TSRequest, ts_request);
+
+		for(i = 0; i < ts_request->negoTokens->list.count; i++)
+		{
+			STREAM s = xmalloc(sizeof(struct stream));
+				
+			dec_rval = ber_decode(0, &asn_DEF_NegotiationToken, (void **)&negotiation_token,
+				ts_request->negoTokens->list.array[i]->negoToken.buf,
+				ts_request->negoTokens->list.array[i]->negoToken.size);
+
+			s->data = (unsigned char*)(ts_request->negoTokens->list.array[i]->negoToken.buf);
+			s->size = ts_request->negoTokens->list.array[i]->negoToken.size;
+			s->p = s->data;
+			s->end = s->p + s->size;
+
+			ntlm_recv(sec, s);
+				
+			xfree(s);
+		}
+	}
+	else
+	{
+		printf("Failed to decode TSRequest\n");
+		asn_DEF_TSRequest.free_struct(&asn_DEF_TSRequest, ts_request, 0);
+	}
 }
 
 static void ntlm_output_version(STREAM s)
@@ -176,9 +217,43 @@ void ntlm_send_negotiate_message(rdpSec * sec)
 	credssp_send(sec, s);
 }
 
-void ntlm_receive_challenge_message(rdpSec * sec)
+void ntlm_recv_challenge_message(rdpSec * sec, STREAM s)
 {
+	uint16 targetNameLen;
+	uint16 targetNameMaxLen;
+	uint32 targetNameBufferOffset;
+	uint32 negotiateFlags;
+	uint8 serverChallenge[8];
+	uint16 targetInfoLen;
+	uint16 targetInfoMaxLen;
+	uint32 targetInfoBufferOffset;
 
+	/* TargetNameFields (8 bytes) */
+	in_uint16_le(s, targetNameLen); /* TargetNameLen (2 bytes) */
+	in_uint16_le(s, targetNameMaxLen); /* TargetNameMaxLen (2 bytes) */
+	in_uint32_le(s, targetNameBufferOffset); /* TargetNameBufferOffset (4 bytes) */
+
+	in_uint32_le(s, negotiateFlags); /* NegotiateFlags (4 bytes) */
+
+	in_uint8a(s, serverChallenge, 8); /* ServerChallenge (8 bytes) */
+
+	printf("ServerChallenge: %X%X%X%X%X%X%X%X\n",
+	        serverChallenge[0], serverChallenge[1], serverChallenge[2], serverChallenge[3],
+	        serverChallenge[4], serverChallenge[5], serverChallenge[6], serverChallenge[7]);
+		
+	in_uint8s(s, 8); /* Reserved (8 bytes), should be ignored */
+		
+	/* TargetInfoFields (8 bytes) */
+	in_uint16_le(s, targetInfoLen); /* TargetInfoLen (2 bytes) */
+	in_uint16_le(s, targetInfoMaxLen); /* TargetInfoMaxLen (2 bytes) */
+	in_uint32_le(s, targetInfoBufferOffset); /* TargetInfoBufferOffset (4 bytes) */
+
+	/* only present if NTLMSSP_NEGOTIATE_VERSION is set */
+
+	if (negotiateFlags & NTLMSSP_NEGOTIATE_VERSION)
+	{
+		in_uint8s(s, 8); /* Version (8 bytes), can be ignored */
+	}
 }
 
 void ntlm_send_authentication_message(rdpSec * sec)
@@ -186,3 +261,33 @@ void ntlm_send_authentication_message(rdpSec * sec)
 
 }
 
+void ntlm_recv(rdpSec * sec, STREAM s)
+{
+	char signature[8]; /* Signature, "NTLMSSP" */
+	uint32 messageType; /* MessageType */
+
+	in_uint8a(s, signature, 8);
+	in_uint32_le(s, messageType);
+
+	printf("Message Type: %X\n", messageType);
+		
+	switch (messageType)
+	{
+		/* NEGOTIATE_MESSAGE */
+		case 0x00000001:
+			printf("NEGOTIATE_MESSAGE\n");
+			/* We should be sending that one, not receiving it! */
+			break;
+
+		/* CHALLENGE_MESSAGE */
+		case 0x00000002:
+			printf("CHALLENGE_MESSAGE\n");
+			ntlm_recv_challenge_message(sec, s);
+			break;
+
+		/* AUTHENTICATE_MESSAGE */
+		case 0x00000003:
+			printf("AUTHENTICATE_MESSAGE\n");
+			break;
+	}
+}
