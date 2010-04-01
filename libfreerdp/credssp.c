@@ -195,14 +195,14 @@ void ntlm_send_negotiate_message(rdpSec * sec)
 	
 	out_uint32_be(s, negotiateFlags); /* NegotiateFlags (4 bytes) */
 
-	/* only set if NTLMSSP_NEGOTIATE_OEM_DOMAIN_SUPPLIED is set*/
+	/* only set if NTLMSSP_NEGOTIATE_OEM_DOMAIN_SUPPLIED is set */
 
 	/* DomainNameFields (8 bytes) */
 	out_uint16_le(s, 0); /* DomainNameLen */
 	out_uint16_le(s, 0); /* DomainNameMaxLen */
 	out_uint32_le(s, 0); /* DomainNameBufferOffset */
 
-	/* only set if NTLMSSP_NEGOTIATE_OEM_WORKSTATION_SUPPLIED is set*/
+	/* only set if NTLMSSP_NEGOTIATE_OEM_WORKSTATION_SUPPLIED is set */
 
 	/* WorkstationFields (8 bytes) */
 	out_uint16_le(s, 0); /* WorkstationLen */
@@ -254,11 +254,65 @@ void ntlm_recv_challenge_message(rdpSec * sec, STREAM s)
 	{
 		in_uint8s(s, 8); /* Version (8 bytes), can be ignored */
 	}
+
+	/* Payload (variable) */
 }
 
-void ntlm_send_authentication_message(rdpSec * sec)
+void ntlm_send_authenticate_message(rdpSec * sec)
 {
+	STREAM s;
+	uint32 negotiateFlags = 0;
 
+	s = tcp_init(sec->mcs->iso->tcp, 256);
+
+	out_uint8a(s, ntlm_signature, 8); /* Signature (8 bytes) */
+	out_uint32_le(s, 1); /* MessageType */
+
+	/* LmChallengeResponseFields (8 bytes) */
+	out_uint16_le(s, 0); /* LmChallengeResponseLen */
+	out_uint16_le(s, 0); /* LmChallengeResponseMaxLen */
+	out_uint32_le(s, 0); /* LmChallengeResponseBufferOffset */
+
+	/* NtChallengeResponseFields (8 bytes) */
+	out_uint16_le(s, 0); /* NtChallengeResponseLen */
+	out_uint16_le(s, 0); /* NtChallengeResponseMaxLen */
+	out_uint32_le(s, 0); /* NtChallengeResponseBufferOffset */
+
+	/* only set if NTLMSSP_NEGOTIATE_OEM_DOMAIN_SUPPLIED is set */
+
+	/* DomainNameFields (8 bytes) */
+	out_uint16_le(s, 0); /* DomainNameLen */
+	out_uint16_le(s, 0); /* DomainNameMaxLen */
+	out_uint32_le(s, 0); /* DomainNameBufferOffset */
+
+	/* UserNameFields (8 bytes) */
+	out_uint16_le(s, 0); /* UserNameLen */
+	out_uint16_le(s, 0); /* UserNameMaxLen */
+	out_uint32_le(s, 0); /* UserNameBufferOffset */
+		
+	/* only set if NTLMSSP_NEGOTIATE_OEM_WORKSTATION_SUPPLIED is set */
+
+	/* WorkstationFields (8 bytes) */
+	out_uint16_le(s, 0); /* WorkstationLen */
+	out_uint16_le(s, 0); /* WorkstationMaxLen */
+	out_uint32_le(s, 0); /* WorkstationBufferOffset */
+
+	/* EncryptedRandomSessionKeyFields (8 bytes) */
+	out_uint16_le(s, 0); /* EncryptedRandomSessionKeyLen */
+	out_uint16_le(s, 0); /* EncryptedRandomSessionKeyMaxLen */
+	out_uint32_le(s, 0); /* EncryptedRandomSessionKeyBufferOffset */
+
+	negotiateFlags |= NTLMSSP_NEGOTIATE_ALWAYS_SIGN;
+	negotiateFlags |= NTLMSSP_NEGOTIATE_SEAL;
+	negotiateFlags |= NTLMSSP_REQUEST_TARGET;
+	negotiateFlags |= NTLMSSP_NEGOTIATE_OEM;
+	negotiateFlags |= NTLMSSP_NEGOTIATE_UNICODE;
+	
+	out_uint32_be(s, negotiateFlags); /* NegotiateFlags (4 bytes) */
+
+	/* MIC (16 bytes) */
+
+	/* Payload (variable) */
 }
 
 void ntlm_recv(rdpSec * sec, STREAM s)
@@ -268,8 +322,6 @@ void ntlm_recv(rdpSec * sec, STREAM s)
 
 	in_uint8a(s, signature, 8);
 	in_uint32_le(s, messageType);
-
-	printf("Message Type: %X\n", messageType);
 		
 	switch (messageType)
 	{
@@ -287,6 +339,7 @@ void ntlm_recv(rdpSec * sec, STREAM s)
 
 		/* AUTHENTICATE_MESSAGE */
 		case 0x00000003:
+			/* Again, we shouldn't be receiving this one */
 			printf("AUTHENTICATE_MESSAGE\n");
 			break;
 	}
