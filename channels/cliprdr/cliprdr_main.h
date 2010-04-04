@@ -47,6 +47,8 @@
    the w32 cross compiler
    this is the CF_ set when WINVER is 0x0400 */
 
+#define CF_RAW          0
+
 #ifndef WIN32
 
 #ifndef CF_TEXT

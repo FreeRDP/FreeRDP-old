@@ -57,21 +57,32 @@ struct clipboard_data
 	pthread_mutex_t * mutex;
 
 	Display * display;
+	Window root_window;
+	Window window;
 	Atom clipboard_atom;
 	Atom property_atom;
-	Window window;
-	uint32 * format_ids;
-	int num_formats;
-	char * data;
-	uint32 data_format;
-	int data_length;
-	XEvent * respond;
+	Atom identity_atom;
 
 	struct clipboard_format_mapping format_mappings[10];
 	int num_format_mappings;
-	int request_index;
+
+	/* server->client data */
+	uint8 * format_data;
+	uint32 * format_ids;
+	int num_formats;
 	Atom targets[10];
 	int num_targets;
+	char * data;
+	uint32 data_format;
+	uint32 data_raw_format;
+	int data_length;
+	XEvent * respond;
+
+	/* client->server data */
+	/* this is just to keep tracking of changing of clipboard owner.
+	   do not use it for in any X11 calls */
+	Window owner;
+	int request_index;
 
 	/* INCR mechanism */
 	Atom incr_atom;
@@ -95,6 +106,10 @@ clipboard_select_format_by_atom(struct clipboard_data * cdata, Atom target)
 		if (cdata->format_mappings[i].target_format != target)
 		{
 			continue;
+		}
+		if (cdata->format_mappings[i].format_id == CF_RAW)
+		{
+			return i;
 		}
 		for (j = 0; j < cdata->num_formats; j++)
 		{
@@ -152,12 +167,14 @@ clipboard_provide_targets(struct clipboard_data * cdata, XEvent * respond)
 	}
 }
 
-static void
-clipboard_send_format_list(struct clipboard_data * cdata)
+static int
+clipboard_send_supported_format_list(struct clipboard_data * cdata)
 {
 	char * s;
 	int size;
 	int i;
+
+	LLOGLN(10, ("clipboard_send_supported_format_list"));
 
 	size = 36 * cdata->num_format_mappings;
 	s = (char *) malloc(size);
@@ -169,10 +186,85 @@ clipboard_send_format_list(struct clipboard_data * cdata)
 	cliprdr_send_packet(cdata->plugin, CB_FORMAT_LIST,
 		0, s, size);
 	free(s);
+	return 0;
+}
+
+static int
+clipboard_send_neighbour_format_list(struct clipboard_data * cdata)
+{
+	Atom type;
+	int format, result;
+	unsigned long len, bytes_left;
+	char * format_data;
+
+	pthread_mutex_lock(cdata->mutex);
+	result = XGetWindowProperty(cdata->display, cdata->root_window,
+		cdata->property_atom, 0, 3600, 0, XA_STRING,
+		&type, &format, &len, &bytes_left, (unsigned char **)&format_data);
+	pthread_mutex_unlock(cdata->mutex);
+	if (result != Success)
+	{
+		LLOGLN(0, ("clipboard_send_neighbour_format_list: XGetWindowProperty failed"));
+		return 1;
+	}
+	LLOGLN(10, ("clipboard_send_neighbour_format_list: format=%d len=%d bytes_left=%d",
+		format, (int)len, (int)bytes_left));
+	cliprdr_send_packet(cdata->plugin, CB_FORMAT_LIST,
+		0, format_data, (int)len);
+	XFree(format_data);
+	return 0;
+}
+
+static int
+clipboard_owner_is_neighbour(struct clipboard_data * cdata)
+{
+	Atom type;
+	int format, result = 0;
+	unsigned long len, bytes_left;
+	uint32 * pid = NULL;
+	uint32 id = 0;
+
+	pthread_mutex_lock(cdata->mutex);
+	cdata->owner = XGetSelectionOwner(cdata->display, cdata->clipboard_atom);
+	if (cdata->owner != None)
+	{
+		result = XGetWindowProperty(cdata->display, cdata->owner,
+			cdata->identity_atom, 0, 4, 0, XA_INTEGER,
+			&type, &format, &len, &bytes_left, (unsigned char **)&pid);
+	}
+	pthread_mutex_unlock(cdata->mutex);
+	if (pid)
+	{
+		id = *pid;
+		XFree(pid);
+	}
+	if (cdata->owner == None || cdata->owner == cdata->window)
+	{
+		return 0;
+	}
+	if (result != Success)
+	{
+		return 0;
+	}
+	return id;
+}
+
+static int
+clipboard_send_format_list(struct clipboard_data * cdata)
+{
+	if (clipboard_owner_is_neighbour(cdata))
+	{
+		clipboard_send_neighbour_format_list(cdata);
+	}
+	else
+	{
+		clipboard_send_supported_format_list(cdata);
+	}
+	return 0;
 }
 
 static void
-thread_process_selection_request(struct clipboard_data * cdata,
+cliprdr_process_selection_request(struct clipboard_data * cdata,
 	XSelectionRequestEvent * req)
 {
 	int delay_respond;
@@ -180,8 +272,13 @@ thread_process_selection_request(struct clipboard_data * cdata,
 	XEvent * respond;
 	int i;
 	uint32 format;
+	uint32 raw_format;
+	Atom type;
+	int fmt;
+	unsigned long len, bytes_left;
+	char * data = NULL;
 
-	LLOGLN(10, ("cliprdr process_selection_request: target=%d", (int)req->target));
+	LLOGLN(10, ("cliprdr_process_selection_request: target=%d", (int)req->target));
 
 	delay_respond = 0;
 	respond = (XEvent *) malloc(sizeof(XEvent));
@@ -209,8 +306,27 @@ thread_process_selection_request(struct clipboard_data * cdata,
 		if (i >= 0 && req->requestor != cdata->window)
 		{
 			format = cdata->format_mappings[i].format_id;
-			LLOGLN(10, ("clipboard_x11 selection_request: provide format 0x%04x", format));
-			if (cdata->data != 0 && format == cdata->data_format)
+			raw_format = format;
+			if (format == CF_RAW)
+			{
+				pthread_mutex_lock(cdata->mutex);
+				if (XGetWindowProperty(cdata->display, req->requestor,
+					cdata->property_atom, 0, 4, 0, XA_INTEGER,
+					&type, &fmt, &len, &bytes_left, (unsigned char **)&data) != Success)
+				{
+					LLOGLN(0, ("cliprdr_process_selection_request: XGetWindowProperty failed"));
+				}
+				pthread_mutex_unlock(cdata->mutex);
+				if (data)
+				{
+					memcpy(&raw_format, data, 4);
+					XFree(data);
+				}
+			}
+			LLOGLN(10, ("cliprdr_process_selection_request: provide format 0x%04x", raw_format));
+			if (cdata->data != 0 &&
+				format == cdata->data_format &&
+				raw_format == cdata->data_raw_format)
 			{
 				/* Cached clipboard data available. Send it now */
 				respond->xselection.property = req->property;
@@ -218,7 +334,7 @@ thread_process_selection_request(struct clipboard_data * cdata,
 			}
 			else if (cdata->respond)
 			{
-				LLOGLN(0, ("cliprdr: thread_process_selection_request: duplicated request"));
+				LLOGLN(0, ("cliprdr_process_selection_request: duplicated request"));
 			}
 			else
 			{
@@ -233,9 +349,10 @@ thread_process_selection_request(struct clipboard_data * cdata,
 				respond->xselection.property = req->property;
 				cdata->respond = respond;
 				cdata->data_format = format;
+				cdata->data_raw_format = raw_format;
 				delay_respond = 1;
 				s = (char *) malloc(4);
-				SET_UINT32(s, 0, format);
+				SET_UINT32(s, 0, raw_format);
 				cliprdr_send_packet(cdata->plugin, CB_FORMAT_DATA_REQUEST,
 					0, s, 4);
 				free(s);
@@ -306,6 +423,17 @@ crlf2lf(char * data, int * length)
 		}
 	}
 	*length = out - data;
+}
+
+static char *
+clipboard_process_requested_raw(struct clipboard_data * cdata,
+	char * data, int * length)
+{
+	char * outbuf;
+
+	outbuf = (char *) malloc(*length);
+	memcpy(outbuf, data, *length);
+	return outbuf;
 }
 
 static char *
@@ -403,6 +531,10 @@ clipboard_process_requested_data(struct clipboard_data * cdata,
 	{
 		switch (cdata->format_mappings[cdata->request_index].format_id)
 		{
+		case CF_RAW:
+			outbuf = clipboard_process_requested_raw(cdata,
+				data, &length);
+			break;
 		case CF_UNICODETEXT:
 			outbuf = clipboard_process_requested_unicodetext(cdata,
 				data, &length);
@@ -537,6 +669,7 @@ clipboard_get_xevent(struct clipboard_data * cdata, XEvent * xev)
 	{
 		XNextEvent(cdata->display, xev);
 	}
+	cdata->owner = XGetSelectionOwner(cdata->display, cdata->clipboard_atom);
 	pthread_mutex_unlock(cdata->mutex);
 	return pending;
 }
@@ -555,7 +688,10 @@ thread_func(void * arg)
 	x_socket = ConnectionNumber(cdata->display);
 	while (1)
 	{
-		wait_obj_select(&cdata->term_event, 1, &x_socket, 1, -1);
+		if (!XPending(cdata->display))
+		{
+			wait_obj_select(&cdata->term_event, 1, &x_socket, 1, -1);
+		}
 		if (wait_obj_is_set(cdata->term_event))
 		{
 			break;
@@ -567,22 +703,40 @@ thread_func(void * arg)
 			case SelectionRequest:
 				if (xevent.xselectionrequest.owner == cdata->window)
 				{
-					thread_process_selection_request(cdata,
+					cliprdr_process_selection_request(cdata,
 						&(xevent.xselectionrequest));
 				}
 				break;
 			case SelectionClear:
-				clipboard_send_format_list(cdata);
+				if (!clipboard_owner_is_neighbour(cdata))
+				{
+					/* Other application owns the clipboard */
+					LLOGLN(10, ("cliprdr SelectionClear"));
+					pthread_mutex_lock(cdata->mutex);
+					XDeleteProperty(cdata->display, cdata->root_window, cdata->property_atom);
+					pthread_mutex_unlock(cdata->mutex);
+				}
 				break;
 			case SelectionNotify:
 				clipboard_get_requested_data(cdata, xevent.xselection.target);
 				break;
 			case PropertyNotify:
-				LLOGLN(10, ("cliprdr PropertyNotify"));
-				if (xevent.xproperty.state == PropertyNewValue &&
+				if (xevent.xproperty.atom != cdata->property_atom)
+				{
+					break;
+				}
+				if (xevent.xproperty.window == cdata->root_window &&
+					cdata->owner != cdata->window)
+				{
+					LLOGLN(10, ("cliprdr root window PropertyNotify"));
+					clipboard_send_format_list(cdata);
+				}
+				else if (xevent.xproperty.window == cdata->window &&
+					xevent.xproperty.state == PropertyNewValue &&
 					cdata->incr_starts &&
 					cdata->request_index >= 0)
 				{
+					LLOGLN(10, ("cliprdr window PropertyNotify"));
 					clipboard_get_requested_data(cdata,
 						cdata->format_mappings[cdata->request_index].target_format);
 				}
@@ -600,6 +754,7 @@ clipboard_new(cliprdrPlugin * plugin)
 {
 	struct clipboard_data * cdata;
 	pthread_t thread;
+	uint32 id;
 
 	cdata = (struct clipboard_data *) malloc(sizeof(struct clipboard_data));
 	memset(cdata, 0, sizeof(struct clipboard_data));
@@ -617,29 +772,38 @@ clipboard_new(cliprdrPlugin * plugin)
 	}
 	else
 	{
+		cdata->root_window = DefaultRootWindow(cdata->display);
 		cdata->clipboard_atom = XInternAtom(cdata->display, "CLIPBOARD", False);
 		if (cdata->clipboard_atom == None)
 		{
 			LLOGLN(0, ("clipboard_new: unable to get CLIPBOARD atom"));
 		}
-		cdata->window = XCreateSimpleWindow(cdata->display, DefaultRootWindow(cdata->display),
+		cdata->window = XCreateSimpleWindow(cdata->display, cdata->root_window,
 			0, 0, 100, 100, 0, 0, 0);
 		if (cdata->window == None)
 		{
 			LLOGLN(0, ("clipboard_new: unable to create window"));
 		}
 
-		XSelectInput(cdata->display, cdata->window, PropertyChangeMask);
-
-		cdata->format_mappings[0].target_format = XInternAtom(cdata->display, "UTF8_STRING", False);
-		cdata->format_mappings[0].format_id = CF_UNICODETEXT;
-		cdata->format_mappings[1].target_format = XInternAtom(cdata->display, "UTF8_STRING", False);
-		cdata->format_mappings[1].format_id = CF_TEXT;
-		cdata->format_mappings[2].target_format = XInternAtom(cdata->display, "image/bmp", False);
-		cdata->format_mappings[2].format_id = CF_DIB;
-		cdata->num_format_mappings = 3;
-
 		cdata->property_atom = XInternAtom(cdata->display, "_FREERDP_CLIPRDR", False);
+		cdata->identity_atom = XInternAtom(cdata->display, "_FREERDP_CLIPRDR_ID", False);
+		id = 1;
+		XChangeProperty(cdata->display, cdata->window, cdata->identity_atom, XA_INTEGER,
+			32, PropModeReplace, (unsigned char *)&id, 1);
+
+		XSelectInput(cdata->display, cdata->window, PropertyChangeMask);
+		XSelectInput(cdata->display, cdata->root_window, PropertyChangeMask);
+
+		cdata->format_mappings[0].target_format = XInternAtom(cdata->display, "_FREERDP_RAW", False);
+		cdata->format_mappings[0].format_id = CF_RAW;
+		cdata->format_mappings[1].target_format = XInternAtom(cdata->display, "UTF8_STRING", False);
+		cdata->format_mappings[1].format_id = CF_UNICODETEXT;
+		cdata->format_mappings[2].target_format = XInternAtom(cdata->display, "UTF8_STRING", False);
+		cdata->format_mappings[2].format_id = CF_TEXT;
+		cdata->format_mappings[3].target_format = XInternAtom(cdata->display, "image/bmp", False);
+		cdata->format_mappings[3].format_id = CF_DIB;
+		cdata->num_format_mappings = 4;
+
 		cdata->targets[0] = XInternAtom(cdata->display, "TIMESTAMP", False);
 		cdata->targets[1] = XInternAtom(cdata->display, "TARGETS", False);
 		cdata->num_targets = 2;
@@ -706,10 +870,16 @@ clipboard_format_list(void * device_data, int flag,
 		free(cdata->data);
 		cdata->data = NULL;
 	}
+	if (cdata->format_data)
+	{
+		free(cdata->format_data);
+	}
 	if (cdata->format_ids)
 	{
 		free(cdata->format_ids);
 	}
+	cdata->format_data = (uint8 *) malloc(length);
+	memcpy(cdata->format_data, data, length);
 	cdata->num_formats = length / 36;
 	cdata->format_ids = (uint32 *) malloc(sizeof(uint32) * cdata->num_formats);
 	cdata->num_targets = 2;
@@ -736,6 +906,9 @@ clipboard_format_list(void * device_data, int flag,
 		}
 	}
 	XSetSelectionOwner(cdata->display, cdata->clipboard_atom, cdata->window, CurrentTime);
+	XChangeProperty(cdata->display, cdata->root_window, cdata->property_atom,
+		XA_STRING, 8, PropModeReplace,
+		(unsigned char *) cdata->format_data, cdata->num_formats * 36);
 	XFlush(cdata->display);
 	pthread_mutex_unlock(cdata->mutex);
 
@@ -763,7 +936,20 @@ clipboard_request_data(void * device_data, uint32 format)
 
 	LLOGLN(10, ("clipboard_request_data: format=0x%04x", format));
 	cdata = (struct clipboard_data *) device_data;
-	i = clipboard_select_format_by_id(cdata, format);
+	if (clipboard_owner_is_neighbour(cdata))
+	{
+		/* CF_RAW */
+		i = 0;
+		pthread_mutex_lock(cdata->mutex);
+		XChangeProperty(cdata->display, cdata->window, cdata->property_atom,
+			XA_INTEGER, 32, PropModeReplace,
+			(unsigned char *) &format, 1);
+		pthread_mutex_unlock(cdata->mutex);
+	}
+	else
+	{
+		i = clipboard_select_format_by_id(cdata, format);
+	}
 	cdata->request_index = i;
 	if (i < 0)
 	{
@@ -788,6 +974,15 @@ clipboard_request_data(void * device_data, uint32 format)
 	cliprdr_send_packet(cdata->plugin, CB_FORMAT_DATA_RESPONSE,
 		CB_RESPONSE_FAIL, NULL, 0);
 	return 1;
+}
+
+static void
+clipboard_handle_raw(struct clipboard_data * cdata,
+	char * data, int length)
+{
+	cdata->data = (char *) malloc(length);
+	memcpy(cdata->data, data, length);
+	cdata->data_length = length;
 }
 
 static void
@@ -896,6 +1091,9 @@ clipboard_handle_data(void * device_data, int flag,
 		}
 		switch (cdata->data_format)
 		{
+		case CF_RAW:
+			clipboard_handle_raw(cdata, data, length);
+			break;
 		case CF_TEXT:
 			clipboard_handle_text(cdata, data, length);
 			break;
@@ -978,6 +1176,10 @@ clipboard_free(void * device_data)
 	if (cdata->format_ids)
 	{
 		free(cdata->format_ids);
+	}
+	if (cdata->format_data)
+	{
+		free(cdata->format_data);
 	}
 	if (cdata->data)
 	{
