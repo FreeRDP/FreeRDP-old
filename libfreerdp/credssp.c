@@ -33,6 +33,8 @@
 #include "NegoData.h"
 #include "NegotiationToken.h"
 
+#include <openssl/des.h>
+
 #include "credssp.h"
 
 #define NTLMSSP_NEGOTIATE_56				0x00000001
@@ -67,6 +69,8 @@
 #define NTLMSSP_REVISION_W2K3		0x0F
 
 const char ntlm_signature[] = "NTLMSSP";
+
+const char lm_magic[] = "KGS!@#$%";
 
 static int
 asn1_write(const void *buffer, size_t size, void *fd)
@@ -161,6 +165,133 @@ void credssp_recv(rdpSec * sec)
 		printf("Failed to decode TSRequest\n");
 		asn_DEF_TSRequest.free_struct(&asn_DEF_TSRequest, ts_request, 0);
 	}
+}
+
+static int get_bit(char* buffer, int bit)
+{
+	return (buffer[(bit - (bit % 8)) / 8] >> (7 - bit % 8) & 1);
+}
+
+static void set_bit(char* buffer, int bit, int value)
+{
+	buffer[(bit - (bit % 8)) / 8] |= value << (7 - bit % 8);
+}
+
+static void create_des_key(char* text, char* des_key)
+{
+	int i, j;
+	int bit;
+	int nbits;
+
+	/* Convert the 7 bytes into a bit stream, and insert a parity-bit (odd parity) after every seven bits. */
+
+	memset(des_key, '\0', 8);
+	
+	for (i = 0; i < 8; i++)
+	{
+		nbits = 0;
+		
+		for (j = 0; j < 7; j++)
+		{
+			/* copy 7 bits, and count the number of bits that are set */
+			
+			bit = get_bit(text, i*7 + j);
+			set_bit(des_key, i*7 + i + j, bit);
+			nbits += bit;
+		}
+
+		/* insert parity bit (odd parity) */
+		
+		if (nbits % 2 == 0)
+			set_bit(des_key, i*7 + i + j, 1);
+	}
+	
+#if 0
+	printf("7-byte text: ");
+	for (i = 0; i < 7; i++)
+	{
+		int bit, j;
+		unsigned char c = text[i];
+
+		for (j = 7; j >= 0; j--)
+		{
+			bit = c >> j & 1;
+			printf("%d", bit);
+		}
+		printf(" ");
+	}
+	printf("\n");
+
+	printf("8-byte DES key: ");
+	for (i = 0; i < 8; i++)
+	{
+		int bit, j;
+		unsigned char c = des_key[i];
+
+		for (j = 7; j >= 0; j--)
+		{
+			bit = c >> j & 1;
+			printf("%d", bit);
+		}
+		printf(" ");
+	}
+	printf("\n");
+#endif
+}
+
+static void lm_hash(char* password)
+{
+	int i;
+	int maxlen;
+	char text[14];
+	char hash[16];
+	char des_key1[8];
+	char des_key2[8];
+	des_key_schedule ks;
+
+	/* lm_hash("password") = E52CAC67419A9A224A3B108F3FA6CB6D */
+	
+	maxlen = (strlen(password) < 14) ? strlen(password) : 14;
+    
+	/* convert to uppercase */
+	for (i = 0; i < maxlen; i++)
+	{
+		if ((password[i] >= 'a') && (password[i] <= 'z'))
+			text[i] = password[i] - 32;
+		else
+			text[i] = password[i];
+	}
+
+	/* pad with nulls up to 14 bytes */
+	for (i = maxlen; i < 14; i++)
+		text[i] = '\0';
+
+	create_des_key(text, des_key1);
+	create_des_key(&text[7], des_key2);
+	
+	DES_set_key((const_DES_cblock*)des_key1, &ks);
+	DES_ecb_encrypt((const_DES_cblock*)lm_magic, (DES_cblock*)hash, &ks, DES_ENCRYPT);
+	
+	DES_set_key((const_DES_cblock*)des_key2, &ks);
+	DES_ecb_encrypt((const_DES_cblock*)lm_magic, (DES_cblock*)&hash[8], &ks, DES_ENCRYPT);
+
+#if 0
+	printf("LM PASSWORD: ");
+	for (i = 0; i < 14; i++)
+	{
+		unsigned char c = (unsigned char)text[i];
+		printf("%c", c);
+	}
+	printf("\n");
+	
+	printf("LM HASH: ");
+	for (i = 0; i < 16; i++)
+	{
+		unsigned char c = (unsigned char)hash[i];
+		printf("%X", c);
+	}
+	printf("\n");
+#endif
 }
 
 static void ntlm_output_version(STREAM s)
