@@ -177,7 +177,7 @@ static void set_bit(char* buffer, int bit, int value)
 	buffer[(bit - (bit % 8)) / 8] |= value << (7 - bit % 8);
 }
 
-static void create_des_key(char* text, char* des_key)
+static void lm_create_des_key(char* text, char* des_key)
 {
 	int i, j;
 	int bit;
@@ -205,51 +205,18 @@ static void create_des_key(char* text, char* des_key)
 		if (nbits % 2 == 0)
 			set_bit(des_key, i*7 + i + j, 1);
 	}
-	
-#if 0
-	printf("7-byte text: ");
-	for (i = 0; i < 7; i++)
-	{
-		int bit, j;
-		unsigned char c = text[i];
-
-		for (j = 7; j >= 0; j--)
-		{
-			bit = c >> j & 1;
-			printf("%d", bit);
-		}
-		printf(" ");
-	}
-	printf("\n");
-
-	printf("8-byte DES key: ");
-	for (i = 0; i < 8; i++)
-	{
-		int bit, j;
-		unsigned char c = des_key[i];
-
-		for (j = 7; j >= 0; j--)
-		{
-			bit = c >> j & 1;
-			printf("%d", bit);
-		}
-		printf(" ");
-	}
-	printf("\n");
-#endif
 }
 
-static void lm_hash(char* password)
+static void lm_hash(char* password, char* hash)
 {
 	int i;
 	int maxlen;
 	char text[14];
-	char hash[16];
 	char des_key1[8];
 	char des_key2[8];
 	des_key_schedule ks;
 
-	/* lm_hash("password") = E52CAC67419A9A224A3B108F3FA6CB6D */
+	/* LM("password") = E52CAC67419A9A224A3B108F3FA6CB6D */
 	
 	maxlen = (strlen(password) < 14) ? strlen(password) : 14;
     
@@ -266,32 +233,42 @@ static void lm_hash(char* password)
 	for (i = maxlen; i < 14; i++)
 		text[i] = '\0';
 
-	create_des_key(text, des_key1);
-	create_des_key(&text[7], des_key2);
+	lm_create_des_key(text, des_key1);
+	lm_create_des_key(&text[7], des_key2);
 	
 	DES_set_key((const_DES_cblock*)des_key1, &ks);
 	DES_ecb_encrypt((const_DES_cblock*)lm_magic, (DES_cblock*)hash, &ks, DES_ENCRYPT);
 	
 	DES_set_key((const_DES_cblock*)des_key2, &ks);
 	DES_ecb_encrypt((const_DES_cblock*)lm_magic, (DES_cblock*)&hash[8], &ks, DES_ENCRYPT);
+}
 
-#if 0
-	printf("LM PASSWORD: ");
-	for (i = 0; i < 14; i++)
-	{
-		unsigned char c = (unsigned char)text[i];
-		printf("%c", c);
-	}
-	printf("\n");
+static void lm_response(char* password, char* challenge, char* response)
+{
+	char hash[21];
+	char des_key1[8];
+	char des_key2[8];
+	char des_key3[8];
+	des_key_schedule ks;
 	
-	printf("LM HASH: ");
-	for (i = 0; i < 16; i++)
-	{
-		unsigned char c = (unsigned char)hash[i];
-		printf("%X", c);
-	}
-	printf("\n");
-#endif
+	/* A LM hash is 16-bytes long, but the LM response uses a LM hash null-padded to 21 bytes */
+	memset(hash, '\0', 21);
+	lm_hash(password, hash);
+
+	/* Each 7-byte third of the 21-byte null-padded LM hash is used to create a DES key */
+	lm_create_des_key(hash, des_key1);
+	lm_create_des_key(&hash[7], des_key2);
+	lm_create_des_key(&hash[14], des_key3);
+	
+	/* Encrypt the LM challenge with each key, and concatenate the result. This is the LM response. */
+	DES_set_key((const_DES_cblock*)des_key1, &ks);
+	DES_ecb_encrypt((const_DES_cblock*)challenge, (DES_cblock*)response, &ks, DES_ENCRYPT);
+	
+	DES_set_key((const_DES_cblock*)des_key2, &ks);
+	DES_ecb_encrypt((const_DES_cblock*)challenge, (DES_cblock*)&response[8], &ks, DES_ENCRYPT);
+
+	DES_set_key((const_DES_cblock*)des_key3, &ks);
+	DES_ecb_encrypt((const_DES_cblock*)challenge, (DES_cblock*)&response[16], &ks, DES_ENCRYPT);
 }
 
 static void ntlm_output_version(STREAM s)
