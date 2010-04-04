@@ -26,7 +26,6 @@ AH_TEMPLATE(WITH_DEBUG_SCARD, [Turn on debugging messages])
 AH_TEMPLATE(WITH_DEBUG_SEAMLESS, [Turn on debugging messages])
 AH_TEMPLATE(WITH_DEBUG_SERIAL, [Turn on debugging messages])
 AH_TEMPLATE(WITH_DEBUG_SOUND, [Turn on debugging messages])
-AH_TEMPLATE(ssldir, [openssl directory])
 
 AC_PROG_INSTALL
 AC_PROG_LIBTOOL
@@ -77,60 +76,13 @@ PLUGIN_PATH='${libdir}/freerdp'
 AC_SUBST(PLUGIN_PATH)
 
 #
-# OpenSSL detection borrowed from stunnel
+# OpenSSL detection
 #
-checkssldir() { :
-    if test -f "$1/include/openssl/ssl.h"; then
-        ssldir="$1"
-        return 0
-    fi
-    return 1
-}
-AC_MSG_CHECKING([for OpenSSL directory])
-AC_ARG_WITH(openssl,
-    [  --with-openssl=DIR          look for OpenSSL at DIR/include, DIR/lib],
-    [
-        dnl Check the specified location only
-        checkssldir "$withval"
-    ],
-    [
-        dnl Search default locations of OpenSSL library
-        for maindir in /usr/local /usr/lib /usr/pkg /usr /var/ssl /opt; do
-            for dir in $maindir $maindir/openssl $maindir/ssl; do
-                checkssldir $dir && break 2
-            done
-        done
-    ]
-)
-if test -z "$ssldir"; then
-    AC_MSG_RESULT([Not found])
-    echo
-    echo "ERROR: Could not find OpenSSL headers/libraries."
-    if test -f /etc/debian_version; then
-       echo "Probably you need to install the libssl-dev package."
-    elif test -f /etc/redhat-release; then
-       echo "Probably you need to install the openssl-devel package."
-    fi
-    echo "To specify a path manually, use the --with-openssl option."
-    echo
-    exit 1
-fi
-AC_MSG_RESULT([$ssldir])
-AC_SUBST(ssldir)
-AC_DEFINE_UNQUOTED(ssldir, "$ssldir")
+PKG_CHECK_MODULES(SSL, [openssl >= 0.9.8a])
 
-dnl Add OpenSSL includes and libraries
-CFLAGS="$CFLAGS -I$ssldir/include"
-AC_ARG_ENABLE(static-openssl,
-             [  --enable-static-openssl link OpenSSL statically],
-             [
-LIBS="$LIBS $ssldir/lib/libcrypto.a"
-             ],
-             [
-LIBS="$LIBS -L$ssldir/lib -lcrypto -lssl"
-rpath="$rpath:$ssldir/lib"
-             ])
-
+#
+# Smartcard
+#
 AC_ARG_ENABLE(smartcard,
              [  --enable-smartcard	  Enables smart-card support.
 	     ],
@@ -906,7 +858,6 @@ case "$host" in
     CFLAGS="$CFLAGS -D_XOPEN_SOURCE_EXTENDED"
     ;;
 *-*-irix6.5*)
-    LIBS="$LIBS -L$ssldir/lib32 -lcrypto -lssl"
     CFLAGS="$CFLAGS -D__SGI_IRIX__"
     ;;
 esac

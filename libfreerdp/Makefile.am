@@ -31,9 +31,11 @@ libfreerdp_la_SOURCES = \
 	types.h debug.h frdp.h
 
 libfreerdp_la_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include -I$(top_srcdir)/include/freerdp \
-	-I$(top_srcdir)/asn1 -DFREERDP_EXPORTS
+	-I$(top_srcdir)/asn1 @SSL_CFLAGS@ -DFREERDP_EXPORTS
 
-libfreerdp_la_LDFLAGS = ../asn1/libasn1.la
+libfreerdp_la_LDFLAGS =
+
+libfreerdp_la_LIBADD = ../asn1/libasn1.la @SSL_LIBS@
 
 # extra
 EXTRA_DIST =
