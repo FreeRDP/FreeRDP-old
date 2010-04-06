@@ -899,10 +899,12 @@ clipboard_format_list(void * device_data, int flag,
 #endif
 		LLOGLN(10, ("clipboard_format_list: format 0x%04x %s",
 			cdata->format_ids[i], data + i * 36 + 4));
-		j = clipboard_select_format_by_id(cdata, cdata->format_ids[i]);
-		if (j >= 0)
+		for (j = 0; j < cdata->num_format_mappings; j++)
 		{
-			clipboard_append_target(cdata, cdata->format_mappings[j].target_format);
+			if (cdata->format_ids[i] == cdata->format_mappings[j].format_id)
+			{
+				clipboard_append_target(cdata, cdata->format_mappings[j].target_format);
+			}
 		}
 	}
 	XSetSelectionOwner(cdata->display, cdata->clipboard_atom, cdata->window, CurrentTime);
@@ -1078,12 +1080,14 @@ clipboard_handle_data(void * device_data, int flag,
 	}
 	else
 	{
-/*		int i;
+#if 0
+		int i;
 		for (i = 0; i < length; i++)
 		{
 			printf("%x%x ", data[i]>>4, data[i]&15);
 		}
-		printf("\n");*/
+		printf("\n");
+#endif
 		if (cdata->data)
 		{
 			free(cdata->data);
@@ -1129,17 +1133,27 @@ clipboard_handle_caps(void * device_data, int flag,
 	char * s;
 	int size;
 
+	LLOGLN(10, ("clipboard_handle_caps: length=%d", length));
+#if 0
+	int i;
+	for (i = 0; i < length; i++)
+	{
+		printf("%x%x ", data[i]>>4, data[i]&15);
+	}
+	printf("\n");
+#endif
+
 	cdata = (struct clipboard_data *) device_data;
 
-	size = 16;
+	size = 4 + CB_CAPSTYPE_GENERAL_LEN;
 	s = (char *) malloc(size);
 	memset(s, 0, size);
 	SET_UINT16(s, 0, 1);
 	SET_UINT16(s, 2, 0);
-	SET_UINT16(s, 4, 1); /* CB_CAPSTYPE_GENERAL */
-	SET_UINT16(s, 6, 12); /* length */
-	SET_UINT32(s, 8, 2); /* version */
-	SET_UINT32(s, 12, 0); /* generalFlags */
+	SET_UINT16(s, 4, CB_CAPSTYPE_GENERAL);
+	SET_UINT16(s, 6, CB_CAPSTYPE_GENERAL_LEN);
+	SET_UINT32(s, 8, CB_CAPS_VERSION_2);
+	SET_UINT32(s, 12, 0);
 	cliprdr_send_packet(cdata->plugin, CB_CLIP_CAPS,
 		0, s, size);
 	free(s);

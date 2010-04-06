@@ -43,6 +43,22 @@
 #define CB_RESPONSE_FAIL           2
 #define CB_ASCII_NAMES             4
 
+/* CLIPRDR_CAPS_SET.capabilitySetType */
+#define CB_CAPSTYPE_GENERAL        1
+
+/* CLIPRDR_GENERAL_CAPABILITY.lengthCapability */
+#define CB_CAPSTYPE_GENERAL_LEN     12
+
+/* CLIPRDR_GENERAL_CAPABILITY.version */
+#define CB_CAPS_VERSION_1            1
+#define CB_CAPS_VERSION_2            2
+
+/* CLIPRDR_GENERAL_CAPABILITY.generalFlags */
+#define CB_USE_LONG_FORMAT_NAMES     2
+#define CB_STREAM_FILECLIP_ENABLED   4
+#define CB_FILECLIP_NO_FILE_PATHS    8
+#define CB_CAN_LOCK_CLIPDATA        16
+
 /* Clipboard constants, "borrowed" from GCC system headers in 
    the w32 cross compiler
    this is the CF_ set when WINVER is 0x0400 */
