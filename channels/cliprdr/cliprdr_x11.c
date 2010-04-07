@@ -22,6 +22,11 @@
 
 */
 
+/*
+   References:
+   http://msdn.microsoft.com/en-us/library/ff468800%28v=VS.85%29.aspx
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -45,6 +50,8 @@ struct clipboard_format_mapping
 {
 	Atom target_format;
 	uint32 format_id;
+	uint32 local_format_id;
+	char name[32];
 };
 
 struct clipboard_data
@@ -74,7 +81,7 @@ struct clipboard_data
 	int num_targets;
 	char * data;
 	uint32 data_format;
-	uint32 data_raw_format;
+	uint32 data_alt_format;
 	int data_length;
 	XEvent * respond;
 
@@ -129,7 +136,7 @@ clipboard_select_format_by_id(struct clipboard_data * cdata, uint32 format_id)
 
 	for (i = 0; i < cdata->num_format_mappings; i++)
 	{
-		if (cdata->format_mappings[i].format_id == format_id)
+		if (cdata->format_mappings[i].local_format_id == format_id)
 		{
 			return i;
 		}
@@ -181,7 +188,8 @@ clipboard_send_supported_format_list(struct clipboard_data * cdata)
 	memset(s, 0, size);
 	for (i = 0; i < cdata->num_format_mappings; i++)
 	{
-		SET_UINT32(s, i * 36, cdata->format_mappings[i].format_id);
+		SET_UINT32(s, i * 36, cdata->format_mappings[i].local_format_id);
+		memcpy(s + i * 36 + 4, cdata->format_mappings[i].name, 32);
 	}
 	cliprdr_send_packet(cdata->plugin, CB_FORMAT_LIST,
 		0, s, size);
@@ -280,7 +288,7 @@ cliprdr_process_selection_request(struct clipboard_data * cdata,
 	XEvent * respond;
 	int i;
 	uint32 format;
-	uint32 raw_format;
+	uint32 alt_format;
 	Atom type;
 	int fmt;
 	unsigned long len, bytes_left;
@@ -313,8 +321,8 @@ cliprdr_process_selection_request(struct clipboard_data * cdata,
 		i = clipboard_select_format_by_atom(cdata, req->target);
 		if (i >= 0 && req->requestor != cdata->window)
 		{
-			format = cdata->format_mappings[i].format_id;
-			raw_format = format;
+			format = cdata->format_mappings[i].local_format_id;
+			alt_format = cdata->format_mappings[i].format_id;
 			if (format == CF_RAW)
 			{
 				pthread_mutex_lock(cdata->mutex);
@@ -327,14 +335,14 @@ cliprdr_process_selection_request(struct clipboard_data * cdata,
 				pthread_mutex_unlock(cdata->mutex);
 				if (data)
 				{
-					memcpy(&raw_format, data, 4);
+					memcpy(&alt_format, data, 4);
 					XFree(data);
 				}
 			}
-			LLOGLN(10, ("cliprdr_process_selection_request: provide format 0x%04x", raw_format));
+			LLOGLN(10, ("cliprdr_process_selection_request: provide format 0x%04x", alt_format));
 			if (cdata->data != 0 &&
 				format == cdata->data_format &&
-				raw_format == cdata->data_raw_format)
+				alt_format == cdata->data_alt_format)
 			{
 				/* Cached clipboard data available. Send it now */
 				respond->xselection.property = req->property;
@@ -357,10 +365,10 @@ cliprdr_process_selection_request(struct clipboard_data * cdata,
 				respond->xselection.property = req->property;
 				cdata->respond = respond;
 				cdata->data_format = format;
-				cdata->data_raw_format = raw_format;
+				cdata->data_alt_format = alt_format;
 				delay_respond = 1;
 				s = (char *) malloc(4);
-				SET_UINT32(s, 0, raw_format);
+				SET_UINT32(s, 0, alt_format);
 				cliprdr_send_packet(cdata->plugin, CB_FORMAT_DATA_REQUEST,
 					0, s, 4);
 				free(s);
@@ -511,6 +519,97 @@ clipboard_process_requested_dib(struct clipboard_data * cdata,
 	return outbuf;
 }
 
+static char *
+clipboard_process_requested_html(struct clipboard_data * cdata,
+	char * data, int * length)
+{
+	iconv_t cd;
+	size_t avail;
+	size_t in_size;
+	char * inbuf;
+	char * in;
+	char * outbuf;
+	char * out;
+	char num[11];
+
+	outbuf = NULL;
+	if (*length > 2)
+	{
+		if ((unsigned char)data[0] == 0xff && (unsigned char)data[1] == 0xfe)
+		{
+			cd = iconv_open("UTF-8", "UTF-16LE");
+		}
+		else if ((unsigned char)data[0] == 0xfe && (unsigned char)data[1] == 0xff)
+		{
+			cd = iconv_open("UTF-8", "UTF-16BE");
+		}
+		else
+		{
+			cd = (iconv_t) - 1;
+		}
+		if (cd != (iconv_t) - 1)
+		{
+			data += 2;
+			avail = (*length) * 3 / 2;
+			outbuf = (char *) malloc(avail + 2);
+			memset(outbuf, 0, avail + 2);
+			in_size = (size_t)(*length) - 2;
+			out = outbuf;
+			in = data;
+			iconv(cd, &in, &in_size, &out, &avail);
+			iconv_close(cd);
+			*length = out - outbuf + 2;
+		}
+	}
+	if (outbuf == NULL)
+	{
+		outbuf = malloc(*length + 1);
+		memcpy(outbuf, data, *length);
+		outbuf[*length] = 0;
+	}
+	inbuf = lf2crlf(outbuf, length);
+	free(outbuf);
+
+	outbuf = (char *) malloc(*length + 200);
+	strcpy(outbuf,
+		"Version:0.9\r\n"
+		"StartHTML:0000000000\r\n"
+		"EndHTML:0000000000\r\n"
+		"StartFragment:0000000000\r\n"
+		"EndFragment:0000000000\r\n");
+	in = strstr(inbuf, "<body");
+	if (in == NULL)
+	{
+		in = strstr(inbuf, "<BODY");
+	}
+	/* StartHTML */
+	snprintf(num, sizeof(num), "%010d", strlen(outbuf)); 
+	memcpy(outbuf + 23, num, 10);
+	if (in == NULL)
+	{
+		strcat(outbuf, "<HTML><BODY>");
+	}
+	strcat(outbuf, "<!--StartFragment-->");
+	/* StartFragment */
+	snprintf(num, sizeof(num), "%010d", strlen(outbuf)); 
+	memcpy(outbuf + 69, num, 10);
+	strcat(outbuf, inbuf);
+	/* EndFragment */
+	snprintf(num, sizeof(num), "%010d", strlen(outbuf)); 
+	memcpy(outbuf + 93, num, 10);
+	strcat(outbuf, "<!--EndFragment-->");
+	if (in == NULL)
+	{
+		strcat(outbuf, "</BODY></HTML>");
+	}
+	/* EndHTML */
+	snprintf(num, sizeof(num), "%010d", strlen(outbuf)); 
+	memcpy(outbuf + 43, num, 10);
+
+	*length = strlen(outbuf) + 1;
+	return outbuf;
+}
+
 static int
 clipboard_process_requested_data(struct clipboard_data * cdata,
 	int result, char * data, int length)
@@ -537,7 +636,7 @@ clipboard_process_requested_data(struct clipboard_data * cdata,
 	}
 	else
 	{
-		switch (cdata->format_mappings[cdata->request_index].format_id)
+		switch (cdata->format_mappings[cdata->request_index].local_format_id)
 		{
 		case CF_RAW:
 			outbuf = clipboard_process_requested_raw(cdata,
@@ -553,6 +652,10 @@ clipboard_process_requested_data(struct clipboard_data * cdata,
 			break;
 		case CF_DIB:
 			outbuf = clipboard_process_requested_dib(cdata,
+				data, &length);
+			break;
+		case CF_FREERDP_HTML:
+			outbuf = clipboard_process_requested_html(cdata,
 				data, &length);
 			break;
 		default:
@@ -609,13 +712,14 @@ clipboard_get_requested_targets(struct clipboard_data * cdata)
 			{
 				if (cdata->format_mappings[j].target_format == atom)
 				{
-					SET_UINT32(s, num * 36, cdata->format_mappings[j].format_id);
+					SET_UINT32(s, num * 36, cdata->format_mappings[j].local_format_id);
+					memcpy(s + num * 36 + 4, cdata->format_mappings[j].name, 32);
 					num++;
 				}
 			}
 		}
 		cliprdr_send_packet(cdata->plugin, CB_FORMAT_LIST,
-			0, s, size);
+			0, s, num * 36);
 		free(s);
 		XFree(data);
 	}
@@ -832,6 +936,16 @@ thread_func(void * arg)
 	return 0;
 }
 
+static void
+clipboard_copy_format_name(char * dest, const char * src)
+{
+	while (*src)
+	{
+		*dest = *src++;
+		dest += 2;
+	}
+}
+
 void *
 clipboard_new(cliprdrPlugin * plugin)
 {
@@ -879,13 +993,26 @@ clipboard_new(cliprdrPlugin * plugin)
 
 		cdata->format_mappings[0].target_format = XInternAtom(cdata->display, "_FREERDP_RAW", False);
 		cdata->format_mappings[0].format_id = CF_RAW;
+		cdata->format_mappings[0].local_format_id = CF_RAW;
+
 		cdata->format_mappings[1].target_format = XInternAtom(cdata->display, "UTF8_STRING", False);
 		cdata->format_mappings[1].format_id = CF_UNICODETEXT;
-		cdata->format_mappings[2].target_format = XInternAtom(cdata->display, "UTF8_STRING", False);
+		cdata->format_mappings[1].local_format_id = CF_UNICODETEXT;
+
+		cdata->format_mappings[2].target_format = XA_STRING;
 		cdata->format_mappings[2].format_id = CF_TEXT;
+		cdata->format_mappings[2].local_format_id = CF_TEXT;
+
 		cdata->format_mappings[3].target_format = XInternAtom(cdata->display, "image/bmp", False);
 		cdata->format_mappings[3].format_id = CF_DIB;
-		cdata->num_format_mappings = 4;
+		cdata->format_mappings[3].local_format_id = CF_DIB;
+
+		cdata->format_mappings[4].target_format = XInternAtom(cdata->display, "text/html", False);
+		cdata->format_mappings[4].format_id = 0;
+		cdata->format_mappings[4].local_format_id = CF_FREERDP_HTML;
+		clipboard_copy_format_name(cdata->format_mappings[4].name, CFSTR_HTML);
+
+		cdata->num_format_mappings = 5;
 
 		cdata->targets[0] = XInternAtom(cdata->display, "TIMESTAMP", False);
 		cdata->targets[1] = XInternAtom(cdata->display, "TARGETS", False);
@@ -938,7 +1065,7 @@ clipboard_format_list(void * device_data, int flag,
 	int i;
 	int j;
 
-	LLOGLN(10, ("clipboard_format_list: length=%d", length));
+	LLOGLN(10, ("clipboard_format_list: length=%d flag=%d", length, flag));
 	if (length % 36 != 0)
 	{
 		LLOGLN(0, ("clipboard_format_list: length is not devided by 36"));
@@ -986,6 +1113,12 @@ clipboard_format_list(void * device_data, int flag,
 		{
 			if (cdata->format_ids[i] == cdata->format_mappings[j].format_id)
 			{
+				clipboard_append_target(cdata, cdata->format_mappings[j].target_format);
+			}
+			else if (cdata->format_mappings[j].name[0] &&
+				memcmp(cdata->format_mappings[j].name, data + i * 36 + 4, 32) == 0)
+			{
+				cdata->format_mappings[j].format_id = cdata->format_ids[i];
 				clipboard_append_target(cdata, cdata->format_mappings[j].target_format);
 			}
 		}
@@ -1143,6 +1276,36 @@ clipboard_handle_dib(struct clipboard_data * cdata,
 	cdata->data_length = size;
 }
 
+static void
+clipboard_handle_html(struct clipboard_data * cdata,
+	char * data, int length)
+{
+	char * start_str;
+	char * end_str;
+	int start;
+	int end;
+
+	start_str = strstr(data, "StartHTML:");
+	end_str = strstr(data, "EndHTML:");
+	if (start_str == NULL || end_str == NULL)
+	{
+		LLOGLN(0, ("clipboard_handle_html: invalid HTML clipboard format"));
+		return;
+	}
+	start = atoi(start_str + 10);
+	end = atoi(end_str + 8);
+	if (start > length || end > length || start > end)
+	{
+		LLOGLN(0, ("clipboard_handle_html: invalid HTML offset"));
+		return;
+	}
+
+	cdata->data = (char *) malloc(length - start + 1);
+	memcpy(cdata->data, data + start, end - start);
+	cdata->data_length = end - start;
+	crlf2lf(cdata->data, &cdata->data_length);
+}
+
 int
 clipboard_handle_data(void * device_data, int flag,
 	char * data, int length)
@@ -1167,7 +1330,12 @@ clipboard_handle_data(void * device_data, int flag,
 		int i;
 		for (i = 0; i < length; i++)
 		{
-			printf("%x%x ", data[i]>>4, data[i]&15);
+			printf("%x%x ", (unsigned char)(data[i])>>4, data[i]&15);
+		}
+		printf("\n");
+		for (i = 0; i < length; i++)
+		{
+			printf("%c", data[i]);
 		}
 		printf("\n");
 #endif
@@ -1189,6 +1357,9 @@ clipboard_handle_data(void * device_data, int flag,
 			break;
 		case CF_DIB:
 			clipboard_handle_dib(cdata, data, length);
+			break;
+		case CF_FREERDP_HTML:
+			clipboard_handle_html(cdata, data, length);
 			break;
 		default:
 			cdata->respond->xselection.property = None;

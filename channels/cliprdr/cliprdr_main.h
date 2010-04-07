@@ -64,6 +64,8 @@
    this is the CF_ set when WINVER is 0x0400 */
 
 #define CF_RAW          0
+#define CF_FREERDP_HTML 0xd010
+#define CFSTR_HTML      "HTML Format"
 
 #ifndef WIN32
 
