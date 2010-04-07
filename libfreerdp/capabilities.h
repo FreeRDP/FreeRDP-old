@@ -102,6 +102,10 @@ rdp_process_rail_capset(rdpRdp * rdp, STREAM s);
 void
 rdp_process_window_capset(rdpRdp * rdp, STREAM s);
 void
+rdp_process_large_pointer_capset(rdpRdp * rdp, STREAM s);
+void
+rdp_process_surface_commands_capset(rdpRdp * rdp, STREAM s);
+void
 rdp_process_compdesk_capset(rdpRdp * rdp, STREAM s);
 void
 rdp_process_multifragmentupdate_capset(rdpRdp * rdp, STREAM s);

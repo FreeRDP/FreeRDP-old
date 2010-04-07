@@ -966,6 +966,14 @@ rdp_process_server_caps(rdpRdp * rdp, STREAM s, uint16 length)
 				rdp_process_window_capset(rdp, s);
 				break;
 
+			case CAPSET_TYPE_LARGE_POINTER:
+				rdp_process_large_pointer_capset(rdp, s);
+				break;
+
+			case CAPSET_TYPE_SURFACE_COMMANDS:
+				rdp_process_surface_commands_capset(rdp, s);
+				break;
+				
 			case CAPSET_TYPE_COMPDESK:
 				rdp_process_compdesk_capset(rdp, s);
 				break;
@@ -975,7 +983,7 @@ rdp_process_server_caps(rdpRdp * rdp, STREAM s, uint16 length)
 				break;
 
 			default:
-				ui_unimpl(rdp->inst, "Capability set 0x%02X processing\n", capabilitySetType);
+				ui_unimpl(rdp->inst, "Capability set 0x%02X processing", capabilitySetType);
 				break;
 		}
 

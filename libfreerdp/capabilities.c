@@ -788,6 +788,23 @@ rdp_out_large_pointer_capset(STREAM s)
 	rdp_out_capset_header(s, header, CAPSET_TYPE_LARGE_POINTER);
 }
 
+/* Process large pointer capability set */
+void
+rdp_process_large_pointer_capset(rdpRdp * rdp, STREAM s)
+{
+	uint16 largePointerSupportFlags;
+	in_uint16_le(s, largePointerSupportFlags); // largePointerSupportFlags
+}
+
+/* Process surface commands capability set */
+void
+rdp_process_surface_commands_capset(rdpRdp * rdp, STREAM s)
+{
+	uint32 cmdFlags;
+	in_uint32_le(s, cmdFlags); // cmdFlags
+	/* Reserved (4 bytes) */
+}
+
 /* Output desktop composition capability set */
 void
 rdp_out_compdesk_capset(STREAM s)
