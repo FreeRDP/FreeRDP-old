@@ -34,6 +34,9 @@
 #include "NegotiationToken.h"
 
 #include <openssl/des.h>
+#include <openssl/md4.h>
+#include <openssl/hmac.h>
+#include <openssl/rand.h>
 
 #include "credssp.h"
 
@@ -69,8 +72,9 @@
 #define NTLMSSP_REVISION_W2K3		0x0F
 
 const char ntlm_signature[] = "NTLMSSP";
-
 const char lm_magic[] = "KGS!@#$%";
+
+/* http://davenport.sourceforge.net/ntlm.html is a really nice source of information with great samples */
 
 static int
 asn1_write(const void *buffer, size_t size, void *fd)
@@ -177,7 +181,7 @@ static void set_bit(char* buffer, int bit, int value)
 	buffer[(bit - (bit % 8)) / 8] |= value << (7 - bit % 8);
 }
 
-static void lm_create_des_key(char* text, char* des_key)
+static void compute_des_key(char* text, char* des_key)
 {
 	int i, j;
 	int bit;
@@ -207,7 +211,7 @@ static void lm_create_des_key(char* text, char* des_key)
 	}
 }
 
-static void lm_hash(char* password, char* hash)
+static void compute_lm_hash(char* password, char* hash)
 {
 	int i;
 	int maxlen;
@@ -233,8 +237,8 @@ static void lm_hash(char* password, char* hash)
 	for (i = maxlen; i < 14; i++)
 		text[i] = '\0';
 
-	lm_create_des_key(text, des_key1);
-	lm_create_des_key(&text[7], des_key2);
+	compute_des_key(text, des_key1);
+	compute_des_key(&text[7], des_key2);
 	
 	DES_set_key((const_DES_cblock*)des_key1, &ks);
 	DES_ecb_encrypt((const_DES_cblock*)lm_magic, (DES_cblock*)hash, &ks, DES_ENCRYPT);
@@ -243,7 +247,7 @@ static void lm_hash(char* password, char* hash)
 	DES_ecb_encrypt((const_DES_cblock*)lm_magic, (DES_cblock*)&hash[8], &ks, DES_ENCRYPT);
 }
 
-static void lm_response(char* password, char* challenge, char* response)
+static void compute_lm_response(char* password, char* challenge, char* response)
 {
 	char hash[21];
 	char des_key1[8];
@@ -253,12 +257,12 @@ static void lm_response(char* password, char* challenge, char* response)
 	
 	/* A LM hash is 16-bytes long, but the LM response uses a LM hash null-padded to 21 bytes */
 	memset(hash, '\0', 21);
-	lm_hash(password, hash);
+	compute_lm_hash(password, hash);
 
 	/* Each 7-byte third of the 21-byte null-padded LM hash is used to create a DES key */
-	lm_create_des_key(hash, des_key1);
-	lm_create_des_key(&hash[7], des_key2);
-	lm_create_des_key(&hash[14], des_key3);
+	compute_des_key(hash, des_key1);
+	compute_des_key(&hash[7], des_key2);
+	compute_des_key(&hash[14], des_key3);
 	
 	/* Encrypt the LM challenge with each key, and concatenate the result. This is the LM response. */
 	DES_set_key((const_DES_cblock*)des_key1, &ks);
@@ -269,6 +273,104 @@ static void lm_response(char* password, char* challenge, char* response)
 
 	DES_set_key((const_DES_cblock*)des_key3, &ks);
 	DES_ecb_encrypt((const_DES_cblock*)challenge, (DES_cblock*)&response[16], &ks, DES_ENCRYPT);
+}
+
+static void compute_ntlm_hash(char* password, char* hash)
+{
+	/* NTLM("password") = 8846F7EAEE8FB117AD06BDD830B7586C */
+
+	int i;
+	int length;
+	char* wstr_password;
+	MD4_CTX md4_ctx;
+
+	/* convert to "unicode" */
+	
+	length = strlen(password);
+	wstr_password = malloc(length * 2);
+
+	for (i = 0; i < length; i++)
+	{
+		wstr_password[i * 2] = password[i];
+		wstr_password[i * 2 + 1] = '\0';
+	}
+
+	/* Apply the MD4 digest algorithm on the password in unicode, the result is the NTLM hash */
+	
+	MD4_Init(&md4_ctx);
+	MD4_Update(&md4_ctx, wstr_password, length * 2);
+	MD4_Final((void*)hash, &md4_ctx);
+
+	free(wstr_password);
+}
+
+static void compute_ntlm_v2_hash(char* password, char* username, char* server, char* hash)
+{
+	int i;
+	int user_length;
+	int server_length;
+	int value_length;
+	
+	char* value;
+	char ntlm_hash[16];
+
+	user_length = strlen(username);
+	server_length = strlen(server);
+	value_length = user_length + server_length;
+	
+	value = malloc(value_length * 2);
+
+	/* First, compute the NTLMv1 hash of the password */
+	compute_ntlm_hash(password, ntlm_hash);
+
+	/* Concatenate the username and server name in uppercase unicode */
+	for (i = 0; i < user_length; i++)
+	{
+		if (username[i] > 'a' && username[i] < 'z')
+			value[2 * i] = username[i] - 32;
+		else
+			value[2 * i] = username[i];
+
+		value[2 * i + 1] = '\0';
+	}
+	
+	for (i = 0; i < server_length; i++)
+	{
+		if (server[i] > 'a' && server[i] < 'z')
+			value[(user_length + i) * 2] = server[i] - 32;
+		else
+			value[(user_length + i) * 2] = server[i];
+
+		value[(user_length + i) * 2 + 1] = '\0';
+	}
+	
+	/* Compute the HMAC-MD5 hash of the above value using the NTLMv1 hash as the key, the result is the NTLMv2 hash */
+	HMAC(EVP_md5(), (void*)ntlm_hash, 16, (void*)value, (value_length) * 2, (void*)hash, NULL);
+	
+	free(value);
+}
+
+static void compute_lm_v2_response(char* password, char* username, char* server, char* challenge, char* response)
+{
+	char ntlm_v2_hash[16];
+	char clientRandom[8];
+	char value[16];
+
+	/* Compute the NTLMv2 hash */
+	compute_ntlm_v2_hash(password, username, server, ntlm_v2_hash);
+
+	/* Generate an 8-byte client random */
+	RAND_bytes((void*)clientRandom, 8);
+
+	/* Concatenate the server and client challenges */
+	memcpy(value, challenge, 8);
+	memcpy(&value[8], clientRandom, 8);
+	
+	/* Compute the HMAC-MD5 hash of the resulting value using the NTLMv2 hash as the key */
+	HMAC(EVP_md5(), (void*)ntlm_v2_hash, 16, (void*)value, 16, (void*)response, NULL);
+
+	/* Concatenate the resulting HMAC-MD5 hash and the client random, giving us the LMv2 response */
+	memcpy(&response[16], clientRandom, 8);
 }
 
 static void ntlm_output_version(STREAM s)
@@ -335,6 +437,12 @@ void ntlm_recv_challenge_message(rdpSec * sec, STREAM s)
 	uint16 targetInfoLen;
 	uint16 targetInfoMaxLen;
 	uint32 targetInfoBufferOffset;
+
+	char password[] = "SecREt01";
+	char username[] = "user";
+	char server[] = "DOMAIN";
+	char challenge[8] = { 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF };
+	char response[24];
 
 	/* TargetNameFields (8 bytes) */
 	in_uint16_le(s, targetNameLen); /* TargetNameLen (2 bytes) */
