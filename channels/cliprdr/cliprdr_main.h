@@ -65,7 +65,13 @@
 
 #define CF_RAW          0
 #define CF_FREERDP_HTML 0xd010
+#define CF_FREERDP_PNG  0xd011
+#define CF_FREERDP_JPEG 0xd012
+#define CF_FREERDP_GIF  0xd013
 #define CFSTR_HTML      "HTML Format"
+#define CFSTR_PNG       "PNG"
+#define CFSTR_JPEG      "JFIF"
+#define CFSTR_GIF       "GIF"
 
 #ifndef WIN32
 

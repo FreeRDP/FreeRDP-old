@@ -33,6 +33,7 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <iconv.h>
+#include <semaphore.h>
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
 #include <freerdp/types_ui.h>
@@ -70,14 +71,14 @@ struct clipboard_data
 	Atom property_atom;
 	Atom identity_atom;
 
-	struct clipboard_format_mapping format_mappings[10];
+	struct clipboard_format_mapping format_mappings[20];
 	int num_format_mappings;
 
 	/* server->client data */
 	uint8 * format_data;
 	uint32 * format_ids;
 	int num_formats;
-	Atom targets[10];
+	Atom targets[20];
 	int num_targets;
 	char * data;
 	uint32 data_format;
@@ -90,6 +91,8 @@ struct clipboard_data
 	   do not use it for in any X11 calls */
 	Window owner;
 	int request_index;
+	sem_t request_sem;
+	int resend_format_list;
 
 	/* INCR mechanism */
 	Atom incr_atom;
@@ -276,6 +279,7 @@ clipboard_send_format_list(struct clipboard_data * cdata)
 			cdata->targets[1], cdata->property_atom,
 			cdata->window, CurrentTime);
 	}
+	cdata->resend_format_list = 0;
 	return 0;
 }
 
@@ -632,6 +636,7 @@ clipboard_process_requested_data(struct clipboard_data * cdata,
 		{
 			XFree(data);
 		}
+		sem_post(&cdata->request_sem);
 		return 1;
 	}
 	else
@@ -639,6 +644,9 @@ clipboard_process_requested_data(struct clipboard_data * cdata,
 		switch (cdata->format_mappings[cdata->request_index].local_format_id)
 		{
 		case CF_RAW:
+		case CF_FREERDP_PNG:
+		case CF_FREERDP_JPEG:
+		case CF_FREERDP_GIF:
 			outbuf = clipboard_process_requested_raw(cdata,
 				data, &length);
 			break;
@@ -674,9 +682,8 @@ clipboard_process_requested_data(struct clipboard_data * cdata,
 			cliprdr_send_packet(cdata->plugin, CB_FORMAT_DATA_RESPONSE,
 				CB_RESPONSE_FAIL, NULL, 0);
 		}
-		/* Less chance of failure if we delay a short while */
-		usleep(100000);
-		clipboard_send_format_list(cdata);
+		cdata->resend_format_list = 1;
+		sem_post(&cdata->request_sem);
 		return 0;
 	}
 }
@@ -749,6 +756,7 @@ clipboard_get_requested_data(struct clipboard_data * cdata, Atom target)
 		LLOGLN(0, ("clipboard_get_requested_data: invalid target"));
 		cliprdr_send_packet(cdata->plugin, CB_FORMAT_DATA_RESPONSE,
 			CB_RESPONSE_FAIL, NULL, 0);
+		sem_post(&cdata->request_sem);
 		return 1;
 	}
 
@@ -827,7 +835,6 @@ clipboard_get_xevent(struct clipboard_data * cdata, XEvent * xev)
 {
 	Window owner;
 	int pending;
-	int owner_changed;
 
 	memset(xev, 0, sizeof(XEvent));
 	pthread_mutex_lock(cdata->mutex);
@@ -836,14 +843,13 @@ clipboard_get_xevent(struct clipboard_data * cdata, XEvent * xev)
 	{
 		XNextEvent(cdata->display, xev);
 	}
-	owner = XGetSelectionOwner(cdata->display, cdata->clipboard_atom);
-	owner_changed = (cdata->owner != owner ? 1 : 0);
-	cdata->owner = owner;
-	pthread_mutex_unlock(cdata->mutex);
-	if (owner_changed)
+	if (!cdata->resend_format_list)
 	{
-		clipboard_send_format_list(cdata);
+		owner = XGetSelectionOwner(cdata->display, cdata->clipboard_atom);
+		cdata->resend_format_list = (cdata->owner != owner ? 1 : 0);
+		cdata->owner = owner;
 	}
+	pthread_mutex_unlock(cdata->mutex);
 	return pending;
 }
 
@@ -916,7 +922,7 @@ thread_func(void * arg)
 				if (xevent.xproperty.window == cdata->root_window)
 				{
 					LLOGLN(10, ("cliprdr root window PropertyNotify"));
-					clipboard_send_format_list(cdata);
+					cdata->resend_format_list = 1;
 				}
 				else if (xevent.xproperty.window == cdata->window &&
 					xevent.xproperty.state == PropertyNewValue &&
@@ -929,6 +935,10 @@ thread_func(void * arg)
 				}
 				break;
 			}
+		}
+		if (cdata->resend_format_list)
+		{
+			clipboard_send_format_list(cdata);
 		}
 	}
 	cdata->thread_status = -1;
@@ -960,6 +970,9 @@ clipboard_new(cliprdrPlugin * plugin)
 	cdata->thread_status = 0;
 	cdata->mutex = (pthread_mutex_t *) malloc(sizeof(pthread_mutex_t));
 	pthread_mutex_init(cdata->mutex, 0);
+
+	cdata->request_index = -1;
+	sem_init(&cdata->request_sem, 0, 1);
 
 	/* Create X11 Display */
 	cdata->display = XOpenDisplay(NULL);
@@ -1003,16 +1016,31 @@ clipboard_new(cliprdrPlugin * plugin)
 		cdata->format_mappings[2].format_id = CF_TEXT;
 		cdata->format_mappings[2].local_format_id = CF_TEXT;
 
-		cdata->format_mappings[3].target_format = XInternAtom(cdata->display, "image/bmp", False);
-		cdata->format_mappings[3].format_id = CF_DIB;
-		cdata->format_mappings[3].local_format_id = CF_DIB;
+		cdata->format_mappings[3].target_format = XInternAtom(cdata->display, "image/png", False);
+		cdata->format_mappings[3].format_id = 0;
+		cdata->format_mappings[3].local_format_id = CF_FREERDP_PNG;
+		clipboard_copy_format_name(cdata->format_mappings[3].name, CFSTR_PNG);
 
-		cdata->format_mappings[4].target_format = XInternAtom(cdata->display, "text/html", False);
+		cdata->format_mappings[4].target_format = XInternAtom(cdata->display, "image/jpeg", False);
 		cdata->format_mappings[4].format_id = 0;
-		cdata->format_mappings[4].local_format_id = CF_FREERDP_HTML;
-		clipboard_copy_format_name(cdata->format_mappings[4].name, CFSTR_HTML);
+		cdata->format_mappings[4].local_format_id = CF_FREERDP_JPEG;
+		clipboard_copy_format_name(cdata->format_mappings[4].name, CFSTR_JPEG);
 
-		cdata->num_format_mappings = 5;
+		cdata->format_mappings[5].target_format = XInternAtom(cdata->display, "image/gif", False);
+		cdata->format_mappings[5].format_id = 0;
+		cdata->format_mappings[5].local_format_id = CF_FREERDP_GIF;
+		clipboard_copy_format_name(cdata->format_mappings[5].name, CFSTR_GIF);
+
+		cdata->format_mappings[6].target_format = XInternAtom(cdata->display, "image/bmp", False);
+		cdata->format_mappings[6].format_id = CF_DIB;
+		cdata->format_mappings[6].local_format_id = CF_DIB;
+
+		cdata->format_mappings[7].target_format = XInternAtom(cdata->display, "text/html", False);
+		cdata->format_mappings[7].format_id = 0;
+		cdata->format_mappings[7].local_format_id = CF_FREERDP_HTML;
+		clipboard_copy_format_name(cdata->format_mappings[7].name, CFSTR_HTML);
+
+		cdata->num_format_mappings = 8;
 
 		cdata->targets[0] = XInternAtom(cdata->display, "TIMESTAMP", False);
 		cdata->targets[1] = XInternAtom(cdata->display, "TARGETS", False);
@@ -1096,19 +1124,15 @@ clipboard_format_list(void * device_data, int flag,
 	for (i = 0; i < cdata->num_formats; i++)
 	{
 		cdata->format_ids[i] = GET_UINT32(data, i * 36);
-#if 0
-		if ((flag & CB_ASCII_NAMES) == 0)
+#if LOG_LEVEL > 10
+		LLOG(10, ("clipboard_format_list: format 0x%04x ",
+			cdata->format_ids[i]));
+		for (j = 0; j < 16; j++)
 		{
-			/* Unicode name, just remove the higher byte */
-			for (j = 1; j < 16; j++)
-			{
-				*(data + i * 36 + 4 + j) =  *(data + i * 36 + 4 + j * 2);
-			}
-			*(data + i * 36 + 4 + 16) = 0;
+			LLOG(10, ("%c", *(data + i * 36 + 4 + j * 2)));
 		}
+		LLOG(10, ("\n"));
 #endif
-		LLOGLN(10, ("clipboard_format_list: format 0x%04x %s",
-			cdata->format_ids[i], data + i * 36 + 4));
 		for (j = 0; j < cdata->num_format_mappings; j++)
 		{
 			if (cdata->format_ids[i] == cdata->format_mappings[j].format_id)
@@ -1141,7 +1165,7 @@ clipboard_format_list_response(void * device_data, int flag)
 	cdata = (struct clipboard_data *) device_data;
 	if (flag & CB_RESPONSE_FAIL)
 	{
-		clipboard_send_format_list(cdata);
+		cdata->resend_format_list = 1;
 	}
 	return 0;
 }
@@ -1168,7 +1192,6 @@ clipboard_request_data(void * device_data, uint32 format)
 	{
 		i = clipboard_select_format_by_id(cdata, format);
 	}
-	cdata->request_index = i;
 	if (i < 0)
 	{
 		LLOGLN(0, ("clipboard_request_data: unsupported format 0x%04x requested",
@@ -1176,6 +1199,8 @@ clipboard_request_data(void * device_data, uint32 format)
 	}
 	else
 	{
+		sem_wait(&cdata->request_sem);
+		cdata->request_index = i;
 		LLOGLN(10, ("clipboard_request_data: target=%d",
 			(int)cdata->format_mappings[i].target_format));
 		pthread_mutex_lock(cdata->mutex);
@@ -1347,6 +1372,9 @@ clipboard_handle_data(void * device_data, int flag,
 		switch (cdata->data_format)
 		{
 		case CF_RAW:
+		case CF_FREERDP_PNG:
+		case CF_FREERDP_JPEG:
+		case CF_FREERDP_GIF:
 			clipboard_handle_raw(cdata, data, length);
 			break;
 		case CF_TEXT:
@@ -1432,6 +1460,7 @@ clipboard_free(void * device_data)
 
 	pthread_mutex_destroy(cdata->mutex);
 	free(cdata->mutex);
+	sem_destroy(&cdata->request_sem);
 
 	if (cdata->window != None)
 	{
