@@ -274,10 +274,12 @@ clipboard_send_format_list(struct clipboard_data * cdata)
 	}
 	else if (cdata->owner != cdata->window)
 	{
+		pthread_mutex_lock(cdata->mutex);
 		/* Request the owner for TARGETS, and wait for SelectionNotify event */
 		XConvertSelection(cdata->display, cdata->clipboard_atom,
 			cdata->targets[1], cdata->property_atom,
 			cdata->window, CurrentTime);
+		pthread_mutex_unlock(cdata->mutex);
 	}
 	cdata->resend_format_list = 0;
 	return 0;
@@ -700,9 +702,11 @@ clipboard_get_requested_targets(struct clipboard_data * cdata)
 	int i, j;
 	int num;
 
+	pthread_mutex_lock(cdata->mutex);
 	XGetWindowProperty(cdata->display, cdata->window, cdata->property_atom,
 		0, 200, 0, XA_ATOM,
 		&atom, &format, &len, &bytes_left, &data);
+	pthread_mutex_unlock(cdata->mutex);
 	LLOGLN(10, ("clipboard_get_requested_targets: type=%d format=%d len=%d bytes_left=%d",
 		(int)atom, format, (int)len, (int)bytes_left));
 	
@@ -859,6 +863,7 @@ thread_func(void * arg)
 	struct clipboard_data * cdata;
 	int x_socket;
 	XEvent xevent;
+	int pending;
 
 	LLOGLN(10, ("clipboard_x11 thread_func: in"));
 
@@ -867,7 +872,10 @@ thread_func(void * arg)
 	x_socket = ConnectionNumber(cdata->display);
 	while (1)
 	{
-		if (!XPending(cdata->display))
+		pthread_mutex_lock(cdata->mutex);
+		pending = XPending(cdata->display);
+		pthread_mutex_unlock(cdata->mutex);
+		if (!pending)
 		{
 			wait_obj_select(&cdata->term_event, 1, &x_socket, 1, 2000);
 		}
