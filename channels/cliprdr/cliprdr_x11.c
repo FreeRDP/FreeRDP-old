@@ -93,6 +93,7 @@ struct clipboard_data
 	int request_index;
 	sem_t request_sem;
 	int resend_format_list;
+	int sync;
 
 	/* INCR mechanism */
 	Atom incr_atom;
@@ -847,7 +848,7 @@ clipboard_get_xevent(struct clipboard_data * cdata, XEvent * xev)
 	{
 		XNextEvent(cdata->display, xev);
 	}
-	if (!cdata->resend_format_list)
+	if (!cdata->resend_format_list  && cdata->sync)
 	{
 		owner = XGetSelectionOwner(cdata->display, cdata->clipboard_atom);
 		cdata->resend_format_list = (cdata->owner != owner ? 1 : 0);
@@ -944,7 +945,7 @@ thread_func(void * arg)
 				break;
 			}
 		}
-		if (cdata->resend_format_list)
+		if (cdata->resend_format_list && cdata->sync)
 		{
 			clipboard_send_format_list(cdata);
 		}
@@ -1070,6 +1071,7 @@ clipboard_sync(void * device_data)
 
 	cdata = (struct clipboard_data *) device_data;
 	clipboard_send_format_list(cdata);
+	cdata->sync = 1;
 	return 0;
 }
 
