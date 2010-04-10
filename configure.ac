@@ -865,6 +865,7 @@ esac
 
 AC_CONFIG_FILES([
 Makefile
+freerdp.pc
 asn1/Makefile
 libfreerdp/Makefile
 include/Makefile
