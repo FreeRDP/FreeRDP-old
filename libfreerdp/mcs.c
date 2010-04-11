@@ -438,7 +438,7 @@ mcs_new(struct rdp_sec * sec)
 		memset(self, 0, sizeof(rdpMcs));
 		self->sec = sec;
 		self->iso = iso_new(self);
-		self->chan = channel_new(self);
+		self->chan = vchan_new(self);
 	}
 	return self;
 }
@@ -448,7 +448,7 @@ mcs_free(rdpMcs * mcs)
 {
 	if (mcs != NULL)
 	{
-		channel_free(mcs->chan);
+		vchan_free(mcs->chan);
 		iso_free(mcs->iso);
 		xfree(mcs);
 	}

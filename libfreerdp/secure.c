@@ -878,7 +878,7 @@ sec_recv(rdpSec * sec, secRecvType * type)
 
 		if (channel != MCS_GLOBAL_CHANNEL)
 		{
-			channel_process(sec->mcs->chan, s, channel);
+			vchan_process(sec->mcs->chan, s, channel);
 			*type = SEC_RECV_IOCHANNEL;
 			return s;
 		}

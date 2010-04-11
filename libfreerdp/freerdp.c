@@ -652,7 +652,7 @@ l_rdp_channel_data(struct rdp_inst * inst, int chan_id, char * data, int data_si
 	
 	rdp = (rdpRdp *) (inst->rdp);
 	chan = rdp->sec->mcs->chan;
-	return channel_send(chan, chan_id, data, data_size);
+	return vchan_send(chan, chan_id, data, data_size);
 }
 
 rdpInst *
