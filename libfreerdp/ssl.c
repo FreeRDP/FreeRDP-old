@@ -2,7 +2,7 @@
    rdesktop: A Remote Desktop Protocol client.
    Secure sockets abstraction layer
    Copyright (C) Matthew Chapman 1999-2008
-   Copyright (C) Jay Sorg 2006-2009
+   Copyright (C) Jay Sorg 2006-2010
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -132,8 +132,9 @@ ssl_cert_read(uint8 * data, uint32 len)
 	return d2i_X509(NULL, (D2I_X509_CONST unsigned char **) &data, len);
 }
 
+/* was named ssl_cert_free, conflicts openssl call ssl_cert_free */
 void
-ssl_cert_free(SSL_CERT * cert)
+ssl1_cert_free(SSL_CERT * cert)
 {
 	X509_free(cert);
 }
@@ -382,9 +383,9 @@ tls_create_context()
 
 	SSL_load_error_strings();
 	SSL_library_init();
-			
+
 	ctx = SSL_CTX_new(TLSv1_client_method());
-			
+
 	if (ctx == NULL)
 	{
 		printf("SSL_CTX_new failed\n");
@@ -399,7 +400,7 @@ tls_create_context()
 	 * block padding is normally used, but the Microsoft TLS implementation
 	 * won't recognize it and will disconnect you after sending a TLS alert.
 	 */
-		
+
 	SSL_CTX_set_options(ctx, SSL_OP_ALL);
 
 	return ctx;
@@ -431,14 +432,14 @@ tls_connect(SSL_CTX *ctx, int sockfd, char *server)
 		/* SSL_WANT_READ errors are normal, just try again if it happens */
 		connection_status = SSL_connect(ssl);
 	}
-	while(SSL_get_error(ssl, connection_status) == SSL_ERROR_WANT_READ);
+	while (SSL_get_error(ssl, connection_status) == SSL_ERROR_WANT_READ);
 
 	if (connection_status < 0)
 	{
 		if (tls_printf("SSL_connect", ssl, connection_status))
 			return NULL;
 	}
-		
+
 	tls_verify(ssl, server);
 
 	printf("TLS connection established\n");
@@ -452,7 +453,7 @@ tls_disconnect(SSL *ssl)
 {
 	int ret;
 
-        if (!ssl)
+	if (!ssl)
 		return;
 
 	while (True)
@@ -486,7 +487,7 @@ int tls_write(SSL *ssl, char* b, int size)
 			break;
 	}
 
-	if(bytesWritten < size)
+	if (bytesWritten < size)
 		return bytesWritten += tls_write(ssl, &b[bytesWritten], size - bytesWritten);
 	else
 		return bytesWritten;
@@ -500,7 +501,7 @@ int tls_read(SSL *ssl, char* b, int size)
 
 	read_status = SSL_read(ssl, b, size);
 
-	switch(SSL_get_error(ssl, read_status))
+	switch (SSL_get_error(ssl, read_status))
 	{
 		case SSL_ERROR_NONE:
 			bytesRead += read_status;
@@ -514,7 +515,7 @@ int tls_read(SSL *ssl, char* b, int size)
 					size += 1024;
 					xrealloc(b, size);
 			}
-					
+
 			bytesRead += tls_read(ssl, &b[bytesRead], size - bytesRead);
 			break;
 
