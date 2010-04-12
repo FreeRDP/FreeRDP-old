@@ -46,6 +46,7 @@ sync, disk/printer redirection, etc.
 %package devel
 Summary: Libraries and header files for embedding and extending freerdp
 Requires: %{name}-libs = %{version}-%{release}
+Requires: pkgconfig
 %description devel
 Header files and unversioned libraries for libfreerdp, libfreerdpchanman and
 libfreerdpkbd.
@@ -88,6 +89,7 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root)
 %{_includedir}/freerdp/
 %{_libdir}/lib*.so
+%{_libdir}/pkgconfig/*
 
 %changelog
 
