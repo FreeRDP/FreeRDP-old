@@ -1559,7 +1559,7 @@ rdp_free(rdpRdp * rdp)
 		xfree(rdp->redirect_domain);
 		xfree(rdp->redirect_password);
 		xfree(rdp->redirect_target_netbios_name);
-		xfree(rdp->redirect_password);
+		xfree(rdp->redirect_target_net_addresses);
 		xfree(rdp);
 	}
 }

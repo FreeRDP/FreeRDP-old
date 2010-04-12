@@ -1021,12 +1021,15 @@ xf_uninit(rdpInst * inst)
 	xfInfo * xfi;
 
 	xfi = GET_XFI(inst);
+	/* xf_post_connect */
 	XFreeModifiermap(xfi->mod_map);
-	XFreePixmap(xfi->display, xfi->backstore);
-	XFreePixmap(xfi->display, xfi->bitmap_mono);
-	XFreeGC(xfi->display, xfi->gc);
-	XFreeGC(xfi->display, xfi->gc_mono);
 	XFreeGC(xfi->display, xfi->gc_default);
+	XFreeGC(xfi->display, xfi->gc_mono);
+	XFreePixmap(xfi->display, xfi->bitmap_mono);
+	XFreePixmap(xfi->display, xfi->backstore);
+	XFreeGC(xfi->display, xfi->gc);
+	XDestroyWindow(xfi->display, xfi->wnd);
+	/* xf_pre_connect */
 	XCloseDisplay(xfi->display);
 	free(xfi);
 }
