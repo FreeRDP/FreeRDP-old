@@ -173,40 +173,41 @@ rdp_fp_send(rdpRdp * rdp, STREAM s)
 	sec_fp_send(rdp->sec, s, rdp->settings->encryption ? SEC_ENCRYPT : 0);
 }
 
-/* Output string reencoded from DEFAULT_CODEPAGE to WINDOWS_CODEPAGE.
- * Strings are 0-terminated and output length should not exceed len. */
-void
-rdp_out_unistr(rdpRdp * rdp, STREAM s, char *string, int len)
+/* Output str reencoded from DEFAULT_CODEPAGE to WINDOWS_CODEPAGE.
+ * Strings are 0-terminated and output length (without 2 zeros) is returned. */
+int
+rdp_out_unistr(rdpRdp * rdp, STREAM s, char *str)
 {
+	size_t ibl = strlen(str), obl = s->end - s->p - 2, len;
+	char *pin = str, *pout0 = (char *) s->p, *pout = pout0;
+	obl = 1 << 14; /* FIXME: HACK: remove this when s->end is initialized properly! */
 #ifdef HAVE_ICONV
-	size_t ibl = strlen(string), obl = len + 2;
-	char *pin = string, *pout = (char *) s->p;
-
 	if (iconv(rdp->out_iconv_h, (ICONV_CONST char **) &pin, &ibl, &pout, &obl) == (size_t) - 1)
 	{
 		ui_error(rdp->inst, "rdp_out_unistr: iconv failure, errno %d\n", errno);
-		return;
+		return 0;
 	}
-
+#else
+	while ((ibl > 0) && (obl > 0))
+	{
+		if ((signed char)(*pin) < 0)
+		{
+			ui_error(rdp->inst, "rdp_out_unistr: wrong output conversion of char %d\n", str[j]);
+		}
+		*pout++ = *pin++;
+		*pout++ = 0;
+		ibl--;
+		obl -= 2;
+	}
+#endif
+	if (ibl > 0)
+	{
+		ui_error(rdp->inst, "rdp_out_unistr: string not fully converted - %d chars left\n", ibl);
+	}
+	len = pout - pout0;
 	s->p += len;
 	out_uint8s(s, 2);
-
-#else
-
-	int i = 0, j = 0;
-	len += 2;
-	while (i < len)
-	{
-		if ((signed char)(string[j]) < 0)
-		{
-			ui_error(rdp->inst, "rdp_out_unistr: wrong output conversion of char %d\n", string[j]);
-		}
-		s->p[i++] = string[j++];
-		s->p[i++] = 0;
-	}
-
-	s->p += len;
-#endif
+	return len;
 }
 
 /* Output system time structure */
@@ -234,6 +235,7 @@ rdp_out_client_timezone_info(rdpRdp * rdp, STREAM s)
 		char daylightName[32];
 		systemTime standardDate;
 		systemTime daylightDate;
+		int len;
 
 		time_t t;
 		struct tm* localTime;
@@ -275,14 +277,14 @@ rdp_out_client_timezone_info(rdpRdp * rdp, STREAM s)
 
 		out_uint32_le(s, bias); // bias
 
-		rdp_out_unistr(rdp, s, standardName, 2 * strlen(standardName));
-		out_uint8s(s, 62 - 2 * strlen(standardName)); // standardName (64 bytes)
+		len = rdp_out_unistr(rdp, s, standardName);
+		out_uint8s(s, 62 - len); // standardName (64 bytes)
 
 		rdp_out_systemtime(s, standardDate); // standardDate
 		out_uint32_le(s, standardBias); // standardBias
 
-		rdp_out_unistr(rdp, s, daylightName, 2 * strlen(daylightName));
-		out_uint8s(s, 62 - 2 * strlen(daylightName)); // daylightName (64 bytes)
+		len = rdp_out_unistr(rdp, s, daylightName);
+		out_uint8s(s, 62 - len); // daylightName (64 bytes)
 
 		rdp_out_systemtime(s, daylightDate); // daylightDate
 		out_uint32_le(s, daylightBias); // daylightBias
@@ -300,11 +302,13 @@ rdp_send_logon_info(rdpRdp * rdp, uint32 flags, char *domain, char *user,
 	int len_program = 2 * strlen(program);
 	int len_directory = 2 * strlen(directory);
 	int len_ip = 2 * strlen(ipaddr);
-	int len_dll = 2 * strlen("C:\\Windows\\System32\\mstscax.dll");
+	char dll[] = "C:\\Windows\\System32\\mstscax.dll";
+	int len_dll = 2 * strlen(dll);
 	int packetlen = 0;
 	uint32 sec_flags =
 		rdp->settings->encryption ? (SEC_LOGON_INFO | SEC_ENCRYPT) : SEC_LOGON_INFO;
 	STREAM s;
+	int ok = True;	/* TODO: Check this */
 
 	if ((rdp->settings->rdp_version < 5))
 	{
@@ -320,11 +324,12 @@ rdp_send_logon_info(rdpRdp * rdp, uint32 flags, char *domain, char *user,
 		out_uint16_le(s, len_password);
 		out_uint16_le(s, len_program);
 		out_uint16_le(s, len_directory);
-		rdp_out_unistr(rdp, s, domain, len_domain);
-		rdp_out_unistr(rdp, s, user, len_user);
-		rdp_out_unistr(rdp, s, password, len_password);
-		rdp_out_unistr(rdp, s, program, len_program);
-		rdp_out_unistr(rdp, s, directory, len_directory);
+		ok &= rdp_out_unistr(rdp, s, domain) == len_domain;
+		ok &= rdp_out_unistr(rdp, s, user) == len_user;
+		out_uint8p(s, password, len_password);
+		out_uint8s(s, 2);
+		ok &= rdp_out_unistr(rdp, s, program) == len_program;
+		ok &= rdp_out_unistr(rdp, s, directory) == len_directory;
 	}
 	else
 	{
@@ -381,15 +386,16 @@ rdp_send_logon_info(rdpRdp * rdp, uint32 flags, char *domain, char *user,
 		out_uint16_le(s, len_directory);	// cbWorkingDir, length of WorkingDir field
 		if (0 < len_domain)
 			// Maximum Domain length of 52 bytes in RDP 4.0 and 5.0, and 512 bytes in RDP 5.1 and later
-			rdp_out_unistr(rdp, s, domain, len_domain);	// Domain (length specified by cbDomain)
+			ok &= rdp_out_unistr(rdp, s, domain) == len_domain;	// Domain (length specified by cbDomain)
 		else
 			out_uint16_le(s, 0);
 		// Maximum UserName length of 44 bytes in RDP 4.0 and 5.0, and 512 bytes in RDP 5.1 and later
-		rdp_out_unistr(rdp, s, user, len_user);	// UserName (length specified by cbUserName)
+		ok &= rdp_out_unistr(rdp, s, user) == len_user;	// UserName (length specified by cbUserName)
 		if (flags & RDP_LOGON_AUTO)
 		{
 			// Maximum Password length of 32 bytes in RDP 4.0 and 5.0, and 512 bytes in RDP 5.1 and later
-			rdp_out_unistr(rdp, s, password, len_password);	// Password (length specified by cbPassword)
+			out_uint8p(s, password, len_password);	// Password (length specified by cbPassword)
+			out_uint8s(s, 2);
 		}
 		if (flags & RDP_LOGON_BLOB && !(flags & RDP_LOGON_AUTO))
 		{
@@ -398,7 +404,7 @@ rdp_send_logon_info(rdpRdp * rdp, uint32 flags, char *domain, char *user,
 		if (0 < len_program)
 		{
 			// Maximum AlternateShell length of 512 bytes
-			rdp_out_unistr(rdp, s, program, len_program);	// AlternateShell (length specified by cbAlternateShell)
+			ok &= rdp_out_unistr(rdp, s, program) == len_program;	// AlternateShell (length specified by cbAlternateShell)
 		}
 		else
 		{
@@ -407,7 +413,7 @@ rdp_send_logon_info(rdpRdp * rdp, uint32 flags, char *domain, char *user,
 		if (0 < len_directory)
 		{
 			// Maximum WorkingDir length of 512 bytes
-			rdp_out_unistr(rdp, s, directory, len_directory);	// WorkingDir (length specified by cbWorkingDir)
+			ok &= rdp_out_unistr(rdp, s, directory) == len_directory;	// WorkingDir (length specified by cbWorkingDir)
 		}
 		else
 		{
@@ -418,9 +424,9 @@ rdp_send_logon_info(rdpRdp * rdp, uint32 flags, char *domain, char *user,
 		out_uint16_le(s, 0x0002);	// clientAddressFamily (AF_INET 0x0002)
 		out_uint16_le(s, len_ip + 2);	// cbClientAddress (IP length)
 		// clientAddress maximum length of 64 bytes prior to RDP 6.1, and 80 bytes for RDP 6.1 and later
-		rdp_out_unistr(rdp, s, ipaddr, len_ip);	// clientAddress (Textual IP representation)
+		ok &= rdp_out_unistr(rdp, s, ipaddr) == len_ip;	// clientAddress (Textual IP representation)
 		out_uint16_le(s, len_dll + 2);	// cbClientDir
-		rdp_out_unistr(rdp, s, "C:\\Windows\\System32\\mstscax.dll", len_dll); // clientDir
+		ok &= rdp_out_unistr(rdp, s, dll) == len_dll; // clientDir
 
 		rdp_out_client_timezone_info(rdp, s); // clientTimeZone
 
@@ -860,7 +866,7 @@ rdp_process_server_caps(rdpRdp * rdp, STREAM s, uint16 length)
 			case CAPSET_TYPE_SURFACE_COMMANDS:
 				rdp_process_surface_commands_capset(rdp, s);
 				break;
-				
+
 			case CAPSET_TYPE_COMPDESK:
 				rdp_process_compdesk_capset(rdp, s);
 				break;

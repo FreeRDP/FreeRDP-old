@@ -366,14 +366,11 @@ sec_out_mcs_data(rdpSec * sec, STREAM s)
 {
 	int i;
 	rdpSet * settings = sec->rdp->settings;
-	int hostlen = 2 * strlen(settings->hostname);
+	int hostlen;
 	int length = 158 + 76 + 12 + 4;
 
 	if (settings->num_channels > 0)
 		length += settings->num_channels * 12 + 8;
-
-	if (hostlen > 30)
-		hostlen = 30;
 
 	/* Generic Conference Control (T.124) ConferenceCreateRequest */
 	out_uint16_be(s, 5);
@@ -420,7 +417,11 @@ sec_out_mcs_data(rdpSec * sec, STREAM s)
 	out_uint32_le(s, 2600);	// clientBuild
 
 	/* Unicode name of client, padded to 32 bytes */
-	rdp_out_unistr(sec->rdp, s, sec->rdp->settings->hostname, hostlen);
+	if (strlen(sec->rdp->settings->hostname) > 15)
+	{
+		sec->rdp->settings->hostname[15] = 0; /* Modified in-place! */
+	}
+	hostlen = rdp_out_unistr(sec->rdp, s, sec->rdp->settings->hostname);
 	out_uint8s(s, 30 - hostlen);
 
 	/* See
@@ -897,7 +898,7 @@ sec_connect(rdpSec * sec, char *server, char *username, int port)
 	mcs_data.size = 512;
 	mcs_data.p = mcs_data.data = (uint8 *) xmalloc(mcs_data.size);
 	sec_out_mcs_data(sec, &mcs_data);
-	
+
 	/* sec->nla = 1; */
 
 	if (!iso_connect(sec->mcs->iso, server, username, port))
@@ -923,10 +924,10 @@ sec_connect(rdpSec * sec, char *server, char *username, int port)
 		/*      sec_process_mcs_data(&mcs_data); */
 		if (sec->rdp->settings->encryption)
 			sec_establish_key(sec);
-		
+
 		xfree(mcs_data.data);
 	}
-	
+
 	return True;
 }
 
