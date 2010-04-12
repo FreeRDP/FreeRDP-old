@@ -611,6 +611,7 @@ l_rdp_check_fds(struct rdp_inst * inst)
 	}
 	if ((rv != 0) && rdp->redirect)
 	{
+		rdp->redirect = False;
 		if (rdp_reconnect(rdp))
 		{
 			rv = 0;
@@ -645,7 +646,7 @@ l_rdp_channel_data(struct rdp_inst * inst, int chan_id, char * data, int data_si
 {
 	rdpRdp * rdp;
 	rdpChannels * chan;
-	
+
 	rdp = (rdpRdp *) (inst->rdp);
 	chan = rdp->sec->mcs->chan;
 	return vchan_send(chan, chan_id, data, data_size);

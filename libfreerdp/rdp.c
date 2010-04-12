@@ -1455,7 +1455,7 @@ rdp_loop(rdpRdp * rdp, RD_BOOL * deactivated, uint32 * ext_disc_reason)
 			default:
 				ui_unimpl(rdp->inst, "PDU %d\n", type);
 		}
-		if (disc || rdp->redirect)
+		if (disc)
 			return False;
 		cont = rdp->next_packet < s->end;
 	}
