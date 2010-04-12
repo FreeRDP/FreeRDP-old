@@ -1514,13 +1514,13 @@ rdp_connect(rdpRdp * rdp, char *server, uint32 flags, char *domain, char *passwo
 
 /* Establish a reconnection up to the RDP layer */
 RD_BOOL
-rdp_reconnect(rdpRdp * rdp, char *server, uint32 flags, char *domain, char *password,
-	      char *command, char *directory, char *cookie, int port, char *username)
+rdp_reconnect(rdpRdp * rdp)
 {
-	if (!sec_reconnect(rdp->sec, server, port))
+	if (!sec_reconnect(rdp->sec, rdp->redirect_server, rdp->settings->tcp_port_rdp))
 		return False;
 
-	rdp_send_logon_info(rdp, flags, domain, username, password, command, directory);
+	rdp_send_logon_info(rdp, rdp->redirect_flags, rdp->redirect_domain, rdp->redirect_username,
+			rdp->redirect_password, rdp->settings->shell, rdp->settings->directory);
 	return True;
 }
 

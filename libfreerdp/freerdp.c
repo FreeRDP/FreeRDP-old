@@ -588,11 +588,11 @@ l_rdp_get_fds(struct rdp_inst * inst, void ** read_fds, int * read_count,
 	return 0;
 }
 
+/* Process receivable fds, return true if connection should live on */
 static int
 l_rdp_check_fds(struct rdp_inst * inst)
 {
 	rdpRdp * rdp;
-	rdpSet * s;
 	RD_BOOL deactivated;
 	uint32 ext_disc_reason;
 	int rv;
@@ -611,11 +611,7 @@ l_rdp_check_fds(struct rdp_inst * inst)
 	}
 	if ((rv != 0) && rdp->redirect)
 	{
-		s = rdp->settings;
-		if (rdp_reconnect(rdp, rdp->redirect_server, rdp->redirect_flags,
-			rdp->redirect_domain, rdp->redirect_password, s->shell,
-			s->directory, rdp->redirect_cookie, s->tcp_port_rdp,
-			rdp->redirect_username))
+		if (rdp_reconnect(rdp))
 		{
 			rv = 0;
 		}

@@ -100,8 +100,7 @@ RD_BOOL
 rdp_connect(rdpRdp * rdp, char * server, uint32 flags, char * domain, char * password,
 	    char * command, char * directory, int port, char * username);
 RD_BOOL
-rdp_reconnect(rdpRdp * rdp, char * server, uint32 flags, char * domain, char * password,
-	      char * command, char * directory, char * cookie, int port, char * username);
+rdp_reconnect(rdpRdp * rdp);
 void
 rdp_reset_state(rdpRdp * rdp);
 void
