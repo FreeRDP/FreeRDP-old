@@ -173,153 +173,40 @@ rdp_fp_send(rdpRdp * rdp, STREAM s)
 	sec_fp_send(rdp->sec, s, rdp->settings->encryption ? SEC_ENCRYPT : 0);
 }
 
-/* Output a string in Unicode */
+/* Output string reencoded from DEFAULT_CODEPAGE to WINDOWS_CODEPAGE.
+ * Strings are 0-terminated and output length should not exceed len. */
 void
 rdp_out_unistr(rdpRdp * rdp, STREAM s, char *string, int len)
 {
 #ifdef HAVE_ICONV
 	size_t ibl = strlen(string), obl = len + 2;
 	char *pin = string, *pout = (char *) s->p;
-	iconv_t iconv_h = (iconv_t) (rdp->out_iconv_h);
 
-	memset(pout, 0, len + 4);
-
-	if (rdp->iconv_works)
+	if (iconv(rdp->out_iconv_h, (ICONV_CONST char **) &pin, &ibl, &pout, &obl) == (size_t) - 1)
 	{
-		if (iconv_h == (iconv_t) - 1)
-		{
-			size_t i = 1, o = 4;
-			if ((iconv_h = iconv_open(WINDOWS_CODEPAGE, rdp->settings->codepage)) ==
-			    (iconv_t) - 1)
-			{
-				ui_warning(rdp->inst, "rdp_out_unistr: iconv_open[%s -> %s] fail %p\n",
-					   rdp->settings->codepage, WINDOWS_CODEPAGE, iconv_h);
-
-				rdp->iconv_works = False;
-				rdp_out_unistr(rdp, s, string, len);
-				return;
-			}
-			if (iconv(iconv_h, (ICONV_CONST char **) &pin, &i, &pout, &o) ==
-			    (size_t) - 1)
-			{
-				iconv_close(iconv_h);
-				rdp->out_iconv_h = (void *) (-1);
-				ui_warning(rdp->inst, "rdp_out_unistr: iconv(1) fail, errno %d\n",
-					   errno);
-
-				rdp->iconv_works = False;
-				rdp_out_unistr(rdp, s, string, len);
-				return;
-			}
-			pin = string;
-			pout = (char *) s->p;
-		}
-
-		if (iconv(iconv_h, (ICONV_CONST char **) &pin, &ibl, &pout, &obl) == (size_t) - 1)
-		{
-			iconv_close(iconv_h);
-			rdp->out_iconv_h = (void *) (-1);
-			ui_warning(rdp->inst, "rdp_out_unistr: iconv(2) fail, errno %d\n", errno);
-
-			rdp->iconv_works = False;
-			rdp_out_unistr(rdp, s, string, len);
-			return;
-		}
-
-		s->p += len + 2;
-
+		ui_error(rdp->inst, "rdp_out_unistr: iconv failure, errno %d\n", errno);
+		return;
 	}
-	else
+
+	s->p += len;
+	out_uint8s(s, 2);
+
+#else
+
+	int i = 0, j = 0;
+	len += 2;
+	while (i < len)
+	{
+		if ((signed char)(string[j]) < 0)
+		{
+			ui_error(rdp->inst, "rdp_out_unistr: wrong output conversion of char %d\n", string[j]);
+		}
+		s->p[i++] = string[j++];
+		s->p[i++] = 0;
+	}
+
+	s->p += len;
 #endif
-	{
-		int i = 0, j = 0;
-
-		len += 2;
-
-		while (i < len)
-		{
-			s->p[i++] = string[j++];
-			s->p[i++] = 0;
-		}
-
-		s->p += len;
-	}
-}
-
-/* Input a string in Unicode
- *
- * Returns str_len of string
- */
-int
-rdp_in_unistr(rdpRdp * rdp, STREAM s, char *string, int str_size, int in_len)
-{
-#ifdef HAVE_ICONV
-	size_t ibl = in_len, obl = str_size - 1;
-	char *pin = (char *) s->p, *pout = string;
-	iconv_t iconv_h = (iconv_t) (rdp->in_iconv_h);
-
-	if (rdp->iconv_works)
-	{
-		if (iconv_h == (iconv_t) - 1)
-		{
-			if ((iconv_h = iconv_open(rdp->settings->codepage, WINDOWS_CODEPAGE)) ==
-			    (iconv_t) - 1)
-			{
-				ui_warning(rdp->inst, "rdp_in_unistr: iconv_open[%s -> %s] fail %p\n",
-					   WINDOWS_CODEPAGE, rdp->settings->codepage, iconv_h);
-
-				rdp->iconv_works = False;
-				return rdp_in_unistr(rdp, s, string, str_size, in_len);
-			}
-		}
-
-		if (iconv(iconv_h, (ICONV_CONST char **) &pin, &ibl, &pout, &obl) == (size_t) - 1)
-		{
-			if (errno == E2BIG)
-			{
-				ui_warning(rdp->inst, "server sent an unexpectedly long string, truncating\n");
-			}
-			else
-			{
-				iconv_close(iconv_h);
-				rdp->in_iconv_h = (void *) (-1);
-				ui_warning(rdp->inst, "rdp_in_unistr: iconv fail, errno %d\n", errno);
-
-				rdp->iconv_works = False;
-				return rdp_in_unistr(rdp, s, string, str_size, in_len);
-			}
-		}
-
-		/* we must update the location of the current STREAM for future reads of s->p */
-		s->p += in_len;
-
-		*pout = 0;
-		return pout - string;
-	}
-	else
-#endif
-	{
-		int i = 0;
-		int len = in_len / 2;
-		int rem = 0;
-
-		if (len > str_size - 1)
-		{
-			ui_warning(rdp->inst, "server sent an unexpectedly long string, truncating\n");
-			len = str_size - 1;
-			rem = in_len - 2 * len;
-		}
-
-		while (i < len)
-		{
-			in_uint8a(s, &string[i++], 1);
-			in_uint8s(s, 1);
-		}
-
-		in_uint8s(s, rem);
-		string[len] = 0;
-		return len;
-	}
 }
 
 /* Output system time structure */
@@ -1552,9 +1439,18 @@ rdp_new(struct rdp_set *settings, struct rdp_inst *inst)
 		self->settings = settings;
 		self->inst = inst;
 		self->current_status = 1;
-		self->iconv_works = True;
-		self->in_iconv_h = (void *) (-1);
-		self->out_iconv_h = (void *) (-1);
+#ifdef HAVE_ICONV
+		self->in_iconv_h = iconv_open(DEFAULT_CODEPAGE, WINDOWS_CODEPAGE);
+		if (errno == EINVAL)
+		{
+			DEBUG("Error opening iconv converter to %s from %s\n", DEFAULT_CODEPAGE, WINDOWS_CODEPAGE);
+		}
+		self->out_iconv_h = iconv_open(WINDOWS_CODEPAGE, DEFAULT_CODEPAGE);
+		if (errno == EINVAL)
+		{
+			DEBUG("Error opening iconv converter to %s from %s\n", WINDOWS_CODEPAGE, DEFAULT_CODEPAGE);
+		}
+#endif
 		self->sec = sec_new(self);
 		self->orders = orders_new(self);
 		self->pcache = pcache_new(self);
@@ -1568,6 +1464,10 @@ rdp_free(rdpRdp * rdp)
 {
 	if (rdp != NULL)
 	{
+#ifdef HAVE_ICONV
+		iconv_close(rdp->in_iconv_h);
+		iconv_close(rdp->out_iconv_h);
+#endif
 		cache_free(rdp->cache);
 		pcache_free(rdp->pcache);
 		orders_free(rdp->orders);

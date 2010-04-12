@@ -33,9 +33,10 @@ struct rdp_rdp
 	uint32 packetno;
 	STREAM rdp_s;
 	int current_status;
-	RD_BOOL iconv_works;
-	void* in_iconv_h;
-	void* out_iconv_h;
+#ifdef HAVE_ICONV
+	void* in_iconv_h;	/* non-thread-safe converter to DEFAULT_CODEPAGE from WINDOWS_CODEPAGE */
+	void* out_iconv_h;	/* non-thread-safe converter to WINDOWS_CODEPAGE from DEFAULT_CODEPAGE */
+#endif
 	RDPCOMP mppc_dict;
 	struct rdp_sec * sec;
 	struct rdp_set * settings; // RDP settings
@@ -67,8 +68,6 @@ void
 rdp5_process(rdpRdp * rdp, STREAM s);
 void
 rdp_out_unistr(rdpRdp * rdp, STREAM s, char *string, int len);
-int
-rdp_in_unistr(rdpRdp * rdp, STREAM s, char *string, int str_len, int in_len);
 void
 rdp_send_input(rdpRdp * rdp, time_t time, uint16 message_type, uint16 device_flags, uint16 param1,
 	       uint16 param2);
