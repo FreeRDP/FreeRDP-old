@@ -47,14 +47,14 @@ struct rdp_rdp
 	/* Session Directory redirection */
 	int redirect;
 	uint32 redirect_session_id;
-	char redirect_server[64];
-	char redirect_domain[16];
-	char redirect_password[256];
-	char redirect_username[256];
-	char redirect_cookie[128];
-	char redirect_target_fqdn[256];
-	char redirect_target_netbios_name[256];
-	char redirect_target_net_addresses[1024];
+	char* redirect_server;
+	char* redirect_domain;
+	char* redirect_password;
+	char* redirect_username;
+	char* redirect_cookie;
+	char* redirect_target_fqdn;
+	char* redirect_target_netbios_name;
+	char* redirect_target_net_addresses;
 	int redirect_flags;
 	int input_flags;
 	int use_input_fast_path;

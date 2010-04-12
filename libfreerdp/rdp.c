@@ -210,6 +210,79 @@ rdp_out_unistr(rdpRdp * rdp, STREAM s, char *str)
 	return len;
 }
 
+/* Convert str to WINDOWS_CODEPAGE - return like xmalloc and length in pout_len */
+static char*
+xmalloc_out_unistr(rdpRdp * rdp, char *str, size_t *pout_len)
+{
+	size_t ibl = strlen(str), obl = 2 * ibl; /* FIXME: worst case */
+	char *pin = str, *pout0 = xmalloc(obl + 2), *pout = pout0;
+#ifdef HAVE_ICONV
+	if (iconv(rdp->out_iconv_h, (ICONV_CONST char **) &pin, &ibl, &pout, &obl) == (size_t) - 1)
+	{
+		ui_error(rdp->inst, "xmalloc_out_unistr: iconv failure, errno %d\n", errno);
+		return 0;
+	}
+#else
+	while ((ibl > 0) && (obl > 0))
+	{
+		if ((signed char)(*pin) < 0)
+		{
+			ui_error(rdp->inst, "xmalloc_out_unistr: wrong output conversion of char %d\n", str[j]);
+		}
+		*pout++ = *pin++;
+		*pout++ = 0;
+		ibl--;
+		obl -= 2;
+	}
+#endif
+	if (ibl > 0)
+	{
+		ui_error(rdp->inst, "xmalloc_out_unistr: string not fully converted - %d chars left\n", ibl);
+	}
+	*pout_len = pout - pout0;
+	return pout0;
+}
+
+/* Convert pin/in_len from WINDOWS_CODEPAGE - return like xstrdup, 0-terminated */
+static char*
+xstrdup_in_unistr(rdpRdp * rdp, unsigned char* pin, int in_len)
+{
+	unsigned char *conv_pin = pin;
+	size_t conv_in_len = in_len;
+	char *pout = xmalloc(in_len + 1), *conv_pout = pout;
+	size_t conv_out_len = in_len;
+#ifdef HAVE_ICONV
+	if (iconv(rdp->in_iconv_h, (ICONV_CONST char **) &conv_pin, &conv_in_len, &conv_pout, &conv_out_len) == (size_t) - 1)
+	{
+		/* TODO: xrealloc if conv_out_len == 0 - it shouldn't be needed, but would allow a smaller initial alloc ... */
+		ui_error(rdp->inst, "xstrdup_in_unistr: iconv failure, errno %d\n", errno);
+		return 0;
+	}
+#else
+	while (conv_in_len >= 2)
+	{
+		if ((signed char)(**conv_pi) < 0)
+		{
+			ui_error(rdp->inst, "xstrdup_in_unistr: wrong input conversion of char %d\n", **conv_pi);
+		}
+		*conv_pout++ = *conv_pin++;
+		if ((**conv_pi) != 0)
+		{
+			ui_error(rdp->inst, "xstrdup_in_unistr: wrong input conversion skipping non-zero char %d\n", **conv_pi);
+		}
+		conv_pin++;
+		conv_in_len -= 2;
+		conv_out-len--;
+	}
+#endif
+	if (conv_in_len > 0)
+	{
+		ui_error(rdp->inst, "xstrdup_in_unistr: conversion failure - %d chars left\n", conv_in_len);
+	}
+	*conv_pout = 0;
+	return pout;
+}
+
 /* Output system time structure */
 void
 rdp_out_systemtime(STREAM s, systemTime sysTime)
@@ -1274,80 +1347,76 @@ process_data_pdu(rdpRdp * rdp, STREAM s, uint32 * ext_disc_reason)
 	return False;
 }
 
-static uint32
-rdp_in_len_and_bytes(STREAM s, char* p, int maxlen)
+/* Read 32 bit length field followed by binary data, returns xmalloc'ed memory and length */
+static char*
+xmalloc_in_len32_data(rdpRdp * rdp, STREAM s)
 {
-	/* TODO: Allocate dynamically instead of using fixed buffers */
 	uint32 len;
-
+	unsigned char *sp, *p;
 	in_uint32_le(s, len);
-	DEBUG("len %d\n", len);
-	/* TODO: Check maxlen */
-	in_uint8a(s, p, len);
-	return len;
+	in_uint8p(s, sp, len);
+	p = xmalloc(len + 1);
+	memcpy(p, sp, len);
+	p[len] = 0;
+	return (char*) p;
 }
 
-static void
-rdp_in_len_and_unicode(STREAM s, char* p, int maxlen)
+/* Read 32 bit length field followed by WINDOWS_CODEPAGE - return like xstrdup, 0-terminated */
+static char*
+xstrdup_in_len32_unistr(rdpRdp * rdp, STREAM s)
 {
-	uint32 len, i;
-
-	len = rdp_in_len_and_bytes(s, p, maxlen);
-	/* TODO: Proper unicode handling */
-	for (i = 1; i < (len / 2); i++)
-	{
-		p[i] = p[i * 2];
-	}
-	p[len / 2] = 0;
+	uint32 len;
+	unsigned char *p;
+	in_uint32_le(s, len);
+	in_uint8p(s, p, len);
+	return xstrdup_in_unistr(rdp, p, len);
 }
 
 /* Process Server Redirection Packet */
 static void
 process_redirect_pdu(rdpRdp * rdp, STREAM s)
 {
-	uint16 length;
+	uint16 total_length;
 
 	in_uint8s(s, 2);	/* flags, 0x0400 */
-	in_uint16_le(s, length);
+	in_uint16_le(s, total_length);
 	in_uint32_le(s, rdp->redirect_session_id);
 	in_uint32_le(s, rdp->redirect_flags);
 
 	if (rdp->redirect_flags & LB_TARGET_NET_ADDRESS)
 	{
-		rdp_in_len_and_unicode(s, rdp->redirect_server, sizeof(rdp->redirect_server));
+		rdp->redirect_server = xstrdup_in_len32_unistr(rdp, s);
 	}
 	if (rdp->redirect_flags & LB_LOAD_BALANCE_INFO)
 	{
-		/* TODO: Handle binary data properly */
-		rdp_in_len_and_unicode(s, rdp->redirect_cookie, sizeof(rdp->redirect_cookie));
+		rdp->redirect_cookie = xmalloc_in_len32_data(rdp, s);
 	}
 	if (rdp->redirect_flags & LB_USERNAME)
 	{
-		rdp_in_len_and_unicode(s, rdp->redirect_username, sizeof(rdp->redirect_username));
+		rdp->redirect_username = xstrdup_in_len32_unistr(rdp, s);
 	}
 	if (rdp->redirect_flags & LB_DOMAIN)
 	{
-		rdp_in_len_and_unicode(s, rdp->redirect_domain, sizeof(rdp->redirect_domain));
+		rdp->redirect_domain = xstrdup_in_len32_unistr(rdp, s);
 	}
 	if (rdp->redirect_flags & LB_PASSWORD)
 	{
-		/* TODO: Handle binary data properly */
-		rdp_in_len_and_bytes(s, rdp->redirect_password, sizeof(rdp->redirect_password));
+		rdp->redirect_password = xmalloc_in_len32_data(rdp, s);
 	}
 	if (rdp->redirect_flags & LB_TARGET_FQDN)
 	{
-		rdp_in_len_and_unicode(s, rdp->redirect_target_fqdn, sizeof(rdp->redirect_target_fqdn));
+		rdp->redirect_target_fqdn = xstrdup_in_len32_unistr(rdp, s);
 	}
 	if (rdp->redirect_flags & LB_TARGET_NETBIOS_NAME)
 	{
-		rdp_in_len_and_unicode(s, rdp->redirect_target_netbios_name, sizeof(rdp->redirect_target_netbios_name));
+		rdp->redirect_target_netbios_name = xstrdup_in_len32_unistr(rdp, s);
 	}
 	if (rdp->redirect_flags & LB_TARGET_NET_ADDRESSES)
 	{
-		rdp_in_len_and_bytes(s, rdp->redirect_target_net_addresses, sizeof(rdp->redirect_target_net_addresses));
+		rdp->redirect_target_net_addresses = xmalloc_in_len32_data(rdp, s);
 	}
 	/* Skip optional padding up to length */
-	rdp->next_packet += length; /* FIXME: Is this correct? */
+	rdp->next_packet += total_length; /* FIXME: Is this correct? */
 
 	rdp->redirect = True;
 
@@ -1478,6 +1547,13 @@ rdp_free(rdpRdp * rdp)
 		pcache_free(rdp->pcache);
 		orders_free(rdp->orders);
 		sec_free(rdp->sec);
+		xfree(rdp->redirect_server);
+		xfree(rdp->redirect_cookie);
+		xfree(rdp->redirect_username);
+		xfree(rdp->redirect_domain);
+		xfree(rdp->redirect_password);
+		xfree(rdp->redirect_target_netbios_name);
+		xfree(rdp->redirect_password);
 		xfree(rdp);
 	}
 }
