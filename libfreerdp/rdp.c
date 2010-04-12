@@ -366,12 +366,11 @@ rdp_out_client_timezone_info(rdpRdp * rdp, STREAM s)
 /* Parse a logon info packet */
 static void
 rdp_send_logon_info(rdpRdp * rdp, uint32 flags, char *domain, char *user,
-		    char *password, char *program, char *directory)
+		    char *password, size_t len_password, char *program, char *directory)
 {
 	char *ipaddr = tcp_get_address(rdp->sec->mcs->iso->tcp);
 	int len_domain = 2 * strlen(domain);
 	int len_user = 2 * strlen(user);
-	int len_password = 2 * strlen(password);
 	int len_program = 2 * strlen(program);
 	int len_directory = 2 * strlen(directory);
 	int len_ip = 2 * strlen(ipaddr);
@@ -1349,15 +1348,13 @@ process_data_pdu(rdpRdp * rdp, STREAM s, uint32 * ext_disc_reason)
 
 /* Read 32 bit length field followed by binary data, returns xmalloc'ed memory and length */
 static char*
-xmalloc_in_len32_data(rdpRdp * rdp, STREAM s)
+xmalloc_in_len32_data(rdpRdp * rdp, STREAM s, uint32 *plen)
 {
-	uint32 len;
 	unsigned char *sp, *p;
-	in_uint32_le(s, len);
-	in_uint8p(s, sp, len);
-	p = xmalloc(len + 1);
-	memcpy(p, sp, len);
-	p[len] = 0;
+	in_uint32_le(s, *plen);
+	in_uint8p(s, sp, *plen);
+	p = xmalloc(*plen);
+	memcpy(p, sp, *plen);
 	return (char*) p;
 }
 
@@ -1389,7 +1386,8 @@ process_redirect_pdu(rdpRdp * rdp, STREAM s)
 	}
 	if (rdp->redirect_flags & LB_LOAD_BALANCE_INFO)
 	{
-		rdp->redirect_cookie = xmalloc_in_len32_data(rdp, s);
+		rdp->redirect_cookie = xmalloc_in_len32_data(rdp, s,
+			&rdp->redirect_cookie_len);
 	}
 	if (rdp->redirect_flags & LB_USERNAME)
 	{
@@ -1401,7 +1399,8 @@ process_redirect_pdu(rdpRdp * rdp, STREAM s)
 	}
 	if (rdp->redirect_flags & LB_PASSWORD)
 	{
-		rdp->redirect_password = xmalloc_in_len32_data(rdp, s);
+		rdp->redirect_password = xmalloc_in_len32_data(rdp, s,
+			&rdp->redirect_password_len);
 	}
 	if (rdp->redirect_flags & LB_TARGET_FQDN)
 	{
@@ -1413,7 +1412,8 @@ process_redirect_pdu(rdpRdp * rdp, STREAM s)
 	}
 	if (rdp->redirect_flags & LB_TARGET_NET_ADDRESSES)
 	{
-		rdp->redirect_target_net_addresses = xmalloc_in_len32_data(rdp, s);
+		rdp->redirect_target_net_addresses = xmalloc_in_len32_data(rdp, s,
+			&rdp->redirect_target_net_addresses_len);
 	}
 	/* Skip optional padding up to length */
 	rdp->next_packet += total_length; /* FIXME: Is this correct? */
@@ -1467,10 +1467,15 @@ RD_BOOL
 rdp_connect(rdpRdp * rdp, char *server, uint32 flags, char *domain, char *password,
 	    char *command, char *directory, int port, char *username)
 {
+	char* password_encoded;
+	size_t password_encoded_len = 0;
+
 	if (!sec_connect(rdp->sec, server, username, port))
 		return False;
 
-	rdp_send_logon_info(rdp, flags, domain, username, password, command, directory);
+	password_encoded = xmalloc_out_unistr(rdp, password, &password_encoded_len);
+	rdp_send_logon_info(rdp, flags, domain, username, password_encoded, password_encoded_len, command, directory);
+	xfree(password_encoded);
 	return True;
 }
 
@@ -1478,11 +1483,12 @@ rdp_connect(rdpRdp * rdp, char *server, uint32 flags, char *domain, char *passwo
 RD_BOOL
 rdp_reconnect(rdpRdp * rdp)
 {
+	/* FIXME: Cookie is unused? */
 	if (!sec_reconnect(rdp->sec, rdp->redirect_server, rdp->settings->tcp_port_rdp))
 		return False;
 
 	rdp_send_logon_info(rdp, rdp->redirect_flags, rdp->redirect_domain, rdp->redirect_username,
-			rdp->redirect_password, rdp->settings->shell, rdp->settings->directory);
+			rdp->redirect_password, rdp->redirect_password_len, rdp->settings->shell, rdp->settings->directory);
 	return True;
 }
 
