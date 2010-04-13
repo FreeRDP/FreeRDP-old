@@ -652,6 +652,15 @@ l_rdp_channel_data(struct rdp_inst * inst, int chan_id, char * data, int data_si
 	return vchan_send(chan, chan_id, data, data_size);
 }
 
+static void
+l_rdp_disconnect(struct rdp_inst * inst)
+{
+	rdpRdp * rdp;
+
+	rdp = (rdpRdp *) (inst->rdp);
+	rdp_disconnect(rdp);
+}
+
 rdpInst *
 freerdp_new(rdpSet * settings)
 {
@@ -667,6 +676,7 @@ freerdp_new(rdpSet * settings)
 	inst->rdp_send_input = l_rdp_send_input;
 	inst->rdp_sync_input = l_rdp_sync_input;
 	inst->rdp_channel_data = l_rdp_channel_data;
+	inst->rdp_disconnect = l_rdp_disconnect;
 	inst->rdp = rdp_new(settings, inst);
 	return inst;
 }
