@@ -21,7 +21,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-/* malloc; exit if out of memory */
 void *
 xmalloc(int size)
 {
@@ -39,7 +38,6 @@ xmalloc(int size)
 	return mem;
 }
 
-/* realloc; exit if out of memory */
 void *
 xrealloc(void * oldmem, int size)
 {
@@ -57,7 +55,6 @@ xrealloc(void * oldmem, int size)
 	return mem;
 }
 
-/* free */
 void
 xfree(void * mem)
 {
@@ -67,7 +64,6 @@ xfree(void * mem)
 	}
 }
 
-/* strdup */
 char *
 xstrdup(const char * s)
 {
