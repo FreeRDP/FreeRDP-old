@@ -354,7 +354,11 @@ tcp_connect(rdpTcp * tcp, char * server, int port)
 void
 tcp_disconnect(rdpTcp * tcp)
 {
-	TCP_CLOSE(tcp->sock);
+	if (tcp->sock != -1)
+	{
+		TCP_CLOSE(tcp->sock);
+		tcp->sock = -1;
+	}
 #ifdef _WIN32
 	if (tcp->wsa_event)
 	{
@@ -421,6 +425,8 @@ tcp_new(struct rdp_iso * iso)
 
 		self->out.size = 4096;
 		self->out.data = (uint8 *) xmalloc(self->out.size);
+
+		self->sock = -1;
 	}
 	return self;
 }
