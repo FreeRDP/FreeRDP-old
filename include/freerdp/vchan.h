@@ -1,5 +1,5 @@
 /*
-   Copyright (c) 2009 Jay Sorg
+   Copyright (c) 2009-2010 Jay Sorg
 
    Permission is hereby granted, free of charge, to any person obtaining a
    copy of this software and associated documentation files (the "Software"),
@@ -26,6 +26,12 @@
 
 #ifndef __VCHAN_H
 #define __VCHAN_H
+
+#ifdef _WIN32
+#define VCHAN_CC WINAPI
+#else
+#define VCHAN_CC
+#endif
 
 #define CHANNEL_EXPORT_FUNC_NAME "VirtualChannelEntry"
 
@@ -73,10 +79,8 @@ struct _CHANNEL_PDU_HEADER
 typedef struct _CHANNEL_PDU_HEADER CHANNEL_PDU_HEADER;
 typedef CHANNEL_PDU_HEADER * PCHANNEL_PDU_HEADER;
 
-typedef void (*PCHANNEL_INIT_EVENT_FN)(void * pInitHandle,
-                                       uint32 event,
-                                       void * pData,
-                                       uint32 dataLength);
+typedef void (VCHAN_CC * PCHANNEL_INIT_EVENT_FN)(void * pInitHandle,
+	uint32 event, void * pData, uint32 dataLength);
 
 #define CHANNEL_EVENT_INITIALIZED  0
 #define CHANNEL_EVENT_CONNECTED    1
@@ -84,12 +88,9 @@ typedef void (*PCHANNEL_INIT_EVENT_FN)(void * pInitHandle,
 #define CHANNEL_EVENT_DISCONNECTED 3
 #define CHANNEL_EVENT_TERMINATED   4
 
-typedef void (*PCHANNEL_OPEN_EVENT_FN)(uint32  openHandle,
-                                       uint32  event,
-                                       void *  pData,
-                                       uint32  dataLength,
-                                       uint32  totalLength,
-                                       uint32  dataFlags);
+typedef void (VCHAN_CC * PCHANNEL_OPEN_EVENT_FN)(uint32  openHandle,
+	uint32  event, void *  pData, uint32  dataLength,
+	uint32 totalLength, uint32  dataFlags);
 
 #define CHANNEL_EVENT_DATA_RECEIVED   10
 #define CHANNEL_EVENT_WRITE_COMPLETE  11
@@ -116,21 +117,16 @@ typedef void (*PCHANNEL_OPEN_EVENT_FN)(uint32  openHandle,
 
 #define VIRTUAL_CHANNEL_VERSION_WIN2000         1
 
-typedef uint32 (*PVIRTUALCHANNELINIT)(void ** ppInitHandle,
-                               PCHANNEL_DEF pChannel,
-                               int channelCount,
-                               uint32 versionRequested,
-                               PCHANNEL_INIT_EVENT_FN pChannelInitEventProc);
-typedef uint32 (*PVIRTUALCHANNELOPEN)(void * pInitHandle,
-                               uint32 * pOpenHandle,
-                               char * pChannelName,
-                               PCHANNEL_OPEN_EVENT_FN pChannelOpenEventProc);
-typedef uint32 (*PVIRTUALCHANNELCLOSE)(uint32 openHandle);
+typedef uint32 (VCHAN_CC * PVIRTUALCHANNELINIT)(void ** ppInitHandle,
+	PCHANNEL_DEF pChannel, int channelCount, uint32 versionRequested,
+	PCHANNEL_INIT_EVENT_FN pChannelInitEventProc);
+typedef uint32 (VCHAN_CC * PVIRTUALCHANNELOPEN)(void * pInitHandle,
+	uint32 * pOpenHandle, char * pChannelName,
+	PCHANNEL_OPEN_EVENT_FN pChannelOpenEventProc);
+typedef uint32 (VCHAN_CC * PVIRTUALCHANNELCLOSE)(uint32 openHandle);
 
-typedef uint32 (*PVIRTUALCHANNELWRITE)(uint32  openHandle,
-                               void *  pData,
-                               uint32  dataLength,
-                               void *  pUserData);
+typedef uint32 (VCHAN_CC * PVIRTUALCHANNELWRITE)(uint32  openHandle,
+	void *  pData, uint32  dataLength, void *  pUserData);
 
 struct _CHANNEL_ENTRY_POINTS
 {
@@ -144,7 +140,7 @@ struct _CHANNEL_ENTRY_POINTS
 typedef struct _CHANNEL_ENTRY_POINTS CHANNEL_ENTRY_POINTS;
 typedef CHANNEL_ENTRY_POINTS * PCHANNEL_ENTRY_POINTS;
 
-typedef int (*PVIRTUALCHANNELENTRY)(PCHANNEL_ENTRY_POINTS pEntryPoints);
+typedef int (VCHAN_CC * PVIRTUALCHANNELENTRY)(PCHANNEL_ENTRY_POINTS pEntryPoints);
 
 struct _CHANNEL_ENTRY_POINTS_EX
 {
