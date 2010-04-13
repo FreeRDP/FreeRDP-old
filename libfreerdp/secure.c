@@ -366,14 +366,11 @@ sec_out_mcs_data(rdpSec * sec, STREAM s)
 {
 	int i;
 	rdpSet * settings = sec->rdp->settings;
-	int hostlen = 2 * strlen(settings->hostname);
+	int hostlen;
 	int length = 158 + 76 + 12 + 4;
 
 	if (settings->num_channels > 0)
 		length += settings->num_channels * 12 + 8;
-
-	if (hostlen > 30)
-		hostlen = 30;
 
 	/* Generic Conference Control (T.124) ConferenceCreateRequest */
 	out_uint16_be(s, 5);
@@ -420,7 +417,11 @@ sec_out_mcs_data(rdpSec * sec, STREAM s)
 	out_uint32_le(s, 2600);	// clientBuild
 
 	/* Unicode name of client, padded to 32 bytes */
-	rdp_out_unistr(sec->rdp, s, sec->rdp->settings->hostname, hostlen);
+	if (strlen(sec->rdp->settings->hostname) > 15)
+	{
+		sec->rdp->settings->hostname[15] = 0; /* Modified in-place! */
+	}
+	hostlen = rdp_out_unistr(sec->rdp, s, sec->rdp->settings->hostname);
 	out_uint8s(s, 30 - hostlen);
 
 	/* See
@@ -668,7 +669,7 @@ sec_parse_crypt_info(rdpSec * sec, STREAM s, uint32 * rc4_key_size,
 			DEBUG_RDP5("cert #%d (ignored):\n", certcount);
 			ssl_cert_print_fp(stdout, ignorecert);
 #endif
-			ssl_cert_free(ignorecert);
+			ssl1_cert_free(ignorecert);
 		}
 		/* Do da funky X.509 stuffy
 
@@ -693,27 +694,27 @@ sec_parse_crypt_info(rdpSec * sec, STREAM s, uint32 * rc4_key_size,
 		in_uint8s(s, cert_len);
 		if (NULL == server_cert)
 		{
-			ssl_cert_free(cacert);
+			ssl1_cert_free(cacert);
 			ui_error(sec->rdp->inst, "Couldn't load Certificate from server\n");
 			return False;
 		}
 		if (!ssl_certs_ok(server_cert, cacert))
 		{
-			ssl_cert_free(server_cert);
-			ssl_cert_free(cacert);
+			ssl1_cert_free(server_cert);
+			ssl1_cert_free(cacert);
 			ui_error(sec->rdp->inst, "Security error CA Certificate invalid\n");
 			return False;
 		}
-		ssl_cert_free(cacert);
+		ssl1_cert_free(cacert);
 		in_uint8s(s, 16);	/* Padding */
 		server_public_key = ssl_cert_to_rkey(server_cert, &(sec->server_public_key_len));
 		if (NULL == server_public_key)
 		{
 			DEBUG_RDP5("Didn't parse X509 correctly\n");
-			ssl_cert_free(server_cert);
+			ssl1_cert_free(server_cert);
 			return False;
 		}
-		ssl_cert_free(server_cert);
+		ssl1_cert_free(server_cert);
 		if ((sec->server_public_key_len < SEC_MODULUS_SIZE) ||
 		    (sec->server_public_key_len > SEC_MAX_MODULUS_SIZE))
 		{
@@ -878,7 +879,7 @@ sec_recv(rdpSec * sec, secRecvType * type)
 
 		if (channel != MCS_GLOBAL_CHANNEL)
 		{
-			channel_process(sec->mcs->chan, s, channel);
+			vchan_process(sec->mcs->chan, s, channel);
 			*type = SEC_RECV_IOCHANNEL;
 			return s;
 		}
@@ -897,7 +898,7 @@ sec_connect(rdpSec * sec, char *server, char *username, int port)
 	mcs_data.size = 512;
 	mcs_data.p = mcs_data.data = (uint8 *) xmalloc(mcs_data.size);
 	sec_out_mcs_data(sec, &mcs_data);
-	
+
 	/* sec->nla = 1; */
 
 	if (!iso_connect(sec->mcs->iso, server, username, port))
@@ -923,10 +924,10 @@ sec_connect(rdpSec * sec, char *server, char *username, int port)
 		/*      sec_process_mcs_data(&mcs_data); */
 		if (sec->rdp->settings->encryption)
 			sec_establish_key(sec);
-		
+
 		xfree(mcs_data.data);
 	}
-	
+
 	return True;
 }
 

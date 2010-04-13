@@ -32,14 +32,6 @@ rdp_out_rail_pdu_header(STREAM s, uint16 orderType, uint16 orderLength)
         out_uint16_le(s, orderLength); // orderLength
 }
 
-/* UNICODE_STRING structure */
-void
-rdp_out_unicode_string(rdpRdp * rdp, STREAM s, char* str)
-{
-        out_uint16_le(s, 2 * strlen(str));
-        rdp_out_unistr(rdp, s, str, 2 * strlen(str));
-}
-
 void
 rdp_send_client_execute_pdu(rdpRdp * rdp)
 {
@@ -56,9 +48,9 @@ rdp_send_client_execute_pdu(rdpRdp * rdp)
         out_uint16_le(s, 2 * strlen(rdp->app->application_name)); // ExeOrFileLength
         out_uint16_le(s, 2 * strlen(rdp->app->working_directory)); // WorkingDirLength
         out_uint16_le(s, 2 * strlen(rdp->app->arguments)); // ArgumentsLength
-        rdp_out_unicode_string(rdp, s, rdp->app->application_name); // ExeOrFile
-        rdp_out_unicode_string(rdp, s, rdp->app->working_directory); // WorkingDir
-        rdp_out_unicode_string(rdp, s, rdp->app->arguments); // Arguments
+        rdp_out_unistr(rdp, s, rdp->app->application_name); // ExeOrFile
+        rdp_out_unistr(rdp, s, rdp->app->working_directory); // WorkingDir
+        rdp_out_unistr(rdp, s, rdp->app->arguments); // Arguments
 
         s_mark_end(s);
 	sec_send(rdp->sec, s, rdp->settings->encryption ? SEC_ENCRYPT : 0);

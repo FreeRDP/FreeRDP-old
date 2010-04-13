@@ -107,7 +107,7 @@ typedef struct stream *STREAM;
 #define out_uint8p(s,v,n)	{ memcpy((s)->p,v,n); (s)->p += n; }
 /* Copy n bytes from *v to stream */
 #define out_uint8a(s,v,n)	out_uint8p(s,v,n);
-/* Copy n bytes from *v to stream */
+/* Output n bytes zero to stream */
 #define out_uint8s(s,n)		{ memset((s)->p,0,n); (s)->p += n; }
 
 /* Read least LSByte to v, shifting old value */

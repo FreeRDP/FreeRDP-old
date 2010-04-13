@@ -2,7 +2,7 @@
    rdesktop: A Remote Desktop Protocol client.
    Secure sockets abstraction layer
    Copyright (C) Matthew Chapman 1999-2008
-   Copyright (C) Jay Sorg 2006-2009
+   Copyright (C) Jay Sorg 2006-2010
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -64,7 +64,7 @@ ssl_rsa_encrypt(uint8 * out, uint8 * in, int len, uint32 modulus_size, uint8 * m
 SSL_CERT *
 ssl_cert_read(uint8 * data, uint32 len);
 void
-ssl_cert_free(SSL_CERT * cert);
+ssl1_cert_free(SSL_CERT * cert);
 SSL_RKEY *
 ssl_cert_to_rkey(SSL_CERT * cert, uint32 * key_len);
 RD_BOOL

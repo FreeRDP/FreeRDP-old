@@ -33,9 +33,10 @@ struct rdp_rdp
 	uint32 packetno;
 	STREAM rdp_s;
 	int current_status;
-	RD_BOOL iconv_works;
-	void* in_iconv_h;
-	void* out_iconv_h;
+#ifdef HAVE_ICONV
+	void* in_iconv_h;	/* non-thread-safe converter to DEFAULT_CODEPAGE from WINDOWS_CODEPAGE */
+	void* out_iconv_h;	/* non-thread-safe converter to WINDOWS_CODEPAGE from DEFAULT_CODEPAGE */
+#endif
 	RDPCOMP mppc_dict;
 	struct rdp_sec * sec;
 	struct rdp_set * settings; // RDP settings
@@ -46,14 +47,17 @@ struct rdp_rdp
 	/* Session Directory redirection */
 	int redirect;
 	uint32 redirect_session_id;
-	char redirect_server[64];
-	char redirect_domain[16];
-	char redirect_password[256];
-	char redirect_username[256];
-	char redirect_cookie[128];
-	char redirect_target_fqdn[256];
-	char redirect_target_netbios_name[256];
-	char redirect_target_net_addresses[1024];
+	char* redirect_server;
+	char* redirect_domain;
+	char* redirect_password;
+	size_t redirect_password_len;
+	char* redirect_username;
+	char* redirect_cookie;
+	size_t redirect_cookie_len;
+	char* redirect_target_fqdn;
+	char* redirect_target_netbios_name;
+	char* redirect_target_net_addresses;
+	size_t redirect_target_net_addresses_len;
 	int redirect_flags;
 	int input_flags;
 	int use_input_fast_path;
@@ -65,10 +69,8 @@ int
 mppc_expand(rdpRdp * rdp, uint8 * data, uint32 clen, uint8 ctype, uint32 * roff, uint32 * rlen);
 void
 rdp5_process(rdpRdp * rdp, STREAM s);
-void
-rdp_out_unistr(rdpRdp * rdp, STREAM s, char *string, int len);
 int
-rdp_in_unistr(rdpRdp * rdp, STREAM s, char *string, int str_len, int in_len);
+rdp_out_unistr(rdpRdp * rdp, STREAM s, char *string);
 void
 rdp_send_input(rdpRdp * rdp, time_t time, uint16 message_type, uint16 device_flags, uint16 param1,
 	       uint16 param2);
@@ -100,8 +102,7 @@ RD_BOOL
 rdp_connect(rdpRdp * rdp, char * server, uint32 flags, char * domain, char * password,
 	    char * command, char * directory, int port, char * username);
 RD_BOOL
-rdp_reconnect(rdpRdp * rdp, char * server, uint32 flags, char * domain, char * password,
-	      char * command, char * directory, char * cookie, int port, char * username);
+rdp_reconnect(rdpRdp * rdp);
 void
 rdp_reset_state(rdpRdp * rdp);
 void

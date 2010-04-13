@@ -59,7 +59,6 @@ struct rdp_set
 	int rdp5_performanceflags;
 	int desktop_save;
 	int polygon_ellipse_orders;
-	char codepage[16];
 	int autologin;
 	int off_screen_bitmaps;
 	int triblt;

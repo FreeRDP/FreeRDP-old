@@ -173,153 +173,114 @@ rdp_fp_send(rdpRdp * rdp, STREAM s)
 	sec_fp_send(rdp->sec, s, rdp->settings->encryption ? SEC_ENCRYPT : 0);
 }
 
-/* Output a string in Unicode */
-void
-rdp_out_unistr(rdpRdp * rdp, STREAM s, char *string, int len)
+/* Output str reencoded from DEFAULT_CODEPAGE to WINDOWS_CODEPAGE.
+ * Strings are 0-terminated and output length (without 2 zeros) is returned. */
+int
+rdp_out_unistr(rdpRdp * rdp, STREAM s, char *str)
 {
+	size_t ibl = strlen(str), obl = s->end - s->p - 2, len;
+	char *pin = str, *pout0 = (char *) s->p, *pout = pout0;
+	obl = 1 << 14; /* FIXME: HACK: remove this when s->end is initialized properly! */
 #ifdef HAVE_ICONV
-	size_t ibl = strlen(string), obl = len + 2;
-	char *pin = string, *pout = (char *) s->p;
-	iconv_t iconv_h = (iconv_t) (rdp->out_iconv_h);
-
-	memset(pout, 0, len + 4);
-
-	if (rdp->iconv_works)
+	if (iconv(rdp->out_iconv_h, (ICONV_CONST char **) &pin, &ibl, &pout, &obl) == (size_t) - 1)
 	{
-		if (iconv_h == (iconv_t) - 1)
-		{
-			size_t i = 1, o = 4;
-			if ((iconv_h = iconv_open(WINDOWS_CODEPAGE, rdp->settings->codepage)) ==
-			    (iconv_t) - 1)
-			{
-				ui_warning(rdp->inst, "rdp_out_unistr: iconv_open[%s -> %s] fail %p\n",
-					   rdp->settings->codepage, WINDOWS_CODEPAGE, iconv_h);
-
-				rdp->iconv_works = False;
-				rdp_out_unistr(rdp, s, string, len);
-				return;
-			}
-			if (iconv(iconv_h, (ICONV_CONST char **) &pin, &i, &pout, &o) ==
-			    (size_t) - 1)
-			{
-				iconv_close(iconv_h);
-				rdp->out_iconv_h = (void *) (-1);
-				ui_warning(rdp->inst, "rdp_out_unistr: iconv(1) fail, errno %d\n",
-					   errno);
-
-				rdp->iconv_works = False;
-				rdp_out_unistr(rdp, s, string, len);
-				return;
-			}
-			pin = string;
-			pout = (char *) s->p;
-		}
-
-		if (iconv(iconv_h, (ICONV_CONST char **) &pin, &ibl, &pout, &obl) == (size_t) - 1)
-		{
-			iconv_close(iconv_h);
-			rdp->out_iconv_h = (void *) (-1);
-			ui_warning(rdp->inst, "rdp_out_unistr: iconv(2) fail, errno %d\n", errno);
-
-			rdp->iconv_works = False;
-			rdp_out_unistr(rdp, s, string, len);
-			return;
-		}
-
-		s->p += len + 2;
-
+		ui_error(rdp->inst, "rdp_out_unistr: iconv failure, errno %d\n", errno);
+		return 0;
 	}
-	else
+#else
+	while ((ibl > 0) && (obl > 0))
+	{
+		if ((signed char)(*pin) < 0)
+		{
+			ui_error(rdp->inst, "rdp_out_unistr: wrong output conversion of char %d\n", str[j]);
+		}
+		*pout++ = *pin++;
+		*pout++ = 0;
+		ibl--;
+		obl -= 2;
+	}
 #endif
+	if (ibl > 0)
 	{
-		int i = 0, j = 0;
-
-		len += 2;
-
-		while (i < len)
-		{
-			s->p[i++] = string[j++];
-			s->p[i++] = 0;
-		}
-
-		s->p += len;
+		ui_error(rdp->inst, "rdp_out_unistr: string not fully converted - %d chars left\n", ibl);
 	}
+	len = pout - pout0;
+	s->p += len;
+	out_uint8s(s, 2);
+	return len;
 }
 
-/* Input a string in Unicode
- *
- * Returns str_len of string
- */
-int
-rdp_in_unistr(rdpRdp * rdp, STREAM s, char *string, int str_size, int in_len)
+/* Convert str to WINDOWS_CODEPAGE - return like xmalloc and length in pout_len */
+static char*
+xmalloc_out_unistr(rdpRdp * rdp, char *str, size_t *pout_len)
 {
+	size_t ibl = strlen(str), obl = 2 * ibl; /* FIXME: worst case */
+	char *pin = str, *pout0 = xmalloc(obl + 2), *pout = pout0;
 #ifdef HAVE_ICONV
-	size_t ibl = in_len, obl = str_size - 1;
-	char *pin = (char *) s->p, *pout = string;
-	iconv_t iconv_h = (iconv_t) (rdp->in_iconv_h);
-
-	if (rdp->iconv_works)
+	if (iconv(rdp->out_iconv_h, (ICONV_CONST char **) &pin, &ibl, &pout, &obl) == (size_t) - 1)
 	{
-		if (iconv_h == (iconv_t) - 1)
-		{
-			if ((iconv_h = iconv_open(rdp->settings->codepage, WINDOWS_CODEPAGE)) ==
-			    (iconv_t) - 1)
-			{
-				ui_warning(rdp->inst, "rdp_in_unistr: iconv_open[%s -> %s] fail %p\n",
-					   WINDOWS_CODEPAGE, rdp->settings->codepage, iconv_h);
-
-				rdp->iconv_works = False;
-				return rdp_in_unistr(rdp, s, string, str_size, in_len);
-			}
-		}
-
-		if (iconv(iconv_h, (ICONV_CONST char **) &pin, &ibl, &pout, &obl) == (size_t) - 1)
-		{
-			if (errno == E2BIG)
-			{
-				ui_warning(rdp->inst, "server sent an unexpectedly long string, truncating\n");
-			}
-			else
-			{
-				iconv_close(iconv_h);
-				rdp->in_iconv_h = (void *) (-1);
-				ui_warning(rdp->inst, "rdp_in_unistr: iconv fail, errno %d\n", errno);
-
-				rdp->iconv_works = False;
-				return rdp_in_unistr(rdp, s, string, str_size, in_len);
-			}
-		}
-
-		/* we must update the location of the current STREAM for future reads of s->p */
-		s->p += in_len;
-
-		*pout = 0;
-		return pout - string;
+		ui_error(rdp->inst, "xmalloc_out_unistr: iconv failure, errno %d\n", errno);
+		return 0;
 	}
-	else
+#else
+	while ((ibl > 0) && (obl > 0))
+	{
+		if ((signed char)(*pin) < 0)
+		{
+			ui_error(rdp->inst, "xmalloc_out_unistr: wrong output conversion of char %d\n", str[j]);
+		}
+		*pout++ = *pin++;
+		*pout++ = 0;
+		ibl--;
+		obl -= 2;
+	}
 #endif
+	if (ibl > 0)
 	{
-		int i = 0;
-		int len = in_len / 2;
-		int rem = 0;
-
-		if (len > str_size - 1)
-		{
-			ui_warning(rdp->inst, "server sent an unexpectedly long string, truncating\n");
-			len = str_size - 1;
-			rem = in_len - 2 * len;
-		}
-
-		while (i < len)
-		{
-			in_uint8a(s, &string[i++], 1);
-			in_uint8s(s, 1);
-		}
-
-		in_uint8s(s, rem);
-		string[len] = 0;
-		return len;
+		ui_error(rdp->inst, "xmalloc_out_unistr: string not fully converted - %d chars left\n", ibl);
 	}
+	*pout_len = pout - pout0;
+	return pout0;
+}
+
+/* Convert pin/in_len from WINDOWS_CODEPAGE - return like xstrdup, 0-terminated */
+static char*
+xstrdup_in_unistr(rdpRdp * rdp, unsigned char* pin, int in_len)
+{
+	unsigned char *conv_pin = pin;
+	size_t conv_in_len = in_len;
+	char *pout = xmalloc(in_len + 1), *conv_pout = pout;
+	size_t conv_out_len = in_len;
+#ifdef HAVE_ICONV
+	if (iconv(rdp->in_iconv_h, (ICONV_CONST char **) &conv_pin, &conv_in_len, &conv_pout, &conv_out_len) == (size_t) - 1)
+	{
+		/* TODO: xrealloc if conv_out_len == 0 - it shouldn't be needed, but would allow a smaller initial alloc ... */
+		ui_error(rdp->inst, "xstrdup_in_unistr: iconv failure, errno %d\n", errno);
+		return 0;
+	}
+#else
+	while (conv_in_len >= 2)
+	{
+		if ((signed char)(**conv_pi) < 0)
+		{
+			ui_error(rdp->inst, "xstrdup_in_unistr: wrong input conversion of char %d\n", **conv_pi);
+		}
+		*conv_pout++ = *conv_pin++;
+		if ((**conv_pi) != 0)
+		{
+			ui_error(rdp->inst, "xstrdup_in_unistr: wrong input conversion skipping non-zero char %d\n", **conv_pi);
+		}
+		conv_pin++;
+		conv_in_len -= 2;
+		conv_out-len--;
+	}
+#endif
+	if (conv_in_len > 0)
+	{
+		ui_error(rdp->inst, "xstrdup_in_unistr: conversion failure - %d chars left\n", conv_in_len);
+	}
+	*conv_pout = 0;
+	return pout;
 }
 
 /* Output system time structure */
@@ -347,6 +308,7 @@ rdp_out_client_timezone_info(rdpRdp * rdp, STREAM s)
 		char daylightName[32];
 		systemTime standardDate;
 		systemTime daylightDate;
+		int len;
 
 		time_t t;
 		struct tm* localTime;
@@ -388,14 +350,14 @@ rdp_out_client_timezone_info(rdpRdp * rdp, STREAM s)
 
 		out_uint32_le(s, bias); // bias
 
-		rdp_out_unistr(rdp, s, standardName, 2 * strlen(standardName));
-		out_uint8s(s, 62 - 2 * strlen(standardName)); // standardName (64 bytes)
+		len = rdp_out_unistr(rdp, s, standardName);
+		out_uint8s(s, 62 - len); // standardName (64 bytes)
 
 		rdp_out_systemtime(s, standardDate); // standardDate
 		out_uint32_le(s, standardBias); // standardBias
 
-		rdp_out_unistr(rdp, s, daylightName, 2 * strlen(daylightName));
-		out_uint8s(s, 62 - 2 * strlen(daylightName)); // daylightName (64 bytes)
+		len = rdp_out_unistr(rdp, s, daylightName);
+		out_uint8s(s, 62 - len); // daylightName (64 bytes)
 
 		rdp_out_systemtime(s, daylightDate); // daylightDate
 		out_uint32_le(s, daylightBias); // daylightBias
@@ -404,20 +366,21 @@ rdp_out_client_timezone_info(rdpRdp * rdp, STREAM s)
 /* Parse a logon info packet */
 static void
 rdp_send_logon_info(rdpRdp * rdp, uint32 flags, char *domain, char *user,
-		    char *password, char *program, char *directory)
+		    char *password, size_t len_password, char *program, char *directory)
 {
 	char *ipaddr = tcp_get_address(rdp->sec->mcs->iso->tcp);
 	int len_domain = 2 * strlen(domain);
 	int len_user = 2 * strlen(user);
-	int len_password = 2 * strlen(password);
 	int len_program = 2 * strlen(program);
 	int len_directory = 2 * strlen(directory);
 	int len_ip = 2 * strlen(ipaddr);
-	int len_dll = 2 * strlen("C:\\Windows\\System32\\mstscax.dll");
+	char dll[] = "C:\\Windows\\System32\\mstscax.dll";
+	int len_dll = 2 * strlen(dll);
 	int packetlen = 0;
 	uint32 sec_flags =
 		rdp->settings->encryption ? (SEC_LOGON_INFO | SEC_ENCRYPT) : SEC_LOGON_INFO;
 	STREAM s;
+	int ok = True;	/* TODO: Check this */
 
 	if ((rdp->settings->rdp_version < 5))
 	{
@@ -433,11 +396,12 @@ rdp_send_logon_info(rdpRdp * rdp, uint32 flags, char *domain, char *user,
 		out_uint16_le(s, len_password);
 		out_uint16_le(s, len_program);
 		out_uint16_le(s, len_directory);
-		rdp_out_unistr(rdp, s, domain, len_domain);
-		rdp_out_unistr(rdp, s, user, len_user);
-		rdp_out_unistr(rdp, s, password, len_password);
-		rdp_out_unistr(rdp, s, program, len_program);
-		rdp_out_unistr(rdp, s, directory, len_directory);
+		ok &= rdp_out_unistr(rdp, s, domain) == len_domain;
+		ok &= rdp_out_unistr(rdp, s, user) == len_user;
+		out_uint8p(s, password, len_password);
+		out_uint8s(s, 2);
+		ok &= rdp_out_unistr(rdp, s, program) == len_program;
+		ok &= rdp_out_unistr(rdp, s, directory) == len_directory;
 	}
 	else
 	{
@@ -494,15 +458,16 @@ rdp_send_logon_info(rdpRdp * rdp, uint32 flags, char *domain, char *user,
 		out_uint16_le(s, len_directory);	// cbWorkingDir, length of WorkingDir field
 		if (0 < len_domain)
 			// Maximum Domain length of 52 bytes in RDP 4.0 and 5.0, and 512 bytes in RDP 5.1 and later
-			rdp_out_unistr(rdp, s, domain, len_domain);	// Domain (length specified by cbDomain)
+			ok &= rdp_out_unistr(rdp, s, domain) == len_domain;	// Domain (length specified by cbDomain)
 		else
 			out_uint16_le(s, 0);
 		// Maximum UserName length of 44 bytes in RDP 4.0 and 5.0, and 512 bytes in RDP 5.1 and later
-		rdp_out_unistr(rdp, s, user, len_user);	// UserName (length specified by cbUserName)
+		ok &= rdp_out_unistr(rdp, s, user) == len_user;	// UserName (length specified by cbUserName)
 		if (flags & RDP_LOGON_AUTO)
 		{
 			// Maximum Password length of 32 bytes in RDP 4.0 and 5.0, and 512 bytes in RDP 5.1 and later
-			rdp_out_unistr(rdp, s, password, len_password);	// Password (length specified by cbPassword)
+			out_uint8p(s, password, len_password);	// Password (length specified by cbPassword)
+			out_uint8s(s, 2);
 		}
 		if (flags & RDP_LOGON_BLOB && !(flags & RDP_LOGON_AUTO))
 		{
@@ -511,7 +476,7 @@ rdp_send_logon_info(rdpRdp * rdp, uint32 flags, char *domain, char *user,
 		if (0 < len_program)
 		{
 			// Maximum AlternateShell length of 512 bytes
-			rdp_out_unistr(rdp, s, program, len_program);	// AlternateShell (length specified by cbAlternateShell)
+			ok &= rdp_out_unistr(rdp, s, program) == len_program;	// AlternateShell (length specified by cbAlternateShell)
 		}
 		else
 		{
@@ -520,7 +485,7 @@ rdp_send_logon_info(rdpRdp * rdp, uint32 flags, char *domain, char *user,
 		if (0 < len_directory)
 		{
 			// Maximum WorkingDir length of 512 bytes
-			rdp_out_unistr(rdp, s, directory, len_directory);	// WorkingDir (length specified by cbWorkingDir)
+			ok &= rdp_out_unistr(rdp, s, directory) == len_directory;	// WorkingDir (length specified by cbWorkingDir)
 		}
 		else
 		{
@@ -531,9 +496,9 @@ rdp_send_logon_info(rdpRdp * rdp, uint32 flags, char *domain, char *user,
 		out_uint16_le(s, 0x0002);	// clientAddressFamily (AF_INET 0x0002)
 		out_uint16_le(s, len_ip + 2);	// cbClientAddress (IP length)
 		// clientAddress maximum length of 64 bytes prior to RDP 6.1, and 80 bytes for RDP 6.1 and later
-		rdp_out_unistr(rdp, s, ipaddr, len_ip);	// clientAddress (Textual IP representation)
+		ok &= rdp_out_unistr(rdp, s, ipaddr) == len_ip;	// clientAddress (Textual IP representation)
 		out_uint16_le(s, len_dll + 2);	// cbClientDir
-		rdp_out_unistr(rdp, s, "C:\\Windows\\System32\\mstscax.dll", len_dll); // clientDir
+		ok &= rdp_out_unistr(rdp, s, dll) == len_dll; // clientDir
 
 		rdp_out_client_timezone_info(rdp, s); // clientTimeZone
 
@@ -973,7 +938,7 @@ rdp_process_server_caps(rdpRdp * rdp, STREAM s, uint16 length)
 			case CAPSET_TYPE_SURFACE_COMMANDS:
 				rdp_process_surface_commands_capset(rdp, s);
 				break;
-				
+
 			case CAPSET_TYPE_COMPDESK:
 				rdp_process_compdesk_capset(rdp, s);
 				break;
@@ -1381,80 +1346,77 @@ process_data_pdu(rdpRdp * rdp, STREAM s, uint32 * ext_disc_reason)
 	return False;
 }
 
-static uint32
-rdp_in_len_and_bytes(STREAM s, char* p, int maxlen)
+/* Read 32 bit length field followed by binary data, returns xmalloc'ed memory and length */
+static char*
+xmalloc_in_len32_data(rdpRdp * rdp, STREAM s, uint32 *plen)
 {
-	/* TODO: Allocate dynamically instead of using fixed buffers */
-	uint32 len;
-
-	in_uint32_le(s, len);
-	DEBUG("len %d\n", len);
-	/* TODO: Check maxlen */
-	in_uint8a(s, p, len);
-	return len;
+	unsigned char *sp, *p;
+	in_uint32_le(s, *plen);
+	in_uint8p(s, sp, *plen);
+	p = xmalloc(*plen);
+	memcpy(p, sp, *plen);
+	return (char*) p;
 }
 
-static void
-rdp_in_len_and_unicode(STREAM s, char* p, int maxlen)
+/* Read 32 bit length field followed by WINDOWS_CODEPAGE - return like xstrdup, 0-terminated */
+static char*
+xstrdup_in_len32_unistr(rdpRdp * rdp, STREAM s)
 {
-	uint32 len, i;
-
-	len = rdp_in_len_and_bytes(s, p, maxlen);
-	/* TODO: Proper unicode handling */
-	for (i = 1; i < (len / 2); i++)
-	{
-		p[i] = p[i * 2];
-	}
-	p[len / 2] = 0;
+	uint32 len;
+	unsigned char *p;
+	in_uint32_le(s, len);
+	in_uint8p(s, p, len);
+	return xstrdup_in_unistr(rdp, p, len);
 }
 
 /* Process Server Redirection Packet */
 static void
 process_redirect_pdu(rdpRdp * rdp, STREAM s)
 {
-	uint16 length;
+	uint16 total_length;
 
 	in_uint8s(s, 2);	/* flags, 0x0400 */
-	in_uint16_le(s, length);
+	in_uint16_le(s, total_length);
 	in_uint32_le(s, rdp->redirect_session_id);
 	in_uint32_le(s, rdp->redirect_flags);
 
 	if (rdp->redirect_flags & LB_TARGET_NET_ADDRESS)
 	{
-		rdp_in_len_and_unicode(s, rdp->redirect_server, sizeof(rdp->redirect_server));
+		rdp->redirect_server = xstrdup_in_len32_unistr(rdp, s);
 	}
 	if (rdp->redirect_flags & LB_LOAD_BALANCE_INFO)
 	{
-		/* TODO: Handle binary data properly */
-		rdp_in_len_and_unicode(s, rdp->redirect_cookie, sizeof(rdp->redirect_cookie));
+		rdp->redirect_cookie = xmalloc_in_len32_data(rdp, s,
+			&rdp->redirect_cookie_len);
 	}
 	if (rdp->redirect_flags & LB_USERNAME)
 	{
-		rdp_in_len_and_unicode(s, rdp->redirect_username, sizeof(rdp->redirect_username));
+		rdp->redirect_username = xstrdup_in_len32_unistr(rdp, s);
 	}
 	if (rdp->redirect_flags & LB_DOMAIN)
 	{
-		rdp_in_len_and_unicode(s, rdp->redirect_domain, sizeof(rdp->redirect_domain));
+		rdp->redirect_domain = xstrdup_in_len32_unistr(rdp, s);
 	}
 	if (rdp->redirect_flags & LB_PASSWORD)
 	{
-		/* TODO: Handle binary data properly */
-		rdp_in_len_and_bytes(s, rdp->redirect_password, sizeof(rdp->redirect_password));
+		rdp->redirect_password = xmalloc_in_len32_data(rdp, s,
+			&rdp->redirect_password_len);
 	}
 	if (rdp->redirect_flags & LB_TARGET_FQDN)
 	{
-		rdp_in_len_and_unicode(s, rdp->redirect_target_fqdn, sizeof(rdp->redirect_target_fqdn));
+		rdp->redirect_target_fqdn = xstrdup_in_len32_unistr(rdp, s);
 	}
 	if (rdp->redirect_flags & LB_TARGET_NETBIOS_NAME)
 	{
-		rdp_in_len_and_unicode(s, rdp->redirect_target_netbios_name, sizeof(rdp->redirect_target_netbios_name));
+		rdp->redirect_target_netbios_name = xstrdup_in_len32_unistr(rdp, s);
 	}
 	if (rdp->redirect_flags & LB_TARGET_NET_ADDRESSES)
 	{
-		rdp_in_len_and_bytes(s, rdp->redirect_target_net_addresses, sizeof(rdp->redirect_target_net_addresses));
+		rdp->redirect_target_net_addresses = xmalloc_in_len32_data(rdp, s,
+			&rdp->redirect_target_net_addresses_len);
 	}
 	/* Skip optional padding up to length */
-	rdp->next_packet += length; /* FIXME: Is this correct? */
+	rdp->next_packet += total_length; /* FIXME: Is this correct? */
 
 	rdp->redirect = True;
 
@@ -1493,7 +1455,7 @@ rdp_loop(rdpRdp * rdp, RD_BOOL * deactivated, uint32 * ext_disc_reason)
 			default:
 				ui_unimpl(rdp->inst, "PDU %d\n", type);
 		}
-		if (disc || rdp->redirect)
+		if (disc)
 			return False;
 		cont = rdp->next_packet < s->end;
 	}
@@ -1505,22 +1467,28 @@ RD_BOOL
 rdp_connect(rdpRdp * rdp, char *server, uint32 flags, char *domain, char *password,
 	    char *command, char *directory, int port, char *username)
 {
+	char* password_encoded;
+	size_t password_encoded_len = 0;
+
 	if (!sec_connect(rdp->sec, server, username, port))
 		return False;
 
-	rdp_send_logon_info(rdp, flags, domain, username, password, command, directory);
+	password_encoded = xmalloc_out_unistr(rdp, password, &password_encoded_len);
+	rdp_send_logon_info(rdp, flags, domain, username, password_encoded, password_encoded_len, command, directory);
+	xfree(password_encoded);
 	return True;
 }
 
 /* Establish a reconnection up to the RDP layer */
 RD_BOOL
-rdp_reconnect(rdpRdp * rdp, char *server, uint32 flags, char *domain, char *password,
-	      char *command, char *directory, char *cookie, int port, char *username)
+rdp_reconnect(rdpRdp * rdp)
 {
-	if (!sec_reconnect(rdp->sec, server, port))
+	/* FIXME: Cookie is unused? */
+	if (!sec_reconnect(rdp->sec, rdp->redirect_server, rdp->settings->tcp_port_rdp))
 		return False;
 
-	rdp_send_logon_info(rdp, flags, domain, username, password, command, directory);
+	rdp_send_logon_info(rdp, rdp->redirect_flags, rdp->redirect_domain, rdp->redirect_username,
+			rdp->redirect_password, rdp->redirect_password_len, rdp->settings->shell, rdp->settings->directory);
 	return True;
 }
 
@@ -1552,9 +1520,18 @@ rdp_new(struct rdp_set *settings, struct rdp_inst *inst)
 		self->settings = settings;
 		self->inst = inst;
 		self->current_status = 1;
-		self->iconv_works = True;
-		self->in_iconv_h = (void *) (-1);
-		self->out_iconv_h = (void *) (-1);
+#ifdef HAVE_ICONV
+		self->in_iconv_h = iconv_open(DEFAULT_CODEPAGE, WINDOWS_CODEPAGE);
+		if (errno == EINVAL)
+		{
+			DEBUG("Error opening iconv converter to %s from %s\n", DEFAULT_CODEPAGE, WINDOWS_CODEPAGE);
+		}
+		self->out_iconv_h = iconv_open(WINDOWS_CODEPAGE, DEFAULT_CODEPAGE);
+		if (errno == EINVAL)
+		{
+			DEBUG("Error opening iconv converter to %s from %s\n", WINDOWS_CODEPAGE, DEFAULT_CODEPAGE);
+		}
+#endif
 		self->sec = sec_new(self);
 		self->orders = orders_new(self);
 		self->pcache = pcache_new(self);
@@ -1568,10 +1545,21 @@ rdp_free(rdpRdp * rdp)
 {
 	if (rdp != NULL)
 	{
+#ifdef HAVE_ICONV
+		iconv_close(rdp->in_iconv_h);
+		iconv_close(rdp->out_iconv_h);
+#endif
 		cache_free(rdp->cache);
 		pcache_free(rdp->pcache);
 		orders_free(rdp->orders);
 		sec_free(rdp->sec);
+		xfree(rdp->redirect_server);
+		xfree(rdp->redirect_cookie);
+		xfree(rdp->redirect_username);
+		xfree(rdp->redirect_domain);
+		xfree(rdp->redirect_password);
+		xfree(rdp->redirect_target_netbios_name);
+		xfree(rdp->redirect_target_net_addresses);
 		xfree(rdp);
 	}
 }

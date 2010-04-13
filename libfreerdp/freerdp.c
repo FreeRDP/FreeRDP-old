@@ -588,11 +588,11 @@ l_rdp_get_fds(struct rdp_inst * inst, void ** read_fds, int * read_count,
 	return 0;
 }
 
+/* Process receivable fds, return true if connection should live on */
 static int
 l_rdp_check_fds(struct rdp_inst * inst)
 {
 	rdpRdp * rdp;
-	rdpSet * s;
 	RD_BOOL deactivated;
 	uint32 ext_disc_reason;
 	int rv;
@@ -611,11 +611,9 @@ l_rdp_check_fds(struct rdp_inst * inst)
 	}
 	if ((rv != 0) && rdp->redirect)
 	{
-		s = rdp->settings;
-		if (rdp_reconnect(rdp, rdp->redirect_server, rdp->redirect_flags,
-			rdp->redirect_domain, rdp->redirect_password, s->shell,
-			s->directory, rdp->redirect_cookie, s->tcp_port_rdp,
-			rdp->redirect_username))
+		rdp->redirect = False;
+		rdp_disconnect(rdp);
+		if (rdp_reconnect(rdp))
 		{
 			rv = 0;
 		}
@@ -649,10 +647,19 @@ l_rdp_channel_data(struct rdp_inst * inst, int chan_id, char * data, int data_si
 {
 	rdpRdp * rdp;
 	rdpChannels * chan;
-	
+
 	rdp = (rdpRdp *) (inst->rdp);
 	chan = rdp->sec->mcs->chan;
-	return channel_send(chan, chan_id, data, data_size);
+	return vchan_send(chan, chan_id, data, data_size);
+}
+
+static void
+l_rdp_disconnect(struct rdp_inst * inst)
+{
+	rdpRdp * rdp;
+
+	rdp = (rdpRdp *) (inst->rdp);
+	rdp_disconnect(rdp);
 }
 
 rdpInst *
@@ -670,6 +677,7 @@ freerdp_new(rdpSet * settings)
 	inst->rdp_send_input = l_rdp_send_input;
 	inst->rdp_sync_input = l_rdp_sync_input;
 	inst->rdp_channel_data = l_rdp_channel_data;
+	inst->rdp_disconnect = l_rdp_disconnect;
 	inst->rdp = rdp_new(settings, inst);
 	return inst;
 }
