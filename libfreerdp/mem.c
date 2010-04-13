@@ -1,53 +1,81 @@
+/* -*- c-basic-offset: 8 -*-
+   freerdp: A Remote Desktop Protocol client.
+   memory functions
+   Copyright (c) 2009-2010 Jay Sorg
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+*/
 
 #include <stdio.h>
-#include "frdp.h"
+#include <stdlib.h>
 
 /* malloc; exit if out of memory */
 void *
 xmalloc(int size)
 {
-	void *mem = malloc(size);
+	void * mem;
+
+	if (size < 1)
+	{
+		size = 1;
+	}
+	mem = malloc(size);
 	if (mem == NULL)
 	{
 		perror("xmalloc");
-		exit(1);
 	}
 	return mem;
 }
 
 /* realloc; exit if out of memory */
 void *
-xrealloc(void *oldmem, size_t size)
+xrealloc(void * oldmem, int size)
 {
-	void *mem;
+	void * mem;
 
-	if (size == 0)
+	if (size < 1)
+	{
 		size = 1;
+	}
 	mem = realloc(oldmem, size);
 	if (mem == NULL)
 	{
 		perror("xrealloc");
-		exit(1);
 	}
 	return mem;
 }
 
 /* free */
 void
-xfree(void *mem)
+xfree(void * mem)
 {
-	free(mem);
+	if (mem != NULL)
+	{
+		free(mem);
+	}
 }
 
 /* strdup */
 char *
-xstrdup(const char *s)
+xstrdup(const char * s)
 {
-	char *mem = strdup(s);
+	char * mem = strdup(s);
+
 	if (mem == NULL)
 	{
 		perror("strdup");
-		exit(1);
 	}
 	return mem;
 }
