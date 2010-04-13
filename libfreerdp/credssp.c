@@ -438,12 +438,6 @@ void ntlm_recv_challenge_message(rdpSec * sec, STREAM s)
 	uint16 targetInfoMaxLen;
 	uint32 targetInfoBufferOffset;
 
-	char password[] = "SecREt01";
-	char username[] = "user";
-	char server[] = "DOMAIN";
-	char challenge[8] = { 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF };
-	char response[24];
-
 	/* TargetNameFields (8 bytes) */
 	in_uint16_le(s, targetNameLen); /* TargetNameLen (2 bytes) */
 	in_uint16_le(s, targetNameMaxLen); /* TargetNameMaxLen (2 bytes) */
@@ -477,7 +471,21 @@ void ntlm_recv_challenge_message(rdpSec * sec, STREAM s)
 void ntlm_send_authenticate_message(rdpSec * sec)
 {
 	STREAM s;
-	uint32 negotiateFlags = 0;
+	uint32 negotiateFlags;
+	
+	uint16 DomainNameLen;
+	uint16 UserNameLen;
+	uint16 WorkstationLen;
+	uint16 LmChallengeResponseLen;
+	uint16 NtChallengeResponseLen;
+	uint16 EncryptedRandomSessionKeyLen;
+
+	uint32 DomainNameBufferOffset;
+	uint32 UserNameBufferOffset;
+	uint32 WorkstationBufferOffset;
+	uint32 LmChallengeResponseBufferOffset;
+	uint32 NtChallengeResponseBufferOffset;
+	uint32 EncryptedRandomSessionKeyBufferOffset;
 
 	s = tcp_init(sec->mcs->iso->tcp, 256);
 
@@ -518,6 +526,7 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 	out_uint16_le(s, 0); /* EncryptedRandomSessionKeyMaxLen */
 	out_uint32_le(s, 0); /* EncryptedRandomSessionKeyBufferOffset */
 
+	negotiateFlags = 0;
 	negotiateFlags |= NTLMSSP_NEGOTIATE_ALWAYS_SIGN;
 	negotiateFlags |= NTLMSSP_NEGOTIATE_SEAL;
 	negotiateFlags |= NTLMSSP_REQUEST_TARGET;
