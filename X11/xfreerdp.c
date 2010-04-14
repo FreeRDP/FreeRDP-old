@@ -357,9 +357,9 @@ run_xfreerdp(rdpSet * settings, rdpChanMan * chan_man)
 		}
 	}
 	/* cleanup */
-	xf_uninit(inst);
 	inst->rdp_disconnect(inst);
 	freerdp_free(inst);
+	xf_uninit(inst);
 	return 0;
 }
 

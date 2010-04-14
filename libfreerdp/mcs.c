@@ -326,9 +326,6 @@ mcs_connect(rdpMcs * mcs, char *server, STREAM mcs_data, char *username, int por
 	int mcs_id;
 	rdpSet * settings;
 
-	if (!iso_connect(mcs->iso, server, username, port))
-		return False;
-
 	mcs_send_connect_initial(mcs, mcs_data);
 	if (!mcs_recv_connect_response(mcs, mcs_data))
 		goto error;

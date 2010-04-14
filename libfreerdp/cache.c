@@ -431,10 +431,10 @@ cache_free(rdpCache * cache)
 	if (cache != NULL)
 	{
 		{
-			size_t colour_code, idx;
-			RD_BRUSHDATA *bd;
+			int colour_code, idx;
+			RD_BRUSHDATA * bd;
 
-			for(colour_code = 0; colour_code < NUM_ELEMENTS(cache->brushcache); colour_code++)
+			for (colour_code = 0; colour_code < NUM_ELEMENTS(cache->brushcache); colour_code++)
 			{
 				for(idx = 0; idx < NUM_ELEMENTS(cache->brushcache[colour_code]); idx++)
 				{
@@ -448,14 +448,64 @@ cache_free(rdpCache * cache)
 		}
 
 		{
-			size_t cache_id;
-			DATABLOB *text;
+			int cache_id;
+			DATABLOB * text;
 
-			for(cache_id = 0; cache_id < NUM_ELEMENTS(cache->textcache); cache_id++)
+			for (cache_id = 0; cache_id < NUM_ELEMENTS(cache->textcache); cache_id++)
 			{
 				text = &(cache->textcache[cache_id]);
 				if (text->data != NULL)
 					xfree(text->data);
+			}
+		}
+
+		{
+			int cache_id;
+			int cache_idx;
+			RD_HBITMAP * bmp;
+
+			for (cache_id = 0; cache_id < NUM_ELEMENTS(cache->bmpcache); cache_id++)
+			{
+				for (cache_idx = 0; cache_idx < NUM_ELEMENTS(cache->bmpcache[0]); cache_idx++)
+				{
+					bmp = cache->bmpcache[cache_id][cache_idx].bitmap;
+					if (bmp != NULL)
+						ui_destroy_bitmap(cache->rdp->inst, bmp);
+				}
+			}
+			for (cache_id = 0; cache_id < NUM_ELEMENTS(cache->drawing_surface); cache_id++)
+			{
+				bmp = cache->drawing_surface[cache_id];
+				if (bmp)
+					ui_destroy_surface(cache->rdp->inst, bmp);
+			}
+		}
+
+		{
+			int cache_id;
+			RD_HCURSOR cursor;
+
+			for (cache_id = 0; cache_id < NUM_ELEMENTS(cache->cursorcache); cache_id++)
+			{
+				cursor = cache->cursorcache[cache_id];
+				if (cursor)
+					ui_destroy_cursor(cache->rdp->inst, cursor);
+			}
+		}
+
+		{
+			int cache_id;
+			int cache_idx;
+			RD_HGLYPH * glyph;
+
+			for (cache_id = 0; cache_id < NUM_ELEMENTS(cache->fontcache); cache_id++)
+			{
+				for (cache_idx = 0; cache_idx < NUM_ELEMENTS(cache->fontcache[0]); cache_idx++)
+				{
+					glyph = cache->fontcache[cache_id][cache_idx].pixmap;
+					if (glyph != NULL)
+						ui_destroy_glyph(cache->rdp->inst, glyph);
+				}
 			}
 		}
 
