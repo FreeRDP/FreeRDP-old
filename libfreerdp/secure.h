@@ -43,10 +43,15 @@ struct rdp_sec
 	int sec_decrypt_use_count;
 	struct rdp_mcs * mcs;
 	struct rdp_licence * licence;
-	int negotiation_state;
 	SSL_CTX *ctx;
 	SSL *ssl;
+	/* Network Level Authentication */
 	int nla;
+	uint8* target_name;
+	uint8* target_info;
+	int negotiation_state;
+	uint32 negotiate_flags;
+	uint8 server_challenge[8];
 };
 typedef struct rdp_sec rdpSec;
 

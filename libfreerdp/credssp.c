@@ -20,6 +20,8 @@
 */
 
 #include "frdp.h"
+#include "rdp.h"
+#include "rdpset.h"
 #include "ssl.h"
 #include "secure.h"
 #include "stream.h"
@@ -73,6 +75,44 @@
 
 const char ntlm_signature[] = "NTLMSSP";
 const char lm_magic[] = "KGS!@#$%";
+
+struct _AV_PAIR
+{
+	uint16 length;
+	uint8* value;
+};
+typedef struct _AV_PAIR AV_PAIR;
+
+struct _MIC
+{
+	AV_PAIR NbComputerName;
+	AV_PAIR NbDomainName;
+	AV_PAIR DnsComputerName;
+	AV_PAIR DnsDomainName;
+	AV_PAIR DnsTreeName;
+	AV_PAIR Timestamp;
+	AV_PAIR Restrictions;
+	AV_PAIR TargetName;
+	AV_PAIR ChannelBindings;
+	uint32 Flags;
+};
+typedef struct _MIC MIC;
+
+enum _AV_ID
+{
+	MsvAvEOL,
+	MsvAvNbComputerName,
+	MsvAvNbDomainName,
+	MsvAvDnsComputerName,
+	MsvAvDnsDomainName,
+	MsvAvDnsTreeName,
+	MsvAvFlags,
+	MsvAvTimestamp,
+	MsvAvRestrictions,
+	MsvAvTargetName,
+	MsvChannelBindings
+};
+typedef enum _AV_ID AV_ID;
 
 /* http://davenport.sourceforge.net/ntlm.html is a really nice source of information with great samples */
 
@@ -264,7 +304,7 @@ static void compute_lm_response(char* password, char* challenge, char* response)
 	compute_des_key(&hash[7], des_key2);
 	compute_des_key(&hash[14], des_key3);
 	
-	/* Encrypt the LM challenge with each key, and concatenate the result. This is the LM response. */
+	/* Encrypt the LM challenge with each key, and concatenate the result. This is the LM response (24 bytes) */
 	DES_set_key((const_DES_cblock*)des_key1, &ks);
 	DES_ecb_encrypt((const_DES_cblock*)challenge, (DES_cblock*)response, &ks, DES_ENCRYPT);
 	
@@ -350,7 +390,7 @@ static void compute_ntlm_v2_hash(char* password, char* username, char* server, c
 	free(value);
 }
 
-static void compute_lm_v2_response(char* password, char* username, char* server, char* challenge, char* response)
+static void compute_lm_v2_response(char* password, char* username, char* server, uint8* challenge, uint8* response)
 {
 	char ntlm_v2_hash[16];
 	char clientRandom[8];
@@ -369,8 +409,188 @@ static void compute_lm_v2_response(char* password, char* username, char* server,
 	/* Compute the HMAC-MD5 hash of the resulting value using the NTLMv2 hash as the key */
 	HMAC(EVP_md5(), (void*)ntlm_v2_hash, 16, (void*)value, 16, (void*)response, NULL);
 
-	/* Concatenate the resulting HMAC-MD5 hash and the client random, giving us the LMv2 response */
+	/* Concatenate the resulting HMAC-MD5 hash and the client random, giving us the LMv2 response (24 bytes) */
 	memcpy(&response[16], clientRandom, 8);
+}
+
+static void ntlm_input_mic(STREAM s, MIC* mic)
+{
+	AV_ID AvId;
+	uint16 AvLen;
+	uint8* value;
+	
+	do
+	{
+		in_uint16_le(s, AvId);
+
+		if (AvLen > 0)
+		{
+			if (AvId != MsvAvFlags)
+			{
+				value = xmalloc(AvLen);
+				in_uint8a(s,value, AvLen);
+			}
+			else
+			{
+				in_uint32_le(s, mic->Flags);
+			}
+		}
+		
+		switch (AvId)
+		{
+			case MsvAvNbComputerName:
+				mic->NbComputerName.length = AvLen;
+				mic->NbComputerName.value = value;
+				break;
+
+			case MsvAvNbDomainName:
+				mic->NbDomainName.length = AvLen;
+				mic->NbDomainName.value = value;
+				break;
+
+			case MsvAvDnsComputerName:
+				mic->DnsComputerName.length = AvLen;
+				mic->DnsComputerName.value = value;
+				break;
+
+			case MsvAvDnsDomainName:
+				mic->DnsDomainName.length = AvLen;
+				mic->DnsDomainName.value = value;
+				break;
+
+			case MsvAvDnsTreeName:
+				mic->DnsTreeName.length = AvLen;
+				mic->DnsTreeName.value = value;
+				break;
+
+			case MsvAvTimestamp:
+				mic->Timestamp.length = AvLen;
+				mic->Timestamp.value = value;
+				break;
+
+			case MsvAvRestrictions:
+				mic->Restrictions.length = AvLen;
+				mic->Restrictions.value = value;
+				break;
+
+			case MsvAvTargetName:
+				mic->TargetName.length = AvLen;
+				mic->TargetName.value = value;
+				break;
+
+			case MsvChannelBindings:
+				mic->ChannelBindings.length = AvLen;
+				mic->ChannelBindings.value = value;
+				break;
+
+			default:
+				xfree(value);
+				break;
+		}
+	}
+	while(AvId != MsvAvEOL);
+}
+
+static void ntlm_output_mic(STREAM s, MIC* mic)
+{
+	if (mic->NbComputerName.length > 0)
+	{
+		out_uint16_le(s, MsvAvNbComputerName); /* AvId */
+		out_uint16_le(s, mic->NbComputerName.length); /* AvLen */
+		out_uint8a(s, mic->NbComputerName.value, mic->NbComputerName.length); /* Value */
+	}
+
+	if (mic->NbDomainName.length > 0)
+	{
+		out_uint16_le(s, MsvAvNbDomainName); /* AvId */
+		out_uint16_le(s, mic->NbDomainName.length); /* AvLen */
+		out_uint8a(s, mic->NbDomainName.value, mic->NbDomainName.length); /* Value */
+	}
+
+	if (mic->DnsComputerName.length > 0)
+	{
+		out_uint16_le(s, MsvAvDnsComputerName); /* AvId */
+		out_uint16_le(s, mic->DnsComputerName.length); /* AvLen */
+		out_uint8a(s, mic->DnsComputerName.value, mic->DnsComputerName.length); /* Value */
+	}
+
+	if (mic->DnsDomainName.length > 0)
+	{
+		out_uint16_le(s, MsvAvDnsDomainName); /* AvId */
+		out_uint16_le(s, mic->DnsDomainName.length); /* AvLen */
+		out_uint8a(s, mic->DnsDomainName.value, mic->DnsDomainName.length); /* Value */
+	}
+
+	if (mic->DnsTreeName.length > 0)
+	{
+		out_uint16_le(s, MsvAvDnsTreeName); /* AvId */
+		out_uint16_le(s, mic->DnsTreeName.length); /* AvLen */
+		out_uint8a(s, mic->DnsTreeName.value, mic->DnsTreeName.length); /* Value */
+	}
+
+	/* MsvAvFlags */
+	out_uint16_le(s, MsvAvFlags); /* AvId */
+	out_uint16_le(s, 4); /* AvLen */
+	out_uint32_le(s, mic->Flags); /* Value */
+
+	if (mic->Timestamp.length > 0)
+	{
+		out_uint16_le(s, MsvAvTimestamp); /* AvId */
+		out_uint16_le(s, mic->Timestamp.length); /* AvLen */
+		out_uint8a(s, mic->Timestamp.value, mic->Timestamp.length); /* Value */
+	}
+
+	if (mic->Restrictions.length > 0)
+	{
+		out_uint16_le(s, MsvAvRestrictions); /* AvId */
+		out_uint16_le(s, mic->Restrictions.length); /* AvLen */
+		out_uint8a(s, mic->Restrictions.value, mic->Restrictions.length); /* Value */
+	}
+
+	if (mic->TargetName.length > 0)
+	{
+		out_uint16_le(s, MsvAvTargetName); /* AvId */
+		out_uint16_le(s, mic->TargetName.length); /* AvLen */
+		out_uint8a(s, mic->TargetName.value, mic->TargetName.length); /* Value */
+	}
+
+	if (mic->ChannelBindings.length > 0)
+	{
+		out_uint16_le(s, MsvChannelBindings); /* AvId */
+		out_uint16_le(s, mic->ChannelBindings.length); /* AvLen */
+		out_uint8a(s, mic->ChannelBindings.value, mic->ChannelBindings.length); /* Value */
+	}
+
+	/* This endicates the end of the AV_PAIR array */
+	out_uint16_le(s, MsvAvEOL); /* AvId */
+	out_uint16_le(s, 0); /* AvLen */
+}
+
+static void ntlm_free_mic(MIC* mic)
+{
+	if (mic != NULL)
+	{
+		if (mic->NbComputerName.value != NULL)
+			xfree(mic->NbComputerName.value);
+		if (mic->NbDomainName.value != NULL)
+			xfree(mic->NbDomainName.value);
+		if (mic->DnsComputerName.value != NULL)
+			xfree(mic->DnsComputerName.value);
+		if (mic->DnsDomainName.value != NULL)
+			xfree(mic->DnsDomainName.value);
+		if (mic->DnsTreeName.value != NULL)
+			xfree(mic->DnsTreeName.value);
+		if (mic->Timestamp.value != NULL)
+			xfree(mic->Timestamp.value);
+		if (mic->Restrictions.value != NULL)
+			xfree(mic->Restrictions.value);
+		if (mic->TargetName.value != NULL)
+			xfree(mic->TargetName.value);
+		if (mic->ChannelBindings.value != NULL)
+			xfree(mic->ChannelBindings.value);
+		
+		xfree(mic);
+	}
 }
 
 static void ntlm_output_version(STREAM s)
@@ -432,8 +652,6 @@ void ntlm_recv_challenge_message(rdpSec * sec, STREAM s)
 	uint16 targetNameLen;
 	uint16 targetNameMaxLen;
 	uint32 targetNameBufferOffset;
-	uint32 negotiateFlags;
-	uint8 serverChallenge[8];
 	uint16 targetInfoLen;
 	uint16 targetInfoMaxLen;
 	uint32 targetInfoBufferOffset;
@@ -443,14 +661,8 @@ void ntlm_recv_challenge_message(rdpSec * sec, STREAM s)
 	in_uint16_le(s, targetNameMaxLen); /* TargetNameMaxLen (2 bytes) */
 	in_uint32_le(s, targetNameBufferOffset); /* TargetNameBufferOffset (4 bytes) */
 
-	in_uint32_le(s, negotiateFlags); /* NegotiateFlags (4 bytes) */
-
-	in_uint8a(s, serverChallenge, 8); /* ServerChallenge (8 bytes) */
-
-	printf("ServerChallenge: %X%X%X%X%X%X%X%X\n",
-	        serverChallenge[0], serverChallenge[1], serverChallenge[2], serverChallenge[3],
-	        serverChallenge[4], serverChallenge[5], serverChallenge[6], serverChallenge[7]);
-		
+	in_uint32_le(s, sec->negotiate_flags); /* NegotiateFlags (4 bytes) */
+	in_uint8a(s, sec->server_challenge, 8); /* ServerChallenge (8 bytes) */
 	in_uint8s(s, 8); /* Reserved (8 bytes), should be ignored */
 		
 	/* TargetInfoFields (8 bytes) */
@@ -460,12 +672,24 @@ void ntlm_recv_challenge_message(rdpSec * sec, STREAM s)
 
 	/* only present if NTLMSSP_NEGOTIATE_VERSION is set */
 
-	if (negotiateFlags & NTLMSSP_NEGOTIATE_VERSION)
+	if (sec->negotiate_flags & NTLMSSP_NEGOTIATE_VERSION)
 	{
 		in_uint8s(s, 8); /* Version (8 bytes), can be ignored */
 	}
 
 	/* Payload (variable) */
+	
+	if (targetNameLen > 0)
+	{
+		sec->target_name = xmalloc(targetNameLen);
+		memcpy(sec->target_name, &(s->data[targetNameBufferOffset]), (size_t)targetNameLen);
+	}
+	
+	if (targetInfoLen > 0)
+	{
+		sec->target_info = xmalloc(targetInfoLen);
+		memcpy((void*)sec->target_info, &(s->data[targetInfoBufferOffset]), (size_t)targetInfoLen);
+	}
 }
 
 void ntlm_send_authenticate_message(rdpSec * sec)
@@ -487,14 +711,30 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 	uint32 NtChallengeResponseBufferOffset;
 	uint32 EncryptedRandomSessionKeyBufferOffset;
 
+	rdpSet *settings;
+	uint8 LmChallengeResponse[24];
+		
 	s = tcp_init(sec->mcs->iso->tcp, 256);
+	settings = sec->rdp->settings;
 
+	DomainNameLen = strlen(settings->domain) * 2;
+	UserNameLen = strlen(settings->username) * 2;
+	WorkstationLen = strlen(settings->domain) * 2;
+
+	DomainNameBufferOffset = 88; /* starting buffer offset */
+	UserNameBufferOffset = DomainNameBufferOffset + DomainNameLen;
+	WorkstationBufferOffset = UserNameBufferOffset + UserNameLen;
+	LmChallengeResponseBufferOffset = WorkstationBufferOffset + 24;
+	
+	compute_lm_v2_response(settings->password, settings->username,
+		settings->server, sec->server_challenge, LmChallengeResponse);
+	
 	out_uint8a(s, ntlm_signature, 8); /* Signature (8 bytes) */
 	out_uint32_le(s, 1); /* MessageType */
 
 	/* LmChallengeResponseFields (8 bytes) */
-	out_uint16_le(s, 0); /* LmChallengeResponseLen */
-	out_uint16_le(s, 0); /* LmChallengeResponseMaxLen */
+	out_uint16_le(s, 24); /* LmChallengeResponseLen */
+	out_uint16_le(s, 24); /* LmChallengeResponseMaxLen */
 	out_uint32_le(s, 0); /* LmChallengeResponseBufferOffset */
 
 	/* NtChallengeResponseFields (8 bytes) */
@@ -505,21 +745,21 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 	/* only set if NTLMSSP_NEGOTIATE_OEM_DOMAIN_SUPPLIED is set */
 
 	/* DomainNameFields (8 bytes) */
-	out_uint16_le(s, 0); /* DomainNameLen */
-	out_uint16_le(s, 0); /* DomainNameMaxLen */
-	out_uint32_le(s, 0); /* DomainNameBufferOffset */
+	out_uint16_le(s, DomainNameLen); /* DomainNameLen */
+	out_uint16_le(s, DomainNameLen); /* DomainNameMaxLen */
+	out_uint32_le(s, DomainNameBufferOffset); /* DomainNameBufferOffset */
 
 	/* UserNameFields (8 bytes) */
-	out_uint16_le(s, 0); /* UserNameLen */
-	out_uint16_le(s, 0); /* UserNameMaxLen */
-	out_uint32_le(s, 0); /* UserNameBufferOffset */
+	out_uint16_le(s, UserNameLen); /* UserNameLen */
+	out_uint16_le(s, UserNameLen); /* UserNameMaxLen */
+	out_uint32_le(s, UserNameBufferOffset); /* UserNameBufferOffset */
 		
 	/* only set if NTLMSSP_NEGOTIATE_OEM_WORKSTATION_SUPPLIED is set */
 
 	/* WorkstationFields (8 bytes) */
-	out_uint16_le(s, 0); /* WorkstationLen */
-	out_uint16_le(s, 0); /* WorkstationMaxLen */
-	out_uint32_le(s, 0); /* WorkstationBufferOffset */
+	out_uint16_le(s, WorkstationLen); /* WorkstationLen */
+	out_uint16_le(s, WorkstationLen); /* WorkstationMaxLen */
+	out_uint32_le(s, WorkstationBufferOffset); /* WorkstationBufferOffset */
 
 	/* EncryptedRandomSessionKeyFields (8 bytes) */
 	out_uint16_le(s, 0); /* EncryptedRandomSessionKeyLen */
@@ -538,6 +778,10 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 	/* MIC (16 bytes) */
 
 	/* Payload (variable) */
+
+	rdp_out_unistr(sec->rdp, s, settings->domain);
+	rdp_out_unistr(sec->rdp, s, settings->username);
+	rdp_out_unistr(sec->rdp, s, settings->domain);
 }
 
 void ntlm_recv(rdpSec * sec, STREAM s)
