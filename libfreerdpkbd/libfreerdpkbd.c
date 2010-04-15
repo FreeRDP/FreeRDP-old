@@ -25,6 +25,8 @@
 
 #include <freerdp/freerdp.h>
 #include <freerdp/kbd.h>
+#include "locales.h"
+#include "keyboard.h"
 
 unsigned int
 find_keyboard_layout_in_xorg_rules(char* layout, char* variant)

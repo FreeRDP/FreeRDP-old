@@ -22,9 +22,22 @@
 #ifndef __FREERDP_KBD_H
 #define	__FREERDP_KBD_H
 
-#include <freerdp/freerdp.h>
-#include <freerdp/locales.h>
-#include <freerdp/keyboard.h>
+extern unsigned char keycodeToVkcode[256];
+
+typedef struct _virtualKey
+{
+	// Scan code
+	int scancode;
+
+	// Flags	
+	int flags;
+
+	// Name of virtual key
+	char name[32];
+
+} virtualKey;
+
+extern virtualKey virtualKeyboard[256];
 
 unsigned int
 freerdp_kbd_init();
