@@ -1487,7 +1487,7 @@ rdp_reconnect(rdpRdp * rdp)
 	if (!sec_reconnect(rdp->sec, rdp->redirect_server, rdp->settings->tcp_port_rdp))
 		return False;
 
-	rdp_send_logon_info(rdp, rdp->redirect_flags, rdp->redirect_domain, rdp->redirect_username,
+	rdp_send_logon_info(rdp, RDP_LOGON_NORMAL|RDP_LOGON_AUTO, rdp->redirect_domain, rdp->redirect_username,
 			rdp->redirect_password, rdp->redirect_password_len, rdp->settings->shell, rdp->settings->directory);
 	return True;
 }
