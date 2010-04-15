@@ -156,6 +156,10 @@ process_params(rdpSet * settings, rdpChanMan * chan_man, int argc, char ** argv,
 			}
 			settings->tcp_port_rdp = atoi(argv[*pindex]);
 		}
+		else if (strcmp("-s", argv[*pindex]) == 0)
+		{
+			settings->leave_audio = 1;
+		}
 		else if (strcmp("-z", argv[*pindex]) == 0)
 		{
 			settings->bulk_compression = 1;

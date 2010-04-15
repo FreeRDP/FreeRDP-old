@@ -560,6 +560,10 @@ l_rdp_connect(struct rdp_inst * inst)
 	{
 		connect_flags |= RDP_LOGON_AUTO;
 	}
+	if (s->leave_audio)
+	{
+		connect_flags |= RDP_LOGON_LEAVE_AUDIO;
+	}
 	for (index = 0; index < s->num_channels; index++)
 	{
 		s->channels[index].chan_id = MCS_GLOBAL_CHANNEL + 1 + index;
