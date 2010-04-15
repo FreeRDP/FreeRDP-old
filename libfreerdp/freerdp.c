@@ -545,31 +545,16 @@ static int
 l_rdp_connect(struct rdp_inst * inst)
 {
 	rdpRdp * rdp;
-	rdpSet * s;
 	uint32 connect_flags;
 	int index;
 
 	connect_flags = RDP_LOGON_NORMAL;
 	rdp = (rdpRdp *) (inst->rdp);
-	s = rdp->settings;
-	if (s->bulk_compression)
+	for (index = 0; index < rdp->settings->num_channels; index++)
 	{
-		connect_flags |= (RDP_LOGON_COMPRESSION | RDP_LOGON_COMPRESSION2);
+		rdp->settings->channels[index].chan_id = MCS_GLOBAL_CHANNEL + 1 + index;
 	}
-	if (s->autologin)
-	{
-		connect_flags |= RDP_LOGON_AUTO;
-	}
-	if (s->leave_audio)
-	{
-		connect_flags |= RDP_LOGON_LEAVE_AUDIO;
-	}
-	for (index = 0; index < s->num_channels; index++)
-	{
-		s->channels[index].chan_id = MCS_GLOBAL_CHANNEL + 1 + index;
-	}
-	if (rdp_connect(rdp, s->server, connect_flags, s->domain, s->password, s->shell,
-			s->directory, s->tcp_port_rdp, s->username))
+	if (rdp_connect(rdp))
 	{
 		return 0;
 	}

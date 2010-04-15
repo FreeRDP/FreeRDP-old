@@ -58,7 +58,6 @@ struct rdp_rdp
 	char* redirect_target_netbios_name;
 	char* redirect_target_net_addresses;
 	size_t redirect_target_net_addresses_len;
-	int redirect_flags;
 	int input_flags;
 	int use_input_fast_path;
 	struct rdp_inst * inst;
@@ -99,8 +98,7 @@ rdp_main_loop(rdpRdp * rdp, RD_BOOL * deactivated, uint32 * ext_disc_reason);
 RD_BOOL
 rdp_loop(rdpRdp * rdp, RD_BOOL * deactivated, uint32 * ext_disc_reason);
 RD_BOOL
-rdp_connect(rdpRdp * rdp, char * server, uint32 flags, char * domain, char * password,
-	    char * command, char * directory, int port, char * username);
+rdp_connect(rdpRdp * rdp);
 RD_BOOL
 rdp_reconnect(rdpRdp * rdp);
 void

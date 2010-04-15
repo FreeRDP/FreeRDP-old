@@ -1374,43 +1374,44 @@ static void
 process_redirect_pdu(rdpRdp * rdp, STREAM s)
 {
 	uint16 total_length;
+	uint32 redirect_flags;
 
 	in_uint8s(s, 2);	/* flags, 0x0400 */
 	in_uint16_le(s, total_length);
 	in_uint32_le(s, rdp->redirect_session_id);
-	in_uint32_le(s, rdp->redirect_flags);
+	in_uint32_le(s, redirect_flags);
 
-	if (rdp->redirect_flags & LB_TARGET_NET_ADDRESS)
+	if (redirect_flags & LB_TARGET_NET_ADDRESS)
 	{
 		rdp->redirect_server = xstrdup_in_len32_unistr(rdp, s);
 	}
-	if (rdp->redirect_flags & LB_LOAD_BALANCE_INFO)
+	if (redirect_flags & LB_LOAD_BALANCE_INFO)
 	{
 		rdp->redirect_cookie = xmalloc_in_len32_data(rdp, s,
 			&rdp->redirect_cookie_len);
 	}
-	if (rdp->redirect_flags & LB_USERNAME)
+	if (redirect_flags & LB_USERNAME)
 	{
 		rdp->redirect_username = xstrdup_in_len32_unistr(rdp, s);
 	}
-	if (rdp->redirect_flags & LB_DOMAIN)
+	if (redirect_flags & LB_DOMAIN)
 	{
 		rdp->redirect_domain = xstrdup_in_len32_unistr(rdp, s);
 	}
-	if (rdp->redirect_flags & LB_PASSWORD)
+	if (redirect_flags & LB_PASSWORD)
 	{
 		rdp->redirect_password = xmalloc_in_len32_data(rdp, s,
 			&rdp->redirect_password_len);
 	}
-	if (rdp->redirect_flags & LB_TARGET_FQDN)
+	if (redirect_flags & LB_TARGET_FQDN)
 	{
 		rdp->redirect_target_fqdn = xstrdup_in_len32_unistr(rdp, s);
 	}
-	if (rdp->redirect_flags & LB_TARGET_NETBIOS_NAME)
+	if (redirect_flags & LB_TARGET_NETBIOS_NAME)
 	{
 		rdp->redirect_target_netbios_name = xstrdup_in_len32_unistr(rdp, s);
 	}
-	if (rdp->redirect_flags & LB_TARGET_NET_ADDRESSES)
+	if (redirect_flags & LB_TARGET_NET_ADDRESSES)
 	{
 		rdp->redirect_target_net_addresses = xmalloc_in_len32_data(rdp, s,
 			&rdp->redirect_target_net_addresses_len);
@@ -1464,17 +1465,30 @@ rdp_loop(rdpRdp * rdp, RD_BOOL * deactivated, uint32 * ext_disc_reason)
 
 /* Establish a connection up to the RDP layer */
 RD_BOOL
-rdp_connect(rdpRdp * rdp, char *server, uint32 flags, char *domain, char *password,
-	    char *command, char *directory, int port, char *username)
+rdp_connect(rdpRdp * rdp)
 {
 	char* password_encoded;
 	size_t password_encoded_len = 0;
+	uint32 connect_flags = RDP_LOGON_NORMAL;
 
-	if (!sec_connect(rdp->sec, server, username, port))
+	if (rdp->settings->bulk_compression)
+	{
+		connect_flags |= RDP_LOGON_COMPRESSION | RDP_LOGON_COMPRESSION2;
+	}
+	if (rdp->settings->autologin)
+	{
+		connect_flags |= RDP_LOGON_AUTO;
+	}
+	if (rdp->settings->leave_audio)
+	{
+		connect_flags |= RDP_LOGON_LEAVE_AUDIO;
+	}
+
+	if (!sec_connect(rdp->sec, rdp->settings->server, rdp->settings->username, rdp->settings->tcp_port_rdp))
 		return False;
 
-	password_encoded = xmalloc_out_unistr(rdp, password, &password_encoded_len);
-	rdp_send_logon_info(rdp, flags, domain, username, password_encoded, password_encoded_len, command, directory);
+	password_encoded = xmalloc_out_unistr(rdp, rdp->settings->password, &password_encoded_len);
+	rdp_send_logon_info(rdp, connect_flags, rdp->settings->domain, rdp->settings->username, password_encoded, password_encoded_len, rdp->settings->shell, rdp->settings->directory);
 	xfree(password_encoded);
 	return True;
 }
