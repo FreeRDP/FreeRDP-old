@@ -72,7 +72,7 @@ tcp_socket_ok(int sck)
 		if (opt == 0)
 		{
 			return True;
-    		}
+		}
   	}
   	return False;
 }
@@ -244,6 +244,7 @@ tcp_connect(rdpTcp * tcp, char * server, int port)
 {
 	socklen_t option_len;
 	uint32 option_value;
+	int sock;
 
 #ifdef IPv6
 
@@ -264,22 +265,22 @@ tcp_connect(rdpTcp * tcp, char * server, int port)
 	}
 
 	ressave = res;
-	tcp->sock = -1;
+	sock = -1;
 	while (res)
 	{
-		tcp->sock = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
-		if (!(tcp->sock < 0))
+		sock = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+		if (!(sock < 0))
 		{
-			if (connect(tcp->sock, res->ai_addr, res->ai_addrlen) == 0)
+			if (connect(sock, res->ai_addr, res->ai_addrlen) == 0)
 				break;
-			TCP_CLOSE(tcp->sock);
-			tcp->sock = -1;
+			TCP_CLOSE(sock);
+			sock = -1;
 		}
 		res = res->ai_next;
 	}
 	freeaddrinfo(ressave);
 
-	if (tcp->sock == -1)
+	if (sock == -1)
 	{
 		ui_error(tcp->iso->mcs->sec->rdp->inst, "%s: unable to connect\n", server);
 		return False;
@@ -300,7 +301,7 @@ tcp_connect(rdpTcp * tcp, char * server, int port)
 		return False;
 	}
 
-	if ((tcp->sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+	if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
 	{
 		ui_error(tcp->iso->mcs->sec->rdp->inst, "socket: %s\n", TCP_STRERROR);
 		return False;
@@ -309,14 +310,16 @@ tcp_connect(rdpTcp * tcp, char * server, int port)
 	servaddr.sin_family = AF_INET;
 	servaddr.sin_port = htons((uint16) port);
 
-	if (connect(tcp->sock, (struct sockaddr *) &servaddr, sizeof(struct sockaddr)) < 0)
+	if (connect(sock, (struct sockaddr *) &servaddr, sizeof(struct sockaddr)) < 0)
 	{
 		ui_error(tcp->iso->mcs->sec->rdp->inst, "connect: %s\n", TCP_STRERROR);
-		TCP_CLOSE(tcp->sock);
+		TCP_CLOSE(sock);
 		return False;
 	}
 
 #endif /* IPv6 */
+
+	tcp->sock = sock;
 
 	/* set socket as non blocking */
 #ifdef _WIN32
