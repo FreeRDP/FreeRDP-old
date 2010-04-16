@@ -110,7 +110,7 @@ typedef struct stream *STREAM;
 /* Output n bytes zero to stream */
 #define out_uint8s(s,n)		{ memset((s)->p,0,n); (s)->p += n; }
 
-/* Read least LSByte to v, shifting old value */
+/* Shift old v value and read new LSByte */
 #define next_be(s,v)		v = ((v) << 8) + *((s)->p++);
 
 #endif // __STREAM_H

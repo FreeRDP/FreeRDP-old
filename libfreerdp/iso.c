@@ -26,42 +26,36 @@
 #include "rdp.h"
 #include "mem.h"
 
-#include <openssl/ssl.h>
+/* TPKT from T123 - aka ISO DP 8073 */
 
-/* output TPKT header */
-
+/* Output TPKT header for length length.
+ * Length should include the TPKT header (4 bytes) */
 static void
-output_tpkt_header(STREAM s, int length)
+tpkt_output_header(STREAM s, int length)
 {
-	out_uint8(s, 3);		/* version */
-	out_uint8(s, 0);		/* reserved */
+	out_uint8(s, 3);	/* version */
+	out_uint8(s, 0);	/* reserved */
 	out_uint16_be(s, length);	/* length */
 }
 
-static uint16
-input_tpkt_header(STREAM s, uint8 * rdpver)
+/* Try to read TPKT header for X.224 from stream and return length
+ * (including the 4 bytes TPKT header already read).
+ * If not possible then return untouched stream and length -1. */
+static int
+tpkt_input_header(STREAM s)
 {
-	uint8 version;
-	uint8 reserved;
-	uint16 length;
-
-	in_uint8(s, version);		/* version */
-	in_uint8(s, reserved);		/* reserved */
-	in_uint16_be(s, length);	/* length */
-
-	if (rdpver != NULL)
-		*rdpver = version;
-
-	if (version == 3 && reserved == 0)
+	if (*s->p == 3)	/* Peeking is less ugly than rewinding */
 	{
+		uint8 version;
+		uint8 reserved;
+		uint16 length;
+
+		in_uint8(s, version);
+		in_uint8(s, reserved);
+		in_uint16_be(s, length);
 		return length;
 	}
-	else
-	{
-		/* not a TPKT header, revert changes */
-		s->p -= 4;
-		return 0;
-	}
+	return -1;	/* Probably Fast-Path */
 }
 
 /* Send a self-contained ISO PDU */
@@ -72,7 +66,7 @@ iso_send_msg(rdpIso * iso, uint8 code)
 
 	s = tcp_init(iso->tcp, 11);
 
-	output_tpkt_header(s, 11);
+	tpkt_output_header(s, 11);
 
 	out_uint8(s, 6);	/* hdrlen */
 	out_uint8(s, code);
@@ -103,7 +97,7 @@ iso_send_connection_request(rdpIso * iso, char *username)
 
 	s = tcp_init(iso->tcp, length);
 
-	output_tpkt_header(s, length);
+	tpkt_output_header(s, length);
 
 	/* X.224 Connection Request (CR) TPDU */
 	out_uint8(s, length - 5);	/* hdrlen */
@@ -207,7 +201,7 @@ rdp_process_negotiation_failure(rdpIso * iso, STREAM s)
 
 /* Receive an X.224 TPDU */
 static STREAM
-x224_recv(rdpIso * iso, STREAM s, int length, uint8* pcode)
+x224_recv(rdpIso * iso, STREAM s, int length, uint8 * pcode)
 {
 	uint8 lengthIndicator;
 	uint8 code;
@@ -223,14 +217,14 @@ x224_recv(rdpIso * iso, STREAM s, int length, uint8* pcode)
 	in_uint8(s, lengthIndicator);
 	in_uint8(s, code);
 
-	subcode = code & 0x0F; /* get the lower nibble */
-	code &= 0xF0; /* take out lower nibble */
+	subcode = code & 0x0F;	/* get the lower nibble */
+	code &= 0xF0;	/* take out lower nibble */
 
 	*pcode = code;
 
 	if (code == X224_TPDU_DATA)
 	{
-		in_uint8s(s, 1); /* EOT */
+		in_uint8s(s, 1);	/* EOT */
 		return s;
 	}
 
@@ -239,7 +233,7 @@ x224_recv(rdpIso * iso, STREAM s, int length, uint8* pcode)
 	/* class option (1 byte) */
 	in_uint8s(s, 5);
 
-	in_uint8(s, type); /* Type */
+	in_uint8(s, type);	/* Type */
 
 	switch (code)
 	{
@@ -284,57 +278,55 @@ x224_recv(rdpIso * iso, STREAM s, int length, uint8* pcode)
 	return s;
 }
 
-/* Receive a packet with a TPKT header */
+/* Receive a packet from tcp and return stream.
+ * If no ptype then only TPKT header with X.224 is accepted.
+ * If ptype then Fast-Path packets are accepted too.
+ * Return NULL on error. */
 static STREAM
-tpkt_recv(rdpIso * iso, uint8* pcode, uint8* rdpver)
+tpkt_recv(rdpIso * iso, uint8 * pcode, isoRecvType * ptype)
 {
 	STREAM s;
-	uint8 version;
-	uint16 length;
+	int length;
 
 	s = tcp_recv(iso->tcp, NULL, 4);
 
 	if (s == NULL)
 		return NULL;
 
-	length = input_tpkt_header(s, &version);
+	length = tpkt_input_header(s);
 
-	if (rdpver != NULL)
-		*rdpver = version;
-
-	if (version == 3)
+	if (length >= 0)
 	{
 		/* Valid TPKT header, payload is X.224 TPDU */
+		if (ptype != NULL)
+			*ptype = ISO_RECV_X224;
+
 		return x224_recv(iso, s, length, pcode);
 	}
-	else
+	else if (ptype != NULL)
 	{
-		/* not a TPKT header */
+		/* Fast-Path header */
+		uint8 fpInputHeader;
 
-		/* nasty hack from previous spaghetti code */
-		in_uint8s(s, 1);
+		in_uint8(s, fpInputHeader);
+		*ptype = (fpInputHeader & 0x80) ? ISO_RECV_FAST_PATH_ENCRYPTED : ISO_RECV_FAST_PATH;
+
 		in_uint8(s, length);
-
 		if (length & 0x80)
 		{
 			length &= ~0x80;
 			next_be(s, length);
 		}
-
 		s = tcp_recv(iso->tcp, s, length - 4);
-
-		if (s == NULL)
-			return NULL;
+		return s;
 	}
-
-	return s;
+	return NULL;	/* Fast-Path not allowed */
 }
 
 static RD_BOOL
 iso_negotiate_encryption(rdpIso * iso, char *username)
 {
 	uint8 code;
-	uint8 version;
 
 	if (iso->mcs->sec->nla == 0)
 	{
@@ -344,7 +336,7 @@ iso_negotiate_encryption(rdpIso * iso, char *username)
 		iso_send_connection_request(iso, username);
 
 		/* Receive negotiation response */
-		if (tpkt_recv(iso, &code, &version) == NULL)
+		if (tpkt_recv(iso, &code, NULL) == NULL)
 			return False;
 	}
 	else
@@ -355,7 +347,7 @@ iso_negotiate_encryption(rdpIso * iso, char *username)
 		iso_send_connection_request(iso, username);
 
 		/* Attempt to receive negotiation response */
-		if (tpkt_recv(iso, &code, &version) == NULL)
+		if (tpkt_recv(iso, &code, NULL) == NULL)
 		{
 			if (iso->mcs->sec->negotiation_state == -1)
 			{
@@ -369,7 +361,7 @@ iso_negotiate_encryption(rdpIso * iso, char *username)
 				iso_send_connection_request(iso, username);
 
 				/* Receive negotiation response */
-				if (tpkt_recv(iso, &code, &version) == NULL)
+				if (tpkt_recv(iso, &code, NULL) == NULL)
 					return False;
 			}
 		}
@@ -380,9 +372,9 @@ iso_negotiate_encryption(rdpIso * iso, char *username)
 
 /* Receive a message on the ISO layer, return code */
 static STREAM
-iso_recv_msg(rdpIso * iso, uint8 * code, uint8 * rdpver)
+iso_recv_msg(rdpIso * iso, uint8 * code, isoRecvType * ptype)
 {
-	return tpkt_recv(iso, code, rdpver);
+	return tpkt_recv(iso, code, ptype);
 }
 
 /* Initialise ISO transport data packet */
@@ -462,23 +454,22 @@ iso_fp_send(rdpIso * iso, STREAM s, uint32 flags)
 	tcp_send(iso->tcp, s);
 }
 
-/* Receive ISO transport data packet */
+/* Receive ISO transport data packet
+ * If ptype is NULL then only X224 is accepted */
 STREAM
-iso_recv(rdpIso * iso, uint8 * rdpver)
+iso_recv(rdpIso * iso, isoRecvType * ptype)
 {
 	STREAM s;
 	uint8 code = 0;
 
-	s = iso_recv_msg(iso, &code, rdpver);
+	s = iso_recv_msg(iso, &code, ptype);
 
 	if (s == NULL)
 		return NULL;
 
-	if (rdpver != NULL)
-		if (*rdpver != 3)
-			return s;
-
-	if (code != X224_TPDU_DATA)
+	if ((ptype != NULL) &&
+		(*ptype == ISO_RECV_X224) &&
+		(code != X224_TPDU_DATA))
 	{
 		ui_error(iso->mcs->sec->rdp->inst, "expected X224_TPDU_DATA, got 0x%x\n", code);
 		return NULL;
@@ -513,7 +504,8 @@ iso_reconnect(rdpIso * iso, char *server, int port)
 
 	if (code != X224_TPDU_CONNECTION_CONFIRM)
 	{
-		ui_error(iso->mcs->sec->rdp->inst, "expected X224_TPDU_CONNECTION_CONFIRM, got 0x%x\n", code);
+		ui_error(iso->mcs->sec->rdp->inst,
+			 "expected X224_TPDU_CONNECTION_CONFIRM, got 0x%x\n", code);
 		tcp_disconnect(iso->tcp);
 		return False;
 	}

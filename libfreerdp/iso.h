@@ -31,6 +31,14 @@ struct rdp_iso
 };
 typedef struct rdp_iso rdpIso;
 
+enum iso_recv_type
+{
+	ISO_RECV_X224,
+	ISO_RECV_FAST_PATH,
+	ISO_RECV_FAST_PATH_ENCRYPTED
+};
+typedef enum iso_recv_type isoRecvType;
+
 STREAM
 iso_init(rdpIso * iso, int length);
 STREAM
@@ -40,7 +48,7 @@ iso_send(rdpIso * iso, STREAM s);
 void
 iso_fp_send(rdpIso * iso, STREAM s, uint32 flags);
 STREAM
-iso_recv(rdpIso * iso, uint8 * rdpver);
+iso_recv(rdpIso * iso, isoRecvType * ptype);
 RD_BOOL
 iso_connect(rdpIso * iso, char * server, char * username, int port);
 RD_BOOL

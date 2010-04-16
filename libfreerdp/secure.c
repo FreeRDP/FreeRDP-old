@@ -836,19 +836,20 @@ sec_process_mcs_data(rdpSec * sec, STREAM s)
 STREAM
 sec_recv(rdpSec * sec, secRecvType * type)
 {
-	uint8 rdpver;
+	isoRecvType iso_type;
 	uint32 sec_flags;
 	uint16 channel;
 	STREAM s;
 
-	while ((s = mcs_recv(sec->mcs, &channel, &rdpver)) != NULL)
+	while ((s = mcs_recv(sec->mcs, &channel, &iso_type)) != NULL)
 	{
-		if (rdpver != 3)
+		if ((iso_type == ISO_RECV_FAST_PATH) ||
+			(iso_type == ISO_RECV_FAST_PATH_ENCRYPTED))
 		{
 			*type = SEC_RECV_FAST_PATH;
-			if (rdpver & 0x80)
+			if (iso_type == ISO_RECV_FAST_PATH_ENCRYPTED)
 			{
-				in_uint8s(s, 8);	/* dataSignature */
+				in_uint8s(s, 8);	/* dataSignature */ /* TODO: Check signature! */
 				sec_decrypt(sec, s->p, s->end - s->p);
 			}
 			return s;

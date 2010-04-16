@@ -21,6 +21,8 @@
 #ifndef __MCS_H
 #define __MCS_H
 
+#include "iso.h"
+
 struct rdp_mcs
 {
 	struct rdp_sec * sec;
@@ -41,7 +43,7 @@ mcs_send(rdpMcs * mcs, STREAM s);
 void
 mcs_fp_send(rdpMcs * mcs, STREAM s, uint32 flags);
 STREAM
-mcs_recv(rdpMcs * mcs, uint16 * channel, uint8 * rdpver);
+mcs_recv(rdpMcs * mcs, uint16 * channel, isoRecvType * ptype);
 RD_BOOL
 mcs_connect(rdpMcs * mcs, char *server, STREAM mcs_data, char *username, int port);
 RD_BOOL

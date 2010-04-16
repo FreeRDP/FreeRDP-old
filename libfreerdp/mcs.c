@@ -287,34 +287,34 @@ mcs_fp_send(rdpMcs * mcs, STREAM s, uint32 flags)
 
 /* Receive an MCS transport data packet */
 STREAM
-mcs_recv(rdpMcs * mcs, uint16 * channel, uint8 * rdpver)
+mcs_recv(rdpMcs * mcs, uint16 * channel, isoRecvType * ptype)
 {
 	uint8 opcode, pdu_type, length;
 	STREAM s;
 
-	s = iso_recv(mcs->iso, rdpver);
+	s = iso_recv(mcs->iso, ptype);
 	if (s == NULL)
 		return NULL;
-	if (rdpver != NULL)
-		if (*rdpver != 3)
-			return s;	/* Fast-Path */
-	/* Parse mcsSDin (MCS Send Data Indication PDU, see [T125] section 7, part 7): */
-	in_uint8(s, opcode);
-	pdu_type = opcode >> 2;
-	if (pdu_type != T125_DOMAINMCSPDU_SendDataIndication)
+	if (*ptype == ISO_RECV_X224)
 	{
-		if (pdu_type != T125_DOMAINMCSPDU_DisconnectProviderUltimatum)
+		/* Parse mcsSDin (MCS Send Data Indication PDU, see [T125] section 7, part 7): */
+		in_uint8(s, opcode);
+		pdu_type = opcode >> 2;
+		if (pdu_type != T125_DOMAINMCSPDU_SendDataIndication)
 		{
-			ui_error(mcs->sec->rdp->inst, "expected data, got %d\n", opcode);
+			if (pdu_type != T125_DOMAINMCSPDU_DisconnectProviderUltimatum)
+			{
+				ui_error(mcs->sec->rdp->inst, "expected data, got %d\n", opcode);
+			}
+			return NULL;
 		}
-		return NULL;
+		in_uint8s(s, 2);	/* initiator */
+		in_uint16_be(s, *channel);
+		in_uint8s(s, 1);	/* dataPriority and segmentation flags */
+		in_uint8(s, length);	/* length of userData in 1 or two bytes */
+		if (length & 0x80)
+			in_uint8s(s, 1);	/* second byte of length */
 	}
-	in_uint8s(s, 2);	/* initiator */
-	in_uint16_be(s, *channel);
-	in_uint8s(s, 1);	/* dataPriority and segmentation flags */
-	in_uint8(s, length);	/* length of userData in 1 or two bytes */
-	if (length & 0x80)
-		in_uint8s(s, 1);	/* second byte of length */
 	return s;
 }
 
