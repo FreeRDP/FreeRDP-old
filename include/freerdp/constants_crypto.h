@@ -22,8 +22,8 @@
 #ifndef __CONSTANTS_CRYPTO_H
 #define __CONSTANTS_CRYPTO_H
 
-/* RDP Negotiation Request requestedProtocols */
-enum RDP_NEG_REQ_PROTOCOLS
+/* RDP Negotiation Protocols */
+enum RDP_NEG_PROTOCOLS
 {
 	PROTOCOL_RDP = 0x00000000,
 	PROTOCOL_SSL = 0x00000001,

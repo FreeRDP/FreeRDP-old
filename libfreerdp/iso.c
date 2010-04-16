@@ -58,9 +58,12 @@ tpkt_input_header(STREAM s)
 	return -1;	/* Probably Fast-Path */
 }
 
-/* Send a self-contained ISO PDU */
+/* Output and send 7 bytes X.224 headers for
+ * Client X.224 Connection Request TPDU (X224_TPDU_CONNECTION_REQUEST)
+ * Server X.224 Connection Confirm TPDU
+ * FIXME: is this also suitable for X224_TPDU_DISCONNECT_REQUEST ??? */
 static void
-iso_send_msg(rdpIso * iso, uint8 code)
+x224_send_dst_src_class(rdpIso * iso, uint8 code)
 {
 	STREAM s;
 
@@ -68,7 +71,7 @@ iso_send_msg(rdpIso * iso, uint8 code)
 
 	tpkt_output_header(s, 11);
 
-	out_uint8(s, 6);	/* hdrlen */
+	out_uint8(s, 6);	/* length indicator */
 	out_uint8(s, code);
 	out_uint16_le(s, 0);	/* dst_ref */
 	out_uint16_le(s, 0);	/* src_ref */
@@ -78,8 +81,9 @@ iso_send_msg(rdpIso * iso, uint8 code)
 	tcp_send(iso->tcp, s);
 }
 
+/* Output and send X.224 Connection Request TPDU with routing for username */
 static void
-iso_send_connection_request(rdpIso * iso, char *username)
+x224_send_connection_request(rdpIso * iso, char *username)
 {
 	STREAM s;
 	int length = 30 + strlen(username);
@@ -95,12 +99,13 @@ iso_send_connection_request(rdpIso * iso, char *username)
 	 * supports the legacy encryption.
 	 */
 
+	/* FIXME: Use x224_send_dst_src_class */
 	s = tcp_init(iso->tcp, length);
 
 	tpkt_output_header(s, length);
 
 	/* X.224 Connection Request (CR) TPDU */
-	out_uint8(s, length - 5);	/* hdrlen */
+	out_uint8(s, length - 5);	/* length indicator */
 	out_uint8(s, X224_TPDU_CONNECTION_REQUEST);
 	out_uint16_le(s, 0);	/* dst_ref */
 	out_uint16_le(s, 0);	/* src_ref */
@@ -117,18 +122,19 @@ iso_send_connection_request(rdpIso * iso, char *username)
 	if (iso->mcs->sec->nla)
 	{
 		/* When using NLA, the RDP_NEG_DATA field should be present */
-		out_uint8(s, 0x01);	/* TYPE_RDP_NEG_REQ */
+		out_uint8(s, TYPE_RDP_NEG_REQ);
 		out_uint8(s, 0x00);	/* flags, must be set to zero */
 		out_uint16_le(s, 8);	/* RDP_NEG_DATA length (8) */
-		out_uint32_le(s, 0x00000003);	/* requestedProtocols, PROTOCOL_HYBRID_FLAG | PROTOCOL_SSL_FLAG */
+		out_uint32_le(s, PROTOCOL_HYBRID | PROTOCOL_SSL);	/* requestedProtocols */
 	}
 
 	s_mark_end(s);
 	tcp_send(iso->tcp, s);
 }
 
-/* Process Negotiation Response */
-uint32
+/* Process Negotiation Response from Connection Confirm payload
+ * Return selected protocol */
+static uint32 /* or enum RDP_NEG_PROTOCOLS */
 rdp_process_negotiation_response(rdpIso * iso, STREAM s)
 {
 	uint8 flags;
@@ -161,8 +167,8 @@ rdp_process_negotiation_response(rdpIso * iso, STREAM s)
 	return selectedProtocol;
 }
 
-/* Process Negotiation Failure */
-void
+/* Process Negotiation Failure from Connection Confirm payload */
+static void
 rdp_process_negotiation_failure(rdpIso * iso, STREAM s)
 {
 	uint8 flags;
@@ -193,7 +199,7 @@ rdp_process_negotiation_failure(rdpIso * iso, STREAM s)
 				printf("Error: HYBRID_REQUIRED_BY_SERVER\n");
 				break;
 			default:
-				printf("Error: Unknown protocol security error\n");
+				printf("Error: Unknown protocol security error %d\n", failureCode);
 				break;
 		}
 	}
@@ -333,7 +339,7 @@ iso_negotiate_encryption(rdpIso * iso, char *username)
 		/* We do no use NLA, so we won't attempt to negotiate */
 
 		iso->mcs->sec->negotiation_state = 2;
-		iso_send_connection_request(iso, username);
+		x224_send_connection_request(iso, username);
 
 		/* Receive negotiation response */
 		if (tpkt_recv(iso, &code, NULL) == NULL)
@@ -344,7 +350,7 @@ iso_negotiate_encryption(rdpIso * iso, char *username)
 		/* first negotiation attempt */
 		iso->mcs->sec->negotiation_state = 1;
 
-		iso_send_connection_request(iso, username);
+		x224_send_connection_request(iso, username);
 
 		/* Attempt to receive negotiation response */
 		if (tpkt_recv(iso, &code, NULL) == NULL)
@@ -358,7 +364,7 @@ iso_negotiate_encryption(rdpIso * iso, char *username)
 				/* second negotiation attempt */
 				iso->mcs->sec->negotiation_state = 2;
 
-				iso_send_connection_request(iso, username);
+				x224_send_connection_request(iso, username);
 
 				/* Receive negotiation response */
 				if (tpkt_recv(iso, &code, NULL) == NULL)
@@ -497,7 +503,7 @@ iso_reconnect(rdpIso * iso, char *server, int port)
 	if (!tcp_connect(iso->tcp, server, port))
 		return False;
 
-	iso_send_msg(iso, X224_TPDU_CONNECTION_REQUEST);
+	x224_send_dst_src_class(iso, X224_TPDU_CONNECTION_REQUEST);
 
 	if (iso_recv_msg(iso, &code, NULL) == NULL)
 		return False;
@@ -517,7 +523,7 @@ iso_reconnect(rdpIso * iso, char *server, int port)
 void
 iso_disconnect(rdpIso * iso)
 {
-	iso_send_msg(iso, X224_TPDU_DISCONNECT_REQUEST);
+	x224_send_dst_src_class(iso, X224_TPDU_DISCONNECT_REQUEST);
 	tcp_disconnect(iso->tcp);
 }
 
