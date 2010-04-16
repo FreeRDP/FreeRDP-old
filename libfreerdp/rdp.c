@@ -50,8 +50,6 @@
 #endif
 #endif
 
-#define RDP5_FLAG 0x0030
-
 static void
 process_redirect_pdu(rdpRdp * rdp, STREAM s);
 
@@ -378,7 +376,7 @@ rdp_send_logon_info(rdpRdp * rdp, uint32 flags, char *domain, char *user,
 	int len_dll = 2 * strlen(dll);
 	int packetlen = 0;
 	uint32 sec_flags =
-		rdp->settings->encryption ? (SEC_LOGON_INFO | SEC_ENCRYPT) : SEC_LOGON_INFO;
+		rdp->settings->encryption ? (SEC_INFO_PKT | SEC_ENCRYPT) : SEC_INFO_PKT;
 	STREAM s;
 	int ok = True;	/* TODO: Check this */
 
@@ -769,7 +767,7 @@ rdp_send_confirm_active(rdpRdp * rdp)
 {
 	STREAM caps;
 	STREAM s;
-	uint32 sec_flags = rdp->settings->encryption ? (RDP5_FLAG | SEC_ENCRYPT) : RDP5_FLAG;
+	uint32 sec_flags = rdp->settings->encryption ? SEC_ENCRYPT : 0;
 	int caplen;
 	uint16 numberCapabilities = 14;
 

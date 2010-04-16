@@ -25,6 +25,7 @@
 #include "mcs.h"
 #include "iso.h"
 #include "tcp.h"
+#include "mem.h"
 
 void
 ssl_sha1_init(SSL_SHA1 * sha1)
@@ -150,7 +151,7 @@ ssl_cert_to_rkey(SSL_CERT * cert, uint32 * key_len)
 	/* By some reason, Microsoft sets the OID of the Public RSA key to
 	   the oid for "MD5 with RSA Encryption" instead of "RSA Encryption"
 
-	   Kudos to Richard Levitte for the following (. intiutive .) 
+	   Kudos to Richard Levitte for the following (. intiutive .)
 	   lines of code that resets the OID and let's us extract the key. */
 	nid = OBJ_obj2nid(cert->cert_info->key->algor->algorithm);
 	if ((nid == NID_md5WithRSAEncryption) || (nid == NID_shaWithRSAEncryption))
@@ -508,7 +509,7 @@ int tls_read(SSL *ssl, char* b, int size)
 			break;
 
 		case SSL_ERROR_WANT_READ:
-					
+
 			if (size - bytesRead < 128)
 			{
 					/* the buffer is almost full, allocate more memory */

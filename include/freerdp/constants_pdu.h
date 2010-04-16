@@ -32,6 +32,16 @@ enum X224_TPDU_TYPE
 	X224_TPDU_ERROR = 0x70
 };
 
+/* Negotation structure types */
+enum RDP_NEGOTIATION_STRUCTURES
+{
+	/* for X224_TPDU_CONNECTION_REQUEST: */
+	TYPE_RDP_NEG_REQ = 0x1,
+	/* for X224_TPDU_CONNECTION_CONFIRM: */
+	TYPE_RDP_NEG_RSP = 0x2,
+	TYPE_RDP_NEG_FAILURE = 0x3
+};
+
 /* T.125 PDU types, index value in PER encoding */
 enum T125_DOMAINMCSPDU_PER_INDEX
 {

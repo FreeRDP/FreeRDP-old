@@ -347,7 +347,7 @@ static void
 sec_establish_key(rdpSec * sec)
 {
 	uint32 length = sec->server_public_key_len + SEC_PADDING_SIZE;
-	uint32 flags = SEC_CLIENT_RANDOM;
+	uint32 flags = SEC_EXCHANGE_PKT;
 	STREAM s;
 
 	s = sec_init(sec, flags, length + 4);
@@ -392,7 +392,7 @@ sec_out_mcs_data(rdpSec * sec, STREAM s)
 	/* Client Core Data */
 
 	/* User Data Header */
-	out_uint16_le(s, SEC_TAG_CLI_INFO);
+	out_uint16_le(s, UDH_CS_CORE);
 	out_uint16_le(s, 212);	/* length */
 	/* End of User Data Header */
 
@@ -476,7 +476,7 @@ sec_out_mcs_data(rdpSec * sec, STREAM s)
 	/* Client Security Data */
 
 	/* User Data Header */
-	out_uint16_le(s, SEC_TAG_CLI_CRYPT); // Type CS_SECURITY (0xC002)
+	out_uint16_le(s, UDH_CS_SECURITY); // Type CS_SECURITY (0xC002)
 	out_uint16_le(s, 12); // Length
 	/* End of User Data Header */
 
@@ -499,7 +499,7 @@ sec_out_mcs_data(rdpSec * sec, STREAM s)
 		/* Client Network Data */
 
 		/* User Data Header */
-		out_uint16_le(s, SEC_TAG_CLI_CHANNELS); // CS_NET (0xC003)
+		out_uint16_le(s, UDH_CS_NET); // CS_NET (0xC003)
 		out_uint16_le(s, settings->num_channels * 12 + 8); // Length
 		/* End of User Data Header */
 
@@ -514,7 +514,7 @@ sec_out_mcs_data(rdpSec * sec, STREAM s)
 	}
 
 	/* Client Cluster Data */
-	out_uint16_le(s, SEC_TAG_CLI_4); // CS_CLUSTER (0xC004)
+	out_uint16_le(s, UDH_CS_CLUSTER); // CS_CLUSTER (0xC004)
 	out_uint16_le(s, 12); // Length
 	out_uint32_le(s, sec->rdp->settings->console_session ?
 		REDIRECTED_SESSIONID_FIELD_VALID | REDIRECTION_SUPPORTED | REDIRECTION_VERSION3 :
@@ -605,11 +605,12 @@ sec_parse_crypt_info(rdpSec * sec, STREAM s, uint32 * rc4_key_size,
 	if (end > s->end)
 		return False;
 
-	in_uint32_le(s, flags);	/* 1 = RDP4-style, 0x80000002 = X.509 */
+	in_uint32_le(s, flags);	/* 1 = Server Proprietary Certificate, 2 = X.509, 0x80000000 = temp */
 	if (flags & 1)
 	{
-		DEBUG_RDP5("We're going for the RDP4-style encryption\n");
-		in_uint8s(s, 8);	/* unknown */
+		DEBUG_RDP5("We're going for the RDP4-style Server Proprietary Certificate\n");
+		in_uint8s(s, 4);	/* dwSigAlgId = SIGNATURE_ALG_RSA */
+		in_uint8s(s, 4);	/* dwKeyAlgId = KEY_EXCHANGE_ALG_RSA */
 
 		while (s->p < end)
 		{
@@ -620,14 +621,14 @@ sec_parse_crypt_info(rdpSec * sec, STREAM s, uint32 * rc4_key_size,
 
 			switch (tag)
 			{
-				case SEC_TAG_PUBKEY:
+				case BB_RSA_KEY_BLOB:
 					if (!sec_parse_public_key(sec, s, modulus, exponent))
 						return False;
 					DEBUG_RDP5("Got Public key, RDP4-style\n");
 
 					break;
 
-				case SEC_TAG_KEYSIG:
+				case BB_RSA_SIGNATURE_BLOB:
 					if (!sec_parse_public_sig(sec, s, length, modulus, exponent))
 						return False;
 					break;
@@ -809,15 +810,15 @@ sec_process_mcs_data(rdpSec * sec, STREAM s)
 
 		switch (tag)
 		{
-			case SEC_TAG_SRV_INFO:
+			case UDH_SC_CORE:
 				sec_process_srv_info(sec, s);
 				break;
 
-			case SEC_TAG_SRV_CRYPT:
+			case UDH_SC_SECURITY:
 				sec_process_crypt_info(sec, s);
 				break;
 
-			case SEC_TAG_SRV_CHANNELS:
+			case UDH_SC_NET:
 				/* FIXME: We should parse this information and
 				   use it to map RDP5 channels to MCS
 				   channels */
@@ -863,7 +864,7 @@ sec_recv(rdpSec * sec, secRecvType * type)
 				sec_decrypt(sec, s->p, s->end - s->p);
 			}
 
-			if (sec_flags & SEC_LICENCE_NEG)
+			if (sec_flags & SEC_LICENSE_PKT)
 			{
 				*type = SEC_RECV_LICENSE;
 				licence_process(sec->licence, s);

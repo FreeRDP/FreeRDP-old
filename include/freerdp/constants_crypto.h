@@ -22,22 +22,23 @@
 #ifndef __CONSTANTS_CRYPTO_H
 #define __CONSTANTS_CRYPTO_H
 
-/* Negotation message types*/
-#define TYPE_RDP_NEG_REQ	0x1
-#define TYPE_RDP_NEG_RSP	0x2
-#define TYPE_RDP_NEG_FAILURE	0x3
+/* RDP Negotiation Request requestedProtocols */
+enum RDP_NEG_REQ_PROTOCOLS
+{
+	PROTOCOL_RDP = 0x00000000,
+	PROTOCOL_SSL = 0x00000001,
+	PROTOCOL_HYBRID = 0x00000002
+};
 
-/* Protocol security flags */
-#define PROTOCOL_RDP		0x00000000
-#define PROTOCOL_SSL		0x00000001
-#define PROTOCOL_HYBRID		0x00000002
-
-/* Protocol security negotation failure reason flags */
-#define SSL_REQUIRED_BY_SERVER		0x00000001
-#define SSL_NOT_ALLOWED_BY_SERVER	0x00000002
-#define SSL_CERT_NOT_ON_SERVER		0x00000003
-#define INCONSISTENT_FLAGS		0x00000004
-#define HYBRID_REQUIRED_BY_SERVER	0x00000005
+/* RDP Negotiation Failure failureCode */
+enum RDP_NEG_FAILURE_FAILURECODES
+{
+	SSL_REQUIRED_BY_SERVER = 0x00000001,
+	SSL_NOT_ALLOWED_BY_SERVER = 0x00000002,
+	SSL_CERT_NOT_ON_SERVER = 0x00000003,
+	INCONSISTENT_FLAGS = 0x00000004,
+	HYBRID_REQUIRED_BY_SERVER = 0x00000005
+};
 
 /* RDP secure transport constants */
 #define SEC_RANDOM_SIZE		32
@@ -46,24 +47,36 @@
 #define SEC_PADDING_SIZE	8
 #define SEC_EXPONENT_SIZE	4
 
-#define SEC_CLIENT_RANDOM	0x0001
-#define SEC_ENCRYPT		0x0008
-#define SEC_LOGON_INFO		0x0040
-#define SEC_LICENCE_NEG		0x0080
-#define SEC_REDIRECTION_PKT	0x0400
+/* RDP Basic Security Header flags */
+enum RDP_BASIC_SEC_FLAGS
+{
+	SEC_EXCHANGE_PKT = 0x0001,
+	SEC_ENCRYPT = 0x0008,
+	SEC_RESET_SEQNO = 0x0010,	/* ignore */
+	SEC_IGNORE_SEQNO = 0x0020,	/* ignore */
+	SEC_INFO_PKT = 0x0040,
+	SEC_LICENSE_PKT = 0x0080,
+	SEC_REDIRECTION_PKT = 0x0400
+};
 
-#define SEC_TAG_SRV_INFO	0x0c01
-#define SEC_TAG_SRV_CRYPT	0x0c02
-#define SEC_TAG_SRV_CHANNELS	0x0c03
+/* User Data Header types */
+enum RDP_MCS_CONNECT_BLOCKS
+{
+	UDH_CS_CORE = 0xc001,
+	UDH_CS_SECURITY = 0xc002,
+	UDH_CS_NET = 0xc003,
+	UDH_CS_CLUSTER = 0xc004,
+	UDH_CS_MONITOR = 0xc005,
+	UDH_SC_CORE = 0x0c01,
+	UDH_SC_SECURITY = 0x0c02,
+	UDH_SC_NET = 0x0c03
+};
 
-#define SEC_TAG_CLI_INFO	0xc001
-#define SEC_TAG_CLI_CRYPT	0xc002
-#define SEC_TAG_CLI_CHANNELS    0xc003
-#define SEC_TAG_CLI_4           0xc004
-
-#define SEC_TAG_PUBKEY		0x0006
-#define SEC_TAG_KEYSIG		0x0008
-
+/* Server Proprietary Certificate constants */
+#define SIGNATURE_ALG_RSA	1
+#define KEY_EXCHANGE_ALG_RSA	1
+#define BB_RSA_KEY_BLOB		0x0006
+#define BB_RSA_SIGNATURE_BLOB		0x0008
 #define SEC_RSA_MAGIC		0x31415352	/* RSA1 */
 
 #endif /* __CONSTANTS_CRYPTO_H */
