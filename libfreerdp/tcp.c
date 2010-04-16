@@ -67,14 +67,14 @@ tcp_socket_ok(int sck)
 #endif
 
 	opt_len = sizeof(opt);
-	if (getsockopt(sck, SOL_SOCKET, SO_ERROR, (char*)(&opt), &opt_len) == 0)
+	if (getsockopt(sck, SOL_SOCKET, SO_ERROR, (char *) (&opt), &opt_len) == 0)
 	{
 		if (opt == 0)
 		{
 			return True;
 		}
-  	}
-  	return False;
+	}
+	return False;
 }
 
 /* wait till socket is ready to write or timeout */
@@ -117,18 +117,18 @@ tcp_can_recv(int sck, int millis)
 	return False;
 }
 
-/* Initialise TCP transport data packet */
+/* Initialise and return STREAM.
+ * The stream will have room for at least minsize.
+ * The tcp layers out stream will be used. */
 STREAM
-tcp_init(rdpTcp * tcp, uint32 maxlen)
+tcp_init(rdpTcp * tcp, uint32 minsize)
 {
-	STREAM result;
+	STREAM result = &(tcp->out);
 
-	result = &(tcp->out);
-
-	if (maxlen > result->size)
+	if (minsize > result->size)
 	{
-		result->data = (uint8 *) xrealloc(result->data, maxlen);
-		result->size = maxlen;
+		result->data = (uint8 *) xrealloc(result->data, minsize);
+		result->size = minsize;
 	}
 
 	result->p = result->data;
@@ -136,7 +136,8 @@ tcp_init(rdpTcp * tcp, uint32 maxlen)
 	return result;
 }
 
-/* Send TCP transport data packet */
+/* Send data from stream to tcp socket.
+ * Will block until all data has been sent. */
 void
 tcp_send(rdpTcp * tcp, STREAM s)
 {
@@ -163,7 +164,10 @@ tcp_send(rdpTcp * tcp, STREAM s)
 	}
 }
 
-/* Receive a message on the TCP layer */
+/* Read length bytes from tcp socket to stream and return it.
+ * Appends to stream s if specified, otherwise it uses stream from tcp layer.
+ * Will block until data available.
+ * Returns NULL on error. */
 STREAM
 tcp_recv(rdpTcp * tcp, STREAM s, uint32 length)
 {
@@ -221,7 +225,7 @@ tcp_recv(rdpTcp * tcp, STREAM s, uint32 length)
 			if (tcp->iso->mcs->sec->negotiation_state < 2)
 			{
 				/* Disconnection is due to an encryption negotiation failure */
-				tcp->iso->mcs->sec->negotiation_state = -1; /* failure */
+				tcp->iso->mcs->sec->negotiation_state = -1;	/* failure */
 				return NULL;
 			}
 			else
@@ -371,6 +375,7 @@ tcp_disconnect(rdpTcp * tcp)
 #endif
 }
 
+/* Returns pointer to internal buffer with lifetime as tcp */
 char *
 tcp_get_address(rdpTcp * tcp)
 {
@@ -379,10 +384,12 @@ tcp_get_address(rdpTcp * tcp)
 	if (getsockname(tcp->sock, (struct sockaddr *) &sockaddr, &len) == 0)
 	{
 		uint8 *ip = (uint8 *) & sockaddr.sin_addr;
-		sprintf(tcp->ipaddr, "%d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);
+		snprintf(tcp->ipaddr, sizeof(tcp->ipaddr), "%d.%d.%d.%d", ip[0], ip[1], ip[2],
+			 ip[3]);
 	}
 	else
-		strcpy(tcp->ipaddr, "127.0.0.1");
+		strncpy(tcp->ipaddr, "127.0.0.1", sizeof(tcp->ipaddr));
+	tcp->ipaddr[sizeof(tcp->ipaddr) - 1] = 0;
 	return tcp->ipaddr;
 }
 

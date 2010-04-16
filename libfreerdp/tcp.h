@@ -44,7 +44,7 @@ tcp_can_send(int sck, int millis);
 RD_BOOL
 tcp_can_recv(int sck, int millis);
 STREAM
-tcp_init(rdpTcp * tcp, uint32 maxlen);
+tcp_init(rdpTcp * tcp, uint32 minsize);
 void
 tcp_send(rdpTcp * tcp, STREAM s);
 STREAM
