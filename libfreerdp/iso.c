@@ -107,7 +107,7 @@ iso_send_connection_request(rdpIso * iso, char *username)
 
 	/* X.224 Connection Request (CR) TPDU */
 	out_uint8(s, length - 5);	/* hdrlen */
-	out_uint8(s, ISO_PDU_CR);
+	out_uint8(s, X224_TPDU_CONNECTION_REQUEST);
 	out_uint16_le(s, 0);	/* dst_ref */
 	out_uint16_le(s, 0);	/* src_ref */
 	out_uint8(s, 0);	/* class */
@@ -228,7 +228,7 @@ x224_recv(rdpIso * iso, STREAM s, int length, uint8* pcode)
 
 	*pcode = code;
 
-	if (code == ISO_PDU_DT)
+	if (code == X224_TPDU_DATA)
 	{
 		in_uint8s(s, 1); /* EOT */
 		return s;
@@ -244,28 +244,28 @@ x224_recv(rdpIso * iso, STREAM s, int length, uint8* pcode)
 	switch (code)
 	{
 		/* Connection Request */
-		case ISO_PDU_CR:
-			printf("ISO_PDU_CR\n");
+		case X224_TPDU_CONNECTION_REQUEST:
+			printf("X224_TPDU_CONNECTION_REQUEST\n");
 			break;
 
 		/* Connection Confirm */
-		case ISO_PDU_CC:
-			printf("ISO_PDU_CC\n");
+		case X224_TPDU_CONNECTION_CONFIRM:
+			printf("X224_TPDU_CONNECTION_CONFIRM\n");
 			break;
 
 		/* Disconnect Request */
-		case ISO_PDU_DR:
-			printf("ISO_PDU_DR\n");
+		case X224_TPDU_DISCONNECT_REQUEST:
+			printf("X224_TPDU_DISCONNECT_REQUEST\n");
 			break;
 
 		/* Data */
-		case ISO_PDU_DT:
-			printf("ISO_PDU_DT\n");
+		case X224_TPDU_DATA:
+			printf("X224_TPDU_DATA\n");
 			break;
 
 		/* Error */
-		case ISO_PDU_ER:
-			printf("ISO_PDU_ER\n");
+		case X224_TPDU_ERROR:
+			printf("X224_TPDU_ERROR\n");
 			break;
 	}
 
@@ -422,7 +422,7 @@ iso_send(rdpIso * iso, STREAM s)
 	out_uint16_be(s, length);
 
 	out_uint8(s, 2);	/* hdrlen */
-	out_uint8(s, ISO_PDU_DT);	/* code */
+	out_uint8(s, X224_TPDU_DATA);	/* code */
 	out_uint8(s, 0x80);	/* eot */
 
 	tcp_send(iso->tcp, s);
@@ -478,9 +478,9 @@ iso_recv(rdpIso * iso, uint8 * rdpver)
 		if (*rdpver != 3)
 			return s;
 
-	if (code != ISO_PDU_DT)
+	if (code != X224_TPDU_DATA)
 	{
-		ui_error(iso->mcs->sec->rdp->inst, "expected DT, got 0x%x\n", code);
+		ui_error(iso->mcs->sec->rdp->inst, "expected X224_TPDU_DATA, got 0x%x\n", code);
 		return NULL;
 	}
 
@@ -506,14 +506,14 @@ iso_reconnect(rdpIso * iso, char *server, int port)
 	if (!tcp_connect(iso->tcp, server, port))
 		return False;
 
-	iso_send_msg(iso, ISO_PDU_CR);
+	iso_send_msg(iso, X224_TPDU_CONNECTION_REQUEST);
 
 	if (iso_recv_msg(iso, &code, NULL) == NULL)
 		return False;
 
-	if (code != ISO_PDU_CC)
+	if (code != X224_TPDU_CONNECTION_CONFIRM)
 	{
-		ui_error(iso->mcs->sec->rdp->inst, "expected CC, got 0x%x\n", code);
+		ui_error(iso->mcs->sec->rdp->inst, "expected X224_TPDU_CONNECTION_CONFIRM, got 0x%x\n", code);
 		tcp_disconnect(iso->tcp);
 		return False;
 	}
@@ -525,7 +525,7 @@ iso_reconnect(rdpIso * iso, char *server, int port)
 void
 iso_disconnect(rdpIso * iso)
 {
-	iso_send_msg(iso, ISO_PDU_DR);
+	iso_send_msg(iso, X224_TPDU_DISCONNECT_REQUEST);
 	tcp_disconnect(iso->tcp);
 }
 

@@ -698,7 +698,7 @@ rdp_send_client_window_status(rdpRdp * rdp, int status)
 	}
 
 	s_mark_end(s);
-	rdp_send_data(rdp, s, RDP_DATA_PDU_CLIENT_WINDOW_STATUS);
+	rdp_send_data(rdp, s, RDP_DATA_PDU_SUPPRESS_OUTPUT);
 	rdp->current_status = status;
 }
 
@@ -721,9 +721,9 @@ rdp_enum_bmpcache2(rdpRdp * rdp)
 
 		flags = 0;
 		if (offset == 0)
-			flags |= PDU_FLAG_FIRST;
+			flags |= BITMAP_PERSIST_FLAG_FIRST;
 		if (num_keys - offset <= 169)
-			flags |= PDU_FLAG_LAST;
+			flags |= BITMAP_PERSIST_FLAG_LAST;
 
 		/* header */
 		out_uint32_le(s, 0);
@@ -760,7 +760,7 @@ rdp_send_fonts(rdpRdp * rdp, uint16 seq)
 	out_uint16_le(s, 0x0032); // entrySize, should be set to 0x0032
 
 	s_mark_end(s);
-	rdp_send_data(rdp, s, RDP_DATA_PDU_FONT2);
+	rdp_send_data(rdp, s, RDP_DATA_PDU_FONTLIST);
 }
 
 /* Send a confirm active PDU */
@@ -979,7 +979,7 @@ process_demand_active(rdpRdp * rdp, STREAM s)
 	rdp_send_control(rdp, RDP_CTL_REQUEST_CONTROL);
 	rdp_recv(rdp, &type);	/* RDP_PDU_SYNCHRONIZE */
 	rdp_recv(rdp, &type);	/* RDP_CTL_COOPERATE */
-	rdp_recv(rdp, &type);	/* RDP_CTL_GRANT_CONTROL */
+	rdp_recv(rdp, &type);	/* RDP_CTL_GRANTED_CONTROL */
 
 	// Synchronize toggle keys
 	rdp_sync_input(rdp, time(NULL), ui_get_toggle_keys_state(rdp->inst));
@@ -1321,16 +1321,16 @@ process_data_pdu(rdpRdp * rdp, STREAM s, uint32 * ext_disc_reason)
 			process_pointer_pdu(rdp, s);
 			break;
 
-		case RDP_DATA_PDU_BELL:
+		case RDP_DATA_PDU_PLAY_SOUND:
 			ui_bell(rdp->inst);
 			break;
 
-		case RDP_DATA_PDU_LOGON:
+		case RDP_DATA_PDU_SAVE_SESSION_INFO:
 			DEBUG("Received Logon PDU\n");
 			/* User logged on */
 			break;
 
-		case RDP_DATA_PDU_DISCONNECT:
+		case RDP_DATA_PDU_SET_ERROR_INFO:
 			process_disconnect_pdu(s, ext_disc_reason);
 
 			/* We used to return true and disconnect immediately here, but

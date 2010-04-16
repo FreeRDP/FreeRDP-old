@@ -127,7 +127,7 @@ mcs_send_edrq(rdpMcs * mcs)
 
 	s = iso_init(mcs->iso, 5);
 
-	out_uint8(s, (MCS_EDRQ << 2));
+	out_uint8(s, (T125_DOMAINMCSPDU_ErectDomainRequest << 2));
 	out_uint16_be(s, 1);	/* height */
 	out_uint16_be(s, 1);	/* interval */
 
@@ -143,7 +143,7 @@ mcs_send_aurq(rdpMcs * mcs)
 
 	s = iso_init(mcs->iso, 1);
 
-	out_uint8(s, (MCS_AURQ << 2));
+	out_uint8(s, (T125_DOMAINMCSPDU_AttachUserRequest << 2));
 
 	s_mark_end(s);
 	iso_send(mcs->iso, s);
@@ -161,7 +161,7 @@ mcs_recv_aucf(rdpMcs * mcs, uint16 * mcs_userid)
 		return False;
 
 	in_uint8(s, opcode);
-	if ((opcode >> 2) != MCS_AUCF)
+	if ((opcode >> 2) != T125_DOMAINMCSPDU_AttachUserConfirm)
 	{
 		ui_error(mcs->sec->rdp->inst, "expected AUcf, got %d\n", opcode);
 		return False;
@@ -190,7 +190,7 @@ mcs_send_cjrq(rdpMcs * mcs, uint16 chanid)
 
 	s = iso_init(mcs->iso, 5);
 
-	out_uint8(s, (MCS_CJRQ << 2));
+	out_uint8(s, (T125_DOMAINMCSPDU_ChannelJoinRequest << 2));
 	out_uint16_be(s, mcs->mcs_userid);
 	out_uint16_be(s, chanid);
 
@@ -210,7 +210,7 @@ mcs_recv_cjcf(rdpMcs * mcs)
 		return False;
 
 	in_uint8(s, opcode);
-	if ((opcode >> 2) != MCS_CJCF)
+	if ((opcode >> 2) != T125_DOMAINMCSPDU_ChannelJoinConfirm)
 	{
 		ui_error(mcs->sec->rdp->inst, "expected CJcf, got %d\n", opcode);
 		return False;
@@ -262,7 +262,7 @@ mcs_send_to_channel(rdpMcs * mcs, STREAM s, uint16 channel)
 	length = s->end - s->p - 8;
 	length |= 0x8000;
 
-	out_uint8(s, (MCS_SDRQ << 2));
+	out_uint8(s, (T125_DOMAINMCSPDU_SendDataRequest << 2));
 	out_uint16_be(s, mcs->mcs_userid);
 	out_uint16_be(s, channel);
 	out_uint8(s, 0x70);	/* flags */
@@ -301,9 +301,9 @@ mcs_recv(rdpMcs * mcs, uint16 * channel, uint8 * rdpver)
 	/* Parse mcsSDin (MCS Send Data Indication PDU, see [T125] section 7, part 7): */
 	in_uint8(s, opcode);
 	pdu_type = opcode >> 2;
-	if (pdu_type != MCS_SDIN)
+	if (pdu_type != T125_DOMAINMCSPDU_SendDataIndication)
 	{
-		if (pdu_type != MCS_DPUM)
+		if (pdu_type != T125_DOMAINMCSPDU_DisconnectProviderUltimatum)
 		{
 			ui_error(mcs->sec->rdp->inst, "expected data, got %d\n", opcode);
 		}

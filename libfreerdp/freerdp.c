@@ -583,7 +583,7 @@ l_rdp_check_fds(struct rdp_inst * inst)
 {
 	rdpRdp * rdp;
 	RD_BOOL deactivated;
-	uint32 ext_disc_reason;
+	uint32 ext_disc_reason; /* TODO: Check with RDP_ERRORINFO */
 	int rv;
 
 	rdp = (rdpRdp *) (inst->rdp);
