@@ -182,6 +182,10 @@ process_params(rdpSet * settings, rdpChanMan * chan_man, int argc, char ** argv,
 		{
 			settings->leave_audio = 1;
 		}
+		else if (strcmp("-0", argv[*pindex]) == 0)
+		{
+			settings->console_session = 1;
+		}
 		else if (strcmp("-z", argv[*pindex]) == 0)
 		{
 			settings->bulk_compression = 1;
