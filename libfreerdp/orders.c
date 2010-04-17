@@ -1263,10 +1263,11 @@ process_colcache(rdpOrders * orders, STREAM s)
 
 	DEBUG("COLCACHE(id=%d,n=%d)\n", cache_id, map.ncolours);
 
-	hmap = ui_create_colourmap(orders->rdp->inst, &map);
-
 	if (cache_id)
+	{
+		hmap = ui_create_colourmap(orders->rdp->inst, &map);
 		ui_set_colourmap(orders->rdp->inst, hmap);
+	}
 
 	xfree(map.colours);
 }
