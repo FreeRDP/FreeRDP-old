@@ -345,6 +345,19 @@ unsigned char keycodeToVkcode[256] =
 
 // Use the virtual key code as an index in this array in order to get its associated scan code		
 
+typedef struct _virtualKey
+{
+	// Scan code
+	int scancode;
+
+	// Flags	
+	int flags;
+
+	// Name of virtual key
+	char name[32];
+
+} virtualKey;
+
 virtualKey virtualKeyboard[256] =
 {
 	{ 0x00, 0, "" },

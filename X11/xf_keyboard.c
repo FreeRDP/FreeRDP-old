@@ -38,12 +38,10 @@ xf_kb_init(rdpInst * inst)
 };
 
 void
-xf_kb_send_key(rdpInst * inst, uint16 aflags, uint8 keycode)
+xf_kb_send_key(rdpInst * inst, int flags, uint8 keycode)
 {
 	xfInfo * xfi;
-	int vkcode;
 	int scancode;
-	int flags;
 
 	xfi = GET_XFI(inst);
 	if (keycode == xfi->pause_key)
@@ -51,7 +49,7 @@ xf_kb_send_key(rdpInst * inst, uint16 aflags, uint8 keycode)
 		/* This is a special key the actually sends two scancodes to the
 		   server.  It looks like Control - NumLock but with special flags. */
 		//printf("special VK_PAUSE\n");
-		if (aflags & KBD_FLAG_UP)
+		if (flags & KBD_FLAG_UP)
 		{
 			inst->rdp_send_input(inst, RDP_INPUT_SCANCODE, 0x8200, 0x1d, 0);
 			inst->rdp_send_input(inst, RDP_INPUT_SCANCODE, 0x8000, 0x45, 0);
@@ -64,9 +62,7 @@ xf_kb_send_key(rdpInst * inst, uint16 aflags, uint8 keycode)
 	}
 	else
 	{
-		vkcode = keycodeToVkcode[keycode];
-		scancode = virtualKeyboard[vkcode].scancode;
-		flags = virtualKeyboard[vkcode].flags | aflags;
+		scancode = freerdp_kbd_get_scancode_by_keycode(keycode, &flags);
 		inst->rdp_send_input(inst, RDP_INPUT_SCANCODE, flags, scancode, 0);
 	}
 }
@@ -143,7 +139,7 @@ xf_kb_focus_in(rdpInst * inst)
 
 	xfi = GET_XFI(inst);
 	/* on focus in send a tab up like mstsc.exe */
-	scancode = virtualKeyboard[xfi->tab_key].scancode;
+	scancode = freerdp_kbd_get_scancode_by_virtualkey(xfi->tab_key);
 	inst->rdp_send_input(inst, RDP_INPUT_SCANCODE, KBD_FLAG_UP, scancode, 0);
 	/* sync num, caps, scroll, kana lock */
 	flags = xf_kb_get_toggle_keys_state(xfi);

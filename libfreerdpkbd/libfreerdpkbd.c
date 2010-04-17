@@ -640,4 +640,21 @@ freerdp_kbd_init()
 	return rv;
 }
 
+int
+freerdp_kbd_get_scancode_by_keycode(uint8 keycode, int * flags)
+{
+	int vkcode;
+	int scancode;
+
+	vkcode = keycodeToVkcode[keycode];
+	scancode = virtualKeyboard[vkcode].scancode;
+	*flags |= virtualKeyboard[vkcode].flags;
+	return scancode;
+}
+
+int
+freerdp_kbd_get_scancode_by_virtualkey(int vkcode)
+{
+	return virtualKeyboard[vkcode].scancode;
+}
 

@@ -20,27 +20,14 @@
 */
 
 #ifndef __FREERDP_KBD_H
-#define	__FREERDP_KBD_H
-
-extern unsigned char keycodeToVkcode[256];
-
-typedef struct _virtualKey
-{
-	// Scan code
-	int scancode;
-
-	// Flags	
-	int flags;
-
-	// Name of virtual key
-	char name[32];
-
-} virtualKey;
-
-extern virtualKey virtualKeyboard[256];
+#define __FREERDP_KBD_H
 
 unsigned int
 freerdp_kbd_init();
+int
+freerdp_kbd_get_scancode_by_keycode(uint8 keycode, int * flags);
+int
+freerdp_kbd_get_scancode_by_virtualkey(int vkcode);
 
 #endif // __FREERDP_KBD_H
 
