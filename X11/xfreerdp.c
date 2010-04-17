@@ -126,6 +126,28 @@ process_params(rdpSet * settings, rdpChanMan * chan_man, int argc, char ** argv,
 			strncpy(settings->domain, argv[*pindex], sizeof(settings->domain) - 1);
 			settings->domain[sizeof(settings->domain) - 1] = 0;
 		}
+		else if (strcmp("-s", argv[*pindex]) == 0)
+		{
+			*pindex = *pindex + 1;
+			if (*pindex == argc)
+			{
+				printf("missing shell\n");
+				return 1;
+			}
+			strncpy(settings->shell, argv[*pindex], sizeof(settings->shell) - 1);
+			settings->shell[sizeof(settings->shell) - 1] = 0;
+		}
+		else if (strcmp("-c", argv[*pindex]) == 0)
+		{
+			*pindex = *pindex + 1;
+			if (*pindex == argc)
+			{
+				printf("missing directory\n");
+				return 1;
+			}
+			strncpy(settings->directory, argv[*pindex], sizeof(settings->directory) - 1);
+			settings->directory[sizeof(settings->directory) - 1] = 0;
+		}
 		else if (strcmp("-g", argv[*pindex]) == 0)
 		{
 			*pindex = *pindex + 1;
@@ -156,7 +178,7 @@ process_params(rdpSet * settings, rdpChanMan * chan_man, int argc, char ** argv,
 			}
 			settings->tcp_port_rdp = atoi(argv[*pindex]);
 		}
-		else if (strcmp("-s", argv[*pindex]) == 0)
+		else if (strcmp("-o", argv[*pindex]) == 0)
 		{
 			settings->leave_audio = 1;
 		}
