@@ -41,7 +41,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\include;..\include\freerdp;C:\OpenSSL\include"
+				AdditionalIncludeDirectories="..\include;..\include\freerdp;C:\OpenSSL\include;..\asn1"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;FREERDP_EXPORTS;_CRT_SECURE_NO_WARNINGS;L_ENDIAN"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -117,6 +117,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
+				AdditionalIncludeDirectories="..\include;..\include\freerdp;C:\OpenSSL\include;..\asn1"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;FREERDP_EXPORTS"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
@@ -194,6 +195,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\libfreerdp\credssp.c"
+				>
+			</File>
+			<File
 				RelativePath="..\libfreerdp\freerdp.c"
 				>
 			</File>
@@ -242,10 +247,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\spnego.c"
-				>
-			</File>
-			<File
 				RelativePath="..\libfreerdp\ssl.c"
 				>
 			</File>
@@ -277,6 +278,10 @@
 			</File>
 			<File
 				RelativePath="..\libfreerdp\chan.h"
+				>
+			</File>
+			<File
+				RelativePath="..\libfreerdp\credssp.h"
 				>
 			</File>
 			<File
@@ -312,10 +317,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\stream.h"
-				>
-			</File>
-			<File
 				RelativePath="..\libfreerdp\pstcache.h"
 				>
 			</File>
@@ -332,11 +333,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\spnego.h"
+				RelativePath="..\libfreerdp\ssl.h"
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\ssl.h"
+				RelativePath="..\libfreerdp\stream.h"
 				>
 			</File>
 			<File

@@ -190,7 +190,7 @@ rdp_out_unistr(rdpRdp * rdp, STREAM s, char *str)
 	{
 		if ((signed char)(*pin) < 0)
 		{
-			ui_error(rdp->inst, "rdp_out_unistr: wrong output conversion of char %d\n", str[j]);
+			ui_error(rdp->inst, "rdp_out_unistr: wrong output conversion of char %d\n", *pin);
 		}
 		*pout++ = *pin++;
 		*pout++ = 0;
@@ -225,7 +225,7 @@ xmalloc_out_unistr(rdpRdp * rdp, char *str, size_t *pout_len)
 	{
 		if ((signed char)(*pin) < 0)
 		{
-			ui_error(rdp->inst, "xmalloc_out_unistr: wrong output conversion of char %d\n", str[j]);
+			ui_error(rdp->inst, "xmalloc_out_unistr: wrong output conversion of char %d\n", *pin);
 		}
 		*pout++ = *pin++;
 		*pout++ = 0;
@@ -259,18 +259,18 @@ xstrdup_in_unistr(rdpRdp * rdp, unsigned char* pin, int in_len)
 #else
 	while (conv_in_len >= 2)
 	{
-		if ((signed char)(**conv_pi) < 0)
+		if ((signed char)(*conv_pin) < 0)
 		{
-			ui_error(rdp->inst, "xstrdup_in_unistr: wrong input conversion of char %d\n", **conv_pi);
+			ui_error(rdp->inst, "xstrdup_in_unistr: wrong input conversion of char %d\n", *conv_pin);
 		}
 		*conv_pout++ = *conv_pin++;
-		if ((**conv_pi) != 0)
+		if ((*conv_pin) != 0)
 		{
-			ui_error(rdp->inst, "xstrdup_in_unistr: wrong input conversion skipping non-zero char %d\n", **conv_pi);
+			ui_error(rdp->inst, "xstrdup_in_unistr: wrong input conversion skipping non-zero char %d\n", *conv_pin);
 		}
 		conv_pin++;
 		conv_in_len -= 2;
-		conv_out-len--;
+		conv_out_len--;
 	}
 #endif
 	if (conv_in_len > 0)

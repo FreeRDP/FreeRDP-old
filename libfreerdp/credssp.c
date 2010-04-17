@@ -29,7 +29,9 @@
 #include "tcp.h"
 #include "mcs.h"
 #include "iso.h"
-#include "unistd.h"
+#ifndef _WIN32
+#include <unistd.h>
+#endif
 
 #include "TSRequest.h"
 #include "NegoData.h"

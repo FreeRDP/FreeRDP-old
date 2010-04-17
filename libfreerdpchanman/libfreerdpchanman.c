@@ -279,7 +279,7 @@ freerdp_chanman_find_rdp_chan_by_name(rdpChanMan * chan_man, rdpSet * settings,
 /* must be called by same thread that calls freerdp_chanman_load_plugin
    according to MS docs
    only called from main thread */
-static uint32
+static uint32 VCHAN_CC
 MyVirtualChannelInit(void ** ppInitHandle, PCHANNEL_DEF pChannel,
 	int channelCount, uint32 versionRequested,
 	PCHANNEL_INIT_EVENT_FN pChannelInitEventProc)
@@ -366,7 +366,7 @@ MyVirtualChannelInit(void ** ppInitHandle, PCHANNEL_DEF pChannel,
 
 /* can be called from any thread
    thread safe because no 2 threads can have the same channel name registered */
-static uint32
+static uint32 VCHAN_CC
 MyVirtualChannelOpen(void * pInitHandle, uint32 * pOpenHandle,
 	char * pChannelName, PCHANNEL_OPEN_EVENT_FN pChannelOpenEventProc)
 {
@@ -411,7 +411,7 @@ MyVirtualChannelOpen(void * pInitHandle, uint32 * pOpenHandle,
 
 /* can be called from any thread
    thread safe because no 2 threads can have the same openHandle */
-static uint32
+static uint32 VCHAN_CC
 MyVirtualChannelClose(uint32 openHandle)
 {
 	rdpChanMan * chan_man;
@@ -497,7 +497,7 @@ freerdp_chanman_clear_ev(rdpChanMan * chan_man)
 }
 
 /* can be called from any thread */
-static uint32
+static uint32 VCHAN_CC
 MyVirtualChannelWrite(uint32 openHandle, void * pData, uint32 dataLength,
 	void * pUserData)
 {

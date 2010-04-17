@@ -536,12 +536,9 @@ l_ui_paint_bitmap(struct rdp_inst * inst, int x, int y, int cx, int cy, int widt
 	wfi = GET_WFI(inst);
 	//printf("ui_paint_bitmap x %d y %d cx %d cy %d width %d height %d\n", x, y, cx, cy, width, height);
 	bm = (struct wf_bitmap *) l_ui_create_bitmap(inst, width, height, data);
-	BitBlt(wfi->drw->hdc, x, y, cx, cy, bm->hdc, 0, 0, SRCCOPY);
+	BitBlt(wfi->backstore->hdc, x, y, cx, cy, bm->hdc, 0, 0, SRCCOPY);
 	wf_bitmap_free(bm);
-	if (wfi->drw == wfi->backstore)
-	{
-		wf_invalidate_region(wfi, x, y, x + cx, y + cy);
-	}
+	wf_invalidate_region(wfi, x, y, x + cx, y + cy);
 }
 
 static void
