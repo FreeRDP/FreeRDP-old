@@ -43,6 +43,7 @@
 #define TCP_CLOSE(_sck) closesocket(_sck)
 #define TCP_STRERROR "tcp error"
 #define TCP_BLOCKS (WSAGetLastError() == WSAEWOULDBLOCK)
+#define MSG_NOSIGNAL 0
 #else
 #define TCP_CLOSE(_sck) close(_sck)
 #define TCP_STRERROR strerror(errno)
@@ -146,7 +147,7 @@ tcp_send(rdpTcp * tcp, STREAM s)
 
 	while (total < length)
 	{
-		sent = send(tcp->sock, s->data + total, length - total, 0);
+		sent = send(tcp->sock, s->data + total, length - total, MSG_NOSIGNAL);
 		if (sent <= 0)
 		{
 			if (sent == -1 && TCP_BLOCKS)
