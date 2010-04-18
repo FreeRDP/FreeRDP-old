@@ -29,7 +29,6 @@
 #include <sys/time.h>
 #include <freerdp/types_ui.h>
 #include <freerdp/vchan.h>
-#include <freerdp/constants_rdpdr.h>
 
 #include "rdpdr.h"
 #include "irp.h"

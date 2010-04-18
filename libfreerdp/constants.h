@@ -23,16 +23,12 @@
 #define __CONSTANTS_H
 
 #include <freerdp/constants_ui.h>
-#include <freerdp/constants_pdu.h>
-#include <freerdp/constants_core.h>
-#include <freerdp/constants_rail.h>
-#include <freerdp/constants_rdpdr.h>
-#include <freerdp/constants_crypto.h>
-#include <freerdp/constants_license.h>
-#include <freerdp/constants_capabilities.h>
-
-/* TCP port for Remote Desktop Protocol */
-#define TCP_PORT_RDP 3389
+#include "constants_pdu.h"
+#include "constants_core.h"
+#include "constants_rail.h"
+#include "constants_crypto.h"
+#include "constants_license.h"
+#include "constants_capabilities.h"
 
 #define DEFAULT_CODEPAGE	"UTF-8"
 #define WINDOWS_CODEPAGE	"UTF-16LE"

@@ -12,6 +12,7 @@ rdpdr_la_SOURCES = \
 	rdpdr.h \
 	rdpdr_main.c \
 	rdpdr_capabilities.c rdpdr_capabilities.h \
+	rdpdr_constants.h
 	devman.c devman.h \
 	irp.c irp.h
 

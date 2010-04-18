@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <freerdp/constants_vchan.h>
 #include "frdp.h"
 #include "chan.h"
 #include "mcs.h"

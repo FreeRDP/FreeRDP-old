@@ -24,6 +24,7 @@
 
 #include <freerdp/types_ui.h>
 #include <freerdp/vchan.h>
+#include "rdpdr_constants.h"
 #include "irp.h"
 #include "devman.h"
 #include "types.h"

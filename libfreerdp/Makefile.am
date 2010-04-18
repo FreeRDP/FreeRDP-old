@@ -11,6 +11,14 @@ libfreerdp_la_SOURCES = \
 	cache.c cache.h \
 	capabilities.c capabilities.h \
 	chan.c chan.h \
+	constants.h \
+	constants_capabilities.h \
+	constants_core.h \
+	constants_crypto.h \
+	constants_license.h \
+	constants_pdu.h \
+	constants_rail.h \
+	constants_window.h \
 	freerdp.c \
 	iso.c iso.h \
 	licence.c licence.h \

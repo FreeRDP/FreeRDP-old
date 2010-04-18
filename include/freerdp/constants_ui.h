@@ -1,6 +1,34 @@
+/*
+   Copyright (c) 2009 Jay Sorg
+
+   Permission is hereby granted, free of charge, to any person obtaining a
+   copy of this software and associated documentation files (the "Software"),
+   to deal in the Software without restriction, including without limitation
+   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+   and/or sell copies of the Software, and to permit persons to whom the
+   Software is furnished to do so, subject to the following conditions:
+
+   The above copyright notice and this permission notice shall be included
+   in all copies or substantial portions of the Software.
+
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+   OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+   DEALINGS IN THE SOFTWARE.
+
+   these are the types needed for the ui interface
+   self contained file, requires no other includes
+
+*/
 
 #ifndef __CONSTANTS_UI_H
 #define __CONSTANTS_UI_H
+
+/* TCP port for Remote Desktop Protocol */
+#define TCP_PORT_RDP 3389
 
 enum RDP_INPUT_DEVICE
 {
@@ -52,17 +80,5 @@ enum RDP_INPUT_DEVICE
 #define RDP5_NO_THEMING		0x08
 #define RDP5_NO_CURSOR_SHADOW	0x20
 #define RDP5_NO_CURSORSETTINGS	0x40	/* disables cursor blinking */
-
-#define MAX_CHANNELS               16
-#define CHANNEL_CHUNK_LENGTH       1600
-#define CHANNEL_FLAG_FIRST         0x01
-#define CHANNEL_FLAG_LAST          0x02
-#define CHANNEL_FLAG_SHOW_PROTOCOL 0x10
-
-/* Virtual channel options */
-#define CHANNEL_OPTION_INITIALIZED   0x80000000
-#define CHANNEL_OPTION_ENCRYPT_RDP   0x40000000
-#define CHANNEL_OPTION_COMPRESS_RDP  0x00800000
-#define CHANNEL_OPTION_SHOW_PROTOCOL 0x00200000
 
 #endif

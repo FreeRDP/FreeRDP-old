@@ -22,7 +22,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <freerdp/constants_rdpdr.h>
 
 #include "rdpdr.h"
 #include "devman.h"
