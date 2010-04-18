@@ -545,10 +545,8 @@ static int
 l_rdp_connect(struct rdp_inst * inst)
 {
 	rdpRdp * rdp;
-	uint32 connect_flags;
 	int index;
 
-	connect_flags = RDP_LOGON_NORMAL;
 	rdp = (rdpRdp *) (inst->rdp);
 	for (index = 0; index < rdp->settings->num_channels; index++)
 	{

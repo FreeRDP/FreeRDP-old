@@ -180,7 +180,7 @@ process_params(rdpSet * settings, rdpChanMan * chan_man, int argc, char ** argv,
 		}
 		else if (strcmp("-o", argv[*pindex]) == 0)
 		{
-			settings->leave_audio = 1;
+			settings->console_audio = 1;
 		}
 		else if (strcmp("-0", argv[*pindex]) == 0)
 		{

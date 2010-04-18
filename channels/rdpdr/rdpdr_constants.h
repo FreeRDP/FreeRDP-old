@@ -125,5 +125,12 @@
 #define DR_USER_LOGGEDON_PDU			0x00000004
 #define DR_ENABLE_ASYNCIO			0x00000000
 
+/* Smartcard constants */
+#define SCARD_LOCK_TCP		0
+#define SCARD_LOCK_SEC		1
+#define SCARD_LOCK_CHANNEL	2
+#define SCARD_LOCK_RDPDR	3
+#define SCARD_LOCK_LAST		4
+
 #endif /* __CONSTANTS_RDPDR_H */
 

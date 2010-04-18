@@ -404,19 +404,19 @@ rdp_send_logon_info(rdpRdp * rdp, uint32 flags, char *domain, char *user,
 	else
 	{
 
-		flags |= RDP_LOGON_BLOB;
+		flags |= INFO_ENABLEWINDOWSKEY;
 		DEBUG_RDP5("Sending RDP5-style Logon packet\n");
 		packetlen = 4 +	/* Codepage */
 			4 +	/* flags */
 			2 +	/* length of Domain field */
 			2 +	/* length of UserName field */
-			(flags & RDP_LOGON_AUTO ? 2 : 0) +	/* length of Password field */
-			(flags & RDP_LOGON_BLOB ? 2 : 0) +	/* Length of BLOB */
+			(flags & INFO_AUTOLOGON ? 2 : 0) +	/* length of Password field */
+			(flags & INFO_ENABLEWINDOWSKEY ? 2 : 0) +	/* Length of BLOB */
 			2 +	/* len_program */
 			2 +	/* len_directory */
 			(0 < len_domain ? len_domain : 2) +	/* domain */
-			len_user + (flags & RDP_LOGON_AUTO ? len_password : 0) + 0 +	/* We have no 512 byte BLOB. Perhaps we must? */
-			(flags & RDP_LOGON_BLOB && !(flags & RDP_LOGON_AUTO) ? 2 : 0) +	/* After the BLOB is a unknown int16. If there is a BLOB, that is. */
+			len_user + (flags & INFO_AUTOLOGON ? len_password : 0) + 0 +	/* We have no 512 byte BLOB. Perhaps we must? */
+			(flags & INFO_ENABLEWINDOWSKEY && !(flags & INFO_AUTOLOGON) ? 2 : 0) +	/* After the BLOB is a unknown int16. If there is a BLOB, that is. */
 			(0 < len_program ? len_program : 2) + (0 < len_directory ? len_directory : 2) + 2 +	/* Unknown (2) */
 			2 +	/* Client ip length */
 			len_ip +	/* Client ip */
@@ -443,12 +443,12 @@ rdp_send_logon_info(rdpRdp * rdp, uint32 flags, char *domain, char *user,
 
 		out_uint16_le(s, len_domain);	// cbDomain, length of Domain field
 		out_uint16_le(s, len_user);	// cbUserName, length of UserName field
-		if (flags & RDP_LOGON_AUTO)
+		if (flags & INFO_AUTOLOGON)
 		{
 			out_uint16_le(s, len_password);	// cbPassword, length of Password field
 
 		}
-		if (flags & RDP_LOGON_BLOB && !(flags & RDP_LOGON_AUTO))
+		if (flags & INFO_ENABLEWINDOWSKEY && !(flags & INFO_AUTOLOGON))
 		{
 			out_uint16_le(s, 0);
 		}
@@ -461,13 +461,13 @@ rdp_send_logon_info(rdpRdp * rdp, uint32 flags, char *domain, char *user,
 			out_uint16_le(s, 0);
 		// Maximum UserName length of 44 bytes in RDP 4.0 and 5.0, and 512 bytes in RDP 5.1 and later
 		ok &= rdp_out_unistr(rdp, s, user) == len_user;	// UserName (length specified by cbUserName)
-		if (flags & RDP_LOGON_AUTO)
+		if (flags & INFO_AUTOLOGON)
 		{
 			// Maximum Password length of 32 bytes in RDP 4.0 and 5.0, and 512 bytes in RDP 5.1 and later
 			out_uint8p(s, password, len_password);	// Password (length specified by cbPassword)
 			out_uint8s(s, 2);
 		}
-		if (flags & RDP_LOGON_BLOB && !(flags & RDP_LOGON_AUTO))
+		if (flags & INFO_ENABLEWINDOWSKEY && !(flags & INFO_AUTOLOGON))
 		{
 			out_uint16_le(s, 0);
 		}
@@ -1467,19 +1467,19 @@ rdp_connect(rdpRdp * rdp)
 {
 	char* password_encoded;
 	size_t password_encoded_len = 0;
-	uint32 connect_flags = RDP_LOGON_NORMAL;
+	uint32 connect_flags = INFO_NORMALLOGON;
 
 	if (rdp->settings->bulk_compression)
 	{
-		connect_flags |= RDP_LOGON_COMPRESSION | RDP_LOGON_COMPRESSION2;
+		connect_flags |= INFO_COMPRESSION | PACKET_COMPR_TYPE_64K;
 	}
 	if (rdp->settings->autologin)
 	{
-		connect_flags |= RDP_LOGON_AUTO;
+		connect_flags |= INFO_AUTOLOGON;
 	}
-	if (rdp->settings->leave_audio)
+	if (rdp->settings->console_audio)
 	{
-		connect_flags |= RDP_LOGON_LEAVE_AUDIO;
+		connect_flags |= INFO_REMOTECONSOLEAUDIO;
 	}
 
 	if (!sec_connect(rdp->sec, rdp->settings->server, rdp->settings->username, rdp->settings->tcp_port_rdp))
@@ -1499,7 +1499,7 @@ rdp_reconnect(rdpRdp * rdp)
 	if (!sec_reconnect(rdp->sec, rdp->redirect_server, rdp->settings->tcp_port_rdp))
 		return False;
 
-	rdp_send_logon_info(rdp, RDP_LOGON_NORMAL|RDP_LOGON_AUTO, rdp->redirect_domain, rdp->redirect_username,
+	rdp_send_logon_info(rdp, INFO_NORMALLOGON | INFO_AUTOLOGON, rdp->redirect_domain, rdp->redirect_username,
 			rdp->redirect_password, rdp->redirect_password_len, rdp->settings->shell, rdp->settings->directory);
 	return True;
 }

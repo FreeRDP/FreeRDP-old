@@ -60,7 +60,7 @@ struct rdp_set
 	int desktop_save;
 	int polygon_ellipse_orders;
 	int autologin;
-	int leave_audio;
+	int console_audio;
 	int off_screen_bitmaps;
 	int triblt;
 	int new_cursors;
