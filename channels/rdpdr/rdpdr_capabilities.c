@@ -49,20 +49,20 @@ rdpdr_out_general_capset(char* data, int size)
 	SET_UINT32(data, 8, 0); /* osType, ignored on receipt */
 	SET_UINT32(data, 12, 0); /* osVersion, unused and must be set to zero */
 	SET_UINT16(data, 16, 1); /* protocolMajorVersion, must be set to 1 */
-	SET_UINT16(data, 18, DR_MINOR_RDP_VERSION_5_2); /* protocolMinorVersion */
+	SET_UINT16(data, 18, RDPDR_MINOR_RDP_VERSION_5_2); /* protocolMinorVersion */
 	SET_UINT32(data, 20, 0x0000FFFF); /* ioCode1 */
 	SET_UINT32(data, 24, 0); /* ioCode2, must be set to zero, reserved for future use */
-	SET_UINT32(data, 28, DR_DEVICE_REMOVE_PDUS | DR_CLIENT_DISPLAY_NAME_PDU); /* extendedPDU */
-	SET_UINT32(data, 32, DR_ENABLE_ASYNCIO); /* extraFlags1 */
+	SET_UINT32(data, 28, RDPDR_DEVICE_REMOVE_PDUS | RDPDR_CLIENT_DISPLAY_NAME_PDU); /* extendedPDU */
+	SET_UINT32(data, 32, ENABLE_ASYNCIO); /* extraFlags1 */
 	SET_UINT32(data, 36, 0); /* extraFlags2, must be set to zero, reserved for future use */
 
 	/*
 	 * SpecialTypeDeviceCap (4 bytes):
-	 * present when DR_GENERAL_CAPABILITY_VERSION_02 is used
+	 * present when GENERAL_CAPABILITY_VERSION_02 is used
 	 */
 
 	rdpdr_out_capset_header(data, size,
-		DR_CAPSET_TYPE_GENERAL, 36, DR_GENERAL_CAPABILITY_VERSION_01);
+		CAP_GENERAL_TYPE, 36, GENERAL_CAPABILITY_VERSION_01);
 
 	return 8;
 }
@@ -94,10 +94,10 @@ rdpdr_process_general_capset(char* data, int size)
 
 	/*
 	 * SpecialTypeDeviceCap (4 bytes):
-	 * present when DR_GENERAL_CAPABILITY_VERSION_02 is used
+	 * present when GENERAL_CAPABILITY_VERSION_02 is used
 	 */
 
-	if (version == DR_GENERAL_CAPABILITY_VERSION_02)
+	if (version == GENERAL_CAPABILITY_VERSION_02)
 	{
 		uint32 specialTypeDeviceCap;
 		specialTypeDeviceCap = GET_UINT32(data, 34);
@@ -111,7 +111,7 @@ int
 rdpdr_out_printer_capset(char* data, int size)
 {
 	rdpdr_out_capset_header(data, size,
-		DR_CAPSET_TYPE_GENERAL, 0, DR_GENERAL_CAPABILITY_VERSION_01);
+		CAP_PRINTER_TYPE, 0, PRINT_CAPABILITY_VERSION_01);
 
 	return 8;
 }
@@ -134,7 +134,7 @@ int
 rdpdr_out_port_capset(char* data, int size)
 {
 	rdpdr_out_capset_header(data, size,
-		DR_CAPSET_TYPE_PORT, 0, DR_GENERAL_CAPABILITY_VERSION_01);
+		CAP_PORT_TYPE, 0, PORT_CAPABILITY_VERSION_01);
 
 	return 8;
 }
@@ -157,11 +157,11 @@ int
 rdpdr_out_drive_capset(char* data, int size)
 {
 	rdpdr_out_capset_header(data, size,
-		DR_CAPSET_TYPE_DRIVE, 0, DR_GENERAL_CAPABILITY_VERSION_01);
+		CAP_DRIVE_TYPE, 0, DRIVE_CAPABILITY_VERSION_01);
 
 	/*
-	 * [MS-RDPEFS] says DR_GENERAL_CAPABILITY_VERSION_02 must be used
-	 * with DR_CAPSET_TYPE_DRIVE, but changing it to the correct version
+	 * [MS-RDPEFS] says GENERAL_CAPABILITY_VERSION_02 must be used
+	 * with CAP_DRIVE_TYPE, but changing it to the correct version
 	 * breaks drive redirection
 	 */
 
@@ -186,7 +186,7 @@ int
 rdpdr_out_smartcard_capset(char* data, int size)
 {
 	rdpdr_out_capset_header(data, size,
-		DR_CAPSET_TYPE_SMARTCARD, 0, DR_GENERAL_CAPABILITY_VERSION_01);
+		CAP_SMARTCARD_TYPE, 0, SMARTCARD_CAPABILITY_VERSION_01);
 
 	return 8;
 }
@@ -222,23 +222,23 @@ rdpdr_process_capabilities(char* data, int size)
 
 		switch (capabilityType)
 		{
-			case DR_CAPSET_TYPE_GENERAL:
+			case CAP_GENERAL_TYPE:
 				offset += rdpdr_process_general_capset(&data[offset], size - offset);
 				break;
 
-			case DR_CAPSET_TYPE_PRINTER:
+			case CAP_PRINTER_TYPE:
 				offset += rdpdr_process_printer_capset(&data[offset], size - offset);
 				break;
 
-			case DR_CAPSET_TYPE_PORT:
+			case CAP_PORT_TYPE:
 				offset += rdpdr_process_port_capset(&data[offset], size - offset);
 				break;
 
-			case DR_CAPSET_TYPE_DRIVE:
+			case CAP_DRIVE_TYPE:
 				offset += rdpdr_process_drive_capset(&data[offset], size - offset);
 				break;
 
-			case DR_CAPSET_TYPE_SMARTCARD:
+			case CAP_SMARTCARD_TYPE:
 				offset += rdpdr_process_smartcard_capset(&data[offset], size - offset);
 				break;
 

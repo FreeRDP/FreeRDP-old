@@ -81,7 +81,7 @@ DeviceServiceEntry(PDEVMAN pDevman, PDEVMAN_ENTRY_POINTS pEntryPoints)
 	disk_service->read = disk_read;
 	disk_service->write = disk_write;
 	disk_service->control = disk_control;
-	disk_service->type = DEVICE_TYPE_DISK;
+	disk_service->type = RDPDR_DTYP_FILESYSTEM;
 
 	disk_device = DevmanRegisterDevice(devman, disk_service, "disk");
 

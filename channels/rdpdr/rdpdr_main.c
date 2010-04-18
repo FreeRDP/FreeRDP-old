@@ -108,7 +108,7 @@ rdpdr_send_client_announce_reply(rdpdrPlugin * plugin)
 	uint32 error;
 	char* out_data = malloc(12);
 
-	SET_UINT16(out_data, 0, RDPDR_COMPONENT_TYPE_CORE);
+	SET_UINT16(out_data, 0, RDPDR_CTYP_CORE);
 	SET_UINT16(out_data, 2, PAKID_CORE_CLIENTID_CONFIRM);
 
 	SET_UINT16(out_data, 4, 1); /* versionMajor, must be set to 1 */
@@ -156,7 +156,7 @@ rdpdr_send_client_name_request(rdpdrPlugin * plugin)
 	size = 16 + computerNameLen * 2;
 	data = malloc(size);
 
-	SET_UINT16(data, 0, RDPDR_COMPONENT_TYPE_CORE);
+	SET_UINT16(data, 0, RDPDR_CTYP_CORE);
 	SET_UINT16(data, 2, PAKID_CORE_CLIENT_NAME);
 
 	SET_UINT32(data, 4, 1); // unicodeFlag, 0 for ASCII and 1 for Unicode
@@ -190,7 +190,7 @@ rdpdr_send_device_list_announce_request(rdpdrPlugin * plugin)
 
 	out_data = malloc(256);
 
-	SET_UINT16(out_data, 0, RDPDR_COMPONENT_TYPE_CORE);
+	SET_UINT16(out_data, 0, RDPDR_CTYP_CORE);
 	SET_UINT16(out_data, 2, PAKID_CORE_DEVICELIST_ANNOUNCE);
 	SET_UINT32(out_data, 4, plugin->devman->count); /* deviceCount */
 	offset = 8;
@@ -216,17 +216,17 @@ rdpdr_send_device_list_announce_request(rdpdrPlugin * plugin)
 
 		switch (pdev->service->type)
 		{
-			case DEVICE_TYPE_PRINTER:
+			case RDPDR_DTYP_PRINT:
 
 				break;
 
-			case DEVICE_TYPE_DISK:
+			case RDPDR_DTYP_FILESYSTEM:
 				SET_UINT32(out_data, offset, 0); // deviceDataLength
 				offset += 4;
 
 				break;
 
-			case DEVICE_TYPE_SMARTCARD:
+			case RDPDR_DTYP_SMARTCARD:
 
 				/*
 				 * According to [MS-RDPEFS] the deviceDataLength field for
@@ -353,7 +353,7 @@ rdpdr_send_capabilities(rdpdrPlugin * plugin)
 	size = 256;
 	data = (char*)malloc(size);
 
-	SET_UINT16(data, 0, RDPDR_COMPONENT_TYPE_CORE);
+	SET_UINT16(data, 0, RDPDR_CTYP_CORE);
 	SET_UINT16(data, 2, PAKID_CORE_CLIENT_CAPABILITY);
 
 	SET_UINT16(data, 4, 5); /* numCapabilities */
@@ -393,9 +393,9 @@ thread_process_message(rdpdrPlugin * plugin, char * data, int data_size)
 	component = GET_UINT16(data, 0);
 	packetID = GET_UINT16(data, 2);
 
-	if (component == RDPDR_COMPONENT_TYPE_CORE)
+	if (component == RDPDR_CTYP_CORE)
 	{
-		LLOGLN(0, ("RDPDR_COMPONENT_TYPE_CORE"));
+		LLOGLN(0, ("RDPDR_CTYP_CORE"));
 		switch (packetID)
 		{
 			case PAKID_CORE_SERVER_ANNOUNCE:
@@ -436,9 +436,9 @@ thread_process_message(rdpdrPlugin * plugin, char * data, int data_size)
 
 		}
 	}
-	else if (component == RDPDR_COMPONENT_TYPE_PRINTING)
+	else if (component == RDPDR_CTYP_PRN)
 	{
-		LLOGLN(0, ("RDPDR_COMPONENT_TYPE_PRINTING"));
+		LLOGLN(0, ("RDPDR_CTYP_PRN"));
 
 		switch (packetID)
 		{
