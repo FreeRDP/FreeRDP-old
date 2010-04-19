@@ -22,7 +22,7 @@
 #include <stdlib.h>
 #include <freerdp/types_ui.h>
 #include <freerdp/vchan.h>
-#include <freerdp/constants_rdpdr.h>
+#include "rdpdr_constants.h"
 
 #include "devman.h"
 #include "chan_stream.h"

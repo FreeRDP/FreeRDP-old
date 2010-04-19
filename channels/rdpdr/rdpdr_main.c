@@ -48,10 +48,10 @@ signal_data_in(rdpdrPlugin * plugin)
 
 	item = (struct data_in_item *) malloc(sizeof(struct data_in_item));
 	item->next = 0;
-	item->data = plugin->data_in[0];
-	plugin->data_in[0] = 0;
-	item->data_size = plugin->data_in_size[0];
-	plugin->data_in_size[0] = 0;
+	item->data = plugin->data_in;
+	plugin->data_in = 0;
+	item->data_size = plugin->data_in_size;
+	plugin->data_in_size = 0;
 	pthread_mutex_lock(plugin->mutex);
 	if (plugin->list_tail == 0)
 	{
@@ -115,7 +115,7 @@ rdpdr_send_client_announce_reply(rdpdrPlugin * plugin)
 	SET_UINT16(out_data, 6, plugin->versionMinor); /* versionMinor */
 	SET_UINT32(out_data, 8, plugin->clientID); /* clientID, given by the server in a Server Announce Request */
 
-	error = plugin->ep.pVirtualChannelWrite(plugin->open_handle[0], out_data, 12, out_data);
+	error = plugin->ep.pVirtualChannelWrite(plugin->open_handle, out_data, 12, out_data);
 
 	if (error != CHANNEL_RC_OK)
 	{
@@ -165,7 +165,7 @@ rdpdr_send_client_name_request(rdpdrPlugin * plugin)
 	SET_UINT32(data, 12, computerNameLen * 2); /* computerNameLen */
 	set_wstr(&data[16], size - 16, "comp", computerNameLen); /* computerName */
 
-	error = plugin->ep.pVirtualChannelWrite(plugin->open_handle[0],
+	error = plugin->ep.pVirtualChannelWrite(plugin->open_handle,
 				data, size, NULL);
 
 	if (error != CHANNEL_RC_OK)
@@ -244,7 +244,7 @@ rdpdr_send_device_list_announce_request(rdpdrPlugin * plugin)
 	}
 
 	out_data_size = offset;
-	error = plugin->ep.pVirtualChannelWrite(plugin->open_handle[0],
+	error = plugin->ep.pVirtualChannelWrite(plugin->open_handle,
 			out_data, out_data_size, NULL);
 
 	if (error != CHANNEL_RC_OK)
@@ -367,7 +367,7 @@ rdpdr_send_capabilities(rdpdrPlugin * plugin)
 	offset += rdpdr_out_drive_capset(&data[offset], size - offset);
 	offset += rdpdr_out_smartcard_capset(&data[offset], size - offset);
 
-	error = plugin->ep.pVirtualChannelWrite(plugin->open_handle[0],
+	error = plugin->ep.pVirtualChannelWrite(plugin->open_handle,
 			data, offset, NULL);
 	free(data);
 
@@ -542,10 +542,8 @@ OpenEventProcessReceived(uint32 openHandle, void * pData, uint32 dataLength,
 	uint32 totalLength, uint32 dataFlags)
 {
 	rdpdrPlugin * plugin;
-	int index;
 
 	plugin = (rdpdrPlugin *) chan_plugin_find_by_open_handle(openHandle);
-	index = (openHandle == plugin->open_handle[0]) ? 0 : 1;
 
 	LLOGLN(10, ("OpenEventProcessReceived: receive openHandle %d dataLength %d "
 		"totalLength %d dataFlags %d",
@@ -553,28 +551,25 @@ OpenEventProcessReceived(uint32 openHandle, void * pData, uint32 dataLength,
 
 	if (dataFlags & CHANNEL_FLAG_FIRST)
 	{
-		plugin->data_in_read[index] = 0;
-		if (plugin->data_in[index] != 0)
+		plugin->data_in_read = 0;
+		if (plugin->data_in != 0)
 		{
-			free(plugin->data_in[index]);
+			free(plugin->data_in);
 		}
-		plugin->data_in[index] = (char *) malloc(totalLength);
-		plugin->data_in_size[index] = totalLength;
+		plugin->data_in = (char *) malloc(totalLength);
+		plugin->data_in_size = totalLength;
 	}
 
-	memcpy(plugin->data_in[index] + plugin->data_in_read[index], pData, dataLength);
-	plugin->data_in_read[index] += dataLength;
+	memcpy(plugin->data_in + plugin->data_in_read, pData, dataLength);
+	plugin->data_in_read += dataLength;
 
 	if (dataFlags & CHANNEL_FLAG_LAST)
 	{
-		if (plugin->data_in_read[index] != plugin->data_in_size[index])
+		if (plugin->data_in_read != plugin->data_in_size)
 		{
 			LLOGLN(0, ("OpenEventProcessReceived: read error"));
 		}
-		if (index == 0)
-		{
-			signal_data_in(plugin);
-		}
+		signal_data_in(plugin);
 	}
 }
 
@@ -608,21 +603,13 @@ InitEventProcessConnected(void * pInitHandle, void * pData, uint32 dataLength)
 		LLOGLN(0, ("InitEventProcessConnected: error no match"));
 	}
 
-	error = plugin->ep.pVirtualChannelOpen(pInitHandle, &(plugin->open_handle[0]),
-		plugin->channel_def[0].name, OpenEvent);
+	error = plugin->ep.pVirtualChannelOpen(pInitHandle, &(plugin->open_handle),
+		plugin->channel_def.name, OpenEvent);
 	if (error != CHANNEL_RC_OK)
 	{
 		LLOGLN(0, ("InitEventProcessConnected: Open failed"));
 	}
-	chan_plugin_register_open_handle((rdpChanPlugin *) plugin, plugin->open_handle[0]);
-
-	error = plugin->ep.pVirtualChannelOpen(pInitHandle, &(plugin->open_handle[1]),
-		plugin->channel_def[1].name, OpenEvent);
-	if (error != CHANNEL_RC_OK)
-	{
-		LLOGLN(0, ("InitEventProcessConnected: Open failed"));
-	}
-	chan_plugin_register_open_handle((rdpChanPlugin *) plugin, plugin->open_handle[1]);
+	chan_plugin_register_open_handle((rdpChanPlugin *) plugin, plugin->open_handle);
 
 	pthread_create(&thread, 0, thread_func, plugin);
 	pthread_detach(thread);
@@ -685,15 +672,13 @@ VirtualChannelEntry(PCHANNEL_ENTRY_POINTS pEntryPoints)
 
 	chan_plugin_init((rdpChanPlugin *) plugin);
 
-	plugin->data_in_size[0] = 0;
-	plugin->data_in_size[1] = 0;
-	plugin->data_in[0] = 0;
-	plugin->data_in[1] = 0;
+	plugin->data_in_size = 0;
+	plugin->data_in = 0;
 	plugin->ep = *pEntryPoints;
 
-	memset(&(plugin->channel_def[0]), 0, sizeof(plugin->channel_def));
-	plugin->channel_def[0].options = CHANNEL_OPTION_INITIALIZED | CHANNEL_OPTION_ENCRYPT_RDP;
-	strcpy(plugin->channel_def[0].name, "rdpdr");
+	memset(&(plugin->channel_def), 0, sizeof(plugin->channel_def));
+	plugin->channel_def.options = CHANNEL_OPTION_INITIALIZED | CHANNEL_OPTION_ENCRYPT_RDP;
+	strcpy(plugin->channel_def.name, "rdpdr");
 
 	plugin->mutex = (pthread_mutex_t *) malloc(sizeof(pthread_mutex_t));
 	pthread_mutex_init(plugin->mutex, 0);
@@ -706,9 +691,9 @@ VirtualChannelEntry(PCHANNEL_ENTRY_POINTS pEntryPoints)
 	plugin->thread_status = 0;
 	plugin->devman = devman_new();
 
-	devman_load_device_service(plugin->devman, "../channels/rdpdr/disk/.libs/libdisk.so");
+	devman_load_device_service(plugin->devman, "../channels/rdpdr/disk/.libs/disk.so");
 
-	plugin->ep.pVirtualChannelInit(&plugin->chan_plugin.init_handle, plugin->channel_def, 2,
+	plugin->ep.pVirtualChannelInit(&plugin->chan_plugin.init_handle, &plugin->channel_def, 1,
 		VIRTUAL_CHANNEL_VERSION_WIN2000, InitEvent);
 
 	return 1;

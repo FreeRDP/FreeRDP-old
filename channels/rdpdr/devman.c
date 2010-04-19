@@ -24,7 +24,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <freerdp/types_ui.h>
-#include <freerdp/constants_rdpdr.h>
+#include "rdpdr_constants.h"
 
 #include "devman.h"
 

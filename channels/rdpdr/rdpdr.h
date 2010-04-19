@@ -50,18 +50,18 @@ struct rdpdr_plugin
 	rdpChanPlugin chan_plugin;
 
 	CHANNEL_ENTRY_POINTS ep;
-	CHANNEL_DEF channel_def[2];
-	uint32 open_handle[2];
-	char * data_in[2];
-	int data_in_size[2];
-	int data_in_read[2];
+	CHANNEL_DEF channel_def;
+	uint32 open_handle;
+	char * data_in;
+	int data_in_size;
+	int data_in_read;
 	struct wait_obj * term_event;
 	struct wait_obj * data_in_event;
-	struct data_in_item * volatile list_head;
-	struct data_in_item * volatile list_tail;
+	struct data_in_item * list_head;
+	struct data_in_item * list_tail;
 	/* for locking the linked list */
 	pthread_mutex_t * mutex;
-	volatile int thread_status;
+	int thread_status;
 
 	uint16 versionMinor;
 	uint16 clientID;
