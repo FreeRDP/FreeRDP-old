@@ -409,6 +409,7 @@ thread_process_message(rdpdrPlugin * plugin, char * data, int data_size)
 			case PAKID_CORE_CLIENTID_CONFIRM:
 				LLOGLN(0, ("PAKID_CORE_CLIENTID_CONFIRM"));
 				rdpdr_process_server_clientid_confirm(plugin, &data[4], data_size - 4);
+				rdpdr_send_capabilities(plugin);
 				rdpdr_send_device_list_announce_request(plugin);
 				break;
 
@@ -428,7 +429,6 @@ thread_process_message(rdpdrPlugin * plugin, char * data, int data_size)
 				/* server capabilities */
 				LLOGLN(0, ("PAKID_CORE_SERVER_CAPABILITY"));
 				rdpdr_process_capabilities(&data[4], data_size - 4);
-				rdpdr_send_capabilities(plugin);
 				break;
 
 			default:
