@@ -39,7 +39,7 @@ typedef SERVICE * PSERVICE;
 struct _DEVICE
 {
 	uint32 id;
-        char* name;
+	char* name;
 	void* info;
 	void* prev;
 	void* next;
@@ -51,10 +51,11 @@ typedef DEVICE * PDEVICE;
 struct _DEVMAN
 {
 	int count; /* device count */
+	int id_sequence; /* generate unique device id */
 	DEVICE* idev; /* iterator device */
 	DEVICE* head; /* head device in linked list */
 	DEVICE* tail; /* tail device in linked list */
-        void* pDevmanEntryPoints; /* entry points for device services */
+	void* pDevmanEntryPoints; /* entry points for device services */
 };
 typedef struct _DEVMAN DEVMAN;
 typedef DEVMAN * PDEVMAN;

@@ -49,7 +49,7 @@ irp_output_device_io_completion_header(char* data, int data_size, uint32 deviceI
 }
 
 void
-irp_process_create_request(char* data, int data_size, IRP* irp)
+irp_process_create_request(IRP* irp, char* data, int data_size)
 {
 #if 0
 	uint32 desiredAccess;
@@ -115,7 +115,7 @@ irp_send_create_response(IRP* irp)
 }
 
 void
-irp_process_close_request(char* data, int data_size, IRP* irp)
+irp_process_close_request(IRP* irp, char* data, int data_size)
 {
 	/* 32-byte pad */
 #if 0
@@ -150,7 +150,7 @@ irp_send_close_response(IRP* irp)
 }
 
 void
-irp_process_read_request(char* data, int data_size, IRP* irp)
+irp_process_read_request(IRP* irp, char* data, int data_size)
 {
 #if 0
 	uint32 length;
@@ -233,7 +233,7 @@ irp_send_read_response(IRP* irp)
 }
 
 void
-irp_process_write_request(char* data, int data_size, IRP* irp)
+irp_process_write_request(IRP* irp, char* data, int data_size)
 {
 #if 0
 	uint32 length;
@@ -250,7 +250,7 @@ irp_process_write_request(char* data, int data_size, IRP* irp)
 }
 
 void
-irp_process_query_volume_information_request(char* data, int data_size, IRP* irp)
+irp_process_query_volume_information_request(IRP* irp, char* data, int data_size)
 {
 #if 0
 	uint32 fsInformationClass;
@@ -265,7 +265,7 @@ irp_process_query_volume_information_request(char* data, int data_size, IRP* irp
 }
 
 void
-irp_process_set_volume_information_request(char* data, int data_size, IRP* irp)
+irp_process_set_volume_information_request(IRP* irp, char* data, int data_size)
 {
 #if 0
 	uint32 fsInformationClass;
@@ -280,7 +280,7 @@ irp_process_set_volume_information_request(char* data, int data_size, IRP* irp)
 }
 
 void
-irp_process_query_information_request(char* data, int data_size, IRP* irp)
+irp_process_query_information_request(IRP* irp, char* data, int data_size)
 {
 #if 0
 	uint32 length;
@@ -332,7 +332,7 @@ irp_send_query_information_response(IRP* irp)
 }
 
 void
-irp_process_set_information_request(char* data, int data_size, IRP* irp)
+irp_process_set_information_request(IRP* irp, char* data, int data_size)
 {
 #if 0
 	uint32 fsInformationClass;
@@ -347,7 +347,7 @@ irp_process_set_information_request(char* data, int data_size, IRP* irp)
 }
 
 void
-irp_process_directory_control_request(char* data, int data_size, IRP* irp)
+irp_process_directory_control_request(IRP* irp, char* data, int data_size)
 {
 #if 0
 	switch(irp->minorFunction)
@@ -371,7 +371,7 @@ irp_process_directory_control_request(char* data, int data_size, IRP* irp)
 }
 
 void
-irp_process_device_control_request(char* data, int data_size, IRP* irp)
+irp_process_device_control_request(IRP* irp, char* data, int data_size)
 {
 #if 0
 	uint32 outputBufferLength;
@@ -388,7 +388,7 @@ irp_process_device_control_request(char* data, int data_size, IRP* irp)
 }
 
 void
-irp_process_file_lock_control_request(char* data, int data_size, IRP* irp)
+irp_process_file_lock_control_request(IRP* irp, char* data, int data_size)
 {
 #if 0
 	uint8 f;
@@ -406,7 +406,7 @@ irp_process_file_lock_control_request(char* data, int data_size, IRP* irp)
 }
 
 void
-irp_process_query_directory_request(char* data, int data_size, IRP* irp)
+irp_process_query_directory_request(IRP* irp, char* data, int data_size)
 {
 #if 0
 	uint8 initialQuery;	
@@ -455,7 +455,7 @@ irp_send_query_directory_response(IRP* irp)
 }
 
 void
-irp_process_notify_change_directory_request(char* data, int data_size, IRP* irp)
+irp_process_notify_change_directory_request(IRP* irp, char* data, int data_size)
 {
 #if 0
 	uint8 watchQuery;	

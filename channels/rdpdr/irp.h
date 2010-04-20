@@ -121,41 +121,41 @@ IRP;
 void
 irp_output_device_io_completion_header(char* data, int data_size, uint32 deviceID, uint32 completionID, uint32 ioStatus);
 void
-irp_process_create_request(char* data, int data_size, IRP* irp);
+irp_process_create_request(IRP* irp, char* data, int data_size);
 void
 irp_send_create_response(IRP* irp);
 void
-irp_process_close_request(char* data, int data_size, IRP* irp);
+irp_process_close_request(IRP* irp, char* data, int data_size);
 void
 irp_send_close_response(IRP* irp);
 void
-irp_process_read_request(char* data, int data_size, IRP* irp);
+irp_process_read_request(IRP* irp, char* data, int data_size);
 void
 irp_send_read_response(IRP* irp);
 void
-irp_process_write_request(char* data, int data_size, IRP* irp);
+irp_process_write_request(IRP* irp, char* data, int data_size);
 void
-irp_process_query_volume_information_request(char* data, int data_size, IRP* irp);
+irp_process_query_volume_information_request(IRP* irp, char* data, int data_size);
 void
-irp_process_set_volume_information_request(char* data, int data_size, IRP* irp);
+irp_process_set_volume_information_request(IRP* irp, char* data, int data_size);
 void
-irp_process_query_information_request(char* data, int data_size, IRP* irp);
+irp_process_query_information_request(IRP* irp, char* data, int data_size);
 void
 irp_send_query_information_response(IRP* irp);
 void
-irp_process_set_information_request(char* data, int data_size, IRP* irp);
+irp_process_set_information_request(IRP* irp, char* data, int data_size);
 void
-irp_process_directory_control_request(char* data, int data_size, IRP* irp);
+irp_process_directory_control_request(IRP* irp, char* data, int data_size);
 void
-irp_process_device_control_request(char* data, int data_size, IRP* irp);
+irp_process_device_control_request(IRP* irp, char* data, int data_size);
 void
-irp_process_file_lock_control_request(char* data, int data_size, IRP* irp);
+irp_process_file_lock_control_request(IRP* irp, char* data, int data_size);
 void
-irp_process_query_directory_request(char* data, int data_size, IRP* irp);
+irp_process_query_directory_request(IRP* irp, char* data, int data_size);
 void
 irp_send_query_directory_response(IRP* irp);
 void
-irp_process_notify_change_directory_request(char* data, int data_size, IRP* irp);
+irp_process_notify_change_directory_request(IRP* irp, char* data, int data_size);
 
 #endif // __IRP_H
 

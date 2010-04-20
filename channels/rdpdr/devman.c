@@ -47,6 +47,7 @@ devman_new()
 	devman->head = NULL;
 	devman->tail = NULL;
 	devman->count = 0;
+	devman->id_sequence = 1;
 
 	pDevmanEntryPoints->pDevmanRegisterService = devman_register_service;
 	pDevmanEntryPoints->pDevmanUnregisterService = devman_unregister_service;
@@ -72,6 +73,8 @@ devman_free(DEVMAN* devman)
 		devman_unregister_service(devman, pdev->service);
 		devman_rewind(devman);
 	}
+
+	free(devman->pDevmanEntryPoints);
 
 	/* free devman */
 	free(devman);
@@ -126,6 +129,7 @@ devman_register_device(DEVMAN* devman, SERVICE* srv, char* name)
 	DEVICE* pdev;
 
 	pdev = (DEVICE*)malloc(sizeof(DEVICE));
+	pdev->id = devman->id_sequence++;
 	pdev->prev = NULL;
 	pdev->next = NULL;
 	pdev->service = srv;

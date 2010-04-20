@@ -155,6 +155,7 @@ rdpdr_send_client_name_request(rdpdrPlugin * plugin)
 	computerNameLen = 5;
 	size = 16 + computerNameLen * 2;
 	data = malloc(size);
+	memset(data, 0, size);
 
 	SET_UINT16(data, 0, RDPDR_CTYP_CORE);
 	SET_UINT16(data, 2, PAKID_CORE_CLIENT_NAME);
@@ -189,6 +190,7 @@ rdpdr_send_device_list_announce_request(rdpdrPlugin * plugin)
 	int offset = 0;	
 
 	out_data = malloc(256);
+	memset(out_data, 0, 256);
 
 	SET_UINT16(out_data, 0, RDPDR_CTYP_CORE);
 	SET_UINT16(out_data, 2, PAKID_CORE_DEVICELIST_ANNOUNCE);
@@ -208,11 +210,10 @@ rdpdr_send_device_list_announce_request(rdpdrPlugin * plugin)
 		offset += 8;
 
 		/* preferredDosName, Max 8 characters, may not be null terminated */
-		memcpy((void*)&out_data[offset],
-			(void*)pdev->name, strlen(pdev->name));
+		strncpy(&out_data[offset], pdev->name, 8);
 		offset += 8;
 
-		LLOGLN(0, ("registered device: %s", pdev->name));
+		LLOGLN(0, ("registered device: %s (type=%d id=%d)", pdev->name, pdev->service->type, pdev->id));
 
 		switch (pdev->service->type)
 		{
@@ -282,55 +283,55 @@ rdpdr_process_irp(rdpdrPlugin * plugin, char* data, int data_size)
 	{
 		case IRP_MJ_CREATE:
 			LLOGLN(0, ("IRP_MJ_CREATE\n"));
-			irp_process_create_request(&data[20], data_size - 20, &irp);
+			irp_process_create_request(&irp, &data[20], data_size - 20);
 			irp_send_create_response(&irp);
 			break;
 
 		case IRP_MJ_CLOSE:
 			LLOGLN(0, ("IRP_MJ_CLOSE\n"));
-			irp_process_close_request(&data[20], data_size - 20, &irp);
+			irp_process_close_request(&irp, &data[20], data_size - 20);
 			irp_send_close_response(&irp);
 			break;
 
 		case IRP_MJ_READ:
 			LLOGLN(0, ("IRP_MJ_READ\n"));
-			irp_process_read_request(&data[20], data_size - 20, &irp);
+			irp_process_read_request(&irp, &data[20], data_size - 20);
 			break;
 
 		case IRP_MJ_WRITE:
 			LLOGLN(0, ("IRP_MJ_WRITE\n"));
-			irp_process_write_request(&data[20], data_size - 20, &irp);
+			irp_process_write_request(&irp, &data[20], data_size - 20);
 			break;
 
 		case IRP_MJ_QUERY_INFORMATION:
 			LLOGLN(0, ("IRP_MJ_QUERY_INFORMATION\n"));
-			irp_process_query_information_request(&data[20], data_size - 20, &irp);
+			irp_process_query_information_request(&irp, &data[20], data_size - 20);
 			irp_send_query_information_response(&irp);
 			break;
 
 		case IRP_MJ_SET_INFORMATION:
 			LLOGLN(0, ("IRP_MJ_SET_INFORMATION\n"));
-			irp_process_set_volume_information_request(&data[20], data_size - 20, &irp);
+			irp_process_set_volume_information_request(&irp, &data[20], data_size - 20);
 			break;
 
 		case IRP_MJ_QUERY_VOLUME_INFORMATION:
 			LLOGLN(0, ("IRP_MJ_QUERY_VOLUME_INFORMATION\n"));
-			irp_process_query_volume_information_request(&data[20], data_size - 20, &irp);
+			irp_process_query_volume_information_request(&irp, &data[20], data_size - 20);
 			break;
 
 		case IRP_MJ_DIRECTORY_CONTROL:
 			LLOGLN(0, ("IRP_MJ_DIRECTORY_CONTROL\n"));
-			irp_process_directory_control_request(&data[20], data_size - 20, &irp);
+			irp_process_directory_control_request(&irp, &data[20], data_size - 20);
 			break;
 
 		case IRP_MJ_DEVICE_CONTROL:
 			LLOGLN(0, ("IRP_MJ_DEVICE_CONTROL\n"));
-			irp_process_device_control_request(&data[20], data_size - 20, &irp);
+			irp_process_device_control_request(&irp, &data[20], data_size - 20);
 			break;
 
 		case IRP_MJ_LOCK_CONTROL:
 			LLOGLN(0, ("IRP_MJ_LOCK_CONTROL\n"));
-			irp_process_file_lock_control_request(&data[20], data_size - 20, &irp);
+			irp_process_file_lock_control_request(&irp, &data[20], data_size - 20);
 			break;
 
 		default:
@@ -468,6 +469,11 @@ thread_process_data(rdpdrPlugin * plugin)
 
 	while (1)
 	{
+		if (wait_obj_is_set(plugin->term_event))
+		{
+			break;
+		}
+
 		pthread_mutex_lock(plugin->mutex);
 
 		if (plugin->list_head == 0)
@@ -620,6 +626,7 @@ InitEventProcessTerminated(void * pInitHandle)
 {
 	rdpdrPlugin * plugin;
 	int index;
+	struct data_in_item * in_item;
 
 	plugin = (rdpdrPlugin *) chan_plugin_find_by_init_handle(pInitHandle);
 	if (plugin == NULL)
@@ -637,6 +644,15 @@ InitEventProcessTerminated(void * pInitHandle)
 	}
 	wait_obj_free(plugin->term_event);
 	wait_obj_free(plugin->data_in_event);
+
+	/* free the un-processed in/out queue */
+	while (plugin->list_head != 0)
+	{
+		in_item = plugin->list_head;
+		plugin->list_head = in_item->next;
+		free(in_item->data);
+		free(in_item);
+	}
 
 	devman_free(plugin->devman);
 	chan_plugin_uninit((rdpChanPlugin *) plugin);
