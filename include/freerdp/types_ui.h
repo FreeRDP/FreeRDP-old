@@ -88,4 +88,11 @@ typedef struct _RD_BRUSH
 }
 RD_BRUSH;
 
+typedef struct _RD_PLUGIN_DATA
+{
+	uint16 size;
+	void * data[4];
+}
+RD_PLUGIN_DATA;
+
 #endif

@@ -70,7 +70,7 @@ FREERDP_CHANMAN_API void
 freerdp_chanman_free(rdpChanMan * chan_man);
 FREERDP_CHANMAN_API int
 freerdp_chanman_load_plugin(rdpChanMan * chan_man, rdpSet * settings,
-	const CHR * filename);
+	const CHR * filename, void * data);
 FREERDP_CHANMAN_API int
 freerdp_chanman_pre_connect(rdpChanMan * chan_man, rdpInst * inst);
 FREERDP_CHANMAN_API int

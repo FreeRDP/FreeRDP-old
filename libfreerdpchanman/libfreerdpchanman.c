@@ -672,10 +672,10 @@ freerdp_chanman_free(rdpChanMan * chan_man)
    called only from main thread */
 int
 freerdp_chanman_load_plugin(rdpChanMan * chan_man, rdpSet * settings,
-	const CHR * filename)
+	const CHR * filename, void * data)
 {
 	struct lib_data * lib;
-	CHANNEL_ENTRY_POINTS ep;
+	CHANNEL_ENTRY_POINTS_EX ep;
 	int ok;
 	CHR path[255];
 
@@ -719,6 +719,7 @@ freerdp_chanman_load_plugin(rdpChanMan * chan_man, rdpSet * settings,
 	ep.pVirtualChannelOpen = MyVirtualChannelOpen;
 	ep.pVirtualChannelClose = MyVirtualChannelClose;
 	ep.pVirtualChannelWrite = MyVirtualChannelWrite;
+	ep.pExtendedData = data;
 
 	/* enable MyVirtualChannelInit */
 	chan_man->can_call_init = 1;
@@ -726,7 +727,7 @@ freerdp_chanman_load_plugin(rdpChanMan * chan_man, rdpSet * settings,
 
 	MUTEX_LOCK(g_mutex_init);
 	g_init_chan_man = chan_man;
-	ok = lib->entry(&ep);
+	ok = lib->entry((PCHANNEL_ENTRY_POINTS)&ep);
 	g_init_chan_man = NULL;
 	MUTEX_UNLOCK(g_mutex_init);
 

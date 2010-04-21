@@ -129,7 +129,7 @@ struct _CHANNEL_ENTRY_POINTS_EX
     PVIRTUALCHANNELWRITE pVirtualChannelWrite;
     void* pExtendedData; /* extended data field to pass initial parameters */
 };
-typedef struct _CHANNEL_ENTRY_POINTS CHANNEL_ENTRY_POINTS_EX;
+typedef struct _CHANNEL_ENTRY_POINTS_EX CHANNEL_ENTRY_POINTS_EX;
 typedef CHANNEL_ENTRY_POINTS_EX * PCHANNEL_ENTRY_POINTS_EX;
 
 #endif

@@ -680,6 +680,7 @@ int
 VirtualChannelEntry(PCHANNEL_ENTRY_POINTS pEntryPoints)
 {
 	rdpdrPlugin * plugin;
+	RD_PLUGIN_DATA * data;
 
 	LLOGLN(10, ("VirtualChannelEntry:"));
 
@@ -708,6 +709,16 @@ VirtualChannelEntry(PCHANNEL_ENTRY_POINTS pEntryPoints)
 	plugin->devman = devman_new();
 
 	devman_load_device_service(plugin->devman, "../channels/rdpdr/disk/.libs/disk.so");
+
+	if (pEntryPoints->cbSize >= sizeof(CHANNEL_ENTRY_POINTS_EX))
+	{
+		data = (RD_PLUGIN_DATA *) (((PCHANNEL_ENTRY_POINTS_EX)pEntryPoints)->pExtendedData);
+		while (data && data->size > 0)
+		{
+			LLOGLN(0, ("Register device %s:%s=%s\n", (char*)data->data[0], (char*)data->data[1], (char*)data->data[2]));
+			data += data->size;
+		}
+	}
 
 	plugin->ep.pVirtualChannelInit(&plugin->chan_plugin.init_handle, &plugin->channel_def, 1,
 		VIRTUAL_CHANNEL_VERSION_WIN2000, InitEvent);

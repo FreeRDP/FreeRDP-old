@@ -34,6 +34,8 @@
 #include <freerdp/chanman.h>
 #include "xf_win.h"
 
+#define MAX_PLUGIN_DATA 20
+
 static int
 set_default_params(rdpSet * settings)
 {
@@ -63,6 +65,9 @@ process_params(rdpSet * settings, rdpChanMan * chan_man, int argc, char ** argv,
 {
 	char * p;
 	struct passwd * pw;
+	RD_PLUGIN_DATA plugin_data[MAX_PLUGIN_DATA + 1];
+	int index;
+	int i, j;
 
 	set_default_params(settings);
 	pw = getpwuid(getuid());
@@ -225,7 +230,27 @@ process_params(rdpSet * settings, rdpChanMan * chan_man, int argc, char ** argv,
 				printf("missing plugin name\n");
 				return 1;
 			}
-			freerdp_chanman_load_plugin(chan_man, settings, argv[*pindex]);
+			index = *pindex;
+			memset(plugin_data, 0, sizeof(plugin_data));
+			if (*pindex < argc - 1 && strcmp("-data", argv[*pindex + 1]) == 0)
+			{
+				*pindex = *pindex + 2;
+				i = 0;
+				while (*pindex < argc && strcmp("--", argv[*pindex]) != 0 && i < MAX_PLUGIN_DATA)
+				{
+					plugin_data[i].size = sizeof(RD_PLUGIN_DATA);
+					for (j = 0, p = argv[*pindex]; j < 4 && p != NULL; j++)
+					{
+						plugin_data[i].data[j] = p;
+						p = strchr(plugin_data[i].data[j], ':');
+						if (p != NULL)
+							*p++ = 0;
+					}
+					*pindex = *pindex + 1;
+					i++;
+				}
+			}
+			freerdp_chanman_load_plugin(chan_man, settings, argv[index], plugin_data);
 		}
 		else
 		{
