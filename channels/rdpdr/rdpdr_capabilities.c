@@ -52,7 +52,7 @@ rdpdr_out_general_capset(char* data, int size)
 	SET_UINT16(data, 18, RDPDR_MINOR_RDP_VERSION_5_2); /* protocolMinorVersion */
 	SET_UINT32(data, 20, 0x0000FFFF); /* ioCode1 */
 	SET_UINT32(data, 24, 0); /* ioCode2, must be set to zero, reserved for future use */
-	SET_UINT32(data, 28, RDPDR_DEVICE_REMOVE_PDUS | RDPDR_CLIENT_DISPLAY_NAME_PDU); /* extendedPDU */
+	SET_UINT32(data, 28, RDPDR_DEVICE_REMOVE_PDUS | RDPDR_CLIENT_DISPLAY_NAME_PDU | RDPDR_USER_LOGGEDON_PDU); /* extendedPDU */
 	SET_UINT32(data, 32, ENABLE_ASYNCIO); /* extraFlags1 */
 	SET_UINT32(data, 36, 0); /* extraFlags2, must be set to zero, reserved for future use */
 
