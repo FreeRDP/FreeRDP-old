@@ -24,16 +24,19 @@
 
 #include <freerdp/types_ui.h>
 
+typedef struct _SERVICE SERVICE;
+typedef struct _DEVICE DEVICE;
+
 struct _SERVICE
 {
 	uint32 type;
-	int(*create) (void);
-	int(*close) (void);
-	int(*read) (void);
-	int(*write) (void);
-	int(*control) (void);
+	int(*create) (DEVICE * dev);
+	int(*close) (DEVICE * dev);
+	int(*read) (DEVICE * dev);
+	int(*write) (DEVICE * dev);
+	int(*control) (DEVICE * dev);
+	int(*free) (DEVICE * dev);
 };
-typedef struct _SERVICE SERVICE;
 typedef SERVICE * PSERVICE;
 
 struct _DEVICE
@@ -45,7 +48,6 @@ struct _DEVICE
 	void* next;
 	SERVICE* service;
 };
-typedef struct _DEVICE DEVICE;
 typedef DEVICE * PDEVICE;
 
 struct _DEVMAN
@@ -71,6 +73,7 @@ struct _DEVMAN_ENTRY_POINTS
     PDEVMAN_UNREGISTER_SERVICE pDevmanUnregisterService;
     PDEVMAN_REGISTER_DEVICE pDevmanRegisterDevice;
     PDEVMAN_UNREGISTER_DEVICE pDevmanUnregisterDevice;
+    void* pExtendedData; /* extended data field to pass initial parameters */
 };
 typedef struct _DEVMAN_ENTRY_POINTS DEVMAN_ENTRY_POINTS;
 typedef DEVMAN_ENTRY_POINTS * PDEVMAN_ENTRY_POINTS;
@@ -78,7 +81,7 @@ typedef DEVMAN_ENTRY_POINTS * PDEVMAN_ENTRY_POINTS;
 typedef int (*PDEVICE_SERVICE_ENTRY)(PDEVMAN, PDEVMAN_ENTRY_POINTS);
 
 DEVMAN*
-devman_new();
+devman_new(void* data);
 int
 devman_free(DEVMAN* devman);
 SERVICE*

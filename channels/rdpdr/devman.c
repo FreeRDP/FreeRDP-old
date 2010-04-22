@@ -35,7 +35,7 @@
   do { if (_level < LOG_LEVEL) { printf _args ; printf("\n"); } } while (0)
 
 DEVMAN*
-devman_new()
+devman_new(void* data)
 {
 	DEVMAN* devman;
 	PDEVMAN_ENTRY_POINTS pDevmanEntryPoints;
@@ -53,6 +53,7 @@ devman_new()
 	pDevmanEntryPoints->pDevmanUnregisterService = devman_unregister_service;
 	pDevmanEntryPoints->pDevmanRegisterDevice = devman_register_device;
 	pDevmanEntryPoints->pDevmanUnregisterDevice = devman_unregister_device;
+	pDevmanEntryPoints->pExtendedData = data;
 	devman->pDevmanEntryPoints = (void*)pDevmanEntryPoints;
 
 	return devman;
@@ -92,6 +93,7 @@ devman_register_service(DEVMAN* devman)
 	srv->read = NULL;
 	srv->write = NULL;
 	srv->control = NULL;
+	srv->free = NULL;
 	srv->type = 0;
 
 	return srv;
@@ -134,10 +136,10 @@ devman_register_device(DEVMAN* devman, SERVICE* srv, char* name)
 	pdev->next = NULL;
 	pdev->service = srv;
 
-	pdev->name = malloc(strlen(name));
+	pdev->name = malloc(strlen(name) + 1);
 	strcpy(pdev->name, name);
 
-	if (devman->head == devman->tail)
+	if (devman->head == NULL)
 	{
 		/* linked list is empty */
 		devman->head = pdev;
@@ -198,6 +200,9 @@ devman_unregister_device(DEVMAN* devman, DEVICE* dev)
 
 			devman->count--;
 
+			if (dev->service->free)
+				dev->service->free(dev);
+			free(dev->name);
 			free(dev); /* free memory for unregistered device */
 			return 1; /* unregistration successful */
 		}
@@ -218,12 +223,8 @@ devman_has_next(DEVMAN* devman)
 {
 	if (devman->idev == NULL)
 		return 0;
-	else if (devman->idev == devman->head)
-		return 1;
-	else if (devman->idev->next != NULL)
-		return 1;
 	else
-		return 0;
+		return 1;
 }
 
 DEVICE*

@@ -26,64 +26,98 @@
 #include "rdpdr.h"
 #include "devman.h"
 
-PDEVMAN devman;
-DEVICE* disk_device;
-SERVICE* disk_service;
+struct _DISK_DEVICE_INFO
+{
+	PDEVMAN devman;
 
-PDEVMAN_REGISTER_SERVICE DevmanRegisterService;
-PDEVMAN_UNREGISTER_SERVICE DevmanUnregisterService;
-PDEVMAN_REGISTER_DEVICE DevmanRegisterDevice;
-PDEVMAN_UNREGISTER_DEVICE DevmanUnregisterDevice;
+	PDEVMAN_REGISTER_SERVICE DevmanRegisterService;
+	PDEVMAN_UNREGISTER_SERVICE DevmanUnregisterService;
+	PDEVMAN_REGISTER_DEVICE DevmanRegisterDevice;
+	PDEVMAN_UNREGISTER_DEVICE DevmanUnregisterDevice;
 
-int disk_create()
+	char * path;
+};
+typedef struct _DISK_DEVICE_INFO DISK_DEVICE_INFO;
+
+int
+disk_create(DEVICE * dev)
 {
 	printf("disk_create\n");
 	return 0;
 }
 
-int disk_close()
+int
+disk_close(DEVICE * dev)
 {
 	printf("disk_close\n");
 	return 0;
 }
 
-int disk_read()
+int
+disk_read(DEVICE * dev)
 {
 	printf("disk_read\n");
 	return 0;
 }
 
-int disk_write()
+int
+disk_write(DEVICE * dev)
 {
 	printf("disk_write\n");
 	return 0;
 }
 
-int disk_control()
+int
+disk_control(DEVICE * dev)
 {
 	printf("disk_control\n");
 	return 0;
 }
 
 int
+disk_free(DEVICE * dev)
+{
+	printf("disk_free\n");
+	free(dev->info);
+	return 0;
+}
+
+int
 DeviceServiceEntry(PDEVMAN pDevman, PDEVMAN_ENTRY_POINTS pEntryPoints)
 {
-	devman = pDevman;
-	DevmanRegisterService = pEntryPoints->pDevmanRegisterService;
-	DevmanUnregisterService = pEntryPoints->pDevmanUnregisterService;
-	DevmanRegisterDevice = pEntryPoints->pDevmanRegisterDevice;
-	DevmanUnregisterDevice = pEntryPoints->pDevmanUnregisterDevice;
+	SERVICE * srv;
+	DEVICE * dev;
+	DISK_DEVICE_INFO * info;
+	RD_PLUGIN_DATA * data;
 
-	disk_service = DevmanRegisterService(devman);
+	srv = pEntryPoints->pDevmanRegisterService(pDevman);
 
-	disk_service->create = disk_create;
-	disk_service->close = disk_close;
-	disk_service->read = disk_read;
-	disk_service->write = disk_write;
-	disk_service->control = disk_control;
-	disk_service->type = RDPDR_DTYP_FILESYSTEM;
+	srv->create = disk_create;
+	srv->close = disk_close;
+	srv->read = disk_read;
+	srv->write = disk_write;
+	srv->control = disk_control;
+	srv->free = disk_free;
+	srv->type = RDPDR_DTYP_FILESYSTEM;
 
-	disk_device = DevmanRegisterDevice(devman, disk_service, "disk");
+	data = (RD_PLUGIN_DATA *) pEntryPoints->pExtendedData;
+	while (data && data->size > 0)
+	{
+		if (strcmp((char*)data->data[0], "disk") == 0)
+		{
+			info = (DISK_DEVICE_INFO *) malloc(sizeof(DISK_DEVICE_INFO));
+			info->devman = pDevman;
+			info->DevmanRegisterService = pEntryPoints->pDevmanRegisterService;
+			info->DevmanUnregisterService = pEntryPoints->pDevmanUnregisterService;
+			info->DevmanRegisterDevice = pEntryPoints->pDevmanRegisterDevice;
+			info->DevmanUnregisterDevice = pEntryPoints->pDevmanUnregisterDevice;
+			info->path = (char *) data->data[2];
+
+			dev = info->DevmanRegisterDevice(pDevman, srv, (char*)data->data[1]);
+			dev->info = info;
+		}
+		data = (RD_PLUGIN_DATA *) (((void *) data) + data->size);
+	}
 
 	return 1;
 }
