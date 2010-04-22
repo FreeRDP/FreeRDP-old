@@ -62,9 +62,9 @@ rdpdr_out_general_capset(char* data, int size)
 	 */
 
 	rdpdr_out_capset_header(data, size,
-		CAP_GENERAL_TYPE, 36, GENERAL_CAPABILITY_VERSION_01);
+		CAP_GENERAL_TYPE, 40, GENERAL_CAPABILITY_VERSION_01);
 
-	return 8;
+	return 40;
 }
 
 /* Process device direction general capability set */

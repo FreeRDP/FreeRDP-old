@@ -167,7 +167,7 @@ rdpdr_send_client_name_request(rdpdrPlugin * plugin)
 	set_wstr(&data[16], size - 16, "comp", computerNameLen); /* computerName */
 
 	error = plugin->ep.pVirtualChannelWrite(plugin->open_handle,
-				data, size, NULL);
+				data, size, data);
 
 	if (error != CHANNEL_RC_OK)
 	{
@@ -246,7 +246,7 @@ rdpdr_send_device_list_announce_request(rdpdrPlugin * plugin)
 
 	out_data_size = offset;
 	error = plugin->ep.pVirtualChannelWrite(plugin->open_handle,
-			out_data, out_data_size, NULL);
+			out_data, out_data_size, out_data);
 
 	if (error != CHANNEL_RC_OK)
 	{
@@ -353,6 +353,7 @@ rdpdr_send_capabilities(rdpdrPlugin * plugin)
 
 	size = 256;
 	data = (char*)malloc(size);
+	memset(data, 0, size);
 
 	SET_UINT16(data, 0, RDPDR_CTYP_CORE);
 	SET_UINT16(data, 2, PAKID_CORE_CLIENT_CAPABILITY);
@@ -369,8 +370,7 @@ rdpdr_send_capabilities(rdpdrPlugin * plugin)
 	offset += rdpdr_out_smartcard_capset(&data[offset], size - offset);
 
 	error = plugin->ep.pVirtualChannelWrite(plugin->open_handle,
-			data, offset, NULL);
-	free(data);
+			data, offset, data);
 
 	if (error != CHANNEL_RC_OK)
 	{
