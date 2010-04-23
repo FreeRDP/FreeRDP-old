@@ -107,7 +107,7 @@ int
 rdpdr_out_printer_capset(char* data, int size)
 {
 	rdpdr_out_capset_header(data, size,
-		CAP_PRINTER_TYPE, 0, PRINT_CAPABILITY_VERSION_01);
+		CAP_PRINTER_TYPE, 8, PRINT_CAPABILITY_VERSION_01);
 
 	return 8;
 }
@@ -130,7 +130,7 @@ int
 rdpdr_out_port_capset(char* data, int size)
 {
 	rdpdr_out_capset_header(data, size,
-		CAP_PORT_TYPE, 0, PORT_CAPABILITY_VERSION_01);
+		CAP_PORT_TYPE, 8, PORT_CAPABILITY_VERSION_01);
 
 	return 8;
 }
@@ -153,13 +153,7 @@ int
 rdpdr_out_drive_capset(char* data, int size)
 {
 	rdpdr_out_capset_header(data, size,
-		CAP_DRIVE_TYPE, 0, DRIVE_CAPABILITY_VERSION_02);
-
-	/*
-	 * [MS-RDPEFS] says GENERAL_CAPABILITY_VERSION_02 must be used
-	 * with CAP_DRIVE_TYPE, but changing it to the correct version
-	 * breaks drive redirection
-	 */
+		CAP_DRIVE_TYPE, 8, DRIVE_CAPABILITY_VERSION_02);
 
 	return 8;
 }
@@ -182,7 +176,7 @@ int
 rdpdr_out_smartcard_capset(char* data, int size)
 {
 	rdpdr_out_capset_header(data, size,
-		CAP_SMARTCARD_TYPE, 0, SMARTCARD_CAPABILITY_VERSION_01);
+		CAP_SMARTCARD_TYPE, 8, SMARTCARD_CAPABILITY_VERSION_01);
 
 	return 8;
 }

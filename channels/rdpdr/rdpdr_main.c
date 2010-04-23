@@ -193,6 +193,7 @@ rdpdr_send_device_list_announce_request(rdpdrPlugin * plugin)
 	DEVICE* pdev;
 	int offset = 0;
 	int device_data_len;
+	int i;
 
 	size = 8 + plugin->devman->count * 256;
 	out_data = malloc(size);
@@ -217,6 +218,13 @@ rdpdr_send_device_list_announce_request(rdpdrPlugin * plugin)
 
 		/* preferredDosName, Max 8 characters, may not be null terminated */
 		strncpy(&out_data[offset], pdev->name, 8);
+		for (i = 0; i < 8; i++)
+		{
+			if (out_data[offset + i] < 0)
+			{
+				out_data[offset + i] = '_';
+			}
+		}
 		offset += 8;
 
 		LLOGLN(0, ("registered device: %s (type=%d id=%d)", pdev->name, pdev->service->type, pdev->id));
@@ -228,9 +236,24 @@ rdpdr_send_device_list_announce_request(rdpdrPlugin * plugin)
 				break;
 
 			case RDPDR_DTYP_FILESYSTEM:
-				device_data_len = set_wstr(&out_data[offset + 4], size - offset - 4, pdev->name, strlen(pdev->name));
-				SET_UINT32(out_data, offset, device_data_len + 2); // deviceDataLength
-				offset += 4 + device_data_len + 2;
+				/* [MS-RDPEFS] 2.2.3.1 said this is a unicode string, however, only ASCII works.
+				   Any non-ASCII characters simply screw up the whole channel. Long name is supported though.
+				   This is yet to be investigated. */
+
+				//device_data_len = set_wstr(&out_data[offset + 4], size - offset - 4, pdev->name, strlen(pdev->name));
+				//SET_UINT32(out_data, offset, device_data_len + 2); // deviceDataLength
+				//offset += 4 + device_data_len + 2;
+				device_data_len = strlen(pdev->name);
+				SET_UINT32(out_data, offset, device_data_len + 1);
+				strncpy(&out_data[offset + 4], pdev->name, size - offset - 4);
+				for (i = 0; i < device_data_len; i++)
+				{
+					if (out_data[offset + 4 + i] < 0)
+					{
+						out_data[offset + 4 + i] = '_';
+					}
+				}
+				offset += 4 + device_data_len + 1;
 
 				break;
 
