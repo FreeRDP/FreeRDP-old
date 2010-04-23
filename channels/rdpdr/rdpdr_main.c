@@ -147,13 +147,16 @@ rdpdr_process_server_clientid_confirm(rdpdrPlugin * plugin, char* data, int data
 static int
 rdpdr_send_client_name_request(rdpdrPlugin * plugin)
 {
-	char* data;
+	char * data;
 	int size;
 	uint32 error;
+	char computerName[256];
 	uint32 computerNameLen;
+	uint32 computerNameLenW;
 
-	computerNameLen = 5;
-	size = 16 + computerNameLen * 2;
+	gethostname(computerName, sizeof(computerName) - 1);
+	computerNameLen = strlen(computerName);
+	size = 16 + computerNameLen * 2 + 2;
 	data = malloc(size);
 	memset(data, 0, size);
 
@@ -163,11 +166,11 @@ rdpdr_send_client_name_request(rdpdrPlugin * plugin)
 	SET_UINT32(data, 4, 1); // unicodeFlag, 0 for ASCII and 1 for Unicode
 	SET_UINT32(data, 8, 0); // codePage, must be set to zero
 
-	SET_UINT32(data, 12, computerNameLen * 2); /* computerNameLen */
-	set_wstr(&data[16], size - 16, "comp", computerNameLen); /* computerName */
+	computerNameLenW = set_wstr(&data[16], size - 16, computerName, computerNameLen); /* computerName */
+	SET_UINT32(data, 12, computerNameLenW + 2); /* computerNameLen, including null terminator */
 
 	error = plugin->ep.pVirtualChannelWrite(plugin->open_handle,
-				data, size, data);
+				data, 16 + computerNameLenW + 2, data);
 
 	if (error != CHANNEL_RC_OK)
 	{
@@ -185,12 +188,15 @@ rdpdr_send_device_list_announce_request(rdpdrPlugin * plugin)
 	char* out_data;
 	int out_data_size;
 
+	int size;
 	uint32 error;
 	DEVICE* pdev;
-	int offset = 0;	
+	int offset = 0;
+	int device_data_len;
 
-	out_data = malloc(256);
-	memset(out_data, 0, 256);
+	size = 8 + plugin->devman->count * 256;
+	out_data = malloc(size);
+	memset(out_data, 0, size);
 
 	SET_UINT16(out_data, 0, RDPDR_CTYP_CORE);
 	SET_UINT16(out_data, 2, PAKID_CORE_DEVICELIST_ANNOUNCE);
@@ -222,8 +228,9 @@ rdpdr_send_device_list_announce_request(rdpdrPlugin * plugin)
 				break;
 
 			case RDPDR_DTYP_FILESYSTEM:
-				SET_UINT32(out_data, offset, 0); // deviceDataLength
-				offset += 4;
+				device_data_len = set_wstr(&out_data[offset + 4], size - offset - 4, pdev->name, strlen(pdev->name));
+				SET_UINT32(out_data, offset, device_data_len + 2); // deviceDataLength
+				offset += 4 + device_data_len + 2;
 
 				break;
 

@@ -55,16 +55,12 @@ rdpdr_out_general_capset(char* data, int size)
 	SET_UINT32(data, 28, RDPDR_DEVICE_REMOVE_PDUS | RDPDR_CLIENT_DISPLAY_NAME_PDU | RDPDR_USER_LOGGEDON_PDU); /* extendedPDU */
 	SET_UINT32(data, 32, ENABLE_ASYNCIO); /* extraFlags1 */
 	SET_UINT32(data, 36, 0); /* extraFlags2, must be set to zero, reserved for future use */
-
-	/*
-	 * SpecialTypeDeviceCap (4 bytes):
-	 * present when GENERAL_CAPABILITY_VERSION_02 is used
-	 */
+	SET_UINT32(data, 40, 0); /* SpecialTypeDeviceCap, number of special devices to be redirected before logon */
 
 	rdpdr_out_capset_header(data, size,
-		CAP_GENERAL_TYPE, 40, GENERAL_CAPABILITY_VERSION_01);
+		CAP_GENERAL_TYPE, 44, GENERAL_CAPABILITY_VERSION_02);
 
-	return 40;
+	return 44;
 }
 
 /* Process device direction general capability set */
@@ -157,7 +153,7 @@ int
 rdpdr_out_drive_capset(char* data, int size)
 {
 	rdpdr_out_capset_header(data, size,
-		CAP_DRIVE_TYPE, 0, DRIVE_CAPABILITY_VERSION_01);
+		CAP_DRIVE_TYPE, 0, DRIVE_CAPABILITY_VERSION_02);
 
 	/*
 	 * [MS-RDPEFS] says GENERAL_CAPABILITY_VERSION_02 must be used
