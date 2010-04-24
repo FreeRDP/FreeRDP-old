@@ -19,99 +19,106 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#include <stdio.h>
 #include <stdlib.h>
-#include <freerdp/types_ui.h>
-#include <freerdp/vchan.h>
+#include <string.h>
+
+#include "rdpdr_types.h"
 #include "rdpdr_constants.h"
-
 #include "devman.h"
-#include "chan_stream.h"
-
 #include "irp.h"
 
 //extern rdpRdp * g_rdp;
 //extern VCHANNEL *rdpdr_channel;
 //extern CHANNEL_ENTRY_POINTS g_ep;
 
-void
-irp_output_device_io_completion_header(char* data, int data_size, uint32 deviceID, uint32 completionID, uint32 ioStatus)
+static void
+irp_output_device_io_completion_header(IRP* irp, char* data, int data_size)
 {
-#if 0
 	if(data_size < 16)
 		return;
 
-	SET_UINT16(data, 0, RDPDR_COMPONENT_TYPE_CORE); /* component */
+	SET_UINT16(data, 0, RDPDR_CTYP_CORE); /* component */
 	SET_UINT16(data, 2, PAKID_CORE_DEVICE_IOCOMPLETION); /* packetID */
-	SET_UINT32(data, 4, deviceID); /* deviceID */
-	SET_UINT32(data, 8, completionID); /* completionID */
-	SET_UINT32(data, 12, ioStatus); /* ioStatus */
-#endif
+	SET_UINT32(data, 4, irp->dev->id); /* deviceID */
+	SET_UINT32(data, 8, irp->completionID); /* completionID */
+	SET_UINT32(data, 12, irp->ioStatus); /* ioStatus */
 }
 
 void
 irp_process_create_request(IRP* irp, char* data, int data_size)
 {
-#if 0
-	uint32 desiredAccess;
-	uint32 allocationSizeHigh;
-	uint32 allocationSizeLow;
-	uint32 fileAttributes;
-	uint32 sharedAccess;
-	uint32 createDisposition;
-	uint32 createOptions;
 	uint32 pathLength;
-	char path[PATH_MAX];
+	char * path;
+	int size;
 
-	desiredAccess = GET_UINT32(data, desiredAccess); /* desiredAccess */
-	allocationSizeHigh = GET_UINT32(data, allocationSizeHigh); /* allocationSizeHigh */
-	allocationSizeLow = GET_UINT32(data, allocationSizeLow); /* allocationSizeLow */
-	fileAttributes = GET_UINT32(data, fileAttributes); /* fileAttributes */
-	sharedAccess = GET_UINT32(data, sharedAccess); /* sharedAccess */
-	createDisposition = GET_UINT32(data, createDisposition); /* createDisposition */
-	createOptions = GET_UINT32(data, createOptions); /* createOptions */
-	pathLength = GET_UINT32(data, pathLength); /* pathLength */
+	irp->desiredAccess = GET_UINT32(data, 0); /* desiredAccess */
+	//irp->allocationSizeLow = GET_UINT32(data, 4); /* allocationSizeLow */
+	//irp->allocationSizeHigh = GET_UINT32(data, 8); /* allocationSizeHigh */
+	irp->fileAttributes = GET_UINT32(data, 12); /* fileAttributes */
+	irp->sharedAccess = GET_UINT32(data, 16); /* sharedAccess */
+	irp->createDisposition = GET_UINT32(data, 20); /* createDisposition */
+	irp->createOptions = GET_UINT32(data, 24); /* createOptions */
+	pathLength = GET_UINT32(data, 28); /* pathLength */
 
-	if (pathLength && (pathLength / 2) < 256)
+	size = pathLength * 3 / 2 + 1;
+	path = (char *) malloc(size);
+	memset(path, 0, size);
+	if (pathLength > 0)
 	{
-		//rdp_in_unistr(g_rdp, s, path, sizeof(path), pathLength);
-		//convert_to_unix_filename(path);
+		get_wstr(path, size, &data[32], pathLength);
 	}
-	else
-		path[0] = '\0';
 
-	if (!irp->fns->create)
+	if (!irp->dev->service->create)
 	{
-		//printf("RD_STATUS_NOT_SUPPORTED\n");
 		irp->ioStatus = RD_STATUS_NOT_SUPPORTED;
 	}
-
-	//irp->ioStatus =
-	//	irp->fns->create(irp->deviceID, desiredAccess, sharedAccess, createDisposition, createOptions, path, &(irp->fileID));
-#endif
+	else
+	{
+		irp->ioStatus = irp->dev->service->create(irp, path);
+	}
+	free(path);
 }
 
 void
 irp_send_create_response(IRP* irp)
 {
-#if 0
 	int error;
-	char* data = malloc(26);
+	char* data;
+	uint8 information;
 
-	irp_output_device_io_completion_header(data, 21,
-		irp->deviceID, irp->completionID, irp->ioStatus);
+	data = malloc(21);
+	irp_output_device_io_completion_header(irp, data, 21);
 
-	SET_UINT32(data, 21, irp->fileID); /* fileID */
-	SET_UINT8(data, 25, 0); /* information */
+	switch (irp->createDisposition)
+	{
+	case FILE_SUPERSEDE:
+	case FILE_OPEN:
+	case FILE_CREATE:
+	case FILE_OVERWRITE:
+		information = FILE_SUPERSEDED;
+		break;
+	case FILE_OPEN_IF:
+		information = FILE_OPENED;
+		break;
+	case FILE_OVERWRITE_IF:
+		information = FILE_OVERWRITTEN;
+		break;
+	default:
+		information = 0;
+		break;
+	}
 
-	error = g_ep.pVirtualChannelWrite(g_open_handle[0], data, 26, data);
+	SET_UINT32(data, 16, irp->fileID); /* fileID */
+	SET_UINT8(data, 20, information); /* information */
+
+	error = irp->ep.pVirtualChannelWrite(irp->open_handle, data, 21, data);
 
 	if (error != CHANNEL_RC_OK)
 	{
-		LLOGLN(0, ("thread_process_message_formats: "
+		LLOGLN(0, ("irp_send_create_response: "
 			"VirtualChannelWrite failed %d", error));
-		return 1;
 	}
-#endif
 }
 
 void
@@ -252,16 +259,56 @@ irp_process_write_request(IRP* irp, char* data, int data_size)
 void
 irp_process_query_volume_information_request(IRP* irp, char* data, int data_size)
 {
-#if 0
-	uint32 fsInformationClass;
 	uint32 length;
 
-	fsInformationClass = GET_UINT32(data, 0); /* fsInformationClass */
+	irp->infoClass = GET_UINT32(data, 0); /* fsInformationClass */
 	length = GET_UINT32(data, 4); /* length */
 	/* 24-byte pad */
 	
 	/* queryVolumeBuffer */
-#endif
+
+	if (!irp->dev->service->query_volume_info)
+	{
+		irp->ioStatus = RD_STATUS_NOT_SUPPORTED;
+	}
+	else
+	{
+		irp->ioStatus = irp->dev->service->query_volume_info(irp);
+	}
+}
+
+void
+irp_send_query_volume_information_response(IRP* irp)
+{
+	int error;
+	int size;
+	char * data;
+
+	size = 20 + irp->buffer_size;
+	data = malloc(size);
+
+	irp_output_device_io_completion_header(irp, data, size);
+
+	SET_UINT32(data, 16, irp->buffer_size); /* Length */
+	if (irp->buffer_size > 0)
+	{
+		memcpy(data + 20, irp->buffer, irp->buffer_size);
+	}
+
+	error = irp->ep.pVirtualChannelWrite(irp->open_handle, data, size, data);
+
+	if (irp->buffer)
+	{
+		free(irp->buffer);
+		irp->buffer = NULL;
+	}
+	irp->buffer_size = 0;
+
+	if (error != CHANNEL_RC_OK)
+	{
+		LLOGLN(0, ("irp_send_create_response: "
+			"VirtualChannelWrite failed %d", error));
+	}
 }
 
 void

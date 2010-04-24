@@ -19,17 +19,13 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#ifndef __RDPDR_H
-#define __RDPDR_H
+#ifndef __RDPDR_TYPES_H
+#define __RDPDR_TYPES_H
 
 #include <freerdp/types_ui.h>
 #include <freerdp/vchan.h>
-#include "rdpdr_constants.h"
-#include "irp.h"
-#include "devman.h"
-#include "types.h"
-#include "chan_stream.h"
 #include "chan_plugin.h"
+#include "chan_stream.h"
 
 #define LOG_LEVEL 1
 #define LLOG(_level, _args) \
@@ -37,35 +33,9 @@
 #define LLOGLN(_level, _args) \
   do { if (_level < LOG_LEVEL) { printf _args ; printf("\n"); } } while (0)
 
-struct data_in_item
-{
-	struct data_in_item * next;
-	char * data;
-	int data_size;
-};
+typedef struct _SERVICE SERVICE;
+typedef struct _DEVICE DEVICE;
+typedef struct _IRP IRP;
+typedef struct _DEVMAN DEVMAN;
 
-typedef struct rdpdr_plugin rdpdrPlugin;
-struct rdpdr_plugin
-{
-	rdpChanPlugin chan_plugin;
-
-	CHANNEL_ENTRY_POINTS ep;
-	CHANNEL_DEF channel_def;
-	uint32 open_handle;
-	char * data_in;
-	int data_in_size;
-	int data_in_read;
-	struct wait_obj * term_event;
-	struct wait_obj * data_in_event;
-	struct data_in_item * list_head;
-	struct data_in_item * list_tail;
-	/* for locking the linked list */
-	pthread_mutex_t * mutex;
-	int thread_status;
-
-	uint16 versionMinor;
-	uint16 clientID;
-	DEVMAN* devman;
-};
-
-#endif /* __RDPDR_H */
+#endif

@@ -81,6 +81,14 @@
 #define IRP_MN_QUERY_DIRECTORY          0x00000001
 #define IRP_MN_NOTIFY_CHANGE_DIRECTORY  0x00000002
 
+/* DR_CREATE_REQ.CreateDisposition */
+#define FILE_SUPERSEDE                  0x00000000
+#define FILE_OPEN                       0x00000001
+#define FILE_CREATE                     0x00000002
+#define FILE_OPEN_IF                    0x00000003
+#define FILE_OVERWRITE                  0x00000004
+#define FILE_OVERWRITE_IF               0x00000005
+
 /* DR_CREATE_RSP.Information */
 /* DR_DRIVE_CREATE_RSP.DeviceCreateResponse */
 #define FILE_SUPERSEDED                 0x00000000

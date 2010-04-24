@@ -6,6 +6,7 @@ diskdir = $(PLUGIN_PATH)
 disk_LTLIBRARIES = disk.la
 
 disk_la_SOURCES = \
+	../../common/chan_stream.c \
 	disk_main.c
 
 disk_la_CFLAGS = -I../../../include -I../../common -I../ \

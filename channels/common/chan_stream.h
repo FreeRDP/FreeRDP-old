@@ -31,5 +31,7 @@
 
 int
 set_wstr(char* dst, int dstlen, char* src, int srclen);
+int
+get_wstr(char* dst, int dstlen, char* src, int srclen);
 
 #endif

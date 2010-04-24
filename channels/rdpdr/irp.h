@@ -22,9 +22,6 @@
 #ifndef __IRP_H
 #define __IRP_H
 
-#include <freerdp/types_ui.h>
-#include "devman.h"
-
 typedef uint32 RD_NTSTATUS;
 typedef uint32 RD_NTHANDLE;
 
@@ -103,9 +100,11 @@ enum FS_INFORMATION_CLASS
 	FileFsMaximumInformation
 };
 
-typedef struct _IRP
+struct _IRP
 {
 	DEVICE* dev;
+	CHANNEL_ENTRY_POINTS ep;
+	uint32 open_handle;
 	uint32 fileID;
 	uint32 completionID;
 	uint32 majorFunction;
@@ -115,11 +114,13 @@ typedef struct _IRP
 	char* buffer;
 	int buffer_size;
 	int infoClass;
-}
-IRP;
+	uint32 desiredAccess;
+	uint32 fileAttributes;
+	uint32 sharedAccess;
+	uint32 createDisposition;
+	uint32 createOptions;
+};
 
-void
-irp_output_device_io_completion_header(char* data, int data_size, uint32 deviceID, uint32 completionID, uint32 ioStatus);
 void
 irp_process_create_request(IRP* irp, char* data, int data_size);
 void
@@ -136,6 +137,8 @@ void
 irp_process_write_request(IRP* irp, char* data, int data_size);
 void
 irp_process_query_volume_information_request(IRP* irp, char* data, int data_size);
+void
+irp_send_query_volume_information_response(IRP* irp);
 void
 irp_process_set_volume_information_request(IRP* irp, char* data, int data_size);
 void

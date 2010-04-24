@@ -1,6 +1,6 @@
 /* -*- c-basic-offset: 8 -*-
    FreeRDP: A Remote Desktop Protocol client.
-   Device Redirection Capability Sets
+   Device Redirection
 
    Copyright (C) Marc-Andre Moreau <marcandre.moreau@gmail.com> 2010
 
@@ -19,32 +19,40 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#ifndef __RDPDR_CAPABILITIES_H
-#define __RDPDR_CAPABILITIES_H
+#ifndef __RDPDR_MAIN_H
+#define __RDPDR_MAIN_H
 
-int
-rdpdr_out_general_capset(char* data, int size);
-int
-rdpdr_out_printer_capset(char* data, int size);
-int
-rdpdr_out_port_capset(char* data, int size);
-int
-rdpdr_out_drive_capset(char* data, int size);
-int
-rdpdr_out_smartcard_capset(char* data, int size);
+#include "wait_obj.h"
 
-int
-rdpdr_process_general_capset(char* data, int size);
-int
-rdpdr_process_printer_capset(char* data, int size);
-int
-rdpdr_process_port_capset(char* data, int size);
-int
-rdpdr_process_drive_capset(char* data, int size);
-int
-rdpdr_process_smartcard_capset(char* data, int size);
+struct data_in_item
+{
+	struct data_in_item * next;
+	char * data;
+	int data_size;
+};
 
-void
-rdpdr_process_capabilities(char* data, int size);
+typedef struct rdpdr_plugin rdpdrPlugin;
+struct rdpdr_plugin
+{
+	rdpChanPlugin chan_plugin;
 
-#endif /* __RDPDR_CAPABILITIES_H */
+	CHANNEL_ENTRY_POINTS ep;
+	CHANNEL_DEF channel_def;
+	uint32 open_handle;
+	char * data_in;
+	int data_in_size;
+	int data_in_read;
+	struct wait_obj * term_event;
+	struct wait_obj * data_in_event;
+	struct data_in_item * list_head;
+	struct data_in_item * list_tail;
+	/* for locking the linked list */
+	pthread_mutex_t * mutex;
+	int thread_status;
+
+	uint16 versionMinor;
+	uint16 clientID;
+	DEVMAN* devman;
+};
+
+#endif /* __RDPDR_MAIN_H */

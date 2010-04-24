@@ -27,17 +27,13 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <sys/time.h>
-#include <freerdp/types_ui.h>
-#include <freerdp/vchan.h>
 
-#include "rdpdr.h"
-#include "irp.h"
-#include "devman.h"
-#include "types.h"
-#include "chan_stream.h"
-#include "chan_plugin.h"
-#include "wait_obj.h"
+#include "rdpdr_types.h"
+#include "rdpdr_main.h"
+#include "rdpdr_constants.h"
 #include "rdpdr_capabilities.h"
+#include "devman.h"
+#include "irp.h"
 
 /* called by main thread
    add item to linked list and inform worker thread that there is data */
@@ -306,6 +302,8 @@ rdpdr_process_irp(rdpdrPlugin * plugin, char* data, int data_size)
 	irp.minorFunction = GET_UINT32(data, 16); /* minorFunction */
 
 	irp.dev = devman_get_device_by_id(plugin->devman, deviceID);
+	irp.ep = plugin->ep;
+	irp.open_handle = plugin->open_handle;
 
 	LLOGLN(0, ("IRP MAJOR: %d MINOR: %d\n", irp.majorFunction, irp.minorFunction));
 
@@ -347,6 +345,7 @@ rdpdr_process_irp(rdpdrPlugin * plugin, char* data, int data_size)
 		case IRP_MJ_QUERY_VOLUME_INFORMATION:
 			LLOGLN(0, ("IRP_MJ_QUERY_VOLUME_INFORMATION\n"));
 			irp_process_query_volume_information_request(&irp, &data[20], data_size - 20);
+			irp_send_query_volume_information_response(&irp);
 			break;
 
 		case IRP_MJ_DIRECTORY_CONTROL:

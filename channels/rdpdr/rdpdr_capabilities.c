@@ -22,15 +22,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/time.h>
-#include <freerdp/types_ui.h>
-#include <freerdp/vchan.h>
 
-#include "irp.h"
-#include "devman.h"
-#include "rdpdr.h"
-#include "types.h"
-#include "chan_stream.h"
-#include "chan_plugin.h"
+#include "rdpdr_types.h"
+#include "rdpdr_constants.h"
 #include "rdpdr_capabilities.h"
 
 /* Output device redirection capability set header */

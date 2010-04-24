@@ -22,20 +22,16 @@
 #ifndef __DEVMAN_H
 #define __DEVMAN_H
 
-#include <freerdp/types_ui.h>
-
-typedef struct _SERVICE SERVICE;
-typedef struct _DEVICE DEVICE;
-
 struct _SERVICE
 {
 	uint32 type;
-	int(*create) (DEVICE * dev);
-	int(*close) (DEVICE * dev);
-	int(*read) (DEVICE * dev);
-	int(*write) (DEVICE * dev);
-	int(*control) (DEVICE * dev);
-	int(*free) (DEVICE * dev);
+	int (*create) (IRP * irp, const char * path);
+	int (*close) (IRP * irp);
+	int (*read) (IRP * irp);
+	int (*write) (IRP * irp);
+	int (*control) (IRP * irp);
+	int (*query_volume_info) (IRP * irp);
+	int (*free) (DEVICE * dev);
 };
 typedef SERVICE * PSERVICE;
 
@@ -59,7 +55,6 @@ struct _DEVMAN
 	DEVICE* tail; /* tail device in linked list */
 	void* pDevmanEntryPoints; /* entry points for device services */
 };
-typedef struct _DEVMAN DEVMAN;
 typedef DEVMAN * PDEVMAN;
 
 typedef PSERVICE (*PDEVMAN_REGISTER_SERVICE)(PDEVMAN devman);

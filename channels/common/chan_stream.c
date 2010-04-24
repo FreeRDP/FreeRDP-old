@@ -43,3 +43,22 @@ set_wstr(char* dst, int dstlen, char* src, int srclen)
 	return dstlen - (int)avail;
 }
 
+int
+get_wstr(char* dst, int dstlen, char* src, int srclen)
+{
+	iconv_t cd;
+	size_t avail;
+	size_t in_size;
+
+	cd = iconv_open("UTF-8", "UTF-16LE");
+	if (cd == (iconv_t) - 1)
+	{
+		printf("set_wstr: iconv_open failed.\n");
+		return 0;
+	}
+	in_size = (size_t)srclen;
+	avail = (size_t)dstlen;
+	iconv(cd, &src, &in_size, &dst, &avail);
+	return dstlen - (int)avail;
+}
+

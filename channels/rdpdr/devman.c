@@ -23,16 +23,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <freerdp/types_ui.h>
+
+#include "rdpdr_types.h"
 #include "rdpdr_constants.h"
-
 #include "devman.h"
-
-#define LOG_LEVEL 1
-#define LLOG(_level, _args) \
-  do { if (_level < LOG_LEVEL) { printf _args ; } } while (0)
-#define LLOGLN(_level, _args) \
-  do { if (_level < LOG_LEVEL) { printf _args ; printf("\n"); } } while (0)
 
 DEVMAN*
 devman_new(void* data)
