@@ -289,6 +289,9 @@ rdpdr_process_irp(rdpdrPlugin * plugin, char* data, int data_size)
 {
 	IRP irp;
 	int deviceID;
+	char * out;
+	int out_size;
+	int error;
 
 	memset((void*)&irp, '\0', sizeof(IRP));
 
@@ -302,74 +305,82 @@ rdpdr_process_irp(rdpdrPlugin * plugin, char* data, int data_size)
 	irp.minorFunction = GET_UINT32(data, 16); /* minorFunction */
 
 	irp.dev = devman_get_device_by_id(plugin->devman, deviceID);
-	irp.ep = plugin->ep;
-	irp.open_handle = plugin->open_handle;
 
-	LLOGLN(0, ("IRP MAJOR: %d MINOR: %d\n", irp.majorFunction, irp.minorFunction));
+	LLOGLN(0, ("IRP MAJOR: %d MINOR: %d", irp.majorFunction, irp.minorFunction));
 
 	switch(irp.majorFunction)
 	{
 		case IRP_MJ_CREATE:
-			LLOGLN(0, ("IRP_MJ_CREATE\n"));
+			LLOGLN(0, ("IRP_MJ_CREATE"));
 			irp_process_create_request(&irp, &data[20], data_size - 20);
-			irp_send_create_response(&irp);
 			break;
 
 		case IRP_MJ_CLOSE:
-			LLOGLN(0, ("IRP_MJ_CLOSE\n"));
+			LLOGLN(0, ("IRP_MJ_CLOSE"));
 			irp_process_close_request(&irp, &data[20], data_size - 20);
-			irp_send_close_response(&irp);
 			break;
 
 		case IRP_MJ_READ:
-			LLOGLN(0, ("IRP_MJ_READ\n"));
+			LLOGLN(0, ("IRP_MJ_READ"));
 			irp_process_read_request(&irp, &data[20], data_size - 20);
 			break;
 
 		case IRP_MJ_WRITE:
-			LLOGLN(0, ("IRP_MJ_WRITE\n"));
+			LLOGLN(0, ("IRP_MJ_WRITE"));
 			irp_process_write_request(&irp, &data[20], data_size - 20);
 			break;
 
 		case IRP_MJ_QUERY_INFORMATION:
-			LLOGLN(0, ("IRP_MJ_QUERY_INFORMATION\n"));
+			LLOGLN(0, ("IRP_MJ_QUERY_INFORMATION"));
 			irp_process_query_information_request(&irp, &data[20], data_size - 20);
-			irp_send_query_information_response(&irp);
 			break;
 
 		case IRP_MJ_SET_INFORMATION:
-			LLOGLN(0, ("IRP_MJ_SET_INFORMATION\n"));
+			LLOGLN(0, ("IRP_MJ_SET_INFORMATION"));
 			irp_process_set_volume_information_request(&irp, &data[20], data_size - 20);
 			break;
 
 		case IRP_MJ_QUERY_VOLUME_INFORMATION:
-			LLOGLN(0, ("IRP_MJ_QUERY_VOLUME_INFORMATION\n"));
+			LLOGLN(0, ("IRP_MJ_QUERY_VOLUME_INFORMATION"));
 			irp_process_query_volume_information_request(&irp, &data[20], data_size - 20);
-			irp_send_query_volume_information_response(&irp);
 			break;
 
 		case IRP_MJ_DIRECTORY_CONTROL:
-			LLOGLN(0, ("IRP_MJ_DIRECTORY_CONTROL\n"));
+			LLOGLN(0, ("IRP_MJ_DIRECTORY_CONTROL"));
 			irp_process_directory_control_request(&irp, &data[20], data_size - 20);
 			break;
 
 		case IRP_MJ_DEVICE_CONTROL:
-			LLOGLN(0, ("IRP_MJ_DEVICE_CONTROL\n"));
+			LLOGLN(0, ("IRP_MJ_DEVICE_CONTROL"));
 			irp_process_device_control_request(&irp, &data[20], data_size - 20);
 			break;
 
 		case IRP_MJ_LOCK_CONTROL:
-			LLOGLN(0, ("IRP_MJ_LOCK_CONTROL\n"));
+			LLOGLN(0, ("IRP_MJ_LOCK_CONTROL"));
 			irp_process_file_lock_control_request(&irp, &data[20], data_size - 20);
 			break;
 
 		default:
-			//ui_unimpl(NULL, "IRP majorFunction=0x%x minorFunction=0x%x\n", irp.majorFunction, irp.minorFunction);
-			return;
+			LLOGLN(0, ("IRP majorFunction=0x%x minorFunction=0x%x not supported", irp.majorFunction, irp.minorFunction));
+			irp.ioStatus = RD_STATUS_NOT_SUPPORTED;
+			break;
 	}
 
-	if (irp.buffer)
-		free(irp.buffer);
+	out_size = 16 + irp.outputBufferLength;
+	out = malloc(out_size);
+	irp_output_device_io_completion_header(&irp, out, out_size);
+	if (irp.outputBufferLength > 0)
+	{
+		memcpy(out + 16, irp.outputBuffer, irp.outputBufferLength);
+	}
+	error = plugin->ep.pVirtualChannelWrite(plugin->open_handle, out, out_size, out);
+	if (error != CHANNEL_RC_OK)
+	{
+		LLOGLN(0, ("rdpdr_process_irp: "
+			"VirtualChannelWrite failed %d", error));
+	}
+	if (irp.outputBuffer)
+		free(irp.outputBuffer);
 }
 
 static int

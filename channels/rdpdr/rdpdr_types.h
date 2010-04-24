@@ -44,13 +44,15 @@ typedef struct _IRP IRP;
 struct _SERVICE
 {
 	uint32 type;
-	int (*create) (IRP * irp, const char * path);
-	int (*close) (IRP * irp);
-	int (*read) (IRP * irp);
-	int (*write) (IRP * irp);
-	int (*control) (IRP * irp);
-	int (*query_volume_info) (IRP * irp);
-	int (*free) (DEVICE * dev);
+	uint32 (*create) (IRP * irp, const char * path);
+	uint32 (*close) (IRP * irp);
+	uint32 (*read) (IRP * irp);
+	uint32 (*write) (IRP * irp);
+	uint32 (*control) (IRP * irp);
+	uint32 (*query_volume_info) (IRP * irp);
+	uint32 (*query_info) (IRP * irp);
+	uint32 (*query_directory) (IRP * irp, uint8 initialQuery, const char * path);
+	uint32 (*free) (DEVICE * dev);
 };
 typedef SERVICE * PSERVICE;
 
@@ -78,23 +80,24 @@ typedef DEVMAN * PDEVMAN;
 
 struct _IRP
 {
-	DEVICE* dev;
-	CHANNEL_ENTRY_POINTS ep;
-	uint32 open_handle;
+	DEVICE * dev;
 	uint32 fileID;
 	uint32 completionID;
 	uint32 majorFunction;
 	uint32 minorFunction;
 	RD_BOOL rwBlocking;
 	RD_NTHANDLE ioStatus;
-	char* buffer;
-	int buffer_size;
+	char * inputBuffer;
+	int inputBufferLength;
+	char * outputBuffer;
+	int outputBufferLength;
 	int infoClass;
 	uint32 desiredAccess;
 	uint32 fileAttributes;
 	uint32 sharedAccess;
 	uint32 createDisposition;
 	uint32 createOptions;
+	uint32 ioControlCode;
 };
 
 #endif

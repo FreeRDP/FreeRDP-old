@@ -89,6 +89,19 @@
 #define FILE_OVERWRITE                  0x00000004
 #define FILE_OVERWRITE_IF               0x00000005
 
+/* DR_CREATE_REQ.CreateOptions [MS-SMB2] */
+#define FILE_DIRECTORY_FILE             0x00000001
+#define FILE_NON_DIRECTORY_FILE         0x00000040
+#define FILE_COMPLETE_IF_OPLOCKED       0x00000100
+#define FILE_DELETE_ON_CLOSE            0x00001000
+#define FILE_OPEN_FOR_FREE_SPACE_QUERY  0x00800000
+
+/* DR_CREATE_REQ.DesiredAccess [MS-SMB2] */
+#define GENERIC_READ                    0x80000000
+#define GENERIC_WRITE                   0x40000000
+#define GENERIC_EXECUTE                 0x20000000
+#define GENERIC_ALL                     0x10000000
+
 /* DR_CREATE_RSP.Information */
 /* DR_DRIVE_CREATE_RSP.DeviceCreateResponse */
 #define FILE_SUPERSEDED                 0x00000000
@@ -163,12 +176,6 @@
 
 #define RDPDR_MAX_DEVICES               0x10
 
-#define FILE_DIRECTORY_FILE             0x00000001
-#define FILE_NON_DIRECTORY_FILE         0x00000040
-#define FILE_COMPLETE_IF_OPLOCKED       0x00000100
-#define FILE_DELETE_ON_CLOSE            0x00001000
-#define FILE_OPEN_FOR_FREE_SPACE_QUERY  0x00800000
-
 #define RDPDR_PRINTER_ANNOUNCE_FLAG_ASCII		0x00000001
 #define RDPDR_PRINTER_ANNOUNCE_FLAG_DEFAULTPRINTER	0x00000002
 #define RDPDR_PRINTER_ANNOUNCE_FLAG_NETWORKPRINTER	0x00000004
@@ -181,6 +188,47 @@
 #define SCARD_LOCK_CHANNEL	2
 #define SCARD_LOCK_RDPDR	3
 #define SCARD_LOCK_LAST		4
+
+/* [MS-FSCC] FileAttributes */
+#define FILE_ATTRIBUTE_ARCHIVE              0x00000020
+#define FILE_ATTRIBUTE_COMPRESSED           0x00000800
+#define FILE_ATTRIBUTE_DIRECTORY            0x00000010
+#define FILE_ATTRIBUTE_ENCRYPTED            0x00004000
+#define FILE_ATTRIBUTE_HIDDEN               0x00000002
+#define FILE_ATTRIBUTE_NORMAL               0x00000080
+#define FILE_ATTRIBUTE_NOT_CONTENT_INDEXED  0x00002000
+#define FILE_ATTRIBUTE_OFFLINE              0x00001000
+#define FILE_ATTRIBUTE_READONLY             0x00000001
+#define FILE_ATTRIBUTE_REPARSE_POINT        0x00000400
+#define FILE_ATTRIBUTE_SPARSE_FILE          0x00000200
+#define FILE_ATTRIBUTE_SYSTEM               0x00000004
+#define FILE_ATTRIBUTE_TEMPORARY            0x00000100
+
+/* [MS-FSCC] FSCTL Structures */
+#define FSCTL_GET_REPARSE_POINT                 0x900a8
+#define FSCTL_GET_RETRIEVAL_POINTERS            0x90073
+#define FSCTL_IS_PATHNAME_VALID                 0x9002c
+#define FSCTL_LMR_SET_LINK_TRACKING_INFORMATION 0x1400ec
+#define FSCTL_PIPE_PEEK                         0x11400c
+#define FSCTL_PIPE_TRANSCEIVE                   0x11c017
+#define FSCTL_PIPE_WAIT                         0x110018
+#define FSCTL_QUERY_FAT_BPB                     0x90058
+#define FSCTL_QUERY_ALLOCATED_RANGES            0x940cf
+#define FSCTL_QUERY_ON_DISK_VOLUME_INFO         0x9013c
+#define FSCTL_QUERY_SPARING_INFO                0x90138
+#define FSCTL_READ_FILE_USN_DATA                0x900eb
+#define FSCTL_RECALL_FILE                       0x90117
+#define FSCTL_SET_COMPRESSION                   0x9c040
+#define FSCTL_SET_DEFECT_MANAGEMENT             0x98134
+#define FSCTL_SET_ENCRYPTION                    0x900D7
+#define FSCTL_SET_OBJECT_ID                     0x90098
+#define FSCTL_SET_OBJECT_ID_EXTENDED            0x900bc
+#define FSCTL_SET_REPARSE_POINT                 0x900a4
+#define FSCTL_SET_SPARSE                        0x900c4
+#define FSCTL_SET_ZERO_DATA                     0x980c8
+#define FSCTL_SET_ZERO_ON_DEALLOCATION          0x90194
+#define FSCTL_SIS_COPYFILE                      0x90100
+#define FSCTL_WRITE_USN_CLOSE_RECORD            0x900ef
 
 enum FILE_INFORMATION_CLASS
 {
