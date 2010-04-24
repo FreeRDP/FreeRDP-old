@@ -9,8 +9,8 @@ rdpdr_la_SOURCES = \
 	../common/wait_obj.c \
 	../common/chan_plugin.c \
 	../common/chan_stream.c \
-	rdpdr.h \
-	rdpdr_main.c \
+	rdpdr_types.h \
+	rdpdr_main.c rdpdr_main.h \
 	rdpdr_capabilities.c rdpdr_capabilities.h \
 	rdpdr_constants.h \
 	devman.c devman.h \

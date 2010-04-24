@@ -182,5 +182,64 @@
 #define SCARD_LOCK_RDPDR	3
 #define SCARD_LOCK_LAST		4
 
+enum FILE_INFORMATION_CLASS
+{
+	FileDirectoryInformation = 1,
+	FileFullDirectoryInformation,
+	FileBothDirectoryInformation,
+	FileBasicInformation,
+	FileStandardInformation,
+	FileInternalInformation,
+	FileEaInformation,
+	FileAccessInformation,
+	FileNameInformation,
+	FileRenameInformation,
+	FileLinkInformation,
+	FileNamesInformation,
+	FileDispositionInformation,
+	FilePositionInformation,
+	FileFullEaInformation,
+	FileModeInformation,
+	FileAlignmentInformation,
+	FileAllInformation,
+	FileAllocationInformation,
+	FileEndOfFileInformation,
+	FileAlternateNameInformation,
+	FileStreamInformation,
+	FilePipeInformation,
+	FilePipeLocalInformation,
+	FilePipeRemoteInformation,
+	FileMailslotQueryInformation,
+	FileMailslotSetInformation,
+	FileCompressionInformation,
+	FileCopyOnWriteInformation,
+	FileCompletionInformation,
+	FileMoveClusterInformation,
+	FileOleClassIdInformation,
+	FileOleStateBitsInformation,
+	FileNetworkOpenInformation,
+	FileObjectIdInformation,
+	FileOleAllInformation,
+	FileOleDirectoryInformation,
+	FileContentIndexInformation,
+	FileInheritContentIndexInformation,
+	FileOleInformation,
+	FileMaximumInformation
+};
+
+enum FS_INFORMATION_CLASS
+{
+	FileFsVolumeInformation = 1,
+	FileFsLabelInformation,
+	FileFsSizeInformation,
+	FileFsDeviceInformation,
+	FileFsAttributeInformation,
+	FileFsControlInformation,
+	FileFsFullSizeInformation,
+	FileFsObjectIdInformation,
+	FileFsDriverPathInformation,
+	FileFsMaximumInformation
+};
+
 #endif /* __CONSTANTS_RDPDR_H */
 

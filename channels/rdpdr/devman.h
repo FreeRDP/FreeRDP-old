@@ -22,41 +22,6 @@
 #ifndef __DEVMAN_H
 #define __DEVMAN_H
 
-struct _SERVICE
-{
-	uint32 type;
-	int (*create) (IRP * irp, const char * path);
-	int (*close) (IRP * irp);
-	int (*read) (IRP * irp);
-	int (*write) (IRP * irp);
-	int (*control) (IRP * irp);
-	int (*query_volume_info) (IRP * irp);
-	int (*free) (DEVICE * dev);
-};
-typedef SERVICE * PSERVICE;
-
-struct _DEVICE
-{
-	uint32 id;
-	char* name;
-	void* info;
-	void* prev;
-	void* next;
-	SERVICE* service;
-};
-typedef DEVICE * PDEVICE;
-
-struct _DEVMAN
-{
-	int count; /* device count */
-	int id_sequence; /* generate unique device id */
-	DEVICE* idev; /* iterator device */
-	DEVICE* head; /* head device in linked list */
-	DEVICE* tail; /* tail device in linked list */
-	void* pDevmanEntryPoints; /* entry points for device services */
-};
-typedef DEVMAN * PDEVMAN;
-
 typedef PSERVICE (*PDEVMAN_REGISTER_SERVICE)(PDEVMAN devman);
 typedef int (*PDEVMAN_UNREGISTER_SERVICE)(PDEVMAN devman, PSERVICE srv);
 typedef PDEVICE (*PDEVMAN_REGISTER_DEVICE)(PDEVMAN devman, PSERVICE srv, char* name);

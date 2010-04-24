@@ -25,7 +25,6 @@
 
 #include "rdpdr_types.h"
 #include "rdpdr_constants.h"
-#include "devman.h"
 #include "irp.h"
 
 //extern rdpRdp * g_rdp;

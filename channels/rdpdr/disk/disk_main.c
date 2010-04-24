@@ -27,7 +27,6 @@
 #include "rdpdr_types.h"
 #include "rdpdr_constants.h"
 #include "devman.h"
-#include "irp.h"
 
 struct _FILE_INFO
 {
