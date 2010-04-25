@@ -91,6 +91,7 @@ struct _IRP
 	RD_NTHANDLE ioStatus;
 	char * inputBuffer;
 	int inputBufferLength;
+	uint32 outputResult;
 	char * outputBuffer;
 	int outputBufferLength;
 	int infoClass;

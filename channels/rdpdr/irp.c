@@ -27,35 +27,26 @@
 #include "rdpdr_constants.h"
 #include "irp.h"
 
-static void
-irp_construct_common_response(IRP * irp)
+char *
+irp_output_device_io_completion(IRP* irp, int * data_size)
 {
-	int size;
 	char * data;
 
-	size = irp->outputBufferLength + 4;
-	data = malloc(size);
-	memset(data, 0, size);
-	SET_UINT32(data, 0, irp->outputBufferLength);
-	if (irp->outputBufferLength > 0)
-		memcpy(data + 4, irp->outputBuffer, irp->outputBufferLength);
-	if (irp->outputBuffer)
-		free(irp->outputBuffer);
-	irp->outputBuffer = data;
-	irp->outputBufferLength = size;
-}
-
-void
-irp_output_device_io_completion_header(IRP* irp, char* data, int data_size)
-{
-	if(data_size < 16)
-		return;
+	*data_size = 20 + irp->outputBufferLength;
+	data = malloc(*data_size);
+	memset(data, 0, *data_size);
 
 	SET_UINT16(data, 0, RDPDR_CTYP_CORE); /* component */
 	SET_UINT16(data, 2, PAKID_CORE_DEVICE_IOCOMPLETION); /* packetID */
 	SET_UINT32(data, 4, irp->dev->id); /* deviceID */
 	SET_UINT32(data, 8, irp->completionID); /* completionID */
 	SET_UINT32(data, 12, irp->ioStatus); /* ioStatus */
+	SET_UINT32(data, 16, irp->outputResult);
+	if (irp->outputBufferLength > 0)
+	{
+		memcpy(data + 20, irp->outputBuffer, irp->outputBufferLength);
+	}
+	return data;
 }
 
 void
@@ -64,7 +55,6 @@ irp_process_create_request(IRP* irp, char* data, int data_size)
 	uint32 pathLength;
 	char * path;
 	int size;
-	uint8 information;
 
 	irp->desiredAccess = GET_UINT32(data, 0); /* desiredAccess */
 	//irp->allocationSize = GET_UINT64(data, 4); /* allocationSize */
@@ -93,8 +83,9 @@ irp_process_create_request(IRP* irp, char* data, int data_size)
 	free(path);
 
 	/* construct create response */
-	irp->outputBufferLength = 5;
-	irp->outputBuffer = malloc(irp->outputBufferLength);
+	irp->outputResult = irp->fileID;
+	irp->outputBufferLength = 1;
+	irp->outputBuffer = malloc(1);
 
 	switch (irp->createDisposition)
 	{
@@ -102,21 +93,18 @@ irp_process_create_request(IRP* irp, char* data, int data_size)
 	case FILE_OPEN:
 	case FILE_CREATE:
 	case FILE_OVERWRITE:
-		information = FILE_SUPERSEDED;
+		irp->outputBuffer[0] = FILE_SUPERSEDED;
 		break;
 	case FILE_OPEN_IF:
-		information = FILE_OPENED;
+		irp->outputBuffer[0] = FILE_OPENED;
 		break;
 	case FILE_OVERWRITE_IF:
-		information = FILE_OVERWRITTEN;
+		irp->outputBuffer[0] = FILE_OVERWRITTEN;
 		break;
 	default:
-		information = 0;
+		irp->outputBuffer[0] = 0;
 		break;
 	}
-
-	SET_UINT32(irp->outputBuffer, 0, irp->fileID); /* fileID */
-	SET_UINT8(irp->outputBuffer, 4, information); /* information */
 }
 
 void
@@ -133,11 +121,9 @@ irp_process_close_request(IRP* irp, char* data, int data_size)
 	}
 
 	/* construct close response */
-	irp->outputBufferLength = 5;
-	irp->outputBuffer = malloc(irp->outputBufferLength);
-
-	SET_UINT32(irp->outputBuffer, 0, 0); /* Padding */
-	SET_UINT8(irp->outputBuffer, 4, 0); /* Padding */
+	irp->outputBufferLength = 1;
+	irp->outputBuffer = malloc(1);
+	irp->outputBuffer[0] = 0;
 }
 
 void
@@ -154,8 +140,8 @@ irp_process_read_request(IRP* irp, char* data, int data_size)
 	else
 	{
 		irp->ioStatus = irp->dev->service->read(irp);
+		irp->outputResult = irp->outputBufferLength;
 	}
-	irp_construct_common_response(irp);
 }
 
 void
@@ -177,15 +163,11 @@ irp_process_write_request(IRP* irp, char* data, int data_size)
 	}
 	if (irp->ioStatus == RD_STATUS_SUCCESS)
 	{
-		irp->outputBufferLength = 5;
-		irp->outputBuffer = malloc(5);
-		SET_UINT32(irp->outputBuffer, 0, irp->length);
+		irp->outputResult = irp->length;
 		/* [MS-RDPEFS] says this is an optional padding, but unfortunately it's required! */
-		SET_UINT8(irp->outputBuffer, 4, 0);
-	}
-	else
-	{
-		irp_construct_common_response(irp);
+		irp->outputBufferLength = 1;
+		irp->outputBuffer = malloc(1);
+		irp->outputBuffer[0] = '\0';
 	}
 }
 
@@ -206,8 +188,8 @@ irp_process_query_volume_information_request(IRP* irp, char* data, int data_size
 	else
 	{
 		irp->ioStatus = irp->dev->service->query_volume_info(irp);
+		irp->outputResult = irp->outputBufferLength;
 	}
-	irp_construct_common_response(irp);
 }
 
 void
@@ -242,8 +224,8 @@ irp_process_query_information_request(IRP* irp, char* data, int data_size)
 	else
 	{
 		irp->ioStatus = irp->dev->service->query_info(irp);
+		irp->outputResult = irp->outputBufferLength;
 	}
-	irp_construct_common_response(irp);
 }
 
 void
@@ -301,8 +283,8 @@ irp_process_device_control_request(IRP* irp, char* data, int data_size)
 	else
 	{
 		irp->ioStatus = irp->dev->service->control(irp);
+		irp->outputResult = irp->outputBufferLength;
 	}
-	irp_construct_common_response(irp);
 }
 
 void
@@ -325,8 +307,8 @@ irp_process_file_lock_control_request(IRP* irp, char* data, int data_size)
 	else
 	{
 		irp->ioStatus = irp->dev->service->lock_control(irp);
+		irp->outputResult = irp->outputBufferLength;
 	}
-	irp_construct_common_response(irp);
 }
 
 void
@@ -363,13 +345,13 @@ irp_process_query_directory_request(IRP* irp, char* data, int data_size)
 	if (irp->ioStatus == RD_STATUS_NO_MORE_FILES)
 	{
 		/* [MS-RDPEFS] said it's an optional padding, however it's *required* for this last query!!! */
-		irp->outputBuffer = malloc(5);
-		memset(irp->outputBuffer, 0, 5);
-		irp->outputBufferLength = 5;
+		irp->outputBufferLength = 1;
+		irp->outputBuffer = malloc(1);
+		irp->outputBuffer[0] = '\0';
 	}
 	else
 	{
-		irp_construct_common_response(irp);
+		irp->outputResult = irp->outputBufferLength;
 	}
 }
 
@@ -389,5 +371,4 @@ irp_process_notify_change_directory_request(IRP* irp, char* data, int data_size)
 		irp->ioStatus = irp->dev->service->notify_change_directory(irp);
 	}
 }
-
 

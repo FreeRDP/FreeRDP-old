@@ -22,8 +22,8 @@
 #ifndef __IRP_H
 #define __IRP_H
 
-void
-irp_output_device_io_completion_header(IRP* irp, char* data, int data_size);
+char *
+irp_output_device_io_completion(IRP* irp, int * data_size);
 void
 irp_process_create_request(IRP* irp, char* data, int data_size);
 void

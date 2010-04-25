@@ -368,13 +368,7 @@ rdpdr_process_irp(rdpdrPlugin * plugin, char* data, int data_size)
 
 	if (irp.ioStatus != RD_STATUS_PENDING)
 	{
-		out_size = 16 + irp.outputBufferLength;
-		out = malloc(out_size);
-		irp_output_device_io_completion_header(&irp, out, out_size);
-		if (irp.outputBufferLength > 0)
-		{
-			memcpy(out + 16, irp.outputBuffer, irp.outputBufferLength);
-		}
+		out = irp_output_device_io_completion(&irp, &out_size);
 		error = plugin->ep.pVirtualChannelWrite(plugin->open_handle, out, out_size, out);
 		if (error != CHANNEL_RC_OK)
 		{
