@@ -277,6 +277,7 @@ static int
 run_xfreerdp(rdpSet * settings, rdpChanMan * chan_man)
 {
 	rdpInst * inst;
+	void * xf_info;
 	void * read_fds[32];
 	void * write_fds[32];
 	int read_count;
@@ -412,9 +413,10 @@ run_xfreerdp(rdpSet * settings, rdpChanMan * chan_man)
 		}
 	}
 	/* cleanup */
+	xf_info = inst->param1;
 	inst->rdp_disconnect(inst);
 	freerdp_free(inst);
-	xf_uninit(inst);
+	xf_uninit(xf_info);
 	return 0;
 }
 

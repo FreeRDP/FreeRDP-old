@@ -1016,11 +1016,11 @@ xf_post_connect(rdpInst * inst)
 }
 
 void
-xf_uninit(rdpInst * inst)
+xf_uninit(void * xf_info)
 {
 	xfInfo * xfi;
 
-	xfi = GET_XFI(inst);
+	xfi = (xfInfo *) xf_info;
 	/* xf_post_connect */
 	XFreeModifiermap(xfi->mod_map);
 	XFreeGC(xfi->display, xfi->gc_default);
