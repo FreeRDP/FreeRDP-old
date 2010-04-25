@@ -138,7 +138,7 @@ irp_process_close_request(IRP* irp, char* data, int data_size)
 	irp->outputBuffer = malloc(irp->outputBufferLength);
 
 	SET_UINT32(irp->outputBuffer, 0, 0); /* Padding */
-	SET_UINT8(irp->outputBuffer, 0, 0); /* Padding */
+	SET_UINT8(irp->outputBuffer, 4, 0); /* Padding */
 }
 
 void
@@ -381,20 +381,35 @@ irp_process_query_directory_request(IRP* irp, char* data, int data_size)
 		irp->ioStatus = irp->dev->service->query_directory(irp, initialQuery, path);
 	}
 	free(path);
-	irp_construct_common_response(irp);
+
+	if (irp->ioStatus == RD_STATUS_NO_MORE_FILES)
+	{
+		/* [MS-RDPEFS] said it's an optional padding, however it's *required* for this last query!!! */
+		irp->outputBuffer = malloc(5);
+		memset(irp->outputBuffer, 0, 5);
+		irp->outputBufferLength = 5;
+	}
+	else
+	{
+		irp_construct_common_response(irp);
+	}
 }
 
 void
 irp_process_notify_change_directory_request(IRP* irp, char* data, int data_size)
 {
-#if 0
-	uint8 watchQuery;	
-	uint32 completionQuery;
-
-	watchQuery = GET_UINT8(data, 0); /* watchQuery */
-	completionQuery = GET_UINT32(data, 1); /* completionQuery */
+	irp->watchTree = GET_UINT8(data, 0); /* watchQuery */
+	irp->completionFilter = GET_UINT32(data, 1); /* completionQuery */
 	/* 27-byte pad */
-#endif
+
+	if (!irp->dev->service->notify_change_directory)
+	{
+		irp->ioStatus = RD_STATUS_NOT_SUPPORTED;
+	}
+	else
+	{
+		irp->ioStatus = irp->dev->service->notify_change_directory(irp);
+	}
 }
 
 

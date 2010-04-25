@@ -52,6 +52,7 @@ struct _SERVICE
 	uint32 (*query_volume_info) (IRP * irp);
 	uint32 (*query_info) (IRP * irp);
 	uint32 (*query_directory) (IRP * irp, uint8 initialQuery, const char * path);
+	uint32 (*notify_change_directory) (IRP * irp);
 	uint32 (*free) (DEVICE * dev);
 };
 typedef SERVICE * PSERVICE;
@@ -98,6 +99,8 @@ struct _IRP
 	uint32 createDisposition;
 	uint32 createOptions;
 	uint32 ioControlCode;
+	uint8 watchTree;	
+	uint32 completionFilter;
 };
 
 #endif

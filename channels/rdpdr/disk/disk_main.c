@@ -31,9 +31,98 @@
 #include <errno.h>
 #include <fnmatch.h>
 
+#ifdef HAVE_SYS_VFS_H
+#include <sys/vfs.h>
+#endif
+
+#ifdef HAVE_SYS_STATVFS_H
+#include <sys/statvfs.h>
+#endif
+
+#ifdef HAVE_SYS_STATFS_H
+#include <sys/statfs.h>
+#endif
+
+#ifdef HAVE_SYS_PARAM_H
+#include <sys/param.h>
+#endif
+
+#ifdef HAVE_SYS_MOUNT_H
+#include <sys/mount.h>
+#endif
+
 #include "rdpdr_types.h"
 #include "rdpdr_constants.h"
 #include "devman.h"
+
+#ifdef STAT_STATFS3_OSF1
+#define STATFS_FN(path, buf) (statfs(path,buf,sizeof(buf)))
+#define STATFS_T statfs
+#define USE_STATFS
+#endif
+
+#ifdef STAT_STATVFS
+#define STATFS_FN(path, buf) (statvfs(path,buf))
+#define STATFS_T statvfs
+#define USE_STATVFS
+#endif
+
+#ifdef STAT_STATVFS64
+#define STATFS_FN(path, buf) (statvfs64(path,buf))
+#define STATFS_T statvfs64
+#define USE_STATVFS
+#endif
+
+#if (defined(STAT_STATFS2_FS_DATA) || defined(STAT_STATFS2_BSIZE) || defined(STAT_STATFS2_FSIZE))
+#define STATFS_FN(path, buf) (statfs(path,buf))
+#define STATFS_T statfs
+#define USE_STATFS
+#endif
+
+#ifdef STAT_STATFS4
+#define STATFS_FN(path, buf) (statfs(path,buf,sizeof(buf),0))
+#define STATFS_T statfs
+#define USE_STATFS
+#endif
+
+#if ((defined(USE_STATFS) && defined(HAVE_STRUCT_STATFS_F_NAMEMAX)) || (defined(USE_STATVFS) && defined(HAVE_STRUCT_STATVFS_F_NAMEMAX)))
+#define F_NAMELEN(buf) ((buf).f_namemax)
+#endif
+
+#if ((defined(USE_STATFS) && defined(HAVE_STRUCT_STATFS_F_NAMELEN)) || (defined(USE_STATVFS) && defined(HAVE_STRUCT_STATVFS_F_NAMELEN)))
+#define F_NAMELEN(buf) ((buf).f_namelen)
+#endif
+
+#ifndef F_NAMELEN
+#define F_NAMELEN(buf) (255)
+#endif
+
+/* Dummy statfs fallback */
+#ifndef STATFS_T
+struct dummy_statfs_t
+{
+	long f_bfree;
+	long f_bsize;
+	long f_blocks;
+	int f_namelen;
+	int f_namemax;
+};
+
+static int
+dummy_statfs(struct dummy_statfs_t *buf)
+{
+	buf->f_blocks = 262144;
+	buf->f_bfree = 131072;
+	buf->f_bsize = 512;
+	buf->f_namelen = 255;
+	buf->f_namemax = 255;
+
+	return 0;
+}
+
+#define STATFS_T dummy_statfs_t
+#define STATFS_FN(path,buf) (dummy_statfs(buf))
+#endif
 
 struct _FILE_INFO
 {
@@ -44,7 +133,8 @@ struct _FILE_INFO
 	int file;
 	DIR * dir;
 	struct _FILE_INFO * next;
-	char pattern[256];
+	char * fullpath;
+	char * pattern;
 };
 typedef struct _FILE_INFO FILE_INFO;
 
@@ -78,16 +168,16 @@ get_error_status(void)
 {
 	switch (errno)
 	{
-	case EACCES:
-	case ENOTDIR:
-	case ENFILE:
-		return RD_STATUS_ACCESS_DENIED;
-	case EISDIR:
-		return RD_STATUS_FILE_IS_A_DIRECTORY;
-	case EEXIST:
-		return RD_STATUS_OBJECT_NAME_COLLISION;
-	default:
-		return RD_STATUS_NO_SUCH_FILE;
+		case EACCES:
+		case ENOTDIR:
+		case ENFILE:
+			return RD_STATUS_ACCESS_DENIED;
+		case EISDIR:
+			return RD_STATUS_FILE_IS_A_DIRECTORY;
+		case EEXIST:
+			return RD_STATUS_OBJECT_NAME_COLLISION;
+		default:
+			return RD_STATUS_NO_SUCH_FILE;
 	}
 }
 
@@ -138,8 +228,16 @@ disk_create_fullpath(IRP * irp, FILE_INFO * finfo, const char * fullpath)
 	int mode = S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH;
 	int flags = 0;
 	char * p;
+	struct stat file_stat;
 
-	finfo->is_dir = ((irp->createOptions & FILE_DIRECTORY_FILE) ? 1 : 0);
+	if (stat(fullpath, &file_stat) == 0)
+	{
+		finfo->is_dir = S_ISDIR(file_stat.st_mode);
+	}
+	else
+	{
+		finfo->is_dir = ((irp->createOptions & FILE_DIRECTORY_FILE) ? 1 : 0);
+	}
 	if (finfo->is_dir)
 	{
 		if (irp->createDisposition == FILE_CREATE)
@@ -155,25 +253,25 @@ disk_create_fullpath(IRP * irp, FILE_INFO * finfo, const char * fullpath)
 	{
 		switch (irp->createDisposition)
 		{
-		case FILE_SUPERSEDE:
-			flags = O_TRUNC | O_CREAT;
-			break;
-		case FILE_OPEN:
-			break;
-		case FILE_CREATE:
-			flags |= O_CREAT | O_EXCL;
-			break;
-		case FILE_OPEN_IF:
-			flags |= O_CREAT;
-			break;
-		case FILE_OVERWRITE:
-			flags |= O_TRUNC;
-			break;
-		case FILE_OVERWRITE_IF:
-			flags |= O_TRUNC | O_CREAT;
-			break;
-		default:
-			return RD_STATUS_INVALID_PARAMETER;
+			case FILE_SUPERSEDE:
+				flags = O_TRUNC | O_CREAT;
+				break;
+			case FILE_OPEN:
+				break;
+			case FILE_CREATE:
+				flags |= O_CREAT | O_EXCL;
+				break;
+			case FILE_OPEN_IF:
+				flags |= O_CREAT;
+				break;
+			case FILE_OVERWRITE:
+				flags |= O_TRUNC;
+				break;
+			case FILE_OVERWRITE_IF:
+				flags |= O_TRUNC | O_CREAT;
+				break;
+			default:
+				return RD_STATUS_INVALID_PARAMETER;
 		}
 
 		if (irp->desiredAccess & GENERIC_ALL
@@ -242,19 +340,23 @@ disk_remove_file(DEVICE * dev, uint32 file_id)
 				close(curr->file);
 			if (curr->dir)
 				closedir(curr->dir);
+			if (curr->fullpath)
+				free(curr->fullpath);
+			if (curr->pattern)
+				free(curr->pattern);
 
 			if (prev == NULL)
 				info->head = curr->next;
 			else
 				prev->next  = curr->next;
 
-			free(curr);			
+			free(curr);
 			break;
 		}
 	}
 }
 
-uint32
+static uint32
 disk_create(IRP * irp, const char * path)
 {
 	DISK_DEVICE_INFO * info;
@@ -269,10 +371,10 @@ disk_create(IRP * irp, const char * path)
 
 	fullpath = disk_get_fullpath(irp->dev, path);
 	status = disk_create_fullpath(irp, finfo, fullpath);
-	free(fullpath);
 
 	if (status == RD_STATUS_SUCCESS)
 	{
+		finfo->fullpath = fullpath;
 		finfo->file_id = info->devman->id_sequence++;
 		finfo->next = info->head;
 		info->head = finfo;
@@ -282,13 +384,14 @@ disk_create(IRP * irp, const char * path)
 	}
 	else
 	{
+		free(fullpath);
 		free(finfo);
 	}
 
 	return status;
 }
 
-uint32
+static uint32
 disk_close(IRP * irp)
 {
 	LLOGLN(0, ("disk_close: id=%d", irp->fileID));
@@ -296,57 +399,93 @@ disk_close(IRP * irp)
 	return RD_STATUS_SUCCESS;
 }
 
-uint32
+static uint32
 disk_read(IRP * irp)
 {
 	printf("disk_read\n");
 	return 0;
 }
 
-uint32
+static uint32
 disk_write(IRP * irp)
 {
 	printf("disk_write\n");
 	return 0;
 }
 
-uint32
+static uint32
 disk_control(IRP * irp)
 {
 	LLOGLN(0, ("disk_control: id=%d io=%X", irp->fileID, irp->ioControlCode));
 	return RD_STATUS_SUCCESS;
 }
 
-uint32
+static uint32
 disk_query_volume_info(IRP * irp)
 {
+	FILE_INFO * finfo;
+	struct STATFS_T stat_fs;
 	uint32 status;
 	int size;
 	char * buf;
 	int len;
 
 	LLOGLN(0, ("disk_query_volume_info: class=%d id=%d", irp->infoClass, irp->fileID));
-	size = 256;
-	buf = malloc(size);
-	memset(buf, 0, size);
+	finfo = disk_get_file_info(irp->dev, irp->fileID);
+	if (finfo == NULL)
+	{
+		LLOGLN(0, ("disk_query_volume_info: invalid file id"));
+		return RD_STATUS_INVALID_HANDLE;
+	}
+	if (STATFS_FN(finfo->fullpath, &stat_fs) != 0)
+	{
+		LLOGLN(0, ("disk_query_volume_info: statfs failed"));
+		return RD_STATUS_ACCESS_DENIED;
+	}
 
+	size = 0;
+	buf = NULL;
 	status = RD_STATUS_SUCCESS;
 
 	switch (irp->infoClass)
 	{
-	case FileFsVolumeInformation:
-		SET_UINT32(buf, 0, 0); /* VolumeCreationTime (low) */
-		SET_UINT32(buf, 4, 0); /* VolumeCreationTime (high) */
-		SET_UINT32(buf, 8, 0); /* VolumeSerialNumber */
-		len = set_wstr(buf + 17, size - 17, "FREERDP", strlen("FREERDP") + 1);
-		SET_UINT32(buf, 12, len); /* VolumeLabelLength */
-		SET_UINT8(buf, 16, 0);	/* SupportsObjects */
-		size = 17 + len;
-		break;
-	default:
-		size = 0;
-		status = RD_STATUS_INVALID_PARAMETER;
-		break;
+		case FileFsVolumeInformation:
+			buf = malloc(256);
+			memset(buf, 0, 256);
+			SET_UINT32(buf, 0, 0); /* VolumeCreationTime (low) */
+			SET_UINT32(buf, 4, 0); /* VolumeCreationTime (high) */
+			SET_UINT32(buf, 8, 0); /* VolumeSerialNumber */
+			len = set_wstr(buf + 17, size - 17, "FREERDP", strlen("FREERDP") + 1);
+			SET_UINT32(buf, 12, len); /* VolumeLabelLength */
+			SET_UINT8(buf, 16, 0);	/* SupportsObjects */
+			size = 17 + len;
+			break;
+
+		case FileFsSizeInformation:
+			size = 24;
+			buf = malloc(size);
+			memset(buf, 0, size);
+			SET_UINT32(buf, 0, stat_fs.f_blocks); /* TotalAllocationUnits (low) */
+			SET_UINT32(buf, 4, 0); /* TotalAllocationUnits (high) */
+			SET_UINT32(buf, 8, stat_fs.f_bfree); /* AvailableAllocationUnits (low) */
+			SET_UINT32(buf, 12, 0); /* AvailableAllocationUnits (high) */
+			SET_UINT32(buf, 16, stat_fs.f_bsize / 0x200); /* SectorsPerAllocationUnit */
+			SET_UINT32(buf, 20, 0x200); /* BytesPerSector */
+			break;
+
+		case FileFsAttributeInformation:
+			buf = malloc(256);
+			memset(buf, 0, 256);
+			SET_UINT32(buf, 0, FILE_CASE_SENSITIVE_SEARCH | FILE_CASE_PRESERVED_NAMES | FILE_UNICODE_ON_DISK); /* FileSystemAttributes */
+			SET_UINT32(buf, 4, F_NAMELEN(stat_fs)); /* MaximumComponentNameLength */
+			len = set_wstr(buf + 12, 256 - 12, "FREERDP", 8);
+			SET_UINT32(buf, 8, len); /* FileSystemNameLength */
+			size = 12 + len;
+			break;
+
+		default:
+			status = RD_STATUS_INVALID_PARAMETER;
+			break;
 	}
 
 	irp->outputBuffer = buf;
@@ -355,7 +494,7 @@ disk_query_volume_info(IRP * irp)
 	return status;
 }
 
-uint32
+static uint32
 disk_query_info(IRP * irp)
 {
 	FILE_INFO *finfo;
@@ -368,7 +507,10 @@ disk_query_info(IRP * irp)
 	LLOGLN(0, ("disk_query_info: class=%d id=%d", irp->infoClass, irp->fileID));
 	finfo = disk_get_file_info(irp->dev, irp->fileID);
 	if (finfo == NULL)
+	{
+		LLOGLN(0, ("disk_query_info: invalid file id"));
 		return RD_STATUS_INVALID_HANDLE;
+	}
 
 	size = 256;
 	buf = malloc(size);
@@ -378,45 +520,46 @@ disk_query_info(IRP * irp)
 
 	switch (irp->infoClass)
 	{
-	case FileBasicInformation:
-		get_filetime((finfo->file_stat.st_ctime < finfo->file_stat.st_mtime ?
-			finfo->file_stat.st_ctime : finfo->file_stat.st_mtime), &tlow, &thigh);
-		SET_UINT32(buf, 0, tlow); /* CreationTime */
-		SET_UINT32(buf, 4, thigh);
-		get_filetime(finfo->file_stat.st_atime, &tlow, &thigh);
-		SET_UINT32(buf, 8, tlow); /* LastAccessTime */
-		SET_UINT32(buf, 12, thigh);
-		get_filetime(finfo->file_stat.st_mtime, &tlow, &thigh);
-		SET_UINT32(buf, 16, tlow); /* LastWriteTime */
-		SET_UINT32(buf, 20, thigh);
-		get_filetime(finfo->file_stat.st_ctime, &tlow, &thigh);
-		SET_UINT32(buf, 24, tlow); /* ChangeTime */
-		SET_UINT32(buf, 28, thigh);
-		SET_UINT32(buf, 32, finfo->file_attr); /* FileAttributes */
-		size = 36;
-		break;
+		case FileBasicInformation:
+			get_filetime((finfo->file_stat.st_ctime < finfo->file_stat.st_mtime ?
+				finfo->file_stat.st_ctime : finfo->file_stat.st_mtime), &tlow, &thigh);
+			SET_UINT32(buf, 0, tlow); /* CreationTime */
+			SET_UINT32(buf, 4, thigh);
+			get_filetime(finfo->file_stat.st_atime, &tlow, &thigh);
+			SET_UINT32(buf, 8, tlow); /* LastAccessTime */
+			SET_UINT32(buf, 12, thigh);
+			get_filetime(finfo->file_stat.st_mtime, &tlow, &thigh);
+			SET_UINT32(buf, 16, tlow); /* LastWriteTime */
+			SET_UINT32(buf, 20, thigh);
+			get_filetime(finfo->file_stat.st_ctime, &tlow, &thigh);
+			SET_UINT32(buf, 24, tlow); /* ChangeTime */
+			SET_UINT32(buf, 28, thigh);
+			SET_UINT32(buf, 32, finfo->file_attr); /* FileAttributes */
+			size = 36;
+			break;
 
-	case FileStandardInformation:
-		SET_UINT32(buf, 0, finfo->file_stat.st_size); /* AllocationSize */
-		SET_UINT32(buf, 4, 0);
-		SET_UINT32(buf, 8, finfo->file_stat.st_size); /* EndOfFile */
-		SET_UINT32(buf, 12, 0);
-		SET_UINT32(buf, 16, finfo->file_stat.st_nlink); /* NumberOfLinks */
-		SET_UINT8(buf, 20, 0); /* DeletePending */
-		SET_UINT8(buf, 21, finfo->is_dir); /* Directory */
-		size = 22;
-		break;
+		case FileStandardInformation:
+			SET_UINT32(buf, 0, finfo->file_stat.st_size); /* AllocationSize */
+			SET_UINT32(buf, 4, 0);
+			SET_UINT32(buf, 8, finfo->file_stat.st_size); /* EndOfFile */
+			SET_UINT32(buf, 12, 0);
+			SET_UINT32(buf, 16, finfo->file_stat.st_nlink); /* NumberOfLinks */
+			SET_UINT8(buf, 20, 0); /* DeletePending */
+			SET_UINT8(buf, 21, finfo->is_dir); /* Directory */
+			size = 22;
+			break;
 
-	case FileObjectIdInformation:
-		SET_UINT32(buf, 0, finfo->file_attr); /* FileAttributes */
-		SET_UINT32(buf, 4, 0);	/* ReparseTag */
-		size = 8;
-		break;
+		case FileObjectIdInformation:
+			SET_UINT32(buf, 0, finfo->file_attr); /* FileAttributes */
+			SET_UINT32(buf, 4, 0);	/* ReparseTag */
+			size = 8;
+			break;
 
-	default:
-		size = 0;
-		status = RD_STATUS_INVALID_PARAMETER;
-		break;
+		default:
+			LLOGLN(0, ("disk_query_info: invalid info class"));
+			size = 0;
+			status = RD_STATUS_INVALID_PARAMETER;
+			break;
 	}
 
 	irp->outputBuffer = buf;
@@ -425,11 +568,11 @@ disk_query_info(IRP * irp)
 	return status;
 }
 
-uint32
+static uint32
 disk_query_directory(IRP * irp, uint8 initialQuery, const char * path)
 {
 	DISK_DEVICE_INFO * info;
-	FILE_INFO *finfo;
+	FILE_INFO * finfo;
 	char * p;
 	uint32 status;
 	char * buf;
@@ -445,13 +588,20 @@ disk_query_directory(IRP * irp, uint8 initialQuery, const char * path)
 		initialQuery, path));
 	finfo = disk_get_file_info(irp->dev, irp->fileID);
 	if (finfo == NULL || finfo->dir == NULL)
+	{
+		LLOGLN(0, ("disk_query_directory: invalid file id"));
 		return RD_STATUS_INVALID_HANDLE;
+	}
 	info = (DISK_DEVICE_INFO *) irp->dev->info;
 
 	if (initialQuery)
 	{
+		if (finfo->pattern)
+			free(finfo->pattern);
 		p = strrchr(path, '\\');
-		strncpy(finfo->pattern, (p ? p + 1 : path), sizeof(finfo->pattern) - 1);
+		p = (p ? p + 1 : (char *)path);
+		finfo->pattern = malloc(strlen(p) + 1);
+		strcpy(finfo->pattern, p);
 		rewinddir(finfo->dir);
 	}
 
@@ -459,66 +609,97 @@ disk_query_directory(IRP * irp, uint8 initialQuery, const char * path)
 	buf = NULL;
 	size = 0;
 
+	pdirent = readdir(finfo->dir);
+	while (pdirent && finfo->pattern[0] && fnmatch(finfo->pattern, pdirent->d_name, 0) != 0)
+		pdirent = readdir(finfo->dir);
+	if (pdirent == NULL)
+	{
+		return RD_STATUS_NO_MORE_FILES;
+	}		
+
+	memset(&file_stat, 0, sizeof(struct stat));
+	p = malloc(strlen(finfo->fullpath) + strlen(pdirent->d_name) + 2);
+	sprintf(p, "%s/%s", finfo->fullpath, pdirent->d_name);
+	if (stat(p, &file_stat) != 0)
+	{
+		LLOGLN(0, ("disk_query_directory: stat %s failed (%i)\n", p, errno));
+	}
+	free(p);
+
+	attr = get_file_attribute(pdirent->d_name, &file_stat);
+
 	switch (irp->infoClass)
 	{
-	case FileBothDirectoryInformation:
-		pdirent = readdir(finfo->dir);
-		while (pdirent && finfo->pattern[0] && fnmatch(finfo->pattern, pdirent->d_name, 0) != 0)
-			pdirent = readdir(finfo->dir);
-		if (pdirent == NULL)
-		{
-			status = RD_STATUS_NO_MORE_FILES;
-			/* [MS-RDPEFS] said it's an optional padding, however it's *required* for this last query!!! */
-			buf = malloc(1);
-			buf[0] = 0;
-			size = 1;
+		case FileBothDirectoryInformation:
+			size = 93 + strlen(pdirent->d_name) * 2;
+			buf = malloc(size);
+			memset(buf, 0, size);
+
+			SET_UINT32(buf, 0, 0); /* NextEntryOffset */
+			SET_UINT32(buf, 4, 0); /* FileIndex */
+			get_filetime((file_stat.st_ctime < file_stat.st_mtime ?
+				file_stat.st_ctime : file_stat.st_mtime), &tlow, &thigh);
+			SET_UINT32(buf, 8, tlow); /* CreationTime */
+			SET_UINT32(buf, 12, thigh);
+			get_filetime(file_stat.st_atime, &tlow, &thigh);
+			SET_UINT32(buf, 16, tlow); /* LastAccessTime */
+			SET_UINT32(buf, 20, thigh);
+			get_filetime(file_stat.st_mtime, &tlow, &thigh);
+			SET_UINT32(buf, 24, tlow); /* LastWriteTime */
+			SET_UINT32(buf, 28, thigh);
+			get_filetime(file_stat.st_ctime, &tlow, &thigh);
+			SET_UINT32(buf, 32, tlow); /* ChangeTime */
+			SET_UINT32(buf, 36, thigh);
+			SET_UINT32(buf, 40, file_stat.st_size); /* EndOfFile */
+			SET_UINT32(buf, 44, 0);
+			SET_UINT32(buf, 48, file_stat.st_size); /* AllocationSize */
+			SET_UINT32(buf, 52, 0);
+			SET_UINT32(buf, 56, attr); /* FileAttributes */
+			SET_UINT32(buf, 64, 0); /* EaSize */
+			SET_UINT8(buf, 68, 0); /* ShortNameLength */
+			/* [MS-FSCC] has one byte padding here but RDP does not! */
+			//SET_UINT8(buf, 69, 0); /* Reserved */
+			/* ShortName 24  bytes */
+			len = set_wstr(buf + 93, size - 93, pdirent->d_name, strlen(pdirent->d_name));
+			SET_UINT32(buf, 60, len); /* FileNameLength */
+			size = 93 + len;
 			break;
-		}		
 
-		p = malloc(strlen(info->path) + strlen(pdirent->d_name) + 2);
-		sprintf(p, "%s/%s", info->path, pdirent->d_name);
-		stat(p, &file_stat);
-		free(p);
+		case FileFullDirectoryInformation:
+			size = 68 + strlen(pdirent->d_name) * 2;
+			buf = malloc(size);
+			memset(buf, 0, size);
 
-		attr = get_file_attribute(pdirent->d_name, &file_stat);
+			SET_UINT32(buf, 0, 0); /* NextEntryOffset */
+			SET_UINT32(buf, 4, 0); /* FileIndex */
+			get_filetime((file_stat.st_ctime < file_stat.st_mtime ?
+				file_stat.st_ctime : file_stat.st_mtime), &tlow, &thigh);
+			SET_UINT32(buf, 8, tlow); /* CreationTime */
+			SET_UINT32(buf, 12, thigh);
+			get_filetime(file_stat.st_atime, &tlow, &thigh);
+			SET_UINT32(buf, 16, tlow); /* LastAccessTime */
+			SET_UINT32(buf, 20, thigh);
+			get_filetime(file_stat.st_mtime, &tlow, &thigh);
+			SET_UINT32(buf, 24, tlow); /* LastWriteTime */
+			SET_UINT32(buf, 28, thigh);
+			get_filetime(file_stat.st_ctime, &tlow, &thigh);
+			SET_UINT32(buf, 32, tlow); /* ChangeTime */
+			SET_UINT32(buf, 36, thigh);
+			SET_UINT32(buf, 40, file_stat.st_size); /* EndOfFile */
+			SET_UINT32(buf, 44, 0);
+			SET_UINT32(buf, 48, file_stat.st_size); /* AllocationSize */
+			SET_UINT32(buf, 52, 0);
+			SET_UINT32(buf, 56, attr); /* FileAttributes */
+			SET_UINT32(buf, 64, 0); /* EaSize */
+			len = set_wstr(buf + 68, size - 68, pdirent->d_name, strlen(pdirent->d_name));
+			SET_UINT32(buf, 60, len); /* FileNameLength */
+			size = 68 + len;
+			break;
 
-		size = 93 + strlen(pdirent->d_name) * 2;
-		buf = malloc(size);
-		memset(buf, 0, size);
-
-		SET_UINT32(buf, 0, 0); /* NextEntryOffset */
-		SET_UINT32(buf, 4, 0); /* FileIndex */
-		get_filetime((file_stat.st_ctime < file_stat.st_mtime ?
-			file_stat.st_ctime : file_stat.st_mtime), &tlow, &thigh);
-		SET_UINT32(buf, 8, tlow); /* CreationTime */
-		SET_UINT32(buf, 12, thigh);
-		get_filetime(file_stat.st_atime, &tlow, &thigh);
-		SET_UINT32(buf, 16, tlow); /* LastAccessTime */
-		SET_UINT32(buf, 20, thigh);
-		get_filetime(file_stat.st_mtime, &tlow, &thigh);
-		SET_UINT32(buf, 24, tlow); /* LastWriteTime */
-		SET_UINT32(buf, 28, thigh);
-		get_filetime(file_stat.st_ctime, &tlow, &thigh);
-		SET_UINT32(buf, 32, tlow); /* ChangeTime */
-		SET_UINT32(buf, 36, thigh);
-		SET_UINT32(buf, 40, file_stat.st_size); /* EndOfFile */
-		SET_UINT32(buf, 44, 0);
-		SET_UINT32(buf, 48, file_stat.st_size); /* AllocationSize */
-		SET_UINT32(buf, 52, 0);
-		SET_UINT32(buf, 56, attr); /* FileAttributes */
-		SET_UINT32(buf, 64, 0); /* EaSize */
-		SET_UINT8(buf, 68, 0); /* ShortNameLength */
-		/* [MS-FSCC] has one byte padding here but RDP does not! */
-		//SET_UINT8(buf, 69, 0); /* Reserved */
-		/* ShortName 24  bytes */
-		len = set_wstr(buf + 93, size - 93, pdirent->d_name, strlen(pdirent->d_name));
-		SET_UINT32(buf, 60, len); /* FileNameLength */
-		size = 93 + len;
-		break;
-
-	default:
-		status = RD_STATUS_INVALID_PARAMETER;
-		break;
+		default:
+			LLOGLN(0, ("disk_query_directory: invalid info class"));
+			status = RD_STATUS_INVALID_PARAMETER;
+			break;
 	}
 
 	irp->outputBuffer = buf;
@@ -527,7 +708,13 @@ disk_query_directory(IRP * irp, uint8 initialQuery, const char * path)
 	return status;
 }
 
-uint32
+static uint32
+disk_notify_change_directory(IRP * irp)
+{
+	return RD_STATUS_PENDING;
+}
+
+static uint32
 disk_free(DEVICE * dev)
 {
 	DISK_DEVICE_INFO * info;
@@ -560,6 +747,7 @@ DeviceServiceEntry(PDEVMAN pDevman, PDEVMAN_ENTRY_POINTS pEntryPoints)
 	srv->query_volume_info = disk_query_volume_info;
 	srv->query_info = disk_query_info;
 	srv->query_directory = disk_query_directory;
+	srv->notify_change_directory = disk_notify_change_directory;
 	srv->free = disk_free;
 	srv->type = RDPDR_DTYP_FILESYSTEM;
 
