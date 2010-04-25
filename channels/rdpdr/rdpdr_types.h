@@ -51,6 +51,7 @@ struct _SERVICE
 	uint32 (*control) (IRP * irp);
 	uint32 (*query_volume_info) (IRP * irp);
 	uint32 (*query_info) (IRP * irp);
+	uint32 (*set_info) (IRP * irp);
 	uint32 (*query_directory) (IRP * irp, uint8 initialQuery, const char * path);
 	uint32 (*notify_change_directory) (IRP * irp);
 	uint32 (*lock_control) (IRP * irp);

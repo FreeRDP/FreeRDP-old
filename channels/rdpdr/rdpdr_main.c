@@ -337,7 +337,7 @@ rdpdr_process_irp(rdpdrPlugin * plugin, char* data, int data_size)
 
 		case IRP_MJ_SET_INFORMATION:
 			LLOGLN(0, ("IRP_MJ_SET_INFORMATION"));
-			irp_process_set_volume_information_request(&irp, &data[20], data_size - 20);
+			irp_process_set_information_request(&irp, &data[20], data_size - 20);
 			break;
 
 		case IRP_MJ_QUERY_VOLUME_INFORMATION:

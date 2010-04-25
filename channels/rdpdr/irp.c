@@ -231,16 +231,22 @@ irp_process_query_information_request(IRP* irp, char* data, int data_size)
 void
 irp_process_set_information_request(IRP* irp, char* data, int data_size)
 {
-#if 0
-	uint32 fsInformationClass;
-	uint32 length;
-
-	fsInformationClass = GET_UINT32(data, 0); /* fsInformationClass */
-	length = GET_UINT32(data, 4); /* length */
+	irp->infoClass = GET_UINT32(data, 0); /* fsInformationClass */
+	irp->inputBufferLength = GET_UINT32(data, 4); /* length */
 	/* 24-byte pad */
 	
 	/* setBuffer */
-#endif
+	irp->inputBuffer = data + 32;
+
+	if (!irp->dev->service->set_info)
+	{
+		irp->ioStatus = RD_STATUS_NOT_SUPPORTED;
+	}
+	else
+	{
+		irp->ioStatus = irp->dev->service->set_info(irp);
+		irp->outputResult = irp->inputBufferLength;
+	}
 }
 
 void

@@ -30,6 +30,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <fnmatch.h>
+#include <utime.h>
 
 #ifdef HAVE_SYS_VFS_H
 #include <sys/vfs.h>
@@ -135,6 +136,7 @@ struct _FILE_INFO
 	struct _FILE_INFO * next;
 	char * fullpath;
 	char * pattern;
+	int delete_pending;
 };
 typedef struct _FILE_INFO FILE_INFO;
 
@@ -154,9 +156,15 @@ struct _DISK_DEVICE_INFO
 typedef struct _DISK_DEVICE_INFO DISK_DEVICE_INFO;
 
 static uint64
-get_filetime(time_t seconds)
+get_rdp_filetime(time_t seconds)
 {
 	return ((uint64)seconds + 11644473600LL) * 10000000LL;
+}
+
+static time_t
+get_system_filetime(uint64 rdp_time)
+{
+	return (time_t) (rdp_time / 10000000LL - 11644473600LL);
 }
 
 static int
@@ -194,6 +202,26 @@ get_file_attribute(const char * filename, struct stat * filestat)
 	if (!(filestat->st_mode & S_IWUSR))
 		attr |= FILE_ATTRIBUTE_READONLY;
 	return attr;
+}
+
+static int
+set_file_size(int fd, off_t length)
+{
+	off_t pos;
+
+	if ((pos = lseek(fd, 0, SEEK_END)) == -1)
+		return -1;
+	if (pos == length)
+		return 0;
+	if (pos > length)
+	{
+		return ftruncate(fd, length);
+	}
+	if (lseek(fd, length, SEEK_SET) == -1)
+		return -1;
+	if (write(fd, "", 1) == -1)
+		return -1;
+	return ftruncate(fd, length);
 }
 
 static char *
@@ -335,6 +363,19 @@ disk_remove_file(DEVICE * dev, uint32 file_id)
 				close(curr->file);
 			if (curr->dir)
 				closedir(curr->dir);
+			if (curr->delete_pending)
+			{
+				if (curr->is_dir)
+				{
+					/* TODO: this should delete files recursively */
+					rmdir(curr->fullpath);
+				}
+				else
+				{
+					unlink(curr->fullpath);
+				}
+			}
+
 			if (curr->fullpath)
 				free(curr->fullpath);
 			if (curr->pattern)
@@ -590,11 +631,11 @@ disk_query_info(IRP * irp)
 	switch (irp->infoClass)
 	{
 		case FileBasicInformation:
-			SET_UINT64(buf, 0, get_filetime(finfo->file_stat.st_ctime < finfo->file_stat.st_mtime ?
+			SET_UINT64(buf, 0, get_rdp_filetime(finfo->file_stat.st_ctime < finfo->file_stat.st_mtime ?
 				finfo->file_stat.st_ctime : finfo->file_stat.st_mtime)); /* CreationTime */
-			SET_UINT64(buf, 8, get_filetime(finfo->file_stat.st_atime)); /* LastAccessTime */
-			SET_UINT64(buf, 16, get_filetime(finfo->file_stat.st_mtime)); /* LastWriteTime */
-			SET_UINT64(buf, 24, get_filetime(finfo->file_stat.st_ctime)); /* ChangeTime */
+			SET_UINT64(buf, 8, get_rdp_filetime(finfo->file_stat.st_atime)); /* LastAccessTime */
+			SET_UINT64(buf, 16, get_rdp_filetime(finfo->file_stat.st_mtime)); /* LastWriteTime */
+			SET_UINT64(buf, 24, get_rdp_filetime(finfo->file_stat.st_ctime)); /* ChangeTime */
 			SET_UINT32(buf, 32, finfo->file_attr); /* FileAttributes */
 			size = 36;
 			break;
@@ -623,6 +664,96 @@ disk_query_info(IRP * irp)
 
 	irp->outputBuffer = buf;
 	irp->outputBufferLength = size;
+
+	return status;
+}
+
+static uint32
+disk_set_info(IRP * irp)
+{
+	FILE_INFO *finfo;
+	uint32 status;
+	uint64 len;
+	char * buf;
+	int size;
+	char * fullpath;
+	struct stat file_stat;
+	struct utimbuf tvs;
+	int mode;
+	uint32 attr;
+
+	LLOGLN(0, ("disk_set_info: class=%d id=%d", irp->infoClass, irp->fileID));
+	finfo = disk_get_file_info(irp->dev, irp->fileID);
+	if (finfo == NULL)
+	{
+		LLOGLN(0, ("disk_set_info: invalid file id"));
+		return RD_STATUS_INVALID_HANDLE;
+	}
+
+	status = RD_STATUS_SUCCESS;
+
+	switch (irp->infoClass)
+	{
+		case FileBasicInformation:
+			/* Change file time */
+			tvs.actime = get_system_filetime(GET_UINT64(irp->inputBuffer, 8)); /* LastAccessTime */
+			tvs.modtime = get_system_filetime(GET_UINT64(irp->inputBuffer, 16)); /* LastWriteTime */
+			utime(finfo->fullpath, &tvs);
+
+			/* Change read-only flag */
+			attr = GET_UINT32(irp->inputBuffer, 32);
+			if (attr == 0)
+				break;
+			if (stat(finfo->fullpath, &file_stat) != 0)
+				return get_error_status();
+			mode = file_stat.st_mode;
+			if (attr & FILE_ATTRIBUTE_READONLY)
+				mode &= ~(S_IWUSR | S_IWGRP | S_IWOTH);
+			else
+				mode |= S_IWUSR;
+			mode &= 0777;
+			chmod(finfo->fullpath, mode);
+			break;
+
+		case FileEndOfFileInformation:
+		case FileAllocationInformation:
+			len = GET_UINT64(irp->inputBuffer, 0);
+			set_file_size(finfo->file, len);
+			break;
+
+		case FileDispositionInformation:
+			/* Delete on close */
+			finfo->delete_pending = 1;
+			break;
+
+		case FileRenameInformation:
+			//replaceIfExists = GET_UINT8(irp->inputBuffer, 0); /* ReplaceIfExists */
+			//rootDirectory = GET_UINT8(irp->inputBuffer, 1); /* RootDirectory */
+			len = GET_UINT32(irp->inputBuffer, 2);
+			size = len * 2;
+			buf = malloc(size);
+			memset(buf, 0, size);
+			get_wstr(buf, size, irp->inputBuffer + 6, len);
+			fullpath = disk_get_fullpath(irp->dev, buf);
+			free(buf);
+			LLOGLN(0, ("disk_set_info: rename %s to %s", finfo->fullpath, fullpath));
+			if (rename(finfo->fullpath, fullpath) == 0)
+			{
+				free(finfo->fullpath);
+				finfo->fullpath = fullpath;
+			}
+			else
+			{
+				free(fullpath);
+				return get_error_status();
+			}
+			break;
+
+		default:
+			LLOGLN(0, ("disk_set_info: invalid info class"));
+			status = RD_STATUS_NOT_SUPPORTED;
+			break;
+	}
 
 	return status;
 }
@@ -694,11 +825,11 @@ disk_query_directory(IRP * irp, uint8 initialQuery, const char * path)
 
 			SET_UINT32(buf, 0, 0); /* NextEntryOffset */
 			SET_UINT32(buf, 4, 0); /* FileIndex */
-			SET_UINT64(buf, 8, get_filetime(file_stat.st_ctime < file_stat.st_mtime ?
+			SET_UINT64(buf, 8, get_rdp_filetime(file_stat.st_ctime < file_stat.st_mtime ?
 				file_stat.st_ctime : file_stat.st_mtime)); /* CreationTime */
-			SET_UINT64(buf, 16, get_filetime(file_stat.st_atime)); /* LastAccessTime */
-			SET_UINT64(buf, 24, get_filetime(file_stat.st_mtime)); /* LastWriteTime */
-			SET_UINT64(buf, 32, get_filetime(file_stat.st_ctime)); /* ChangeTime */
+			SET_UINT64(buf, 16, get_rdp_filetime(file_stat.st_atime)); /* LastAccessTime */
+			SET_UINT64(buf, 24, get_rdp_filetime(file_stat.st_mtime)); /* LastWriteTime */
+			SET_UINT64(buf, 32, get_rdp_filetime(file_stat.st_ctime)); /* ChangeTime */
 			SET_UINT64(buf, 40, file_stat.st_size); /* EndOfFile */
 			SET_UINT64(buf, 48, file_stat.st_size); /* AllocationSize */
 			SET_UINT32(buf, 56, attr); /* FileAttributes */
@@ -719,11 +850,11 @@ disk_query_directory(IRP * irp, uint8 initialQuery, const char * path)
 
 			SET_UINT32(buf, 0, 0); /* NextEntryOffset */
 			SET_UINT32(buf, 4, 0); /* FileIndex */
-			SET_UINT64(buf, 8, get_filetime(file_stat.st_ctime < file_stat.st_mtime ?
+			SET_UINT64(buf, 8, get_rdp_filetime(file_stat.st_ctime < file_stat.st_mtime ?
 				file_stat.st_ctime : file_stat.st_mtime)); /* CreationTime */
-			SET_UINT64(buf, 16, get_filetime(file_stat.st_atime)); /* LastAccessTime */
-			SET_UINT64(buf, 24, get_filetime(file_stat.st_mtime)); /* LastWriteTime */
-			SET_UINT64(buf, 32, get_filetime(file_stat.st_ctime)); /* ChangeTime */
+			SET_UINT64(buf, 16, get_rdp_filetime(file_stat.st_atime)); /* LastAccessTime */
+			SET_UINT64(buf, 24, get_rdp_filetime(file_stat.st_mtime)); /* LastWriteTime */
+			SET_UINT64(buf, 32, get_rdp_filetime(file_stat.st_ctime)); /* ChangeTime */
 			SET_UINT64(buf, 40, file_stat.st_size); /* EndOfFile */
 			SET_UINT64(buf, 48, file_stat.st_size); /* AllocationSize */
 			SET_UINT32(buf, 56, attr); /* FileAttributes */
@@ -789,6 +920,7 @@ DeviceServiceEntry(PDEVMAN pDevman, PDEVMAN_ENTRY_POINTS pEntryPoints)
 	srv->control = disk_control;
 	srv->query_volume_info = disk_query_volume_info;
 	srv->query_info = disk_query_info;
+	srv->set_info = disk_set_info;
 	srv->query_directory = disk_query_directory;
 	srv->notify_change_directory = disk_notify_change_directory;
 	srv->lock_control = disk_lock_control;
