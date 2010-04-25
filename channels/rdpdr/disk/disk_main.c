@@ -357,7 +357,7 @@ disk_remove_file(DEVICE * dev, uint32 file_id)
 	{
 		if (curr->file_id == file_id)
 		{
-			LLOGLN(0, ("disk_remove_file: id=%d", curr->file_id));
+			LLOGLN(10, ("disk_remove_file: id=%d", curr->file_id));
 
 			if (curr->file != -1)
 				close(curr->file);
@@ -416,7 +416,7 @@ disk_create(IRP * irp, const char * path)
 		info->head = finfo;
 
 		irp->fileID = finfo->file_id;
-		LLOGLN(0, ("disk_create: %s (id=%d)", path, finfo->file_id));
+		LLOGLN(10, ("disk_create: %s (id=%d)", path, finfo->file_id));
 	}
 	else
 	{
@@ -430,7 +430,7 @@ disk_create(IRP * irp, const char * path)
 static uint32
 disk_close(IRP * irp)
 {
-	LLOGLN(0, ("disk_close: id=%d", irp->fileID));
+	LLOGLN(10, ("disk_close: id=%d", irp->fileID));
 	disk_remove_file(irp->dev, irp->fileID);
 	return RD_STATUS_SUCCESS;
 }
@@ -442,7 +442,7 @@ disk_read(IRP * irp)
 	char * buf;
 	ssize_t r;
 
-	LLOGLN(0, ("disk_read: id=%d len=%d off=%lld", irp->fileID, irp->length, irp->offset));
+	LLOGLN(10, ("disk_read: id=%d len=%d off=%lld", irp->fileID, irp->length, irp->offset));
 	finfo = disk_get_file_info(irp->dev, irp->fileID);
 	if (finfo == NULL)
 	{
@@ -480,7 +480,7 @@ disk_write(IRP * irp)
 	ssize_t r;
 	uint32 len;
 
-	LLOGLN(0, ("disk_write: id=%d len=%d off=%lld", irp->fileID, irp->inputBufferLength, irp->offset));
+	LLOGLN(10, ("disk_write: id=%d len=%d off=%lld", irp->fileID, irp->inputBufferLength, irp->offset));
 	finfo = disk_get_file_info(irp->dev, irp->fileID);
 	if (finfo == NULL)
 	{
@@ -511,7 +511,7 @@ disk_write(IRP * irp)
 static uint32
 disk_control(IRP * irp)
 {
-	LLOGLN(0, ("disk_control: id=%d io=%X", irp->fileID, irp->ioControlCode));
+	LLOGLN(10, ("disk_control: id=%d io=%X", irp->fileID, irp->ioControlCode));
 	return RD_STATUS_SUCCESS;
 }
 
@@ -525,7 +525,7 @@ disk_query_volume_info(IRP * irp)
 	char * buf;
 	int len;
 
-	LLOGLN(0, ("disk_query_volume_info: class=%d id=%d", irp->infoClass, irp->fileID));
+	LLOGLN(10, ("disk_query_volume_info: class=%d id=%d", irp->infoClass, irp->fileID));
 	finfo = disk_get_file_info(irp->dev, irp->fileID);
 	if (finfo == NULL)
 	{
@@ -614,7 +614,7 @@ disk_query_info(IRP * irp)
 	int size;
 	char * buf;
 
-	LLOGLN(0, ("disk_query_info: class=%d id=%d", irp->infoClass, irp->fileID));
+	LLOGLN(10, ("disk_query_info: class=%d id=%d", irp->infoClass, irp->fileID));
 	finfo = disk_get_file_info(irp->dev, irp->fileID);
 	if (finfo == NULL)
 	{
@@ -682,7 +682,7 @@ disk_set_info(IRP * irp)
 	int mode;
 	uint32 attr;
 
-	LLOGLN(0, ("disk_set_info: class=%d id=%d", irp->infoClass, irp->fileID));
+	LLOGLN(10, ("disk_set_info: class=%d id=%d", irp->infoClass, irp->fileID));
 	finfo = disk_get_file_info(irp->dev, irp->fileID);
 	if (finfo == NULL)
 	{
@@ -736,7 +736,7 @@ disk_set_info(IRP * irp)
 			get_wstr(buf, size, irp->inputBuffer + 6, len);
 			fullpath = disk_get_fullpath(irp->dev, buf);
 			free(buf);
-			LLOGLN(0, ("disk_set_info: rename %s to %s", finfo->fullpath, fullpath));
+			LLOGLN(10, ("disk_set_info: rename %s to %s", finfo->fullpath, fullpath));
 			if (rename(finfo->fullpath, fullpath) == 0)
 			{
 				free(finfo->fullpath);
@@ -772,7 +772,7 @@ disk_query_directory(IRP * irp, uint8 initialQuery, const char * path)
 	struct stat file_stat;
 	uint32 attr;
 
-	LLOGLN(0, ("disk_query_directory: class=%d id=%d init=%d path=%s", irp->infoClass, irp->fileID,
+	LLOGLN(10, ("disk_query_directory: class=%d id=%d init=%d path=%s", irp->infoClass, irp->fileID,
 		initialQuery, path));
 	finfo = disk_get_file_info(irp->dev, irp->fileID);
 	if (finfo == NULL || finfo->dir == NULL)

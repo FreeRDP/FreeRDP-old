@@ -255,12 +255,12 @@ irp_process_directory_control_request(IRP* irp, char* data, int data_size)
 	switch(irp->minorFunction)
 	{
 		case IRP_MN_QUERY_DIRECTORY:
-			LLOGLN(0, ("IRP_MN_QUERY_DIRECTORY"));
+			LLOGLN(10, ("IRP_MN_QUERY_DIRECTORY"));
 			irp_process_query_directory_request(irp, data, data_size);
 			break;
 		
 		case IRP_MN_NOTIFY_CHANGE_DIRECTORY:
-			LLOGLN(0, ("IRP_MN_NOTIFY_CHANGE_DIRECTORY"));
+			LLOGLN(10, ("IRP_MN_NOTIFY_CHANGE_DIRECTORY"));
 			irp_process_notify_change_directory_request(irp, data, data_size);
 			break;
 

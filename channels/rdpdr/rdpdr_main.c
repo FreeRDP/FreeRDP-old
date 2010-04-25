@@ -306,57 +306,57 @@ rdpdr_process_irp(rdpdrPlugin * plugin, char* data, int data_size)
 
 	irp.dev = devman_get_device_by_id(plugin->devman, deviceID);
 
-	LLOGLN(0, ("IRP MAJOR: %d MINOR: %d", irp.majorFunction, irp.minorFunction));
+	LLOGLN(10, ("IRP MAJOR: %d MINOR: %d", irp.majorFunction, irp.minorFunction));
 
 	switch(irp.majorFunction)
 	{
 		case IRP_MJ_CREATE:
-			LLOGLN(0, ("IRP_MJ_CREATE"));
+			LLOGLN(10, ("IRP_MJ_CREATE"));
 			irp_process_create_request(&irp, &data[20], data_size - 20);
 			break;
 
 		case IRP_MJ_CLOSE:
-			LLOGLN(0, ("IRP_MJ_CLOSE"));
+			LLOGLN(10, ("IRP_MJ_CLOSE"));
 			irp_process_close_request(&irp, &data[20], data_size - 20);
 			break;
 
 		case IRP_MJ_READ:
-			LLOGLN(0, ("IRP_MJ_READ"));
+			LLOGLN(10, ("IRP_MJ_READ"));
 			irp_process_read_request(&irp, &data[20], data_size - 20);
 			break;
 
 		case IRP_MJ_WRITE:
-			LLOGLN(0, ("IRP_MJ_WRITE"));
+			LLOGLN(10, ("IRP_MJ_WRITE"));
 			irp_process_write_request(&irp, &data[20], data_size - 20);
 			break;
 
 		case IRP_MJ_QUERY_INFORMATION:
-			LLOGLN(0, ("IRP_MJ_QUERY_INFORMATION"));
+			LLOGLN(10, ("IRP_MJ_QUERY_INFORMATION"));
 			irp_process_query_information_request(&irp, &data[20], data_size - 20);
 			break;
 
 		case IRP_MJ_SET_INFORMATION:
-			LLOGLN(0, ("IRP_MJ_SET_INFORMATION"));
+			LLOGLN(10, ("IRP_MJ_SET_INFORMATION"));
 			irp_process_set_information_request(&irp, &data[20], data_size - 20);
 			break;
 
 		case IRP_MJ_QUERY_VOLUME_INFORMATION:
-			LLOGLN(0, ("IRP_MJ_QUERY_VOLUME_INFORMATION"));
+			LLOGLN(10, ("IRP_MJ_QUERY_VOLUME_INFORMATION"));
 			irp_process_query_volume_information_request(&irp, &data[20], data_size - 20);
 			break;
 
 		case IRP_MJ_DIRECTORY_CONTROL:
-			LLOGLN(0, ("IRP_MJ_DIRECTORY_CONTROL"));
+			LLOGLN(10, ("IRP_MJ_DIRECTORY_CONTROL"));
 			irp_process_directory_control_request(&irp, &data[20], data_size - 20);
 			break;
 
 		case IRP_MJ_DEVICE_CONTROL:
-			LLOGLN(0, ("IRP_MJ_DEVICE_CONTROL"));
+			LLOGLN(10, ("IRP_MJ_DEVICE_CONTROL"));
 			irp_process_device_control_request(&irp, &data[20], data_size - 20);
 			break;
 
 		case IRP_MJ_LOCK_CONTROL:
-			LLOGLN(0, ("IRP_MJ_LOCK_CONTROL"));
+			LLOGLN(10, ("IRP_MJ_LOCK_CONTROL"));
 			irp_process_file_lock_control_request(&irp, &data[20], data_size - 20);
 			break;
 
@@ -437,7 +437,7 @@ thread_process_message(rdpdrPlugin * plugin, char * data, int data_size)
 		switch (packetID)
 		{
 			case PAKID_CORE_SERVER_ANNOUNCE:
-				LLOGLN(0, ("PAKID_CORE_SERVER_ANNOUNCE"));
+				LLOGLN(10, ("PAKID_CORE_SERVER_ANNOUNCE"));
 				rdpdr_process_server_announce_request(plugin, &data[4], data_size - 4);
 				rdpdr_send_client_announce_reply(plugin);
 				rdpdr_send_client_name_request(plugin);
@@ -445,30 +445,30 @@ thread_process_message(rdpdrPlugin * plugin, char * data, int data_size)
 
 			case PAKID_CORE_SERVER_CAPABILITY:
 				/* server capabilities */
-				LLOGLN(0, ("PAKID_CORE_SERVER_CAPABILITY"));
+				LLOGLN(10, ("PAKID_CORE_SERVER_CAPABILITY"));
 				rdpdr_process_capabilities(&data[4], data_size - 4);
 				rdpdr_send_capabilities(plugin);
 				break;
 
 			case PAKID_CORE_CLIENTID_CONFIRM:
-				LLOGLN(0, ("PAKID_CORE_CLIENTID_CONFIRM"));
+				LLOGLN(10, ("PAKID_CORE_CLIENTID_CONFIRM"));
 				rdpdr_process_server_clientid_confirm(plugin, &data[4], data_size - 4);
 				break;
 
 			case PAKID_CORE_USER_LOGGEDON:
-				LLOGLN(0, ("PAKID_CORE_USER_LOGGEDON"));
+				LLOGLN(10, ("PAKID_CORE_USER_LOGGEDON"));
 				rdpdr_send_device_list_announce_request(plugin);
 				break;
 
 			case PAKID_CORE_DEVICE_REPLY:
 				/* connect to a specific resource */
-				LLOGLN(0, ("PAKID_CORE_DEVICE_REPLY"));
+				LLOGLN(10, ("PAKID_CORE_DEVICE_REPLY"));
 				deviceID = GET_UINT32(data, 4);
 				status = GET_UINT32(data, 8);
 				break;
 
 			case PAKID_CORE_DEVICE_IOREQUEST:
-				LLOGLN(0, ("PAKID_CORE_DEVICE_IOREQUEST"));
+				LLOGLN(10, ("PAKID_CORE_DEVICE_IOREQUEST"));
 				rdpdr_process_irp(plugin, &data[4], data_size - 4);
 				break;
 
