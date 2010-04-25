@@ -153,14 +153,10 @@ struct _DISK_DEVICE_INFO
 };
 typedef struct _DISK_DEVICE_INFO DISK_DEVICE_INFO;
 
-static void
-get_filetime(time_t seconds, uint32 * low, uint32 * high)
+static uint64
+get_filetime(time_t seconds)
 {
-	unsigned long long ticks;
-
-	ticks = (seconds + 11644473600LL) * 10000000;
-	*low = (uint32) ticks;
-	*high = (uint32) (ticks >> 32);
+	return ((uint64)seconds + 11644473600LL) * 10000000LL;
 }
 
 static int
@@ -400,7 +396,7 @@ disk_close(IRP * irp)
 }
 
 static uint32
-disk_read(IRP * irp)
+disk_read(IRP * irp, uint32 length, uint64 offset)
 {
 	printf("disk_read\n");
 	return 0;
@@ -452,8 +448,7 @@ disk_query_volume_info(IRP * irp)
 		case FileFsVolumeInformation:
 			buf = malloc(256);
 			memset(buf, 0, 256);
-			SET_UINT32(buf, 0, 0); /* VolumeCreationTime (low) */
-			SET_UINT32(buf, 4, 0); /* VolumeCreationTime (high) */
+			SET_UINT64(buf, 0, 0); /* VolumeCreationTime */
 			SET_UINT32(buf, 8, 0); /* VolumeSerialNumber */
 			len = set_wstr(buf + 17, size - 17, "FREERDP", strlen("FREERDP") + 1);
 			SET_UINT32(buf, 12, len); /* VolumeLabelLength */
@@ -465,10 +460,8 @@ disk_query_volume_info(IRP * irp)
 			size = 24;
 			buf = malloc(size);
 			memset(buf, 0, size);
-			SET_UINT32(buf, 0, stat_fs.f_blocks); /* TotalAllocationUnits (low) */
-			SET_UINT32(buf, 4, 0); /* TotalAllocationUnits (high) */
-			SET_UINT32(buf, 8, stat_fs.f_bfree); /* AvailableAllocationUnits (low) */
-			SET_UINT32(buf, 12, 0); /* AvailableAllocationUnits (high) */
+			SET_UINT64(buf, 0, stat_fs.f_blocks); /* TotalAllocationUnits */
+			SET_UINT64(buf, 8, stat_fs.f_bfree); /* AvailableAllocationUnits */
 			SET_UINT32(buf, 16, stat_fs.f_bsize / 0x200); /* SectorsPerAllocationUnit */
 			SET_UINT32(buf, 20, 0x200); /* BytesPerSector */
 			break;
@@ -501,8 +494,6 @@ disk_query_info(IRP * irp)
 	uint32 status;
 	int size;
 	char * buf;
-	uint32 tlow;
-	uint32 thigh;
 
 	LLOGLN(0, ("disk_query_info: class=%d id=%d", irp->infoClass, irp->fileID));
 	finfo = disk_get_file_info(irp->dev, irp->fileID);
@@ -521,28 +512,18 @@ disk_query_info(IRP * irp)
 	switch (irp->infoClass)
 	{
 		case FileBasicInformation:
-			get_filetime((finfo->file_stat.st_ctime < finfo->file_stat.st_mtime ?
-				finfo->file_stat.st_ctime : finfo->file_stat.st_mtime), &tlow, &thigh);
-			SET_UINT32(buf, 0, tlow); /* CreationTime */
-			SET_UINT32(buf, 4, thigh);
-			get_filetime(finfo->file_stat.st_atime, &tlow, &thigh);
-			SET_UINT32(buf, 8, tlow); /* LastAccessTime */
-			SET_UINT32(buf, 12, thigh);
-			get_filetime(finfo->file_stat.st_mtime, &tlow, &thigh);
-			SET_UINT32(buf, 16, tlow); /* LastWriteTime */
-			SET_UINT32(buf, 20, thigh);
-			get_filetime(finfo->file_stat.st_ctime, &tlow, &thigh);
-			SET_UINT32(buf, 24, tlow); /* ChangeTime */
-			SET_UINT32(buf, 28, thigh);
+			SET_UINT64(buf, 0, get_filetime(finfo->file_stat.st_ctime < finfo->file_stat.st_mtime ?
+				finfo->file_stat.st_ctime : finfo->file_stat.st_mtime)); /* CreationTime */
+			SET_UINT64(buf, 8, get_filetime(finfo->file_stat.st_atime)); /* LastAccessTime */
+			SET_UINT64(buf, 16, get_filetime(finfo->file_stat.st_mtime)); /* LastWriteTime */
+			SET_UINT64(buf, 24, get_filetime(finfo->file_stat.st_ctime)); /* ChangeTime */
 			SET_UINT32(buf, 32, finfo->file_attr); /* FileAttributes */
 			size = 36;
 			break;
 
 		case FileStandardInformation:
-			SET_UINT32(buf, 0, finfo->file_stat.st_size); /* AllocationSize */
-			SET_UINT32(buf, 4, 0);
-			SET_UINT32(buf, 8, finfo->file_stat.st_size); /* EndOfFile */
-			SET_UINT32(buf, 12, 0);
+			SET_UINT64(buf, 0, finfo->file_stat.st_size); /* AllocationSize */
+			SET_UINT64(buf, 8, finfo->file_stat.st_size); /* EndOfFile */
 			SET_UINT32(buf, 16, finfo->file_stat.st_nlink); /* NumberOfLinks */
 			SET_UINT8(buf, 20, 0); /* DeletePending */
 			SET_UINT8(buf, 21, finfo->is_dir); /* Directory */
@@ -581,8 +562,6 @@ disk_query_directory(IRP * irp, uint8 initialQuery, const char * path)
 	struct dirent * pdirent;
 	struct stat file_stat;
 	uint32 attr;
-	uint32 tlow;
-	uint32 thigh;
 
 	LLOGLN(0, ("disk_query_directory: class=%d id=%d init=%d path=%s", irp->infoClass, irp->fileID,
 		initialQuery, path));
@@ -637,23 +616,13 @@ disk_query_directory(IRP * irp, uint8 initialQuery, const char * path)
 
 			SET_UINT32(buf, 0, 0); /* NextEntryOffset */
 			SET_UINT32(buf, 4, 0); /* FileIndex */
-			get_filetime((file_stat.st_ctime < file_stat.st_mtime ?
-				file_stat.st_ctime : file_stat.st_mtime), &tlow, &thigh);
-			SET_UINT32(buf, 8, tlow); /* CreationTime */
-			SET_UINT32(buf, 12, thigh);
-			get_filetime(file_stat.st_atime, &tlow, &thigh);
-			SET_UINT32(buf, 16, tlow); /* LastAccessTime */
-			SET_UINT32(buf, 20, thigh);
-			get_filetime(file_stat.st_mtime, &tlow, &thigh);
-			SET_UINT32(buf, 24, tlow); /* LastWriteTime */
-			SET_UINT32(buf, 28, thigh);
-			get_filetime(file_stat.st_ctime, &tlow, &thigh);
-			SET_UINT32(buf, 32, tlow); /* ChangeTime */
-			SET_UINT32(buf, 36, thigh);
-			SET_UINT32(buf, 40, file_stat.st_size); /* EndOfFile */
-			SET_UINT32(buf, 44, 0);
-			SET_UINT32(buf, 48, file_stat.st_size); /* AllocationSize */
-			SET_UINT32(buf, 52, 0);
+			SET_UINT64(buf, 8, get_filetime(file_stat.st_ctime < file_stat.st_mtime ?
+				file_stat.st_ctime : file_stat.st_mtime)); /* CreationTime */
+			SET_UINT64(buf, 16, get_filetime(file_stat.st_atime)); /* LastAccessTime */
+			SET_UINT64(buf, 24, get_filetime(file_stat.st_mtime)); /* LastWriteTime */
+			SET_UINT64(buf, 32, get_filetime(file_stat.st_ctime)); /* ChangeTime */
+			SET_UINT64(buf, 40, file_stat.st_size); /* EndOfFile */
+			SET_UINT64(buf, 48, file_stat.st_size); /* AllocationSize */
 			SET_UINT32(buf, 56, attr); /* FileAttributes */
 			SET_UINT32(buf, 64, 0); /* EaSize */
 			SET_UINT8(buf, 68, 0); /* ShortNameLength */
@@ -672,23 +641,13 @@ disk_query_directory(IRP * irp, uint8 initialQuery, const char * path)
 
 			SET_UINT32(buf, 0, 0); /* NextEntryOffset */
 			SET_UINT32(buf, 4, 0); /* FileIndex */
-			get_filetime((file_stat.st_ctime < file_stat.st_mtime ?
-				file_stat.st_ctime : file_stat.st_mtime), &tlow, &thigh);
-			SET_UINT32(buf, 8, tlow); /* CreationTime */
-			SET_UINT32(buf, 12, thigh);
-			get_filetime(file_stat.st_atime, &tlow, &thigh);
-			SET_UINT32(buf, 16, tlow); /* LastAccessTime */
-			SET_UINT32(buf, 20, thigh);
-			get_filetime(file_stat.st_mtime, &tlow, &thigh);
-			SET_UINT32(buf, 24, tlow); /* LastWriteTime */
-			SET_UINT32(buf, 28, thigh);
-			get_filetime(file_stat.st_ctime, &tlow, &thigh);
-			SET_UINT32(buf, 32, tlow); /* ChangeTime */
-			SET_UINT32(buf, 36, thigh);
-			SET_UINT32(buf, 40, file_stat.st_size); /* EndOfFile */
-			SET_UINT32(buf, 44, 0);
-			SET_UINT32(buf, 48, file_stat.st_size); /* AllocationSize */
-			SET_UINT32(buf, 52, 0);
+			SET_UINT64(buf, 8, get_filetime(file_stat.st_ctime < file_stat.st_mtime ?
+				file_stat.st_ctime : file_stat.st_mtime)); /* CreationTime */
+			SET_UINT64(buf, 16, get_filetime(file_stat.st_atime)); /* LastAccessTime */
+			SET_UINT64(buf, 24, get_filetime(file_stat.st_mtime)); /* LastWriteTime */
+			SET_UINT64(buf, 32, get_filetime(file_stat.st_ctime)); /* ChangeTime */
+			SET_UINT64(buf, 40, file_stat.st_size); /* EndOfFile */
+			SET_UINT64(buf, 48, file_stat.st_size); /* AllocationSize */
 			SET_UINT32(buf, 56, attr); /* FileAttributes */
 			SET_UINT32(buf, 64, 0); /* EaSize */
 			len = set_wstr(buf + 68, size - 68, pdirent->d_name, strlen(pdirent->d_name));

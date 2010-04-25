@@ -67,8 +67,7 @@ irp_process_create_request(IRP* irp, char* data, int data_size)
 	uint8 information;
 
 	irp->desiredAccess = GET_UINT32(data, 0); /* desiredAccess */
-	//irp->allocationSizeLow = GET_UINT32(data, 4); /* allocationSizeLow */
-	//irp->allocationSizeHigh = GET_UINT32(data, 8); /* allocationSizeHigh */
+	//irp->allocationSize = GET_UINT64(data, 4); /* allocationSize */
 	irp->fileAttributes = GET_UINT32(data, 12); /* fileAttributes */
 	irp->sharedAccess = GET_UINT32(data, 16); /* sharedAccess */
 	irp->createDisposition = GET_UINT32(data, 20); /* createDisposition */

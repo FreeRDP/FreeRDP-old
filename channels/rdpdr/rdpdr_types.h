@@ -46,7 +46,7 @@ struct _SERVICE
 	uint32 type;
 	uint32 (*create) (IRP * irp, const char * path);
 	uint32 (*close) (IRP * irp);
-	uint32 (*read) (IRP * irp);
+	uint32 (*read) (IRP * irp, uint32 length, uint64 offset);
 	uint32 (*write) (IRP * irp);
 	uint32 (*control) (IRP * irp);
 	uint32 (*query_volume_info) (IRP * irp);
