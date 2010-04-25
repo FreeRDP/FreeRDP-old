@@ -287,7 +287,6 @@ disk_create_fullpath(IRP * irp, FILE_INFO * finfo, const char * fullpath)
 		finfo->file = open(fullpath, flags, mode);
 		if (finfo->file == -1)
 			return get_error_status();
-		fcntl(finfo->file, F_SETFL, O_NONBLOCK);
 	}
 
 	if (stat(fullpath, &finfo->file_stat) != 0)
@@ -398,8 +397,39 @@ disk_close(IRP * irp)
 static uint32
 disk_read(IRP * irp, uint32 length, uint64 offset)
 {
-	printf("disk_read\n");
-	return 0;
+	FILE_INFO * finfo;
+	char * buf;
+	uint32 r;
+
+	LLOGLN(0, ("disk_read: class=%d id=%d len=%d off=%lld", irp->infoClass, irp->fileID, length, offset));
+	finfo = disk_get_file_info(irp->dev, irp->fileID);
+	if (finfo == NULL)
+	{
+		LLOGLN(0, ("disk_read: invalid file id"));
+		return RD_STATUS_INVALID_HANDLE;
+	}
+	if (finfo->is_dir)
+		return RD_STATUS_FILE_IS_A_DIRECTORY;
+	if (finfo->file == -1)
+		return RD_STATUS_INVALID_HANDLE;
+
+	if (lseek(finfo->file, offset, SEEK_SET) == (off_t) - 1)
+		return get_error_status();
+
+	buf = malloc(length);
+	memset(buf, 0, length);
+	r = read(finfo->file, buf, length);
+	if (r == -1)
+	{
+		free(buf);
+		return get_error_status();
+	}
+	else
+	{
+		irp->outputBuffer = buf;
+		irp->outputBufferLength = r;
+		return RD_STATUS_SUCCESS;
+	}
 }
 
 static uint32
@@ -476,8 +506,28 @@ disk_query_volume_info(IRP * irp)
 			size = 12 + len;
 			break;
 
+		case FileFsFullSizeInformation:
+			size = 32;
+			buf = malloc(size);
+			memset(buf, 0, size);
+			SET_UINT64(buf, 0, stat_fs.f_blocks); /* TotalAllocationUnits */
+			SET_UINT64(buf, 8, stat_fs.f_bfree); /* CallerAvailableAllocationUnits */
+			SET_UINT64(buf, 16, stat_fs.f_bfree); /* ActualAvailableAllocationUnits */
+			SET_UINT32(buf, 24, stat_fs.f_bsize / 0x200); /* SectorsPerAllocationUnit */
+			SET_UINT32(buf, 28, 0x200); /* BytesPerSector */
+			break;
+
+		case FileFsDeviceInformation:
+			size = 8;
+			buf = malloc(size);
+			memset(buf, 0, size);
+			SET_UINT32(buf, 0, FILE_DEVICE_DISK); /* DeviceType */
+			SET_UINT32(buf, 4, 0); /* BytesPerSector */
+			break;
+
 		default:
-			status = RD_STATUS_INVALID_PARAMETER;
+			LLOGLN(0, ("disk_query_volume_info: invalid info class"));
+			status = RD_STATUS_NOT_SUPPORTED;
 			break;
 	}
 
@@ -539,7 +589,7 @@ disk_query_info(IRP * irp)
 		default:
 			LLOGLN(0, ("disk_query_info: invalid info class"));
 			size = 0;
-			status = RD_STATUS_INVALID_PARAMETER;
+			status = RD_STATUS_NOT_SUPPORTED;
 			break;
 	}
 
@@ -657,7 +707,7 @@ disk_query_directory(IRP * irp, uint8 initialQuery, const char * path)
 
 		default:
 			LLOGLN(0, ("disk_query_directory: invalid info class"));
-			status = RD_STATUS_INVALID_PARAMETER;
+			status = RD_STATUS_NOT_SUPPORTED;
 			break;
 	}
 

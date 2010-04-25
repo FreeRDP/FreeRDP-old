@@ -252,6 +252,20 @@
 #define FILE_CASE_PRESERVED_NAMES           0x00000002
 #define FILE_CASE_SENSITIVE_SEARCH          0x00000001
 
+/* [MS-FSCC] FileFsDeviceInformation.DeviceType */
+#define FILE_DEVICE_CD_ROM                  0x00000002
+#define FILE_DEVICE_DISK                    0x00000007
+
+/* [MS-FSCC] FileFsDeviceInformation.Characteristics */
+#define FILE_REMOVABLE_MEDIA                0x00000001
+#define FILE_READ_ONLY_DEVICE               0x00000002
+#define FILE_FLOPPY_DISKETTE                0x00000004
+#define FILE_WRITE_ONCE_MEDIA               0x00000008
+#define FILE_REMOTE_DEVICE                  0x00000010
+#define FILE_DEVICE_IS_MOUNTED              0x00000020
+#define FILE_VIRTUAL_VOLUME                 0x00000040
+#define FILE_DEVICE_SECURE_OPEN             0x00000100
+
 enum FILE_INFORMATION_CLASS
 {
 	FileDirectoryInformation = 1,

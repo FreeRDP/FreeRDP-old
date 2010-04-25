@@ -143,60 +143,22 @@ irp_process_close_request(IRP* irp, char* data, int data_size)
 void
 irp_process_read_request(IRP* irp, char* data, int data_size)
 {
-#if 0
 	uint32 length;
-	uint32 offsetLow;
-	uint32 offsetHigh;
-
-	uint8* pstBuffer;
-	uint32 totalTimeout = 0;
-	uint32 intervalTimeout = 0;
+	uint64 offset;
 
 	length = GET_UINT32(data, 0); /* length */
-	offsetLow = GET_UINT32(data, 4); /* offsetLow */
-	offsetHigh = GET_UINT32(data, 8); /* offsetHigh */
+	offset = GET_UINT64(data, 4); /* offset */
 	/* 20-byte pad */
 
-	if (!irp->fns->read)
+	if (!irp->dev->service->read)
+	{
 		irp->ioStatus = RD_STATUS_NOT_SUPPORTED;
-
-	if (!rdpdr_handle_ok(irp->deviceID, irp->fileID))
-		irp->ioStatus = RD_STATUS_INVALID_HANDLE;
-
-	if (irp->rwBlocking)	/* Complete read immediately */
-	{
-		unsigned int bytesRead = 0;
-		
-		irp->buffer->size = length;
-		irp->buffer->data = xmalloc(irp->buffer->size);
-		irp->buffer->p = irp->buffer->data;
-		irp->buffer->end = irp->buffer->data + irp->buffer->size;
-
-		if (!irp->buffer->data)
-			irp->ioStatus = RD_STATUS_CANCELLED;
-		
-		irp->ioStatus = irp->fns->read(irp->fileID, irp->buffer->p, irp->buffer->size, offsetLow, &bytesRead);
-		irp->buffer->size = bytesRead;
-	}
-
-	/* Add request to table */
-	pstBuffer = (uint8 *) xmalloc(length);
-	if (!pstBuffer)
-		irp->ioStatus = RD_STATUS_CANCELLED;
-	
-	serial_get_timeout(irp->fileID, length, &totalTimeout, &intervalTimeout);
-	
-	if (add_async_iorequest(irp->deviceID, irp->fileID,
-		irp->completionID, IRP_MJ_READ, length, irp->fns,
-		totalTimeout, intervalTimeout, pstBuffer, offsetLow))
-	{
-		irp->ioStatus = RD_STATUS_PENDING;
 	}
 	else
 	{
-		irp->ioStatus = RD_STATUS_CANCELLED;
+		irp->ioStatus = irp->dev->service->read(irp, length, offset);
 	}
-#endif
+	irp_construct_common_response(irp);
 }
 
 void
