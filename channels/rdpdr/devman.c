@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "config.h"
 #include "rdpdr_types.h"
 #include "rdpdr_constants.h"
 #include "devman.h"
@@ -256,17 +257,28 @@ int
 devman_load_device_service(DEVMAN* devman, char* filename)
 {
 	void* dl;
+	char* fn;
 	PDEVICE_SERVICE_ENTRY pDeviceServiceEntry = NULL;
 
-	dl = dlopen(filename, RTLD_LOCAL | RTLD_LAZY);
+	if (strchr(filename, '/'))
+	{
+		fn = strdup(filename);
+	}
+	else
+	{
+		fn = malloc(strlen(PLUGIN_PATH) + strlen(filename) + 10);
+		sprintf(fn, PLUGIN_PATH "/%s.so", filename);
+	}
+	dl = dlopen(fn, RTLD_LOCAL | RTLD_LAZY);
 
 	pDeviceServiceEntry = (PDEVICE_SERVICE_ENTRY)dlsym(dl, "DeviceServiceEntry");
 
 	if(pDeviceServiceEntry != NULL)
 	{
 		pDeviceServiceEntry(devman, devman->pDevmanEntryPoints);
-		LLOGLN(0, ("loaded device service: %s", filename));
+		LLOGLN(0, ("loaded device service: %s", fn));
 	}
+	free(fn);
 
 	return 0;
 }

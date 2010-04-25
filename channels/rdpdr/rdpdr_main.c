@@ -757,7 +757,7 @@ VirtualChannelEntry(PCHANNEL_ENTRY_POINTS pEntryPoints)
 		data = NULL;
 	}
 	plugin->devman = devman_new(data);
-	devman_load_device_service(plugin->devman, "../channels/rdpdr/disk/.libs/disk.so");
+	devman_load_device_service(plugin->devman, "disk");
 
 	plugin->ep.pVirtualChannelInit(&plugin->chan_plugin.init_handle, &plugin->channel_def, 1,
 		VIRTUAL_CHANNEL_VERSION_WIN2000, InitEvent);
