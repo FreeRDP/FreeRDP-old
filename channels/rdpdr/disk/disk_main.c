@@ -172,6 +172,8 @@ get_error_status(void)
 			return RD_STATUS_FILE_IS_A_DIRECTORY;
 		case EEXIST:
 			return RD_STATUS_OBJECT_NAME_COLLISION;
+		case EBADF:
+			return RD_STATUS_INVALID_HANDLE;
 		default:
 			return RD_STATUS_NO_SUCH_FILE;
 	}
@@ -270,14 +272,12 @@ disk_create_fullpath(IRP * irp, FILE_INFO * finfo, const char * fullpath)
 				return RD_STATUS_INVALID_PARAMETER;
 		}
 
-		if (irp->desiredAccess & GENERIC_ALL
-		    || ((irp->desiredAccess & GENERIC_READ) && (irp->desiredAccess & GENERIC_WRITE)))
+		if ((irp->desiredAccess & GENERIC_ALL)
+		    || (irp->desiredAccess & GENERIC_WRITE)
+			|| (irp->desiredAccess & FILE_WRITE_DATA)
+			|| (irp->desiredAccess & FILE_APPEND_DATA))
 		{
 			flags |= O_RDWR;
-		}
-		else if ((irp->desiredAccess & GENERIC_WRITE) && !(irp->desiredAccess & GENERIC_READ))
-		{
-			flags |= O_WRONLY;
 		}
 		else
 		{
@@ -395,13 +395,13 @@ disk_close(IRP * irp)
 }
 
 static uint32
-disk_read(IRP * irp, uint32 length, uint64 offset)
+disk_read(IRP * irp)
 {
 	FILE_INFO * finfo;
 	char * buf;
-	uint32 r;
+	ssize_t r;
 
-	LLOGLN(0, ("disk_read: class=%d id=%d len=%d off=%lld", irp->infoClass, irp->fileID, length, offset));
+	LLOGLN(0, ("disk_read: id=%d len=%d off=%lld", irp->fileID, irp->length, irp->offset));
 	finfo = disk_get_file_info(irp->dev, irp->fileID);
 	if (finfo == NULL)
 	{
@@ -413,12 +413,12 @@ disk_read(IRP * irp, uint32 length, uint64 offset)
 	if (finfo->file == -1)
 		return RD_STATUS_INVALID_HANDLE;
 
-	if (lseek(finfo->file, offset, SEEK_SET) == (off_t) - 1)
+	if (lseek(finfo->file, irp->offset, SEEK_SET) == (off_t) - 1)
 		return get_error_status();
 
-	buf = malloc(length);
-	memset(buf, 0, length);
-	r = read(finfo->file, buf, length);
+	buf = malloc(irp->length);
+	memset(buf, 0, irp->length);
+	r = read(finfo->file, buf, irp->length);
 	if (r == -1)
 	{
 		free(buf);
@@ -435,8 +435,36 @@ disk_read(IRP * irp, uint32 length, uint64 offset)
 static uint32
 disk_write(IRP * irp)
 {
-	printf("disk_write\n");
-	return 0;
+	FILE_INFO * finfo;
+	ssize_t r;
+	uint32 len;
+
+	LLOGLN(0, ("disk_write: id=%d len=%d off=%lld", irp->fileID, irp->inputBufferLength, irp->offset));
+	finfo = disk_get_file_info(irp->dev, irp->fileID);
+	if (finfo == NULL)
+	{
+		LLOGLN(0, ("disk_read: invalid file id"));
+		return RD_STATUS_INVALID_HANDLE;
+	}
+	if (finfo->is_dir)
+		return RD_STATUS_FILE_IS_A_DIRECTORY;
+	if (finfo->file == -1)
+		return RD_STATUS_INVALID_HANDLE;
+
+	if (lseek(finfo->file, irp->offset, SEEK_SET) == (off_t) - 1)
+		return get_error_status();
+
+	len = 0;
+	while (len < irp->inputBufferLength)
+	{
+		r = write(finfo->file, irp->inputBuffer, irp->inputBufferLength);
+		if (r == -1)
+		{
+			return get_error_status();
+		}
+		len += r;
+	}
+	return RD_STATUS_SUCCESS;
 }
 
 static uint32

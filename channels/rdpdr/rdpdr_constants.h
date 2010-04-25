@@ -97,10 +97,25 @@
 #define FILE_OPEN_FOR_FREE_SPACE_QUERY  0x00800000
 
 /* DR_CREATE_REQ.DesiredAccess [MS-SMB2] */
-#define GENERIC_READ                    0x80000000
-#define GENERIC_WRITE                   0x40000000
-#define GENERIC_EXECUTE                 0x20000000
+#define FILE_READ_DATA                  0x00000001
+#define FILE_WRITE_DATA                 0x00000002
+#define FILE_APPEND_DATA                0x00000004
+#define FILE_READ_EA                    0x00000008
+#define FILE_WRITE_EA                   0x00000010
+#define FILE_EXECUTE                    0x00000020
+#define FILE_READ_ATTRIBUTES            0x00000080
+#define FILE_WRITE_ATTRIBUTES           0x00000100
+#define DELETE                          0x00010000
+#define READ_CONTROL                    0x00020000
+#define WRITE_DAC                       0x00040000
+#define WRITE_OWNER                     0x00080000
+#define SYNCHRONIZE                     0x00100000
+#define ACCESS_SYSTEM_SECURITY          0x01000000
+#define MAXIMUM_ALLOWED                 0x02000000
 #define GENERIC_ALL                     0x10000000
+#define GENERIC_EXECUTE                 0x20000000
+#define GENERIC_WRITE                   0x40000000
+#define GENERIC_READ                    0x80000000
 
 /* DR_CREATE_RSP.Information */
 /* DR_DRIVE_CREATE_RSP.DeviceCreateResponse */

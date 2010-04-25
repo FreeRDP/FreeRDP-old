@@ -143,11 +143,8 @@ irp_process_close_request(IRP* irp, char* data, int data_size)
 void
 irp_process_read_request(IRP* irp, char* data, int data_size)
 {
-	uint32 length;
-	uint64 offset;
-
-	length = GET_UINT32(data, 0); /* length */
-	offset = GET_UINT64(data, 4); /* offset */
+	irp->length = GET_UINT32(data, 0); /* length */
+	irp->offset = GET_UINT64(data, 4); /* offset */
 	/* 20-byte pad */
 
 	if (!irp->dev->service->read)
@@ -156,7 +153,7 @@ irp_process_read_request(IRP* irp, char* data, int data_size)
 	}
 	else
 	{
-		irp->ioStatus = irp->dev->service->read(irp, length, offset);
+		irp->ioStatus = irp->dev->service->read(irp);
 	}
 	irp_construct_common_response(irp);
 }
@@ -164,18 +161,32 @@ irp_process_read_request(IRP* irp, char* data, int data_size)
 void
 irp_process_write_request(IRP* irp, char* data, int data_size)
 {
-#if 0
-	uint32 length;
-	uint32 offsetLow;
-	uint32 offsetHigh;
-
-	length = GET_UINT32(data, 0); /* length */
-	offsetLow = GET_UINT32(data, 4); /* offsetLow */
-	offsetHigh = GET_UINT32(data, 8); /* offsetHigh */
+	irp->length = GET_UINT32(data, 0); /* length */
+	irp->offset = GET_UINT64(data, 4); /* offset */
 	/* 20-byte pad */
+	irp->inputBuffer = data + 32;
+	irp->inputBufferLength = irp->length;
 
-	/* writeData */
-#endif
+	if (!irp->dev->service->write)
+	{
+		irp->ioStatus = RD_STATUS_NOT_SUPPORTED;
+	}
+	else
+	{
+		irp->ioStatus = irp->dev->service->write(irp);
+	}
+	if (irp->ioStatus == RD_STATUS_SUCCESS)
+	{
+		irp->outputBufferLength = 5;
+		irp->outputBuffer = malloc(5);
+		SET_UINT32(irp->outputBuffer, 0, irp->length);
+		/* [MS-RDPEFS] says this is an optional padding, but unfortunately it's required! */
+		SET_UINT8(irp->outputBuffer, 4, 0);
+	}
+	else
+	{
+		irp_construct_common_response(irp);
+	}
 }
 
 void
