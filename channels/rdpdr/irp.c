@@ -297,19 +297,25 @@ irp_process_device_control_request(IRP* irp, char* data, int data_size)
 void
 irp_process_file_lock_control_request(IRP* irp, char* data, int data_size)
 {
-#if 0
-	uint8 f;
 	uint32 numLocks;
-	uint32 operation;
 
-	operation = GET_UINT32(data, 0); /* operation */
-	f = GET_UINT8(data, 4); /* f (first bit) */
+	irp->operation = GET_UINT32(data, 0); /* operation */
+	irp->waitOperation = GET_UINT8(data, 4); /* f (first bit) */
 	/* pad (f + pad = 32 bits) */
 	numLocks = GET_UINT32(data, 8); /* numLocks */
+	irp->inputBufferLength = numLocks * 16; /* sizeof(RDP_LOCK_INFO) */
 	/* 20-byte pad */
+	irp->inputBuffer = data + 32;
 
-	/* locks */
-#endif
+	if (!irp->dev->service->lock_control)
+	{
+		irp->ioStatus = RD_STATUS_NOT_SUPPORTED;
+	}
+	else
+	{
+		irp->ioStatus = irp->dev->service->lock_control(irp);
+	}
+	irp_construct_common_response(irp);
 }
 
 void

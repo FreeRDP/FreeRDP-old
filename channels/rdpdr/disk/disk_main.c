@@ -724,6 +724,12 @@ disk_notify_change_directory(IRP * irp)
 }
 
 static uint32
+disk_lock_control(IRP * irp)
+{
+	return RD_STATUS_SUCCESS;
+}
+
+static uint32
 disk_free(DEVICE * dev)
 {
 	DISK_DEVICE_INFO * info;
@@ -757,6 +763,7 @@ DeviceServiceEntry(PDEVMAN pDevman, PDEVMAN_ENTRY_POINTS pEntryPoints)
 	srv->query_info = disk_query_info;
 	srv->query_directory = disk_query_directory;
 	srv->notify_change_directory = disk_notify_change_directory;
+	srv->lock_control = disk_lock_control;
 	srv->free = disk_free;
 	srv->type = RDPDR_DTYP_FILESYSTEM;
 
