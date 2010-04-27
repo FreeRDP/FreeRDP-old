@@ -78,44 +78,6 @@
 const char ntlm_signature[] = "NTLMSSP";
 const char lm_magic[] = "KGS!@#$%";
 
-struct _AV_PAIR
-{
-	uint16 length;
-	uint8* value;
-};
-typedef struct _AV_PAIR AV_PAIR;
-
-struct _MIC
-{
-	AV_PAIR NbComputerName;
-	AV_PAIR NbDomainName;
-	AV_PAIR DnsComputerName;
-	AV_PAIR DnsDomainName;
-	AV_PAIR DnsTreeName;
-	AV_PAIR Timestamp;
-	AV_PAIR Restrictions;
-	AV_PAIR TargetName;
-	AV_PAIR ChannelBindings;
-	uint32 Flags;
-};
-typedef struct _MIC MIC;
-
-enum _AV_ID
-{
-	MsvAvEOL,
-	MsvAvNbComputerName,
-	MsvAvNbDomainName,
-	MsvAvDnsComputerName,
-	MsvAvDnsDomainName,
-	MsvAvDnsTreeName,
-	MsvAvFlags,
-	MsvAvTimestamp,
-	MsvAvRestrictions,
-	MsvAvTargetName,
-	MsvChannelBindings
-};
-typedef enum _AV_ID AV_ID;
-
 /* http://davenport.sourceforge.net/ntlm.html is a really nice source of information with great samples */
 
 static int
@@ -663,8 +625,8 @@ void ntlm_recv_challenge_message(rdpSec * sec, STREAM s)
 	in_uint16_le(s, targetNameMaxLen); /* TargetNameMaxLen (2 bytes) */
 	in_uint32_le(s, targetNameBufferOffset); /* TargetNameBufferOffset (4 bytes) */
 
-	in_uint32_le(s, sec->negotiate_flags); /* NegotiateFlags (4 bytes) */
-	in_uint8a(s, sec->server_challenge, 8); /* ServerChallenge (8 bytes) */
+	in_uint32_le(s, sec->nla->negotiate_flags); /* NegotiateFlags (4 bytes) */
+	in_uint8a(s, sec->nla->server_challenge, 8); /* ServerChallenge (8 bytes) */
 	in_uint8s(s, 8); /* Reserved (8 bytes), should be ignored */
 		
 	/* TargetInfoFields (8 bytes) */
@@ -674,7 +636,7 @@ void ntlm_recv_challenge_message(rdpSec * sec, STREAM s)
 
 	/* only present if NTLMSSP_NEGOTIATE_VERSION is set */
 
-	if (sec->negotiate_flags & NTLMSSP_NEGOTIATE_VERSION)
+	if (sec->nla->negotiate_flags & NTLMSSP_NEGOTIATE_VERSION)
 	{
 		in_uint8s(s, 8); /* Version (8 bytes), can be ignored */
 	}
@@ -683,14 +645,14 @@ void ntlm_recv_challenge_message(rdpSec * sec, STREAM s)
 	
 	if (targetNameLen > 0)
 	{
-		sec->target_name = xmalloc(targetNameLen);
-		memcpy(sec->target_name, &(s->data[targetNameBufferOffset]), (size_t)targetNameLen);
+		sec->nla->target_name = xmalloc(targetNameLen);
+		memcpy(sec->nla->target_name, &(s->data[targetNameBufferOffset]), (size_t)targetNameLen);
 	}
 	
 	if (targetInfoLen > 0)
 	{
-		sec->target_info = xmalloc(targetInfoLen);
-		memcpy((void*)sec->target_info, &(s->data[targetInfoBufferOffset]), (size_t)targetInfoLen);
+		sec->nla->target_info = xmalloc(targetInfoLen);
+		memcpy((void*)sec->nla->target_info, &(s->data[targetInfoBufferOffset]), (size_t)targetInfoLen);
 	}
 }
 
@@ -729,7 +691,7 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 	LmChallengeResponseBufferOffset = WorkstationBufferOffset + 24;
 	
 	compute_lm_v2_response(settings->password, settings->username,
-		settings->server, sec->server_challenge, LmChallengeResponse);
+		settings->server, sec->nla->server_challenge, LmChallengeResponse);
 	
 	out_uint8a(s, ntlm_signature, 8); /* Signature (8 bytes) */
 	out_uint32_le(s, 1); /* MessageType */
@@ -813,5 +775,30 @@ void ntlm_recv(rdpSec * sec, STREAM s)
 			/* Again, we shouldn't be receiving this one */
 			printf("AUTHENTICATE_MESSAGE\n");
 			break;
+	}
+}
+
+rdpNla *
+nla_new(struct rdp_sec * sec)
+{
+	rdpNla * self;
+
+	self = (rdpNla *) xmalloc(sizeof(rdpNla));
+	if (self != NULL)
+	{
+		memset(self, 0, sizeof(rdpNla));
+		self->sec = sec;
+		self->mic = (MIC*)xmalloc(sizeof(MIC));
+	}
+	return self;
+}
+
+void
+nla_free(rdpNla * nla)
+{
+	if (nla != NULL)
+	{
+		ntlm_free_mic(nla->mic);
+		xfree(nla);
 	}
 }

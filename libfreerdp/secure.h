@@ -46,12 +46,9 @@ struct rdp_sec
 	SSL_CTX *ctx;
 	SSL *ssl;
 	/* Network Level Authentication */
-	int nla;
-	uint8* target_name;
-	uint8* target_info;
+	int tls;
+	struct rdp_nla * nla;
 	int negotiation_state;
-	uint32 negotiate_flags;
-	uint8 server_challenge[8];
 };
 typedef struct rdp_sec rdpSec;
 

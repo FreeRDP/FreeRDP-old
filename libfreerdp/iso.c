@@ -88,7 +88,7 @@ x224_send_connection_request(rdpIso * iso, char *username)
 	STREAM s;
 	int length = 30 + strlen(username);
 
-	if (iso->mcs->sec->nla)
+	if (iso->mcs->sec->tls)
 		length += 8;
 
 	/*
@@ -119,9 +119,9 @@ x224_send_connection_request(rdpIso * iso, char *username)
 	out_uint8(s, 0x0D);	/* CR */
 	out_uint8(s, 0x0A);	/* LF */
 
-	if (iso->mcs->sec->nla)
+	if (iso->mcs->sec->tls)
 	{
-		/* When using NLA, the RDP_NEG_DATA field should be present */
+		/* When using TLS + NLA, the RDP_NEG_DATA field should be present */
 		out_uint8(s, TYPE_RDP_NEG_REQ);
 		out_uint8(s, 0x00);	/* flags, must be set to zero */
 		out_uint16_le(s, 8);	/* RDP_NEG_DATA length (8) */
@@ -145,7 +145,7 @@ rdp_process_negotiation_response(rdpIso * iso, STREAM s)
 	in_uint16_le(s, length);
 	in_uint32_le(s, selectedProtocol);
 
-	if (iso->mcs->sec->nla)
+	if (iso->mcs->sec->tls)
 	{
 		switch (selectedProtocol)
 		{
@@ -179,7 +179,7 @@ rdp_process_negotiation_failure(rdpIso * iso, STREAM s)
 	in_uint16_le(s, length);
 	in_uint32_le(s, failureCode);
 
-	if (iso->mcs->sec->nla)
+	if (iso->mcs->sec->tls)
 	{
 		switch (failureCode)
 		{
@@ -334,9 +334,9 @@ iso_negotiate_encryption(rdpIso * iso, char *username)
 {
 	uint8 code;
 
-	if (iso->mcs->sec->nla == 0)
+	if (iso->mcs->sec->tls == 0)
 	{
-		/* We do no use NLA, so we won't attempt to negotiate */
+		/* We do no use TLS + NLA, so we won't attempt to negotiate */
 
 		iso->mcs->sec->negotiation_state = 2;
 		x224_send_connection_request(iso, username);
@@ -359,7 +359,7 @@ iso_negotiate_encryption(rdpIso * iso, char *username)
 			{
 				/* Negotiation failure, downgrade encryption and try again */
 
-				iso->mcs->sec->nla = 0;
+				iso->mcs->sec->tls = 0;
 
 				/* second negotiation attempt */
 				iso->mcs->sec->negotiation_state = 2;

@@ -901,12 +901,10 @@ sec_connect(rdpSec * sec, char *server, char *username, int port)
 	mcs_data.p = mcs_data.data = (uint8 *) xmalloc(mcs_data.size);
 	sec_out_mcs_data(sec, &mcs_data);
 
-	/* sec->nla = 1; */
-
 	if (!iso_connect(sec->mcs->iso, server, username, port))
 		return False;
 
-	if(sec->nla)
+	if(sec->tls)
 	{
 		/* TLS with NLA was successfully negotiated */
 
@@ -923,7 +921,7 @@ sec_connect(rdpSec * sec, char *server, char *username, int port)
 		if (!mcs_connect(sec->mcs, server, &mcs_data, username, port))
 			return False;
 
-		/*      sec_process_mcs_data(&mcs_data); */
+		/* sec_process_mcs_data(&mcs_data); */
 		if (sec->rdp->settings->encryption)
 			sec_establish_key(sec);
 
@@ -983,6 +981,7 @@ sec_new(struct rdp_rdp * rdp)
 		self->rdp = rdp;
 		self->mcs = mcs_new(self);
 		self->licence = licence_new(self);
+		self->nla = nla_new(self);
 	}
 	return self;
 }

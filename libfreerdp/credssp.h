@@ -24,6 +24,55 @@
 
 #include "secure.h"
 
+struct _AV_PAIR
+{
+	uint16 length;
+	uint8* value;
+};
+typedef struct _AV_PAIR AV_PAIR;
+
+struct _MIC
+{
+	AV_PAIR NbComputerName;
+	AV_PAIR NbDomainName;
+	AV_PAIR DnsComputerName;
+	AV_PAIR DnsDomainName;
+	AV_PAIR DnsTreeName;
+	AV_PAIR Timestamp;
+	AV_PAIR Restrictions;
+	AV_PAIR TargetName;
+	AV_PAIR ChannelBindings;
+	uint32 Flags;
+};
+typedef struct _MIC MIC;
+
+enum _AV_ID
+{
+	MsvAvEOL,
+	MsvAvNbComputerName,
+	MsvAvNbDomainName,
+	MsvAvDnsComputerName,
+	MsvAvDnsDomainName,
+	MsvAvDnsTreeName,
+	MsvAvFlags,
+	MsvAvTimestamp,
+	MsvAvRestrictions,
+	MsvAvTargetName,
+	MsvChannelBindings
+};
+typedef enum _AV_ID AV_ID;
+
+struct rdp_nla
+{
+	struct rdp_sec * sec;
+	MIC * mic;
+	uint8* target_name;
+	uint8* target_info;
+	uint32 negotiate_flags;
+	uint8 server_challenge[8];
+};
+typedef struct rdp_nla rdpNla;
+
 void
 credssp_send(rdpSec * sec, STREAM s);
 void
@@ -37,6 +86,11 @@ void
 ntlm_send_authenticate_message(rdpSec * sec);
 void
 ntlm_recv(rdpSec * sec, STREAM s);
+
+rdpNla *
+nla_new(rdpSec * sec);
+void
+nla_free(rdpNla * nla);
 
 #endif // __CREDSSP_H
 
