@@ -41,6 +41,7 @@
 #include <openssl/md4.h>
 #include <openssl/hmac.h>
 #include <openssl/rand.h>
+#include <time.h>
 
 #include "credssp.h"
 
@@ -377,7 +378,36 @@ static void compute_lm_v2_response(char* password, char* username, char* server,
 	memcpy(&response[16], clientRandom, 8);
 }
 
-static void ntlm_input_mic(STREAM s, MIC* mic)
+static void compute_ntlm_v2_response(char* password, char* username, char* server, uint8* challenge, uint8* response)
+{
+	time_t t;
+	char clientRandom[8];
+	char ntlm_v2_hash[16];
+	char ntlm_v2_client_challenge[28];
+	
+	/* Compute the NTLMv2 hash */
+	compute_ntlm_v2_hash(password, username, server, ntlm_v2_hash);
+
+	/* Generate an 8-byte client random */
+	RAND_bytes((void*)clientRandom, 8);
+
+	/* Timestamp (8 bytes), represented as the number of 100 nanosecond ticks since midnight of January 1, 1601 */
+	/* This is tricky, as we need to do 64-bit arithmetic */
+	t = time(NULL);
+	
+	/* NTLMv2_CLIENT_CHALLENGE */
+	memset(ntlm_v2_client_challenge, '\0', sizeof(ntlm_v2_client_challenge));
+	
+	ntlm_v2_client_challenge[0] = 1; /* RespType (1 byte) */
+	ntlm_v2_client_challenge[1] = 1; /* HighRespType (1 byte) */
+	/* Reserved1 (2 bytes) */
+	/* Reserved2 (4 bytes) */
+	/* Timestamp (8 bytes) */
+	memcpy(&ntlm_v2_client_challenge[16], clientRandom, 8); /* ChallengeFromClient (8 bytes) */
+	/* Reserved3 (4 bytes) */
+}
+
+static void ntlm_input_av_pairs(STREAM s, AV_PAIRS* av_pairs)
 {
 	AV_ID AvId;
 	uint16 AvLen;
@@ -386,65 +416,66 @@ static void ntlm_input_mic(STREAM s, MIC* mic)
 	do
 	{
 		in_uint16_le(s, AvId);
+		in_uint16_le(s, AvLen);
 
 		if (AvLen > 0)
 		{
 			if (AvId != MsvAvFlags)
 			{
 				value = xmalloc(AvLen);
-				in_uint8a(s,value, AvLen);
+				in_uint8a(s, value, AvLen);
 			}
 			else
 			{
-				in_uint32_le(s, mic->Flags);
+				in_uint32_le(s, av_pairs->Flags);
 			}
 		}
 		
 		switch (AvId)
 		{
 			case MsvAvNbComputerName:
-				mic->NbComputerName.length = AvLen;
-				mic->NbComputerName.value = value;
+				av_pairs->NbComputerName.length = AvLen;
+				av_pairs->NbComputerName.value = value;
 				break;
 
 			case MsvAvNbDomainName:
-				mic->NbDomainName.length = AvLen;
-				mic->NbDomainName.value = value;
+				av_pairs->NbDomainName.length = AvLen;
+				av_pairs->NbDomainName.value = value;
 				break;
 
 			case MsvAvDnsComputerName:
-				mic->DnsComputerName.length = AvLen;
-				mic->DnsComputerName.value = value;
+				av_pairs->DnsComputerName.length = AvLen;
+				av_pairs->DnsComputerName.value = value;
 				break;
 
 			case MsvAvDnsDomainName:
-				mic->DnsDomainName.length = AvLen;
-				mic->DnsDomainName.value = value;
+				av_pairs->DnsDomainName.length = AvLen;
+				av_pairs->DnsDomainName.value = value;
 				break;
 
 			case MsvAvDnsTreeName:
-				mic->DnsTreeName.length = AvLen;
-				mic->DnsTreeName.value = value;
+				av_pairs->DnsTreeName.length = AvLen;
+				av_pairs->DnsTreeName.value = value;
 				break;
 
 			case MsvAvTimestamp:
-				mic->Timestamp.length = AvLen;
-				mic->Timestamp.value = value;
+				av_pairs->Timestamp.length = AvLen;
+				av_pairs->Timestamp.value = value;
 				break;
 
 			case MsvAvRestrictions:
-				mic->Restrictions.length = AvLen;
-				mic->Restrictions.value = value;
+				av_pairs->Restrictions.length = AvLen;
+				av_pairs->Restrictions.value = value;
 				break;
 
 			case MsvAvTargetName:
-				mic->TargetName.length = AvLen;
-				mic->TargetName.value = value;
+				av_pairs->TargetName.length = AvLen;
+				av_pairs->TargetName.value = value;
 				break;
 
 			case MsvChannelBindings:
-				mic->ChannelBindings.length = AvLen;
-				mic->ChannelBindings.value = value;
+				av_pairs->ChannelBindings.length = AvLen;
+				av_pairs->ChannelBindings.value = value;
 				break;
 
 			default:
@@ -455,74 +486,74 @@ static void ntlm_input_mic(STREAM s, MIC* mic)
 	while(AvId != MsvAvEOL);
 }
 
-static void ntlm_output_mic(STREAM s, MIC* mic)
+static void ntlm_output_av_pairs(STREAM s, AV_PAIRS* av_pairs)
 {
-	if (mic->NbComputerName.length > 0)
+	if (av_pairs->NbComputerName.length > 0)
 	{
 		out_uint16_le(s, MsvAvNbComputerName); /* AvId */
-		out_uint16_le(s, mic->NbComputerName.length); /* AvLen */
-		out_uint8a(s, mic->NbComputerName.value, mic->NbComputerName.length); /* Value */
+		out_uint16_le(s, av_pairs->NbComputerName.length); /* AvLen */
+		out_uint8a(s, av_pairs->NbComputerName.value, av_pairs->NbComputerName.length); /* Value */
 	}
 
-	if (mic->NbDomainName.length > 0)
+	if (av_pairs->NbDomainName.length > 0)
 	{
 		out_uint16_le(s, MsvAvNbDomainName); /* AvId */
-		out_uint16_le(s, mic->NbDomainName.length); /* AvLen */
-		out_uint8a(s, mic->NbDomainName.value, mic->NbDomainName.length); /* Value */
+		out_uint16_le(s, av_pairs->NbDomainName.length); /* AvLen */
+		out_uint8a(s, av_pairs->NbDomainName.value, av_pairs->NbDomainName.length); /* Value */
 	}
 
-	if (mic->DnsComputerName.length > 0)
+	if (av_pairs->DnsComputerName.length > 0)
 	{
 		out_uint16_le(s, MsvAvDnsComputerName); /* AvId */
-		out_uint16_le(s, mic->DnsComputerName.length); /* AvLen */
-		out_uint8a(s, mic->DnsComputerName.value, mic->DnsComputerName.length); /* Value */
+		out_uint16_le(s, av_pairs->DnsComputerName.length); /* AvLen */
+		out_uint8a(s, av_pairs->DnsComputerName.value, av_pairs->DnsComputerName.length); /* Value */
 	}
 
-	if (mic->DnsDomainName.length > 0)
+	if (av_pairs->DnsDomainName.length > 0)
 	{
 		out_uint16_le(s, MsvAvDnsDomainName); /* AvId */
-		out_uint16_le(s, mic->DnsDomainName.length); /* AvLen */
-		out_uint8a(s, mic->DnsDomainName.value, mic->DnsDomainName.length); /* Value */
+		out_uint16_le(s, av_pairs->DnsDomainName.length); /* AvLen */
+		out_uint8a(s, av_pairs->DnsDomainName.value, av_pairs->DnsDomainName.length); /* Value */
 	}
 
-	if (mic->DnsTreeName.length > 0)
+	if (av_pairs->DnsTreeName.length > 0)
 	{
 		out_uint16_le(s, MsvAvDnsTreeName); /* AvId */
-		out_uint16_le(s, mic->DnsTreeName.length); /* AvLen */
-		out_uint8a(s, mic->DnsTreeName.value, mic->DnsTreeName.length); /* Value */
+		out_uint16_le(s, av_pairs->DnsTreeName.length); /* AvLen */
+		out_uint8a(s, av_pairs->DnsTreeName.value, av_pairs->DnsTreeName.length); /* Value */
 	}
 
 	/* MsvAvFlags */
 	out_uint16_le(s, MsvAvFlags); /* AvId */
 	out_uint16_le(s, 4); /* AvLen */
-	out_uint32_le(s, mic->Flags); /* Value */
+	out_uint32_le(s, av_pairs->Flags); /* Value */
 
-	if (mic->Timestamp.length > 0)
+	if (av_pairs->Timestamp.length > 0)
 	{
 		out_uint16_le(s, MsvAvTimestamp); /* AvId */
-		out_uint16_le(s, mic->Timestamp.length); /* AvLen */
-		out_uint8a(s, mic->Timestamp.value, mic->Timestamp.length); /* Value */
+		out_uint16_le(s, av_pairs->Timestamp.length); /* AvLen */
+		out_uint8a(s, av_pairs->Timestamp.value, av_pairs->Timestamp.length); /* Value */
 	}
 
-	if (mic->Restrictions.length > 0)
+	if (av_pairs->Restrictions.length > 0)
 	{
 		out_uint16_le(s, MsvAvRestrictions); /* AvId */
-		out_uint16_le(s, mic->Restrictions.length); /* AvLen */
-		out_uint8a(s, mic->Restrictions.value, mic->Restrictions.length); /* Value */
+		out_uint16_le(s, av_pairs->Restrictions.length); /* AvLen */
+		out_uint8a(s, av_pairs->Restrictions.value, av_pairs->Restrictions.length); /* Value */
 	}
 
-	if (mic->TargetName.length > 0)
+	if (av_pairs->TargetName.length > 0)
 	{
 		out_uint16_le(s, MsvAvTargetName); /* AvId */
-		out_uint16_le(s, mic->TargetName.length); /* AvLen */
-		out_uint8a(s, mic->TargetName.value, mic->TargetName.length); /* Value */
+		out_uint16_le(s, av_pairs->TargetName.length); /* AvLen */
+		out_uint8a(s, av_pairs->TargetName.value, av_pairs->TargetName.length); /* Value */
 	}
 
-	if (mic->ChannelBindings.length > 0)
+	if (av_pairs->ChannelBindings.length > 0)
 	{
 		out_uint16_le(s, MsvChannelBindings); /* AvId */
-		out_uint16_le(s, mic->ChannelBindings.length); /* AvLen */
-		out_uint8a(s, mic->ChannelBindings.value, mic->ChannelBindings.length); /* Value */
+		out_uint16_le(s, av_pairs->ChannelBindings.length); /* AvLen */
+		out_uint8a(s, av_pairs->ChannelBindings.value, av_pairs->ChannelBindings.length); /* Value */
 	}
 
 	/* This endicates the end of the AV_PAIR array */
@@ -530,30 +561,30 @@ static void ntlm_output_mic(STREAM s, MIC* mic)
 	out_uint16_le(s, 0); /* AvLen */
 }
 
-static void ntlm_free_mic(MIC* mic)
+static void ntlm_free_av_pairs(AV_PAIRS* av_pairs)
 {
-	if (mic != NULL)
+	if (av_pairs != NULL)
 	{
-		if (mic->NbComputerName.value != NULL)
-			xfree(mic->NbComputerName.value);
-		if (mic->NbDomainName.value != NULL)
-			xfree(mic->NbDomainName.value);
-		if (mic->DnsComputerName.value != NULL)
-			xfree(mic->DnsComputerName.value);
-		if (mic->DnsDomainName.value != NULL)
-			xfree(mic->DnsDomainName.value);
-		if (mic->DnsTreeName.value != NULL)
-			xfree(mic->DnsTreeName.value);
-		if (mic->Timestamp.value != NULL)
-			xfree(mic->Timestamp.value);
-		if (mic->Restrictions.value != NULL)
-			xfree(mic->Restrictions.value);
-		if (mic->TargetName.value != NULL)
-			xfree(mic->TargetName.value);
-		if (mic->ChannelBindings.value != NULL)
-			xfree(mic->ChannelBindings.value);
+		if (av_pairs->NbComputerName.value != NULL)
+			xfree(av_pairs->NbComputerName.value);
+		if (av_pairs->NbDomainName.value != NULL)
+			xfree(av_pairs->NbDomainName.value);
+		if (av_pairs->DnsComputerName.value != NULL)
+			xfree(av_pairs->DnsComputerName.value);
+		if (av_pairs->DnsDomainName.value != NULL)
+			xfree(av_pairs->DnsDomainName.value);
+		if (av_pairs->DnsTreeName.value != NULL)
+			xfree(av_pairs->DnsTreeName.value);
+		if (av_pairs->Timestamp.value != NULL)
+			xfree(av_pairs->Timestamp.value);
+		if (av_pairs->Restrictions.value != NULL)
+			xfree(av_pairs->Restrictions.value);
+		if (av_pairs->TargetName.value != NULL)
+			xfree(av_pairs->TargetName.value);
+		if (av_pairs->ChannelBindings.value != NULL)
+			xfree(av_pairs->ChannelBindings.value);
 		
-		xfree(mic);
+		xfree(av_pairs);
 	}
 }
 
@@ -651,8 +682,8 @@ void ntlm_recv_challenge_message(rdpSec * sec, STREAM s)
 	
 	if (targetInfoLen > 0)
 	{
-		sec->nla->target_info = xmalloc(targetInfoLen);
-		memcpy((void*)sec->nla->target_info, &(s->data[targetInfoBufferOffset]), (size_t)targetInfoLen);
+		s->p = &(s->data[targetInfoBufferOffset]);
+		ntlm_input_av_pairs(s, sec->nla->target_info);
 	}
 }
 
@@ -676,35 +707,36 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 	uint32 EncryptedRandomSessionKeyBufferOffset;
 
 	rdpSet *settings;
-	uint8 LmChallengeResponse[24];
 		
 	s = tcp_init(sec->mcs->iso->tcp, 256);
 	settings = sec->rdp->settings;
-
+	
 	DomainNameLen = strlen(settings->domain) * 2;
 	UserNameLen = strlen(settings->username) * 2;
 	WorkstationLen = strlen(settings->domain) * 2;
+	LmChallengeResponseLen = 24;
+	NtChallengeResponseLen = 0;
+	EncryptedRandomSessionKeyLen = 16;
 
 	DomainNameBufferOffset = 88; /* starting buffer offset */
 	UserNameBufferOffset = DomainNameBufferOffset + DomainNameLen;
 	WorkstationBufferOffset = UserNameBufferOffset + UserNameLen;
-	LmChallengeResponseBufferOffset = WorkstationBufferOffset + 24;
-	
-	compute_lm_v2_response(settings->password, settings->username,
-		settings->server, sec->nla->server_challenge, LmChallengeResponse);
+	LmChallengeResponseBufferOffset = WorkstationBufferOffset + WorkstationLen;
+	NtChallengeResponseBufferOffset = LmChallengeResponseBufferOffset + LmChallengeResponseLen;
+	EncryptedRandomSessionKeyBufferOffset = NtChallengeResponseBufferOffset + NtChallengeResponseLen;
 	
 	out_uint8a(s, ntlm_signature, 8); /* Signature (8 bytes) */
 	out_uint32_le(s, 1); /* MessageType */
 
 	/* LmChallengeResponseFields (8 bytes) */
-	out_uint16_le(s, 24); /* LmChallengeResponseLen */
-	out_uint16_le(s, 24); /* LmChallengeResponseMaxLen */
-	out_uint32_le(s, 0); /* LmChallengeResponseBufferOffset */
+	out_uint16_le(s, LmChallengeResponseLen); /* LmChallengeResponseLen */
+	out_uint16_le(s, LmChallengeResponseLen); /* LmChallengeResponseMaxLen */
+	out_uint32_le(s, LmChallengeResponseBufferOffset); /* LmChallengeResponseBufferOffset */
 
 	/* NtChallengeResponseFields (8 bytes) */
-	out_uint16_le(s, 0); /* NtChallengeResponseLen */
-	out_uint16_le(s, 0); /* NtChallengeResponseMaxLen */
-	out_uint32_le(s, 0); /* NtChallengeResponseBufferOffset */
+	out_uint16_le(s, NtChallengeResponseLen); /* NtChallengeResponseLen */
+	out_uint16_le(s, NtChallengeResponseLen); /* NtChallengeResponseMaxLen */
+	out_uint32_le(s, NtChallengeResponseBufferOffset); /* NtChallengeResponseBufferOffset */
 
 	/* only set if NTLMSSP_NEGOTIATE_OEM_DOMAIN_SUPPLIED is set */
 
@@ -726,9 +758,9 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 	out_uint32_le(s, WorkstationBufferOffset); /* WorkstationBufferOffset */
 
 	/* EncryptedRandomSessionKeyFields (8 bytes) */
-	out_uint16_le(s, 0); /* EncryptedRandomSessionKeyLen */
-	out_uint16_le(s, 0); /* EncryptedRandomSessionKeyMaxLen */
-	out_uint32_le(s, 0); /* EncryptedRandomSessionKeyBufferOffset */
+	out_uint16_le(s, EncryptedRandomSessionKeyLen); /* EncryptedRandomSessionKeyLen */
+	out_uint16_le(s, EncryptedRandomSessionKeyLen); /* EncryptedRandomSessionKeyMaxLen */
+	out_uint32_le(s, EncryptedRandomSessionKeyBufferOffset); /* EncryptedRandomSessionKeyBufferOffset */
 
 	negotiateFlags = 0;
 	negotiateFlags |= NTLMSSP_NEGOTIATE_ALWAYS_SIGN;
@@ -741,11 +773,16 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 
 	/* MIC (16 bytes) */
 
+
 	/* Payload (variable) */
 
 	rdp_out_unistr(sec->rdp, s, settings->domain);
 	rdp_out_unistr(sec->rdp, s, settings->username);
 	rdp_out_unistr(sec->rdp, s, settings->domain);
+
+	out_uint8s(s, 24); /* LmChallengeResponse is left blank */
+
+	
 }
 
 void ntlm_recv(rdpSec * sec, STREAM s)
@@ -788,7 +825,7 @@ nla_new(struct rdp_sec * sec)
 	{
 		memset(self, 0, sizeof(rdpNla));
 		self->sec = sec;
-		self->mic = (MIC*)xmalloc(sizeof(MIC));
+		self->target_info = (AV_PAIRS*)xmalloc(sizeof(AV_PAIRS));
 	}
 	return self;
 }
@@ -798,7 +835,7 @@ nla_free(rdpNla * nla)
 {
 	if (nla != NULL)
 	{
-		ntlm_free_mic(nla->mic);
+		ntlm_free_av_pairs(nla->target_info);
 		xfree(nla);
 	}
 }

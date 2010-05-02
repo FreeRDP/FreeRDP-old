@@ -31,7 +31,7 @@ struct _AV_PAIR
 };
 typedef struct _AV_PAIR AV_PAIR;
 
-struct _MIC
+struct _AV_PAIRS
 {
 	AV_PAIR NbComputerName;
 	AV_PAIR NbDomainName;
@@ -44,7 +44,7 @@ struct _MIC
 	AV_PAIR ChannelBindings;
 	uint32 Flags;
 };
-typedef struct _MIC MIC;
+typedef struct _AV_PAIRS AV_PAIRS;
 
 enum _AV_ID
 {
@@ -65,9 +65,8 @@ typedef enum _AV_ID AV_ID;
 struct rdp_nla
 {
 	struct rdp_sec * sec;
-	MIC * mic;
+	AV_PAIRS* target_info;
 	uint8* target_name;
-	uint8* target_info;
 	uint32 negotiate_flags;
 	uint8 server_challenge[8];
 };
