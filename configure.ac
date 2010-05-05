@@ -16,6 +16,7 @@ AH_TEMPLATE(EGD_SOCKET, [EGD])
 AH_TEMPLATE(HAVE_LIBSAMPLERATE, [Define if you have libsamplerate])
 AH_TEMPLATE(IPv6, [IPv6])
 AH_TEMPLATE(NEED_ALIGN, [Alignment])
+AH_TEMPLATE(DISABLE_TLS, [Disable TLS encryption])
 AH_TEMPLATE(WITH_SCARD, [Define if smartcard is enabled])
 AH_TEMPLATE(WITH_DEBUG, [Turn on debugging messages])
 AH_TEMPLATE(WITH_DEBUG_CHANNEL, [Turn on debugging messages])
@@ -754,6 +755,17 @@ AC_ARG_WITH(ipv6,
 	fi
     ])
 
+#
+# Disable TLS encryption
+#
+AC_ARG_ENABLE(tls,
+    [  --disable-tls           disable TLS encryption],
+    [
+        if test $enableval = "no";
+        then
+	    AC_DEFINE(DISABLE_TLS,1)
+	fi
+    ])
 
 #
 # debugging

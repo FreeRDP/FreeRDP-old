@@ -22,7 +22,6 @@
 #include "mcs.h"
 #include "chan.h"
 #include "secure.h"
-#include "credssp.h"
 #include "licence.h"
 #include "rdp.h"
 #include "rdpset.h"
@@ -30,6 +29,10 @@
 #include "mem.h"
 #include "debug.h"
 #include "tcp.h"
+
+#ifndef DISABLE_TLS
+#include "credssp.h"
+#endif
 
 /* these are read only */
 static uint8 pad_54[40] = {
@@ -904,6 +907,7 @@ sec_connect(rdpSec * sec, char *server, char *username, int port)
 	if (!iso_connect(sec->mcs->iso, server, username, port))
 		return False;
 
+#ifndef DISABLE_TLS
 	if(sec->tls)
 	{
 		/* TLS with NLA was successfully negotiated */
@@ -915,6 +919,7 @@ sec_connect(rdpSec * sec, char *server, char *username, int port)
 		exit(0);
 	}
 	else
+#endif
 	{
 		/* We exchange some RDP data during the MCS-Connect */
 
@@ -981,7 +986,11 @@ sec_new(struct rdp_rdp * rdp)
 		self->rdp = rdp;
 		self->mcs = mcs_new(self);
 		self->licence = licence_new(self);
+		
+#ifndef DISABLE_TLS
 		self->nla = nla_new(self);
+#endif
+		
 	}
 	return self;
 }
@@ -993,6 +1002,11 @@ sec_free(rdpSec * sec)
 	{
 		licence_free(sec->licence);
 		mcs_free(sec->mcs);
+
+#ifndef DISABLE_TLS
+		nla_free(sec->nla);
+#endif
+		
 		xfree(sec);
 	}
 }
