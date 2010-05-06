@@ -35,8 +35,11 @@ libfreerdp_la_SOURCES = \
 	secure.c secure.h \
 	ssl.c ssl.h \
 	tcp.c tcp.h \
-	types.h debug.h frdp.h \
-	credssp.c credssp.h
+	types.h debug.h frdp.h
+
+if ENABLE_TLS
+libfreerdp_la_SOURCES += credssp.c credssp.h
+endif
 
 libfreerdp_la_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include -I$(top_srcdir)/include/freerdp \
 	-I$(top_srcdir)/asn1 @SSL_CFLAGS@ -DFREERDP_EXPORTS

@@ -758,12 +758,16 @@ AC_ARG_WITH(ipv6,
 #
 # Disable TLS encryption
 #
+
+AM_CONDITIONAL(ENABLE_TLS, true)
+
 AC_ARG_ENABLE(tls,
     [  --disable-tls           disable TLS encryption],
     [
         if test $enableval = "no";
         then
 	    AC_DEFINE(DISABLE_TLS,1)
+	    AM_CONDITIONAL(ENABLE_TLS, false)
 	fi
     ])
 
