@@ -38,7 +38,7 @@ libfreerdp_la_SOURCES = \
 	types.h debug.h frdp.h
 
 if ENABLE_TLS
-libfreerdp_la_SOURCES += credssp.c credssp.h
+libfreerdp_la_SOURCES += tls.c tls.h credssp.c credssp.h
 endif
 
 libfreerdp_la_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include -I$(top_srcdir)/include/freerdp \

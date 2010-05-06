@@ -80,17 +80,4 @@ RD_BOOL
 ssl_sig_ok(uint8 * exponent, uint32 exp_len, uint8 * modulus, uint32 mod_len,
 	   uint8 * signature, uint32 sig_len);
 
-/* Functions for TLS */
-
-SSL_CTX*
-tls_create_context();
-SSL*
-tls_connect(SSL_CTX *ctx, int sockfd, char *server);
-void
-tls_disconnect(SSL *ssl);
-int
-tls_write(SSL *ssl, char* b, int size);
-int
-tls_read(SSL *ssl, char* b, int size);
-
 #endif

@@ -31,6 +31,7 @@
 #include "tcp.h"
 
 #ifndef DISABLE_TLS
+#include "tls.h"
 #include "credssp.h"
 #endif
 
@@ -904,10 +905,14 @@ sec_connect(rdpSec * sec, char *server, char *username, int port)
 	mcs_data.p = mcs_data.data = (uint8 *) xmalloc(mcs_data.size);
 	sec_out_mcs_data(sec, &mcs_data);
 
+	/* Don't forget to set this *before* iso_connect(), otherwise you'll bang your head on the wall */
+	/* sec->tls = 1; */
+	
 	if (!iso_connect(sec->mcs->iso, server, username, port))
 		return False;
 
 #ifndef DISABLE_TLS
+	
 	if(sec->tls)
 	{
 		/* TLS with NLA was successfully negotiated */

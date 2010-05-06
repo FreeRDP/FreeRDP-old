@@ -22,7 +22,7 @@
 #include "frdp.h"
 #include "rdp.h"
 #include "rdpset.h"
-#include "ssl.h"
+#include "tls.h"
 #include "secure.h"
 #include "stream.h"
 #include "mem.h"

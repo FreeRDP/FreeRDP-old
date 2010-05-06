@@ -24,6 +24,10 @@
 #include "ssl.h"
 #include "constants.h"
 
+#ifndef DISABLE_TLS
+#include "tls.h"
+#endif
+
 struct rdp_sec
 {
 	struct rdp_rdp * rdp;
