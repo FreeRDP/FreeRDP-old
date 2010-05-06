@@ -674,7 +674,7 @@ sec_parse_crypt_info(rdpSec * sec, STREAM s, uint32 * rc4_key_size,
 			DEBUG_RDP5("cert #%d (ignored):\n", certcount);
 			ssl_cert_print_fp(stdout, ignorecert);
 #endif
-			ssl1_cert_free(ignorecert);
+			ssl_cert_free(ignorecert);
 		}
 		/* Do da funky X.509 stuffy
 
@@ -699,27 +699,27 @@ sec_parse_crypt_info(rdpSec * sec, STREAM s, uint32 * rc4_key_size,
 		in_uint8s(s, cert_len);
 		if (NULL == server_cert)
 		{
-			ssl1_cert_free(cacert);
+			ssl_cert_free(cacert);
 			ui_error(sec->rdp->inst, "Couldn't load Certificate from server\n");
 			return False;
 		}
 		if (!ssl_certs_ok(server_cert, cacert))
 		{
-			ssl1_cert_free(server_cert);
-			ssl1_cert_free(cacert);
+			ssl_cert_free(server_cert);
+			ssl_cert_free(cacert);
 			ui_error(sec->rdp->inst, "Security error CA Certificate invalid\n");
 			return False;
 		}
-		ssl1_cert_free(cacert);
+		ssl_cert_free(cacert);
 		in_uint8s(s, 16);	/* Padding */
 		server_public_key = ssl_cert_to_rkey(server_cert, &(sec->server_public_key_len));
 		if (NULL == server_public_key)
 		{
 			DEBUG_RDP5("Didn't parse X509 correctly\n");
-			ssl1_cert_free(server_cert);
+			ssl_cert_free(server_cert);
 			return False;
 		}
-		ssl1_cert_free(server_cert);
+		ssl_cert_free(server_cert);
 		if ((sec->server_public_key_len < SEC_MODULUS_SIZE) ||
 		    (sec->server_public_key_len > SEC_MAX_MODULUS_SIZE))
 		{
