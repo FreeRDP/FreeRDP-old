@@ -34,6 +34,7 @@ libfreerdp_la_SOURCES = \
 	rdp5.c \
 	secure.c secure.h \
 	ssl.c ssl.h \
+	crypto.c crypto.h \
 	tcp.c tcp.h \
 	types.h debug.h frdp.h
 

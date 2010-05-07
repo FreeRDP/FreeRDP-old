@@ -1,5 +1,5 @@
 /* -*- c-basic-offset: 8 -*-
-   rdesktop: A Remote Desktop Protocol client.
+   FreeRDP: A Remote Desktop Protocol client.
    Secure sockets abstraction layer
    Copyright (C) Matthew Chapman 1999-2008
    Copyright (C) Jay Sorg 2006-2010
