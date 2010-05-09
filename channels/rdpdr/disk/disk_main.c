@@ -900,6 +900,11 @@ disk_free(DEVICE * dev)
 		disk_remove_file(dev, info->head->file_id);
 	}
 	free(info);
+	if (dev->data)
+	{
+		free(dev->data);
+		dev->data = NULL;
+	}
 	return 0;
 }
 
@@ -910,6 +915,7 @@ DeviceServiceEntry(PDEVMAN pDevman, PDEVMAN_ENTRY_POINTS pEntryPoints)
 	DEVICE * dev;
 	DISK_DEVICE_INFO * info;
 	RD_PLUGIN_DATA * data;
+	int i;
 
 	srv = pEntryPoints->pDevmanRegisterService(pDevman);
 
@@ -943,6 +949,19 @@ DeviceServiceEntry(PDEVMAN pDevman, PDEVMAN_ENTRY_POINTS pEntryPoints)
 
 			dev = info->DevmanRegisterDevice(pDevman, srv, (char*)data->data[1]);
 			dev->info = info;
+
+			/* [MS-RDPEFS] 2.2.3.1 said this is a unicode string, however, only ASCII works.
+			   Any non-ASCII characters simply screw up the whole channel. Long name is supported though.
+			   This is yet to be investigated. */
+			dev->data_len = strlen(dev->name) + 1;
+			dev->data = strdup(dev->name);
+			for (i = 0; i < dev->data_len; i++)
+			{
+				if (dev->data[i] < 0)
+				{
+					dev->data[i] = '_';
+				}
+			}
 		}
 		data = (RD_PLUGIN_DATA *) (((void *) data) + data->size);
 	}

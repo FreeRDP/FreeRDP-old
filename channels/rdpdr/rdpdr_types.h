@@ -67,6 +67,8 @@ struct _DEVICE
 	void* prev;
 	void* next;
 	SERVICE* service;
+	int data_len;
+	char* data;
 };
 typedef DEVICE * PDEVICE;
 

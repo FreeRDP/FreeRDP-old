@@ -130,6 +130,8 @@ devman_register_device(DEVMAN* devman, SERVICE* srv, char* name)
 	pdev->prev = NULL;
 	pdev->next = NULL;
 	pdev->service = srv;
+	pdev->data_len = 0;
+	pdev->data = NULL;
 
 	pdev->name = malloc(strlen(name) + 1);
 	strcpy(pdev->name, name);

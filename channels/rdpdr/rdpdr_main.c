@@ -188,7 +188,6 @@ rdpdr_send_device_list_announce_request(rdpdrPlugin * plugin)
 	uint32 error;
 	DEVICE* pdev;
 	int offset = 0;
-	int device_data_len;
 	int i;
 
 	size = 8 + plugin->devman->count * 256;
@@ -225,49 +224,14 @@ rdpdr_send_device_list_announce_request(rdpdrPlugin * plugin)
 
 		LLOGLN(0, ("registered device: %s (type=%d id=%d)", pdev->name, pdev->service->type, pdev->id));
 
-		switch (pdev->service->type)
+		SET_UINT32(out_data, offset, pdev->data_len);
+		offset += 4;
+		if (pdev->data_len > 0)
 		{
-			case RDPDR_DTYP_PRINT:
-
-				break;
-
-			case RDPDR_DTYP_FILESYSTEM:
-				/* [MS-RDPEFS] 2.2.3.1 said this is a unicode string, however, only ASCII works.
-				   Any non-ASCII characters simply screw up the whole channel. Long name is supported though.
-				   This is yet to be investigated. */
-
-				//device_data_len = set_wstr(&out_data[offset + 4], size - offset - 4, pdev->name, strlen(pdev->name));
-				//SET_UINT32(out_data, offset, device_data_len + 2); // deviceDataLength
-				//offset += 4 + device_data_len + 2;
-				device_data_len = strlen(pdev->name);
-				SET_UINT32(out_data, offset, device_data_len + 1);
-				strncpy(&out_data[offset + 4], pdev->name, size - offset - 4);
-				for (i = 0; i < device_data_len; i++)
-				{
-					if (out_data[offset + 4 + i] < 0)
-					{
-						out_data[offset + 4 + i] = '_';
-					}
-				}
-				offset += 4 + device_data_len + 1;
-
-				break;
-
-			case RDPDR_DTYP_SMARTCARD:
-
-				/*
-				 * According to [MS-RDPEFS] the deviceDataLength field for
-				 * the smart card device type must be set to zero
-				 */
-				
-				SET_UINT32(out_data, offset, 0); // deviceDataLength
-				offset += 4;
-				break;
-
-			default:
-				SET_UINT32(out_data, offset, 0);
-				offset += 4;
-		}		
+			i = (pdev->data_len <= size - offset ? pdev->data_len : size - offset);
+			memcpy(&out_data[offset], pdev->data, i);
+			offset += i;
+		}
 	}
 
 	out_data_size = offset;
