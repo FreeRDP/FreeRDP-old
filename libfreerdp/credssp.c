@@ -826,6 +826,7 @@ nla_new(struct rdp_sec * sec)
 		memset(self, 0, sizeof(rdpNla));
 		self->sec = sec;
 		self->target_info = (AV_PAIRS*)xmalloc(sizeof(AV_PAIRS));
+		memset(self->target_info, 0, sizeof(AV_PAIRS));
 	}
 	return self;
 }
