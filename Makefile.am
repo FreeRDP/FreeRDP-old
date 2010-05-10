@@ -11,7 +11,8 @@ SUBDIRS = \
 	channels/rdpsnd \
 	channels/cliprdr \
 	channels/rdpdr \
-	channels/rdpdr/disk
+	channels/rdpdr/disk \
+	channels/rdpdr/printer
 
 EXTRA_DIST = autogen.sh indent-all.sh freerdp.spec \
 	AUTHORS ChangeLog COPYING INSTALL NEWS README doc

@@ -89,6 +89,14 @@ autom4te.cache
 /channels/rdpdr/disk/.deps
 /channels/rdpdr/disk/.libs
 /channels/rdpdr/disk/*~
+/channels/rdpdr/printer/*.o
+/channels/rdpdr/printer/*.lo
+/channels/rdpdr/printer/*.la
+/channels/rdpdr/printer/Makefile
+/channels/rdpdr/printer/Makefile.in
+/channels/rdpdr/printer/.deps
+/channels/rdpdr/printer/.libs
+/channels/rdpdr/printer/*~
 /libfreerdpchanman/*.o
 /libfreerdpchanman/*.lo
 /libfreerdpchanman/*.la

@@ -327,6 +327,23 @@ case $sound in
         ;;
 esac
 
+#
+# printer
+#
+
+AM_CONDITIONAL(RDPDR_PRINTER_CUPS, false)
+
+AC_CHECK_PROG(HAVE_CUPS, cups-config, 1, 0)
+if test x"$HAVE_CUPS" = "x1"; then
+    CUPS_CFLAGS=`cups-config --cflags`
+    AC_SUBST(CUPS_CFLAGS)
+    CUPS_LIBS=`cups-config --libs`
+    AC_SUBST(CUPS_LIBS)
+    AM_CONDITIONAL(RDPDR_PRINTER_CUPS, true)
+else
+    AC_MSG_WARN([Printer support disabled. CUPS development package not found.])
+fi
+
 # Checks for time zones
 AC_STRUCT_TIMEZONE
 
@@ -914,6 +931,7 @@ channels/rdpsnd/Makefile
 channels/cliprdr/Makefile
 channels/rdpdr/Makefile
 channels/rdpdr/disk/Makefile
+channels/rdpdr/printer/Makefile
 ])
 
 AC_OUTPUT

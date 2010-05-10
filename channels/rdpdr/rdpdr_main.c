@@ -426,9 +426,9 @@ thread_process_message(rdpdrPlugin * plugin, char * data, int data_size)
 
 			case PAKID_CORE_DEVICE_REPLY:
 				/* connect to a specific resource */
-				LLOGLN(10, ("PAKID_CORE_DEVICE_REPLY"));
 				deviceID = GET_UINT32(data, 4);
 				status = GET_UINT32(data, 8);
+				LLOGLN(10, ("PAKID_CORE_DEVICE_REPLY (deviceID=%d status=%d)", deviceID, status));
 				break;
 
 			case PAKID_CORE_DEVICE_IOREQUEST:
@@ -722,6 +722,7 @@ VirtualChannelEntry(PCHANNEL_ENTRY_POINTS pEntryPoints)
 	}
 	plugin->devman = devman_new(data);
 	devman_load_device_service(plugin->devman, "disk");
+	devman_load_device_service(plugin->devman, "printer");
 
 	plugin->ep.pVirtualChannelInit(&plugin->chan_plugin.init_handle, &plugin->channel_def, 1,
 		VIRTUAL_CHANNEL_VERSION_WIN2000, InitEvent);
