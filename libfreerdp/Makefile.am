@@ -43,11 +43,11 @@ libfreerdp_la_SOURCES += tls.c tls.h credssp.c credssp.h
 endif
 
 libfreerdp_la_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include -I$(top_srcdir)/include/freerdp \
-	-I$(top_srcdir)/asn1 @SSL_CFLAGS@ -DFREERDP_EXPORTS
+	-I$(top_srcdir)/asn1 @CRYPTO_CFLAGS@ -DFREERDP_EXPORTS
 
 libfreerdp_la_LDFLAGS =
 
-libfreerdp_la_LIBADD = ../asn1/libasn1.la @SSL_LIBS@
+libfreerdp_la_LIBADD = ../asn1/libasn1.la @CRYPTO_LIBS@
 
 # extra
 EXTRA_DIST =

@@ -77,44 +77,58 @@ PLUGIN_PATH='${libdir}/freerdp'
 AC_SUBST(PLUGIN_PATH)
 
 #
+# Check Crypto libraries
+#
+AC_ARG_WITH([crypto],
+	[AS_HELP_STRING([--with-crypto=ARG],
+		[Choose the crypto library. Valid arguments are openssl, polarssl, no (default is openssl)])],
+	[with_crypto=$withval],
+	[with_crypto=openssl])
+
+disable_tls=yes
+case $with_crypto in
+	openssl)
+		PKG_CHECK_MODULES(CRYPTO, [openssl >= 0.9.8a])
+		disable_tls=no
+		;;
+
+	polarssl)
+		AC_CHECK_LIB(polarssl, ssl_init,
+			[CRYPTO_LIBS=-lpolarssl],
+			[AC_MSG_ERROR(PolarSSL library not found)])
+		AC_CHECK_HEADER(polarssl/ssl.h,
+			[CRYPTO_CFLAGS=],
+			[AC_MSG_ERROR(PolarSSL development header not found)])
+		disable_tls=no
+		;;
+
+	no)
+		AC_MSG_WARN([Cryptographic disabled.])
+		;;
+
+	*)
+		AC_MSG_ERROR([Invalid --with-crypto argument $with_crypto.])
+		;;
+esac
+
+#
 # Disable TLS encryption
 #
 
+AC_ARG_ENABLE(tls,
+	[AS_HELP_STRING([--disable-tls], [disable TLS encryption])],
+	[
+		if test $enableval = "no";
+		then
+			disable_tls=yes
+		fi
+    ])
+
 AM_CONDITIONAL(ENABLE_TLS, true)
 
-AC_ARG_ENABLE(tls,
-    [  --disable-tls           disable TLS encryption],
-    [
-        if test $enableval = "no";
-        then
-	    AC_DEFINE(DISABLE_TLS,1)
-	    AM_CONDITIONAL(ENABLE_TLS, false)
-	fi
-    ])
-
-#
-# Disable OpenSSL (also disables TLS)
-#
-
-USE_OPENSSL=0 
-
-AC_ARG_ENABLE(openssl,
-    [  --disable-openssl           disable OpenSSL],
-    [
-        if test $enableval = "no";
-        then
-		USE_OPENSSL=1
-	fi
-    ])
-
-if test x"$USE_OPENSSL" = "x1"
-then
-    # Disable TLS (depends on OpenSSL)
-    AC_DEFINE(DISABLE_TLS,1)
-    AM_CONDITIONAL(ENABLE_TLS, false)
-else
-    # OpenSSL detection
-    PKG_CHECK_MODULES(SSL, [openssl >= 0.9.8a])
+if test "$disable_tls" = "yes"; then
+	AC_DEFINE(DISABLE_TLS,1)
+	AM_CONDITIONAL(ENABLE_TLS, false)
 fi
 
 #
