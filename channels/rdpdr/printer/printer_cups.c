@@ -23,7 +23,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <pthread.h>
+#include <time.h>
 #include <cups/cups.h>
+#include "rdpdr_constants.h"
 #include "rdpdr_types.h"
 #include "devman.h"
 #include "chan_stream.h"
@@ -38,7 +41,11 @@ struct _PRINTER_DEVICE_INFO
 	PDEVMAN_REGISTER_DEVICE DevmanRegisterDevice;
 	PDEVMAN_UNREGISTER_DEVICE DevmanUnregisterDevice;
 
-	int using_xps;
+	char * printer_name;
+
+	pthread_mutex_t printjob_mutex;
+	http_t * printjob_http_t;
+	int printjob_id;
 };
 typedef struct _PRINTER_DEVICE_INFO PRINTER_DEVICE_INFO;
 
@@ -73,7 +80,14 @@ printer_register_device(PDEVMAN pDevman, PDEVMAN_ENTRY_POINTS pEntryPoints, SERV
 			info->DevmanRegisterDevice = pEntryPoints->pDevmanRegisterDevice;
 			info->DevmanUnregisterDevice = pEntryPoints->pDevmanUnregisterDevice;
 
+			info->printer_name = strdup(dest->name);
+			pthread_mutex_init (&info->printjob_mutex, NULL);
+
+			/* TODO: Need to tell the server Windows version to choose the best driver automatically. */
+			/* This is good for XP/2003 */
 			driver_name = "HP Color LaserJet 8500 PS";
+			/* This is good for Window 7 */
+			/*driver_name = "HP Color LaserJet 2800 Series PS";*/
 
 			snprintf(buf, sizeof(buf) - 1, "PRN%d", i);
 			dev = info->DevmanRegisterDevice(pDevman, srv, buf);
@@ -83,7 +97,8 @@ printer_register_device(PDEVMAN pDevman, PDEVMAN_ENTRY_POINTS pEntryPoints, SERV
 			dev->data = malloc(size);
 			memset(dev->data, 0, size);
 
-			flags = RDPDR_PRINTER_ANNOUNCE_FLAG_XPSFORMAT;
+			/*flags = RDPDR_PRINTER_ANNOUNCE_FLAG_XPSFORMAT;*/
+			flags = 0;
 			if (dest->is_default)
 				flags |= RDPDR_PRINTER_ANNOUNCE_FLAG_DEFAULTPRINTER;
 
@@ -109,19 +124,97 @@ printer_register_device(PDEVMAN pDevman, PDEVMAN_ENTRY_POINTS pEntryPoints, SERV
 uint32
 printer_create(IRP * irp, const char * path)
 {
-	return 0;
+	PRINTER_DEVICE_INFO * info;
+	time_t tt;
+	struct tm * t;
+	char buf[100];
+
+	info = (PRINTER_DEVICE_INFO *) irp->dev->info;
+
+	/* Server's print queue will ensure no two print jobs will be sent to the same printer.
+	   However, we still want to do a simple locking just to ensure we are safe. */
+	pthread_mutex_lock (&info->printjob_mutex);
+
+	if (info->printjob_http_t)
+	{
+		pthread_mutex_unlock (&info->printjob_mutex);
+		return RD_STATUS_DEVICE_BUSY;
+	}
+	info->printjob_http_t = httpConnectEncrypt(cupsServer(), ippPort(), HTTP_ENCRYPT_IF_REQUESTED);
+	if (info->printjob_http_t == NULL)
+	{
+		pthread_mutex_unlock (&info->printjob_mutex);
+		LLOGLN(0, ("printer_create: httpConnectEncrypt: %s", cupsLastErrorString()));
+		return RD_STATUS_DEVICE_BUSY;
+	}
+
+	pthread_mutex_unlock (&info->printjob_mutex);
+
+	tt = time(NULL);
+	t = localtime(&tt);
+	snprintf(buf, sizeof(buf) - 1, "FreeRDP Print Job %d%02d%02d%02d%02d%02d",
+		t->tm_year + 1900, t->tm_mon + 1, t->tm_mday,
+		t->tm_hour, t->tm_min, t->tm_sec);
+	info->printjob_id = cupsCreateJob(info->printjob_http_t,
+		info->printer_name, buf,
+		0, NULL);
+
+	LLOGLN(10, ("printe_create: %s id=%d", info->printer_name, irp->fileID));
+
+	if (info->printjob_id == 0)
+	{
+		LLOGLN(0, ("printer_create: cupsCreateJob: %s", cupsLastErrorString()));
+		httpClose(info->printjob_http_t);
+		info->printjob_http_t = NULL;
+		/* Should get the right return code based on printer status */
+		return RD_STATUS_DEVICE_BUSY;
+	}
+	cupsStartDocument(info->printjob_http_t,
+		info->printer_name, info->printjob_id, buf,
+		CUPS_FORMAT_POSTSCRIPT, 1);
+
+	irp->fileID = info->printjob_id;
+
+	return RD_STATUS_SUCCESS;
 }
 
 uint32
 printer_close(IRP * irp)
 {
-	return 0;
+	PRINTER_DEVICE_INFO * info;
+
+	info = (PRINTER_DEVICE_INFO *) irp->dev->info;
+	LLOGLN(10, ("printe_close: %s id=%d", info->printer_name, irp->fileID));
+
+	if (irp->fileID != info->printjob_id)
+	{
+		LLOGLN(0, ("printer_write: invalid file id"));
+		return RD_STATUS_INVALID_HANDLE;
+	}
+
+	cupsFinishDocument(info->printjob_http_t, info->printer_name);
+	info->printjob_id = 0;
+	httpClose(info->printjob_http_t);
+	info->printjob_http_t = NULL;
+
+	return RD_STATUS_SUCCESS;
 }
 
 uint32
 printer_write(IRP * irp)
 {
-	return 0;
+	PRINTER_DEVICE_INFO * info;
+
+	info = (PRINTER_DEVICE_INFO *) irp->dev->info;
+	LLOGLN(10, ("printe_write: %s id=%d len=%d off=%lld", info->printer_name,
+		irp->fileID, irp->inputBufferLength, irp->offset));
+	if (irp->fileID != info->printjob_id)
+	{
+		LLOGLN(0, ("printer_write: invalid file id"));
+		return RD_STATUS_INVALID_HANDLE;
+	}
+	cupsWriteRequestData(info->printjob_http_t, irp->inputBuffer, irp->inputBufferLength);
+	return RD_STATUS_SUCCESS;
 }
 
 uint32
@@ -131,6 +224,17 @@ printer_free(DEVICE * dev)
 
 	LLOGLN(10, ("printer_free"));
 	info = (PRINTER_DEVICE_INFO *) dev->info;
+	if (info->printer_name)
+	{
+		free(info->printer_name);
+		info->printer_name = NULL;
+	}
+	if (info->printjob_http_t)
+	{
+		httpClose(info->printjob_http_t);
+		info->printjob_http_t = NULL;
+	}
+	pthread_mutex_destroy(&info->printjob_mutex);
 	free(info);
 	if (dev->data)
 	{
