@@ -40,6 +40,7 @@ set_wstr(char* dst, int dstlen, char* src, int srclen)
 	in_size = (size_t)srclen;
 	avail = (size_t)dstlen;
 	iconv(cd, &src, &in_size, &dst, &avail);
+	iconv_close(cd);
 	return dstlen - (int)avail;
 }
 
@@ -59,6 +60,7 @@ get_wstr(char* dst, int dstlen, char* src, int srclen)
 	in_size = (size_t)srclen;
 	avail = (size_t)dstlen;
 	iconv(cd, &src, &in_size, &dst, &avail);
+	iconv_close(cd);
 	return dstlen - (int)avail;
 }
 

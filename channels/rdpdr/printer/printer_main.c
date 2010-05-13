@@ -28,11 +28,10 @@
 #include "devman.h"
 #include "printer_main.h"
 
-int
-DeviceServiceEntry(PDEVMAN pDevman, PDEVMAN_ENTRY_POINTS pEntryPoints)
+static SERVICE * 
+printer_register_service(PDEVMAN pDevman, PDEVMAN_ENTRY_POINTS pEntryPoints)
 {
 	SERVICE * srv;
-	RD_PLUGIN_DATA * data;
 
 	srv = pEntryPoints->pDevmanRegisterService(pDevman);
 
@@ -50,11 +49,23 @@ DeviceServiceEntry(PDEVMAN pDevman, PDEVMAN_ENTRY_POINTS pEntryPoints)
 	srv->free = printer_free;
 	srv->type = RDPDR_DTYP_PRINT;
 
+	return srv;
+}
+
+int
+DeviceServiceEntry(PDEVMAN pDevman, PDEVMAN_ENTRY_POINTS pEntryPoints)
+{
+	SERVICE * srv = NULL;
+	RD_PLUGIN_DATA * data;
+
 	data = (RD_PLUGIN_DATA *) pEntryPoints->pExtendedData;
 	while (data && data->size > 0)
 	{
 		if (strcmp((char*)data->data[0], "printer") == 0)
 		{
+			if (srv == NULL)
+				srv = printer_register_service(pDevman, pEntryPoints);
+
 			printer_register_device (pDevman, pEntryPoints, srv);
 			break;
 		}

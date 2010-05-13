@@ -649,6 +649,8 @@ InitEventProcessTerminated(void * pInitHandle)
 	}
 	wait_obj_free(plugin->term_event);
 	wait_obj_free(plugin->data_in_event);
+	pthread_mutex_destroy(plugin->mutex);
+	free(plugin->mutex);
 
 	/* free the un-processed in/out queue */
 	while (plugin->list_head != 0)

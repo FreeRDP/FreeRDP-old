@@ -908,14 +908,10 @@ disk_free(DEVICE * dev)
 	return 0;
 }
 
-int
-DeviceServiceEntry(PDEVMAN pDevman, PDEVMAN_ENTRY_POINTS pEntryPoints)
+static SERVICE *
+disk_register_service(PDEVMAN pDevman, PDEVMAN_ENTRY_POINTS pEntryPoints)
 {
 	SERVICE * srv;
-	DEVICE * dev;
-	DISK_DEVICE_INFO * info;
-	RD_PLUGIN_DATA * data;
-	int i;
 
 	srv = pEntryPoints->pDevmanRegisterService(pDevman);
 
@@ -933,11 +929,26 @@ DeviceServiceEntry(PDEVMAN pDevman, PDEVMAN_ENTRY_POINTS pEntryPoints)
 	srv->free = disk_free;
 	srv->type = RDPDR_DTYP_FILESYSTEM;
 
+	return srv;
+}
+
+int
+DeviceServiceEntry(PDEVMAN pDevman, PDEVMAN_ENTRY_POINTS pEntryPoints)
+{
+	SERVICE * srv = NULL;
+	DEVICE * dev;
+	DISK_DEVICE_INFO * info;
+	RD_PLUGIN_DATA * data;
+	int i;
+
 	data = (RD_PLUGIN_DATA *) pEntryPoints->pExtendedData;
 	while (data && data->size > 0)
 	{
 		if (strcmp((char*)data->data[0], "disk") == 0)
 		{
+			if (srv == NULL)
+				srv = disk_register_service(pDevman, pEntryPoints);
+
 			info = (DISK_DEVICE_INFO *) malloc(sizeof(DISK_DEVICE_INFO));
 			memset(info, 0, sizeof(DISK_DEVICE_INFO));
 			info->devman = pDevman;
