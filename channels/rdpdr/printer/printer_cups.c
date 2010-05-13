@@ -43,7 +43,6 @@ struct _PRINTER_DEVICE_INFO
 
 	char * printer_name;
 
-	pthread_mutex_t printjob_mutex;
 	http_t * printjob_http_t;
 	int printjob_id;
 };
@@ -81,13 +80,9 @@ printer_register_device(PDEVMAN pDevman, PDEVMAN_ENTRY_POINTS pEntryPoints, SERV
 			info->DevmanUnregisterDevice = pEntryPoints->pDevmanUnregisterDevice;
 
 			info->printer_name = strdup(dest->name);
-			pthread_mutex_init (&info->printjob_mutex, NULL);
 
-			/* TODO: Need to tell the server Windows version to choose the best driver automatically. */
-			/* This is good for XP/2003 */
-			driver_name = "HP Color LaserJet 8500 PS";
-			/* This is good for Window 7 */
-			/*driver_name = "HP Color LaserJet 2800 Series PS";*/
+			/* This is a generic PostScript printer driver developed by MS, so it should be good in most cases */
+			driver_name = "MS Publisher Imagesetter";
 
 			snprintf(buf, sizeof(buf) - 1, "PRN%d", i);
 			dev = info->DevmanRegisterDevice(pDevman, srv, buf);
@@ -133,22 +128,16 @@ printer_create(IRP * irp, const char * path)
 
 	/* Server's print queue will ensure no two print jobs will be sent to the same printer.
 	   However, we still want to do a simple locking just to ensure we are safe. */
-	pthread_mutex_lock (&info->printjob_mutex);
-
 	if (info->printjob_http_t)
 	{
-		pthread_mutex_unlock (&info->printjob_mutex);
 		return RD_STATUS_DEVICE_BUSY;
 	}
 	info->printjob_http_t = httpConnectEncrypt(cupsServer(), ippPort(), HTTP_ENCRYPT_IF_REQUESTED);
 	if (info->printjob_http_t == NULL)
 	{
-		pthread_mutex_unlock (&info->printjob_mutex);
 		LLOGLN(0, ("printer_create: httpConnectEncrypt: %s", cupsLastErrorString()));
 		return RD_STATUS_DEVICE_BUSY;
 	}
-
-	pthread_mutex_unlock (&info->printjob_mutex);
 
 	tt = time(NULL);
 	t = localtime(&tt);
@@ -234,7 +223,6 @@ printer_free(DEVICE * dev)
 		httpClose(info->printjob_http_t);
 		info->printjob_http_t = NULL;
 	}
-	pthread_mutex_destroy(&info->printjob_mutex);
 	free(info);
 	if (dev->data)
 	{
