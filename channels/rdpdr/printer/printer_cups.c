@@ -49,71 +49,84 @@ struct _PRINTER_DEVICE_INFO
 typedef struct _PRINTER_DEVICE_INFO PRINTER_DEVICE_INFO;
 
 int
-printer_register_device(PDEVMAN pDevman, PDEVMAN_ENTRY_POINTS pEntryPoints, SERVICE * srv)
+printer_register_all(PDEVMAN pDevman, PDEVMAN_ENTRY_POINTS pEntryPoints, SERVICE * srv,
+	int port)
 {
-	DEVICE * dev;
-	PRINTER_DEVICE_INFO * info;
 	cups_dest_t *dests;
 	cups_dest_t *dest;
 	int num_dests;
-	int i;
+	int i, j;
+
+	num_dests = cupsGetDests(&dests);
+	for (i = 0, j = 0, dest = dests; i < num_dests; i++, dest++)
+	{
+		if (dest->instance == NULL)
+		{
+			j += printer_register(pDevman, pEntryPoints, srv, dest->name, NULL, dest->is_default, port + j);
+		}
+	}
+	cupsFreeDests(num_dests, dests);
+	return j;
+}
+
+int
+printer_register(PDEVMAN pDevman, PDEVMAN_ENTRY_POINTS pEntryPoints, SERVICE * srv,
+	const char * name, const char * driver, int is_default, int port)
+{
+	DEVICE * dev;
+	PRINTER_DEVICE_INFO * info;
 	char buf[8];
 	uint32 flags;
-	char * driver_name;
 	int size;
 	int offset;
 	int len;
 
-	num_dests = cupsGetDests(&dests);
-	for (i = 1, dest = dests; i <= num_dests; i++, dest++)
+	LLOGLN(0, ("printer_register: %s (default=%d)", name, is_default));
+
+	info = (PRINTER_DEVICE_INFO *) malloc(sizeof(PRINTER_DEVICE_INFO));
+	memset(info, 0, sizeof(PRINTER_DEVICE_INFO));
+	info->devman = pDevman;
+	info->DevmanRegisterService = pEntryPoints->pDevmanRegisterService;
+	info->DevmanUnregisterService = pEntryPoints->pDevmanUnregisterService;
+	info->DevmanRegisterDevice = pEntryPoints->pDevmanRegisterDevice;
+	info->DevmanUnregisterDevice = pEntryPoints->pDevmanUnregisterDevice;
+
+	info->printer_name = strdup(name);
+
+	if (driver == NULL)
 	{
-		if (dest->instance == NULL)
-		{
-			LLOGLN(10, ("printer_register_device: %s (default=%d)", dest->name, dest->is_default));
-
-			info = (PRINTER_DEVICE_INFO *) malloc(sizeof(PRINTER_DEVICE_INFO));
-			memset(info, 0, sizeof(PRINTER_DEVICE_INFO));
-			info->devman = pDevman;
-			info->DevmanRegisterService = pEntryPoints->pDevmanRegisterService;
-			info->DevmanUnregisterService = pEntryPoints->pDevmanUnregisterService;
-			info->DevmanRegisterDevice = pEntryPoints->pDevmanRegisterDevice;
-			info->DevmanUnregisterDevice = pEntryPoints->pDevmanUnregisterDevice;
-
-			info->printer_name = strdup(dest->name);
-
-			/* This is a generic PostScript printer driver developed by MS, so it should be good in most cases */
-			driver_name = "MS Publisher Imagesetter";
-
-			snprintf(buf, sizeof(buf) - 1, "PRN%d", i);
-			dev = info->DevmanRegisterDevice(pDevman, srv, buf);
-			dev->info = info;
-
-			size = 24 + 4 + (strlen(dest->name) + 1) * 2 + (strlen(driver_name) + 1) * 2;
-			dev->data = malloc(size);
-			memset(dev->data, 0, size);
-
-			/*flags = RDPDR_PRINTER_ANNOUNCE_FLAG_XPSFORMAT;*/
-			flags = 0;
-			if (dest->is_default)
-				flags |= RDPDR_PRINTER_ANNOUNCE_FLAG_DEFAULTPRINTER;
-
-			SET_UINT32 (dev->data, 0, flags); /* Flags */
-			SET_UINT32 (dev->data, 4, 0); /* CodePage, reserved */
-			SET_UINT32 (dev->data, 8, 0); /* PnPNameLen */
-			SET_UINT32 (dev->data, 20, 0); /* CachedFieldsLen */
-			offset = 24;
-			len = set_wstr(&dev->data[offset], size - offset, driver_name, strlen(driver_name) + 1);
-			SET_UINT32 (dev->data, 12, len); /* DriverNameLen */
-			offset += len;
-			len = set_wstr(&dev->data[offset], size - offset, dest->name, strlen(dest->name) + 1);
-			SET_UINT32 (dev->data, 16, len); /* PrintNameLen */
-			offset += len;
-
-			dev->data_len = offset;
-		}
+		/* This is a generic PostScript printer driver developed by MS, so it should be good in most cases */
+		driver = "MS Publisher Imagesetter";
 	}
-	cupsFreeDests(num_dests, dests);
-	return 0;
+
+	snprintf(buf, sizeof(buf) - 1, "PRN%d", port);
+	dev = info->DevmanRegisterDevice(pDevman, srv, buf);
+	dev->info = info;
+
+	size = 24 + 4 + (strlen(name) + 1) * 2 + (strlen(driver) + 1) * 2;
+	dev->data = malloc(size);
+	memset(dev->data, 0, size);
+
+	/*flags = RDPDR_PRINTER_ANNOUNCE_FLAG_XPSFORMAT;*/
+	flags = 0;
+	if (is_default)
+		flags |= RDPDR_PRINTER_ANNOUNCE_FLAG_DEFAULTPRINTER;
+
+	SET_UINT32 (dev->data, 0, flags); /* Flags */
+	SET_UINT32 (dev->data, 4, 0); /* CodePage, reserved */
+	SET_UINT32 (dev->data, 8, 0); /* PnPNameLen */
+	SET_UINT32 (dev->data, 20, 0); /* CachedFieldsLen */
+	offset = 24;
+	len = set_wstr(&dev->data[offset], size - offset, (char *) driver, strlen(driver) + 1);
+	SET_UINT32 (dev->data, 12, len); /* DriverNameLen */
+	offset += len;
+	len = set_wstr(&dev->data[offset], size - offset, (char *) name, strlen(name) + 1);
+	SET_UINT32 (dev->data, 16, len); /* PrintNameLen */
+	offset += len;
+
+	dev->data_len = offset;
+
+	return 1;
 }
 
 uint32

@@ -57,6 +57,7 @@ DeviceServiceEntry(PDEVMAN pDevman, PDEVMAN_ENTRY_POINTS pEntryPoints)
 {
 	SERVICE * srv = NULL;
 	RD_PLUGIN_DATA * data;
+	int port = 1;
 
 	data = (RD_PLUGIN_DATA *) pEntryPoints->pExtendedData;
 	while (data && data->size > 0)
@@ -66,7 +67,10 @@ DeviceServiceEntry(PDEVMAN pDevman, PDEVMAN_ENTRY_POINTS pEntryPoints)
 			if (srv == NULL)
 				srv = printer_register_service(pDevman, pEntryPoints);
 
-			printer_register_device (pDevman, pEntryPoints, srv);
+			if (data->data[1] == NULL)
+				port += printer_register_all(pDevman, pEntryPoints, srv, port);
+			else
+				port += printer_register(pDevman, pEntryPoints, srv, data->data[1], data->data[2], (port == 1), port);
 			break;
 		}
 		data = (RD_PLUGIN_DATA *) (((void *) data) + data->size);
