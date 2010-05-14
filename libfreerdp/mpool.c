@@ -32,6 +32,13 @@
  * growth problems.
  */
 
+/* freerdp addition: */
+#ifdef __GNUC__
+#define VARIABLE_IS_NOT_USED __attribute__ ((unused))
+#else
+#define VARIABLE_IS_NOT_USED
+#endif
+
 #include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
@@ -49,10 +56,10 @@
 #include "mpool.h"
 #include "mpool_loc.h"
 
-static char *rcs_id = "$Id: mpool.c,v 1.5 2006/05/31 20:28:31 gray Exp $";
+static char * VARIABLE_IS_NOT_USED rcs_id = "$Id: mpool.c,v 1.5 2006/05/31 20:28:31 gray Exp $";
 
 /* version */
-static	char *version = "mpool library version 2.1.0";
+static	char * VARIABLE_IS_NOT_USED version = "mpool library version 2.1.0";
 
 /* local variables */
 static	int		enabled_b = 0;		/* lib initialized? */

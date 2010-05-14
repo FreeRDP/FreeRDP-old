@@ -7,7 +7,7 @@ AC_CONFIG_SRCDIR([libfreerdp/freerdp.c])
 AC_PROG_CC
 AM_PROG_CC_C_O
 if test "$GCC" = yes; then
-    CFLAGS="$CFLAGS -Wall"
+    CFLAGS="$CFLAGS -Wall -Werror"
 fi
 
 AH_TEMPLATE(B_ENDIAN, [Big endian])

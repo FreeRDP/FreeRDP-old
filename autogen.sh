@@ -1,4 +1,4 @@
-#! /bin/sh
+#! /bin/sh -x
 
 aclocal || exit 1
 autoheader --force || exit 2

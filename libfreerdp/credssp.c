@@ -135,17 +135,17 @@ void credssp_recv(rdpSec * sec)
 	TSRequest_t *ts_request = 0;
 	NegotiationToken_t *negotiation_token = 0;
 	asn_dec_rval_t dec_rval;
-		
+
 	int size = 2048;
 	int bytes_read;
 	char* recv_buffer;
 
 	recv_buffer = xmalloc(size);
-		
+
 	bytes_read = tls_read(sec->ssl, recv_buffer, size);
 
 	dec_rval = ber_decode(0, &asn_DEF_TSRequest, (void **)&ts_request, recv_buffer, bytes_read);
-		
+
 	if(dec_rval.code == RC_OK)
 	{
 		int i;
@@ -154,7 +154,7 @@ void credssp_recv(rdpSec * sec)
 		for(i = 0; i < ts_request->negoTokens->list.count; i++)
 		{
 			STREAM s = xmalloc(sizeof(struct stream));
-				
+
 			dec_rval = ber_decode(0, &asn_DEF_NegotiationToken, (void **)&negotiation_token,
 				ts_request->negoTokens->list.array[i]->negoToken.buf,
 				ts_request->negoTokens->list.array[i]->negoToken.size);
@@ -165,7 +165,7 @@ void credssp_recv(rdpSec * sec)
 			s->end = s->p + s->size;
 
 			ntlm_recv(sec, s);
-				
+
 			xfree(s);
 		}
 	}
@@ -176,6 +176,7 @@ void credssp_recv(rdpSec * sec)
 	}
 }
 
+#ifdef COMPILE_UNUSED_CODE
 static int get_bit(char* buffer, int bit)
 {
 	return (buffer[(bit - (bit % 8)) / 8] >> (7 - bit % 8) & 1);
@@ -195,22 +196,22 @@ static void compute_des_key(char* text, char* des_key)
 	/* Convert the 7 bytes into a bit stream, and insert a parity-bit (odd parity) after every seven bits. */
 
 	memset(des_key, '\0', 8);
-	
+
 	for (i = 0; i < 8; i++)
 	{
 		nbits = 0;
-		
+
 		for (j = 0; j < 7; j++)
 		{
 			/* copy 7 bits, and count the number of bits that are set */
-			
+
 			bit = get_bit(text, i*7 + j);
 			set_bit(des_key, i*7 + i + j, bit);
 			nbits += bit;
 		}
 
 		/* insert parity bit (odd parity) */
-		
+
 		if (nbits % 2 == 0)
 			set_bit(des_key, i*7 + i + j, 1);
 	}
@@ -226,9 +227,9 @@ static void compute_lm_hash(char* password, char* hash)
 	des_key_schedule ks;
 
 	/* LM("password") = E52CAC67419A9A224A3B108F3FA6CB6D */
-	
+
 	maxlen = (strlen(password) < 14) ? strlen(password) : 14;
-    
+
 	/* convert to uppercase */
 	for (i = 0; i < maxlen; i++)
 	{
@@ -244,10 +245,10 @@ static void compute_lm_hash(char* password, char* hash)
 
 	compute_des_key(text, des_key1);
 	compute_des_key(&text[7], des_key2);
-	
+
 	DES_set_key((const_DES_cblock*)des_key1, &ks);
 	DES_ecb_encrypt((const_DES_cblock*)lm_magic, (DES_cblock*)hash, &ks, DES_ENCRYPT);
-	
+
 	DES_set_key((const_DES_cblock*)des_key2, &ks);
 	DES_ecb_encrypt((const_DES_cblock*)lm_magic, (DES_cblock*)&hash[8], &ks, DES_ENCRYPT);
 }
@@ -259,7 +260,7 @@ static void compute_lm_response(char* password, char* challenge, char* response)
 	char des_key2[8];
 	char des_key3[8];
 	des_key_schedule ks;
-	
+
 	/* A LM hash is 16-bytes long, but the LM response uses a LM hash null-padded to 21 bytes */
 	memset(hash, '\0', 21);
 	compute_lm_hash(password, hash);
@@ -268,11 +269,11 @@ static void compute_lm_response(char* password, char* challenge, char* response)
 	compute_des_key(hash, des_key1);
 	compute_des_key(&hash[7], des_key2);
 	compute_des_key(&hash[14], des_key3);
-	
+
 	/* Encrypt the LM challenge with each key, and concatenate the result. This is the LM response (24 bytes) */
 	DES_set_key((const_DES_cblock*)des_key1, &ks);
 	DES_ecb_encrypt((const_DES_cblock*)challenge, (DES_cblock*)response, &ks, DES_ENCRYPT);
-	
+
 	DES_set_key((const_DES_cblock*)des_key2, &ks);
 	DES_ecb_encrypt((const_DES_cblock*)challenge, (DES_cblock*)&response[8], &ks, DES_ENCRYPT);
 
@@ -290,7 +291,7 @@ static void compute_ntlm_hash(char* password, char* hash)
 	MD4_CTX md4_ctx;
 
 	/* convert to "unicode" */
-	
+
 	length = strlen(password);
 	wstr_password = malloc(length * 2);
 
@@ -301,7 +302,7 @@ static void compute_ntlm_hash(char* password, char* hash)
 	}
 
 	/* Apply the MD4 digest algorithm on the password in unicode, the result is the NTLM hash */
-	
+
 	MD4_Init(&md4_ctx);
 	MD4_Update(&md4_ctx, wstr_password, length * 2);
 	MD4_Final((void*)hash, &md4_ctx);
@@ -315,14 +316,14 @@ static void compute_ntlm_v2_hash(char* password, char* username, char* server, c
 	int user_length;
 	int server_length;
 	int value_length;
-	
+
 	char* value;
 	char ntlm_hash[16];
 
 	user_length = strlen(username);
 	server_length = strlen(server);
 	value_length = user_length + server_length;
-	
+
 	value = malloc(value_length * 2);
 
 	/* First, compute the NTLMv1 hash of the password */
@@ -338,7 +339,7 @@ static void compute_ntlm_v2_hash(char* password, char* username, char* server, c
 
 		value[2 * i + 1] = '\0';
 	}
-	
+
 	for (i = 0; i < server_length; i++)
 	{
 		if (server[i] > 'a' && server[i] < 'z')
@@ -348,10 +349,10 @@ static void compute_ntlm_v2_hash(char* password, char* username, char* server, c
 
 		value[(user_length + i) * 2 + 1] = '\0';
 	}
-	
+
 	/* Compute the HMAC-MD5 hash of the above value using the NTLMv1 hash as the key, the result is the NTLMv2 hash */
 	HMAC(EVP_md5(), (void*)ntlm_hash, 16, (void*)value, (value_length) * 2, (void*)hash, NULL);
-	
+
 	free(value);
 }
 
@@ -370,7 +371,7 @@ static void compute_lm_v2_response(char* password, char* username, char* server,
 	/* Concatenate the server and client challenges */
 	memcpy(value, challenge, 8);
 	memcpy(&value[8], clientRandom, 8);
-	
+
 	/* Compute the HMAC-MD5 hash of the resulting value using the NTLMv2 hash as the key */
 	HMAC(EVP_md5(), (void*)ntlm_v2_hash, 16, (void*)value, 16, (void*)response, NULL);
 
@@ -384,7 +385,7 @@ static void compute_ntlm_v2_response(char* password, char* username, char* serve
 	char clientRandom[8];
 	char ntlm_v2_hash[16];
 	char ntlm_v2_client_challenge[28];
-	
+
 	/* Compute the NTLMv2 hash */
 	compute_ntlm_v2_hash(password, username, server, ntlm_v2_hash);
 
@@ -394,10 +395,10 @@ static void compute_ntlm_v2_response(char* password, char* username, char* serve
 	/* Timestamp (8 bytes), represented as the number of 100 nanosecond ticks since midnight of January 1, 1601 */
 	/* This is tricky, as we need to do 64-bit arithmetic */
 	t = time(NULL);
-	
+
 	/* NTLMv2_CLIENT_CHALLENGE */
 	memset(ntlm_v2_client_challenge, '\0', sizeof(ntlm_v2_client_challenge));
-	
+
 	ntlm_v2_client_challenge[0] = 1; /* RespType (1 byte) */
 	ntlm_v2_client_challenge[1] = 1; /* HighRespType (1 byte) */
 	/* Reserved1 (2 bytes) */
@@ -406,13 +407,14 @@ static void compute_ntlm_v2_response(char* password, char* username, char* serve
 	memcpy(&ntlm_v2_client_challenge[16], clientRandom, 8); /* ChallengeFromClient (8 bytes) */
 	/* Reserved3 (4 bytes) */
 }
+#endif
 
 static void ntlm_input_av_pairs(STREAM s, AV_PAIRS* av_pairs)
 {
 	AV_ID AvId;
 	uint16 AvLen;
 	uint8* value;
-	
+
 	do
 	{
 		in_uint16_le(s, AvId);
@@ -430,7 +432,7 @@ static void ntlm_input_av_pairs(STREAM s, AV_PAIRS* av_pairs)
 				in_uint32_le(s, av_pairs->Flags);
 			}
 		}
-		
+
 		switch (AvId)
 		{
 			case MsvAvNbComputerName:
@@ -486,6 +488,7 @@ static void ntlm_input_av_pairs(STREAM s, AV_PAIRS* av_pairs)
 	while(AvId != MsvAvEOL);
 }
 
+#ifdef COMPILE_UNUSED_CODE
 static void ntlm_output_av_pairs(STREAM s, AV_PAIRS* av_pairs)
 {
 	if (av_pairs->NbComputerName.length > 0)
@@ -560,6 +563,7 @@ static void ntlm_output_av_pairs(STREAM s, AV_PAIRS* av_pairs)
 	out_uint16_le(s, MsvAvEOL); /* AvId */
 	out_uint16_le(s, 0); /* AvLen */
 }
+#endif
 
 static void ntlm_free_av_pairs(AV_PAIRS* av_pairs)
 {
@@ -583,7 +587,7 @@ static void ntlm_free_av_pairs(AV_PAIRS* av_pairs)
 			xfree(av_pairs->TargetName.value);
 		if (av_pairs->ChannelBindings.value != NULL)
 			xfree(av_pairs->ChannelBindings.value);
-		
+
 		xfree(av_pairs);
 	}
 }
@@ -617,7 +621,7 @@ void ntlm_send_negotiate_message(rdpSec * sec)
 	negotiateFlags |= NTLMSSP_NEGOTIATE_SEAL;
 	negotiateFlags |= NTLMSSP_REQUEST_TARGET;
 	negotiateFlags |= NTLMSSP_NEGOTIATE_UNICODE;
-	
+
 	out_uint32_be(s, negotiateFlags); /* NegotiateFlags (4 bytes) */
 
 	/* only set if NTLMSSP_NEGOTIATE_OEM_DOMAIN_SUPPLIED is set */
@@ -633,12 +637,12 @@ void ntlm_send_negotiate_message(rdpSec * sec)
 	out_uint16_le(s, 0); /* WorkstationLen */
 	out_uint16_le(s, 0); /* WorkstationMaxLen */
 	out_uint32_le(s, 0); /* WorkstationBufferOffset */
-		
+
 	/* Version is present because NTLMSSP_NEGOTIATE_VERSION is set */
 	ntlm_output_version(s); /* Version (8 bytes) */
 
 	s_mark_end(s);
-		
+
 	credssp_send(sec, s);
 }
 
@@ -659,7 +663,7 @@ void ntlm_recv_challenge_message(rdpSec * sec, STREAM s)
 	in_uint32_le(s, sec->nla->negotiate_flags); /* NegotiateFlags (4 bytes) */
 	in_uint8a(s, sec->nla->server_challenge, 8); /* ServerChallenge (8 bytes) */
 	in_uint8s(s, 8); /* Reserved (8 bytes), should be ignored */
-		
+
 	/* TargetInfoFields (8 bytes) */
 	in_uint16_le(s, targetInfoLen); /* TargetInfoLen (2 bytes) */
 	in_uint16_le(s, targetInfoMaxLen); /* TargetInfoMaxLen (2 bytes) */
@@ -673,13 +677,13 @@ void ntlm_recv_challenge_message(rdpSec * sec, STREAM s)
 	}
 
 	/* Payload (variable) */
-	
+
 	if (targetNameLen > 0)
 	{
 		sec->nla->target_name = xmalloc(targetNameLen);
 		memcpy(sec->nla->target_name, &(s->data[targetNameBufferOffset]), (size_t)targetNameLen);
 	}
-	
+
 	if (targetInfoLen > 0)
 	{
 		s->p = &(s->data[targetInfoBufferOffset]);
@@ -691,7 +695,7 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 {
 	STREAM s;
 	uint32 negotiateFlags;
-	
+
 	uint16 DomainNameLen;
 	uint16 UserNameLen;
 	uint16 WorkstationLen;
@@ -707,10 +711,10 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 	uint32 EncryptedRandomSessionKeyBufferOffset;
 
 	rdpSet *settings;
-		
+
 	s = tcp_init(sec->mcs->iso->tcp, 256);
 	settings = sec->rdp->settings;
-	
+
 	DomainNameLen = strlen(settings->domain) * 2;
 	UserNameLen = strlen(settings->username) * 2;
 	WorkstationLen = strlen(settings->domain) * 2;
@@ -724,7 +728,7 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 	LmChallengeResponseBufferOffset = WorkstationBufferOffset + WorkstationLen;
 	NtChallengeResponseBufferOffset = LmChallengeResponseBufferOffset + LmChallengeResponseLen;
 	EncryptedRandomSessionKeyBufferOffset = NtChallengeResponseBufferOffset + NtChallengeResponseLen;
-	
+
 	out_uint8a(s, ntlm_signature, 8); /* Signature (8 bytes) */
 	out_uint32_le(s, 1); /* MessageType */
 
@@ -749,7 +753,7 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 	out_uint16_le(s, UserNameLen); /* UserNameLen */
 	out_uint16_le(s, UserNameLen); /* UserNameMaxLen */
 	out_uint32_le(s, UserNameBufferOffset); /* UserNameBufferOffset */
-		
+
 	/* only set if NTLMSSP_NEGOTIATE_OEM_WORKSTATION_SUPPLIED is set */
 
 	/* WorkstationFields (8 bytes) */
@@ -768,7 +772,7 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 	negotiateFlags |= NTLMSSP_REQUEST_TARGET;
 	negotiateFlags |= NTLMSSP_NEGOTIATE_OEM;
 	negotiateFlags |= NTLMSSP_NEGOTIATE_UNICODE;
-	
+
 	out_uint32_be(s, negotiateFlags); /* NegotiateFlags (4 bytes) */
 
 	/* MIC (16 bytes) */
@@ -782,7 +786,7 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 
 	out_uint8s(s, 24); /* LmChallengeResponse is left blank */
 
-	
+
 }
 
 void ntlm_recv(rdpSec * sec, STREAM s)
@@ -792,7 +796,7 @@ void ntlm_recv(rdpSec * sec, STREAM s)
 
 	in_uint8a(s, signature, 8);
 	in_uint32_le(s, messageType);
-		
+
 	switch (messageType)
 	{
 		/* NEGOTIATE_MESSAGE */
