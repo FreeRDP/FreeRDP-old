@@ -12,7 +12,7 @@ Group: Applications/Communications
 Url: http://freerdp.sourceforge.net/
 Source: http://downloads.sourceforge.net/%{name}/%{name}-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-BuildRequires:  openssl-devel, libX11-devel, libXcursor-devel
+BuildRequires:  openssl-devel, libX11-devel, libXcursor-devel, cups-devel
 
 %description
 freerdp implements Remote Desktop Protocol (RDP), used in a number of Microsoft
@@ -55,7 +55,7 @@ libfreerdpkbd.
 %setup -q
 
 %build
-%configure --with-ipv6 --enable-smartcard --with-sound
+%configure --with-ipv6 --enable-smartcard --with-sound --with-crypto=openssl --with-gnu-ld
 make %{?_smp_mflags}
 
 %install
