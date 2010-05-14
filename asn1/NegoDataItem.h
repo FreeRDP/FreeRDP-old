@@ -5,39 +5,33 @@
  * 	`asn1c -fnative-types -fskeletons-copy`
  */
 
-#ifndef	_NegoData_H_
-#define	_NegoData_H_
+#ifndef	_NegoDataItem_H_
+#define	_NegoDataItem_H_
 
 
 #include <asn_application.h>
 
 /* Including external dependencies */
-#include <asn_SEQUENCE_OF.h>
-#include <constr_SEQUENCE_OF.h>
+#include <OCTET_STRING.h>
+#include <constr_SEQUENCE.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/* Forward declarations */
-struct NegoDataItem;
-
-/* NegoData */
-typedef struct NegoData {
-	A_SEQUENCE_OF(struct NegoDataItem) list;
+/* NegoDataItem */
+typedef struct NegoDataItem {
+	OCTET_STRING_t	 negoToken;
 	
 	/* Context for parsing across buffer boundaries */
 	asn_struct_ctx_t _asn_ctx;
-} NegoData_t;
+} NegoDataItem_t;
 
 /* Implementation */
-extern asn_TYPE_descriptor_t asn_DEF_NegoData;
+extern asn_TYPE_descriptor_t asn_DEF_NegoDataItem;
 
 #ifdef __cplusplus
 }
 #endif
 
-/* Referred external types */
-#include "NegoDataItem.h"
-
-#endif	/* _NegoData_H_ */
+#endif	/* _NegoDataItem_H_ */

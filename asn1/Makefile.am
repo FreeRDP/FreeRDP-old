@@ -53,6 +53,8 @@ libasn1_la_SOURCES = \
 	NegHints.h \
 	NegoData.c \
 	NegoData.h \
+	NegoDataItem.c \
+	NegoDataItem.h \
 	NegotiationToken.c \
 	NegotiationToken.h \
 	NegTokenInit2.c \

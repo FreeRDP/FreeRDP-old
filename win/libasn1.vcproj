@@ -243,6 +243,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\asn1\NegoDataItem.c"
+				>
+			</File>
+			<File
 				RelativePath="..\asn1\NegotiationToken.c"
 				>
 			</File>
@@ -426,6 +430,10 @@
 			</File>
 			<File
 				RelativePath="..\asn1\NegoData.h"
+				>
+			</File>
+			<File
+				RelativePath="..\asn1\NegoDataItem.h"
 				>
 			</File>
 			<File
