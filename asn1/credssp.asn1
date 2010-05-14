@@ -12,7 +12,9 @@ TSRequest ::= SEQUENCE {
         pubKeyAuth [3] OCTET STRING OPTIONAL
 }
 
-NegoData ::= SEQUENCE OF SEQUENCE {
+NegoData ::= SEQUENCE OF NegoDataItem
+
+NegoDataItem ::= SEQUENCE {
 	negoToken [0] OCTET STRING
 }
 
