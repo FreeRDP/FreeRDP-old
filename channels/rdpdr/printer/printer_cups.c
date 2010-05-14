@@ -34,13 +34,6 @@
 
 struct _PRINTER_DEVICE_INFO
 {
-	PDEVMAN devman;
-
-	PDEVMAN_REGISTER_SERVICE DevmanRegisterService;
-	PDEVMAN_UNREGISTER_SERVICE DevmanUnregisterService;
-	PDEVMAN_REGISTER_DEVICE DevmanRegisterDevice;
-	PDEVMAN_UNREGISTER_DEVICE DevmanUnregisterDevice;
-
 	char * printer_name;
 
 	http_t * printjob_http_t;
@@ -49,88 +42,41 @@ struct _PRINTER_DEVICE_INFO
 typedef struct _PRINTER_DEVICE_INFO PRINTER_DEVICE_INFO;
 
 int
-printer_register_all(PDEVMAN pDevman, PDEVMAN_ENTRY_POINTS pEntryPoints, SERVICE * srv,
-	int port)
+printer_hw_register_auto(PDEVMAN pDevman, PDEVMAN_ENTRY_POINTS pEntryPoints, SERVICE * srv,
+	int * port)
 {
 	cups_dest_t *dests;
 	cups_dest_t *dest;
 	int num_dests;
-	int i, j;
+	int i;
 
 	num_dests = cupsGetDests(&dests);
-	for (i = 0, j = 0, dest = dests; i < num_dests; i++, dest++)
+	for (i = 0, dest = dests; i < num_dests; i++, dest++)
 	{
 		if (dest->instance == NULL)
 		{
-			j += printer_register(pDevman, pEntryPoints, srv, dest->name, NULL, dest->is_default, port + j);
+			printer_register(pDevman, pEntryPoints, srv, dest->name, NULL, dest->is_default, port);
 		}
 	}
 	cupsFreeDests(num_dests, dests);
-	return j;
+	return 0;
 }
 
-int
-printer_register(PDEVMAN pDevman, PDEVMAN_ENTRY_POINTS pEntryPoints, SERVICE * srv,
-	const char * name, const char * driver, int is_default, int port)
+void *
+printer_hw_new(const char * name)
 {
-	DEVICE * dev;
 	PRINTER_DEVICE_INFO * info;
-	char buf[8];
-	uint32 flags;
-	int size;
-	int offset;
-	int len;
-
-	LLOGLN(0, ("printer_register: %s (default=%d)", name, is_default));
 
 	info = (PRINTER_DEVICE_INFO *) malloc(sizeof(PRINTER_DEVICE_INFO));
 	memset(info, 0, sizeof(PRINTER_DEVICE_INFO));
-	info->devman = pDevman;
-	info->DevmanRegisterService = pEntryPoints->pDevmanRegisterService;
-	info->DevmanUnregisterService = pEntryPoints->pDevmanUnregisterService;
-	info->DevmanRegisterDevice = pEntryPoints->pDevmanRegisterDevice;
-	info->DevmanUnregisterDevice = pEntryPoints->pDevmanUnregisterDevice;
 
 	info->printer_name = strdup(name);
 
-	if (driver == NULL)
-	{
-		/* This is a generic PostScript printer driver developed by MS, so it should be good in most cases */
-		driver = "MS Publisher Imagesetter";
-	}
-
-	snprintf(buf, sizeof(buf) - 1, "PRN%d", port);
-	dev = info->DevmanRegisterDevice(pDevman, srv, buf);
-	dev->info = info;
-
-	size = 24 + 4 + (strlen(name) + 1) * 2 + (strlen(driver) + 1) * 2;
-	dev->data = malloc(size);
-	memset(dev->data, 0, size);
-
-	/*flags = RDPDR_PRINTER_ANNOUNCE_FLAG_XPSFORMAT;*/
-	flags = 0;
-	if (is_default)
-		flags |= RDPDR_PRINTER_ANNOUNCE_FLAG_DEFAULTPRINTER;
-
-	SET_UINT32 (dev->data, 0, flags); /* Flags */
-	SET_UINT32 (dev->data, 4, 0); /* CodePage, reserved */
-	SET_UINT32 (dev->data, 8, 0); /* PnPNameLen */
-	SET_UINT32 (dev->data, 20, 0); /* CachedFieldsLen */
-	offset = 24;
-	len = set_wstr(&dev->data[offset], size - offset, (char *) driver, strlen(driver) + 1);
-	SET_UINT32 (dev->data, 12, len); /* DriverNameLen */
-	offset += len;
-	len = set_wstr(&dev->data[offset], size - offset, (char *) name, strlen(name) + 1);
-	SET_UINT32 (dev->data, 16, len); /* PrintNameLen */
-	offset += len;
-
-	dev->data_len = offset;
-
-	return 1;
+	return info;
 }
 
 uint32
-printer_create(IRP * irp, const char * path)
+printer_hw_create(IRP * irp, const char * path)
 {
 	PRINTER_DEVICE_INFO * info;
 	time_t tt;
@@ -181,7 +127,7 @@ printer_create(IRP * irp, const char * path)
 }
 
 uint32
-printer_close(IRP * irp)
+printer_hw_close(IRP * irp)
 {
 	PRINTER_DEVICE_INFO * info;
 
@@ -203,7 +149,7 @@ printer_close(IRP * irp)
 }
 
 uint32
-printer_write(IRP * irp)
+printer_hw_write(IRP * irp)
 {
 	PRINTER_DEVICE_INFO * info;
 
@@ -219,29 +165,23 @@ printer_write(IRP * irp)
 	return RD_STATUS_SUCCESS;
 }
 
-uint32
-printer_free(DEVICE * dev)
+void
+printer_hw_free(void * info)
 {
-	PRINTER_DEVICE_INFO * info;
+	PRINTER_DEVICE_INFO * pinfo;
 
 	LLOGLN(10, ("printer_free"));
-	info = (PRINTER_DEVICE_INFO *) dev->info;
-	if (info->printer_name)
+	pinfo = (PRINTER_DEVICE_INFO *) info;
+	if (pinfo->printer_name)
 	{
-		free(info->printer_name);
-		info->printer_name = NULL;
+		free(pinfo->printer_name);
+		pinfo->printer_name = NULL;
 	}
-	if (info->printjob_http_t)
+	if (pinfo->printjob_http_t)
 	{
-		httpClose(info->printjob_http_t);
-		info->printjob_http_t = NULL;
+		httpClose(pinfo->printjob_http_t);
+		pinfo->printjob_http_t = NULL;
 	}
-	free(info);
-	if (dev->data)
-	{
-		free(dev->data);
-		dev->data = NULL;
-	}
-	return 0;
+	free(pinfo);
 }
 

@@ -37,19 +37,24 @@
 #define RDPDR_PRINTER_ANNOUNCE_FLAG_XPSFORMAT       0x00000010
 
 int
-printer_register_all(PDEVMAN pDevman, PDEVMAN_ENTRY_POINTS pEntryPoints, SERVICE * srv,
-	int port);
-int
 printer_register(PDEVMAN pDevman, PDEVMAN_ENTRY_POINTS pEntryPoints, SERVICE * srv,
-	const char * name, const char * driver, int is_default, int port);
-uint32
-printer_create(IRP * irp, const char * path);
-uint32
-printer_close(IRP * irp);
-uint32
-printer_write(IRP * irp);
+	const char * name, const char * driver, int is_default, int * port);
 uint32
 printer_free(DEVICE * dev);
+
+void *
+printer_hw_new(const char * name);
+int
+printer_hw_register_auto(PDEVMAN pDevman, PDEVMAN_ENTRY_POINTS pEntryPoints, SERVICE * srv,
+	int * port);
+uint32
+printer_hw_create(IRP * irp, const char * path);
+uint32
+printer_hw_close(IRP * irp);
+uint32
+printer_hw_write(IRP * irp);
+void
+printer_hw_free(void * info);
 
 #endif
 
