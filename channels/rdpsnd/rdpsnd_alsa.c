@@ -106,7 +106,7 @@ wave_out_open(void * device_data)
 	{
 		return 0;
 	}
-	LLOGLN(0, ("wave_out_open:"));
+	LLOGLN(10, ("wave_out_open:"));
 	error = snd_pcm_open(&alsa_data->out_handle, "default",
 		SND_PCM_STREAM_PLAYBACK, 0);
 	if (error < 0)
@@ -126,7 +126,7 @@ wave_out_close(void * device_data)
 	alsa_data = (struct alsa_device_data *) device_data;
 	if (alsa_data->out_handle != 0)
 	{
-		LLOGLN(0, ("wave_out_close:"));
+		LLOGLN(10, ("wave_out_close:"));
 		snd_pcm_close(alsa_data->out_handle);
 		alsa_data->out_handle = 0;
 	}

@@ -464,7 +464,7 @@ thread_process_message_wave(rdpsndPlugin * plugin, char * data, int data_size)
 	SET_UINT8(out_data, 0, SNDC_WAVECONFIRM);
 	SET_UINT8(out_data, 1, 0);
 	SET_UINT16(out_data, 2, size - 4);
-	LLOGLN(0, ("thread_process_message_wave: "
+	LLOGLN(10, ("thread_process_message_wave: "
 		"data_size %d delay %d local_time %u",
 		data_size, plugin->delay_ms, plugin->local_time_stamp));
 	wTimeStamp = plugin->wTimeStamp + plugin->delay_ms;
