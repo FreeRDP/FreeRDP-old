@@ -182,15 +182,13 @@ static int
 rdpdr_send_device_list_announce_request(rdpdrPlugin * plugin)
 {
 	char* out_data;
-	int out_data_size;
-
 	int size;
 	uint32 error;
 	DEVICE* pdev;
 	int offset = 0;
 	int i;
 
-	size = 8 + plugin->devman->count * 256;
+	size = 8;
 	out_data = malloc(size);
 	memset(out_data, 0, size);
 
@@ -206,6 +204,9 @@ rdpdr_send_device_list_announce_request(rdpdrPlugin * plugin)
 	while (devman_has_next(plugin->devman) != 0)
 	{
 		pdev = devman_get_next(plugin->devman);
+
+		size += 20 + pdev->data_len;
+		out_data = realloc(out_data, size);
 
 		SET_UINT32(out_data, offset, pdev->service->type); /* deviceType */
 		SET_UINT32(out_data, offset + 4, pdev->id); /* deviceID */
@@ -228,15 +229,13 @@ rdpdr_send_device_list_announce_request(rdpdrPlugin * plugin)
 		offset += 4;
 		if (pdev->data_len > 0)
 		{
-			i = (pdev->data_len <= size - offset ? pdev->data_len : size - offset);
-			memcpy(&out_data[offset], pdev->data, i);
-			offset += i;
+			memcpy(&out_data[offset], pdev->data, pdev->data_len);
+			offset += pdev->data_len;
 		}
 	}
 
-	out_data_size = offset;
 	error = plugin->ep.pVirtualChannelWrite(plugin->open_handle,
-			out_data, out_data_size, out_data);
+			out_data, offset, out_data);
 
 	if (error != CHANNEL_RC_OK)
 	{
@@ -384,6 +383,26 @@ rdpdr_send_capabilities(rdpdrPlugin * plugin)
 	return 0;
 }
 
+static void
+rdpdr_process_prn(rdpdrPlugin * plugin, int type, char * data, int data_size)
+{
+	SERVICE * srv;
+
+	/* Pass the control to the printer sub-plugin service, if registered */
+	srv = devman_get_service_by_type(plugin->devman, RDPDR_DTYP_PRINT);
+	if (srv == NULL)
+	{
+		LLOGLN(0, ("rdpdr_process_prn: printer service not register"));
+		return;
+	}
+	if (srv->process_data == NULL)
+	{
+		LLOGLN(0, ("rdpdr_process_prn: printer service does not support"));
+		return;
+	}
+	srv->process_data(srv, type, data, data_size);
+}
+
 static int
 thread_process_message(rdpdrPlugin * plugin, char * data, int data_size)
 {
@@ -444,22 +463,13 @@ thread_process_message(rdpdrPlugin * plugin, char * data, int data_size)
 	}
 	else if (component == RDPDR_CTYP_PRN)
 	{
-		LLOGLN(0, ("RDPDR_CTYP_PRN"));
-
-		switch (packetID)
-		{
-			case PAKID_PRN_CACHE_DATA:
-				LLOGLN(0, ("PAKID_PRN_CACHE_DATA"));
-				//printercache_process(s);
-				break;
-
-			default:
-				//ui_unimpl(NULL, "RDPDR printer component, packetID: 0x%02X\n", packetID);
-				break;
-		}
+		LLOGLN(10, ("RDPDR_CTYP_PRN"));
+		rdpdr_process_prn(plugin, packetID, &data[4], data_size - 4);
 	}
-	//else
-		//ui_unimpl(NULL, "RDPDR component: 0x%02X packetID: 0x%02X\n", component, packetID);
+	else
+	{
+		LLOGLN(0, ("RDPDR component: 0x%02X packetID: 0x%02X\n", component, packetID));
+	}
 
 	return 0;
 }

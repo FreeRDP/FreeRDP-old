@@ -60,6 +60,8 @@ DEVICE*
 devman_get_next(DEVMAN* devman);
 DEVICE*
 devman_get_device_by_id(DEVMAN* devman, uint32 id);
+SERVICE*
+devman_get_service_by_type(DEVMAN* devman, int type);
 int
 devman_load_device_service(DEVMAN* devman, char* filename);
 

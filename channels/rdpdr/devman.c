@@ -81,15 +81,10 @@ devman_free(DEVMAN* devman)
 SERVICE*
 devman_register_service(DEVMAN* devman)
 {
-	SERVICE* srv = (SERVICE*)malloc(sizeof(SERVICE));
+	SERVICE* srv;
 
-	srv->create = NULL;
-	srv->close = NULL;
-	srv->read = NULL;
-	srv->write = NULL;
-	srv->control = NULL;
-	srv->free = NULL;
-	srv->type = 0;
+	srv = (SERVICE*)malloc(sizeof(SERVICE));
+	memset(srv, 0, sizeof(SERVICE));
 
 	return srv;
 }
@@ -252,6 +247,26 @@ devman_get_device_by_id(DEVMAN* devman, uint32 id)
 	}
 
 	/* no device with the given ID was found */
+	return NULL;
+}
+
+SERVICE*
+devman_get_service_by_type(DEVMAN* devman, int type)
+{
+	DEVICE* pdev;
+
+	devman_rewind(devman);
+
+	while (devman_has_next(devman) != 0)
+	{
+		pdev = devman_get_next(devman);
+
+		/* service with given type was found */
+		if (pdev->service->type == type)
+			return pdev->service;
+	}
+
+	/* no service with the given type was found */
 	return NULL;
 }
 

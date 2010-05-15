@@ -56,6 +56,7 @@ struct _SERVICE
 	uint32 (*notify_change_directory) (IRP * irp);
 	uint32 (*lock_control) (IRP * irp);
 	uint32 (*free) (DEVICE * dev);
+	uint32 (*process_data) (SERVICE * srv, int type, const char * data, int data_len);
 };
 typedef SERVICE * PSERVICE;
 
