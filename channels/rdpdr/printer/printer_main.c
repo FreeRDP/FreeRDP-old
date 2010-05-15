@@ -133,6 +133,30 @@ printer_process_update_printer_event(SERVICE * srv, const char * data, int data_
 }
 
 static uint32
+printer_process_delete_printer_event(SERVICE * srv, const char * data, int data_len)
+{
+	uint32 printerNameLen;
+	char * printerName;
+	uint32 size;
+	char * filename;
+
+	printerNameLen = GET_UINT32(data, 0);
+
+	size = printerNameLen * 3 / 2 + 2;
+	printerName = (char *) malloc(size);
+	memset(printerName, 0, size);
+	get_wstr(printerName, size, (char *)(data + 4), printerNameLen);
+
+	filename = printer_get_filename(printerName);
+	remove(filename);
+	LLOGLN(0, ("printer_process_delete_printer_event: %s deleted", filename));
+	free(filename);
+	free(printerName);
+
+	return 0;
+}
+
+static uint32
 printer_process_cache_data(SERVICE * srv, const char * data, int data_len)
 {
 	uint32 eventID;
@@ -150,7 +174,8 @@ printer_process_cache_data(SERVICE * srv, const char * data, int data_len)
 			break;
 
 		case RDPDR_DELETE_PRINTER_EVENT:
-			LLOGLN(0, ("RDPDR_DELETE_PRINTER_EVENT"));
+			LLOGLN(10, ("RDPDR_DELETE_PRINTER_EVENT"));
+			printer_process_delete_printer_event(srv, &data[4], data_len - 4);
 			break;
 
 		case RDPDR_RENAME_PRINTER_EVENT:
