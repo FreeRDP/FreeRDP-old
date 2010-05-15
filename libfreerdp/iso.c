@@ -239,8 +239,6 @@ x224_recv(rdpIso * iso, STREAM s, int length, uint8 * pcode)
 	/* class option (1 byte) */
 	in_uint8s(s, 5);
 
-	in_uint8(s, type);	/* Type */
-
 	switch (code)
 	{
 		/* Connection Request */
@@ -269,16 +267,22 @@ x224_recv(rdpIso * iso, STREAM s, int length, uint8 * pcode)
 			break;
 	}
 
-	switch (type)
+	/* According to X.224 13.4 and [MS-RDPBCGR] 2.2.1.2, the rdpNegData field is optional
+	   and its length is included in the X.224 length indicator */
+	if (lengthIndicator > 6)
 	{
-		case TYPE_RDP_NEG_RSP:
-			printf("TYPE_RDP_NEG_RSP\n");
-			rdp_process_negotiation_response(iso, s);
-			break;
-		case TYPE_RDP_NEG_FAILURE:
-			printf("TYPE_RDP_NEG_FAILURE\n");
-			rdp_process_negotiation_failure(iso, s);
-			break;
+		in_uint8(s, type);	/* Type */
+		switch (type)
+		{
+			case TYPE_RDP_NEG_RSP:
+				printf("TYPE_RDP_NEG_RSP\n");
+				rdp_process_negotiation_response(iso, s);
+				break;
+			case TYPE_RDP_NEG_FAILURE:
+				printf("TYPE_RDP_NEG_FAILURE\n");
+				rdp_process_negotiation_failure(iso, s);
+				break;
+		}
 	}
 
 	return s;
