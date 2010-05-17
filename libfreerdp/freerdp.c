@@ -456,7 +456,6 @@ l_rdp_check_fds(rdpInst * inst)
 {
 	rdpRdp * rdp;
 	RD_BOOL deactivated;
-	uint32 ext_disc_reason; /* TODO: Check with RDP_ERRORINFO */
 	int rv;
 
 	rdp = RDP_FROM_INST(inst);
@@ -466,7 +465,7 @@ l_rdp_check_fds(rdpInst * inst)
 	rv = 0;
 	if (tcp_can_recv(rdp->sec->mcs->iso->tcp->sock, 0))
 	{
-		if (!rdp_loop(rdp, &deactivated, &ext_disc_reason))
+		if (!rdp_loop(rdp, &deactivated))
 		{
 			rv = 1;
 		}

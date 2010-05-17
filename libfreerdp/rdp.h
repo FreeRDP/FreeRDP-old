@@ -94,11 +94,11 @@ process_bitmap_updates(rdpRdp * rdp, STREAM s);
 void
 process_palette(rdpRdp * rdp, STREAM s);
 void
-process_disconnect_pdu(STREAM s, uint32 * ext_disc_reason);
+process_disconnect_pdu(STREAM s, struct rdp_inst *inst);
 void
 rdp_main_loop(rdpRdp * rdp, RD_BOOL * deactivated, uint32 * ext_disc_reason);
 RD_BOOL
-rdp_loop(rdpRdp * rdp, RD_BOOL * deactivated, uint32 * ext_disc_reason);
+rdp_loop(rdpRdp * rdp, RD_BOOL * deactivated);
 RD_BOOL
 rdp_connect(rdpRdp * rdp);
 RD_BOOL

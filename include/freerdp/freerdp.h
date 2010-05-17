@@ -65,6 +65,7 @@ struct rdp_inst
 	void * param2;
 	void * param3;
 	void * param4;
+	uint32 disc_reason;
 	/* calls from ui to library */
 	int (* rdp_connect)(rdpInst * inst);
 	int (* rdp_get_fds)(rdpInst * inst, void ** read_fds, int * read_count,

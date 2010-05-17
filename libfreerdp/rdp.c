@@ -24,6 +24,7 @@
 #include <unistd.h>
 #endif
 #include "frdp.h"
+#include "freerdp.h"
 #include "types_ui.h"
 #include "iso.h"
 #include "tcp.h"
@@ -1281,16 +1282,16 @@ process_update_pdu(rdpRdp * rdp, STREAM s)
 
 /* Process a disconnect PDU */
 void
-process_disconnect_pdu(STREAM s, uint32 * ext_disc_reason)
+process_disconnect_pdu(STREAM s, struct rdp_inst *inst)
 {
-	in_uint32_le(s, *ext_disc_reason);
+	in_uint32_le(s, inst->disc_reason);
 
 	DEBUG("Received disconnect PDU\n");
 }
 
 /* Process data PDU */
 static RD_BOOL
-process_data_pdu(rdpRdp * rdp, STREAM s, uint32 * ext_disc_reason)
+process_data_pdu(rdpRdp * rdp, STREAM s)
 {
 	uint8 data_pdu_type;
 	uint8 ctype;
@@ -1351,7 +1352,7 @@ process_data_pdu(rdpRdp * rdp, STREAM s, uint32 * ext_disc_reason)
 			break;
 
 		case RDP_DATA_PDU_SET_ERROR_INFO:
-			process_disconnect_pdu(s, ext_disc_reason);
+			process_disconnect_pdu(s, rdp->inst);
 
 			/* We used to return true and disconnect immediately here, but
 			 * Windows Vista sends a disconnect PDU with reason 0 when
@@ -1446,7 +1447,7 @@ process_redirect_pdu(rdpRdp * rdp, STREAM s)
 
 /* used in uiports and rdp_main_loop, processes the rdp packets waiting */
 RD_BOOL
-rdp_loop(rdpRdp * rdp, RD_BOOL * deactivated, uint32 * ext_disc_reason)
+rdp_loop(rdpRdp * rdp, RD_BOOL * deactivated)
 {
 	uint8 type;
 	RD_BOOL disc = False;	/* True when a disconnect PDU was received */
@@ -1469,7 +1470,7 @@ rdp_loop(rdpRdp * rdp, RD_BOOL * deactivated, uint32 * ext_disc_reason)
 				*deactivated = True;
 				break;
 			case RDP_PDU_DATA:
-				disc = process_data_pdu(rdp, s, ext_disc_reason);
+				disc = process_data_pdu(rdp, s);
 				break;
 			case 0:
 				break;
