@@ -83,6 +83,7 @@ printer_get_data(const char * name, int * len)
 	char * buf;
 	char * filename;
 	FILE * fp;
+	int i;
 
 	filename = printer_get_filename(name);
 	fp = fopen(filename, "rb");
@@ -98,7 +99,7 @@ printer_get_data(const char * name, int * len)
 		fseek(fp, 0, SEEK_SET);
 		buf = (char *) malloc(*len);
 		memset(buf, 0, *len);
-		fread(buf, 1, *len, fp);
+		i = fread(buf, 1, *len, fp);
 	}
 	free(filename);
 	return buf;
