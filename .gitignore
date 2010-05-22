@@ -33,6 +33,9 @@ autom4te.cache
 /asn1/*.deps
 /asn1/*.libs
 /asn1/*~
+/doc/Makefile
+/doc/Makefile.in
+/doc/*~
 /libfreerdp/Makefile
 /libfreerdp/Makefile.in
 /libfreerdp/*.o

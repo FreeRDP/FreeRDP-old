@@ -1,7 +1,8 @@
 ## Process this file with automake to produce Makefile.in
 SUBDIRS = \
-        asn1 \
+	asn1 \
 	libfreerdp \
+	doc \
 	include \
 	libfreerdpkbd \
 	keymaps \

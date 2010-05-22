@@ -953,6 +953,7 @@ Makefile
 freerdp.pc
 asn1/Makefile
 libfreerdp/Makefile
+doc/Makefile
 include/Makefile
 libfreerdpkbd/Makefile
 keymaps/Makefile
