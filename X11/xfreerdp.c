@@ -40,7 +40,7 @@ static int
 set_default_params(rdpSet * settings)
 {
 	memset(settings, 0, sizeof(rdpSet));
-	strcpy(settings->hostname, "test");
+	gethostname(settings->hostname, sizeof(settings->hostname) - 1);
 	settings->width = 1024;
 	settings->height = 768;
 	strcpy(settings->server, "127.0.0.1");
@@ -182,6 +182,17 @@ process_params(rdpSet * settings, rdpChanMan * chan_man, int argc, char ** argv,
 				return 1;
 			}
 			settings->tcp_port_rdp = atoi(argv[*pindex]);
+		}
+		else if (strcmp("-n", argv[*pindex]) == 0)
+		{
+			*pindex = *pindex + 1;
+			if (*pindex == argc)
+			{
+				printf("missing hostname\n");
+				return 1;
+			}
+			strncpy(settings->hostname, argv[*pindex], sizeof(settings->hostname) - 1);
+			settings->directory[sizeof(settings->hostname) - 1] = 0;
 		}
 		else if (strcmp("-o", argv[*pindex]) == 0)
 		{
