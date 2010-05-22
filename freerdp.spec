@@ -73,10 +73,11 @@ rm -rf $RPM_BUILD_ROOT
 %files -n xfreerdp
 %defattr(-,root,root)
 %{_bindir}/xfreerdp
+%{_mandir}/*/*
 
 %files libs
 %defattr(-,root,root)
-%doc COPYING doc/AUTHORS doc/ipv6.txt doc/ChangeLog
+%doc COPYING AUTHORS doc/ipv6.txt doc/ChangeLog
 %{_libdir}/lib*.so.*
 %dir %{_libdir}/freerdp
 %{_datadir}/freerdp/
