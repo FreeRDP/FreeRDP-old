@@ -569,7 +569,7 @@ l_rdp_get_fds(struct rdp_inst * inst, void ** read_fds, int * read_count,
 #ifdef _WIN32
 	read_fds[*read_count] = (void *) (rdp->sec->mcs->iso->tcp->wsa_event);
 #else
-	read_fds[*read_count] = (void *) (rdp->sec->mcs->iso->tcp->sock);
+	read_fds[*read_count] = (void *)(long) (rdp->sec->mcs->iso->tcp->sock);
 #endif
 	(*read_count)++;
 	return 0;

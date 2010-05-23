@@ -1041,7 +1041,7 @@ xf_get_fds(rdpInst * inst, void ** read_fds, int * read_count,
 	xfInfo * xfi;
 
 	xfi = GET_XFI(inst);
-	read_fds[*read_count] = (void *) (xfi->x_socket);
+	read_fds[*read_count] = (void *)(long) (xfi->x_socket);
 	(*read_count)++;
 	return 0;
 }

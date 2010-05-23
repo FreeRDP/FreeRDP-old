@@ -590,7 +590,7 @@ clipboard_process_requested_html(struct clipboard_data * cdata,
 		in = strstr(inbuf, "<BODY");
 	}
 	/* StartHTML */
-	snprintf(num, sizeof(num), "%010d", strlen(outbuf)); 
+	snprintf(num, sizeof(num), "%010lu", (unsigned long) strlen(outbuf));
 	memcpy(outbuf + 23, num, 10);
 	if (in == NULL)
 	{
@@ -598,11 +598,11 @@ clipboard_process_requested_html(struct clipboard_data * cdata,
 	}
 	strcat(outbuf, "<!--StartFragment-->");
 	/* StartFragment */
-	snprintf(num, sizeof(num), "%010d", strlen(outbuf)); 
+	snprintf(num, sizeof(num), "%010lu", (unsigned long) strlen(outbuf));
 	memcpy(outbuf + 69, num, 10);
 	strcat(outbuf, inbuf);
 	/* EndFragment */
-	snprintf(num, sizeof(num), "%010d", strlen(outbuf)); 
+	snprintf(num, sizeof(num), "%010lu", (unsigned long) strlen(outbuf));
 	memcpy(outbuf + 93, num, 10);
 	strcat(outbuf, "<!--EndFragment-->");
 	if (in == NULL)
@@ -610,7 +610,7 @@ clipboard_process_requested_html(struct clipboard_data * cdata,
 		strcat(outbuf, "</BODY></HTML>");
 	}
 	/* EndHTML */
-	snprintf(num, sizeof(num), "%010d", strlen(outbuf)); 
+	snprintf(num, sizeof(num), "%010lu", (unsigned long) strlen(outbuf));
 	memcpy(outbuf + 43, num, 10);
 
 	*length = strlen(outbuf) + 1;

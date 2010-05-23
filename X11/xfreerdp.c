@@ -312,7 +312,7 @@ run_xfreerdp(rdpSet * settings, rdpChanMan * chan_man)
 	{
 		printf("run_xfreerdp: freerdp_new size, version / size do not "
 		       "match expecting v %d s %d got v %d s %d\n",
-		       FREERDP_INTERFACE_VERSION, sizeof(rdpInst),
+		       FREERDP_INTERFACE_VERSION, (int)sizeof(rdpInst),
 		       inst->version, inst->size);
 		return 1;
 	}
@@ -371,7 +371,7 @@ run_xfreerdp(rdpSet * settings, rdpChanMan * chan_man)
 		FD_ZERO(&rfds);
 		for (index = 0; index < read_count; index++)
 		{
-			sck = (int) (read_fds[index]);
+			sck = (int)(long) (read_fds[index]);
 			if (sck > max_sck)
 				max_sck = sck;
 			FD_SET(sck, &rfds);
@@ -380,7 +380,7 @@ run_xfreerdp(rdpSet * settings, rdpChanMan * chan_man)
 		FD_ZERO(&wfds);
 		for (index = 0; index < write_count; index++)
 		{
-			sck = (int) (write_fds[index]);
+			sck = (int)(long) (write_fds[index]);
 			if (sck > max_sck)
 				max_sck = sck;
 			FD_SET(sck, &wfds);

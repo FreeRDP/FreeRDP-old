@@ -903,7 +903,7 @@ freerdp_chanman_get_fds(rdpChanMan * chan_man, rdpInst * inst, void ** read_fds,
 	{
 		return 0;
 	}
-	read_fds[*read_count] = (void *) chan_man->pipe_fd[0];
+	read_fds[*read_count] = (void *)(long) chan_man->pipe_fd[0];
 #endif
 	(*read_count)++;
 	return 0;

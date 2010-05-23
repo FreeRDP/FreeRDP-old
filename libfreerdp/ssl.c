@@ -1589,7 +1589,7 @@ by David Ireland, copyright (c) 2001 by D.I. Management Services \
 Pty Limited <www.di-mgt.com.au>, and is used with permission.";
 
   /* this should never happen, just a way to get the text to compile in */
-  if ((unsigned int)in == 0xffffffff)
+  if ((unsigned int)(unsigned long)in == 0xffffffff)
   {
     in = (uint8*)str;
   }

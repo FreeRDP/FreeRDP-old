@@ -50,14 +50,14 @@ struct rdp_rdp
 	char* redirect_server;
 	char* redirect_domain;
 	char* redirect_password;
-	size_t redirect_password_len;
+	uint32 redirect_password_len;
 	char* redirect_username;
 	char* redirect_cookie;
-	size_t redirect_cookie_len;
+	uint32 redirect_cookie_len;
 	char* redirect_target_fqdn;
 	char* redirect_target_netbios_name;
 	char* redirect_target_net_addresses;
-	size_t redirect_target_net_addresses_len;
+	uint32 redirect_target_net_addresses_len;
 	int input_flags;
 	int use_input_fast_path;
 	struct rdp_inst * inst;
