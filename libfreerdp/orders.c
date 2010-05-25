@@ -528,6 +528,7 @@ process_triblt(rdpOrders * orders, STREAM s, TRIBLT_ORDER * os, uint32 present, 
 static void
 process_polygon(rdpOrders * orders, STREAM s, POLYGON_ORDER * os, uint32 present, RD_BOOL delta)
 {
+	int size;
 	int index, data, next;
 	uint8 flags = 0;
 	RD_POINT *points;
@@ -572,8 +573,16 @@ process_polygon(rdpOrders * orders, STREAM s, POLYGON_ORDER * os, uint32 present
 		return;
 	}
 
-	points = (RD_POINT *) xmalloc((os->npoints + 1) * sizeof(RD_POINT));
-	memset(points, 0, (os->npoints + 1) * sizeof(RD_POINT));
+	size = (os->npoints + 1) * sizeof(RD_POINT);
+	
+	if (size > orders->buffer_size)
+	{
+		orders->buffer = xrealloc(orders->buffer, size);
+		orders->buffer_size = size;
+	}
+	
+	points = (RD_POINT *) orders->buffer;
+	memset(points, 0, size);
 
 	points[0].x = os->x;
 	points[0].y = os->y;
@@ -599,14 +608,13 @@ process_polygon(rdpOrders * orders, STREAM s, POLYGON_ORDER * os, uint32 present
 			   os->npoints + 1, NULL, 0, os->fgcolour);
 	else
 		ui_error(orders->rdp->inst, "polygon parse error\n");
-
-	xfree(points);
 }
 
 /* Process a polygon2 order */
 static void
 process_polygon2(rdpOrders * orders, STREAM s, POLYGON2_ORDER * os, uint32 present, RD_BOOL delta)
 {
+	int size;
 	int index, data, next;
 	uint8 flags = 0;
 	RD_POINT *points;
@@ -660,8 +668,16 @@ process_polygon2(rdpOrders * orders, STREAM s, POLYGON2_ORDER * os, uint32 prese
 
 	setup_brush(orders, &brush, &os->brush);
 
-	points = (RD_POINT *) xmalloc((os->npoints + 1) * sizeof(RD_POINT));
-	memset(points, 0, (os->npoints + 1) * sizeof(RD_POINT));
+	size = (os->npoints + 1) * sizeof(RD_POINT);
+	
+	if (size > orders->buffer_size)
+	{
+		orders->buffer = xrealloc(orders->buffer, size);
+		orders->buffer_size = size;
+	}
+	
+	points = (RD_POINT *) orders->buffer;
+	memset(points, 0, size);
 
 	points[0].x = os->x;
 	points[0].y = os->y;
@@ -687,14 +703,13 @@ process_polygon2(rdpOrders * orders, STREAM s, POLYGON2_ORDER * os, uint32 prese
 			   os->npoints + 1, &brush, os->bgcolour, os->fgcolour);
 	else
 		ui_error(orders->rdp->inst, "polygon2 parse error\n");
-
-	xfree(points);
 }
 
 /* Process a polyline order */
 static void
 process_polyline(rdpOrders * orders, STREAM s, POLYLINE_ORDER * os, uint32 present, RD_BOOL delta)
 {
+	int size;
 	int index, next, data;
 	uint8 flags = 0;
 	RD_PEN pen;
@@ -736,9 +751,17 @@ process_polyline(rdpOrders * orders, STREAM s, POLYLINE_ORDER * os, uint32 prese
 		ui_error(orders->rdp->inst, "bad ROP2 0x%x\n", os->opcode);
 		return;
 	}
-
-	points = (RD_POINT *) xmalloc((os->lines + 1) * sizeof(RD_POINT));
-	memset(points, 0, (os->lines + 1) * sizeof(RD_POINT));
+	
+	size = (os->lines + 1) * sizeof(RD_POINT);
+	
+	if (size > orders->buffer_size)
+	{
+		orders->buffer = xrealloc(orders->buffer, size);
+		orders->buffer_size = size;
+	}
+	
+	points = (RD_POINT *) orders->buffer;
+	memset(points, 0, size);
 
 	points[0].x = os->x;
 	points[0].y = os->y;
@@ -765,8 +788,6 @@ process_polyline(rdpOrders * orders, STREAM s, POLYLINE_ORDER * os, uint32 prese
 		ui_polyline(orders->rdp->inst, os->opcode, points, os->lines + 1, &pen);
 	else
 		ui_error(orders->rdp->inst, "polyline parse error\n");
-
-	xfree(points);
 }
 
 /* Process an ellipse order */
@@ -1072,6 +1093,7 @@ process_text2(rdpOrders * orders, STREAM s, TEXT2_ORDER * os, uint32 present, RD
 static void
 process_raw_bmpcache(rdpOrders * orders, STREAM s)
 {
+	int size;
 	RD_HBITMAP bitmap;
 	uint16 cache_idx, bufsize;
 	uint8 cache_id, width, height, bpp, Bpp;
@@ -1089,7 +1111,16 @@ process_raw_bmpcache(rdpOrders * orders, STREAM s)
 	in_uint8p(s, data, bufsize);
 
 	DEBUG("RAW_BMPCACHE(cx=%d,cy=%d,id=%d,idx=%d)\n", width, height, cache_id, cache_idx);
-	inverted = (uint8 *) xmalloc(width * height * Bpp);
+
+	size = width * height * Bpp;
+	
+	if (size > orders->buffer_size)
+	{
+		orders->buffer = xrealloc(orders->buffer, size);
+		orders->buffer_size = size;
+	}
+	inverted = (uint8 *) orders->buffer;
+	
 	for (y = 0; y < height; y++)
 	{
 		memcpy(&inverted[(height - y - 1) * (width * Bpp)], &data[y * (width * Bpp)],
@@ -1097,7 +1128,6 @@ process_raw_bmpcache(rdpOrders * orders, STREAM s)
 	}
 
 	bitmap = ui_create_bitmap(orders->rdp->inst, width, height, inverted);
-	xfree(inverted);
 	cache_put_bitmap(orders->rdp->cache, cache_id, cache_idx, bitmap);
 }
 
@@ -1105,6 +1135,7 @@ process_raw_bmpcache(rdpOrders * orders, STREAM s)
 static void
 process_bmpcache(rdpOrders * orders, STREAM s, uint16 flags)
 {
+	int buffer_size;
 	RD_HBITMAP bitmap;
 	uint16 cache_idx, size;
 	uint8 cache_id, width, height, bpp, Bpp;
@@ -1142,7 +1173,15 @@ process_bmpcache(rdpOrders * orders, STREAM s, uint16 flags)
 
 	DEBUG("BMPCACHE(cx=%d,cy=%d,id=%d,idx=%d,bpp=%d,size=%d,pad1=%d,bufsize=%d,pad2=%d,rs=%d,fs=%d)\n", width, height, cache_id, cache_idx, bpp, size, pad1, bufsize, pad2, row_size, final_size);
 
-	bmpdata = (uint8 *) xmalloc(width * height * Bpp);
+	buffer_size = width * height * Bpp;
+
+	if (buffer_size > orders->buffer_size)
+	{
+		orders->buffer = xrealloc(orders->buffer, buffer_size);
+		orders->buffer_size = buffer_size;
+	}
+	
+	bmpdata = (uint8 *) orders->buffer;
 
 	if (bitmap_decompress(orders->rdp->inst, bmpdata, width, height, data, size, Bpp))
 	{
@@ -1153,16 +1192,15 @@ process_bmpcache(rdpOrders * orders, STREAM s, uint16 flags)
 	{
 		DEBUG("Failed to decompress bitmap data\n");
 	}
-
-	xfree(bmpdata);
 }
 
 /* Process a bitmap cache v2 order */
 static void
 process_bmpcache2(rdpOrders * orders, STREAM s, uint16 flags, RD_BOOL compressed)
 {
-	RD_HBITMAP bitmap;
 	int y;
+	int size;
+	RD_HBITMAP bitmap;
 	uint8 cache_id, cache_idx_low, width, height, Bpp;
 	uint16 cache_idx, bufsize;
 	uint8 *data, *bmpdata, *bitmap_id;
@@ -1202,7 +1240,15 @@ process_bmpcache2(rdpOrders * orders, STREAM s, uint16 flags, RD_BOOL compressed
 	DEBUG("BMPCACHE2(compr=%d,flags=%x,cx=%d,cy=%d,id=%d,idx=%d,Bpp=%d,bs=%d)\n",
 	       compressed, flags, width, height, cache_id, cache_idx, Bpp, bufsize);
 
-	bmpdata = (uint8 *) xmalloc(width * height * Bpp);
+	size = width * height * Bpp;
+
+	if (size > orders->buffer_size)
+	{
+		orders->buffer = xrealloc(orders->buffer, size);
+		orders->buffer_size = size;
+	}
+	
+	bmpdata = (uint8 *) orders->buffer;
 
 	if (compressed)
 	{
@@ -1233,24 +1279,31 @@ process_bmpcache2(rdpOrders * orders, STREAM s, uint16 flags, RD_BOOL compressed
 	{
 		DEBUG("process_bmpcache2: ui_create_bitmap failed\n");
 	}
-
-	xfree(bmpdata);
 }
 
 /* Process a colourmap cache order */
 static void
 process_colcache(rdpOrders * orders, STREAM s)
 {
+	int i;
+	int size;
 	RD_COLOURENTRY *entry;
 	RD_COLOURMAP map;
 	RD_HCOLOURMAP hmap;
 	uint8 cache_id;
-	int i;
 
 	in_uint8(s, cache_id);
 	in_uint16_le(s, map.ncolours);
 
-	map.colours = (RD_COLOURENTRY *) xmalloc(sizeof(RD_COLOURENTRY) * map.ncolours);
+	size = sizeof(RD_COLOURENTRY) * map.ncolours;
+
+	if (size > orders->buffer_size)
+	{
+		orders->buffer = xrealloc(orders->buffer, size);
+		orders->buffer_size = size;
+	}
+	
+	map.colours = (RD_COLOURENTRY *) orders->buffer;
 
 	for (i = 0; i < map.ncolours; i++)
 	{
@@ -1268,8 +1321,6 @@ process_colcache(rdpOrders * orders, STREAM s)
 		hmap = ui_create_colourmap(orders->rdp->inst, &map);
 		ui_set_colourmap(orders->rdp->inst, hmap);
 	}
-
-	xfree(map.colours);
 }
 
 /* Process a font cache order */
@@ -1687,6 +1738,10 @@ orders_new(struct rdp_rdp * rdp)
 		/* orders_state is void * */
 		self->order_state = xmalloc(sizeof(RDP_ORDER_STATE));
 		memset(self->order_state, 0, sizeof(RDP_ORDER_STATE));
+		/* reusable buffer */
+		self->buffer_size = 4096;
+		self->buffer = xmalloc(self->buffer_size);
+		memset(self->buffer, 0, self->buffer_size);
 	}
 	return self;
 }
@@ -1697,6 +1752,7 @@ orders_free(rdpOrders * orders)
 	if (orders != NULL)
 	{
 		xfree(orders->order_state);
+		xfree(orders->buffer);
 		xfree(orders);
 	}
 }

@@ -25,6 +25,8 @@ struct rdp_orders
 {
 	struct rdp_rdp *rdp;
 	void *order_state;
+	void *buffer;
+	size_t buffer_size;
 };
 typedef struct rdp_orders rdpOrders;
 
