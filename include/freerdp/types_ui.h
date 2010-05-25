@@ -1,5 +1,5 @@
 /*
-   Copyright (c) 2009 Jay Sorg
+   Copyright (c) 2009-2010 Jay Sorg
 
    Permission is hereby granted, free of charge, to any person obtaining a
    copy of this software and associated documentation files (the "Software"),
@@ -96,5 +96,13 @@ typedef struct _RD_PLUGIN_DATA
 	void * data[4];
 }
 RD_PLUGIN_DATA;
+
+/* defined in include/freerdp/freerdp.h */
+struct rdp_inst;
+typedef struct rdp_inst rdpInst;
+
+/* defined in include/freerdp/rdpset.h */
+struct rdp_set;
+typedef struct rdp_set rdpSet;
 
 #endif

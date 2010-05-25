@@ -13,12 +13,13 @@
 #include "mem.h"
 #include "chan.h"
 
+#define RDP_FROM_INST(_inst) ((rdpRdp *) (_inst->rdp))
+
 void
-ui_error(void * inst, char * format, ...)
+ui_error(rdpInst * inst, char * format, ...)
 {
 	char * text1;
 	char * text2;
-	rdpInst * linst;
 	va_list ap;
 
 	text1 = (char *) xmalloc(1024);
@@ -29,18 +30,16 @@ ui_error(void * inst, char * format, ...)
 	text1[1023] = 0;
 	snprintf(text2, 1023, "ERROR: %s", text1);
 	text2[1023] = 0;
-	linst = (rdpInst *) inst;
-	linst->ui_error(linst, text2);
+	inst->ui_error(inst, text2);
 	xfree(text1);
 	xfree(text2);
 }
 
 void
-ui_warning(void * inst, char * format, ...)
+ui_warning(rdpInst * inst, char * format, ...)
 {
 	char * text1;
 	char * text2;
-	rdpInst * linst;
 	va_list ap;
 
 	text1 = (char *) xmalloc(1024);
@@ -51,18 +50,16 @@ ui_warning(void * inst, char * format, ...)
 	text1[1023] = 0;
 	snprintf(text2, 1023, "WARNING: %s", text1);
 	text2[1023] = 0;
-	linst = (rdpInst *) inst;
-	linst->ui_warning(linst, text2);
+	inst->ui_warning(inst, text2);
 	xfree(text1);
 	xfree(text2);
 }
 
 void
-ui_unimpl(void * inst, char * format, ...)
+ui_unimpl(rdpInst * inst, char * format, ...)
 {
 	char * text1;
 	char * text2;
-	rdpInst * linst;
 	va_list ap;
 
 	text1 = (char *) xmalloc(1024);
@@ -73,8 +70,7 @@ ui_unimpl(void * inst, char * format, ...)
 	text1[1023] = 0;
 	snprintf(text2, 1023, "NOT IMPLEMENTED: %s", text1);
 	text2[1023] = 0;
-	linst = (rdpInst *) inst;
-	linst->ui_unimpl(linst, text2);
+	inst->ui_unimpl(inst, text2);
 	xfree(text1);
 	xfree(text2);
 }
@@ -173,381 +169,260 @@ save_licence(unsigned char * data, int length)
 }
 
 void
-ui_begin_update(void * inst)
+ui_begin_update(rdpInst * inst)
 {
-	rdpInst * linst;
-
-	linst = (rdpInst *) inst;
-	linst->ui_begin_update(linst);
+	inst->ui_begin_update(inst);
 }
 
 void
-ui_end_update(void * inst)
+ui_end_update(rdpInst * inst)
 {
-	rdpInst * linst;
-
-	linst = (rdpInst *) inst;
-	linst->ui_end_update(linst);
+	inst->ui_end_update(inst);
 }
 
 void
-ui_line(void * inst, uint8 opcode, int startx, int starty, int endx, int endy, RD_PEN * pen)
+ui_line(rdpInst * inst, uint8 opcode, int startx, int starty, int endx, int endy, RD_PEN * pen)
 {
-	rdpInst * linst;
-
-	linst = (rdpInst *) inst;
-	linst->ui_line(linst, opcode, startx, starty, endx, endy, pen);
+	inst->ui_line(inst, opcode, startx, starty, endx, endy, pen);
 }
 
 void
-ui_rect(void * inst, int x, int y, int cx, int cy, int colour)
+ui_rect(rdpInst * inst, int x, int y, int cx, int cy, int colour)
 {
-	rdpInst * linst;
-
-	linst = (rdpInst *) inst;
-	linst->ui_rect(linst, x, y, cx, cy, colour);
+	inst->ui_rect(inst, x, y, cx, cy, colour);
 }
 
 void
-ui_polygon(void * inst, uint8 opcode, uint8 fillmode, RD_POINT * point, int npoints,
+ui_polygon(rdpInst * inst, uint8 opcode, uint8 fillmode, RD_POINT * point, int npoints,
 	   RD_BRUSH * brush, int bgcolour, int fgcolour)
 {
-	rdpInst * linst;
-
-	linst = (rdpInst *) inst;
-	linst->ui_polygon(linst, opcode, fillmode, point, npoints, brush, bgcolour, fgcolour);
+	inst->ui_polygon(inst, opcode, fillmode, point, npoints, brush, bgcolour, fgcolour);
 }
 
 void
-ui_polyline(void * inst, uint8 opcode, RD_POINT * points, int npoints, RD_PEN * pen)
+ui_polyline(rdpInst * inst, uint8 opcode, RD_POINT * points, int npoints, RD_PEN * pen)
 {
-	rdpInst * linst;
-
-	linst = (rdpInst *) inst;
-	linst->ui_polyline(linst, opcode, points, npoints, pen);
+	inst->ui_polyline(inst, opcode, points, npoints, pen);
 }
 
 void
-ui_ellipse(void * inst, uint8 opcode, uint8 fillmode, int x, int y, int cx, int cy,
+ui_ellipse(rdpInst * inst, uint8 opcode, uint8 fillmode, int x, int y, int cx, int cy,
 	   RD_BRUSH * brush, int bgcolour, int fgcolour)
 {
-	rdpInst * linst;
-
-	linst = (rdpInst *) inst;
-	linst->ui_ellipse(linst, opcode, fillmode, x, y, cx, cy, brush, bgcolour, fgcolour);
+	inst->ui_ellipse(inst, opcode, fillmode, x, y, cx, cy, brush, bgcolour, fgcolour);
 }
 
 void
-ui_start_draw_glyphs(void * inst, int bgcolour, int fgcolour)
+ui_start_draw_glyphs(rdpInst * inst, int bgcolour, int fgcolour)
 {
-	rdpInst * linst;
-
-	linst = (rdpInst *) inst;
-	linst->ui_start_draw_glyphs(linst, bgcolour, fgcolour);
+	inst->ui_start_draw_glyphs(inst, bgcolour, fgcolour);
 }
 
 void
-ui_draw_glyph(void * inst, int x, int y, int cx, int cy, RD_HGLYPH glyph)
+ui_draw_glyph(rdpInst * inst, int x, int y, int cx, int cy, RD_HGLYPH glyph)
 {
-	rdpInst * linst;
-
-	linst = (rdpInst *) inst;
-	linst->ui_draw_glyph(linst, x, y, cx, cy, glyph);
+	inst->ui_draw_glyph(inst, x, y, cx, cy, glyph);
 }
 
 void
-ui_end_draw_glyphs(void * inst, int x, int y, int cx, int cy)
+ui_end_draw_glyphs(rdpInst * inst, int x, int y, int cx, int cy)
 {
-	rdpInst * linst;
-
-	linst = (rdpInst *) inst;
-	linst->ui_end_draw_glyphs(linst, x, y, cx, cy);
+	inst->ui_end_draw_glyphs(inst, x, y, cx, cy);
 }
 
 void
-ui_desktop_save(void * inst, uint32 offset, int x, int y, int cx, int cy)
+ui_desktop_save(rdpInst * inst, uint32 offset, int x, int y, int cx, int cy)
 {
-	rdpInst * linst;
-
-	linst = (rdpInst *) inst;
-	linst->ui_desktop_save(linst, offset, x, y, cx, cy);
+	inst->ui_desktop_save(inst, offset, x, y, cx, cy);
 }
 
 void
-ui_desktop_restore(void * inst, uint32 offset, int x, int y, int cx, int cy)
+ui_desktop_restore(rdpInst * inst, uint32 offset, int x, int y, int cx, int cy)
 {
-	rdpInst * linst;
-
-	linst = (rdpInst *) inst;
-	linst->ui_desktop_save(linst, offset, x, y, cx, cy);
+	inst->ui_desktop_save(inst, offset, x, y, cx, cy);
 }
 
 uint32
-ui_get_toggle_keys_state(void * inst)
+ui_get_toggle_keys_state(rdpInst * inst)
 {
-	rdpInst * linst;
-
-	linst = (rdpInst *) inst;
-	return linst->ui_get_toggle_keys_state(linst);
+	return inst->ui_get_toggle_keys_state(inst);
 }
 
 void
-ui_bell(void * inst)
+ui_bell(rdpInst * inst)
 {
-	rdpInst * linst;
-
-	linst = (rdpInst *) inst;
-	linst->ui_bell(linst);
+	inst->ui_bell(inst);
 }
 
 void
-ui_destblt(void * inst, uint8 opcode, int x, int y, int cx, int cy)
+ui_destblt(rdpInst * inst, uint8 opcode, int x, int y, int cx, int cy)
 {
-	rdpInst * linst;
-
-	linst = (rdpInst *) inst;
-	linst->ui_destblt(linst, opcode, x, y, cx, cy);
+	inst->ui_destblt(inst, opcode, x, y, cx, cy);
 }
 
 void
-ui_patblt(void * inst, uint8 opcode, int x, int y, int cx, int cy, RD_BRUSH * brush,
+ui_patblt(rdpInst * inst, uint8 opcode, int x, int y, int cx, int cy, RD_BRUSH * brush,
 	  int bgcolour, int fgcolour)
 {
-	rdpInst * linst;
-
-	linst = (rdpInst *) inst;
-	linst->ui_patblt(linst, opcode, x, y, cx, cy, brush, bgcolour, fgcolour);
+	inst->ui_patblt(inst, opcode, x, y, cx, cy, brush, bgcolour, fgcolour);
 }
 
 void
-ui_screenblt(void * inst, uint8 opcode, int x, int y, int cx, int cy, int srcx, int srcy)
+ui_screenblt(rdpInst * inst, uint8 opcode, int x, int y, int cx, int cy, int srcx, int srcy)
 {
-	rdpInst * linst;
-
-	linst = (rdpInst *) inst;
-	linst->ui_screenblt(linst, opcode, x, y, cx, cy, srcx, srcy);
+	inst->ui_screenblt(inst, opcode, x, y, cx, cy, srcx, srcy);
 }
 
 void
-ui_memblt(void * inst, uint8 opcode, int x, int y, int cx, int cy, RD_HBITMAP src,
+ui_memblt(rdpInst * inst, uint8 opcode, int x, int y, int cx, int cy, RD_HBITMAP src,
 	  int srcx, int srcy)
 {
-	rdpInst * linst;
-
-	linst = (rdpInst *) inst;
-	linst->ui_memblt(linst, opcode, x, y, cx, cy, src, srcx, srcy);
+	inst->ui_memblt(inst, opcode, x, y, cx, cy, src, srcx, srcy);
 }
 
 void
-ui_triblt(void * inst, uint8 opcode, int x, int y, int cx, int cy, RD_HBITMAP src,
+ui_triblt(rdpInst * inst, uint8 opcode, int x, int y, int cx, int cy, RD_HBITMAP src,
 	  int srcx, int srcy, RD_BRUSH * brush, int bgcolour, int fgcolour)
 {
-	rdpInst * linst;
-
-	linst = (rdpInst *) inst;
-	linst->ui_triblt(linst, opcode, x, y, cx, cy, src, srcx, srcy, brush, bgcolour, fgcolour);
+	inst->ui_triblt(inst, opcode, x, y, cx, cy, src, srcx, srcy, brush, bgcolour, fgcolour);
 }
 
 RD_HGLYPH
-ui_create_glyph(void * inst, int width, int height, uint8 * data)
+ui_create_glyph(rdpInst * inst, int width, int height, uint8 * data)
 {
-	rdpInst * linst;
-
-	linst = (rdpInst *) inst;
-	return 	linst->ui_create_glyph(linst, width, height, data);
-;
+	return inst->ui_create_glyph(inst, width, height, data);
 }
 
 void
-ui_destroy_glyph(void * inst, RD_HGLYPH glyph)
+ui_destroy_glyph(rdpInst * inst, RD_HGLYPH glyph)
 {
-	rdpInst * linst;
-
-	linst = (rdpInst *) inst;
-	linst->ui_destroy_glyph(linst, glyph);
+	inst->ui_destroy_glyph(inst, glyph);
 }
 
 int
-ui_select(void * inst, int rdp_socket)
+ui_select(rdpInst * inst, int rdp_socket)
 {
-	rdpInst * linst;
-
-	linst = (rdpInst *) inst;
-	return linst->ui_select(linst, rdp_socket);
+	return inst->ui_select(inst, rdp_socket);
 }
 
 void
-ui_set_clip(void * inst, int x, int y, int cx, int cy)
+ui_set_clip(rdpInst * inst, int x, int y, int cx, int cy)
 {
-	rdpInst * linst;
-
-	linst = (rdpInst *) inst;
-	linst->ui_set_clip(linst, x, y, cx, cy);
+	inst->ui_set_clip(inst, x, y, cx, cy);
 }
 
 void
-ui_reset_clip(void * inst)
+ui_reset_clip(rdpInst * inst)
 {
-	rdpInst * linst;
-
-	linst = (rdpInst *) inst;
-	linst->ui_reset_clip(linst);
+	inst->ui_reset_clip(inst);
 }
 
 void
-ui_resize_window(void * inst)
+ui_resize_window(rdpInst * inst)
 {
-	rdpInst * linst;
-
-	linst = (rdpInst *) inst;
-	linst->ui_resize_window(linst);
+	inst->ui_resize_window(inst);
 }
 
 RD_HCURSOR
-ui_create_cursor(void * inst, unsigned int x, unsigned int y, int width, int height,
+ui_create_cursor(rdpInst * inst, unsigned int x, unsigned int y, int width, int height,
 		 uint8 * andmask, uint8 * xormask, int bpp)
 {
-	rdpInst * linst;
-
-	linst = (rdpInst *) inst;
-	return linst->ui_create_cursor(linst, x, y, width, height, andmask, xormask, bpp);
+	return inst->ui_create_cursor(inst, x, y, width, height, andmask, xormask, bpp);
 }
 
 void
-ui_set_cursor(void * inst, RD_HCURSOR cursor)
+ui_set_cursor(rdpInst * inst, RD_HCURSOR cursor)
 {
-	rdpInst * linst;
-
-	linst = (rdpInst *) inst;
-	linst->ui_set_cursor(linst, cursor);
+	inst->ui_set_cursor(inst, cursor);
 }
 
 void
-ui_set_null_cursor(void * inst)
+ui_set_null_cursor(rdpInst * inst)
 {
-	rdpInst * linst;
-
-	linst = (rdpInst *) inst;
-	linst->ui_set_null_cursor(linst);
+	inst->ui_set_null_cursor(inst);
 }
 
 void
-ui_set_default_cursor(void * inst)
+ui_set_default_cursor(rdpInst * inst)
 {
-	rdpInst * linst;
-
-	linst = (rdpInst *) inst;
-	linst->ui_set_default_cursor(linst);
+	inst->ui_set_default_cursor(inst);
 }
 
 void
-ui_destroy_cursor(void * inst, RD_HCURSOR cursor)
+ui_destroy_cursor(rdpInst * inst, RD_HCURSOR cursor)
 {
-	rdpInst * linst;
-
-	linst = (rdpInst *) inst;
-	linst->ui_destroy_cursor(linst, cursor);
+	inst->ui_destroy_cursor(inst, cursor);
 }
 
 RD_HBITMAP
-ui_create_bitmap(void * inst, int width, int height, uint8 * data)
+ui_create_bitmap(rdpInst * inst, int width, int height, uint8 * data)
 {
-	rdpInst * linst;
-
-	linst = (rdpInst *) inst;
-	return linst->ui_create_bitmap(linst, width, height, data);
+	return inst->ui_create_bitmap(inst, width, height, data);
 }
 
 void
-ui_paint_bitmap(void * inst, int x, int y, int cx, int cy, int width, int height, uint8 * data)
+ui_paint_bitmap(rdpInst * inst, int x, int y, int cx, int cy, int width, int height, uint8 * data)
 {
-	rdpInst * linst;
-
-	linst = (rdpInst *) inst;
-	linst->ui_paint_bitmap(linst, x, y, cx, cy, width,  height, data);
+	inst->ui_paint_bitmap(inst, x, y, cx, cy, width,  height, data);
 }
 
 void
-ui_destroy_bitmap(void * inst, RD_HBITMAP bmp)
+ui_destroy_bitmap(rdpInst * inst, RD_HBITMAP bmp)
 {
-	rdpInst * linst;
-
-	linst = (rdpInst *) inst;
-	linst->ui_destroy_bitmap(linst, bmp);
+	inst->ui_destroy_bitmap(inst, bmp);
 }
 
 RD_HCOLOURMAP
-ui_create_colourmap(void * inst, RD_COLOURMAP * colours)
+ui_create_colourmap(rdpInst * inst, RD_COLOURMAP * colours)
 {
-	rdpInst * linst;
-
-	linst = (rdpInst *) inst;
-	return linst->ui_create_colourmap(linst, colours);
+	return inst->ui_create_colourmap(inst, colours);
 }
 
 void
-ui_move_pointer(void * inst, int x, int y)
+ui_move_pointer(rdpInst * inst, int x, int y)
 {
-	rdpInst * linst;
-
-	linst = (rdpInst *) inst;
-	linst->ui_move_pointer(linst, x, y);
+	inst->ui_move_pointer(inst, x, y);
 }
 
 void
-ui_set_colourmap(void * inst, RD_HCOLOURMAP map)
+ui_set_colourmap(rdpInst * inst, RD_HCOLOURMAP map)
 {
-	rdpInst * linst;
-
-	linst = (rdpInst *) inst;
-	linst->ui_set_colourmap(linst, map);
+	inst->ui_set_colourmap(inst, map);
 }
 
 RD_HBITMAP
-ui_create_surface(void * inst, int width, int height, RD_HBITMAP old)
+ui_create_surface(rdpInst * inst, int width, int height, RD_HBITMAP old)
 {
-	rdpInst * linst;
-
-	linst = (rdpInst *) inst;
-	return linst->ui_create_surface(linst, width, height, old);
+	return inst->ui_create_surface(inst, width, height, old);
 }
 
 void
-ui_set_surface(void * inst, RD_HBITMAP surface)
+ui_set_surface(rdpInst * inst, RD_HBITMAP surface)
 {
-	rdpInst * linst;
-
-	linst = (rdpInst *) inst;
-	linst->ui_set_surface(linst, surface);
+	inst->ui_set_surface(inst, surface);
 }
 
 void
-ui_destroy_surface(void * inst, RD_HBITMAP surface)
+ui_destroy_surface(rdpInst * inst, RD_HBITMAP surface)
 {
-	rdpInst * linst;
-
-	linst = (rdpInst *) inst;
-	linst->ui_destroy_surface(linst, surface);
+	inst->ui_destroy_surface(inst, surface);
 }
 
 void
-ui_channel_data(void * inst, int chan_id, char * data, int data_size,
+ui_channel_data(rdpInst * inst, int chan_id, char * data, int data_size,
 		int flags, int total_size)
 {
-	rdpInst * linst;
-
-	linst = (rdpInst *) inst;
-	linst->ui_channel_data(linst, chan_id, data, data_size, flags, total_size);
+	inst->ui_channel_data(inst, chan_id, data, data_size, flags, total_size);
 }
 
 /* returns error */
 static int
-l_rdp_connect(struct rdp_inst * inst)
+l_rdp_connect(rdpInst * inst)
 {
 	rdpRdp * rdp;
 	int index;
 
-	rdp = (rdpRdp *) (inst->rdp);
+	rdp = RDP_FROM_INST(inst);
 	for (index = 0; index < rdp->settings->num_channels; index++)
 	{
 		rdp->settings->channels[index].chan_id = MCS_GLOBAL_CHANNEL + 1 + index;
@@ -560,12 +435,12 @@ l_rdp_connect(struct rdp_inst * inst)
 }
 
 static int
-l_rdp_get_fds(struct rdp_inst * inst, void ** read_fds, int * read_count,
+l_rdp_get_fds(rdpInst * inst, void ** read_fds, int * read_count,
 	void ** write_fds, int * write_count)
 {
 	rdpRdp * rdp;
 
-	rdp = (rdpRdp *) (inst->rdp);
+	rdp = RDP_FROM_INST(inst);
 #ifdef _WIN32
 	read_fds[*read_count] = (void *) (rdp->sec->mcs->iso->tcp->wsa_event);
 #else
@@ -577,14 +452,14 @@ l_rdp_get_fds(struct rdp_inst * inst, void ** read_fds, int * read_count,
 
 /* Process receivable fds, return true if connection should live on */
 static int
-l_rdp_check_fds(struct rdp_inst * inst)
+l_rdp_check_fds(rdpInst * inst)
 {
 	rdpRdp * rdp;
 	RD_BOOL deactivated;
 	uint32 ext_disc_reason; /* TODO: Check with RDP_ERRORINFO */
 	int rv;
 
-	rdp = (rdpRdp *) (inst->rdp);
+	rdp = RDP_FROM_INST(inst);
 #ifdef _WIN32
 	WSAResetEvent(rdp->sec->mcs->iso->tcp->wsa_event);
 #endif
@@ -609,18 +484,18 @@ l_rdp_check_fds(struct rdp_inst * inst)
 }
 
 static int
-l_rdp_send_input(struct rdp_inst * inst, int message_type, int device_flags,
+l_rdp_send_input(rdpInst * inst, int message_type, int device_flags,
 	int param1, int param2)
 {
 	rdpRdp * rdp;
 
-	rdp = (rdpRdp *) (inst->rdp);
+	rdp = RDP_FROM_INST(inst);
 	rdp_send_input(rdp, time(NULL), message_type, device_flags, param1, param2);
 	return 0;
 }
 
 static int
-l_rdp_sync_input(struct rdp_inst * inst, int toggle_flags)
+l_rdp_sync_input(rdpInst * inst, int toggle_flags)
 {
 	rdpRdp * rdp;
 
@@ -630,22 +505,22 @@ l_rdp_sync_input(struct rdp_inst * inst, int toggle_flags)
 }
 
 static int
-l_rdp_channel_data(struct rdp_inst * inst, int chan_id, char * data, int data_size)
+l_rdp_channel_data(rdpInst * inst, int chan_id, char * data, int data_size)
 {
 	rdpRdp * rdp;
 	rdpChannels * chan;
 
-	rdp = (rdpRdp *) (inst->rdp);
+	rdp = RDP_FROM_INST(inst);
 	chan = rdp->sec->mcs->chan;
 	return vchan_send(chan, chan_id, data, data_size);
 }
 
 static void
-l_rdp_disconnect(struct rdp_inst * inst)
+l_rdp_disconnect(rdpInst * inst)
 {
 	rdpRdp * rdp;
 
-	rdp = (rdpRdp *) (inst->rdp);
+	rdp = RDP_FROM_INST(inst);
 	rdp_disconnect(rdp);
 }
 
@@ -665,16 +540,19 @@ freerdp_new(rdpSet * settings)
 	inst->rdp_sync_input = l_rdp_sync_input;
 	inst->rdp_channel_data = l_rdp_channel_data;
 	inst->rdp_disconnect = l_rdp_disconnect;
-	inst->rdp = rdp_new(settings, inst);
+	inst->rdp = (void *) rdp_new(settings, inst);
 	return inst;
 }
 
 void
 freerdp_free(rdpInst * inst)
 {
+	rdpRdp * rdp;
+
 	if (inst != NULL)
 	{
-		rdp_free(inst->rdp);
+		rdp = RDP_FROM_INST(inst);
+		rdp_free(rdp);
 		xfree(inst);
 	}
 }

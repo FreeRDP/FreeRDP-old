@@ -60,7 +60,7 @@ struct rdp_rdp
 	uint32 redirect_target_net_addresses_len;
 	int input_flags;
 	int use_input_fast_path;
-	struct rdp_inst * inst;
+	rdpInst * inst;
 	void* buffer;
 	size_t buffer_size;
 };
@@ -108,7 +108,7 @@ rdp_reset_state(rdpRdp * rdp);
 void
 rdp_disconnect(rdpRdp * rdp);
 rdpRdp *
-rdp_new(struct rdp_set * settings, struct rdp_inst *inst);
+rdp_new(rdpSet * settings, rdpInst * inst);
 void
 rdp_free(rdpRdp * rdp);
 

@@ -68,6 +68,5 @@ struct rdp_set
 	int num_channels;
 	struct rdp_chan channels[16];
 };
-typedef struct rdp_set rdpSet;
 
 #endif
