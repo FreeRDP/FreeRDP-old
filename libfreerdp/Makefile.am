@@ -36,8 +36,7 @@ libfreerdp_la_SOURCES = \
 	ssl.c ssl.h \
 	crypto.c crypto.h \
 	tcp.c tcp.h \
-	types.h debug.h frdp.h \
-	mpool.c mpool.h mpool_loc.h
+	types.h debug.h frdp.h
 
 if ENABLE_TLS
 libfreerdp_la_SOURCES += tls.c tls.h credssp.c credssp.h
