@@ -1124,11 +1124,12 @@ process_pointer_pdu(rdpRdp * rdp, STREAM s)
 void
 process_bitmap_updates(rdpRdp * rdp, STREAM s)
 {
+	int i;
+	int buffer_size;
 	uint16 num_updates;
 	uint16 left, top, right, bottom, width, height;
 	uint16 cx, cy, bpp, Bpp, compress, bufsize, size;
 	uint8 *data, *bmpdata;
-	int i;
 
 	in_uint16_le(s, num_updates);
 
@@ -1151,20 +1152,26 @@ process_bitmap_updates(rdpRdp * rdp, STREAM s)
 		DEBUG("BITMAP_UPDATE(l=%d,t=%d,r=%d,b=%d,w=%d,h=%d,Bpp=%d,cmp=%d)\n",
 		       left, top, right, bottom, width, height, Bpp, compress);
 
+		buffer_size = width * height * Bpp;
+
+		if (buffer_size > rdp->buffer_size)
+		{
+			rdp->buffer = xrealloc(rdp->buffer, buffer_size);
+			rdp->buffer_size = buffer_size;
+		}
+		
 		if (!compress)
 		{
 			int y;
-			bmpdata = (uint8 *) xmalloc(width * height * Bpp);
+			bmpdata = (uint8 *) rdp->buffer;
 			for (y = 0; y < height; y++)
 			{
 				in_uint8a(s, &bmpdata[(height - y - 1) * (width * Bpp)],
 					  width * Bpp);
 			}
 			ui_paint_bitmap(rdp->inst, left, top, cx, cy, width, height, bmpdata);
-			xfree(bmpdata);
 			continue;
 		}
-
 
 		if (compress & 0x400)
 		{
@@ -1177,7 +1184,17 @@ process_bitmap_updates(rdpRdp * rdp, STREAM s)
 			in_uint8s(s, 4);	/* line_size, final_size */
 		}
 		in_uint8p(s, data, size);
-		bmpdata = (uint8 *) xmalloc(width * height * Bpp);
+		
+		buffer_size = width * height * Bpp;
+
+		if (buffer_size > rdp->buffer_size)
+		{
+			rdp->buffer = xrealloc(rdp->buffer, buffer_size);
+			rdp->buffer_size = buffer_size;
+		}
+
+		bmpdata = (uint8 *) rdp->buffer;
+		
 		if (bitmap_decompress(rdp->inst, bmpdata, width, height, data, size, Bpp))
 		{
 			ui_paint_bitmap(rdp->inst, left, top, cx, cy, width, height, bmpdata);
@@ -1186,8 +1203,6 @@ process_bitmap_updates(rdpRdp * rdp, STREAM s)
 		{
 			DEBUG_RDP5("Failed to decompress data\n");
 		}
-
-		xfree(bmpdata);
 	}
 }
 
@@ -1195,16 +1210,25 @@ process_bitmap_updates(rdpRdp * rdp, STREAM s)
 void
 process_palette(rdpRdp * rdp, STREAM s)
 {
+	int i;
+	int size;
 	RD_COLOURENTRY *entry;
 	RD_COLOURMAP map;
 	RD_HCOLOURMAP hmap;
-	int i;
 
 	in_uint8s(s, 2);	/* pad */
 	in_uint16_le(s, map.ncolours);
 	in_uint8s(s, 2);	/* pad */
 
-	map.colours = (RD_COLOURENTRY *) xmalloc(sizeof(RD_COLOURENTRY) * map.ncolours);
+	size = sizeof(RD_COLOURENTRY) * map.ncolours;
+
+	if (size > rdp->buffer_size)
+	{
+		rdp->buffer = xrealloc(rdp->buffer, size);
+		rdp->buffer_size = size;
+	}
+	
+	map.colours = (RD_COLOURENTRY *) rdp->buffer;
 
 	DEBUG("PALETTE(c=%d)\n", map.ncolours);
 
@@ -1218,8 +1242,6 @@ process_palette(rdpRdp * rdp, STREAM s)
 
 	hmap = ui_create_colourmap(rdp->inst, &map);
 	ui_set_colourmap(rdp->inst, hmap);
-
-	xfree(map.colours);
 }
 
 /* Process an update PDU */
@@ -1544,6 +1566,9 @@ rdp_new(struct rdp_set *settings, struct rdp_inst *inst)
 			DEBUG("Error opening iconv converter to %s from %s\n", WINDOWS_CODEPAGE, DEFAULT_CODEPAGE);
 		}
 #endif
+		self->buffer_size = 2048;
+		self->buffer = xmalloc(self->buffer_size);
+		memset(self->buffer, 0, self->buffer_size);
 		self->sec = sec_new(self);
 		self->orders = orders_new(self);
 		self->pcache = pcache_new(self);
@@ -1564,6 +1589,7 @@ rdp_free(rdpRdp * rdp)
 		cache_free(rdp->cache);
 		pcache_free(rdp->pcache);
 		orders_free(rdp->orders);
+		xfree(rdp->buffer);
 		sec_free(rdp->sec);
 		xfree(rdp->redirect_server);
 		xfree(rdp->redirect_cookie);

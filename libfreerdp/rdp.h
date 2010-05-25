@@ -61,6 +61,8 @@ struct rdp_rdp
 	int input_flags;
 	int use_input_fast_path;
 	struct rdp_inst * inst;
+	void* buffer;
+	size_t buffer_size;
 };
 typedef struct rdp_rdp rdpRdp;
 
