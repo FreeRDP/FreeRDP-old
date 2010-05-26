@@ -3,7 +3,7 @@
 .I xfreerdp
 \- X11 front-end for FreeRDP
 .SH SYNOPSIS
-.B xfreerdp [options] server[:port]
+.B xfreerdp [options] server[:port] [[options] server[:port] ...]
 .br
 .SH DESCRIPTION
 .I xfreerdp
@@ -11,6 +11,9 @@ is a front-end for various FreeRDP components, which implement a client of the
 Remote Desktop Protocol (RDP), used in a number of Microsoft products including
 Windows NT Terminal Server, Windows 2000 Server, Windows XP, Windows 2003
 Server, Windows Vista, Windows 2008 Server and Windows 7.
+
+xfreerdp can connect to multiple servers if more than one server
+addresses are specified, and each session runs in a separate window.
 .SH OPTIONS
 .TP
 .BR "-u <username>"
