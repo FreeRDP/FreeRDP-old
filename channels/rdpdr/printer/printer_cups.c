@@ -36,7 +36,7 @@ struct _PRINTER_DEVICE_INFO
 {
 	char * printer_name;
 
-	http_t * printjob_http_t;
+	void * printjob_object;
 	int printjob_id;
 };
 typedef struct _PRINTER_DEVICE_INFO PRINTER_DEVICE_INFO;
@@ -72,55 +72,77 @@ printer_hw_new(const char * name)
 
 	info->printer_name = strdup(name);
 
+#ifndef _CUPS_API_1_4
+	LLOGLN(0, ("printer_hw_new: use CUPS API 1.2"));
+#endif
+
 	return info;
+}
+
+static void
+printer_hw_get_printjob_name(char * buf, int size)
+{
+	time_t tt;
+	struct tm * t;
+
+	tt = time(NULL);
+	t = localtime(&tt);
+	snprintf(buf, size - 1, "FreeRDP Print Job %d%02d%02d%02d%02d%02d",
+		t->tm_year + 1900, t->tm_mon + 1, t->tm_mday,
+		t->tm_hour, t->tm_min, t->tm_sec);
 }
 
 uint32
 printer_hw_create(IRP * irp, const char * path)
 {
 	PRINTER_DEVICE_INFO * info;
-	time_t tt;
-	struct tm * t;
-	char buf[100];
 
 	info = (PRINTER_DEVICE_INFO *) irp->dev->info;
 
 	/* Server's print queue will ensure no two print jobs will be sent to the same printer.
 	   However, we still want to do a simple locking just to ensure we are safe. */
-	if (info->printjob_http_t)
+	if (info->printjob_object)
 	{
 		return RD_STATUS_DEVICE_BUSY;
 	}
-	info->printjob_http_t = httpConnectEncrypt(cupsServer(), ippPort(), HTTP_ENCRYPT_IF_REQUESTED);
-	if (info->printjob_http_t == NULL)
+
+#ifndef _CUPS_API_1_4
+
+	info->printjob_id++;
+	info->printjob_object = strdup(tmpnam(NULL));
+
+#else
 	{
-		LLOGLN(0, ("printer_create: httpConnectEncrypt: %s", cupsLastErrorString()));
-		return RD_STATUS_DEVICE_BUSY;
+		char buf[100];
+
+		info->printjob_object = httpConnectEncrypt(cupsServer(), ippPort(), HTTP_ENCRYPT_IF_REQUESTED);
+		if (info->printjob_object == NULL)
+		{
+			LLOGLN(0, ("printer_hw_create: httpConnectEncrypt: %s", cupsLastErrorString()));
+			return RD_STATUS_DEVICE_BUSY;
+		}
+
+		printer_hw_get_printjob_name(buf, sizeof(buf));
+		info->printjob_id = cupsCreateJob((http_t *) info->printjob_object,
+			info->printer_name, buf,
+			0, NULL);
+
+		if (info->printjob_id == 0)
+		{
+			LLOGLN(0, ("printer_hw_create: cupsCreateJob: %s", cupsLastErrorString()));
+			httpClose((http_t *) info->printjob_object);
+			info->printjob_object = NULL;
+			/* Should get the right return code based on printer status */
+			return RD_STATUS_DEVICE_BUSY;
+		}
+		cupsStartDocument((http_t *) info->printjob_object,
+			info->printer_name, info->printjob_id, buf,
+			CUPS_FORMAT_POSTSCRIPT, 1);
 	}
 
-	tt = time(NULL);
-	t = localtime(&tt);
-	snprintf(buf, sizeof(buf) - 1, "FreeRDP Print Job %d%02d%02d%02d%02d%02d",
-		t->tm_year + 1900, t->tm_mon + 1, t->tm_mday,
-		t->tm_hour, t->tm_min, t->tm_sec);
-	info->printjob_id = cupsCreateJob(info->printjob_http_t,
-		info->printer_name, buf,
-		0, NULL);
+#endif
 
-	LLOGLN(10, ("printe_create: %s id=%d", info->printer_name, irp->fileID));
-
-	if (info->printjob_id == 0)
-	{
-		LLOGLN(0, ("printer_create: cupsCreateJob: %s", cupsLastErrorString()));
-		httpClose(info->printjob_http_t);
-		info->printjob_http_t = NULL;
-		/* Should get the right return code based on printer status */
-		return RD_STATUS_DEVICE_BUSY;
-	}
-	cupsStartDocument(info->printjob_http_t,
-		info->printer_name, info->printjob_id, buf,
-		CUPS_FORMAT_POSTSCRIPT, 1);
-
+	LLOGLN(10, ("printe_hw_create: %s id=%d", info->printer_name, info->printjob_id));
 	irp->fileID = info->printjob_id;
 
 	return RD_STATUS_SUCCESS;
@@ -132,18 +154,37 @@ printer_hw_close(IRP * irp)
 	PRINTER_DEVICE_INFO * info;
 
 	info = (PRINTER_DEVICE_INFO *) irp->dev->info;
-	LLOGLN(10, ("printe_close: %s id=%d", info->printer_name, irp->fileID));
+	LLOGLN(10, ("printe_hw_close: %s id=%d", info->printer_name, irp->fileID));
 
 	if (irp->fileID != info->printjob_id)
 	{
-		LLOGLN(0, ("printer_write: invalid file id"));
+		LLOGLN(0, ("printer_hw_close: invalid file id"));
 		return RD_STATUS_INVALID_HANDLE;
 	}
 
-	cupsFinishDocument(info->printjob_http_t, info->printer_name);
+#ifndef _CUPS_API_1_4
+
+	{
+		char buf[100];
+
+		printer_hw_get_printjob_name(buf, sizeof(buf));
+		if (cupsPrintFile(info->printer_name, (const char *) info->printjob_object, buf, 0, NULL) == 0)
+		{
+			LLOGLN(0, ("printer_hw_close: cupsPrintFile: %s", cupsLastErrorString()));
+		}
+		unlink(info->printjob_object);
+		free(info->printjob_object);
+	}
+
+#else
+
+	cupsFinishDocument((http_t *) info->printjob_object, info->printer_name);
 	info->printjob_id = 0;
-	httpClose(info->printjob_http_t);
-	info->printjob_http_t = NULL;
+	httpClose((http_t *) info->printjob_object);
+
+#endif
+
+	info->printjob_object = NULL;
 
 	return RD_STATUS_SUCCESS;
 }
@@ -154,14 +195,40 @@ printer_hw_write(IRP * irp)
 	PRINTER_DEVICE_INFO * info;
 
 	info = (PRINTER_DEVICE_INFO *) irp->dev->info;
-	LLOGLN(10, ("printe_write: %s id=%d len=%d off=%lld", info->printer_name,
+	LLOGLN(10, ("printe_hw_write: %s id=%d len=%d off=%lld", info->printer_name,
 		irp->fileID, irp->inputBufferLength, irp->offset));
 	if (irp->fileID != info->printjob_id)
 	{
-		LLOGLN(0, ("printer_write: invalid file id"));
+		LLOGLN(0, ("printer_hw_write: invalid file id"));
 		return RD_STATUS_INVALID_HANDLE;
 	}
-	cupsWriteRequestData(info->printjob_http_t, irp->inputBuffer, irp->inputBufferLength);
+
+#ifndef _CUPS_API_1_4
+
+	{
+		FILE * fp;
+
+		fp = fopen((const char *) info->printjob_object, "a+b");
+		if (fp == NULL)
+		{
+			LLOGLN(0, ("printer_hw_write: failed to open file %s", (char *) info->printjob_object));
+			return RD_STATUS_DEVICE_BUSY;
+		}
+		if (fwrite(irp->inputBuffer, 1, irp->inputBufferLength, fp) < irp->inputBufferLength)
+		{
+			fclose(fp);
+			LLOGLN(0, ("printer_hw_write: failed to write file %s", (char *) info->printjob_object));
+			return RD_STATUS_DEVICE_BUSY;
+		}
+		fclose(fp);
+	}
+
+#else
+
+	cupsWriteRequestData((http_t *) info->printjob_object, irp->inputBuffer, irp->inputBufferLength);
+
+#endif
+
 	return RD_STATUS_SUCCESS;
 }
 
@@ -177,10 +244,14 @@ printer_hw_free(void * info)
 		free(pinfo->printer_name);
 		pinfo->printer_name = NULL;
 	}
-	if (pinfo->printjob_http_t)
+	if (pinfo->printjob_object)
 	{
-		httpClose(pinfo->printjob_http_t);
-		pinfo->printjob_http_t = NULL;
+#ifndef _CUPS_API_1_4
+		free(pinfo->printjob_object);
+#else
+		httpClose((http_t *) pinfo->printjob_object);
+#endif
+		pinfo->printjob_object = NULL;
 	}
 	free(pinfo);
 }
