@@ -33,6 +33,7 @@
 #include <freerdp/freerdp.h>
 #include <freerdp/chanman.h>
 #include "xf_win.h"
+#include "xf_keyboard.h"
 
 #define MAX_PLUGIN_DATA 20
 
@@ -466,6 +467,7 @@ main(int argc, char ** argv)
 
 	setlocale(LC_CTYPE, "");
 	freerdp_chanman_init();
+	xf_kb_init();
 
 	while (1)
 	{

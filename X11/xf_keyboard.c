@@ -30,11 +30,19 @@
 #include <freerdp/kbd.h>
 #include "xf_event.h"
 
+static int xf_kb_keyboard_layout = 0;
+
 void
-xf_kb_init(rdpInst * inst)
+xf_kb_init(void)
 {
-	inst->settings->keyboard_layout = freerdp_kbd_init();
-	printf("freerdp_kbd_init: %X\n", inst->settings->keyboard_layout);
+	xf_kb_keyboard_layout = freerdp_kbd_init();
+	printf("freerdp_kbd_init: %X\n", xf_kb_keyboard_layout);
+}
+
+void
+xf_kb_inst_init(rdpInst * inst)
+{
+	inst->settings->keyboard_layout = xf_kb_keyboard_layout;
 };
 
 void
@@ -105,11 +113,13 @@ xf_kb_get_key_state(xfInfo * xfi, int state, int keysym)
 }
 
 int
-xf_kb_get_toggle_keys_state(xfInfo * xfi)
+xf_kb_get_toggle_keys_state(rdpInst * inst)
 {
+	xfInfo * xfi;
 	int toggle_keys_state = 0;
 	int state;
 
+	xfi = GET_XFI(inst);
 	state = xf_kb_read_keyboard_state(xfi);
 	if (xf_kb_get_key_state(xfi, state, XK_Scroll_Lock))
 	{
@@ -142,7 +152,7 @@ xf_kb_focus_in(rdpInst * inst)
 	scancode = freerdp_kbd_get_scancode_by_virtualkey(xfi->tab_key);
 	inst->rdp_send_input(inst, RDP_INPUT_SCANCODE, KBD_FLAG_UP, scancode, 0);
 	/* sync num, caps, scroll, kana lock */
-	flags = xf_kb_get_toggle_keys_state(xfi);
+	flags = xf_kb_get_toggle_keys_state(inst);
 	inst->rdp_sync_input(inst, flags);
 }
 

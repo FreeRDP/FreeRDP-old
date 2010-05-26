@@ -424,10 +424,7 @@ l_ui_end_draw_glyphs(struct rdp_inst * inst, int x, int y, int cx, int cy)
 static uint32
 l_ui_get_toggle_keys_state(struct rdp_inst * inst)
 {
-	xfInfo * xfi;
-
-	xfi = GET_XFI(inst);
-	return xf_kb_get_toggle_keys_state(xfi);
+	return xf_kb_get_toggle_keys_state(inst);
 }
 
 static void
@@ -964,7 +961,7 @@ xf_pre_connect(rdpInst * inst)
 	xfi->screen = ScreenOfDisplay(xfi->display, xfi->screen_num);
 	xfi->depth = DefaultDepthOfScreen(xfi->screen);
 	xfi->xserver_be = (ImageByteOrder(xfi->display) == MSBFirst);
-	xf_kb_init(inst);
+	xf_kb_inst_init(inst);
 	return 0;
 }
 
