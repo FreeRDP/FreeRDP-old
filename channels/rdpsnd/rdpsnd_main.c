@@ -94,8 +94,6 @@ struct rdpsnd_plugin
 	int delay_ms;
 	struct data_out_item * out_list_head;
 	struct data_out_item * out_list_tail;
-	/* for locking the linked list */
-	pthread_mutex_t * out_mutex;
 
 	int cBlockNo;
 	char * supported_formats;
@@ -181,7 +179,6 @@ queue_data_out(rdpsndPlugin * plugin)
 	item->data_size = plugin->data_out_size;
 	plugin->data_out_size = 0;
 	item->out_time_stamp = plugin->local_time_stamp + plugin->delay_ms;
-	pthread_mutex_lock(plugin->out_mutex);
 	if (plugin->out_list_tail == 0)
 	{
 		plugin->out_list_head = item;
@@ -192,7 +189,6 @@ queue_data_out(rdpsndPlugin * plugin)
 		plugin->out_list_tail->next = item;
 		plugin->out_list_tail = item;
 	}
-	pthread_mutex_unlock(plugin->out_mutex);
 }
 
 /* process the linked list of data that has queued to be sent */
@@ -212,16 +208,13 @@ thread_process_data_out(rdpsndPlugin * plugin)
 		{
 			break;
 		}
-		pthread_mutex_lock(plugin->out_mutex);
 		if (plugin->out_list_head == 0)
 		{
-			pthread_mutex_unlock(plugin->out_mutex);
 			break;
 		}
 		cur_time = get_mstime();
 		if (cur_time <= plugin->out_list_head->out_time_stamp)
 		{
-			pthread_mutex_unlock(plugin->out_mutex);
 			break;
 		}
 		data = plugin->out_list_head->data;
@@ -232,7 +225,6 @@ thread_process_data_out(rdpsndPlugin * plugin)
 		{
 			plugin->out_list_tail = 0;
 		}
-		pthread_mutex_unlock(plugin->out_mutex);
 
 		error = plugin->ep.pVirtualChannelWrite(plugin->open_handle,
 			data, data_size, data);
@@ -300,6 +292,7 @@ thread_process_message_formats(rdpsndPlugin * plugin, char * data, int data_size
 	{
 		LLOGLN(0, ("thread_process_message_formats: warning, old server"));
 	}
+	LLOGLN(0, ("thread_process_message_formats: version %d", version));
 	/* skip:
 		bPad (1 byte) */
 	/* setup output buffer */
@@ -354,6 +347,24 @@ thread_process_message_formats(rdpsndPlugin * plugin, char * data, int data_size
 			"VirtualChannelWrite "
 			"failed %d", error));
 		return 1;
+	}
+	if (version >= 6)
+	{
+		size = 6;
+		out_data = (char *) malloc(size);
+		SET_UINT8(out_data, 0, SNDC_QUALITYMODE); /* Header (4 bytes) */
+		SET_UINT8(out_data, 1, 0);
+		SET_UINT16(out_data, 2, size - 4);
+		SET_UINT16(out_data, 4, 2); /* HIGH_QUALITY */
+		error = plugin->ep.pVirtualChannelWrite(plugin->open_handle,
+			out_data, size, out_data);
+		if (error != CHANNEL_RC_OK)
+		{
+			LLOGLN(0, ("thread_process_message_formats: "
+				"VirtualChannelWrite "
+				"failed %d", error));
+			return 1;
+		}
 	}
 	return 0;
 }
@@ -590,6 +601,7 @@ thread_func(void * arg)
 	rdpsndPlugin * plugin;
 	struct wait_obj * listobj[2];
 	int numobj;
+	int timeout;
 
 	plugin = (rdpsndPlugin *) arg;
 
@@ -600,8 +612,8 @@ thread_func(void * arg)
 		listobj[0] = plugin->term_event;
 		listobj[1] = plugin->data_in_event;
 		numobj = 2;
-		wait_obj_select(listobj, numobj, NULL, 0, 500);
-
+		timeout = plugin->out_list_head == 0 ? -1 : 500;
+		wait_obj_select(listobj, numobj, NULL, 0, timeout);
 		if (wait_obj_is_set(plugin->term_event))
 		{
 			break;
@@ -726,8 +738,6 @@ InitEventProcessTerminated(void * pInitHandle)
 
 	pthread_mutex_destroy(plugin->in_mutex);
 	free(plugin->in_mutex);
-	pthread_mutex_destroy(plugin->out_mutex);
-	free(plugin->out_mutex);
 
 	/* free the un-processed in/out queue */
 	while (plugin->in_list_head != 0)
@@ -789,8 +799,6 @@ VirtualChannelEntry(PCHANNEL_ENTRY_POINTS pEntryPoints)
 	strcpy(plugin->channel_def.name, "rdpsnd");
 	plugin->in_mutex = (pthread_mutex_t *) malloc(sizeof(pthread_mutex_t));
 	pthread_mutex_init(plugin->in_mutex, 0);
-	plugin->out_mutex = (pthread_mutex_t *) malloc(sizeof(pthread_mutex_t));
-	pthread_mutex_init(plugin->out_mutex, 0);
 	plugin->in_list_head = 0;
 	plugin->in_list_tail = 0;
 	plugin->out_list_head = 0;
