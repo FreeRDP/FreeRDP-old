@@ -350,12 +350,13 @@ thread_process_message_formats(rdpsndPlugin * plugin, char * data, int data_size
 	}
 	if (version >= 6)
 	{
-		size = 6;
+		size = 8;
 		out_data = (char *) malloc(size);
 		SET_UINT8(out_data, 0, SNDC_QUALITYMODE); /* Header (4 bytes) */
 		SET_UINT8(out_data, 1, 0);
 		SET_UINT16(out_data, 2, size - 4);
 		SET_UINT16(out_data, 4, 2); /* HIGH_QUALITY */
+		SET_UINT16(out_data, 6, 0); /* Reserved (2 bytes) */
 		error = plugin->ep.pVirtualChannelWrite(plugin->open_handle,
 			out_data, size, out_data);
 		if (error != CHANNEL_RC_OK)
