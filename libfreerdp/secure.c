@@ -367,89 +367,75 @@ sec_establish_key(rdpSec * sec)
 	sec_send(sec, s, flags);
 }
 
-/* Output connect initial data blob */
+/* Prepare PER encoded T.125 ConnectData for ConferenceCreateRequest connect-initial */
 static void
-sec_out_mcs_data(rdpSec * sec, STREAM s)
+sec_out_connectdata(rdpSec * sec, STREAM s)
 {
 	int i;
 	rdpSet * settings = sec->rdp->settings;
-	int hostlen;
+	int out_len;
 	int length = 158 + 76 + 12 + 4;
 
 	if (settings->num_channels > 0)
 		length += settings->num_channels * 12 + 8;
 
-	/* Generic Conference Control (T.124) ConferenceCreateRequest */
+	/* t124Identifier = 0.0.20.124.0.1 */
 	out_uint16_be(s, 5);
 	out_uint16_be(s, 0x14);
 	out_uint8(s, 0x7c);
 	out_uint16_be(s, 1);
-
-	out_uint16_be(s, (length | 0x8000));	/* remaining length */
-
-	out_uint16_be(s, 8);	/* length? */
+	/* connectPDU octet string */
+	out_uint16_be(s, (length | 0x8000));	/* connectPDU length in two bytes*/
+	/* connectPDU content is ConnectGCCPDU PER encoded: */
+	out_uint16_be(s, 8);	/* ConferenceCreateRequest ... */
 	out_uint16_be(s, 16);
 	out_uint8(s, 0);
-	out_uint16_le(s, 0xc001);
-	out_uint8(s, 0);
-
-	out_uint32_le(s, 0x61637544);	/* OEM ID: "Duca", as in Ducati. */
-	out_uint16_be(s, ((length - 14) | 0x8000));	/* remaining length */
-
-	/* Client Core Data */
-
-	/* User Data Header */
-	out_uint16_le(s, UDH_CS_CORE);
-	out_uint16_le(s, 212);	/* length */
-	/* End of User Data Header */
+	out_uint16_le(s, 0xc001);	/* userData key is h221NonStandard */
+	out_uint8(s, 0);	/* 4 bytes: */
+	out_uint32_le(s, 0x61637544);	/* "Duca" */
+	out_uint16_be(s, ((length - 14) | 0x8000));	/* userData value length in two bytes */
 
 	/*
-		version (4 bytes)
-		0x00080001	RDP 4.0
-		0x00080004	RDP 5.0, 5.1 and 6.0
+	 * Client Core Data (216 bytes plus optional connectionType, pad1octet and serverSelectedProtocol)
+	 */
 
-		Major version in high two bytes
-		Minor version in low two bytes
-	*/
+	out_uint16_le(s, UDH_CS_CORE);	/* User Data Header type */
+	out_uint16_le(s, 212);	/* total length */
 
-	out_uint16_le(s, sec->rdp->settings->rdp_version >= 5 ? 4 : 1);	/* RDP version. 1 == RDP4, 4 == RDP5. */
-	out_uint16_le(s, 0x0008); // Major version
-
-	out_uint16_le(s, sec->rdp->settings->width); // desktopWidth
-	out_uint16_le(s, sec->rdp->settings->height); // desktopHeight
-	out_uint16_le(s, RNS_UD_COLOR_8BPP); // colorDepth
-
+	out_uint32_le(s, sec->rdp->settings->rdp_version >= 5 ? 0x00080004 : 0x00080001);	/* client version */
+	out_uint16_le(s, sec->rdp->settings->width);	// desktopWidth
+	out_uint16_le(s, sec->rdp->settings->height);	// desktopHeight
+	out_uint16_le(s, RNS_UD_COLOR_8BPP);	// colorDepth - ignored because of postBeta2ColorDepth
 	out_uint16_le(s, RNS_UD_SAS_DEL); // SASSequence (Secure Access Sequence)
 	out_uint32_le(s, sec->rdp->settings->keyboard_layout); // keyboardLayout
 	out_uint32_le(s, 2600);	// clientBuild
 
-	/* Unicode name of client, padded to 32 bytes */
+	/* Unicode name of client, truncated to 15 characters */
 	if (strlen(sec->rdp->settings->hostname) > 15)
 	{
 		sec->rdp->settings->hostname[15] = 0; /* Modified in-place! */
 	}
-	hostlen = rdp_out_unistr(sec->rdp, s, sec->rdp->settings->hostname);
-	out_uint8s(s, 30 - hostlen);
+	out_len = rdp_out_unistr(sec->rdp, s, sec->rdp->settings->hostname);
+	out_uint8s(s, 30 - out_len);	/* pad to 32 bytes (double zero termination has already been added) */
 
-	/* See
-	   http://msdn.microsoft.com/library/default.asp?url=/library/en-us/wceddk40/html/cxtsksupportingremotedesktopprotocol.asp */
-	out_uint32_le(s, sec->rdp->settings->keyboard_type);
-	out_uint32_le(s, sec->rdp->settings->keyboard_subtype);
-	out_uint32_le(s, sec->rdp->settings->keyboard_functionkeys);
+	out_uint32_le(s, sec->rdp->settings->keyboard_type);	/* keyboardType */
+	out_uint32_le(s, sec->rdp->settings->keyboard_subtype);	/* keyboardSubType */
+	out_uint32_le(s, sec->rdp->settings->keyboard_functionkeys);	/* keyboardFunctionKey */
 
 	/* Input Method Editor (IME) file name associated with the input locale.
 	   Up to 31 Unicode characters plus a NULL terminator */
-	//rdp_out_unistr(sec->rdp, s, sec->rdp->settings->keyboard_ime, 2 * strlen(sec->rdp->settings->keyboard_ime));
-	//out_uint8s(s, 62 - 2 * strlen(sec->rdp->settings->keyboard_ime)); // imeFileName (64 bytes)
-	out_uint8s(s, 64);
+	// if (strlen(sec->rdp->settings->keyboard_ime) > 31)
+	// 	sec->rdp->settings->keyboard_ime[31] = 0; /* Modified in-place! */
+	// out_len = rdp_out_unistr(sec->rdp, s, sec->rdp->settings->hostname);
+	// out_uint8s(s, 62 - out_len); /* pad to 64 bytes (double zero termination has already been added) */
+	out_uint8s(s, 64);	/* imeFileName */
 
 	out_uint16_le(s, RNS_UD_COLOR_8BPP); // postBeta2ColorDepth
 	out_uint16_le(s, 1); // clientProductID
-
 	out_uint32_le(s, 0); // serialNumber (should be initialized to 0)
 
-	i = MIN(sec->rdp->settings->server_depth, 24);
-	out_uint16_le(s, i); // highColorDepth
+	i = MIN(sec->rdp->settings->server_depth, 24);	/* 32 must be reported as 24 and RNS_UD_CS_WANT_32BPP_SESSION */
+	out_uint16_le(s, i); // (requested) highColorDepth
 
 	i = RNS_UD_32BPP_SUPPORT | RNS_UD_24BPP_SUPPORT | RNS_UD_16BPP_SUPPORT | RNS_UD_15BPP_SUPPORT;
 	out_uint16_le(s, i); // supportedColorDepths
@@ -463,52 +449,30 @@ sec_out_mcs_data(rdpSec * sec, STREAM s)
 
 	out_uint8s(s, 64); // clientDigProductId (64 bytes)
 
-	/*
-		Optional missing fields:
-
-		pad2octets (2 bytes): A 16-bit, unsigned integer. Padding to align the
-		serverSelectedProtocol field on the correct byte boundary. If this field is present, then all of
-		the preceding fields MUST also be present. If this field is not present, then none of the
-		subsequent fields MUST be present.
-
-		serverSelectedProtocol (4 bytes): A 32-bit, unsigned integer. It contains the value returned
-		by the server in the selectedProtocol field of the RDP Negotiation Response structure
-		(section 2.2.1.2.1). In the event that an RDP Negotiation Response structure was not sent,
-		this field MUST be initialized to PROTOCOL_RDP (0). If this field is present, then all of the
-		preceding fields MUST also be present.
+	/* Optional fields left out:
+	   connectionType (1 byte) and pad1octet (1 byte) (because no earlyCapabilityFlags RNS_UD_CS_VALID_CONNECTION_TYPE)
+	   serverSelectedProtocol (4 bytes) (default 0 = PROTOCOL_RDP)
 	*/
 
-	/* End of Client Core Data */
+	/*
+	 * Client Security Data (12 bytes)
+	 */
 
-	/* Client Security Data */
-
-	/* User Data Header */
-	out_uint16_le(s, UDH_CS_SECURITY); // Type CS_SECURITY (0xC002)
-	out_uint16_le(s, 12); // Length
-	/* End of User Data Header */
+	out_uint16_le(s, UDH_CS_SECURITY);	/* User Data Header type */
+	out_uint16_le(s, 12);	/* total length */
 
 	out_uint32_le(s, sec->rdp->settings->encryption ? ENCRYPTION_40BIT_FLAG | ENCRYPTION_128BIT_FLAG : 0); // encryptionMethods
-
-	/*
-		extEncryptionMethods (4 bytes): A 32-bit, unsigned integer.This field is used exclusively for
-		the French locale. In French locale clients, encryptionMethods MUST be set to 0 and
-		extEncryptionMethods MUST be set to the value to which encryptionMethods would have
-		been set. For non-French locale clients, this field MUST be set to 0.
-	*/
-
 	out_uint32_le(s, 0); // extEncryptionMethods
 
-	/* End of Client Security Data */
+	/*
+	 * Client Network Data (optional and variable-length)
+	 */
 
 	DEBUG_RDP5("num_channels is %d\n", settings->num_channels);
 	if (settings->num_channels > 0)
 	{
-		/* Client Network Data */
-
-		/* User Data Header */
-		out_uint16_le(s, UDH_CS_NET); // CS_NET (0xC003)
-		out_uint16_le(s, settings->num_channels * 12 + 8); // Length
-		/* End of User Data Header */
+		out_uint16_le(s, UDH_CS_NET);	/* User Data Header type */
+		out_uint16_le(s, settings->num_channels * 12 + 8);	/* total length */
 
 		out_uint32_le(s, settings->num_channels);	// channelCount
 		for (i = 0; i < settings->num_channels; i++)
@@ -517,17 +481,18 @@ sec_out_mcs_data(rdpSec * sec, STREAM s)
 			out_uint8a(s, settings->channels[i].name, 8); // name (8 bytes) 7 characters with null terminator
 			out_uint32_be(s, settings->channels[i].flags); // options (4 bytes)
 		}
-		/* End of Client Network Data */
 	}
 
-	/* Client Cluster Data */
-	out_uint16_le(s, UDH_CS_CLUSTER); // CS_CLUSTER (0xC004)
-	out_uint16_le(s, 12); // Length
+	/*
+	 * Client Cluster Data (12 bytes)
+	 */
+
+	out_uint16_le(s, UDH_CS_CLUSTER);	/* User Data Header type */
+	out_uint16_le(s, 12);	/* total length */
 	out_uint32_le(s, sec->rdp->settings->console_session ?
 		REDIRECTED_SESSIONID_FIELD_VALID | REDIRECTION_SUPPORTED | REDIRECTION_VERSION3 :
 		REDIRECTION_SUPPORTED | REDIRECTION_VERSION3); // flags
 	out_uint32_le(s, 0); // RedirectedSessionID
-	/* End of Client Cluster Data */
 
 	s_mark_end(s);
 }
@@ -930,7 +895,7 @@ sec_connect(rdpSec * sec, char *server, char *username, int port)
 		/* We exchange some RDP data during the MCS-Connect */
 		connectdata.size = 512;
 		connectdata.p = connectdata.data = (uint8 *) xmalloc(connectdata.size);
-		sec_out_mcs_data(sec, &connectdata);
+		sec_out_connectdata(sec, &connectdata);
 		success = mcs_connect(sec->mcs, &connectdata);
 		xfree(connectdata.data);
 
@@ -954,7 +919,7 @@ sec_reconnect(rdpSec * sec, char *server, int port)
 	/* We exchange some RDP data during the MCS-Connect */
 	connectdata.size = 512;
 	connectdata.p = connectdata.data = (uint8 *) xmalloc(connectdata.size);
-	sec_out_mcs_data(sec, &connectdata);
+	sec_out_connectdata(sec, &connectdata);
 	success = mcs_reconnect(sec->mcs, &connectdata);
 	xfree(connectdata.data);
 

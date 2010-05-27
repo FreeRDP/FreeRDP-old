@@ -59,29 +59,29 @@ mcs_parse_domain_params(rdpMcs * mcs, STREAM s)
 
 /* Send an MCS_CONNECT_INITIAL message (ASN.1 BER) */
 static void
-mcs_send_connect_initial(rdpMcs * mcs, STREAM mcs_data)
+mcs_send_connect_initial(rdpMcs * mcs, STREAM connectdata)
 {
-	int datalen = mcs_data->end - mcs_data->data;
+	int datalen = connectdata->end - connectdata->data;
 	int length = 9 + 3 * 34 + 4 + datalen;
 	STREAM s;
 
 	s = iso_init(mcs->iso, length + 5);
 
-	ber_out_header(s, MCS_CONNECT_INITIAL, length);
-	ber_out_header(s, BER_TAG_OCTET_STRING, 1);	/* calling domain */
+	ber_out_header(s, MCS_CONNECT_INITIAL, length);	/* ConnectMCSPDU connect-initial */
+	ber_out_header(s, BER_TAG_OCTET_STRING, 1);	/* callingDomainSelector */
 	out_uint8(s, 1);
-	ber_out_header(s, BER_TAG_OCTET_STRING, 1);	/* called domain */
+	ber_out_header(s, BER_TAG_OCTET_STRING, 1);	/* calledDomainSelector */
 	out_uint8(s, 1);
 
-	ber_out_header(s, BER_TAG_BOOLEAN, 1);
-	out_uint8(s, 0xff);	/* upward flag */
+	ber_out_header(s, BER_TAG_BOOLEAN, 1);	/* upwardFlag */
+	out_uint8(s, 0xff);
 
-	mcs_out_domain_params(s, 34, 2, 0, 0xffff);	/* target params */
-	mcs_out_domain_params(s, 1, 1, 1, 0x420);	/* min params */
-	mcs_out_domain_params(s, 0xffff, 0xfc17, 0xffff, 0xffff);	/* max params */
+	mcs_out_domain_params(s, 34, 2, 0, 0xffff);	/* targetParameters */
+	mcs_out_domain_params(s, 1, 1, 1, 0x420);	/* minimumParameters */
+	mcs_out_domain_params(s, 0xffff, 0xfc17, 0xffff, 0xffff);	/* maximumParameters */
 
-	ber_out_header(s, BER_TAG_OCTET_STRING, datalen);
-	out_uint8p(s, mcs_data->data, datalen);
+	ber_out_header(s, BER_TAG_OCTET_STRING, datalen);	/* userData */
+	out_uint8p(s, connectdata->data, datalen);
 
 	s_mark_end(s);
 	iso_send(mcs->iso, s);
@@ -320,13 +320,13 @@ mcs_recv(rdpMcs * mcs, uint16 * channel, isoRecvType * ptype)
 
 /* Establish a connection up to the MCS layer */
 RD_BOOL
-mcs_connect(rdpMcs * mcs, STREAM mcs_data)
+mcs_connect(rdpMcs * mcs, STREAM connectdata)
 {
 	int i;
 	int mcs_id;
 	rdpSet * settings;
 
-	mcs_send_connect_initial(mcs, mcs_data);
+	mcs_send_connect_initial(mcs, connectdata);
 	if (!mcs_recv_connect_response(mcs))
 		goto error;
 
@@ -364,13 +364,13 @@ mcs_connect(rdpMcs * mcs, STREAM mcs_data)
 
 /* Establish a connection up to the MCS layer */
 RD_BOOL
-mcs_reconnect(rdpMcs * mcs, STREAM mcs_data)
+mcs_reconnect(rdpMcs * mcs, STREAM connectdata)
 {
 	int i;
 	int mcs_id;
 	rdpSet * settings;
 
-	mcs_send_connect_initial(mcs, mcs_data);
+	mcs_send_connect_initial(mcs, connectdata);
 	if (!mcs_recv_connect_response(mcs))
 		goto error;
 

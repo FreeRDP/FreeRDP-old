@@ -33,7 +33,9 @@
 #define DEFAULT_CODEPAGE	"UTF-8"
 #define WINDOWS_CODEPAGE	"UTF-16LE"
 
+/* MCSPDU choice connect-initial, Application tag 101 */
 #define MCS_CONNECT_INITIAL	0x7f65
+/* MCSPDU choice connect-response, Application tag 102 */
 #define MCS_CONNECT_RESPONSE	0x7f66
 #define MCS_TAG_DOMAIN_PARAMS	0x30
 #define MCS_GLOBAL_CHANNEL	1003

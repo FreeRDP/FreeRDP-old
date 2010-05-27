@@ -27,6 +27,9 @@
 /* Color depth */
 #define RNS_UD_COLOR_4BPP	0xCA00
 #define RNS_UD_COLOR_8BPP	0xCA01
+#define RNS_UD_COLOR_16BPP_555	0xCA02
+#define RNS_UD_COLOR_16BPP_565	0xCA03
+#define RNS_UD_COLOR_24BPP	0xCA04
 
 /* Secure Access Sequence */
 #define RNS_UD_SAS_DEL		0xAA03
@@ -56,9 +59,10 @@
 #define ServerSessionRedirectionVersionMask	0x0000003C
 #define REDIRECTED_SESSIONID_FIELD_VALID	0x00000002
 #define REDIRECTED_SMARTCARD			0x00000040
-
-#define REDIRECTION_VERSION3	0x08
-#define REDIRECTION_VERSION4	0x0C
+/* The following values are shifted 2 places to fit into ServerSessionRedirectionVersionMask */
+#define REDIRECTION_VERSION3	(0x02 << 2)
+#define REDIRECTION_VERSION4	(0x03 << 2)
+#define REDIRECTION_VERSION5	(0x04 << 2)
 
 /* Channel Option Flags */
 #define CHAN_INITIALIZED		0x80000000
@@ -86,7 +90,7 @@
 #define INFO_ENABLEWINDOWSKEY		0x00000100
 #define INFO_REMOTECONSOLEAUDIO		0x00002000
 #define INFO_FORCE_ENCRYPTED_CS_PDU	0x00004000
-#define INFO_RAIL			0x00008000	// RemoteApp! :)
+#define INFO_RAIL			0x00008000
 #define INFO_LOGONERRORS		0x00010000
 #define INFO_MOUSE_HAS_WHEEL		0x00020000
 #define INFO_PASSWORD_IS_SC_PIN		0x00040000
