@@ -1397,9 +1397,9 @@ process_redirect_pdu(rdpRdp * rdp, STREAM s)
 	uint16 total_length;
 	uint32 redirect_flags;
 
-	in_uint8s(s, 2);	/* flags, 0x0400 */
+	in_uint8s(s, 2);	/* flags, MUST be set to SEC_REDIRECTION_PKT = 0x0400 */
 	in_uint16_le(s, total_length);
-	in_uint32_le(s, rdp->redirect_session_id);
+	in_uint32_le(s, rdp->redirect_session_id);	/* Must be used in Client Cluster Data as RedirectedSessionID */
 	in_uint32_le(s, redirect_flags);
 
 	if (redirect_flags & LB_TARGET_NET_ADDRESS)
