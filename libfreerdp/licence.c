@@ -293,8 +293,8 @@ licence_process_issue(rdpLicence * licence, STREAM s)
 	crypto_rc4(&crypt_key, length, s->p, s->p);	/* decrypt in place */
 
 	/* dwVersion */
-	in_uint16_le(s, os_major)	/* OS major version */
-	in_uint16_le(s, os_minor)	/* OS minor version */
+	in_uint16_le(s, os_major);	/* OS major version */
+	in_uint16_le(s, os_minor);	/* OS minor version */
 		
 	/* Skip Scope, CompanyName and ProductId */
 	for (i = 0; i < 3; i++)
