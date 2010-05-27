@@ -89,7 +89,7 @@ mcs_send_connect_initial(rdpMcs * mcs, STREAM mcs_data)
 
 /* Expect a MCS_CONNECT_RESPONSE message (ASN.1 BER) */
 static RD_BOOL
-mcs_recv_connect_response(rdpMcs * mcs, STREAM mcs_data)
+mcs_recv_connect_response(rdpMcs * mcs)
 {
 	uint8 result;
 	int length;
@@ -320,14 +320,14 @@ mcs_recv(rdpMcs * mcs, uint16 * channel, isoRecvType * ptype)
 
 /* Establish a connection up to the MCS layer */
 RD_BOOL
-mcs_connect(rdpMcs * mcs, char *server, STREAM mcs_data, char *username, int port)
+mcs_connect(rdpMcs * mcs, STREAM mcs_data)
 {
 	int i;
 	int mcs_id;
 	rdpSet * settings;
 
 	mcs_send_connect_initial(mcs, mcs_data);
-	if (!mcs_recv_connect_response(mcs, mcs_data))
+	if (!mcs_recv_connect_response(mcs))
 		goto error;
 
 	mcs_send_edrq(mcs);
@@ -364,17 +364,14 @@ mcs_connect(rdpMcs * mcs, char *server, STREAM mcs_data, char *username, int por
 
 /* Establish a connection up to the MCS layer */
 RD_BOOL
-mcs_reconnect(rdpMcs * mcs, char *server, STREAM mcs_data, int port)
+mcs_reconnect(rdpMcs * mcs, STREAM mcs_data)
 {
 	int i;
 	int mcs_id;
 	rdpSet * settings;
 
-	if (!iso_reconnect(mcs->iso, server, port))
-		return False;
-
 	mcs_send_connect_initial(mcs, mcs_data);
-	if (!mcs_recv_connect_response(mcs, mcs_data))
+	if (!mcs_recv_connect_response(mcs))
 		goto error;
 
 	mcs_send_edrq(mcs);

@@ -931,7 +931,7 @@ sec_connect(rdpSec * sec, char *server, char *username, int port)
 	{
 		/* We exchange some RDP data during the MCS-Connect */
 
-		if (!mcs_connect(sec->mcs, server, &mcs_data, username, port))
+		if (!mcs_connect(sec->mcs, &mcs_data))
 			return False;
 
 		/* sec_process_mcs_data(&mcs_data); */
@@ -944,18 +944,21 @@ sec_connect(rdpSec * sec, char *server, char *username, int port)
 	return True;
 }
 
-/* Establish a secure connection */
+/* Reestablish a secure connection */
 RD_BOOL
 sec_reconnect(rdpSec * sec, char *server, int port)
 {
 	struct stream mcs_data;
+
+	if (!iso_reconnect(sec->mcs->iso, server, port))
+		return False;
 
 	/* We exchange some RDP data during the MCS-Connect */
 	mcs_data.size = 512;
 	mcs_data.p = mcs_data.data = (uint8 *) xmalloc(mcs_data.size);
 	sec_out_mcs_data(sec, &mcs_data);
 
-	if (!mcs_reconnect(sec->mcs, server, &mcs_data, port))
+	if (!mcs_reconnect(sec->mcs, &mcs_data))
 		return False;
 
 	/*      sec_process_mcs_data(&mcs_data); */
