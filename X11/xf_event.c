@@ -144,9 +144,33 @@ xf_handle_event_KeyPress(rdpInst * inst, xfInfo * xfi, XEvent * xevent)
 	return 0;
 }
 
+static RD_BOOL
+xf_skip_key_release(rdpInst * inst, xfInfo * xfi, XEvent * xevent)
+{
+	XEvent next_event;
+
+	if (XPending(xfi->display))
+	{
+		memset(&next_event, 0, sizeof(next_event));
+		XPeekEvent(xfi->display, &next_event);
+		if (next_event.type == KeyPress)
+		{
+			if (next_event.xkey.keycode == xevent->xkey.keycode)
+			{
+				return True;
+			}
+		}
+	}
+	return False;
+}
+
 static int
 xf_handle_event_KeyRelease(rdpInst * inst, xfInfo * xfi, XEvent * xevent)
 {
+	if (xf_skip_key_release(inst, xfi, xevent))
+	{
+		return 0;
+	}
 	xf_kb_send_key(inst, RDP_KEYRELEASE, xevent->xkey.keycode);
 	return 0;
 }
