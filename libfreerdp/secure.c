@@ -903,11 +903,6 @@ sec_recv(rdpSec * sec, secRecvType * type)
 RD_BOOL
 sec_connect(rdpSec * sec, char *server, char *username, int port)
 {
-	struct stream mcs_data;
-	mcs_data.size = 512;
-	mcs_data.p = mcs_data.data = (uint8 *) xmalloc(mcs_data.size);
-	sec_out_mcs_data(sec, &mcs_data);
-
 	/* Don't forget to set this *before* iso_connect(), otherwise you'll bang your head on the wall */
 	/* sec->tls = 1; */
 	
@@ -929,43 +924,44 @@ sec_connect(rdpSec * sec, char *server, char *username, int port)
 	else
 #endif
 	{
+		RD_BOOL success;
+		struct stream connectdata;
+
 		/* We exchange some RDP data during the MCS-Connect */
+		connectdata.size = 512;
+		connectdata.p = connectdata.data = (uint8 *) xmalloc(connectdata.size);
+		sec_out_mcs_data(sec, &connectdata);
+		success = mcs_connect(sec->mcs, &connectdata);
+		xfree(connectdata.data);
 
-		if (!mcs_connect(sec->mcs, &mcs_data))
-			return False;
-
-		/* sec_process_mcs_data(&mcs_data); */
-		if (sec->rdp->settings->encryption)
+		if (success && sec->rdp->settings->encryption)
 			sec_establish_key(sec);
 
-		xfree(mcs_data.data);
+		return success;
 	}
-
-	return True;
 }
 
 /* Reestablish a secure connection */
 RD_BOOL
 sec_reconnect(rdpSec * sec, char *server, int port)
 {
-	struct stream mcs_data;
+	RD_BOOL success;
+	struct stream connectdata;
 
 	if (!iso_reconnect(sec->mcs->iso, server, port))
 		return False;
 
 	/* We exchange some RDP data during the MCS-Connect */
-	mcs_data.size = 512;
-	mcs_data.p = mcs_data.data = (uint8 *) xmalloc(mcs_data.size);
-	sec_out_mcs_data(sec, &mcs_data);
+	connectdata.size = 512;
+	connectdata.p = connectdata.data = (uint8 *) xmalloc(connectdata.size);
+	sec_out_mcs_data(sec, &connectdata);
+	success = mcs_reconnect(sec->mcs, &connectdata);
+	xfree(connectdata.data);
 
-	if (!mcs_reconnect(sec->mcs, &mcs_data))
-		return False;
-
-	/*      sec_process_mcs_data(&mcs_data); */
-	if (sec->rdp->settings->encryption)
+	if (success && sec->rdp->settings->encryption)
 		sec_establish_key(sec);
-	xfree(mcs_data.data);
-	return True;
+
+	return success;
 }
 
 /* Disconnect a connection */
