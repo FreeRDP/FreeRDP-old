@@ -489,9 +489,9 @@ sec_out_connectdata(rdpSec * sec, STREAM s)
 
 	out_uint16_le(s, UDH_CS_CLUSTER);	/* User Data Header type */
 	out_uint16_le(s, 12);	/* total length */
-	out_uint32_le(s, sec->rdp->settings->console_session || sec->rdp->redirect_session_id ?
-		REDIRECTED_SESSIONID_FIELD_VALID | REDIRECTION_SUPPORTED | REDIRECTION_VERSION3 :
-		REDIRECTION_SUPPORTED | REDIRECTION_VERSION3); // flags
+	out_uint32_le(s, (sec->rdp->settings->console_session || sec->rdp->redirect_session_id) ?
+		REDIRECTED_SESSIONID_FIELD_VALID | REDIRECTION_SUPPORTED | REDIRECTION_VERSION4 :
+		REDIRECTION_SUPPORTED | REDIRECTION_VERSION4); // flags
 	out_uint32_le(s, sec->rdp->redirect_session_id); // RedirectedSessionID
 
 	s_mark_end(s);
