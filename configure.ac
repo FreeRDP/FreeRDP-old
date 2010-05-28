@@ -72,7 +72,7 @@ dnl Define keymap path
 KEYMAP_PATH="${datadir}/freerdp/keymaps"
 AC_SUBST(KEYMAP_PATH)
 
-dnl Difine plugin path
+dnl Define plugin path
 PLUGIN_PATH='${libdir}/freerdp'
 AC_SUBST(PLUGIN_PATH)
 

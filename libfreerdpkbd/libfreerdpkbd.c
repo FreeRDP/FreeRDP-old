@@ -410,32 +410,38 @@ load_keyboard(char* kbd)
 	// when it is for reading only.
 	if((fp = fopen(xkbfilepath, "r")) == NULL)
 	{
-		/* If ran from the source tree, the keymaps will be in the parent directory */
-		snprintf(xkbfilepath, sizeof(xkbfilepath), "../keymaps/%s", xkbfile);
+		/* Look first in path given at compile time (install path) */
+		snprintf(xkbfilepath, sizeof(xkbfilepath), "%s/%s", KEYMAP_PATH, xkbfile);
 
 		if((fp = fopen(xkbfilepath, "r")) == NULL)
 		{
-			// File wasn't found in the source tree, try ~/.freerdp/ folder
-			if((home = getenv("HOME")) == NULL)
-				return 0;
-
-			// Get path to file in ~/.freerdp/ folder
-			snprintf(xkbfilepath, sizeof(xkbfilepath), "%s/.freerdp/keymaps/%s", home, xkbfile);
+			/* If ran from the source tree, the keymaps will be in the parent directory */
+			snprintf(xkbfilepath, sizeof(xkbfilepath), "../keymaps/%s", xkbfile);
 
 			if((fp = fopen(xkbfilepath, "r")) == NULL)
 			{
-				// Try /usr/share/freerdp folder
-				snprintf(xkbfilepath, sizeof(xkbfilepath), "/usr/share/freerdp/keymaps/%s", xkbfile);
+				// File wasn't found in the source tree, try ~/.freerdp/ folder
+				if((home = getenv("HOME")) == NULL)
+					return 0;
+
+				// Get path to file in ~/.freerdp/ folder
+				snprintf(xkbfilepath, sizeof(xkbfilepath), "%s/.freerdp/keymaps/%s", home, xkbfile);
 
 				if((fp = fopen(xkbfilepath, "r")) == NULL)
 				{
-					// Try /usr/local/share/freerdp folder
-					snprintf(xkbfilepath, sizeof(xkbfilepath), "/usr/local/share/freerdp/keymaps/%s", xkbfile);
+					// Try /usr/share/freerdp folder
+					snprintf(xkbfilepath, sizeof(xkbfilepath), "/usr/share/freerdp/keymaps/%s", xkbfile);
 
 					if((fp = fopen(xkbfilepath, "r")) == NULL)
 					{
-						// Error: Could not find keymap
-						return 0;
+						// Try /usr/local/share/freerdp folder
+						snprintf(xkbfilepath, sizeof(xkbfilepath), "/usr/local/share/freerdp/keymaps/%s", xkbfile);
+
+						if((fp = fopen(xkbfilepath, "r")) == NULL)
+						{
+							// Error: Could not find keymap
+							return 0;
+						}
 					}
 				}
 			}
