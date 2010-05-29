@@ -831,14 +831,17 @@ AC_CHECK_FUNCS(setmntent)
 #
 # IPv6
 #
-AC_ARG_WITH(ipv6,
-    [  --with-ipv6             enable IPv6-support],
-    [
-        if test $withval != "no";
-        then
-	    AC_DEFINE(IPv6,1)
-	fi
-    ])
+AC_ARG_ENABLE(ipv6,
+	[AS_HELP_STRING([--disable-ipv6], [disable IPv6 support])],
+	[
+		if test $enableval != "no";
+		then
+			AC_DEFINE(IPv6,1)
+		fi
+    ],
+	[
+		AC_DEFINE(IPv6,1)
+	])
 
 #
 # debugging
