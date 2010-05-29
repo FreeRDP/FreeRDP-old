@@ -959,6 +959,7 @@ libfreerdpkbd/Makefile
 keymaps/Makefile
 libfreerdpchanman/Makefile
 X11/Makefile
+dfb/Makefile
 channels/common/Makefile
 channels/rdpsnd/Makefile
 channels/cliprdr/Makefile

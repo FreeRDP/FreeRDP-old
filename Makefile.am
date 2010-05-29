@@ -8,6 +8,7 @@ SUBDIRS = \
 	keymaps \
 	libfreerdpchanman \
 	X11 \
+	dfb \
 	channels/common \
 	channels/rdpsnd \
 	channels/cliprdr \
