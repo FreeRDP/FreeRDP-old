@@ -869,7 +869,13 @@ thread_func(void * arg)
 	LLOGLN(10, ("clipboard_x11 thread_func: in"));
 
 	cdata = (struct clipboard_data *) arg;
-	cdata->thread_status = 1;
+	if (cdata->display == NULL)
+	{
+		LLOGLN(0, ("clipboard_x11 thread_func: no display"));
+		cdata->thread_status = -1;
+		return 0;
+	}
+
 	x_socket = ConnectionNumber(cdata->display);
 	while (1)
 	{
@@ -1057,6 +1063,7 @@ clipboard_new(cliprdrPlugin * plugin)
 
 		cdata->incr_atom = XInternAtom(cdata->display, "INCR", False);
 	}
+	cdata->thread_status = 1;
 	pthread_create(&thread, 0, thread_func, cdata);
 	pthread_detach(thread);
 	return cdata;
