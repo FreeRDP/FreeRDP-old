@@ -17,7 +17,7 @@ SUBDIRS = \
 	channels/rdpdr/printer
 
 EXTRA_DIST = autogen.sh indent-all.sh freerdp.spec \
-	AUTHORS ChangeLog COPYING INSTALL NEWS README doc
+	AUTHORS ChangeLog COPYING INSTALL NEWS README
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = freerdp.pc
