@@ -60,6 +60,15 @@ autom4te.cache
 /X11/*.deps
 /X11/*.libs
 /X11/*~
+/dfb/Makefile
+/dfb/Makefile.in
+/dfb/dfbfreerdp
+/dfb/*.o
+/dfb/*.lo
+/dfb/*.la
+/dfb/*.deps
+/dfb/*.libs
+/dfb/*~
 /channels/rdpsnd/*.o
 /channels/rdpsnd/*.lo
 /channels/rdpsnd/*.la
