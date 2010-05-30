@@ -170,6 +170,7 @@ detect_keyboard_type_from_xkb(char* xkbfile, int length)
 	char buffer[1024];
 	unsigned int rv = 0;
 
+	xkbfile = NULL;
 	FILE* setxkbmap;
 
 	// This tells us about the current XKB configuration, if XKB is available
@@ -561,7 +562,8 @@ detect_and_load_keyboard()
 	unsigned int keyboardLayoutID = 0;
 
 	int keymapLoaded = 0;
-
+	memset(xkbfile, '\0', sizeof(xkbfile));
+	
 #if defined(sun)
 	keyboardLayoutID = detect_keyboard_type_and_layout_sunos(xkbfile, sizeof(xkbfile));
 #endif
