@@ -537,7 +537,17 @@ size_t iconv();
   AC_SUBST(LIBICONV)
 ])
 
-UTILS_FUNC_ICONV
+AC_ARG_ENABLE(iconv,
+	[AS_HELP_STRING([--disable-iconv], [disable iconv support])],
+	[
+		if test $enableval != "no";
+		then
+			UTILS_FUNC_ICONV
+		fi
+    ],
+	[
+		UTILS_FUNC_ICONV
+	])
 LIBS="$LIBS $LIBICONV"
 
 #
