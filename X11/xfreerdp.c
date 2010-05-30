@@ -266,8 +266,29 @@ process_params(rdpSet * settings, rdpChanMan * chan_man, int argc, char ** argv,
 		}
 		else
 		{
-			strncpy(settings->server, argv[*pindex], sizeof(settings->server) - 1);
 			settings->server[sizeof(settings->server) - 1] = 0;
+			if (argv[*pindex][0] == '[' && (p = strchr(argv[*pindex], ']')) 
+				&& (p[1] == 0 || (p[1] == ':' && !strchr(p + 2, ':'))))
+			{
+				/* Either "[...]" or "[...]:..." with at most one : after the brackets */
+				strncpy(settings->server, argv[*pindex] + 1, sizeof(settings->server) - 1);
+				if ((p = strchr(settings->server, ']')))
+				{
+					*p = 0;
+					if (p[1] == ':')
+						settings->tcp_port_rdp = atoi(p + 2);
+				}
+			}
+			else
+			{
+				/* Port number is cut off and used if exactly one : in the string */
+				strncpy(settings->server, argv[*pindex], sizeof(settings->server) - 1);
+				if ((p = strchr(settings->server, ':')) && !strchr(p + 1, ':'))
+				{
+					*p = 0;
+					settings->tcp_port_rdp = atoi(p + 1);
+				}
+			}
 			/* server is the last argument for the current session. arguments
 			   followed will be parsed for the next session. */
 			*pindex = *pindex + 1;
