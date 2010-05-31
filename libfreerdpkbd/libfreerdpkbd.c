@@ -170,7 +170,6 @@ detect_keyboard_type_from_xkb(char* xkbfile, int length)
 	char buffer[1024];
 	unsigned int rv = 0;
 
-	xkbfile = NULL;
 	FILE* setxkbmap;
 
 	// This tells us about the current XKB configuration, if XKB is available
