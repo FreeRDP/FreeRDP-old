@@ -132,6 +132,12 @@ if test "$disable_tls" = "yes"; then
 fi
 
 #
+# DirectFB
+#
+
+PKG_CHECK_MODULES(DFB, [directfb >= 1.0.0])
+
+#
 # Smartcard
 #
 AC_ARG_ENABLE(smartcard,

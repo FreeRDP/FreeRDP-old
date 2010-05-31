@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <directfb.h>
 #include <freerdp/chanman.h>
 #include "dfb_win.h"
 #include "dfb_event.h"
@@ -140,8 +141,7 @@ l_ui_start_draw_glyphs(struct rdp_inst * inst, int bgcolour, int fgcolour)
 }
 
 static void
-l_ui_draw_glyph(struct rdp_inst * inst, int x, int y, int cx, int cy,
-	RD_HGLYPH glyph)
+l_ui_draw_glyph(struct rdp_inst * inst, int x, int y, int cx, int cy, RD_HGLYPH glyph)
 {
 
 }
@@ -355,11 +355,37 @@ dfb_get_pixmap_info(rdpInst * inst)
 
 #endif
 
+void
+dfb_init(int *argc, char *(*argv[]))
+{
+	DFBResult err;
+	err = DirectFBInit(argc, argv);
+}
+
 int
 dfb_pre_connect(rdpInst * inst)
 {
+	DFBResult err;
+	dfbInfo * dfbi;
+	
 	dfb_assign_callbacks(inst);
+	dfbi = (dfbInfo *) malloc(sizeof(dfbInfo));
+	SET_DFBI(inst, dfbi);
+	memset(dfbi, 0, sizeof(dfbInfo));
+
+	err = DirectFBCreate(&(dfbi->dfb));
+	
+	dfbi->dsc.flags = DSDESC_CAPS;
+	dfbi->dsc.caps  = DSCAPS_PRIMARY | DSCAPS_DOUBLE | DSCAPS_FLIPPING;
+
+	err = dfbi->dfb->CreateSurface(dfbi->dfb, &(dfbi->dsc), &(dfbi->primary));
+	
+	dfbi->dfb->CreateInputEventBuffer(dfbi->dfb, DICAPS_AXES | DICAPS_BUTTONS | DICAPS_KEYS, 0, &(dfbi->event));
+
+	err = dfbi->primary->GetSize(dfbi->primary, &(dfbi->width), &(dfbi->height));
+	
 	dfb_kb_inst_init(inst);
+
 	return 0;
 }
 

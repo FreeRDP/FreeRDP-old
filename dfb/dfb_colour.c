@@ -29,8 +29,6 @@
     32 -> 32
 */
 
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -155,7 +153,7 @@ set_pixel(uint8 * data, int x, int y, int width, int height, int bpp, int pixel)
 }
 
 static int
-dfb_colour(xfInfo * xfi, int in_colour, int in_bpp, int out_bpp)
+dfb_colour(dfbInfo * dfbi, int in_colour, int in_bpp, int out_bpp)
 {
 	return 0;
 }
@@ -163,25 +161,25 @@ dfb_colour(xfInfo * xfi, int in_colour, int in_bpp, int out_bpp)
 #endif
 
 int
-dfb_colour_convert(xfInfo * xfi, rdpSet * settings, int colour)
+dfb_colour_convert(dfbInfo * dfbi, rdpSet * settings, int colour)
 {
 	return 0;
 }
 
 uint8 *
-dfb_image_convert(xfInfo * xfi, rdpSet * settings, int width, int height, uint8 * in_data)
+dfb_image_convert(dfbInfo * dfbi, rdpSet * settings, int width, int height, uint8 * in_data)
 {
 	return in_data;
 }
 
 RD_HCOLOURMAP
-dfb_create_colourmap(xfInfo * xfi, rdpSet * settings, RD_COLOURMAP * colours)
+dfb_create_colourmap(dfbInfo * dfbi, rdpSet * settings, RD_COLOURMAP * colours)
 {
 	return (RD_HCOLOURMAP) NULL;
 }
 
 int
-dfb_set_colourmap(xfInfo * xfi, rdpSet * settings, RD_HCOLOURMAP map)
+dfb_set_colourmap(dfbInfo * dfbi, rdpSet * settings, RD_HCOLOURMAP map)
 {
 
 	return 0;
@@ -189,7 +187,7 @@ dfb_set_colourmap(xfInfo * xfi, rdpSet * settings, RD_HCOLOURMAP map)
 
 /* create mono cursor */
 int
-dfb_cursor_convert_mono(xfInfo * xfi, uint8 * src_data, uint8 * msk_data,
+dfb_cursor_convert_mono(dfbInfo * dfbi, uint8 * src_data, uint8 * msk_data,
 	uint8 * xormask, uint8 * andmask, int width, int height, int bpp)
 {
 
@@ -198,7 +196,7 @@ dfb_cursor_convert_mono(xfInfo * xfi, uint8 * src_data, uint8 * msk_data,
 
 /* create 32 bpp cursor */
 int
-dfb_cursor_convert_alpha(xfInfo * xfi, uint8 * alpha_data,
+dfb_cursor_convert_alpha(dfbInfo * dfbi, uint8 * alpha_data,
 	uint8 * xormask, uint8 * andmask, int width, int height, int bpp)
 {
 

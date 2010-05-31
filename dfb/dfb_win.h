@@ -4,6 +4,8 @@
 
 #include <freerdp/freerdp.h>
 
+void
+dfb_init(int *argc, char *(*argv[]));
 int
 dfb_pre_connect(rdpInst * inst);
 int

@@ -467,6 +467,7 @@ main(int argc, char ** argv)
 
 	setlocale(LC_CTYPE, "");
 	freerdp_chanman_init();
+	dfb_init(&argc, &argv);
 	dfb_kb_init();
 
 	while (1)
