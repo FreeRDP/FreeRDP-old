@@ -436,8 +436,10 @@ static int
 thread_process_message_wave_info(rdpsndPlugin * plugin, char * data, int data_size)
 {
 	int wFormatNo;
+	int error;
 
-	wave_out_open(plugin->device_data);
+	error = wave_out_open(plugin->device_data);
+
 	plugin->wTimeStamp = GET_UINT16(data, 0); /* time in ms */
 	plugin->local_time_stamp = get_mstime(); /* time in ms */
 	wFormatNo = GET_UINT16(data, 2);
@@ -446,13 +448,13 @@ thread_process_message_wave_info(rdpsndPlugin * plugin, char * data, int data_si
 	plugin->cBlockNo = GET_UINT8(data, 4);
 	plugin->waveDataSize = data_size - 8;
 	memcpy(plugin->waveData, data + 8, 4);
-	if (wFormatNo != plugin->current_format)
+	if (wFormatNo != plugin->current_format && !error)
 	{
 		plugin->current_format = wFormatNo;
 		set_format(plugin);
 	}
 	plugin->expectingWave = 1;
-	return 0;
+	return error;
 }
 
 /* header is not removed from data in this function */
@@ -514,10 +516,12 @@ thread_process_message(rdpsndPlugin * plugin, char * data, int data_size)
 {
 	int opcode;
 	int size;
+	static int wave_error = 0;
 
 	if (plugin->expectingWave)
 	{
-		thread_process_message_wave(plugin, data, data_size);
+		if (!wave_error)
+			thread_process_message_wave(plugin, data, data_size);
 		plugin->expectingWave = 0;
 		return 0;
 	}
@@ -534,13 +538,17 @@ thread_process_message(rdpsndPlugin * plugin, char * data, int data_size)
 			thread_process_message_training(plugin, data + 4, size);
 			break;
 		case SNDC_WAVE:
-			thread_process_message_wave_info(plugin, data + 4, size);
+			if (!wave_error)
+				wave_error = thread_process_message_wave_info(plugin, data + 4, size);
 			break;
 		case SNDC_CLOSE:
 			thread_process_message_close(plugin, data + 4, size);
+			wave_error = 0;
 			break;
 		case SNDC_SETVOLUME:
 			thread_process_message_setvolume(plugin, data + 4, size);
+			break;
+		case 0: /* wave PDU: ignoring it since it is received only if wave_error == 1*/
 			break;
 		default:
 			LLOGLN(0, ("thread_process_message: unknown opcode"));
