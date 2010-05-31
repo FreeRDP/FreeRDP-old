@@ -966,6 +966,22 @@ case "$host" in
     ;;
 esac
 
+#
+# Optional build targets
+#
+EXTRA_SUBDIRS=""
+
+#
+# DirectFB (optionally built when --with-dfb specified)
+#
+AC_ARG_WITH([dfb],
+	[AS_HELP_STRING([--with-dfb], [Build DirectFB UI])],
+	[
+		# Put dependency check here
+		EXTRA_SUBDIRS="$EXTRA_SUBDIRS dfb"
+	])
+
+AC_SUBST(EXTRA_SUBDIRS)
 
 AC_CONFIG_FILES([
 Makefile
