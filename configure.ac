@@ -132,12 +132,6 @@ if test "$disable_tls" = "yes"; then
 fi
 
 #
-# DirectFB
-#
-
-PKG_CHECK_MODULES(DFB, [directfb >= 1.0.0])
-
-#
 # Smartcard
 #
 AC_ARG_ENABLE(smartcard,
@@ -979,6 +973,9 @@ AC_ARG_WITH([dfb],
 	[
 		# Put dependency check here
 		EXTRA_SUBDIRS="$EXTRA_SUBDIRS dfb"
+		
+		# DirectFB
+		PKG_CHECK_MODULES(DFB, [directfb >= 1.0.0])
 	])
 
 AC_SUBST(EXTRA_SUBDIRS)
