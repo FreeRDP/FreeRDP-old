@@ -29,8 +29,10 @@
 #include <freerdp/freerdp.h>
 #include <freerdp/kbd.h>
 #include "xf_event.h"
+#include "xf_win.h"
 
 static int xf_kb_keyboard_layout = 0;
+static RD_BOOL pressed_keys[256] = { False };
 
 void
 xf_kb_init(void)
@@ -156,3 +158,43 @@ xf_kb_focus_in(rdpInst * inst)
 	inst->rdp_sync_input(inst, flags);
 }
 
+void
+xf_kb_set_keypress(uint8 keycode, KeySym keysym)
+{
+	if (keycode < 8 || keycode > 255)
+		return;
+	pressed_keys[keycode] = keysym;
+}
+
+void
+xf_kb_unset_keypress(uint8 keycode)
+{
+	if (keycode < 8 || keycode > 255)
+		return;
+	pressed_keys[keycode] = NoSymbol;
+}
+
+static RD_BOOL
+xf_kb_key_pressed(xfInfo * xfi, KeySym keysym)
+{
+	KeyCode keycode = XKeysymToKeycode(xfi->display, keysym);
+	return pressed_keys[keycode] == keysym;
+}
+
+RD_BOOL
+xf_kb_handle_special_keys(rdpInst * inst, KeySym keysym)
+{
+	xfInfo *xfi = GET_XFI(inst);
+	if (keysym == XK_Return)
+	{
+		if ((xf_kb_key_pressed(xfi, XK_Alt_L) || xf_kb_key_pressed(xfi, XK_Alt_R))
+		    && (xf_kb_key_pressed(xfi, XK_Control_L) || xf_kb_key_pressed(xfi, XK_Control_R)))
+		{
+			/* Ctrl-Alt-Enter: toggle full screen */
+			xf_toggle_fullscreen(inst);
+			return True;
+		}
+	}
+
+	return False;
+}

@@ -38,6 +38,19 @@
 #include "xf_colour.h"
 #include "xf_keyboard.h"
 
+#define MWM_HINTS_DECORATIONS   (1L << 1)
+#define PROP_MOTIF_WM_HINTS_ELEMENTS    5
+
+typedef struct
+{
+	unsigned long flags;
+	unsigned long functions;
+	unsigned long decorations;
+	long inputMode;
+	unsigned long status;
+}
+PropMotifWmHints;
+
 static uint8 g_hatch_patterns[] = {
 	0x00, 0x00, 0x00, 0xff, 0x00, 0x00, 0x00, 0x00, /* 0 - bsHorizontal */
 	0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, /* 1 - bsVertical */
@@ -962,7 +975,36 @@ xf_pre_connect(rdpInst * inst)
 	xfi->depth = DefaultDepthOfScreen(xfi->screen);
 	xfi->xserver_be = (ImageByteOrder(xfi->display) == MSBFirst);
 	xf_kb_inst_init(inst);
+
+	if (inst->settings->fullscreen)
+	{
+		inst->settings->width = WidthOfScreen(xfi->screen);
+		inst->settings->height = HeightOfScreen(xfi->screen);
+	}
+
 	return 0;
+}
+
+static void
+mwm_hide_decorations(xfInfo * xfi)
+{
+	PropMotifWmHints motif_hints;
+	Atom hintsatom;
+
+	/* setup the property */
+	motif_hints.flags = MWM_HINTS_DECORATIONS;
+	motif_hints.decorations = 0;
+
+	/* get the atom for the property */
+	hintsatom = XInternAtom(xfi->display, "_MOTIF_WM_HINTS", False);
+	if (!hintsatom)
+	{
+		printf("xf_post_connect: Failed to get atom _MOTIF_WM_HINTS: probably your window manager does not support MWM hints\n");
+		return;
+	}
+
+	XChangeProperty(xfi->display, xfi->wnd, hintsatom, hintsatom, 32, PropModeReplace,
+			(unsigned char *) &motif_hints, PROP_MOTIF_WM_HINTS_ELEMENTS);
 }
 
 int
@@ -976,16 +1018,41 @@ xf_post_connect(rdpInst * inst)
 	int height;
 	Atom protocol_atom;
 	Atom kill_atom;
+	int fullscreen;
+	XSetWindowAttributes attribs;
+	XSizeHints *sizehints;
 
 	xfi = GET_XFI(inst);
 	if (xf_get_pixmap_info(inst, xfi) != 0)
 	{
 		return 1;
 	}
-	width = inst->settings->width;
-	height = inst->settings->height;
-	xfi->wnd = XCreateSimpleWindow(xfi->display, RootWindowOfScreen(xfi->screen),
-		 0, 0, width, height, 0, 0, 0);
+
+	fullscreen = inst->settings->fullscreen;
+	width = fullscreen ? WidthOfScreen(xfi->screen) : inst->settings->width;
+	height = fullscreen ? HeightOfScreen(xfi->screen) : inst->settings->height;
+
+	attribs.background_pixel = BlackPixelOfScreen(xfi->screen);
+	attribs.border_pixel = WhitePixelOfScreen(xfi->screen);
+	attribs.backing_store = xfi->backstore ? NotUseful : Always;
+	attribs.override_redirect = fullscreen;
+	attribs.colormap = xfi->xcolmap;
+
+	xfi->wnd = XCreateWindow(xfi->display, RootWindowOfScreen(xfi->screen),
+		0, 0, width, height, 0, xfi->depth, InputOutput, xfi->visual,
+		CWBackPixel | CWBackingStore | CWOverrideRedirect | CWColormap |
+		CWBorderPixel, &attribs);
+
+	sizehints = XAllocSizeHints();
+	if (sizehints)
+	{
+		sizehints->flags = PMinSize | PMaxSize;
+		sizehints->min_width = sizehints->max_width = width;
+		sizehints->min_height = sizehints->max_height = height;
+		XSetWMNormalHints(xfi->display, xfi->wnd, sizehints);
+		XFree(sizehints);
+	}
+
 	XStoreName(xfi->display, xfi->wnd, "freerdp");
 	input_mask =
 		KeyPressMask | KeyReleaseMask | ButtonPressMask | ButtonReleaseMask |
@@ -993,6 +1060,13 @@ xf_post_connect(rdpInst * inst)
 		PointerMotionMask | ExposureMask | EnterWindowMask | LeaveWindowMask;
 	XSelectInput(xfi->display, xfi->wnd, input_mask);
 	XMapWindow(xfi->display, xfi->wnd);
+
+	if (fullscreen)
+	{
+		mwm_hide_decorations(xfi);
+		XSetInputFocus(xfi->display, xfi->wnd, RevertToParent, CurrentTime);
+	}
+
 	/* wait for VisibilityNotify */
 	do
 	{
@@ -1001,14 +1075,19 @@ xf_post_connect(rdpInst * inst)
 	while (xevent.type != VisibilityNotify);
 	xfi->unobscured = xevent.xvisibility.state == VisibilityUnobscured;
 	memset(&gcv, 0, sizeof(gcv));
-	xfi->gc = XCreateGC(xfi->display, xfi->wnd, GCGraphicsExposures, &gcv);
-	xfi->backstore = XCreatePixmap(xfi->display, xfi->wnd, width, height, xfi->depth);
 
 	protocol_atom = XInternAtom(xfi->display, "WM_PROTOCOLS", True);
 	kill_atom = XInternAtom(xfi->display, "WM_DELETE_WINDOW", True);
 	XSetWMProtocols(xfi->display, xfi->wnd, &kill_atom, 1);
 
+	if (!xfi->gc)
+		xfi->gc = XCreateGC(xfi->display, xfi->wnd, GCGraphicsExposures, &gcv);
+
+	if (!xfi->backstore)
+		xfi->backstore = XCreatePixmap(xfi->display, xfi->wnd, width, height, xfi->depth);
+
 	xfi->drw = xfi->backstore;
+
 	xfi->bitmap_mono = XCreatePixmap(xfi->display, xfi->wnd, 8, 8, 1);
 	xfi->gc_mono = XCreateGC(xfi->display, xfi->bitmap_mono, GCGraphicsExposures, &gcv);
 	xfi->gc_default = XCreateGC(xfi->display, xfi->wnd, GCGraphicsExposures, &gcv);
@@ -1068,4 +1147,36 @@ xf_check_fds(rdpInst * inst)
 		}
 	}
 	return 0;
+}
+
+static void
+xf_destroy_window(xfInfo * xfi)
+{
+	XDestroyWindow(xfi->display, xfi->wnd);
+	xfi->wnd = 0;
+
+	if (xfi->backstore)
+	{
+		XFreePixmap(xfi->display, xfi->backstore);
+		xfi->backstore = 0;
+	}
+}
+
+void
+xf_toggle_fullscreen(rdpInst * inst)
+{
+	Pixmap contents = 0;
+	xfInfo *xfi = GET_XFI(inst);
+	int width = inst->settings->width;
+	int height = inst->settings->height;
+
+	contents = XCreatePixmap(xfi->display, xfi->wnd, width, height, xfi->depth);
+	XCopyArea(xfi->display, xfi->backstore, contents, xfi->gc, 0, 0, width, height, 0, 0);
+
+	xf_destroy_window(xfi);
+	inst->settings->fullscreen = !inst->settings->fullscreen;
+	xf_post_connect(inst);
+
+	XCopyArea(xfi->display, contents, xfi->backstore, xfi->gc, 0, 0, width, height, 0, 0);
+	XFreePixmap(xfi->display, contents);
 }

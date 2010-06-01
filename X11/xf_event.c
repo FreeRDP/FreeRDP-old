@@ -50,6 +50,10 @@ xf_handle_event_MotionNotify(rdpInst * inst, xfInfo * xfi, XEvent * xevent)
 		y = xevent->xmotion.y;
 		inst->rdp_send_input(inst, RDP_INPUT_MOUSE, PTRFLAGS_MOVE, x, y);
 	}
+
+	if (inst->settings->fullscreen)
+		XSetInputFocus(xfi->display, xfi->wnd, RevertToPointerRoot, CurrentTime);
+
 	return 0;
 }
 
@@ -140,6 +144,15 @@ xf_handle_event_ButtonRelease(rdpInst * inst, xfInfo * xfi, XEvent * xevent)
 static int
 xf_handle_event_KeyPress(rdpInst * inst, xfInfo * xfi, XEvent * xevent)
 {
+	KeySym keysym;
+	char str[256];
+
+	XLookupString((XKeyEvent *) xevent, str, sizeof(str), &keysym, NULL);
+
+	xf_kb_set_keypress(xevent->xkey.keycode, keysym);
+	if (inst->settings->fs_toggle && xf_kb_handle_special_keys(inst, keysym))
+		return 0;
+
 	xf_kb_send_key(inst, RDP_KEYPRESS, xevent->xkey.keycode);
 	return 0;
 }
@@ -171,6 +184,7 @@ xf_handle_event_KeyRelease(rdpInst * inst, xfInfo * xfi, XEvent * xevent)
 	{
 		return 0;
 	}
+	xf_kb_unset_keypress(xevent->xkey.keycode);
 	xf_kb_send_key(inst, RDP_KEYRELEASE, xevent->xkey.keycode);
 	return 0;
 }
@@ -233,6 +247,10 @@ static int
 xf_handle_event_EnterNotify(rdpInst * inst, xfInfo * xfi, XEvent * xevent)
 {
 	xfi->mouse_into = True;
+
+	if (inst->settings->fullscreen)
+		XSetInputFocus(xfi->display, xfi->wnd, RevertToPointerRoot, CurrentTime);
+
 	if (xfi->focused)
 		XGrabKeyboard(xfi->display, xfi->wnd, True, GrabModeAsync, GrabModeAsync, CurrentTime);
 
