@@ -1,5 +1,5 @@
 ## Process this file with automake to produce Makefile.in
-SUBDIRS = \
+REQUIRED_SUBDIRS = \
 	asn1 \
 	libfreerdp \
 	doc \
@@ -13,8 +13,14 @@ SUBDIRS = \
 	channels/cliprdr \
 	channels/rdpdr \
 	channels/rdpdr/disk \
-	channels/rdpdr/printer \
-	$(EXTRA_SUBDIRS)
+	channels/rdpdr/printer
+
+OPTIONAL_SUBDIRS = \
+	dfb
+
+SUBDIRS = $(REQUIRED_SUBDIRS) $(EXTRA_SUBDIRS)
+
+DIST_SUBDIRS = $(REQUIRED_SUBDIRS) $(OPTIONAL_SUBDIRS)
 
 EXTRA_DIST = autogen.sh indent-all.sh freerdp.spec \
 	AUTHORS ChangeLog COPYING INSTALL NEWS README
