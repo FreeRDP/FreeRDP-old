@@ -5,11 +5,12 @@ EXTRA_DIST = \
 	diagrams \
 	ChangeLog \
 	Doxyfile \
-	freerdp_software_design.lyx	\
+	freerdp_software_design.lyx \
 	ipv6.txt \
 	licensing.txt \
 	ntlmssp.txt \
 	rdp-keyboard.odg \
 	rdp-keyboard.txt \
-	rdp-keyboard-repeat.txt	
+	rdp-keyboard-repeat.txt \
+	xfreerdp.1
 
