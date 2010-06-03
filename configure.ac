@@ -33,19 +33,6 @@ AC_PROG_LIBTOOL
 AC_LANG_C
 AC_HEADER_STDC
 AC_C_BIGENDIAN([AC_DEFINE(B_ENDIAN)], [AC_DEFINE(L_ENDIAN)])
-AC_PATH_XTRA
-if test "$no_x" = "yes"; then
-    echo
-    echo "ERROR: Could not find X Window System headers/libraries."
-    if test -f /etc/debian_version; then
-       echo "Probably you need to install the libx11-dev package."
-    elif test -f /etc/redhat-release; then
-       echo "Probably you need to install the libX11-devel package."
-    fi
-    echo "To specify paths manually, use the options --x-includes and --x-libraries."
-    echo
-    exit 1
-fi
 
 AC_PATH_PROG(PKG_CONFIG, pkg-config)
 
@@ -966,8 +953,21 @@ esac
 EXTRA_SUBDIRS=""
 
 #
+# X11
+#
+AC_PATH_XTRA
+if test "$no_x" = "yes"; then
+	x11="no"
+else
+	PKG_CHECK_MODULES(XCURSOR, [xcursor])
+	x11="yes"
+	EXTRA_SUBDIRS="$EXTRA_SUBDIRS X11"
+fi
+
+#
 # DirectFB (optionally built when --with-dfb specified)
 #
+dfb="no"
 AC_ARG_WITH([dfb],
 	[AS_HELP_STRING([--with-dfb], [Build DirectFB UI])],
 	[
@@ -976,6 +976,7 @@ AC_ARG_WITH([dfb],
 		
 		# DirectFB
 		PKG_CHECK_MODULES(DFB, [directfb >= 1.0.0])
+		dfb="yes"
 	])
 
 AC_SUBST(EXTRA_SUBDIRS)
@@ -1002,9 +1003,15 @@ channels/rdpdr/printer/Makefile
 
 AC_OUTPUT
 
-dnl Local Variables:
-dnl comment-start: "dnl "
-dnl comment-end: ""
-dnl comment-start-skip: "\\bdnl\\b\\s *"
-dnl compile-command: "autoconf"
-dnl End:
+echo
+echo "FreeRDP configure result:"
+echo
+echo "Cryptography : $with_crypto"
+if test "x$disable_tls" = "xyes"; then
+	echo "               (TLS disabled)"
+fi
+echo "Sound        : $sound"
+echo "Printer      : $printer"
+echo "X11          : $x11"
+echo "DirectFB     : $dfb"
+

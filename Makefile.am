@@ -7,7 +7,6 @@ REQUIRED_SUBDIRS = \
 	libfreerdpkbd \
 	keymaps \
 	libfreerdpchanman \
-	X11 \
 	channels/common \
 	channels/rdpsnd \
 	channels/cliprdr \
@@ -16,6 +15,7 @@ REQUIRED_SUBDIRS = \
 	channels/rdpdr/printer
 
 OPTIONAL_SUBDIRS = \
+	X11 \
 	dfb
 
 SUBDIRS = $(REQUIRED_SUBDIRS) $(EXTRA_SUBDIRS)
