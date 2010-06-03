@@ -22,7 +22,7 @@ SUBDIRS = $(REQUIRED_SUBDIRS) $(EXTRA_SUBDIRS)
 
 DIST_SUBDIRS = $(REQUIRED_SUBDIRS) $(OPTIONAL_SUBDIRS)
 
-EXTRA_DIST = autogen.sh indent-all.sh freerdp.spec \
+EXTRA_DIST = autogen.sh indent-all.sh freerdp.spec debian \
 	AUTHORS ChangeLog COPYING INSTALL NEWS README
 
 pkgconfigdir = $(libdir)/pkgconfig
