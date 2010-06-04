@@ -13,6 +13,7 @@ struct dfb_info
 	IDirectFB * dfb;
 	int width;
 	int height;
+	DFBRegion region;
 	DFBSurfaceDescription dsc;
 	IDirectFBSurface * primary;
 	IDirectFBEventBuffer * event;

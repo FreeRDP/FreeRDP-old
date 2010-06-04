@@ -86,19 +86,46 @@ l_ui_destroy_glyph(struct rdp_inst * inst, RD_HGLYPH glyph)
 static RD_HBITMAP
 l_ui_create_bitmap(struct rdp_inst * inst, int width, int height, uint8 * data)
 {
-	return (RD_HBITMAP) NULL;
+	dfbInfo * dfbi;
+	IDirectFBSurface* surface;
+	DFBSurfaceDescription dsc;
+	dfbi = GET_DFBI(inst);
+	
+	surface = (IDirectFBSurface*) malloc(sizeof(IDirectFBSurface));
+	dsc.flags = DSDESC_CAPS | DSDESC_WIDTH | DSDESC_HEIGHT;
+	dsc.caps = DSCAPS_VIDEOONLY;
+	dsc.width = width;
+	dsc.height = height;
+
+	surface = (IDirectFBSurface*) malloc(sizeof(IDirectFBSurface));
+	dfbi->dfb->CreateSurface(dfbi->dfb, &dsc, &surface);
+	
+	return (RD_HBITMAP) surface;
 }
 
 static void
 l_ui_paint_bitmap(struct rdp_inst * inst, int x, int y, int cx, int cy, int width, int height, uint8 * data)
 {
+	dfbInfo * dfbi;
+	DFBRectangle rect;
+	IDirectFBSurface* surface;
+	dfbi = GET_DFBI(inst);
 
+	rect.x = x;
+	rect.y = y;
+	rect.w = cx;
+	rect.h = cy;
+	
+	surface = (IDirectFBSurface*) l_ui_create_bitmap(inst, width, height, data);
+	surface->Blit(surface, dfbi->primary, &rect, 0, 0);
+	dfbi->primary->Blit(dfbi->primary, surface, 0, x, y);
+	surface->Release(surface);
 }
 
 static void
 l_ui_destroy_bitmap(struct rdp_inst * inst, RD_HBITMAP bmp)
 {
-
+	free(bmp);
 }
 
 static void
@@ -117,12 +144,11 @@ static void
 l_ui_polygon(struct rdp_inst * inst, uint8 opcode, uint8 fillmode, RD_POINT * point,
 	int npoints, RD_BRUSH * brush, int bgcolour, int fgcolour)
 {
-	printf("ui_polygon:\n");
+	printf("ui_polygon\n");
 }
 
 static void
-l_ui_polyline(struct rdp_inst * inst, uint8 opcode, RD_POINT * points, int npoints,
-	RD_PEN * pen)
+l_ui_polyline(struct rdp_inst * inst, uint8 opcode, RD_POINT * points, int npoints, RD_PEN * pen)
 {
 
 }
@@ -161,41 +187,41 @@ l_ui_get_toggle_keys_state(struct rdp_inst * inst)
 static void
 l_ui_bell(struct rdp_inst * inst)
 {
-	printf("ui_bell:\n");
+	printf("ui_bell\n");
 }
 
 static void
 l_ui_destblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy)
 {
-
+	printf("ui_destblt\n");
 }
 
 static void
 l_ui_patblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy,
 	RD_BRUSH * brush, int bgcolour, int fgcolour)
 {
-
+	printf("ui_patblt\n");
 }
 
 static void
 l_ui_screenblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy,
 	int srcx, int srcy)
 {
-
+	printf("ui_screenblt\n");
 }
 
 static void
 l_ui_memblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy,
 	RD_HBITMAP src, int srcx, int srcy)
 {
-
+	printf("ui_memblt\n");
 }
 
 static void
 l_ui_triblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy,
 	RD_HBITMAP src, int srcx, int srcy, RD_BRUSH * brush, int bgcolour, int fgcolour)
 {
-
+	printf("ui_triblt\n");
 }
 
 static int
@@ -207,7 +233,15 @@ l_ui_select(struct rdp_inst * inst, int rdp_socket)
 static void
 l_ui_set_clip(struct rdp_inst * inst, int x, int y, int cx, int cy)
 {
+	dfbInfo * dfbi;
+	dfbi = GET_DFBI(inst);
+	
+	dfbi->region.x1 = x;
+	dfbi->region.y1 = y;
+	dfbi->region.x2 = (x + cx) - 1;
+	dfbi->region.y2 = (y + cy) - 1;
 
+	dfbi->primary->SetClip(dfbi->primary, &(dfbi->region));
 }
 
 static void
@@ -219,7 +253,7 @@ l_ui_reset_clip(struct rdp_inst * inst)
 static void
 l_ui_resize_window(struct rdp_inst * inst)
 {
-	printf("ui_resize_window:\n");
+	printf("ui_resize_window\n");
 }
 
 static void
@@ -262,19 +296,33 @@ l_ui_create_colourmap(struct rdp_inst * inst, RD_COLOURMAP * colours)
 static void
 l_ui_move_pointer(struct rdp_inst * inst, int x, int y)
 {
-
+	printf("ui_move_pointer\n");
 }
 
 static void
 l_ui_set_colourmap(struct rdp_inst * inst, RD_HCOLOURMAP map)
 {
-
+	printf("ui_set_colourmap\n");
 }
 
 static RD_HBITMAP
 l_ui_create_surface(struct rdp_inst * inst, int width, int height, RD_HBITMAP old_surface)
 {
-	return (RD_HBITMAP) NULL;
+	dfbInfo * dfbi;
+	IDirectFBSurface* surface;
+	DFBSurfaceDescription dsc;
+	dfbi = GET_DFBI(inst);
+	
+	surface = (IDirectFBSurface*) malloc(sizeof(IDirectFBSurface));
+	dsc.flags = DSDESC_CAPS | DSDESC_WIDTH | DSDESC_HEIGHT | DSDESC_PREALLOCATED | DSDESC_PIXELFORMAT;
+	dsc.caps = DSCAPS_SYSTEMONLY;
+	dsc.width = width;
+	dsc.height = height;
+
+	surface = (IDirectFBSurface*) malloc(sizeof(IDirectFBSurface));
+	dfbi->dfb->CreateSurface(dfbi->dfb, &dsc, &surface);
+	
+	return (RD_HBITMAP) surface;
 }
 
 static void
@@ -290,8 +338,7 @@ l_ui_destroy_surface(struct rdp_inst * inst, RD_HBITMAP surface)
 }
 
 static void
-l_ui_channel_data(struct rdp_inst * inst, int chan_id, char * data, int data_size,
-	int flags, int total_size)
+l_ui_channel_data(struct rdp_inst * inst, int chan_id, char * data, int data_size, int flags, int total_size)
 {
 
 }
@@ -345,16 +392,6 @@ dfb_assign_callbacks(rdpInst * inst)
 	return 0;
 }
 
-#if 0
-
-static int
-dfb_get_pixmap_info(rdpInst * inst)
-{
-	return 0;
-}
-
-#endif
-
 void
 dfb_init(int *argc, char *(*argv[]))
 {
@@ -377,13 +414,10 @@ dfb_pre_connect(rdpInst * inst)
 	
 	dfbi->dsc.flags = DSDESC_CAPS;
 	dfbi->dsc.caps  = DSCAPS_PRIMARY | DSCAPS_DOUBLE | DSCAPS_FLIPPING;
-
 	err = dfbi->dfb->CreateSurface(dfbi->dfb, &(dfbi->dsc), &(dfbi->primary));
-	
-	dfbi->dfb->CreateInputEventBuffer(dfbi->dfb, DICAPS_AXES | DICAPS_BUTTONS | DICAPS_KEYS, 0, &(dfbi->event));
-
 	err = dfbi->primary->GetSize(dfbi->primary, &(dfbi->width), &(dfbi->height));
-	
+
+	dfbi->dfb->CreateInputEventBuffer(dfbi->dfb, DICAPS_AXES | DICAPS_BUTTONS | DICAPS_KEYS, 0, &(dfbi->event));
 	dfb_kb_inst_init(inst);
 
 	return 0;
@@ -398,7 +432,11 @@ dfb_post_connect(rdpInst * inst)
 void
 dfb_uninit(void * dfb_info)
 {
+	dfbInfo * dfbi;
+	dfbi = (dfbInfo *) dfb_info;
 
+	dfbi->primary->Release(dfbi->primary);
+	dfbi->dfb->Release(dfbi->dfb);
 }
 
 int
