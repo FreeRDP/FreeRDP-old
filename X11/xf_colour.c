@@ -240,55 +240,59 @@ xf_image_convert(xfInfo * xfi, rdpSet * settings, int width, int height,
 	int pixel;
 	uint8 * out_data;
 	uint8 * src8;
-	uint16 * src16;
-	uint16 * dst16;
-	uint32 * dst32;
+	uint8 * dst8;
 
 	if ((settings->server_depth == 24) && (xfi->bpp == 32))
 	{
 		out_data = (uint8 *) malloc(width * height * 4);
 		src8 = in_data;
-		dst32 = (uint32 *) out_data;
+		dst8 = out_data;
 		for (index = width * height; index > 0; index--)
 		{
 			blue = *(src8++);
 			green = *(src8++);
 			red = *(src8++);
 			pixel = MAKE24RGB(red, green, blue);
-			*dst32 = pixel;
-			dst32++;
+			*dst8++ = pixel & 0xff;
+			*dst8++ = (pixel >> 8) & 0xff;
+			*dst8++ = (pixel >> 16) & 0xff;
+			*dst8++ = (pixel >> 24) & 0xff;
 		}
 		return out_data;
 	}
 	else if ((settings->server_depth == 16) && (xfi->bpp == 32))
 	{
 		out_data = (uint8 *) malloc(width * height * 4);
-		src16 = (uint16 *) in_data;
-		dst32 = (uint32 *) out_data;
+		src8 = in_data;
+		dst8 = out_data;
 		for (index = width * height; index > 0; index--)
 		{
-			pixel = *src16;
-			src16++;
+			pixel = *src8++;
+			pixel |= (*src8++) << 8;
 			SPLIT16RGB(red, green, blue, pixel);
 			pixel = MAKE24RGB(red, green, blue);
-			*dst32 = pixel;
-			dst32++;
+			*dst8++ = pixel & 0xff;
+			*dst8++ = (pixel >> 8) & 0xff;
+			*dst8++ = (pixel >> 16) & 0xff;
+			*dst8++ = (pixel >> 24) & 0xff;
 		}
 		return out_data;
 	}
 	else if ((settings->server_depth == 15) && (xfi->bpp == 32))
 	{
 		out_data = (uint8 *) malloc(width * height * 4);
-		src16 = (uint16 *) in_data;
-		dst32 = (uint32 *) out_data;
+		src8 = in_data;
+		dst8 = out_data;
 		for (index = width * height; index > 0; index--)
 		{
-			pixel = *src16;
-			src16++;
+			pixel = *src8++;
+			pixel |= (*src8++) << 8;
 			SPLIT15RGB(red, green, blue, pixel);
 			pixel = MAKE24RGB(red, green, blue);
-			*dst32 = pixel;
-			dst32++;
+			*dst8++ = pixel & 0xff;
+			*dst8++ = (pixel >> 8) & 0xff;
+			*dst8++ = (pixel >> 16) & 0xff;
+			*dst8++ = (pixel >> 24) & 0xff;
 		}
 		return out_data;
 	}
@@ -296,30 +300,32 @@ xf_image_convert(xfInfo * xfi, rdpSet * settings, int width, int height,
 	{
 		out_data = (uint8 *) malloc(width * height * 4);
 		src8 = in_data;
-		dst32 = (uint32 *) out_data;
+		dst8 = out_data;
 		for (index = width * height; index > 0; index--)
 		{
 			pixel = *src8;
 			src8++;
 			pixel = xfi->colourmap[pixel];
-			*dst32 = pixel;
-			dst32++;
+			*dst8++ = pixel & 0xff;
+			*dst8++ = (pixel >> 8) & 0xff;
+			*dst8++ = (pixel >> 16) & 0xff;
+			*dst8++ = (pixel >> 24) & 0xff;
 		}
 		return out_data;
 	}
 	else if ((settings->server_depth == 15) && (xfi->bpp == 16))
 	{
 		out_data = (uint8 *) malloc(width * height * 2);
-		src16 = (uint16 *) in_data;
-		dst16 = (uint16 *) out_data;
+		src8 = in_data;
+		dst8 = out_data;
 		for (index = width * height; index > 0; index--)
 		{
-			pixel = *src16;
-			src16++;
+			pixel = *src8++;
+			pixel |= (*src8++) << 8;
 			SPLIT15RGB(red, green, blue, pixel);
 			pixel = MAKE16RGB(red, green, blue);
-			*dst16 = pixel;
-			dst16++;
+			*dst8++ = pixel & 0xff;
+			*dst8++ = (pixel >> 8) & 0xff;
 		}
 		return out_data;
 	}
@@ -327,7 +333,7 @@ xf_image_convert(xfInfo * xfi, rdpSet * settings, int width, int height,
 	{
 		out_data = (uint8 *) malloc(width * height * 2);
 		src8 = in_data;
-		dst16 = (uint16 *) out_data;
+		dst8 = out_data;
 		for (index = width * height; index > 0; index--)
 		{
 			pixel = *src8;
@@ -335,8 +341,8 @@ xf_image_convert(xfInfo * xfi, rdpSet * settings, int width, int height,
 			pixel = xfi->colourmap[pixel];
 			SPLIT24RGB(red, green, blue, pixel);
 			pixel = MAKE16RGB(red, green, blue);
-			*dst16 = pixel;
-			dst16++;
+			*dst8++ = pixel & 0xff;
+			*dst8++ = (pixel >> 8) & 0xff;
 		}
 		return out_data;
 	}
@@ -344,7 +350,7 @@ xf_image_convert(xfInfo * xfi, rdpSet * settings, int width, int height,
 	{
 		out_data = (uint8 *) malloc(width * height * 2);
 		src8 = in_data;
-		dst16 = (uint16 *) out_data;
+		dst8 = out_data;
 		for (index = width * height; index > 0; index--)
 		{
 			pixel = *src8;
@@ -352,8 +358,8 @@ xf_image_convert(xfInfo * xfi, rdpSet * settings, int width, int height,
 			pixel = xfi->colourmap[pixel];
 			SPLIT24RGB(red, green, blue, pixel);
 			pixel = MAKE15RGB(red, green, blue);
-			*dst16 = pixel;
-			dst16++;
+			*dst8++ = pixel & 0xff;
+			*dst8++ = (pixel >> 8) & 0xff;
 		}
 		return out_data;
 	}
