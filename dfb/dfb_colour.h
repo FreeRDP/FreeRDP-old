@@ -5,7 +5,7 @@
 #include <freerdp/freerdp.h>
 
 int
-dfb_colour_convert(dfbInfo * dfbi, rdpSet * settings, int colour);
+dfb_colour_convert(dfbInfo * dfbi, int in_colour, int in_bpp);
 uint8 *
 dfb_image_convert(dfbInfo * dfbi, rdpSet * settings, int width, int height,
 	uint8 * in_data);

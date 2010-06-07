@@ -77,93 +77,49 @@
   (((_green & 0xff) >> 2) <<  5) | \
   (((_blue & 0xff) >> 3) <<  0)
 
-#if 0
-
-static int
-get_pixel(uint8 * data, int x, int y, int width, int height, int bpp)
+int
+dfb_colour_convert(dfbInfo * dfbi, int in_colour, int in_bpp)
 {
-	int start;
-	int shift;
+	int alpha;
 	int red;
 	int green;
 	int blue;
-	uint16 * s16;
-	uint32 * s32;
+	int rv;
 
-	switch (bpp)
+	alpha = 0xFF;
+	red = 0;
+	green = 0;
+	blue = 0;
+	rv = 0;
+	
+	switch (in_bpp)
 	{
-		case  1:
-			width = (width + 7) / 8;
-			start = (y * width) + x / 8;
-			shift = x % 8;
-			return (data[start] & (0x80 >> shift)) != 0;
-		case 8:
-			return data[y * width + x];
-		case 15:
-		case 16:
-			s16 = (uint16 *) data;
-			return s16[y * width + x];
-		case 24:
-			data += y * width * 3;
-			data += x * 3;
-			red = data[0];
-			green = data[1];
-			blue = data[2];
-			return MAKE24RGB(red, green, blue);
 		case 32:
-			s32 = (uint32 *) data;
-			return s32[y * width + x];
+			SPLIT32BGR(alpha, red, green, blue, in_colour);
+			break;
+		case 24:
+			SPLIT24BGR(red, green, blue, in_colour);
+			break;
+		case 16:
+			SPLIT16RGB(red, green, blue, in_colour);
+			break;
+		case 15:
+			SPLIT15RGB(red, green, blue, in_colour);
+			break;
+		case 8:
+			in_colour &= 0xFF;
+			SPLIT24RGB(red, green, blue, dfbi->colourmap[in_colour]);
+			break;
+		case 1:
+			if ((red != 0) || (green != 0) || (blue != 0))
+				rv = 1;
+			break;
 		default:
-			printf("unknonw in get_pixel\n");
+			printf("dfb_colour: bad in_bpp %d\n", in_bpp);
 			break;
 	}
-	return 0;
-}
 
-static void
-set_pixel(uint8 * data, int x, int y, int width, int height, int bpp, int pixel)
-{
-	int start;
-	int shift;
-	int * d32;
-
-	if (bpp == 1)
-	{
-		width = (width + 7) / 8;
-		start = (y * width) + x / 8;
-		shift = x % 8;
-		if (pixel)
-		{
-			data[start] = data[start] | (0x80 >> shift);
-		}
-		else
-		{
-			data[start] = data[start] & ~(0x80 >> shift);
-		}
-	}
-	else if (bpp == 32)
-	{
-		d32 = (int *) data;
-		d32[y * width + x] = pixel;
-	}
-	else
-	{
-		printf("unknown in set_pixel\n");
-	}
-}
-
-static int
-dfb_colour(dfbInfo * dfbi, int in_colour, int in_bpp, int out_bpp)
-{
-	return 0;
-}
-
-#endif
-
-int
-dfb_colour_convert(dfbInfo * dfbi, rdpSet * settings, int colour)
-{
-	return 0;
+	return rv;
 }
 
 uint8 *
@@ -171,10 +127,17 @@ dfb_image_convert(dfbInfo * dfbi, rdpSet * settings, int width, int height, uint
 {
 	return in_data;
 }
-
+/*
 RD_HCOLOURMAP
 dfb_create_colourmap(dfbInfo * dfbi, rdpSet * settings, RD_COLOURMAP * colours)
 {
+	return (RD_HCOLOURMAP) NULL;
+}*/
+
+static RD_HCOLOURMAP
+l_ui_create_colourmap(struct rdp_inst * inst, RD_COLOURMAP * colours)
+{
+	printf("create_colourmap\n");
 	return (RD_HCOLOURMAP) NULL;
 }
 

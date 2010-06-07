@@ -13,10 +13,14 @@ struct dfb_info
 	int width;
 	int height;
 	IDirectFB * dfb;
+	DFBRegion region;
 	IDirectFBSurface * drw;
 	IDirectFBSurface * primary;
 	DFBSurfaceDescription dsc;
 	IDirectFBEventBuffer * event;
+	int update_pending;
+	DFBRegion update_region;
+	uint8 * colourmap;
 };
 typedef struct dfb_info dfbInfo;
 

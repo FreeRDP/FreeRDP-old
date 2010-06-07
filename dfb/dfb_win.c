@@ -49,6 +49,33 @@ l_ui_unimpl(struct rdp_inst * inst, char * text)
 }
 
 static void
+dfb_invalidate_region(dfbInfo * dfbi, int x1, int y1, int x2, int y2)
+{
+	if (dfbi->update_pending)
+	{
+		if (x1 < dfbi->update_region.x1)
+			dfbi->update_region.x1 = x1;
+
+		if (y1 < dfbi->update_region.y1)
+			dfbi->update_region.y2 = y1;
+
+		if (x2 > dfbi->update_region.x2)
+			dfbi->update_region.x2 = x2;
+
+		if (y2 > dfbi->update_region.y2)
+			dfbi->update_region.y2 = y2;
+	}
+	else
+	{
+		dfbi->update_pending = 1;
+		dfbi->update_region.x1 = x1;
+		dfbi->update_region.y1 = y1;
+		dfbi->update_region.x2 = x2;
+		dfbi->update_region.y2 = y2;
+	}
+}
+
+static void
 l_ui_begin_update(struct rdp_inst * inst)
 {
 }
@@ -154,7 +181,6 @@ l_ui_paint_bitmap(struct rdp_inst * inst, int x, int y, int cx, int cy, int widt
 	
 	surface = (IDirectFBSurface*) l_ui_create_bitmap(inst, width, height, data);
 	dfbi->primary->Blit(dfbi->primary, surface, &rect, cx, cy);
-	dfbi->primary->Flip(dfbi->primary, NULL, DSFLIP_ONCE);
 	
 	surface->Release(surface);
 }
@@ -185,7 +211,7 @@ l_ui_rect(struct rdp_inst * inst, int x, int y, int cx, int cy, int colour)
 	green = (colour & 0xFF00) >> 8;
 	blue = colour & 0xFF;
 	
-	dfbi->primary->SetColor(dfbi->primary, red, green, blue, 0);
+	dfbi->primary->SetColor(dfbi->primary, red, green, blue, 0xFF);
 	dfbi->primary->FillRectangle(dfbi->primary, x, y, cx, cy);
 }
 
@@ -295,31 +321,29 @@ l_ui_select(struct rdp_inst * inst, int rdp_socket)
 static void
 l_ui_set_clip(struct rdp_inst * inst, int x, int y, int cx, int cy)
 {
-	dfbInfo * dfbi;
-	DFBRegion region;
+	dfbInfo * dfbi;	
 	dfbi = GET_DFBI(inst);
 	
-	region.x1 = x;
-	region.y1 = y;
-	region.x2 = cx;
-	region.y2 = cy;
+	dfbi->region.x1 = x;
+	dfbi->region.y1 = y;
+	dfbi->region.x2 = cx;
+	dfbi->region.y2 = cy;
 
-	dfbi->primary->SetClip(dfbi->primary, &region);
+	dfbi->primary->SetClip(dfbi->primary, &(dfbi->region));
 }
 
 static void
 l_ui_reset_clip(struct rdp_inst * inst)
 {
-	dfbInfo * dfbi;
-	DFBRegion region;
+	dfbInfo * dfbi;	
 	dfbi = GET_DFBI(inst);
 	
-	region.x1 = 0;
-	region.y1 = 0;
-	region.x2 = dfbi->width;
-	region.y2 = dfbi->height;
+	dfbi->region.x1 = 0;
+	dfbi->region.y1 = 0;
+	dfbi->region.x2 = dfbi->width;
+	dfbi->region.y2 = dfbi->height;
 
-	dfbi->primary->SetClip(dfbi->primary, &region);
+	dfbi->primary->SetClip(dfbi->primary, &(dfbi->region));
 }
 
 static void
@@ -497,6 +521,7 @@ dfb_pre_connect(rdpInst * inst)
 	dfbi->dsc.caps  = DSCAPS_PRIMARY;
 	err = dfbi->dfb->CreateSurface(dfbi->dfb, &(dfbi->dsc), &(dfbi->primary));
 	err = dfbi->primary->GetSize(dfbi->primary, &(dfbi->width), &(dfbi->height));
+	dfbi->update_pending = 0;
 	
 	dfbi->dfb->CreateInputEventBuffer(dfbi->dfb, DICAPS_AXES | DICAPS_BUTTONS | DICAPS_KEYS, 0, &(dfbi->event));
 	dfb_kb_inst_init(inst);
