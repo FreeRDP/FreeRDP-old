@@ -47,22 +47,6 @@ dfb_kb_send_key(rdpInst * inst, int flags, uint8 keycode)
 
 }
 
-#if 0
-
-static int
-dfb_kb_read_keyboard_state(xfInfo * xfi)
-{
-	return 0;
-}
-
-static int
-dfb_kb_get_key_state(xfInfo * xfi, int state, int keysym)
-{
-	return 0;
-}
-
-#endif
-
 int
 dfb_kb_get_toggle_keys_state(rdpInst * inst)
 {

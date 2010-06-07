@@ -10,12 +10,12 @@
 
 struct dfb_info
 {
-	IDirectFB * dfb;
 	int width;
 	int height;
-	DFBRegion region;
-	DFBSurfaceDescription dsc;
+	IDirectFB * dfb;
+	IDirectFBSurface * drw;
 	IDirectFBSurface * primary;
+	DFBSurfaceDescription dsc;
 	IDirectFBEventBuffer * event;
 };
 typedef struct dfb_info dfbInfo;
