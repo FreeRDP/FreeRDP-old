@@ -62,13 +62,13 @@ l_ui_end_update(struct rdp_inst * inst)
 static void
 l_ui_desktop_save(struct rdp_inst * inst, int offset, int x, int y, int cx, int cy)
 {
-	printf("ui_desktop_save:\n");
+
 }
 
 static void
 l_ui_desktop_restore(struct rdp_inst * inst, int offset, int x, int y, int cx, int cy)
 {
-	printf("ui_desktop_restore:\n");
+
 }
 
 static RD_HGLYPH
@@ -117,7 +117,21 @@ l_ui_create_bitmap(struct rdp_inst * inst, int width, int height, uint8 * data)
 	dsc.caps = DSCAPS_SYSTEMONLY;
 	dsc.width = width;
 	dsc.height = height;
-	dsc.pixelformat = DSPF_AiRGB;
+
+	switch (inst->settings->server_depth)
+	{
+		case 16:
+			dsc.pixelformat = DSPF_RGB16;
+			break;
+
+		case 24:
+			dsc.pixelformat = DSPF_RGB16;
+			break;
+
+		case 32:
+			dsc.pixelformat = DSPF_RGB16;
+			break;
+	}
 
 	surface = (IDirectFBSurface*) malloc(sizeof(IDirectFBSurface));
 	dfbi->dfb->CreateSurface(dfbi->dfb, &dsc, &surface);
@@ -139,8 +153,7 @@ l_ui_paint_bitmap(struct rdp_inst * inst, int x, int y, int cx, int cy, int widt
 	rect.h = cy;
 	
 	surface = (IDirectFBSurface*) l_ui_create_bitmap(inst, width, height, data);
-	dfbi->primary->FillRectangle(dfbi->primary, 0, 0, width, height);
-	dfbi->primary->Blit(dfbi->primary, surface, &rect, x, y);
+	dfbi->primary->Blit(dfbi->primary, surface, &rect, cx, cy);
 	dfbi->primary->Flip(dfbi->primary, NULL, DSFLIP_ONCE);
 	
 	surface->Release(surface);
@@ -171,7 +184,7 @@ l_ui_rect(struct rdp_inst * inst, int x, int y, int cx, int cy, int colour)
 	red = (colour & 0xFF0000) >> 16;
 	green = (colour & 0xFF00) >> 8;
 	blue = colour & 0xFF;
-
+	
 	dfbi->primary->SetColor(dfbi->primary, red, green, blue, 0);
 	dfbi->primary->FillRectangle(dfbi->primary, x, y, cx, cy);
 }
@@ -180,7 +193,7 @@ static void
 l_ui_polygon(struct rdp_inst * inst, uint8 opcode, uint8 fillmode, RD_POINT * point,
 	int npoints, RD_BRUSH * brush, int bgcolour, int fgcolour)
 {
-	printf("ui_polygon\n");
+
 }
 
 static void
@@ -193,7 +206,7 @@ static void
 l_ui_ellipse(struct rdp_inst * inst, uint8 opcode, uint8 fillmode, int x, int y,
 	int cx, int cy, RD_BRUSH * brush, int bgcolour, int fgcolour)
 {
-	printf("ui_ellipse:\n");
+
 }
 
 static void
@@ -223,27 +236,27 @@ l_ui_get_toggle_keys_state(struct rdp_inst * inst)
 static void
 l_ui_bell(struct rdp_inst * inst)
 {
-	printf("ui_bell\n");
+
 }
 
 static void
 l_ui_destblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy)
 {
-	printf("ui_destblt\n");
+
 }
 
 static void
 l_ui_patblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy,
 	RD_BRUSH * brush, int bgcolour, int fgcolour)
 {
-	printf("ui_patblt\n");
+
 }
 
 static void
 l_ui_screenblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy,
 	int srcx, int srcy)
 {
-	printf("ui_screenblt\n");
+
 }
 
 static void
@@ -252,14 +265,13 @@ l_ui_memblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy,
 {
 	dfbInfo * dfbi;
 	DFBRectangle rect;
-	DFBSurfaceDescription dsc;
 	IDirectFBSurface * surface;
 	dfbi = GET_DFBI(inst);
 
-	rect.x = srcx;
-	rect.y = srcy;
-	rect.w = cx;
-	rect.h = cy;
+	rect.x = x;
+	rect.y = y;
+	rect.w = cx - x;
+	rect.h = cy - x;
 	surface = (IDirectFBSurface*) src;
 
 	printf("ui_memblt: x:%d y:%d cx:%d cy:%d srcx:%d srcy:%d rop3: %X\n", x, y, cx, cy, srcx, srcy, opcode);
@@ -292,20 +304,28 @@ l_ui_set_clip(struct rdp_inst * inst, int x, int y, int cx, int cy)
 	region.x2 = cx;
 	region.y2 = cy;
 
-	printf("set clip: %d %d %d %d\n", x, y, cx, cy);
 	dfbi->primary->SetClip(dfbi->primary, &region);
 }
 
 static void
 l_ui_reset_clip(struct rdp_inst * inst)
 {
+	dfbInfo * dfbi;
+	DFBRegion region;
+	dfbi = GET_DFBI(inst);
 	
+	region.x1 = 0;
+	region.y1 = 0;
+	region.x2 = dfbi->width;
+	region.y2 = dfbi->height;
+
+	dfbi->primary->SetClip(dfbi->primary, &region);
 }
 
 static void
 l_ui_resize_window(struct rdp_inst * inst)
 {
-	printf("ui_resize_window\n");
+
 }
 
 static void
@@ -342,19 +362,20 @@ l_ui_set_default_cursor(struct rdp_inst * inst)
 static RD_HCOLOURMAP
 l_ui_create_colourmap(struct rdp_inst * inst, RD_COLOURMAP * colours)
 {
+	printf("create_colourmap\n");
 	return (RD_HCOLOURMAP) NULL;
 }
 
 static void
 l_ui_move_pointer(struct rdp_inst * inst, int x, int y)
 {
-	printf("ui_move_pointer\n");
+
 }
 
 static void
 l_ui_set_colourmap(struct rdp_inst * inst, RD_HCOLOURMAP map)
 {
-	printf("ui_set_colourmap\n");
+
 }
 
 static RD_HBITMAP
@@ -473,12 +494,9 @@ dfb_pre_connect(rdpInst * inst)
 	err = DirectFBCreate(&(dfbi->dfb));
 	
 	dfbi->dsc.flags = DSDESC_CAPS;
-	dfbi->dsc.caps  = DSCAPS_PRIMARY | DSCAPS_FLIPPING;
+	dfbi->dsc.caps  = DSCAPS_PRIMARY;
 	err = dfbi->dfb->CreateSurface(dfbi->dfb, &(dfbi->dsc), &(dfbi->primary));
 	err = dfbi->primary->GetSize(dfbi->primary, &(dfbi->width), &(dfbi->height));
-
-	dfbi->primary->SetColor(dfbi->primary, 0xAA, 0xAA, 0xFF, 0x00);
-	dfbi->primary->FillRectangle(dfbi->primary, 100, 100, 200, 200);
 	
 	dfbi->dfb->CreateInputEventBuffer(dfbi->dfb, DICAPS_AXES | DICAPS_BUTTONS | DICAPS_KEYS, 0, &(dfbi->event));
 	dfb_kb_inst_init(inst);
@@ -503,10 +521,8 @@ dfb_uninit(void * dfb_info)
 }
 
 int
-dfb_get_fds(rdpInst * inst, void ** read_fds, int * read_count,
-	void ** write_fds, int * write_count)
+dfb_get_fds(rdpInst * inst, void ** read_fds, int * read_count, void ** write_fds, int * write_count)
 {
-
 	return 0;
 }
 
