@@ -135,9 +135,12 @@ static RD_HBITMAP
 l_ui_create_bitmap(struct rdp_inst * inst, int width, int height, uint8 * data)
 {
 	dfbInfo * dfbi;
+	uint8 * cdata;
 	IDirectFBSurface* surface;
 	DFBSurfaceDescription dsc;
 	dfbi = GET_DFBI(inst);
+
+	cdata = dfb_image_convert(dfbi, inst->settings, width, height, data);
 	
 	surface = (IDirectFBSurface*) malloc(sizeof(IDirectFBSurface));
 	dsc.flags = DSDESC_CAPS | DSDESC_WIDTH | DSDESC_HEIGHT | DSDESC_PIXELFORMAT;
@@ -170,6 +173,7 @@ static void
 l_ui_paint_bitmap(struct rdp_inst * inst, int x, int y, int cx, int cy, int width, int height, uint8 * data)
 {
 	dfbInfo * dfbi;
+	uint8 * cdata;
 	DFBRectangle rect;
 	IDirectFBSurface* surface;
 	dfbi = GET_DFBI(inst);
@@ -179,7 +183,8 @@ l_ui_paint_bitmap(struct rdp_inst * inst, int x, int y, int cx, int cy, int widt
 	rect.w = cx;
 	rect.h = cy;
 	
-	surface = (IDirectFBSurface*) l_ui_create_bitmap(inst, width, height, data);
+	cdata = dfb_image_convert(dfbi, inst->settings, width, height, data);
+	surface = (IDirectFBSurface*) l_ui_create_bitmap(inst, width, height, cdata);
 	dfbi->primary->Blit(dfbi->primary, surface, &rect, cx, cy);
 	
 	surface->Release(surface);
@@ -210,6 +215,8 @@ l_ui_rect(struct rdp_inst * inst, int x, int y, int cx, int cy, int colour)
 	red = (colour & 0xFF0000) >> 16;
 	green = (colour & 0xFF00) >> 8;
 	blue = colour & 0xFF;
+
+	dfb_colour_convert(dfbi, colour, dfbi->bpp);
 	
 	dfbi->primary->SetColor(dfbi->primary, red, green, blue, 0xFF);
 	dfbi->primary->FillRectangle(dfbi->primary, x, y, cx, cy);
@@ -383,23 +390,26 @@ l_ui_set_default_cursor(struct rdp_inst * inst)
 
 }
 
-static RD_HCOLOURMAP
-l_ui_create_colourmap(struct rdp_inst * inst, RD_COLOURMAP * colours)
-{
-	printf("create_colourmap\n");
-	return (RD_HCOLOURMAP) NULL;
-}
-
 static void
 l_ui_move_pointer(struct rdp_inst * inst, int x, int y)
 {
 
 }
 
+static RD_HCOLOURMAP
+l_ui_create_colourmap(struct rdp_inst * inst, RD_COLOURMAP * colours)
+{
+	dfbInfo * dfbi;
+	dfbi = GET_DFBI(inst);
+	return dfb_create_colourmap(dfbi, inst->settings, colours);
+}
+
 static void
 l_ui_set_colourmap(struct rdp_inst * inst, RD_HCOLOURMAP map)
 {
-
+	dfbInfo * dfbi;
+	dfbi = GET_DFBI(inst);
+	dfb_set_colourmap(dfbi, inst->settings, map);
 }
 
 static RD_HBITMAP
@@ -516,11 +526,13 @@ dfb_pre_connect(rdpInst * inst)
 	memset(dfbi, 0, sizeof(dfbInfo));
 
 	err = DirectFBCreate(&(dfbi->dfb));
-	
+
+	dfbi->bpp = 24;
 	dfbi->dsc.flags = DSDESC_CAPS;
 	dfbi->dsc.caps  = DSCAPS_PRIMARY;
 	err = dfbi->dfb->CreateSurface(dfbi->dfb, &(dfbi->dsc), &(dfbi->primary));
 	err = dfbi->primary->GetSize(dfbi->primary, &(dfbi->width), &(dfbi->height));
+	dfbi->dfb->SetVideoMode(dfbi->dfb, dfbi->width, dfbi->height, dfbi->bpp);
 	dfbi->update_pending = 0;
 	
 	dfbi->dfb->CreateInputEventBuffer(dfbi->dfb, DICAPS_AXES | DICAPS_BUTTONS | DICAPS_KEYS, 0, &(dfbi->event));

@@ -10,6 +10,7 @@
 
 struct dfb_info
 {
+	int bpp;
 	int width;
 	int height;
 	IDirectFB * dfb;
@@ -20,7 +21,7 @@ struct dfb_info
 	IDirectFBEventBuffer * event;
 	int update_pending;
 	DFBRegion update_region;
-	uint8 * colourmap;
+	int * colourmap;
 };
 typedef struct dfb_info dfbInfo;
 

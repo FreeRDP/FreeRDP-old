@@ -78,7 +78,7 @@
   (((_blue & 0xff) >> 3) <<  0)
 
 int
-dfb_colour_convert(dfbInfo * dfbi, int in_colour, int in_bpp)
+dfb_colour(dfbInfo * dfbi, int in_colour, int in_bpp, int out_bpp)
 {
 	int alpha;
 	int red;
@@ -118,33 +118,204 @@ dfb_colour_convert(dfbInfo * dfbi, int in_colour, int in_bpp)
 			printf("dfb_colour: bad in_bpp %d\n", in_bpp);
 			break;
 	}
-
+	switch (out_bpp)
+	{
+		case 32:
+			rv = MAKE32RGB(alpha, red, green, blue);
+			break;
+		case 24:
+			rv = MAKE24RGB(red, green, blue);
+			break;
+		case 16:
+			rv = MAKE16RGB(red, green, blue);
+			break;
+		case 15:
+			rv = MAKE15RGB(red, green, blue);
+			break;
+		case 1:
+			if ((red != 0) || (green != 0) || (blue != 0))
+				rv = 1;
+			break;
+		default:
+			printf("dfb_colour: bad out_bpp %d\n", out_bpp);
+			break;
+	}
+	
 	return rv;
+}
+
+int
+dfb_colour_convert(dfbInfo * dfbi, rdpSet * settings, int colour)
+{
+	return dfb_colour(dfbi, colour, settings->server_depth, dfbi->bpp);
 }
 
 uint8 *
 dfb_image_convert(dfbInfo * dfbi, rdpSet * settings, int width, int height, uint8 * in_data)
 {
+	int red;
+	int green;
+	int blue;
+	int index;
+	int pixel;
+	uint8 * out_data;
+	uint8 * src8;
+	uint16 * src16;
+	uint16 * dst16;
+	uint32 * dst32;
+
+	if ((settings->server_depth == 24) && (dfbi->bpp == 32))
+	{
+		out_data = (uint8 *) malloc(width * height * 4);
+		src8 = in_data;
+		dst32 = (uint32 *) out_data;
+		for (index = width * height; index > 0; index--)
+		{
+			blue = *(src8++);
+			green = *(src8++);
+			red = *(src8++);
+			pixel = MAKE24RGB(red, green, blue);
+			*dst32 = pixel;
+			dst32++;
+		}
+		return out_data;
+	}
+	else if ((settings->server_depth == 16) && (dfbi->bpp == 32))
+	{
+		out_data = (uint8 *) malloc(width * height * 4);
+		src16 = (uint16 *) in_data;
+		dst32 = (uint32 *) out_data;
+		for (index = width * height; index > 0; index--)
+		{
+			pixel = *src16;
+			src16++;
+			SPLIT16RGB(red, green, blue, pixel);
+			pixel = MAKE24RGB(red, green, blue);
+			*dst32 = pixel;
+			dst32++;
+		}
+		return out_data;
+	}
+	else if ((settings->server_depth == 15) && (dfbi->bpp == 32))
+	{
+		out_data = (uint8 *) malloc(width * height * 4);
+		src16 = (uint16 *) in_data;
+		dst32 = (uint32 *) out_data;
+		for (index = width * height; index > 0; index--)
+		{
+			pixel = *src16;
+			src16++;
+			SPLIT15RGB(red, green, blue, pixel);
+			pixel = MAKE24RGB(red, green, blue);
+			*dst32 = pixel;
+			dst32++;
+		}
+		return out_data;
+	}
+	else if ((settings->server_depth == 8) && (dfbi->bpp == 32))
+	{
+		out_data = (uint8 *) malloc(width * height * 4);
+		src8 = in_data;
+		dst32 = (uint32 *) out_data;
+		for (index = width * height; index > 0; index--)
+		{
+			pixel = *src8;
+			src8++;
+			pixel = dfbi->colourmap[pixel];
+			*dst32 = pixel;
+			dst32++;
+		}
+		return out_data;
+	}
+	else if ((settings->server_depth == 15) && (dfbi->bpp == 16))
+	{
+		out_data = (uint8 *) malloc(width * height * 2);
+		src16 = (uint16 *) in_data;
+		dst16 = (uint16 *) out_data;
+		for (index = width * height; index > 0; index--)
+		{
+			pixel = *src16;
+			src16++;
+			SPLIT15RGB(red, green, blue, pixel);
+			pixel = MAKE16RGB(red, green, blue);
+			*dst16 = pixel;
+			dst16++;
+		}
+		return out_data;
+	}
+	else if ((settings->server_depth == 8) && (dfbi->bpp == 16))
+	{
+		out_data = (uint8 *) malloc(width * height * 2);
+		src8 = in_data;
+		dst16 = (uint16 *) out_data;
+		for (index = width * height; index > 0; index--)
+		{
+			pixel = *src8;
+			src8++;
+			pixel = dfbi->colourmap[pixel];
+			SPLIT24RGB(red, green, blue, pixel);
+			pixel = MAKE16RGB(red, green, blue);
+			*dst16 = pixel;
+			dst16++;
+		}
+		return out_data;
+	}
+	else if ((settings->server_depth == 8) && (dfbi->bpp == 15))
+	{
+		out_data = (uint8 *) malloc(width * height * 2);
+		src8 = in_data;
+		dst16 = (uint16 *) out_data;
+		for (index = width * height; index > 0; index--)
+		{
+			pixel = *src8;
+			src8++;
+			pixel = dfbi->colourmap[pixel];
+			SPLIT24RGB(red, green, blue, pixel);
+			pixel = MAKE15RGB(red, green, blue);
+			*dst16 = pixel;
+			dst16++;
+		}
+		return out_data;
+	}
 	return in_data;
 }
-/*
+
 RD_HCOLOURMAP
 dfb_create_colourmap(dfbInfo * dfbi, rdpSet * settings, RD_COLOURMAP * colours)
 {
-	return (RD_HCOLOURMAP) NULL;
-}*/
-
-static RD_HCOLOURMAP
-l_ui_create_colourmap(struct rdp_inst * inst, RD_COLOURMAP * colours)
-{
-	printf("create_colourmap\n");
-	return (RD_HCOLOURMAP) NULL;
+	int index;
+	int red;
+	int green;
+	int blue;
+	int count;
+	int * colourmap;
+	
+	colourmap = (int *) malloc(sizeof(int) * 256);
+	memset(colourmap, 0, sizeof(int) * 256);
+	count = colours->ncolours;
+	
+	if (count > 256)
+		count = 256;
+	
+	for (index = count - 1; index >= 0; index--)
+	{
+		red = colours->colours[index].red;
+		green = colours->colours[index].green;
+		blue = colours->colours[index].blue;
+		colourmap[index] = MAKE24RGB(red, green, blue);
+	}
+	
+	return (RD_HCOLOURMAP) colourmap;
 }
 
 int
 dfb_set_colourmap(dfbInfo * dfbi, rdpSet * settings, RD_HCOLOURMAP map)
 {
+	if (dfbi->colourmap != NULL)
+		free(dfbi->colourmap);
 
+	dfbi->colourmap = (int *) map;
+	
 	return 0;
 }
 
