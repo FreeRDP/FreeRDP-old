@@ -205,6 +205,9 @@ detect_keyboard_type_from_xkb(char* xkbfile, int length)
 		}
 	}
 
+	if (xkbfile[0] == '\0')
+		strcpy(xkbfile, "base");
+
 	pclose(setxkbmap);
 	return rv;
 }
