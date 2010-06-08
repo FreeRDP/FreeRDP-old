@@ -178,7 +178,27 @@ xf_handle_event_KeyRelease(rdpInst * inst, xfInfo * xfi, XEvent * xevent)
 static int
 xf_handle_event_FocusIn(rdpInst * inst, xfInfo * xfi, XEvent * xevent)
 {
+	if (xevent->xfocus.mode == NotifyGrab)
+		return 0;
+
+	xfi->focused = True;
+	if (xfi->mouse_into)
+		XGrabKeyboard(xfi->display, xfi->wnd, True, GrabModeAsync, GrabModeAsync, CurrentTime);
+
 	xf_kb_focus_in(inst);
+	return 0;
+}
+
+static int
+xf_handle_event_FocusOut(rdpInst * inst, xfInfo * xfi, XEvent * xevent)
+{
+	if (xevent->xfocus.mode == NotifyUngrab)
+		return 0;
+
+	xfi->focused = False;
+	if (xevent->xfocus.mode == NotifyWhileGrabbed)
+		XUngrabKeyboard(xfi->display, CurrentTime);
+
 	return 0;
 }
 
@@ -206,6 +226,24 @@ xf_handle_event_ClientMessage(rdpInst * inst, xfInfo * xfi, XEvent * xevent)
 		return 1;
 	}
 
+	return 0;
+}
+
+static int
+xf_handle_event_EnterNotify(rdpInst * inst, xfInfo * xfi, XEvent * xevent)
+{
+	xfi->mouse_into = True;
+	if (xfi->focused)
+		XGrabKeyboard(xfi->display, xfi->wnd, True, GrabModeAsync, GrabModeAsync, CurrentTime);
+
+	return 0;
+}
+
+static int
+xf_handle_event_LeaveNotify(rdpInst * inst, xfInfo * xfi, XEvent * xevent)
+{
+	xfi->mouse_into = False;
+	XUngrabKeyboard(xfi->display, CurrentTime);
 	return 0;
 }
 
@@ -242,12 +280,13 @@ xf_handle_event(rdpInst * inst, xfInfo * xfi, XEvent * xevent)
 			rv = xf_handle_event_FocusIn(inst, xfi, xevent);
 			break;
 		case FocusOut:
+			rv = xf_handle_event_FocusOut(inst, xfi, xevent);
 			break;
 		case EnterNotify:
-			/*printf("xf_handle_event: EnterNotify\n");*/
+			rv = xf_handle_event_EnterNotify(inst, xfi, xevent);
 			break;
 		case LeaveNotify:
-			/*printf("xf_handle_event: LeaveNotify\n");*/
+			rv = xf_handle_event_LeaveNotify(inst, xfi, xevent);
 			break;
 		case NoExpose:
 			printf("xf_handle_event: NoExpose\n");

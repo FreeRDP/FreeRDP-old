@@ -42,6 +42,8 @@ struct xf_info
 	int pause_key;
 	int tab_key;
 	XModifierKeymap * mod_map;
+	RD_BOOL focused;
+	RD_BOOL mouse_into;
 };
 typedef struct xf_info xfInfo;
 
