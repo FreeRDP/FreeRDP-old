@@ -6,7 +6,6 @@ diskdir = $(PLUGIN_PATH)
 disk_LTLIBRARIES = disk.la
 
 disk_la_SOURCES = \
-	../../common/chan_stream.c \
 	disk_main.c
 
 disk_la_CFLAGS = -I../../../include -I../../common -I../ \
@@ -14,7 +13,7 @@ disk_la_CFLAGS = -I../../../include -I../../common -I../ \
 
 disk_la_LDFLAGS = -avoid-version -module
 
-disk_la_LIBADD = 
+disk_la_LIBADD = ../../common/libcommon.la
 
 # extra
 EXTRA_DIST =

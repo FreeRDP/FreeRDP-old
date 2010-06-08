@@ -1,17 +1,20 @@
 ## Process this file with automake to produce Makefile.in
 
-# Don't install anything - this is just to ensure header files are included in dist
-commondir =
+noinst_LTLIBRARIES = libcommon.la
 
-# It seems like common_SOURCES doesn't work because we don't build anything 
-# It seems like this works because commondir isn't set
-common_HEADERS = \
-	types.h \
-	chan_plugin.h \
-	chan_stream.h \
-	wait_obj.h
+libcommon_la_SOURCES = \
+	chan_plugin.c chan_plugin.h \
+	chan_stream.c chan_stream.h \
+	wait_obj.c wait_obj.h \
+	types.h
 
-#common_SOURCES = \
-#	chan_plugin.c \
-#	chan_stream.c \
-#	wait_obj.c
+libcommon_la_CFLAGS = -I../../include -I.
+
+libcommon_la_LDFLAGS =
+
+libcommon_la_LIBADD = -lpthread
+
+# extra
+EXTRA_DIST =
+
+DISTCLEANFILES =
