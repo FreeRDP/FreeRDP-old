@@ -6,7 +6,6 @@ printerdir = $(PLUGIN_PATH)
 printer_LTLIBRARIES = printer.la
 
 printer_la_SOURCES = \
-	../../common/chan_stream.c \
 	printer_main.c printer_main.h
 
 printer_la_CFLAGS = -I../../../include -I../../common -I../ \
@@ -14,7 +13,7 @@ printer_la_CFLAGS = -I../../../include -I../../common -I../ \
 
 printer_la_LDFLAGS = -avoid-version -module
 
-printer_la_LIBADD = 
+printer_la_LIBADD = ../../common/libcommon.la
 
 if RDPDR_PRINTER_CUPS
 printer_la_SOURCES += printer_cups.c

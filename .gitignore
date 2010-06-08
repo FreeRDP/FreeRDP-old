@@ -69,6 +69,14 @@ autom4te.cache
 /dfb/*.deps
 /dfb/*.libs
 /dfb/*~
+/channels/common/*.o
+/channels/common/*.lo
+/channels/common/*.la
+/channels/common/Makefile
+/channels/common/Makefile.in
+/channels/common/.deps
+/channels/common/.libs
+/channels/common/*~
 /channels/rdpsnd/*.o
 /channels/rdpsnd/*.lo
 /channels/rdpsnd/*.la

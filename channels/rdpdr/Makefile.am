@@ -6,9 +6,6 @@ rdpdrdir = $(PLUGIN_PATH)
 rdpdr_LTLIBRARIES = rdpdr.la
 
 rdpdr_la_SOURCES = \
-	../common/wait_obj.c \
-	../common/chan_plugin.c \
-	../common/chan_stream.c \
 	rdpdr_types.h \
 	rdpdr_main.c rdpdr_main.h \
 	rdpdr_capabilities.c rdpdr_capabilities.h \
@@ -21,7 +18,7 @@ rdpdr_la_CFLAGS = -I../../include -I../common -I. \
 
 rdpdr_la_LDFLAGS = -avoid-version -module
 
-rdpdr_la_LIBADD = 
+rdpdr_la_LIBADD = ../common/libcommon.la
 
 # extra
 EXTRA_DIST =

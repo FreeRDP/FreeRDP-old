@@ -351,6 +351,7 @@ case $printer in
 			AM_CONDITIONAL(RDPDR_PRINTER_CUPS, true)
 		else
 			AC_MSG_WARN([Printer support disabled. CUPS development package not found.])
+			printer=no
 		fi
 		;;
 

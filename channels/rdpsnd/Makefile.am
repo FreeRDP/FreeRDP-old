@@ -8,8 +8,6 @@ rdpsnddir = $(PLUGIN_PATH)
 rdpsnd_LTLIBRARIES = rdpsnd.la
 
 rdpsnd_la_SOURCES = \
-	../common/wait_obj.c \
-	../common/chan_plugin.c \
 	rdpsnd_dsp.h rdpsnd.h \
 	rdpsnd_main.c
 
@@ -18,7 +16,7 @@ rdpsnd_la_CFLAGS = -I../../include -I../common \
 
 rdpsnd_la_LDFLAGS = -avoid-version -module
 
-rdpsnd_la_LIBADD =
+rdpsnd_la_LIBADD = ../common/libcommon.la
 
 if RDPSND_ALSA
 rdpsnd_la_SOURCES += rdpsnd_alsa.c
