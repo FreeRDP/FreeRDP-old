@@ -974,6 +974,8 @@ xf_post_connect(rdpInst * inst)
 	int input_mask;
 	int width;
 	int height;
+	Atom protocol_atom;
+	Atom kill_atom;
 
 	xfi = GET_XFI(inst);
 	if (xf_get_pixmap_info(inst, xfi) != 0)
@@ -1001,6 +1003,11 @@ xf_post_connect(rdpInst * inst)
 	memset(&gcv, 0, sizeof(gcv));
 	xfi->gc = XCreateGC(xfi->display, xfi->wnd, GCGraphicsExposures, &gcv);
 	xfi->backstore = XCreatePixmap(xfi->display, xfi->wnd, width, height, xfi->depth);
+
+	protocol_atom = XInternAtom(xfi->display, "WM_PROTOCOLS", True);
+	kill_atom = XInternAtom(xfi->display, "WM_DELETE_WINDOW", True);
+	XSetWMProtocols(xfi->display, xfi->wnd, &kill_atom, 1);
+
 	xfi->drw = xfi->backstore;
 	xfi->bitmap_mono = XCreatePixmap(xfi->display, xfi->wnd, 8, 8, 1);
 	xfi->gc_mono = XCreateGC(xfi->display, xfi->bitmap_mono, GCGraphicsExposures, &gcv);

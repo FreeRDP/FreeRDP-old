@@ -193,6 +193,22 @@ xf_handle_event_MappingNotify(rdpInst * inst, xfInfo * xfi, XEvent * xevent)
 	return 0;
 }
 
+static int
+xf_handle_event_ClientMessage(rdpInst * inst, xfInfo * xfi, XEvent * xevent)
+{
+	Atom protocol_atom = XInternAtom(xfi->display, "WM_PROTOCOLS", True);
+	Atom kill_atom = XInternAtom(xfi->display, "WM_DELETE_WINDOW", True);
+
+	if ((xevent->xclient.message_type == protocol_atom)
+	    && ((Atom) xevent->xclient.data.l[0] == kill_atom))
+	{
+		printf("xf_handle_event: ClientMessage user quit received\n");
+		return 1;
+	}
+
+	return 0;
+}
+
 int
 xf_handle_event(rdpInst * inst, xfInfo * xfi, XEvent * xevent)
 {
@@ -250,6 +266,10 @@ xf_handle_event(rdpInst * inst, xfInfo * xfi, XEvent * xevent)
 			break;
 		case MappingNotify:
 			rv = xf_handle_event_MappingNotify(inst, xfi, xevent);
+			break;
+		case ClientMessage:
+			/* the window manager told us to quit */
+			rv = xf_handle_event_ClientMessage(inst, xfi, xevent);
 			break;
 		default:
 			printf("xf_handle_event unknown event %d\n", xevent->type);
