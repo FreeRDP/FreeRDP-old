@@ -3,6 +3,7 @@
 #define __XF_EVENT_H
 
 #include <freerdp/freerdp.h>
+#include <X11/Xlib.h>
 
 #define SET_XFI(_inst, _xfi) (_inst)->param1 = _xfi
 #define GET_XFI(_inst) ((xfInfo *) ((_inst)->param1))
@@ -42,6 +43,8 @@ struct xf_info
 	int pause_key;
 	int tab_key;
 	XModifierKeymap * mod_map;
+	RD_BOOL focused;
+	RD_BOOL mouse_into;
 };
 typedef struct xf_info xfInfo;
 

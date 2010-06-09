@@ -50,6 +50,10 @@ xf_handle_event_MotionNotify(rdpInst * inst, xfInfo * xfi, XEvent * xevent)
 		y = xevent->xmotion.y;
 		inst->rdp_send_input(inst, RDP_INPUT_MOUSE, PTRFLAGS_MOVE, x, y);
 	}
+
+	if (inst->settings->fullscreen)
+		XSetInputFocus(xfi->display, xfi->wnd, RevertToPointerRoot, CurrentTime);
+
 	return 0;
 }
 
@@ -140,6 +144,15 @@ xf_handle_event_ButtonRelease(rdpInst * inst, xfInfo * xfi, XEvent * xevent)
 static int
 xf_handle_event_KeyPress(rdpInst * inst, xfInfo * xfi, XEvent * xevent)
 {
+	KeySym keysym;
+	char str[256];
+
+	XLookupString((XKeyEvent *) xevent, str, sizeof(str), &keysym, NULL);
+
+	xf_kb_set_keypress(xevent->xkey.keycode, keysym);
+	if (inst->settings->fs_toggle && xf_kb_handle_special_keys(inst, keysym))
+		return 0;
+
 	xf_kb_send_key(inst, RDP_KEYPRESS, xevent->xkey.keycode);
 	return 0;
 }
@@ -171,6 +184,7 @@ xf_handle_event_KeyRelease(rdpInst * inst, xfInfo * xfi, XEvent * xevent)
 	{
 		return 0;
 	}
+	xf_kb_unset_keypress(xevent->xkey.keycode);
 	xf_kb_send_key(inst, RDP_KEYRELEASE, xevent->xkey.keycode);
 	return 0;
 }
@@ -178,7 +192,27 @@ xf_handle_event_KeyRelease(rdpInst * inst, xfInfo * xfi, XEvent * xevent)
 static int
 xf_handle_event_FocusIn(rdpInst * inst, xfInfo * xfi, XEvent * xevent)
 {
+	if (xevent->xfocus.mode == NotifyGrab)
+		return 0;
+
+	xfi->focused = True;
+	if (xfi->mouse_into)
+		XGrabKeyboard(xfi->display, xfi->wnd, True, GrabModeAsync, GrabModeAsync, CurrentTime);
+
 	xf_kb_focus_in(inst);
+	return 0;
+}
+
+static int
+xf_handle_event_FocusOut(rdpInst * inst, xfInfo * xfi, XEvent * xevent)
+{
+	if (xevent->xfocus.mode == NotifyUngrab)
+		return 0;
+
+	xfi->focused = False;
+	if (xevent->xfocus.mode == NotifyWhileGrabbed)
+		XUngrabKeyboard(xfi->display, CurrentTime);
+
 	return 0;
 }
 
@@ -190,6 +224,44 @@ xf_handle_event_MappingNotify(rdpInst * inst, xfInfo * xfi, XEvent * xevent)
 		XFreeModifiermap(xfi->mod_map);
 		xfi->mod_map = XGetModifierMapping(xfi->display);
 	}
+	return 0;
+}
+
+static int
+xf_handle_event_ClientMessage(rdpInst * inst, xfInfo * xfi, XEvent * xevent)
+{
+	Atom protocol_atom = XInternAtom(xfi->display, "WM_PROTOCOLS", True);
+	Atom kill_atom = XInternAtom(xfi->display, "WM_DELETE_WINDOW", True);
+
+	if ((xevent->xclient.message_type == protocol_atom)
+	    && ((Atom) xevent->xclient.data.l[0] == kill_atom))
+	{
+		printf("xf_handle_event: ClientMessage user quit received\n");
+		return 1;
+	}
+
+	return 0;
+}
+
+static int
+xf_handle_event_EnterNotify(rdpInst * inst, xfInfo * xfi, XEvent * xevent)
+{
+	xfi->mouse_into = True;
+
+	if (inst->settings->fullscreen)
+		XSetInputFocus(xfi->display, xfi->wnd, RevertToPointerRoot, CurrentTime);
+
+	if (xfi->focused)
+		XGrabKeyboard(xfi->display, xfi->wnd, True, GrabModeAsync, GrabModeAsync, CurrentTime);
+
+	return 0;
+}
+
+static int
+xf_handle_event_LeaveNotify(rdpInst * inst, xfInfo * xfi, XEvent * xevent)
+{
+	xfi->mouse_into = False;
+	XUngrabKeyboard(xfi->display, CurrentTime);
 	return 0;
 }
 
@@ -226,12 +298,13 @@ xf_handle_event(rdpInst * inst, xfInfo * xfi, XEvent * xevent)
 			rv = xf_handle_event_FocusIn(inst, xfi, xevent);
 			break;
 		case FocusOut:
+			rv = xf_handle_event_FocusOut(inst, xfi, xevent);
 			break;
 		case EnterNotify:
-			/*printf("xf_handle_event: EnterNotify\n");*/
+			rv = xf_handle_event_EnterNotify(inst, xfi, xevent);
 			break;
 		case LeaveNotify:
-			/*printf("xf_handle_event: LeaveNotify\n");*/
+			rv = xf_handle_event_LeaveNotify(inst, xfi, xevent);
 			break;
 		case NoExpose:
 			printf("xf_handle_event: NoExpose\n");
@@ -250,6 +323,10 @@ xf_handle_event(rdpInst * inst, xfInfo * xfi, XEvent * xevent)
 			break;
 		case MappingNotify:
 			rv = xf_handle_event_MappingNotify(inst, xfi, xevent);
+			break;
+		case ClientMessage:
+			/* the window manager told us to quit */
+			rv = xf_handle_event_ClientMessage(inst, xfi, xevent);
 			break;
 		default:
 			printf("xf_handle_event unknown event %d\n", xevent->type);

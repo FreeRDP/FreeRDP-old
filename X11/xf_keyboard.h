@@ -3,6 +3,7 @@
 #define __XF_KEYBOARD_H
 
 #include <freerdp/freerdp.h>
+#include "xf_event.h"
 
 void
 xf_kb_init(void);
@@ -14,5 +15,11 @@ int
 xf_kb_get_toggle_keys_state(rdpInst * inst);
 void
 xf_kb_focus_in(rdpInst * inst);
+void
+xf_kb_set_keypress(uint8 keycode, unsigned keysym);
+void
+xf_kb_unset_keypress(uint8 keycode);
+RD_BOOL
+xf_kb_handle_special_keys(rdpInst * inst, unsigned keysym);
 
 #endif
