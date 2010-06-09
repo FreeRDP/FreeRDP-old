@@ -15,5 +15,7 @@ xf_get_fds(rdpInst * inst, void ** read_fds, int * read_count,
 	void ** write_fds, int * write_count);
 int
 xf_check_fds(rdpInst * inst);
+void
+xf_toggle_fullscreen(rdpInst * inst);
 
 #endif

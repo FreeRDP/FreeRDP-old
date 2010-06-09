@@ -58,6 +58,7 @@ set_default_params(rdpSet * settings)
 	settings->triblt = 0;
 	settings->new_cursors = 1;
 	settings->rdp_version = 5;
+	settings->fullscreen = settings->fs_toggle = 0;
 	return 0;
 }
 
@@ -206,6 +207,11 @@ process_params(rdpSet * settings, rdpChanMan * chan_man, int argc, char ** argv,
 		else if (strcmp("-z", argv[*pindex]) == 0)
 		{
 			settings->bulk_compression = 1;
+		}
+		else if (strcmp("-f", argv[*pindex]) == 0)
+		{
+			settings->fullscreen = settings->fs_toggle = 1;
+			printf("full screen option\n");
 		}
 		else if (strcmp("-x", argv[*pindex]) == 0)
 		{
