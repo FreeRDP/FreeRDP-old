@@ -50,7 +50,9 @@
 #define TCP_BLOCKS (errno == EWOULDBLOCK)
 #endif
 
+#ifdef __APPLE__
 #define MSG_NOSIGNAL SO_NOSIGPIPE
+#endif
 
 #ifndef INADDR_NONE
 #define INADDR_NONE ((unsigned long) -1)
