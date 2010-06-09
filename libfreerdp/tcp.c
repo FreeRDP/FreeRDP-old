@@ -50,6 +50,8 @@
 #define TCP_BLOCKS (errno == EWOULDBLOCK)
 #endif
 
+#define MSG_NOSIGNAL SO_NOSIGPIPE
+
 #ifndef INADDR_NONE
 #define INADDR_NONE ((unsigned long) -1)
 #endif
