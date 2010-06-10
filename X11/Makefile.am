@@ -16,7 +16,7 @@ xfreerdp_LDADD = \
 	../libfreerdp/libfreerdp.la \
 	../libfreerdpkbd/libfreerdpkbd.la \
 	../libfreerdpchanman/libfreerdpchanman.la \
-	@XCURSOR_LIBS@  @X_LIBS@ \
+	@XCURSOR_LIBS@ @X_LIBS@ @X_EXTRA_LIBS@ \
 	-lpthread
 
 

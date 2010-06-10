@@ -13,7 +13,7 @@ cliprdr_la_CFLAGS = -I../../include -I../common @X_CFLAGS@
 
 cliprdr_la_LDFLAGS = -avoid-version -module
 
-cliprdr_la_LIBADD = ../common/libcommon.la @X_LIBS@
+cliprdr_la_LIBADD = ../common/libcommon.la @X_LIBS@ @X_EXTRA_LIBS@
 
 # extra
 EXTRA_DIST =
