@@ -9,11 +9,11 @@ cliprdr_la_SOURCES = \
 	cliprdr_main.h cliprdr_main.c \
 	cliprdr_x11.c
 
-cliprdr_la_CFLAGS = -I../../include -I../common
+cliprdr_la_CFLAGS = -I../../include -I../common @X_CFLAGS@
 
 cliprdr_la_LDFLAGS = -avoid-version -module
 
-cliprdr_la_LIBADD = ../common/libcommon.la -lX11
+cliprdr_la_LIBADD = ../common/libcommon.la @X_LIBS@
 
 # extra
 EXTRA_DIST =

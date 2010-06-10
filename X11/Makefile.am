@@ -10,13 +10,15 @@ xfreerdp_SOURCES = \
 	xf_win.h xf_win.c \
 	xfreerdp.c
 
-xfreerdp_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include @XCURSOR_CFLAGS@
+xfreerdp_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include @XCURSOR_CFLAGS@ @X_CFLAGS@
 
 xfreerdp_LDADD = \
 	../libfreerdp/libfreerdp.la \
 	../libfreerdpkbd/libfreerdpkbd.la \
 	../libfreerdpchanman/libfreerdpchanman.la \
-	@XCURSOR_LIBS@ \
-	-lX11 -lpthread
+	@XCURSOR_LIBS@  @X_LIBS@ \
+	-lpthread
+
+
 
 
