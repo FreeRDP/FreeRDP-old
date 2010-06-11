@@ -1,5 +1,5 @@
 /*
-   Copyright (c) 2009 Jay Sorg
+   Copyright (c) 2009-2010 Jay Sorg
 
    Permission is hereby granted, free of charge, to any person obtaining a
    copy of this software and associated documentation files (the "Software"),
@@ -33,10 +33,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <freerdp/chanman.h>
-#include "xf_win.h"
+#include "xf_types.h"
 #include "xf_event.h"
 #include "xf_colour.h"
 #include "xf_keyboard.h"
+#include "xf_win.h"
 
 #define MWM_HINTS_DECORATIONS   (1L << 1)
 #define PROP_MOTIF_WM_HINTS_ELEMENTS    5
@@ -437,7 +438,10 @@ l_ui_end_draw_glyphs(struct rdp_inst * inst, int x, int y, int cx, int cy)
 static uint32
 l_ui_get_toggle_keys_state(struct rdp_inst * inst)
 {
-	return xf_kb_get_toggle_keys_state(inst);
+	xfInfo * xfi;
+
+	xfi = GET_XFI(inst);
+	return xf_kb_get_toggle_keys_state(xfi);
 }
 
 static void
@@ -899,7 +903,7 @@ xf_assign_callbacks(rdpInst * inst)
 }
 
 static int
-xf_get_pixmap_info(rdpInst * inst, xfInfo * xfi)
+xf_get_pixmap_info(xfInfo * xfi)
 {
 	int vi_count;
 	int pf_count;
@@ -955,14 +959,9 @@ xf_get_pixmap_info(rdpInst * inst, xfInfo * xfi)
 }
 
 int
-xf_pre_connect(rdpInst * inst)
+xf_pre_connect(xfInfo * xfi)
 {
-	xfInfo * xfi;
-
-	xf_assign_callbacks(inst);
-	xfi = (xfInfo *) malloc(sizeof(xfInfo));
-	SET_XFI(inst, xfi);
-	memset(xfi, 0, sizeof(xfInfo));
+	xf_assign_callbacks(xfi->inst);
 	xfi->display = XOpenDisplay(NULL);
 	if (xfi->display == NULL)
 	{
@@ -974,12 +973,12 @@ xf_pre_connect(rdpInst * inst)
 	xfi->screen = ScreenOfDisplay(xfi->display, xfi->screen_num);
 	xfi->depth = DefaultDepthOfScreen(xfi->screen);
 	xfi->xserver_be = (ImageByteOrder(xfi->display) == MSBFirst);
-	xf_kb_inst_init(inst);
+	xf_kb_inst_init(xfi);
 
-	if (inst->settings->fullscreen)
+	if (xfi->fullscreen)
 	{
-		inst->settings->width = WidthOfScreen(xfi->screen);
-		inst->settings->height = HeightOfScreen(xfi->screen);
+		xfi->settings->width = WidthOfScreen(xfi->screen);
+		xfi->settings->height = HeightOfScreen(xfi->screen);
 	}
 
 	return 0;
@@ -1008,9 +1007,8 @@ mwm_hide_decorations(xfInfo * xfi)
 }
 
 int
-xf_post_connect(rdpInst * inst)
+xf_post_connect(xfInfo * xfi)
 {
-	xfInfo * xfi;
 	XEvent xevent;
 	XGCValues gcv;
 	int input_mask;
@@ -1022,15 +1020,14 @@ xf_post_connect(rdpInst * inst)
 	XSetWindowAttributes attribs;
 	XSizeHints *sizehints;
 
-	xfi = GET_XFI(inst);
-	if (xf_get_pixmap_info(inst, xfi) != 0)
+	if (xf_get_pixmap_info(xfi) != 0)
 	{
 		return 1;
 	}
 
-	fullscreen = inst->settings->fullscreen;
-	width = fullscreen ? WidthOfScreen(xfi->screen) : inst->settings->width;
-	height = fullscreen ? HeightOfScreen(xfi->screen) : inst->settings->height;
+	fullscreen = xfi->fullscreen;
+	width = fullscreen ? WidthOfScreen(xfi->screen) : xfi->settings->width;
+	height = fullscreen ? HeightOfScreen(xfi->screen) : xfi->settings->height;
 
 	attribs.background_pixel = BlackPixelOfScreen(xfi->screen);
 	attribs.border_pixel = WhitePixelOfScreen(xfi->screen);
@@ -1093,17 +1090,14 @@ xf_post_connect(rdpInst * inst)
 	xfi->gc_default = XCreateGC(xfi->display, xfi->wnd, GCGraphicsExposures, &gcv);
 	XSetForeground(xfi->display, xfi->gc, BlackPixelOfScreen(xfi->screen));
 	XFillRectangle(xfi->display, xfi->backstore, xfi->gc, 0, 0, width, height);
-	xfi->null_cursor = (Cursor) l_ui_create_cursor(inst, 0, 0, 32, 32, 0, 0, 0);
+	xfi->null_cursor = (Cursor) l_ui_create_cursor(xfi->inst, 0, 0, 32, 32, 0, 0, 0);
 	xfi->mod_map = XGetModifierMapping(xfi->display);
 	return 0;
 }
 
 void
-xf_uninit(void * xf_info)
+xf_uninit(xfInfo * xfi)
 {
-	xfInfo * xfi;
-
-	xfi = (xfInfo *) xf_info;
 	/* xf_post_connect */
 	XFreeModifiermap(xfi->mod_map);
 	XFreeGC(xfi->display, xfi->gc_default);
@@ -1114,34 +1108,28 @@ xf_uninit(void * xf_info)
 	XDestroyWindow(xfi->display, xfi->wnd);
 	/* xf_pre_connect */
 	XCloseDisplay(xfi->display);
-	free(xfi);
 }
 
 int
-xf_get_fds(rdpInst * inst, void ** read_fds, int * read_count,
+xf_get_fds(xfInfo * xfi, void ** read_fds, int * read_count,
 	void ** write_fds, int * write_count)
 {
-	xfInfo * xfi;
-
-	xfi = GET_XFI(inst);
 	read_fds[*read_count] = (void *)(long) (xfi->x_socket);
 	(*read_count)++;
 	return 0;
 }
 
 int
-xf_check_fds(rdpInst * inst)
+xf_check_fds(xfInfo * xfi)
 {
 	XEvent xevent;
-	xfInfo * xfi;
 
-	xfi = GET_XFI(inst);
 	while (XPending(xfi->display))
 	{
 		memset(&xevent, 0, sizeof(xevent));
 		XNextEvent(xfi->display, &xevent);
 		//printf("-----------------got event %d\n", xevent.type);
-		if (xf_handle_event(inst, xfi, &xevent) != 0)
+		if (xf_handle_event(xfi, &xevent) != 0)
 		{
 			return 1;
 		}
@@ -1163,20 +1151,20 @@ xf_destroy_window(xfInfo * xfi)
 }
 
 void
-xf_toggle_fullscreen(rdpInst * inst)
+xf_toggle_fullscreen(xfInfo * xfi)
 {
 	Pixmap contents = 0;
-	xfInfo *xfi = GET_XFI(inst);
-	int width = inst->settings->width;
-	int height = inst->settings->height;
+	int width = xfi->settings->width;
+	int height = xfi->settings->height;
 
 	contents = XCreatePixmap(xfi->display, xfi->wnd, width, height, xfi->depth);
 	XCopyArea(xfi->display, xfi->backstore, contents, xfi->gc, 0, 0, width, height, 0, 0);
 
 	xf_destroy_window(xfi);
-	inst->settings->fullscreen = !inst->settings->fullscreen;
-	xf_post_connect(inst);
+	xfi->fullscreen = !xfi->fullscreen;
+	xf_post_connect(xfi);
 
 	XCopyArea(xfi->display, contents, xfi->backstore, xfi->gc, 0, 0, width, height, 0, 0);
 	XFreePixmap(xfi->display, contents);
 }
+

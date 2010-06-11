@@ -34,8 +34,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "xf_win.h"
-#include "xf_event.h"
+#include "xf_types.h"
 
 #define SPLIT32BGR(_alpha, _red, _green, _blue, _pixel) \
   _red = _pixel & 0xff; \

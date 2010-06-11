@@ -1,5 +1,5 @@
 /*
-   Copyright (c) 2009 Jay Sorg
+   Copyright (c) 2009-2010 Jay Sorg
 
    Permission is hereby granted, free of charge, to any person obtaining a
    copy of this software and associated documentation files (the "Software"),
@@ -28,8 +28,9 @@
 #include <X11/keysym.h>
 #include <freerdp/freerdp.h>
 #include <freerdp/kbd.h>
-#include "xf_event.h"
+#include "xf_types.h"
 #include "xf_win.h"
+#include "xf_keyboard.h"
 
 static int xf_kb_keyboard_layout = 0;
 static RD_BOOL pressed_keys[256] = { False };
@@ -42,18 +43,16 @@ xf_kb_init(void)
 }
 
 void
-xf_kb_inst_init(rdpInst * inst)
+xf_kb_inst_init(xfInfo * xfi)
 {
-	inst->settings->keyboard_layout = xf_kb_keyboard_layout;
+	xfi->inst->settings->keyboard_layout = xf_kb_keyboard_layout;
 };
 
 void
-xf_kb_send_key(rdpInst * inst, int flags, uint8 keycode)
+xf_kb_send_key(xfInfo * xfi, int flags, uint8 keycode)
 {
-	xfInfo * xfi;
 	int scancode;
 
-	xfi = GET_XFI(inst);
 	if (keycode == xfi->pause_key)
 	{
 		/* This is a special key the actually sends two scancodes to the
@@ -61,19 +60,19 @@ xf_kb_send_key(rdpInst * inst, int flags, uint8 keycode)
 		//printf("special VK_PAUSE\n");
 		if (flags & KBD_FLAG_UP)
 		{
-			inst->rdp_send_input(inst, RDP_INPUT_SCANCODE, 0x8200, 0x1d, 0);
-			inst->rdp_send_input(inst, RDP_INPUT_SCANCODE, 0x8000, 0x45, 0);
+			xfi->inst->rdp_send_input(xfi->inst, RDP_INPUT_SCANCODE, 0x8200, 0x1d, 0);
+			xfi->inst->rdp_send_input(xfi->inst, RDP_INPUT_SCANCODE, 0x8000, 0x45, 0);
 		}
 		else
 		{
-			inst->rdp_send_input(inst, RDP_INPUT_SCANCODE, 0x0200, 0x1d, 0);
-			inst->rdp_send_input(inst, RDP_INPUT_SCANCODE, 0x0000, 0x45, 0);
+			xfi->inst->rdp_send_input(xfi->inst, RDP_INPUT_SCANCODE, 0x0200, 0x1d, 0);
+			xfi->inst->rdp_send_input(xfi->inst, RDP_INPUT_SCANCODE, 0x0000, 0x45, 0);
 		}
 	}
 	else
 	{
 		scancode = freerdp_kbd_get_scancode_by_keycode(keycode, &flags);
-		inst->rdp_send_input(inst, RDP_INPUT_SCANCODE, flags, scancode, 0);
+		xfi->inst->rdp_send_input(xfi->inst, RDP_INPUT_SCANCODE, flags, scancode, 0);
 	}
 }
 
@@ -115,13 +114,11 @@ xf_kb_get_key_state(xfInfo * xfi, int state, int keysym)
 }
 
 int
-xf_kb_get_toggle_keys_state(rdpInst * inst)
+xf_kb_get_toggle_keys_state(xfInfo * xfi)
 {
-	xfInfo * xfi;
 	int toggle_keys_state = 0;
 	int state;
 
-	xfi = GET_XFI(inst);
 	state = xf_kb_read_keyboard_state(xfi);
 	if (xf_kb_get_key_state(xfi, state, XK_Scroll_Lock))
 	{
@@ -143,19 +140,17 @@ xf_kb_get_toggle_keys_state(rdpInst * inst)
 }
 
 void
-xf_kb_focus_in(rdpInst * inst)
+xf_kb_focus_in(xfInfo * xfi)
 {
-	xfInfo * xfi;
 	int flags;
 	int scancode;
 
-	xfi = GET_XFI(inst);
 	/* on focus in send a tab up like mstsc.exe */
 	scancode = freerdp_kbd_get_scancode_by_virtualkey(xfi->tab_key);
-	inst->rdp_send_input(inst, RDP_INPUT_SCANCODE, KBD_FLAG_UP, scancode, 0);
+	xfi->inst->rdp_send_input(xfi->inst, RDP_INPUT_SCANCODE, KBD_FLAG_UP, scancode, 0);
 	/* sync num, caps, scroll, kana lock */
-	flags = xf_kb_get_toggle_keys_state(inst);
-	inst->rdp_sync_input(inst, flags);
+	flags = xf_kb_get_toggle_keys_state(xfi);
+	xfi->inst->rdp_sync_input(xfi->inst, flags);
 }
 
 void
@@ -182,16 +177,15 @@ xf_kb_key_pressed(xfInfo * xfi, KeySym keysym)
 }
 
 RD_BOOL
-xf_kb_handle_special_keys(rdpInst * inst, KeySym keysym)
+xf_kb_handle_special_keys(xfInfo * xfi, KeySym keysym)
 {
-	xfInfo *xfi = GET_XFI(inst);
 	if (keysym == XK_Return)
 	{
 		if ((xf_kb_key_pressed(xfi, XK_Alt_L) || xf_kb_key_pressed(xfi, XK_Alt_R))
 		    && (xf_kb_key_pressed(xfi, XK_Control_L) || xf_kb_key_pressed(xfi, XK_Control_R)))
 		{
 			/* Ctrl-Alt-Enter: toggle full screen */
-			xf_toggle_fullscreen(inst);
+			xf_toggle_fullscreen(xfi);
 			return True;
 		}
 	}

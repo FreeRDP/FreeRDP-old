@@ -20,25 +20,65 @@
    DEALINGS IN THE SOFTWARE.
 */
 
-#ifndef __XF_COLOUR_H
-#define __XF_COLOUR_H
+#ifndef __XF_TYPES_H
+#define __XF_TYPES_H
 
 #include <freerdp/freerdp.h>
+#include <freerdp/chanman.h>
+#include <X11/Xlib.h>
 
-int
-xf_colour_convert(xfInfo * xfi, rdpSet * settings, int colour);
-uint8 *
-xf_image_convert(xfInfo * xfi, rdpSet * settings, int width, int height,
-	uint8 * in_data);
-RD_HCOLOURMAP
-xf_create_colourmap(xfInfo * xfi, rdpSet * settings, RD_COLOURMAP * colours);
-int
-xf_set_colourmap(xfInfo * xfi, rdpSet * settings, RD_HCOLOURMAP map);
-int
-xf_cursor_convert_mono(xfInfo * xfi, uint8 * src_glyph, uint8 * msk_glyph,
-	uint8 * xormask, uint8 * andmask, int width, int height, int bpp);
-int
-xf_cursor_convert_alpha(xfInfo * xfi, uint8 * alpha_data,
-	uint8 * xormask, uint8 * andmask, int width, int height, int bpp);
+#define SET_XFI(_inst, _xfi) (_inst)->param1 = _xfi
+#define GET_XFI(_inst) ((xfInfo *) ((_inst)->param1))
+
+struct xf_km
+{
+	int scancode;
+	int flags;
+};
+
+struct xf_info
+{
+	/* RDP stuff */
+	rdpSet * settings;
+	rdpChanMan * chan_man;
+	rdpInst * inst;
+
+	/* UI settings */
+	int fullscreen;
+	int fs_toggle;
+
+	/* X11 stuff */
+	Window wnd;
+	GC gc;
+	Display * display;
+	Screen * screen;
+	Colormap xcolmap;
+	int x_socket;
+	int depth;
+	int bpp;
+	int screen_num;
+	Pixmap backstore;
+	int unobscured;
+	Visual * visual;
+	int xserver_be;
+	int bitmap_pad;
+	int red_mask;
+	int green_mask;
+	int blue_mask;
+	int * colourmap;
+	Drawable drw;
+	Pixmap bitmap_mono;
+	GC gc_mono;
+	GC gc_default;
+	Cursor null_cursor;
+	struct xf_km km[256];
+	int pause_key;
+	int tab_key;
+	XModifierKeymap * mod_map;
+	RD_BOOL focused;
+	RD_BOOL mouse_into;
+};
+typedef struct xf_info xfInfo;
 
 #endif
+

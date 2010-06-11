@@ -1,5 +1,5 @@
 /*
-   Copyright (c) 2009 Jay Sorg
+   Copyright (c) 2009-2010 Jay Sorg
 
    Permission is hereby granted, free of charge, to any person obtaining a
    copy of this software and associated documentation files (the "Software"),
@@ -32,14 +32,18 @@
 #include <pthread.h>
 #include <freerdp/freerdp.h>
 #include <freerdp/chanman.h>
+#include "xf_types.h"
 #include "xf_win.h"
 #include "xf_keyboard.h"
 
 #define MAX_PLUGIN_DATA 20
 
 static int
-set_default_params(rdpSet * settings)
+set_default_params(xfInfo * xfi)
 {
+	rdpSet * settings;
+
+	settings = xfi->settings;
 	memset(settings, 0, sizeof(rdpSet));
 	gethostname(settings->hostname, sizeof(settings->hostname) - 1);
 	settings->width = 1024;
@@ -58,20 +62,22 @@ set_default_params(rdpSet * settings)
 	settings->triblt = 0;
 	settings->new_cursors = 1;
 	settings->rdp_version = 5;
-	settings->fullscreen = settings->fs_toggle = 0;
+	xfi->fullscreen = xfi->fs_toggle = 0;
 	return 0;
 }
 
 static int
-process_params(rdpSet * settings, rdpChanMan * chan_man, int argc, char ** argv, int * pindex)
+process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 {
+	rdpSet * settings;
 	char * p;
 	struct passwd * pw;
 	RD_PLUGIN_DATA plugin_data[MAX_PLUGIN_DATA + 1];
 	int index;
 	int i, j;
 
-	set_default_params(settings);
+	set_default_params(xfi);
+	settings = xfi->settings;
 	pw = getpwuid(getuid());
 	if (pw != 0)
 	{
@@ -210,7 +216,7 @@ process_params(rdpSet * settings, rdpChanMan * chan_man, int argc, char ** argv,
 		}
 		else if (strcmp("-f", argv[*pindex]) == 0)
 		{
-			settings->fullscreen = settings->fs_toggle = 1;
+			xfi->fullscreen = xfi->fs_toggle = 1;
 			printf("full screen option\n");
 		}
 		else if (strcmp("-x", argv[*pindex]) == 0)
@@ -268,7 +274,7 @@ process_params(rdpSet * settings, rdpChanMan * chan_man, int argc, char ** argv,
 					i++;
 				}
 			}
-			freerdp_chanman_load_plugin(chan_man, settings, argv[index], plugin_data);
+			freerdp_chanman_load_plugin(xfi->chan_man, settings, argv[index], plugin_data);
 		}
 		else
 		{
@@ -307,10 +313,9 @@ process_params(rdpSet * settings, rdpChanMan * chan_man, int argc, char ** argv,
 }
 
 static int
-run_xfreerdp(rdpSet * settings, rdpChanMan * chan_man)
+run_xfreerdp(xfInfo * xfi)
 {
 	rdpInst * inst;
-	void * xf_info;
 	void * read_fds[32];
 	void * write_fds[32];
 	int read_count;
@@ -323,7 +328,7 @@ run_xfreerdp(rdpSet * settings, rdpChanMan * chan_man)
 
 	printf("run_xfreerdp:\n");
 	/* create an instance of the library */
-	inst = freerdp_new(settings);
+	inst = freerdp_new(xfi->settings);
 	if (inst == NULL)
 	{
 		printf("run_xfreerdp: freerdp_new failed\n");
@@ -338,12 +343,14 @@ run_xfreerdp(rdpSet * settings, rdpChanMan * chan_man)
 		       inst->version, inst->size);
 		return 1;
 	}
-	if (xf_pre_connect(inst) != 0)
+	xfi->inst = inst;
+	SET_XFI(inst, xfi);
+	if (xf_pre_connect(xfi) != 0)
 	{
 		printf("run_xfreerdp: xf_pre_connect failed\n");
 		return 1;
 	}
-	if (freerdp_chanman_pre_connect(chan_man, inst) != 0)
+	if (freerdp_chanman_pre_connect(xfi->chan_man, inst) != 0)
 	{
 		printf("run_xfreerdp: freerdp_chanman_pre_connect failed\n");
 		return 1;
@@ -355,12 +362,12 @@ run_xfreerdp(rdpSet * settings, rdpChanMan * chan_man)
 		printf("run_xfreerdp: inst->rdp_connect failed\n");
 		return 1;
 	}
-	if (freerdp_chanman_post_connect(chan_man, inst) != 0)
+	if (freerdp_chanman_post_connect(xfi->chan_man, inst) != 0)
 	{
 		printf("run_xfreerdp: freerdp_chanman_post_connect failed\n");
 		return 1;
 	}
-	if (xf_post_connect(inst) != 0)
+	if (xf_post_connect(xfi) != 0)
 	{
 		printf("run_xfreerdp: xf_post_connect failed\n");
 		return 1;
@@ -377,13 +384,13 @@ run_xfreerdp(rdpSet * settings, rdpChanMan * chan_man)
 			break;
 		}
 		/* get x fds */
-		if (xf_get_fds(inst, read_fds, &read_count, write_fds, &write_count) != 0)
+		if (xf_get_fds(xfi, read_fds, &read_count, write_fds, &write_count) != 0)
 		{
 			printf("run_xfreerdp: xf_get_fds failed\n");
 			break;
 		}
 		/* get channel fds */
-		if (freerdp_chanman_get_fds(chan_man, inst, read_fds, &read_count, write_fds, &write_count) != 0)
+		if (freerdp_chanman_get_fds(xfi->chan_man, inst, read_fds, &read_count, write_fds, &write_count) != 0)
 		{
 			printf("run_xfreerdp: freerdp_chanman_get_fds failed\n");
 			break;
@@ -433,44 +440,37 @@ run_xfreerdp(rdpSet * settings, rdpChanMan * chan_man)
 			break;
 		}
 		/* check x fds */
-		if (xf_check_fds(inst) != 0)
+		if (xf_check_fds(xfi) != 0)
 		{
 			printf("run_xfreerdp: xf_check_fds failed\n");
 			break;
 		}
 		/* check channel fds */
-		if (freerdp_chanman_check_fds(chan_man, inst) != 0)
+		if (freerdp_chanman_check_fds(xfi->chan_man, inst) != 0)
 		{
 			printf("run_xfreerdp: freerdp_chanman_check_fds failed\n");
 			break;
 		}
 	}
 	/* cleanup */
-	xf_info = inst->param1;
 	inst->rdp_disconnect(inst);
 	freerdp_free(inst);
-	xf_uninit(xf_info);
+	xf_uninit(xfi);
 	return 0;
 }
 
 static int g_thread_count = 0;
 
-struct thread_data
-{
-	rdpSet * settings;
-	rdpChanMan * chan_man;
-};
-
 static void *
 thread_func(void * arg)
 {
-	struct thread_data * data;
+	xfInfo * xfi;
 
-	data = (struct thread_data *) arg;
-	run_xfreerdp(data->settings, data->chan_man);
-	free(data->settings);
-	freerdp_chanman_free(data->chan_man);
-	free(data);
+	xfi = (xfInfo *) arg;
+	run_xfreerdp(xfi);
+	free(xfi->settings);
+	freerdp_chanman_free(xfi->chan_man);
+	free(xfi);
 
 	pthread_detach(pthread_self());
 	g_thread_count--;
@@ -481,7 +481,7 @@ thread_func(void * arg)
 int
 main(int argc, char ** argv)
 {
-	struct thread_data * data;
+	xfInfo * xfi;
 	int rv;
 	pthread_t thread;
 	int index = 1;
@@ -492,22 +492,23 @@ main(int argc, char ** argv)
 
 	while (1)
 	{
-		data = (struct thread_data *) malloc(sizeof(struct thread_data));
-		data->settings = (rdpSet *) malloc(sizeof(rdpSet));
-		data->chan_man = freerdp_chanman_new();
-		rv = process_params(data->settings, data->chan_man, argc, argv, &index);
+		xfi = (xfInfo *) malloc(sizeof(xfInfo));
+		memset(xfi, 0, sizeof(xfInfo));
+		xfi->settings = (rdpSet *) malloc(sizeof(rdpSet));
+		xfi->chan_man = freerdp_chanman_new();
+		rv = process_params(xfi, argc, argv, &index);
 		if (rv == 0)
 		{
 			g_thread_count++;
 			printf("starting thread %d to %s:%d\n", g_thread_count,
-				data->settings->server, data->settings->tcp_port_rdp);
-			pthread_create(&thread, 0, thread_func, data);
+				xfi->settings->server, xfi->settings->tcp_port_rdp);
+			pthread_create(&thread, 0, thread_func, xfi);
 		}
 		else
 		{
-			free(data->settings);
-			freerdp_chanman_free(data->chan_man);
-			free(data);
+			free(xfi->settings);
+			freerdp_chanman_free(xfi->chan_man);
+			free(xfi);
 			break;
 		}
 	}

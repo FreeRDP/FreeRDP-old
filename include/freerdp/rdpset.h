@@ -34,8 +34,6 @@ struct rdp_set
 	char hostname[16];
 	int width;
 	int height;
-	int fullscreen;
-	int fs_toggle;
 	char server[64];
 	char domain[16];
 	char password[64];
