@@ -1095,17 +1095,34 @@ xf_post_connect(xfInfo * xfi)
 	return 0;
 }
 
-void
-xf_uninit(xfInfo * xfi)
+static void
+xf_destroy_window(xfInfo * xfi)
 {
 	/* xf_post_connect */
 	XFreeModifiermap(xfi->mod_map);
+	xfi->mod_map = 0;
 	XFreeGC(xfi->display, xfi->gc_default);
+	xfi->gc_default = 0;
 	XFreeGC(xfi->display, xfi->gc_mono);
+	xfi->gc_mono = 0;
 	XFreePixmap(xfi->display, xfi->bitmap_mono);
-	XFreePixmap(xfi->display, xfi->backstore);
+	xfi->bitmap_mono = 0;
 	XFreeGC(xfi->display, xfi->gc);
+	xfi->gc = 0;
 	XDestroyWindow(xfi->display, xfi->wnd);
+	xfi->wnd = 0;
+
+	if (xfi->backstore)
+	{
+		XFreePixmap(xfi->display, xfi->backstore);
+		xfi->backstore = 0;
+	}
+}
+
+void
+xf_uninit(xfInfo * xfi)
+{
+	xf_destroy_window(xfi);
 	/* xf_pre_connect */
 	XCloseDisplay(xfi->display);
 }
@@ -1135,19 +1152,6 @@ xf_check_fds(xfInfo * xfi)
 		}
 	}
 	return 0;
-}
-
-static void
-xf_destroy_window(xfInfo * xfi)
-{
-	XDestroyWindow(xfi->display, xfi->wnd);
-	xfi->wnd = 0;
-
-	if (xfi->backstore)
-	{
-		XFreePixmap(xfi->display, xfi->backstore);
-		xfi->backstore = 0;
-	}
 }
 
 void

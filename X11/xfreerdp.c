@@ -71,20 +71,16 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 {
 	rdpSet * settings;
 	char * p;
-	struct passwd * pw;
 	RD_PLUGIN_DATA plugin_data[MAX_PLUGIN_DATA + 1];
 	int index;
 	int i, j;
 
 	set_default_params(xfi);
 	settings = xfi->settings;
-	pw = getpwuid(getuid());
-	if (pw != 0)
+	p = getlogin();
+	if (p != 0)
 	{
-		if (pw->pw_name != 0)
-		{
-			strncpy(settings->username, pw->pw_name, sizeof(settings->username) - 1);
-		}
+		strncpy(settings->username, p, sizeof(settings->username) - 1);
 	}
 	printf("process_params\n");
 	if (argc < *pindex + 1)
