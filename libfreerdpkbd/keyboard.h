@@ -749,7 +749,7 @@ virtualKey virtualKeyboard[256] =
 #define KBD_GREEK_LATIN					0x00050408
 #define KBD_US_ENGLISH_TABLE_FOR_IBM_ARABIC_238_L	0x00050409
 #define KBD_GREEK_POLYTONIC				0x00060408
-#define KBD_GERMAN_NEO					0x00000409
+#define KBD_GERMAN_NEO					0xB0000409
 
 // Global Input Method Editor (IME) IDs
 
