@@ -749,6 +749,7 @@ virtualKey virtualKeyboard[256] =
 #define KBD_GREEK_LATIN					0x00050408
 #define KBD_US_ENGLISH_TABLE_FOR_IBM_ARABIC_238_L	0x00050409
 #define KBD_GREEK_POLYTONIC				0x00060408
+#define KBD_GERMAN_NEO					0x00000409
 
 // Global Input Method Editor (IME) IDs
 
@@ -1318,7 +1319,7 @@ xkbVariant de_variants[] =
 	{ "ro_nodeadkeys",	KBD_GERMAN }, // Romanian keyboard with German letters, eliminate dead keys
 	{ "dvorak",		KBD_UNITED_STATES_DVORAK }, // Dvorak
 	{ "sundeadkeys",	KBD_GERMAN }, // Sun dead keys
-	{ "neo",		KBD_GERMAN }, // Neo 2
+	{ "neo",		KBD_NEO_GERMAN }, // Neo 2
 	{ "mac",		KBD_GERMAN }, // Macintosh
 	{ "mac_nodeadkeys",	KBD_GERMAN }, // Macintosh, eliminate dead keys
 	{ "dsb",		KBD_GERMAN }, // Lower Sorbian
