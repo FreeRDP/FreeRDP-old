@@ -1319,7 +1319,7 @@ xkbVariant de_variants[] =
 	{ "ro_nodeadkeys",	KBD_GERMAN }, // Romanian keyboard with German letters, eliminate dead keys
 	{ "dvorak",		KBD_UNITED_STATES_DVORAK }, // Dvorak
 	{ "sundeadkeys",	KBD_GERMAN }, // Sun dead keys
-	{ "neo",		KBD_NEO_GERMAN }, // Neo 2
+	{ "neo",		KBD_GERMAN_NEO }, // Neo 2
 	{ "mac",		KBD_GERMAN }, // Macintosh
 	{ "mac_nodeadkeys",	KBD_GERMAN }, // Macintosh, eliminate dead keys
 	{ "dsb",		KBD_GERMAN }, // Lower Sorbian
