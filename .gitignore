@@ -24,6 +24,7 @@ TODO.tasks
 *~
 autom4te.cache
 *.pc
+m4
 /asn1/Makefile
 /asn1/Makefile.in
 /asn1/xfreerdp
