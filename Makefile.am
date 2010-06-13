@@ -1,5 +1,6 @@
 ## Process this file with automake to produce Makefile.in
 REQUIRED_SUBDIRS = \
+	build-aux \
 	asn1 \
 	libfreerdp \
 	doc \
