@@ -135,6 +135,23 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 			strncpy(settings->domain, argv[*pindex], sizeof(settings->domain) - 1);
 			settings->domain[sizeof(settings->domain) - 1] = 0;
 		}
+		else if (strcmp("-k", argv[*pindex]) == 0)
+		{
+			*pindex = *pindex + 1;
+			if (*pindex == argc)
+			{
+				printf("missing keyboard layout ID\n");
+				return 1;
+			}
+			settings->keyboard_layout_id = atoi(argv[*pindex]);
+			sscanf(argv[*pindex], "%X", &(settings->keyboard_layout_id));
+			printf("keyboard layout ID: %X\n", settings->keyboard_layout_id);
+		}
+		else if (strcmp("--kbd-list", argv[*pindex]) == 0)
+		{
+			freerdp_kbd_list();
+			exit(0);
+		}
 		else if (strcmp("-s", argv[*pindex]) == 0)
 		{
 			*pindex = *pindex + 1;
@@ -484,7 +501,6 @@ main(int argc, char ** argv)
 
 	setlocale(LC_CTYPE, "");
 	freerdp_chanman_init();
-	xf_kb_init();
 
 	while (1)
 	{
@@ -493,6 +509,8 @@ main(int argc, char ** argv)
 		xfi->settings = (rdpSet *) malloc(sizeof(rdpSet));
 		xfi->chan_man = freerdp_chanman_new();
 		rv = process_params(xfi, argc, argv, &index);
+		xf_kb_init(xfi->settings->keyboard_layout_id);
+		
 		if (rv == 0)
 		{
 			g_thread_count++;

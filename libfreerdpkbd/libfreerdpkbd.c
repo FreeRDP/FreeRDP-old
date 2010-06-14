@@ -59,6 +59,24 @@ find_keyboard_layout_in_xorg_rules(char* layout, char* variant)
 	return 0;
 }
 
+void
+list_keyboard_layout_ids()
+{
+	int i;
+
+	printf("\nKeyboard Layouts\n");
+	for (i = 0; i < sizeof(keyboardLayouts) / sizeof(keyboardLayout); i++)
+		printf("0x%08X\t%s\n", keyboardLayouts[i].code, keyboardLayouts[i].name);
+
+	printf("\nKeyboard Layout Variants\n");
+	for (i = 0; i < sizeof(keyboardLayoutVariants) / sizeof(keyboardLayoutVariant); i++)
+		printf("0x%08X\t%s\n", keyboardLayoutVariants[i].code, keyboardLayoutVariants[i].name);
+
+	printf("\nKeyboard Input Method Editors (IMEs)\n");
+	for (i = 0; i < sizeof(keyboardIMEs) / sizeof(keyboardIME); i++)
+		printf("0x%08X\t%s\n", keyboardIMEs[i].code, keyboardIMEs[i].name);
+}
+
 unsigned int
 detect_keyboard_layout_from_xkb()
 {
@@ -638,17 +656,28 @@ detect_and_load_keyboard()
 }
 
 unsigned int
-freerdp_kbd_init()
+freerdp_kbd_init(unsigned int keyboard_layout_id)
 {
 	unsigned int rv;
 
 	rv = detect_and_load_keyboard();
-	printf("kbd_init: detect_and_load_keyboard returned %d\n", rv);
-	if (rv == 0)
-	{
-		rv = 0x0409;
-	}
-	return rv;
+
+	if (keyboard_layout_id == 0)
+		keyboard_layout_id = rv;
+	
+	printf("kbd_init: detect_and_load_keyboard returned %d\n", keyboard_layout_id);
+
+	if (keyboard_layout_id == 0)
+		keyboard_layout_id = 0x0409;
+
+	return keyboard_layout_id;
+}
+
+int
+freerdp_kbd_list()
+{
+	list_keyboard_layout_ids();
+	return 0;
 }
 
 int

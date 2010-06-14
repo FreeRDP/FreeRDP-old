@@ -27,7 +27,7 @@
 #include "xf_types.h"
 
 void
-xf_kb_init(void);
+xf_kb_init(unsigned int keyboard_layout_id);
 void
 xf_kb_inst_init(xfInfo * xfi);
 void

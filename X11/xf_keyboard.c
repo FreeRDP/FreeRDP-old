@@ -36,9 +36,9 @@ static int xf_kb_keyboard_layout = 0;
 static RD_BOOL pressed_keys[256] = { False };
 
 void
-xf_kb_init(void)
+xf_kb_init(unsigned int keyboard_layout_id)
 {
-	xf_kb_keyboard_layout = freerdp_kbd_init();
+	xf_kb_keyboard_layout = freerdp_kbd_init(keyboard_layout_id);
 	printf("freerdp_kbd_init: %X\n", xf_kb_keyboard_layout);
 }
 

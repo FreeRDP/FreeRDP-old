@@ -22,8 +22,10 @@
 #ifndef __FREERDP_KBD_H
 #define __FREERDP_KBD_H
 
+int
+freerdp_kbd_list();
 unsigned int
-freerdp_kbd_init();
+freerdp_kbd_init(unsigned int keyboard_layout_id);
 int
 freerdp_kbd_get_scancode_by_keycode(uint8 keycode, int * flags);
 int
