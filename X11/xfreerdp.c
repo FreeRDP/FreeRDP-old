@@ -82,7 +82,7 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 	{
 		strncpy(settings->username, p, sizeof(settings->username) - 1);
 	}
-	printf("process_params\n");
+
 	if (argc < *pindex + 1)
 	{
 		if (*pindex == 1)
@@ -289,6 +289,37 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 			}
 			freerdp_chanman_load_plugin(xfi->chan_man, settings, argv[index], plugin_data);
 		}
+		else if (strcmp("-h", argv[*pindex]) == 0)
+		{
+			char help[] =
+				"\n"
+				"FreeRDP - A Free Remote Desktop Protocol Client\n"
+				"See http://freerdp.sourceforge.net for more information\n"
+				"\n"
+				"Usage: xfreerdp [options] server:port\n"
+				"\t-a: color depth (16, 24 or 32)\n"
+				"\t-u: username\n"
+				"\t-p: password\n"
+				"\t-d: domain\n"
+				"\t-k: keyboard layout ID\n"
+				"\t--kbd-list: list all keyboard layout IDs\n"
+				"\t-s: shell\n"
+				"\t-c: directory\n"
+				"\t-g: geometry, using format WxH, default is 1024x768\n"
+				"\t-t: alternative port number (default is 3389)\n"
+				"\t-n: hostname\n"
+				"\t-o: console audio\n"
+				"\t-0: console session\n"
+				"\t-f: fullscreen mode\n"
+				"\t-z: enable bulk compression\n"
+				"\t-x: performance flags (m, b or l for modem, broadband or lan)\n"
+				"\t-plugin: list of virtual channel plugins separated by commas\n"
+				"\t-h: show this help\n"
+				"\n";
+
+			printf(help);
+			exit(0);
+		}
 		else
 		{
 			settings->server[sizeof(settings->server) - 1] = 0;
@@ -339,7 +370,6 @@ run_xfreerdp(xfInfo * xfi)
 	fd_set rfds;
 	fd_set wfds;
 
-	printf("run_xfreerdp:\n");
 	/* create an instance of the library */
 	inst = freerdp_new(xfi->settings);
 	if (inst == NULL)
