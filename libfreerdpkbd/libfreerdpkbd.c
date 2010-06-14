@@ -39,15 +39,16 @@ find_keyboard_layout_in_xorg_rules(char* layout, char* variant)
 
 	printf("xkbLayout: %s\txkbVariant: %s\n", layout, variant);
 
-	for(i = 0; i < sizeof(xkbLayouts) / sizeof(xkbLayout); i++)
+	for (i = 0; i < sizeof(xkbLayouts) / sizeof(xkbLayout); i++)
 	{
-		if(strcmp(xkbLayouts[i].layout, layout) == 0)
+		if (strcmp(xkbLayouts[i].layout, layout) == 0)
 		{
-			for(j = 0; xkbLayouts[i].variants[j].variant != NULL; j++)
+			for (j = 0; xkbLayouts[i].variants[j].variant != NULL; j++)
 			{
-				if(strcmp(xkbLayouts[i].variants[j].variant, variant) == 0)
+				if (strcmp(xkbLayouts[i].variants[j].variant, variant) == 0)
 				{
-					return xkbLayouts[i].variants[j].keyboardLayoutID;
+					if (strlen(xkbLayouts[i].variants[j].variant) > 0)
+						return xkbLayouts[i].variants[j].keyboardLayoutID;
 				}
 			}
 
