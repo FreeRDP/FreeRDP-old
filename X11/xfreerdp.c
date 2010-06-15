@@ -32,6 +32,7 @@
 #include <pthread.h>
 #include <freerdp/freerdp.h>
 #include <freerdp/chanman.h>
+#include <freerdp/kbd.h>
 #include "xf_types.h"
 #include "xf_win.h"
 #include "xf_keyboard.h"
@@ -143,9 +144,8 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 				printf("missing keyboard layout ID\n");
 				return 1;
 			}
-			settings->keyboard_layout_id = atoi(argv[*pindex]);
-			sscanf(argv[*pindex], "%X", &(settings->keyboard_layout_id));
-			printf("keyboard layout ID: %X\n", settings->keyboard_layout_id);
+			sscanf(argv[*pindex], "%X", &(xfi->keyboard_layout_id));
+			printf("keyboard layout ID: %X\n", xfi->keyboard_layout_id);
 		}
 		else if (strcmp("--kbd-list", argv[*pindex]) == 0)
 		{
@@ -539,7 +539,7 @@ main(int argc, char ** argv)
 		xfi->settings = (rdpSet *) malloc(sizeof(rdpSet));
 		xfi->chan_man = freerdp_chanman_new();
 		rv = process_params(xfi, argc, argv, &index);
-		xf_kb_init(xfi->settings->keyboard_layout_id);
+		xf_kb_init(xfi->keyboard_layout_id);
 		
 		if (rv == 0)
 		{

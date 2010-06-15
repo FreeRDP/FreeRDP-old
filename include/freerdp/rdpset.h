@@ -45,7 +45,6 @@ struct rdp_set
 	int keyboard_type;
 	int keyboard_subtype;
 	int keyboard_functionkeys;
-	int keyboard_layout_id;
 	char xkb_layout[32];
 	char xkb_variant[32];
 	int encryption;

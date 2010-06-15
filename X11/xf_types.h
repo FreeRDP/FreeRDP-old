@@ -46,6 +46,7 @@ struct xf_info
 	/* UI settings */
 	int fullscreen;
 	int fs_toggle;
+	int keyboard_layout_id;
 
 	/* X11 stuff */
 	Window wnd;
