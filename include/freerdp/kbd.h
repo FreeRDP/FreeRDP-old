@@ -22,8 +22,18 @@
 #ifndef __FREERDP_KBD_H
 #define __FREERDP_KBD_H
 
-int
-freerdp_kbd_list();
+#define RDP_KEYBOARD_LAYOUT_TYPE_STANDARD   1
+#define RDP_KEYBOARD_LAYOUT_TYPE_VARIANT    2
+#define RDP_KEYBOARD_LAYOUT_TYPE_IME        4
+
+typedef struct rdp_keyboard_layout
+{
+	unsigned int code;
+	char name[50];
+} rdpKeyboardLayout;
+
+rdpKeyboardLayout *
+freerdp_kbd_get_layouts(int types);
 unsigned int
 freerdp_kbd_init(unsigned int keyboard_layout_id);
 int

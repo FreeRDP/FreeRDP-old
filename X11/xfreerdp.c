@@ -71,6 +71,7 @@ static int
 process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 {
 	rdpSet * settings;
+	rdpKeyboardLayout * layouts;
 	char * p;
 	RD_PLUGIN_DATA plugin_data[MAX_PLUGIN_DATA + 1];
 	int index;
@@ -149,7 +150,24 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 		}
 		else if (strcmp("--kbd-list", argv[*pindex]) == 0)
 		{
-			freerdp_kbd_list();
+			layouts = freerdp_kbd_get_layouts(RDP_KEYBOARD_LAYOUT_TYPE_STANDARD);
+			printf("\nKeyboard Layouts\n");
+			for (i = 0; layouts[i].code; i++)
+				printf("0x%08X\t%s\n", layouts[i].code, layouts[i].name);
+			free(layouts);
+
+			layouts = freerdp_kbd_get_layouts(RDP_KEYBOARD_LAYOUT_TYPE_VARIANT);
+			printf("\nKeyboard Layout Variants\n");
+			for (i = 0; layouts[i].code; i++)
+				printf("0x%08X\t%s\n", layouts[i].code, layouts[i].name);
+			free(layouts);
+
+			layouts = freerdp_kbd_get_layouts(RDP_KEYBOARD_LAYOUT_TYPE_IME);
+			printf("\nKeyboard Input Method Editors (IMEs)\n");
+			for (i = 0; layouts[i].code; i++)
+				printf("0x%08X\t%s\n", layouts[i].code, layouts[i].name);
+			free(layouts);
+
 			exit(0);
 		}
 		else if (strcmp("-s", argv[*pindex]) == 0)

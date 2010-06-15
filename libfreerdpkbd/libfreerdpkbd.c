@@ -59,22 +59,51 @@ find_keyboard_layout_in_xorg_rules(char* layout, char* variant)
 	return 0;
 }
 
-void
-list_keyboard_layout_ids()
+static rdpKeyboardLayout *
+get_keyboard_layouts(int types)
 {
+	rdpKeyboardLayout * layouts;
+	int num;
+	int len;
 	int i;
 
-	printf("\nKeyboard Layouts\n");
-	for (i = 0; i < sizeof(keyboardLayouts) / sizeof(keyboardLayout); i++)
-		printf("0x%08X\t%s\n", keyboardLayouts[i].code, keyboardLayouts[i].name);
+	num = 0;
+	layouts = (rdpKeyboardLayout *) malloc((num + 1) * sizeof(rdpKeyboardLayout));
 
-	printf("\nKeyboard Layout Variants\n");
-	for (i = 0; i < sizeof(keyboardLayoutVariants) / sizeof(keyboardLayoutVariant); i++)
-		printf("0x%08X\t%s\n", keyboardLayoutVariants[i].code, keyboardLayoutVariants[i].name);
+	if ((types & RDP_KEYBOARD_LAYOUT_TYPE_STANDARD) != 0)
+	{
+		len = sizeof(keyboardLayouts) / sizeof(keyboardLayout);
+		layouts = (rdpKeyboardLayout *) realloc(layouts, (num + len + 1) * sizeof(rdpKeyboardLayout));
+		for (i = 0; i < len; i++, num++)
+		{
+			layouts[num].code = keyboardLayouts[i].code;
+			strcpy(layouts[num].name, keyboardLayouts[i].name);
+		}
+	}
+	if ((types & RDP_KEYBOARD_LAYOUT_TYPE_VARIANT) != 0)
+	{
+		len = sizeof(keyboardLayoutVariants) / sizeof(keyboardLayoutVariant);
+		layouts = (rdpKeyboardLayout *) realloc(layouts, (num + len + 1) * sizeof(rdpKeyboardLayout));
+		for (i = 0; i < len; i++, num++)
+		{
+			layouts[num].code = keyboardLayoutVariants[i].code;
+			strcpy(layouts[num].name, keyboardLayoutVariants[i].name);
+		}
+	}
+	if ((types & RDP_KEYBOARD_LAYOUT_TYPE_IME) != 0)
+	{
+		len = sizeof(keyboardIMEs) / sizeof(keyboardIME);
+		layouts = (rdpKeyboardLayout *) realloc(layouts, (num + len + 1) * sizeof(rdpKeyboardLayout));
+		for (i = 0; i < len; i++, num++)
+		{
+			layouts[num].code = keyboardIMEs[i].code;
+			strcpy(layouts[num].name, keyboardIMEs[i].name);
+		}
+	}
 
-	printf("\nKeyboard Input Method Editors (IMEs)\n");
-	for (i = 0; i < sizeof(keyboardIMEs) / sizeof(keyboardIME); i++)
-		printf("0x%08X\t%s\n", keyboardIMEs[i].code, keyboardIMEs[i].name);
+	memset(&layouts[num], 0, sizeof(rdpKeyboardLayout));
+
+	return layouts;
 }
 
 unsigned int
@@ -673,11 +702,10 @@ freerdp_kbd_init(unsigned int keyboard_layout_id)
 	return keyboard_layout_id;
 }
 
-int
-freerdp_kbd_list()
+rdpKeyboardLayout *
+freerdp_kbd_get_layouts(int types)
 {
-	list_keyboard_layout_ids();
-	return 0;
+	return get_keyboard_layouts(types);
 }
 
 int
