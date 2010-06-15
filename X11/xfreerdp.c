@@ -277,7 +277,7 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 				settings->rdp5_performanceflags = strtol(argv[*pindex], 0, 16);
 			}
 		}
-		else if (strcmp("-plugin", argv[*pindex]) == 0)
+		else if (strcmp("--plugin", argv[*pindex]) == 0)
 		{
 			*pindex = *pindex + 1;
 			if (*pindex == argc)
@@ -287,7 +287,7 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 			}
 			index = *pindex;
 			memset(plugin_data, 0, sizeof(plugin_data));
-			if (*pindex < argc - 1 && strcmp("-data", argv[*pindex + 1]) == 0)
+			if (*pindex < argc - 1 && strcmp("--data", argv[*pindex + 1]) == 0)
 			{
 				*pindex = *pindex + 2;
 				i = 0;

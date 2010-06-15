@@ -87,28 +87,28 @@ List all available keyboard layout IDs and exit.
 .BR "-h"
 Print help message.
 .TP
-.BR "-plugin <pluginname> [-data <plugindata> --]"
+.BR "--plugin <pluginname> [--data <plugindata> --]"
 Load a Virtual Channel plugin module, and optionally pass initial parameters
 to it. <pluginname> can be the virtual channel name, or a path specifying the
 plugin module. If the virtual channel name was passed, xfreerdp will try to
 locate the plugin module in its plugin path ${prefix}/lib/freerdp.
 
-Some plugins support retrieving initial parameters. Add -data argument after
+Some plugins support retrieving initial parameters. Add --data argument after
 the <pluginname> in order to pass such parameters, and end it with --.
 
-The -plugin argument can be repeated more than once if there are multiple
+The --plugin argument can be repeated more than once if there are multiple
 plugins to load.
 
 Following plugins are currently supported:
 .TP
-.BR "-plugin cliprdr"
+.BR "--plugin cliprdr"
 Synchronize client and server clipboard data. Plain text, Unicode text, HTML
 content and images are supported.
 .TP
-.BR "-plugin rdpsnd"
+.BR "--plugin rdpsnd"
 Redirects sound generated on the server to the client.
 .TP
-.BR "-plugin rdpdr -data <subplugin> [<subplugin> ...] --"
+.BR "--plugin rdpdr --data <subplugin> [<subplugin> ...] --"
 Redirects file system devices on your client to the server. <subplugin> can be
 one of more of the following:
 
