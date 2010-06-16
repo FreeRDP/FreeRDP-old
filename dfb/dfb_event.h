@@ -8,6 +8,15 @@
 #define SET_DFBI(_inst, _dfbi) (_inst)->param1 = _dfbi
 #define GET_DFBI(_inst) ((dfbInfo *) ((_inst)->param1))
 
+struct _PIXEL
+{
+	int red;
+	int green;
+	int blue;
+	int alpha;
+};
+typedef struct _PIXEL PIXEL;
+
 struct dfb_info
 {
 	int bpp;
@@ -22,6 +31,7 @@ struct dfb_info
 	int update_pending;
 	DFBRegion update_region;
 	int * colourmap;
+	PIXEL pixel;
 };
 typedef struct dfb_info dfbInfo;
 

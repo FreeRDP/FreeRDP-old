@@ -34,6 +34,7 @@
 #include <string.h>
 #include "dfb_win.h"
 #include "dfb_event.h"
+#include "dfb_colour.h"
 
 #define SPLIT32BGR(_alpha, _red, _green, _blue, _pixel) \
   _red = _pixel & 0xff; \
@@ -77,77 +78,38 @@
   (((_green & 0xff) >> 2) <<  5) | \
   (((_blue & 0xff) >> 3) <<  0)
 
-int
-dfb_colour(dfbInfo * dfbi, int in_colour, int in_bpp, int out_bpp)
+void
+dfb_colour_convert(dfbInfo * dfbi, int in_colour, PIXEL * pixel, int in_bpp, int out_bpp)
 {
-	int alpha;
-	int red;
-	int green;
-	int blue;
-	int rv;
-
-	alpha = 0xFF;
-	red = 0;
-	green = 0;
-	blue = 0;
-	rv = 0;
+	pixel->red = 0;
+	pixel->green = 0;
+	pixel->blue = 0;
+	pixel->alpha = 0xFF;
+	
+	printf("in_colour:%X in_bpp:%d out_bpp:%d\n", in_colour,in_bpp,out_bpp);
 	
 	switch (in_bpp)
 	{
 		case 32:
-			SPLIT32BGR(alpha, red, green, blue, in_colour);
+			SPLIT32BGR(pixel->alpha, pixel->red, pixel->green, pixel->blue, in_colour);
 			break;
 		case 24:
-			SPLIT24BGR(red, green, blue, in_colour);
+			SPLIT24BGR(pixel->red, pixel->green, pixel->blue, in_colour);
 			break;
 		case 16:
-			SPLIT16RGB(red, green, blue, in_colour);
+			SPLIT16RGB(pixel->red, pixel->green, pixel->blue, in_colour);
 			break;
 		case 15:
-			SPLIT15RGB(red, green, blue, in_colour);
+			SPLIT15RGB(pixel->red, pixel->green, pixel->blue, in_colour);
 			break;
 		case 8:
 			in_colour &= 0xFF;
-			SPLIT24RGB(red, green, blue, dfbi->colourmap[in_colour]);
-			break;
-		case 1:
-			if ((red != 0) || (green != 0) || (blue != 0))
-				rv = 1;
+			SPLIT24RGB(pixel->red, pixel->green, pixel->blue, dfbi->colourmap[in_colour]);
 			break;
 		default:
 			printf("dfb_colour: bad in_bpp %d\n", in_bpp);
 			break;
 	}
-	switch (out_bpp)
-	{
-		case 32:
-			rv = MAKE32RGB(alpha, red, green, blue);
-			break;
-		case 24:
-			rv = MAKE24RGB(red, green, blue);
-			break;
-		case 16:
-			rv = MAKE16RGB(red, green, blue);
-			break;
-		case 15:
-			rv = MAKE15RGB(red, green, blue);
-			break;
-		case 1:
-			if ((red != 0) || (green != 0) || (blue != 0))
-				rv = 1;
-			break;
-		default:
-			printf("dfb_colour: bad out_bpp %d\n", out_bpp);
-			break;
-	}
-	
-	return rv;
-}
-
-int
-dfb_colour_convert(dfbInfo * dfbi, rdpSet * settings, int colour)
-{
-	return dfb_colour(dfbi, colour, settings->server_depth, dfbi->bpp);
 }
 
 uint8 *

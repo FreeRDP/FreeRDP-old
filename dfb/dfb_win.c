@@ -110,27 +110,6 @@ l_ui_destroy_glyph(struct rdp_inst * inst, RD_HGLYPH glyph)
 
 }
 
-static int
-dfb_set_rop3(IDirectFBSurface* surface, int rop3)
-{
-	switch (rop3)
-	{
-		case 0x00: /* 0 - 0 */
-			surface->SetBlittingFlags(surface, DSBLIT_NOFX);
-			break;
-		case 0x5A: /* D ^ P - DPx */		
-			surface->SetBlittingFlags(surface, DSBLIT_XOR);
-			break;
-		case 0xCC: /* S - S */
-			surface->SetBlittingFlags(surface, DSBLIT_INDEX_TRANSLATION);
-			break;
-		default:
-			printf("dfb_set_rop3: unknown raster opcode %x\n", rop3);
-			break;
-	}
-	return 0;
-}
-
 static RD_HBITMAP
 l_ui_create_bitmap(struct rdp_inst * inst, int width, int height, uint8 * data)
 {
@@ -204,21 +183,13 @@ l_ui_line(struct rdp_inst * inst, uint8 opcode, int startx, int starty, int endx
 
 static void
 l_ui_rect(struct rdp_inst * inst, int x, int y, int cx, int cy, int colour)
-{
-	int red;
-	int green;
-	int blue;
-	
+{	
 	dfbInfo * dfbi;
 	dfbi = GET_DFBI(inst);
-	
-	red = (colour & 0xFF0000) >> 16;
-	green = (colour & 0xFF00) >> 8;
-	blue = colour & 0xFF;
 
-	dfb_colour_convert(dfbi, colour, dfbi->bpp);
+	dfb_colour_convert(dfbi, colour, &(dfbi->pixel), inst->settings->server_depth, dfbi->bpp);
 	
-	dfbi->primary->SetColor(dfbi->primary, red, green, blue, 0xFF);
+	dfbi->primary->SetColor(dfbi->primary, dfbi->pixel.red, dfbi->pixel.green, dfbi->pixel.blue, dfbi->pixel.alpha);
 	dfbi->primary->FillRectangle(dfbi->primary, x, y, cx, cy);
 }
 
@@ -279,8 +250,7 @@ l_ui_destblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy)
 }
 
 static void
-l_ui_patblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy,
-	RD_BRUSH * brush, int bgcolour, int fgcolour)
+l_ui_patblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy, RD_BRUSH * brush, int bgcolour, int fgcolour)
 {
 
 }
@@ -293,23 +263,29 @@ l_ui_screenblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int c
 }
 
 static void
-l_ui_memblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy,
-	RD_HBITMAP src, int srcx, int srcy)
+l_ui_memblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy, RD_HBITMAP src, int srcx, int srcy)
 {
 	dfbInfo * dfbi;
 	DFBRectangle rect;
+	DFBSurfaceDescription dsc;
 	IDirectFBSurface * surface;
 	dfbi = GET_DFBI(inst);
 
-	rect.x = x;
-	rect.y = y;
-	rect.w = cx - x;
-	rect.h = cy - x;
-	surface = (IDirectFBSurface*) src;
-
-	printf("ui_memblt: x:%d y:%d cx:%d cy:%d srcx:%d srcy:%d rop3: %X\n", x, y, cx, cy, srcx, srcy, opcode);
+	dsc.width = cx;
+	dsc.height = cy;
+	dsc.caps = DSCAPS_VIDEOONLY;
+	dsc.flags = DSDESC_CAPS | DSDESC_WIDTH | DSDESC_HEIGHT;
 	
-	dfb_set_rop3(dfbi->primary, opcode);
+	if (dfbi->dfb->CreateSurface(dfbi->dfb, &dsc, &surface) == 0)
+	{
+		rect.x = srcx;
+		rect.y = srcy;
+		rect.w = cx;
+		rect.h = cy;
+		surface->Blit(surface, dfbi->primary, &rect, 0, 0);
+		dfbi->primary->Blit(dfbi->primary, surface, 0, x, y);
+		surface->Release(surface);
+	}
 }
 
 static void
@@ -527,7 +503,7 @@ dfb_pre_connect(rdpInst * inst)
 
 	err = DirectFBCreate(&(dfbi->dfb));
 
-	dfbi->bpp = 24;
+	dfbi->bpp = 16;
 	dfbi->dsc.flags = DSDESC_CAPS;
 	dfbi->dsc.caps  = DSCAPS_PRIMARY;
 	err = dfbi->dfb->CreateSurface(dfbi->dfb, &(dfbi->dsc), &(dfbi->primary));
