@@ -331,7 +331,7 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 				"\t-f: fullscreen mode\n"
 				"\t-z: enable bulk compression\n"
 				"\t-x: performance flags (m, b or l for modem, broadband or lan)\n"
-				"\t-plugin: list of virtual channel plugins separated by commas\n"
+				"\t--plugin: load a virtual channel plugin\n"
 				"\t-h: show this help\n"
 				"\n";
 
