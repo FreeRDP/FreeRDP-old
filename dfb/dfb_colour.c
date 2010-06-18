@@ -86,8 +86,6 @@ dfb_colour_convert(dfbInfo * dfbi, int in_colour, PIXEL * pixel, int in_bpp, int
 	pixel->blue = 0;
 	pixel->alpha = 0xFF;
 	
-	printf("in_colour:%X in_bpp:%d out_bpp:%d\n", in_colour,in_bpp,out_bpp);
-	
 	switch (in_bpp)
 	{
 		case 32:
@@ -120,12 +118,15 @@ dfb_image_convert(dfbInfo * dfbi, rdpSet * settings, int width, int height, uint
 	int blue;
 	int index;
 	int pixel;
-	uint8 * out_data;
 	uint8 * src8;
 	uint16 * src16;
 	uint16 * dst16;
 	uint32 * dst32;
+	uint8 * out_data;
 
+	if (settings->server_depth == dfbi->bpp)
+		return in_data;
+	
 	if ((settings->server_depth == 24) && (dfbi->bpp == 32))
 	{
 		out_data = (uint8 *) malloc(width * height * 4);
@@ -239,6 +240,7 @@ dfb_image_convert(dfbInfo * dfbi, rdpSet * settings, int width, int height, uint
 		}
 		return out_data;
 	}
+	
 	return in_data;
 }
 
@@ -286,7 +288,6 @@ int
 dfb_cursor_convert_mono(dfbInfo * dfbi, uint8 * src_data, uint8 * msk_data,
 	uint8 * xormask, uint8 * andmask, int width, int height, int bpp)
 {
-
 	return 0;
 }
 
@@ -295,6 +296,5 @@ int
 dfb_cursor_convert_alpha(dfbInfo * dfbi, uint8 * alpha_data,
 	uint8 * xormask, uint8 * andmask, int width, int height, int bpp)
 {
-
 	return 0;
 }

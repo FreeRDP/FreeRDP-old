@@ -49,53 +49,102 @@ l_ui_unimpl(struct rdp_inst * inst, char * text)
 }
 
 static void
-dfb_invalidate_region(dfbInfo * dfbi, int x1, int y1, int x2, int y2)
+dfb_invalidate_rect(dfbInfo * dfbi, int x1, int y1, int x2, int y2)
 {
 	if (dfbi->update_pending)
 	{
-		if (x1 < dfbi->update_region.x1)
-			dfbi->update_region.x1 = x1;
+		int right = dfbi->update_rect.x + dfbi->update_rect.w;
+		int bottom = dfbi->update_rect.y + dfbi->update_rect.h;
+		
+		if (x1 < dfbi->update_rect.x)
+			dfbi->update_rect.x = x1;
 
-		if (y1 < dfbi->update_region.y1)
-			dfbi->update_region.y2 = y1;
+		if (y1 < dfbi->update_rect.y)
+			dfbi->update_rect.y = y1;
 
-		if (x2 > dfbi->update_region.x2)
-			dfbi->update_region.x2 = x2;
+		if (x2 > right)
+			right = x2;
 
-		if (y2 > dfbi->update_region.y2)
-			dfbi->update_region.y2 = y2;
+		if (y2 > bottom)
+			bottom = y2;
+
+		dfbi->update_rect.w = right - dfbi->update_rect.x;
+		dfbi->update_rect.h = bottom - dfbi->update_rect.y;
 	}
 	else
 	{
+		dfbi->update_rect.x = 0;
+		dfbi->update_rect.y = 0;
+		dfbi->update_rect.w = dfbi->width;
+		dfbi->update_rect.h = dfbi->height;
 		dfbi->update_pending = 1;
-		dfbi->update_region.x1 = x1;
-		dfbi->update_region.y1 = y1;
-		dfbi->update_region.x2 = x2;
-		dfbi->update_region.y2 = y2;
+	}
+}
+
+static char *
+dfb_get_screen_pointer(dfbInfo * dfbi, int x, int y)
+{
+	char * p;
+
+	if (x >= 0 && x < dfbi->width && y >= 0 && y < dfbi->height)
+	{
+		p = dfbi->screen + (y * dfbi->width * dfbi->bytes_per_pixel) + (x * dfbi->bytes_per_pixel);
+		return p;
+	}
+	else
+	{
+		return 0;
+	}
+}
+
+static void
+dfb_copy_mem(char * d, char * s, int n)
+{
+	while (n & (~7))
+	{
+		*(d++) = *(s++);
+		*(d++) = *(s++);
+		*(d++) = *(s++);
+		*(d++) = *(s++);
+		*(d++) = *(s++);
+		*(d++) = *(s++);
+		*(d++) = *(s++);
+		*(d++) = *(s++);
+		n = n - 8;
+	}
+	while (n > 0)
+	{
+		*(d++) = *(s++);
+		n--;
 	}
 }
 
 static void
 l_ui_begin_update(struct rdp_inst * inst)
 {
+	dfbInfo * dfbi;
+	dfbi = GET_DFBI(inst);
+	
+	dfbi->primary->Blit(dfbi->primary, dfbi->screen_surface,
+	                    &(dfbi->update_rect), dfbi->update_rect.x, dfbi->update_rect.y);
 }
 
 static void
 l_ui_end_update(struct rdp_inst * inst)
 {
-
+	dfbInfo * dfbi;
+	dfbi = GET_DFBI(inst);	
+	dfbi->update_pending = 0;
 }
 
 static void
 l_ui_desktop_save(struct rdp_inst * inst, int offset, int x, int y, int cx, int cy)
 {
-
 }
 
 static void
 l_ui_desktop_restore(struct rdp_inst * inst, int offset, int x, int y, int cx, int cy)
 {
-
 }
 
 static RD_HGLYPH
@@ -107,45 +156,16 @@ l_ui_create_glyph(struct rdp_inst * inst, int width, int height, uint8 * data)
 static void
 l_ui_destroy_glyph(struct rdp_inst * inst, RD_HGLYPH glyph)
 {
-
 }
 
 static RD_HBITMAP
 l_ui_create_bitmap(struct rdp_inst * inst, int width, int height, uint8 * data)
 {
-	dfbInfo * dfbi;
 	uint8 * cdata;
-	IDirectFBSurface* surface;
-	DFBSurfaceDescription dsc;
+	dfbInfo * dfbi;
 	dfbi = GET_DFBI(inst);
-
 	cdata = dfb_image_convert(dfbi, inst->settings, width, height, data);
-	
-	surface = (IDirectFBSurface*) malloc(sizeof(IDirectFBSurface));
-	dsc.flags = DSDESC_CAPS | DSDESC_WIDTH | DSDESC_HEIGHT | DSDESC_PIXELFORMAT;
-	dsc.caps = DSCAPS_SYSTEMONLY;
-	dsc.width = width;
-	dsc.height = height;
-
-	switch (inst->settings->server_depth)
-	{
-		case 16:
-			dsc.pixelformat = DSPF_RGB16;
-			break;
-
-		case 24:
-			dsc.pixelformat = DSPF_RGB16;
-			break;
-
-		case 32:
-			dsc.pixelformat = DSPF_RGB16;
-			break;
-	}
-
-	surface = (IDirectFBSurface*) malloc(sizeof(IDirectFBSurface));
-	dfbi->dfb->CreateSurface(dfbi->dfb, &dsc, &surface);
-	
-	return (RD_HBITMAP) surface;
+	return (RD_HBITMAP) cdata;
 }
 
 static void
@@ -154,31 +174,28 @@ l_ui_paint_bitmap(struct rdp_inst * inst, int x, int y, int cx, int cy, int widt
 	dfbInfo * dfbi;
 	uint8 * cdata;
 	DFBRectangle rect;
-	IDirectFBSurface* surface;
 	dfbi = GET_DFBI(inst);
-
+	
 	rect.x = x;
 	rect.y = y;
 	rect.w = cx;
 	rect.h = cy;
-	
+
 	cdata = dfb_image_convert(dfbi, inst->settings, width, height, data);
-	surface = (IDirectFBSurface*) l_ui_create_bitmap(inst, width, height, cdata);
-	dfbi->primary->Blit(dfbi->primary, surface, &rect, cx, cy);
-	
-	surface->Release(surface);
+	inst->ui_memblt(inst, 12, x, y, cx, cy, cdata, 0, 0);
+	dfb_invalidate_rect(dfbi, 0, 0, dfbi->width, dfbi->height);
 }
 
 static void
 l_ui_destroy_bitmap(struct rdp_inst * inst, RD_HBITMAP bmp)
 {
-	free(bmp);
+	if (bmp)
+		free(bmp);
 }
 
 static void
 l_ui_line(struct rdp_inst * inst, uint8 opcode, int startx, int starty, int endx, int endy, RD_PEN * pen)
 {
-
 }
 
 static void
@@ -186,9 +203,7 @@ l_ui_rect(struct rdp_inst * inst, int x, int y, int cx, int cy, int colour)
 {	
 	dfbInfo * dfbi;
 	dfbi = GET_DFBI(inst);
-
 	dfb_colour_convert(dfbi, colour, &(dfbi->pixel), inst->settings->server_depth, dfbi->bpp);
-	
 	dfbi->primary->SetColor(dfbi->primary, dfbi->pixel.red, dfbi->pixel.green, dfbi->pixel.blue, dfbi->pixel.alpha);
 	dfbi->primary->FillRectangle(dfbi->primary, x, y, cx, cy);
 }
@@ -197,38 +212,32 @@ static void
 l_ui_polygon(struct rdp_inst * inst, uint8 opcode, uint8 fillmode, RD_POINT * point,
 	int npoints, RD_BRUSH * brush, int bgcolour, int fgcolour)
 {
-
 }
 
 static void
 l_ui_polyline(struct rdp_inst * inst, uint8 opcode, RD_POINT * points, int npoints, RD_PEN * pen)
 {
-
 }
 
 static void
 l_ui_ellipse(struct rdp_inst * inst, uint8 opcode, uint8 fillmode, int x, int y,
 	int cx, int cy, RD_BRUSH * brush, int bgcolour, int fgcolour)
 {
-
 }
 
 static void
 l_ui_start_draw_glyphs(struct rdp_inst * inst, int bgcolour, int fgcolour)
 {
-
 }
 
 static void
 l_ui_draw_glyph(struct rdp_inst * inst, int x, int y, int cx, int cy, RD_HGLYPH glyph)
 {
-
 }
 
 static void
 l_ui_end_draw_glyphs(struct rdp_inst * inst, int x, int y, int cx, int cy)
 {
-
 }
 
 static uint32
@@ -240,51 +249,45 @@ l_ui_get_toggle_keys_state(struct rdp_inst * inst)
 static void
 l_ui_bell(struct rdp_inst * inst)
 {
-
 }
 
 static void
 l_ui_destblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy)
 {
-
 }
 
 static void
 l_ui_patblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy, RD_BRUSH * brush, int bgcolour, int fgcolour)
 {
-
 }
 
 static void
-l_ui_screenblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy,
-	int srcx, int srcy)
+l_ui_screenblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy, int srcx, int srcy)
 {
-
 }
 
 static void
 l_ui_memblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy, RD_HBITMAP src, int srcx, int srcy)
 {
+	int i;
+	int rv = 0;
+	char * dst;
 	dfbInfo * dfbi;
-	DFBRectangle rect;
-	DFBSurfaceDescription dsc;
-	IDirectFBSurface * surface;
 	dfbi = GET_DFBI(inst);
 
-	dsc.width = cx;
-	dsc.height = cy;
-	dsc.caps = DSCAPS_VIDEOONLY;
-	dsc.flags = DSDESC_CAPS | DSDESC_WIDTH | DSDESC_HEIGHT;
-	
-	if (dfbi->dfb->CreateSurface(dfbi->dfb, &dsc, &surface) == 0)
+	for (i = 0; i < cy; i++)
 	{
-		rect.x = srcx;
-		rect.y = srcy;
-		rect.w = cx;
-		rect.h = cy;
-		surface->Blit(surface, dfbi->primary, &rect, 0, 0);
-		dfbi->primary->Blit(dfbi->primary, surface, 0, x, y);
-		surface->Release(surface);
+		dst = dfb_get_screen_pointer(dfbi, x, y + i);
+		if (dst != 0)
+		{
+			if (!rv)
+			{
+				if (memcmp(dst, src, cx * dfbi->bytes_per_pixel) != 0)
+					rv = 1;
+			}
+			dfb_copy_mem(dst, src, cx * dfbi->bytes_per_pixel);
+			src += srcx * dfbi->bytes_per_pixel;
+		}
 	}
 }
 
@@ -292,7 +295,6 @@ static void
 l_ui_triblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy,
 	RD_HBITMAP src, int srcx, int srcy, RD_BRUSH * brush, int bgcolour, int fgcolour)
 {
-	printf("ui_triblt\n");
 }
 
 static int
@@ -332,19 +334,16 @@ l_ui_reset_clip(struct rdp_inst * inst)
 static void
 l_ui_resize_window(struct rdp_inst * inst)
 {
-
 }
 
 static void
 l_ui_set_cursor(struct rdp_inst * inst, RD_HCURSOR cursor)
 {
-
 }
 
 static void
 l_ui_destroy_cursor(struct rdp_inst * inst, RD_HCURSOR cursor)
 {
-
 }
 
 static RD_HCURSOR
@@ -357,19 +356,16 @@ l_ui_create_cursor(struct rdp_inst * inst, uint32 x, uint32 y,
 static void
 l_ui_set_null_cursor(struct rdp_inst * inst)
 {
-
 }
 
 static void
 l_ui_set_default_cursor(struct rdp_inst * inst)
 {
-
 }
 
 static void
 l_ui_move_pointer(struct rdp_inst * inst, int x, int y)
 {
-
 }
 
 static RD_HCOLOURMAP
@@ -431,7 +427,6 @@ l_ui_destroy_surface(struct rdp_inst * inst, RD_HBITMAP surface)
 static void
 l_ui_channel_data(struct rdp_inst * inst, int chan_id, char * data, int data_size, int flags, int total_size)
 {
-
 }
 
 static int
@@ -493,33 +488,44 @@ dfb_init(int *argc, char *(*argv[]))
 int
 dfb_pre_connect(rdpInst * inst)
 {
-	DFBResult err;
 	dfbInfo * dfbi;
-	
 	dfb_assign_callbacks(inst);
 	dfbi = (dfbInfo *) malloc(sizeof(dfbInfo));
 	SET_DFBI(inst, dfbi);
 	memset(dfbi, 0, sizeof(dfbInfo));
-
-	err = DirectFBCreate(&(dfbi->dfb));
-
-	dfbi->bpp = 16;
-	dfbi->dsc.flags = DSDESC_CAPS;
-	dfbi->dsc.caps  = DSCAPS_PRIMARY;
-	err = dfbi->dfb->CreateSurface(dfbi->dfb, &(dfbi->dsc), &(dfbi->primary));
-	err = dfbi->primary->GetSize(dfbi->primary, &(dfbi->width), &(dfbi->height));
-	dfbi->dfb->SetVideoMode(dfbi->dfb, dfbi->width, dfbi->height, dfbi->bpp);
+	dfbi->bytes_per_pixel = 4;
 	dfbi->update_pending = 0;
-	
-	dfbi->dfb->CreateInputEventBuffer(dfbi->dfb, DICAPS_AXES | DICAPS_BUTTONS | DICAPS_KEYS, 0, &(dfbi->event));
-	dfb_kb_inst_init(inst);
-
+	dfbi->bpp = 16;
 	return 0;
 }
 
 int
 dfb_post_connect(rdpInst * inst)
 {
+	dfbInfo * dfbi;
+	dfbi = GET_DFBI(inst);
+
+	dfbi->err = DirectFBCreate(&(dfbi->dfb));
+
+	dfbi->dsc.flags = DSDESC_CAPS;
+	dfbi->dsc.caps = DSCAPS_PRIMARY;
+	dfbi->err = dfbi->dfb->CreateSurface(dfbi->dfb, &(dfbi->dsc), &(dfbi->primary));
+	dfbi->err = dfbi->primary->GetSize(dfbi->primary, &(dfbi->width), &(dfbi->height));
+	dfbi->dfb->SetVideoMode(dfbi->dfb, dfbi->width, dfbi->height, dfbi->bpp);
+	dfbi->dfb->CreateInputEventBuffer(dfbi->dfb, DICAPS_AXES | DICAPS_BUTTONS | DICAPS_KEYS, 0, &(dfbi->event));
+	
+	dfbi->width = inst->settings->width;
+	dfbi->height = inst->settings->height;
+	dfbi->screen = malloc(dfbi->width * dfbi->height * dfbi->bytes_per_pixel);
+	dfbi->dsc.flags = DSDESC_CAPS | DSDESC_WIDTH | DSDESC_HEIGHT | DSDESC_PREALLOCATED | DSDESC_PIXELFORMAT;
+	dfbi->dsc.caps = DSCAPS_SYSTEMONLY;
+	dfbi->dsc.width = dfbi->width;
+	dfbi->dsc.height = dfbi->height;
+	dfbi->dsc.pixelformat = DSPF_AiRGB;
+	dfbi->dsc.preallocated[0].data = dfbi->screen;
+	dfbi->dsc.preallocated[0].pitch = dfbi->width * dfbi->bytes_per_pixel;
+	dfbi->dfb->CreateSurface(dfbi->dfb, &(dfbi->dsc), &(dfbi->screen_surface));
+	
 	return 0;
 }
 
@@ -528,7 +534,6 @@ dfb_uninit(void * dfb_info)
 {
 	dfbInfo * dfbi;
 	dfbi = (dfbInfo *) dfb_info;
-
 	dfbi->primary->Release(dfbi->primary);
 	dfbi->dfb->Release(dfbi->dfb);
 }
