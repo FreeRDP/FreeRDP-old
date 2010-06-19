@@ -128,7 +128,7 @@ my %sym2virt = (
         "SPCE" => "VK_SPACE",
         "BKSP" => "VK_BACK",
         "BKSL" => "VK_OEM_5",
-	"LSGT" => "VK_OEM_5",
+        "LSGT" => "VK_OEM_102",
         "ESC" => "VK_ESCAPE",
         "TLDE" => "VK_OEM_3",
         "CAPS" => "VK_CAPITAL",
@@ -141,6 +141,7 @@ my %sym2virt = (
         "RWIN" => "VK_RWIN",
         "LALT" => "VK_LMENU",
         "RALT" => "VK_RMENU",
+        "COMP" => "VK_APPS",
         "MENU" => "VK_APPS",
         "UP" => "VK_UP",
         "DOWN" => "VK_DOWN",
@@ -185,13 +186,13 @@ my $outDir;
 
 if(@ARGV < 1) {
 	$inDir = getcwd() . "/";
-	$outDir = $inDir . "xkb/";
+	$outDir = $inDir;
 } elsif(@ARGV == 1) {
 	$inDir = $ARGV[0];
-	$outDir = $inDir . "xkb/";
+	$outDir = getcwd() . "/";
 } elsif(@ARGV == 2) {
 	$inDir = $ARGV[0];
-	$outDir = $ARGV[1] . "xkb/";
+	$outDir = $ARGV[1];
 } else {
 	print 	"Error: Too many arguments\n" .
 		"Usage:\n" .

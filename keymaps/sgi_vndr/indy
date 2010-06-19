@@ -1,5 +1,5 @@
-# This file was generated with xkb.pl (Thu Jun 11 22:23:02 2009)
-# and is based on the X Keyboard Configuration Database version 1.6
+# This file was generated with xkb.pl (Sat Jun 19 10:21:16 2010)
+# and is based on the X Keyboard Configuration Database version 1.9
 # Please use xkb.pl to re-export newer versions of XKB
 
 
@@ -65,11 +65,11 @@ keyboard "pc101"
 	VK_OEM_2	<82>
 	VK_RSHIFT	<97>
 	VK_OEM_5	<100>
-	VK_MENU		<33>
+	VK_LMENU	<33>
 	VK_LCONTROL	<25>
 	VK_SPACE	<49>
 	VK_RCONTROL	<96>
-	VK_MENU		<65>
+	VK_RMENU	<65>
 	VK_ESCAPE	<16>
 	VK_F1		<15>
 	VK_F2		<23>
@@ -117,7 +117,7 @@ keyboard "pc101"
 
 keyboard "pc102"
 {
-	VK_OEM_5	<27>
+	VK_OEM_102	<27>
 };
 
 keyboard "pc104"

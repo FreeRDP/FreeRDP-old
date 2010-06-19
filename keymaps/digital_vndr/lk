@@ -1,5 +1,5 @@
-# This file was generated with xkb.pl (Thu Jun 11 22:23:02 2009)
-# and is based on the X Keyboard Configuration Database version 1.6
+# This file was generated with xkb.pl (Sat Jun 19 10:21:16 2010)
+# and is based on the X Keyboard Configuration Database version 1.9
 # Please use xkb.pl to re-export newer versions of XKB
 
 
@@ -122,8 +122,8 @@ keyboard "lk201"
 keyboard "lk421"
 : extends "digital_vndr/lk(lkx01)"
 {
-	VK_MENU		<172>
-	VK_MENU		<178>
+	VK_LMENU	<172>
+	VK_RMENU	<178>
 };
 
 keyboard "lk401"
@@ -149,8 +149,8 @@ keyboard "lk44x"
 	VK_MULTIPLY	<163>
 	VK_SUBTRACT	<164>
 	VK_ADD		<156>
-	VK_MENU		<172>
-	VK_MENU		<178>
+	VK_LMENU	<172>
+	VK_RMENU	<178>
 	VK_RCONTROL	<173>
 };
 

@@ -1,5 +1,5 @@
-# This file was generated with xkb.pl (Thu Jun 11 22:23:02 2009)
-# and is based on the X Keyboard Configuration Database version 1.6
+# This file was generated with xkb.pl (Sat Jun 19 10:21:16 2010)
+# and is based on the X Keyboard Configuration Database version 1.9
 # Please use xkb.pl to re-export newer versions of XKB
 
 
@@ -55,7 +55,7 @@ keyboard "old"
 	VK_OEM_1	<49>
 	VK_OEM_7	<47>
 	VK_RETURN	<44>
-	VK_OEM_5	<18>
+	VK_OEM_102	<18>
 	VK_KEY_Z	<14>
 	VK_KEY_X	<15>
 	VK_KEY_C	<16>
@@ -68,11 +68,11 @@ keyboard "old"
 	VK_OEM_2	<52>
 	VK_SPACE	<57>
 	VK_LCONTROL	<62>
-	VK_MENU		<63>
+	VK_LMENU	<63>
 	VK_LSHIFT	<64>
-	VK_MENU		<66>
+	VK_RMENU	<66>
 	VK_RSHIFT	<131>
-	VK_MENU		<132>
+	VK_RMENU	<132>
 	VK_RCONTROL	<133>
 	VK_F1		<130>
 	VK_F2		<128>
@@ -127,5 +127,16 @@ keyboard "hhk"
 	VK_F13		<111>
 	VK_F14		<78>
 	VK_F15		<110>
+};
+
+keyboard "alukbd"
+: extends "xfree86"
+{
+	VK_F18		<129>
+	VK_F19		<130>
+};
+
+keyboard "jisevdev"
+{
 };
 

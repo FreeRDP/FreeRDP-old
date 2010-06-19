@@ -1,5 +1,5 @@
-# This file was generated with xkb.pl (Thu Jun 11 22:23:02 2009)
-# and is based on the X Keyboard Configuration Database version 1.6
+# This file was generated with xkb.pl (Sat Jun 19 10:21:16 2010)
+# and is based on the X Keyboard Configuration Database version 1.9
 # Please use xkb.pl to re-export newer versions of XKB
 
 
@@ -70,9 +70,9 @@ keyboard "usa1"
 	VK_OEM_PERIOD	<65>
 	VK_OEM_2	<66>
 	VK_RSHIFT	<105>
-	VK_MENU		<108>
+	VK_LMENU	<108>
 	VK_SPACE	<72>
-	VK_MENU		<109>
+	VK_RMENU	<109>
 	VK_DELETE	<78>
 	VK_HELP		<103>
 	VK_UP		<84>
@@ -153,7 +153,7 @@ keyboard "de"
 	VK_OEM_7	<50>
 	VK_OEM_5	<51>
 	VK_LSHIFT	<104>
-	VK_OEM_5	<56>
+	VK_OEM_102	<56>
 	VK_KEY_Z	<57>
 	VK_KEY_X	<58>
 	VK_KEY_C	<59>
@@ -165,9 +165,9 @@ keyboard "de"
 	VK_OEM_PERIOD	<65>
 	VK_OEM_2	<66>
 	VK_RSHIFT	<105>
-	VK_MENU		<108>
+	VK_LMENU	<108>
 	VK_SPACE	<72>
-	VK_MENU		<109>
+	VK_RMENU	<109>
 	VK_DELETE	<78>
 	VK_HELP		<103>
 	VK_UP		<84>

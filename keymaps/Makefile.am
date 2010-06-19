@@ -14,6 +14,7 @@ nobase_xkb_DATA = \
 	macintosh \
 	sony \
 	xfree86 \
+	empty \
 	digital_vndr/lk \
 	digital_vndr/pc \
 	sgi_vndr/indigo \
