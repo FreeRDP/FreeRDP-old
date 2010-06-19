@@ -1,5 +1,5 @@
-# This file was generated with xkb.pl (Thu Jun 11 22:23:02 2009)
-# and is based on the X Keyboard Configuration Database version 1.6
+# This file was generated with xkb.pl (Sat Jun 19 10:21:16 2010)
+# and is based on the X Keyboard Configuration Database version 1.9
 # Please use xkb.pl to re-export newer versions of XKB
 
 
@@ -62,8 +62,9 @@ keyboard "type4"
 	VK_RSHIFT	<117>
 	VK_HELP		<125>
 	VK_CAPITAL	<126>
-	VK_MENU		<26>
+	VK_LMENU	<26>
 	VK_SPACE	<128>
+	VK_APPS		<74>
 	VK_F1		<12>
 	VK_F2		<13>
 	VK_F3		<15>
@@ -129,6 +130,7 @@ keyboard "type5"
 	VK_OEM_4	<71>
 	VK_OEM_6	<72>
 	VK_DELETE	<73>
+	VK_APPS		<74>
 	VK_LCONTROL	<83>
 	VK_KEY_A	<84>
 	VK_KEY_S	<85>
@@ -155,7 +157,7 @@ keyboard "type5"
 	VK_OEM_PERIOD	<115>
 	VK_OEM_2	<116>
 	VK_RSHIFT	<117>
-	VK_MENU		<26>
+	VK_LMENU	<26>
 	VK_CAPITAL	<126>
 	VK_SPACE	<128>
 	VK_F1		<12>
@@ -205,13 +207,13 @@ keyboard "type5"
 keyboard "type4tuv"
 : extends "sun(type4)"
 {
-	VK_OEM_5	<131>
+	VK_OEM_102	<131>
 };
 
 keyboard "type4_ca"
 : extends "sun(type4)"
 {
-	VK_OEM_5	<131>
+	VK_OEM_102	<131>
 };
 
 keyboard "type4_jp"
@@ -223,13 +225,13 @@ keyboard "type4_jp"
 keyboard "type4_euro"
 : extends "sun(type4)"
 {
-	VK_OEM_5	<131>
+	VK_OEM_102	<131>
 };
 
 keyboard "type5tuv"
 : extends "sun(type5)"
 {
-	VK_OEM_5	<131>
+	VK_OEM_102	<131>
 };
 
 keyboard "type5_jp"
@@ -241,7 +243,7 @@ keyboard "type5_jp"
 keyboard "type5_euro"
 : extends "sun(type5)"
 {
-	VK_OEM_5	<131>
+	VK_OEM_102	<131>
 };
 
 keyboard "type5hobo"
@@ -275,6 +277,7 @@ keyboard "type5hobo"
 	VK_OEM_4	<71>
 	VK_OEM_6	<72>
 	VK_DELETE	<73>
+	VK_APPS		<74>
 	VK_LCONTROL	<83>
 	VK_KEY_A	<84>
 	VK_KEY_S	<85>
@@ -301,7 +304,7 @@ keyboard "type5hobo"
 	VK_OEM_PERIOD	<115>
 	VK_OEM_2	<116>
 	VK_RSHIFT	<117>
-	VK_MENU		<26>
+	VK_LMENU	<26>
 	VK_CAPITAL	<126>
 	VK_SPACE	<128>
 	VK_F1		<12>
@@ -351,7 +354,7 @@ keyboard "type5hobo"
 keyboard "type5tuvhobo"
 : extends "sun(type5hobo)"
 {
-	VK_OEM_5	<131>
+	VK_OEM_102	<131>
 };
 
 keyboard "type5_jphobo"
@@ -394,7 +397,7 @@ keyboard "type6_usb"
 keyboard "type6tuv_usb"
 : extends "sun(type6_usb)"
 {
-	VK_OEM_5	<94>
+	VK_OEM_102	<94>
 	VK_OEM_5	<51>
 };
 
@@ -497,8 +500,9 @@ keyboard "type5_se"
 	VK_NUMPAD3	<121>
 	VK_RETURN	<97>
 	VK_LCONTROL	<83>
-	VK_MENU		<26>
+	VK_LMENU	<26>
 	VK_SPACE	<128>
+	VK_APPS		<74>
 	VK_LEFT		<31>
 	VK_DOWN		<34>
 	VK_RIGHT	<35>
@@ -597,8 +601,9 @@ keyboard "type4__se"
 	VK_NUMPAD3	<121>
 	VK_RETURN	<97>
 	VK_HELP		<125>
-	VK_MENU		<26>
+	VK_LMENU	<26>
 	VK_SPACE	<128>
+	VK_APPS		<74>
 	VK_NUMPAD0	<101>
 	VK_DECIMAL	<57>
 };

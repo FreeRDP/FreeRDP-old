@@ -1,5 +1,5 @@
-# This file was generated with xkb.pl (Thu Jun 11 22:23:02 2009)
-# and is based on the X Keyboard Configuration Database version 1.6
+# This file was generated with xkb.pl (Sat Jun 19 10:21:16 2010)
+# and is based on the X Keyboard Configuration Database version 1.9
 # Please use xkb.pl to re-export newer versions of XKB
 
 
@@ -58,11 +58,11 @@ keyboard "pc101"
 	VK_OEM_2	<60>
 	VK_RSHIFT	<12>
 	VK_OEM_5	<64>
-	VK_MENU		<91>
+	VK_LMENU	<91>
 	VK_LCONTROL	<10>
 	VK_SPACE	<90>
 	VK_RCONTROL	<93>
-	VK_MENU		<92>
+	VK_RMENU	<92>
 	VK_ESCAPE	<14>
 	VK_F1		<94>
 	VK_F2		<95>
@@ -111,6 +111,6 @@ keyboard "pc101"
 keyboard "pc102"
 : extends "sgi_vndr/indigo(pc101)"
 {
-	VK_OEM_5	<118>
+	VK_OEM_102	<118>
 };
 

@@ -3,3 +3,11 @@
 # Please use xkb.pl to re-export newer versions of XKB
 
 
+keyboard "empty"
+{
+};
+
+keyboard "empty"
+{
+};
+

@@ -72,7 +72,14 @@ xf_kb_send_key(xfInfo * xfi, int flags, uint8 keycode)
 	else
 	{
 		scancode = freerdp_kbd_get_scancode_by_keycode(keycode, &flags);
-		xfi->inst->rdp_send_input(xfi->inst, RDP_INPUT_SCANCODE, flags, scancode, 0);
+		if (scancode == 0)
+		{
+			printf("xf_kb_send_key: unable to get scancode (keycode=%d)\n", keycode);
+		}
+		else
+		{
+			xfi->inst->rdp_send_input(xfi->inst, RDP_INPUT_SCANCODE, flags, scancode, 0);
+		}
 	}
 }
 
