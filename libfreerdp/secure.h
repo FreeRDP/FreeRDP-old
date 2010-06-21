@@ -98,8 +98,6 @@ RD_BOOL
 sec_reconnect(rdpSec * sec, char *server, int port);
 void
 sec_disconnect(rdpSec * sec);
-void
-sec_reset_state(rdpSec * sec);
 rdpSec *
 sec_new(struct rdp_rdp * rdp);
 void

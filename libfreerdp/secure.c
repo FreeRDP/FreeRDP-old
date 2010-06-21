@@ -870,12 +870,12 @@ sec_connect(rdpSec * sec, char *server, char *username, int port)
 {
 	/* Don't forget to set this *before* iso_connect(), otherwise you'll bang your head on the wall */
 	/* sec->tls = 1; */
-	
+
 	if (!iso_connect(sec->mcs->iso, server, username, port))
 		return False;
 
 #ifndef DISABLE_TLS
-	
+
 	if(sec->tls)
 	{
 		/* TLS with NLA was successfully negotiated */
@@ -936,16 +936,6 @@ sec_disconnect(rdpSec * sec)
 	mcs_disconnect(sec->mcs);
 }
 
-/* reset the state of the sec layer */
-void
-sec_reset_state(rdpSec * sec)
-{
-	sec->server_rdp_version = 0;
-	sec->sec_encrypt_use_count = 0;
-	sec->sec_decrypt_use_count = 0;
-	mcs_reset_state(sec->mcs);
-}
-
 rdpSec *
 sec_new(struct rdp_rdp * rdp)
 {
@@ -958,11 +948,11 @@ sec_new(struct rdp_rdp * rdp)
 		self->rdp = rdp;
 		self->mcs = mcs_new(self);
 		self->licence = licence_new(self);
-		
+
 #ifndef DISABLE_TLS
 		self->nla = nla_new(self);
 #endif
-		
+
 	}
 	return self;
 }
@@ -978,7 +968,7 @@ sec_free(rdpSec * sec)
 #ifndef DISABLE_TLS
 		nla_free(sec->nla);
 #endif
-		
+
 		xfree(sec);
 	}
 }

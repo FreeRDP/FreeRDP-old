@@ -104,8 +104,6 @@ rdp_connect(rdpRdp * rdp);
 RD_BOOL
 rdp_reconnect(rdpRdp * rdp);
 void
-rdp_reset_state(rdpRdp * rdp);
-void
 rdp_disconnect(rdpRdp * rdp);
 rdpRdp *
 rdp_new(rdpSet * settings, rdpInst * inst);

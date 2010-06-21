@@ -531,13 +531,6 @@ iso_disconnect(rdpIso * iso)
 	tcp_disconnect(iso->tcp);
 }
 
-/* reset the state to support reconnecting */
-void
-iso_reset_state(rdpIso * iso)
-{
-	tcp_reset_state(iso->tcp);
-}
-
 rdpIso *
 iso_new(struct rdp_mcs *mcs)
 {

@@ -413,14 +413,6 @@ mcs_disconnect(rdpMcs * mcs)
 	iso_disconnect(mcs->iso);
 }
 
-/* reset the state of the mcs layer */
-void
-mcs_reset_state(rdpMcs * mcs)
-{
-	mcs->mcs_userid = 0;
-	iso_reset_state(mcs->iso);
-}
-
 rdpMcs *
 mcs_new(struct rdp_sec * sec)
 {

@@ -398,32 +398,6 @@ tcp_get_address(rdpTcp * tcp)
 	return tcp->ipaddr;
 }
 
-/* reset the state of the tcp layer */
-/* Support for Session Directory */
-void
-tcp_reset_state(rdpTcp * tcp)
-{
-	tcp->sock = -1;		/* reset socket */
-
-	/* Clear the incoming stream - put preserve its data store */
-	tcp->in.p = NULL;
-	tcp->in.end = NULL;
-	tcp->in.iso_hdr = NULL;
-	tcp->in.mcs_hdr = NULL;
-	tcp->in.sec_hdr = NULL;
-	tcp->in.rdp_hdr = NULL;
-	tcp->in.channel_hdr = NULL;
-
-	/* Clear the outgoing stream - put preserve its data store */
-	tcp->out.p = NULL;
-	tcp->out.end = NULL;
-	tcp->out.iso_hdr = NULL;
-	tcp->out.mcs_hdr = NULL;
-	tcp->out.sec_hdr = NULL;
-	tcp->out.rdp_hdr = NULL;
-	tcp->out.channel_hdr = NULL;
-}
-
 rdpTcp *
 tcp_new(struct rdp_iso * iso)
 {

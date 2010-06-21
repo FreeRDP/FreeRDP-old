@@ -55,8 +55,6 @@ RD_BOOL
 iso_reconnect(rdpIso * iso, char * server, int port);
 void
 iso_disconnect(rdpIso * iso);
-void
-iso_reset_state(rdpIso * iso);
 rdpIso *
 iso_new(struct rdp_mcs * mcs);
 void

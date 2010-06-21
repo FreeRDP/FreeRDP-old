@@ -50,8 +50,6 @@ RD_BOOL
 mcs_reconnect(rdpMcs * mcs, STREAM mcs_data);
 void
 mcs_disconnect(rdpMcs * mcs);
-void
-mcs_reset_state(rdpMcs * mcs);
 rdpMcs *
 mcs_new(struct rdp_sec * secure);
 void

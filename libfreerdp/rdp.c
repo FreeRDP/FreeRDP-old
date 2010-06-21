@@ -1527,15 +1527,6 @@ rdp_reconnect(rdpRdp * rdp)
 	return True;
 }
 
-/* Called during redirection to reset the state to support redirection */
-void
-rdp_reset_state(rdpRdp * rdp)
-{
-	rdp->next_packet = NULL;	/* reset the packet information */
-	rdp->rdp_shareid = 0;
-	sec_reset_state(rdp->sec);
-}
-
 /* Disconnect from the RDP layer */
 void
 rdp_disconnect(rdpRdp * rdp)

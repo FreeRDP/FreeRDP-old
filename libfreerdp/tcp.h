@@ -55,8 +55,6 @@ void
 tcp_disconnect(rdpTcp * tcp);
 char *
 tcp_get_address(rdpTcp * tcp);
-void
-tcp_reset_state(rdpTcp * tcp);
 rdpTcp *
 tcp_new(struct rdp_iso * iso);
 void
