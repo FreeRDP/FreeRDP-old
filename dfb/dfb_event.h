@@ -17,29 +17,42 @@ struct _PIXEL
 };
 typedef struct _PIXEL PIXEL;
 
+struct _BITMAP
+{
+	uint8 * data;
+	uint32 width;
+	uint32 height;
+};
+typedef struct _BITMAP BITMAP;
+
 struct dfb_info
 {
 	int bpp;
 	int width;
 	int height;
+	int cursor_x;
+	int cursor_y;
 	char* screen;
 	DFBResult err;
 	IDirectFB * dfb;
 	DFBRegion region;
+	DFBEvent events[16];
 	IDirectFBSurface * drw;
 	DFBSurfaceDescription dsc;
 	IDirectFBSurface * primary;
 	IDirectFBEventBuffer * event;
 	IDirectFBSurface * screen_surface;
+	IDirectFBDisplayLayer * layer;
 	DFBRectangle update_rect;
-	int update_pending;
 	int bytes_per_pixel;
 	int * colourmap;
+	PIXEL bgcolour;
+	PIXEL fgcolour;
 	PIXEL pixel;
 };
 typedef struct dfb_info dfbInfo;
 
 int
-dfb_handle_event(rdpInst * inst);
+dfb_process_event(rdpInst * inst, DFBEvent * event);
 
 #endif /* __DFB_EVENT_H */

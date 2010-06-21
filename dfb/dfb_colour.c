@@ -125,8 +125,11 @@ dfb_image_convert(dfbInfo * dfbi, rdpSet * settings, int width, int height, uint
 	uint8 * out_data;
 
 	if (settings->server_depth == dfbi->bpp)
-		return in_data;
-	
+	{
+		out_data = (uint8 *) malloc(width * height * 4);
+		memcpy(out_data, in_data, width * height * 4);
+		return out_data;
+	}
 	if ((settings->server_depth == 24) && (dfbi->bpp == 32))
 	{
 		out_data = (uint8 *) malloc(width * height * 4);

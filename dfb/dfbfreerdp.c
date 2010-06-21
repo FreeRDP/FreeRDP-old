@@ -48,12 +48,11 @@ set_default_params(rdpSet * settings)
 	strcpy(settings->username, "guest");
 	settings->tcp_port_rdp = 3389;
 	settings->encryption = 1;
-	settings->server_depth = 16;
+	settings->server_depth = 32;
 	settings->bitmap_cache = 1;
 	settings->bitmap_compression = 1;
 	settings->desktop_save = 0;
-	settings->rdp5_performanceflags =
-		RDP5_NO_WALLPAPER | RDP5_NO_FULLWINDOWDRAG | RDP5_NO_MENUANIMATIONS;
+	settings->rdp5_performanceflags = RDP5_NO_FULLWINDOWDRAG | RDP5_NO_MENUANIMATIONS;
 	settings->off_screen_bitmaps = 1;
 	settings->triblt = 0;
 	settings->new_cursors = 1;
