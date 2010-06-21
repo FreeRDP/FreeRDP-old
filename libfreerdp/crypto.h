@@ -100,7 +100,4 @@ crypto_rkey_free(CRYPTO_RKEY * rkey);
 int
 crypto_rkey_get_exp_mod(CRYPTO_RKEY * rkey, uint8 * exponent, uint32 max_exp_len, uint8 * modulus, uint32 max_mod_len);
 
-RD_BOOL
-crypto_sig_ok(uint8 * exponent, uint32 exp_len, uint8 * modulus, uint32 mod_len, uint8 * signature, uint32 sig_len);
-
 #endif // __CRYPTO_H

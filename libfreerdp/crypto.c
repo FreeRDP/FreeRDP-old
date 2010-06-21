@@ -235,7 +235,7 @@ crypto_cert_verify(CRYPTO_CERT * server_cert, CRYPTO_CERT * cacert)
 #ifdef CRYPTO_OPENSSL
 	return True;
 #else /* built-in crypto */
-	return ssl_certs_ok(server_cert, cacert);
+	return ssl_cert_verify(server_cert, cacert);
 #endif
 }
 
@@ -283,16 +283,3 @@ crypto_rkey_get_exp_mod(CRYPTO_RKEY * rkey, uint8 * exponent, uint32 max_exp_len
 	
 #endif
 }
-
-RD_BOOL
-crypto_sig_ok(uint8 * exponent, uint32 exp_len, uint8 * modulus, uint32 mod_len, uint8 * signature, uint32 sig_len)
-{
-	/* FIXME: check the signature for real */
-	
-#ifdef CRYPTO_OPENSSL
-	return True;
-#else /* built-in crypto */
-	return True;
-#endif
-}
-

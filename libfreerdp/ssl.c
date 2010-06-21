@@ -2546,7 +2546,7 @@ ssl_cert_to_rkey(SSL_CERT * cert, uint32 * key_len)
 /*****************************************************************************/
 /* returns boolean */
 RD_BOOL
-ssl_certs_ok(SSL_CERT * server_cert, SSL_CERT * cacert)
+ssl_cert_verify(SSL_CERT * server_cert, SSL_CERT * cacert)
 {
 	return True;
 }
@@ -2572,13 +2572,4 @@ ssl_rkey_get_exp_mod(SSL_RKEY * rkey, uint8 * exponent, uint32 max_exp_len,
 	uint8 * modulus, uint32 max_mod_len)
 {
 	return 0;
-}
-
-/*****************************************************************************/
-/* returns boolean */
-RD_BOOL
-ssl_sig_ok(uint8 * exponent, uint32 exp_len, uint8 * modulus, uint32 mod_len,
-	uint8 * signature, uint32 sig_len)
-{
-	return True;
 }

@@ -76,8 +76,6 @@ buf_out_uint32(uint8 * buffer, uint32 value);
 void
 sec_sign(uint8 * signature, int siglen, uint8 * session_key, int keylen,
 	 uint8 * data, int datalen);
-void
-sec_decrypt(rdpSec * sec, uint8 * data, int length);
 STREAM
 sec_init(rdpSec * sec, uint32 flags, int maxlen);
 STREAM

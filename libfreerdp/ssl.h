@@ -79,7 +79,7 @@ ssl_cert_free(SSL_CERT * cert);
 SSL_RKEY *
 ssl_cert_to_rkey(SSL_CERT * cert, uint32 * key_len);
 RD_BOOL
-ssl_certs_ok(SSL_CERT * server_cert, SSL_CERT * cacert);
+ssl_cert_verify(SSL_CERT * server_cert, SSL_CERT * cacert);
 int
 ssl_cert_print_fp(FILE * fp, SSL_CERT * cert);
 
@@ -88,9 +88,5 @@ ssl_rkey_free(SSL_RKEY * rkey);
 int
 ssl_rkey_get_exp_mod(SSL_RKEY * rkey, uint8 * exponent, uint32 max_exp_len,
                      uint8 * modulus, uint32 max_mod_len);
-
-RD_BOOL
-ssl_sig_ok(uint8 * exponent, uint32 exp_len, uint8 * modulus, uint32 mod_len,
-           uint8 * signature, uint32 sig_len);
 
 #endif

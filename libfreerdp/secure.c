@@ -243,7 +243,7 @@ sec_encrypt(rdpSec * sec, uint8 * data, int length)
 }
 
 /* Decrypt data using RC4 */
-void
+static void
 sec_decrypt(rdpSec * sec, uint8 * data, int length)
 {
 	if (sec->sec_decrypt_use_count == 4096)
@@ -276,7 +276,7 @@ sec_init(rdpSec * sec, uint32 flags, int maxlen)
 		hdrlen = (flags & SEC_ENCRYPT) ? 12 : 4;
 	else
 		hdrlen = (flags & SEC_ENCRYPT) ? 12 : 0;
-	
+
 	s = mcs_init(sec->mcs, maxlen + hdrlen);
 	s_push_layer(s, sec_hdr, hdrlen);
 
@@ -293,7 +293,7 @@ sec_fp_init(rdpSec * sec, uint32 flags, int maxlen)
 	hdrlen = (flags & SEC_ENCRYPT) ? 8 : 0;
 	s = mcs_fp_init(sec->mcs, maxlen + hdrlen);
 	s_push_layer(s, sec_hdr, hdrlen);
-	
+
 	return s;
 }
 
@@ -304,7 +304,7 @@ sec_send_to_channel(rdpSec * sec, STREAM s, uint32 flags, uint16 channel)
 	int datalen;
 
 	s_pop_layer(s, sec_hdr);
-	
+
 	if (!(sec->licence->licence_issued) || (flags & SEC_ENCRYPT))
 		out_uint32_le(s, flags);
 
@@ -424,6 +424,7 @@ sec_out_connectdata(rdpSec * sec, STREAM s)
 
 	/* Input Method Editor (IME) file name associated with the input locale.
 	   Up to 31 Unicode characters plus a NULL terminator */
+	// FIXME:
 	// if (strlen(sec->rdp->settings->keyboard_ime) > 31)
 	// 	sec->rdp->settings->keyboard_ime[31] = 0; /* Modified in-place! */
 	// out_len = rdp_out_unistr(sec->rdp, s, sec->rdp->settings->hostname);
@@ -527,21 +528,16 @@ sec_parse_public_key(rdpSec * sec, STREAM s, uint8 * modulus, uint8 * exponent)
 	return s_check(s);
 }
 
-/* Parse a public signature structure */
+/* Parse a Proprietary Certificate signature */
 static RD_BOOL
-sec_parse_public_sig(rdpSec * sec, STREAM s, uint32 len, uint8 * modulus, uint8 * exponent)
+sec_parse_public_sig(STREAM s, uint32 len)
 {
-	uint32 sig_len;
-	uint8 signature[SEC_MAX_MODULUS_SIZE];
+	/* The Proprietary Certificate signature uses a static published private key.
+	 * That is completely nonsense, so we won't bother checking it. */
 
-	if (len != 72)
-		return True;
-
-	memset(signature, 0, sizeof(signature));
-	sig_len = len - 8;
-	in_uint8a(s, signature, sig_len);
+	in_uint8s(s, len);
 	
-	return crypto_sig_ok(exponent, SEC_EXPONENT_SIZE, modulus, sec->server_public_key_len, signature, sig_len);
+	return len == 72;
 }
 
 /* Parse a crypto information structure */
@@ -600,7 +596,7 @@ sec_parse_crypt_info(rdpSec * sec, STREAM s, uint32 * rc4_key_size, uint8 ** ser
 					break;
 
 				case BB_RSA_SIGNATURE_BLOB:
-					if (!sec_parse_public_sig(sec, s, length, modulus, exponent))
+					if (!sec_parse_public_sig(s, length))
 						return False;
 					break;
 
