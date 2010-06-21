@@ -605,7 +605,7 @@ sec_parse_crypt_info(rdpSec * sec, STREAM s, uint32 * rc4_key_size, uint8 ** ser
 					break;
 
 				default:
-					ui_unimpl(NULL, "crypt tag 0x%x\n", tag);
+					fprintf(stderr, "unimpl: crypt tag 0x%x\n", tag);
 			}
 
 			s->p = next_tag;
@@ -797,7 +797,7 @@ sec_process_mcs_data(rdpSec * sec, STREAM s)
 				break;
 
 			default:
-				ui_unimpl(NULL, "response tag 0x%x\n", tag);
+				fprintf(stderr, "unimpl: response tag 0x%x\n", tag);
 		}
 
 		s->p = next_tag;

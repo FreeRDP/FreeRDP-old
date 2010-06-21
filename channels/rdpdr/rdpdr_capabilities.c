@@ -227,7 +227,7 @@ rdpdr_process_capabilities(char* data, int size)
 				break;
 
 			default:
-				//ui_unimpl(NULL, "Device redirection capability set type %d\n", capabilityType);
+				//fprintf(stderr, "unimpl: Device redirection capability set type %d\n", capabilityType);
 				break;
 		}
 	}

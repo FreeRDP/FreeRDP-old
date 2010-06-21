@@ -212,7 +212,7 @@ rdpsnd_auto_select(void)
 			current_driver = current_driver->next;
 		}
 
-		ui_warning(NULL, "no working audio-driver found\n");
+		fprintf(stderr, "warning: no working audio-driver found\n");
 		failed = True;
 		current_driver = NULL;
 	}
@@ -443,7 +443,7 @@ rdpsnd_process_packet(uint8 opcode, STREAM s)
 
 			if (format >= MAX_FORMATS)
 			{
-				ui_error(NULL, "RDPSND: Invalid format index\n");
+				fprintf(stderr, "error: RDPSND: Invalid format index\n");
 				break;
 			}
 
@@ -508,13 +508,13 @@ rdpsnd_process_packet(uint8 opcode, STREAM s)
 
 			if (format >= MAX_FORMATS)
 			{
-				ui_error(NULL, "RDPSND: Invalid format index\n");
+				fprintf(stderr, "error: RDPSND: Invalid format index\n");
 				break;
 			}
 
 			if (rec_device_open)
 			{
-				ui_error(NULL, "RDPSND: Multiple RDPSND_REC_START\n");
+				fprintf(stderr, "error: RDPSND: Multiple RDPSND_REC_START\n");
 				break;
 			}
 
@@ -523,7 +523,7 @@ rdpsnd_process_packet(uint8 opcode, STREAM s)
 
 			if (!current_driver->wave_in_set_format(&rec_formats[format]))
 			{
-				ui_error(NULL, "RDPSND: Device not accepting format\n");
+				fprintf(stderr, "error: RDPSND: Device not accepting format\n");
 				current_driver->wave_in_close();
 				break;
 			}
@@ -545,7 +545,7 @@ rdpsnd_process_packet(uint8 opcode, STREAM s)
 				current_driver->wave_in_volume(vol_left, vol_right);
 			break;
 		default:
-			ui_unimpl(NULL, "RDPSND packet type %x\n", opcode);
+			fprintf(stderr, "unimpl: RDPSND packet type %x\n", opcode);
 			break;
 	}
 }
@@ -562,7 +562,7 @@ rdpsnd_process(STREAM s)
 		{
 			if ((s->end - s->p) < 4)
 			{
-				ui_error(NULL, "RDPSND: Split at packet header. Things will go south from here...\n");
+				fprintf(stderr, "error: RDPSND: Split at packet header. Things will go south from here...\n");
 				return;
 			}
 			in_uint8(s, packet_opcode);
@@ -690,7 +690,7 @@ rdpsnd_init(char *optarg)
 
 	if ((rdpsnd_channel == NULL) || (rdpsnddbg_channel == NULL))
 	{
-		ui_error(NULL, "channel_register\n");
+		fprintf(stderr, "error: channel_register\n");
 		return False;
 	}
 
@@ -786,7 +786,7 @@ rdpsnd_queue_write(STREAM s, uint16 tick, uint8 index)
 
 	if (next_hi == queue_pending)
 	{
-		ui_error(NULL, "No space to queue audio packet\n");
+		fprintf(stderr, "error: No space to queue audio packet\n");
 		return;
 	}
 

@@ -134,7 +134,7 @@ scard_enum_devices(uint32 * id, char *optarg)
 	rv = SCardEstablishContext(SCARD_SCOPE_SYSTEM, NULL, NULL, &hContext);
 	if (rv != SCARD_S_SUCCESS)
 	{
-		ui_error(NULL, "scard_enum_devices: PCSC service not available\n");
+		fprintf(stderr, "error: scard_enum_devices: PCSC service not available\n");
 		return 0;
 	}
 	else
@@ -144,26 +144,26 @@ scard_enum_devices(uint32 * id, char *optarg)
 
 	if (0 != pthread_mutex_init(&queueAccess, NULL))
 	{
-		ui_error(NULL, "scard_enum_devices: Can't initialize queue access mutex\n");
+		fprintf(stderr, "error: scard_enum_devices: Can't initialize queue access mutex\n");
 		return 0;
 	}
 
 	if (0 != pthread_cond_init(&queueEmpty, NULL))
 	{
-		ui_error(NULL, "scard_enum_devices: Can't initialize queue control cv\n");
+		fprintf(stderr, "error: scard_enum_devices: Can't initialize queue control cv\n");
 		return 0;
 	}
 
 	if (0 != pthread_mutex_init(&hcardAccess, NULL))
 	{
-		ui_error(NULL, "scard_enum_devices: Can't initialize hcard list access mutex\n");
+		fprintf(stderr, "error: scard_enum_devices: Can't initialize hcard list access mutex\n");
 		return 0;
 	}
 
 	if (0 !=
 	    pthread_create(&queueHandler, NULL, (void *(*)(void *)) queue_handler_function, NULL))
 	{
-		ui_error(NULL, "scard_enum_devices: Can't create queue handling Thread\n");
+		fprintf(stderr, "error: scard_enum_devices: Can't create queue handling Thread\n");
 		return 0;
 	}
 
@@ -1572,7 +1572,7 @@ TS_SCardTransmit(STREAM in, STREAM out)
 	/* FIXME: handle responses with length > 448 bytes */
 	if (cbRecvLength > 448)
 	{
-		ui_warning(NULL, "Card response limited from %d to 448 bytes!\n", cbRecvLength);
+		fprintf(stderr, "warning: Card response limited from %d to 448 bytes!\n", cbRecvLength);
 		DEBUG_SCARD("SCARD:    Truncated %d to %d\n", (unsigned int) cbRecvLength, 448);
 		cbRecvLength = 448;
 	}
@@ -2304,7 +2304,7 @@ scard_device_control(RD_NTHANDLE handle, uint32 request, STREAM in, STREAM out)
 			}
 		default:
 			{
-				ui_warning(NULL, "SCARD: Unknown function %d\n", (int) request);
+				fprintf(stderr, "warning: SCARD: Unknown function %d\n", (int) request);
 				Result = 0x80100014;
 				out_uint8s(out, 256);
 				break;
@@ -2531,7 +2531,7 @@ SC_handleRequest(PSCThreadData data)
 	Result = pthread_create(&cur->thread, NULL, (void *(*)(void *)) thread_function, cur);
 	if (0 != Result)
 	{
-		ui_error(NULL, "[THREAD CREATE ERROR 0x%.8x]\n", Result);
+		fprintf(stderr, "error: [THREAD CREATE ERROR 0x%.8x]\n", Result);
 		SC_xfree(&threadListHandle, cur);
 		SC_destroyThreadData(data);
 		data = NULL;

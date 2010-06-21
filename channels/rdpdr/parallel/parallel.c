@@ -177,7 +177,7 @@ parallel_device_control(RD_NTHANDLE handle, uint32 request, STREAM in, STREAM ou
 		default:
 
 			printf("\n");
-			ui_unimpl(NULL, "UNKNOWN IOCTL %d\n", request);
+			fprintf(stderr, "unimpl: UNKNOWN IOCTL %d\n", request);
 	}
 	return RD_STATUS_SUCCESS;
 }

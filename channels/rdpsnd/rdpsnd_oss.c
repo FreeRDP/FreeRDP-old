@@ -158,7 +158,7 @@ oss_open(int wanted)
 			if ((ioctl(dsp_fd, SNDCTL_DSP_GETCAPS, &caps) < 0)
 			    || !(caps & DSP_CAP_DUPLEX))
 			{
-				ui_warning(NULL, "This device is not capable of full duplex operation.\n");
+				fprintf(stderr, "warning: This device is not capable of full duplex operation.\n");
 				return False;
 			}
 			close(dsp_fd);
@@ -325,7 +325,7 @@ oss_set_format(RD_WAVEFORMATEX * pwfx)
 				if (rdpsnd_dsp_resample_set
 				    (snd_rate, pwfx->wBitsPerSample, pwfx->nChannels) == False)
 				{
-					ui_error(NULL, "rdpsnd_dsp_resample_set failed");
+					fprintf(stderr, "error: rdpsnd_dsp_resample_set failed");
 					oss_close();
 					return False;
 				}
@@ -383,7 +383,7 @@ oss_volume(uint16 left, uint16 right)
 
 	if (ioctl(dsp_fd, MIXER_WRITE(SOUND_MIXER_PCM), &volume) == -1)
 	{
-		ui_warning(NULL, "hardware volume control unavailable, falling back to software volume control!\n");
+		fprintf(stderr, "warning: hardware volume control unavailable, falling back to software volume control!\n");
 		oss_driver.wave_out_volume = rdpsnd_dsp_softvol_set;
 		rdpsnd_dsp_softvol_set(left, right);
 		return;

@@ -181,19 +181,19 @@ alsa_set_format(snd_pcm_t * pcm, RD_WAVEFORMATEX * pwfx)
 
 	if ((err = snd_pcm_hw_params_malloc(&hwparams)) < 0)
 	{
-		ui_error(NULL, "snd_pcm_hw_params_malloc: %s\n", snd_strerror(err));
+		fprintf(stderr, "error: snd_pcm_hw_params_malloc: %s\n", snd_strerror(err));
 		return False;
 	}
 
 	if ((err = snd_pcm_hw_params_any(pcm, hwparams)) < 0)
 	{
-		ui_error(NULL, "snd_pcm_hw_params_any: %s\n", snd_strerror(err));
+		fprintf(stderr, "error: snd_pcm_hw_params_any: %s\n", snd_strerror(err));
 		return False;
 	}
 
 	if ((err = snd_pcm_hw_params_set_access(pcm, hwparams, SND_PCM_ACCESS_RW_INTERLEAVED)) < 0)
 	{
-		ui_error(NULL, "snd_pcm_hw_params_set_access: %s\n", snd_strerror(err));
+		fprintf(stderr, "error: snd_pcm_hw_params_set_access: %s\n", snd_strerror(err));
 		return False;
 	}
 
@@ -201,7 +201,7 @@ alsa_set_format(snd_pcm_t * pcm, RD_WAVEFORMATEX * pwfx)
 	{
 		if ((err = snd_pcm_hw_params_set_format(pcm, hwparams, SND_PCM_FORMAT_S16_LE)) < 0)
 		{
-			ui_error(NULL, "snd_pcm_hw_params_set_format: %s\n", snd_strerror(err));
+			fprintf(stderr, "error: snd_pcm_hw_params_set_format: %s\n", snd_strerror(err));
 			return False;
 		}
 	}
@@ -209,7 +209,7 @@ alsa_set_format(snd_pcm_t * pcm, RD_WAVEFORMATEX * pwfx)
 	{
 		if ((err = snd_pcm_hw_params_set_format(pcm, hwparams, SND_PCM_FORMAT_S8)) < 0)
 		{
-			ui_error(NULL, "snd_pcm_hw_params_set_format: %s\n", snd_strerror(err));
+			fprintf(stderr, "error: snd_pcm_hw_params_set_format: %s\n", snd_strerror(err));
 			return False;
 		}
 	}
@@ -217,7 +217,7 @@ alsa_set_format(snd_pcm_t * pcm, RD_WAVEFORMATEX * pwfx)
 #if 0
 	if ((err = snd_pcm_hw_params_set_rate_resample(pcm, hwparams, 1)) < 0)
 	{
-		ui_error(NULL, "snd_pcm_hw_params_set_rate_resample: %s\n", snd_strerror(err));
+		fprintf(stderr, "error: snd_pcm_hw_params_set_rate_resample: %s\n", snd_strerror(err));
 		return False;
 	}
 #endif
@@ -225,14 +225,14 @@ alsa_set_format(snd_pcm_t * pcm, RD_WAVEFORMATEX * pwfx)
 	rate = pwfx->nSamplesPerSec;
 	if ((err = snd_pcm_hw_params_set_rate_near(pcm, hwparams, &rate, 0)) < 0)
 	{
-		ui_error(NULL, "snd_pcm_hw_params_set_rate_near: %s\n", snd_strerror(err));
+		fprintf(stderr, "error: snd_pcm_hw_params_set_rate_near: %s\n", snd_strerror(err));
 		return False;
 	}
 
 	audiochannels = pwfx->nChannels;
 	if ((err = snd_pcm_hw_params_set_channels(pcm, hwparams, pwfx->nChannels)) < 0)
 	{
-		ui_error(NULL, "snd_pcm_hw_params_set_channels: %s\n", snd_strerror(err));
+		fprintf(stderr, "error: snd_pcm_hw_params_set_channels: %s\n", snd_strerror(err));
 		return False;
 	}
 
@@ -240,13 +240,13 @@ alsa_set_format(snd_pcm_t * pcm, RD_WAVEFORMATEX * pwfx)
 	buffertime = 500000;	/* microseconds */
 	if ((err = snd_pcm_hw_params_set_buffer_time_near(pcm, hwparams, &buffertime, 0)) < 0)
 	{
-		ui_error(NULL, "snd_pcm_hw_params_set_buffer_time_near: %s\n", snd_strerror(err));
+		fprintf(stderr, "error: snd_pcm_hw_params_set_buffer_time_near: %s\n", snd_strerror(err));
 		return False;
 	}
 
 	if ((err = snd_pcm_hw_params(pcm, hwparams)) < 0)
 	{
-		ui_error(NULL, "snd_pcm_hw_params: %s\n", snd_strerror(err));
+		fprintf(stderr, "error: snd_pcm_hw_params: %s\n", snd_strerror(err));
 		return False;
 	}
 
@@ -254,7 +254,7 @@ alsa_set_format(snd_pcm_t * pcm, RD_WAVEFORMATEX * pwfx)
 
 	if ((err = snd_pcm_prepare(pcm)) < 0)
 	{
-		ui_error(NULL, "snd_pcm_prepare: %s\n", snd_strerror(err));
+		fprintf(stderr, "error: snd_pcm_prepare: %s\n", snd_strerror(err));
 		return False;
 	}
 
@@ -270,7 +270,7 @@ alsa_open_out(void)
 
 	if ((err = snd_pcm_open(&out_handle, pcm_name, SND_PCM_STREAM_PLAYBACK, 0)) < 0)
 	{
-		ui_error(NULL, "snd_pcm_open: %s\n", snd_strerror(err));
+		fprintf(stderr, "error: snd_pcm_open: %s\n", snd_strerror(err));
 		return False;
 	}
 
@@ -302,13 +302,13 @@ alsa_format_supported(RD_WAVEFORMATEX * pwfx)
 
 	if ((err = snd_pcm_hw_params_malloc(&hwparams)) < 0)
 	{
-		ui_error(NULL, "snd_pcm_hw_params_malloc: %s\n", snd_strerror(err));
+		fprintf(stderr, "error: snd_pcm_hw_params_malloc: %s\n", snd_strerror(err));
 		return False;
 	}
 
 	if ((err = snd_pcm_hw_params_any(pcm_handle, hwparams)) < 0)
 	{
-		ui_error(NULL, "snd_pcm_hw_params_malloc: %s\n", snd_strerror(err));
+		fprintf(stderr, "error: snd_pcm_hw_params_malloc: %s\n", snd_strerror(err));
 		return False;
 	}
 	snd_pcm_hw_params_free(hwparams);
@@ -417,7 +417,7 @@ alsa_open_in(void)
 	if ((err =
 	     snd_pcm_open(&in_handle, pcm_name, SND_PCM_STREAM_CAPTURE, SND_PCM_NONBLOCK)) < 0)
 	{
-		ui_error(NULL, "snd_pcm_open: %s\n", snd_strerror(err));
+		fprintf(stderr, "error: snd_pcm_open: %s\n", snd_strerror(err));
 		return False;
 	}
 
@@ -444,7 +444,7 @@ alsa_set_format_in(RD_WAVEFORMATEX * pwfx)
 
 	if ((err = snd_pcm_start(in_handle)) < 0)
 	{
-		ui_error(NULL, "snd_pcm_start: %s\n", snd_strerror(err));
+		fprintf(stderr, "error: snd_pcm_start: %s\n", snd_strerror(err));
 		return False;
 	}
 

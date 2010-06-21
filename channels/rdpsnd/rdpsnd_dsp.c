@@ -121,7 +121,7 @@ rdpsnd_dsp_swapbytes(unsigned char *buffer, unsigned int size, RD_WAVEFORMATEX *
 		return;
 
 	if (size & 0x1)
-		ui_warning(NULL, "badly aligned sound data");
+		fprintf(stderr, "warning: badly aligned sound data");
 
 	for (i = 0; i < (int) size; i += 2)
 	{
@@ -154,7 +154,7 @@ rdpsnd_dsp_resample_set(uint32 device_srate, uint16 device_bitspersample, uint16
 
 	if ((src_converter = src_new(SRC_CONVERTER, device_channels, &err)) == NULL)
 	{
-		ui_warning(NULL, "src_new failed: %d!\n", err);
+		fprintf(stderr, "warning: src_new failed: %d!\n", err);
 		return False;
 	}
 #endif
@@ -257,7 +257,7 @@ rdpsnd_dsp_resample(unsigned char **out, unsigned char *in, unsigned int size,
 #ifdef HAVE_LIBSAMPLERATE
 	if (src_converter == NULL)
 	{
-		ui_warning(NULL, "no samplerate converter available!!\n");
+		fprintf(stderr, "warning: no samplerate converter available!!\n");
 		return 0;
 	}
 
@@ -277,7 +277,7 @@ rdpsnd_dsp_resample(unsigned char **out, unsigned char *in, unsigned int size,
 	resample_data.end_of_input = 0;
 
 	if ((err = src_process(src_converter, &resample_data)) != 0)
-		ui_error(NULL, "src_process: %s", src_strerror(err));
+		fprintf(stderr, "error: src_process: %s", src_strerror(err));
 
 	xfree(infloat);
 
@@ -291,7 +291,7 @@ rdpsnd_dsp_resample(unsigned char **out, unsigned char *in, unsigned int size,
 	/* Michaels simple linear resampler */
 	if (resample_to_srate < format->nSamplesPerSec)
 	{
-		ui_warning(NULL, "downsampling currently not supported!\n");
+		fprintf(stderr, "warning: downsampling currently not supported!\n");
 		return 0;
 	}
 

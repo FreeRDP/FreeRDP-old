@@ -74,7 +74,7 @@ sgi_open(void)
 
 	if (!warned && sgi_output_device)
 	{
-		ui_warning(NULL, "device-options not supported for libao-driver\n");
+		fprintf(stderr, "warning: device-options not supported for libao-driver\n");
 		warned = 1;
 	}
 

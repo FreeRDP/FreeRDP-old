@@ -933,7 +933,7 @@ serial_device_control(RD_NTHANDLE handle, uint32 request, STREAM in, STREAM out)
 			tcflow(handle, TCION);
 			break;
 		default:
-			ui_unimpl(NULL, "SERIAL IOCTL %d\n", request);
+			fprintf(stderr, "unimpl: SERIAL IOCTL %d\n", request);
 			return RD_STATUS_INVALID_PARAMETER;
 	}
 

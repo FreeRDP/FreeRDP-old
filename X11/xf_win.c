@@ -1123,7 +1123,6 @@ void
 xf_uninit(xfInfo * xfi)
 {
 	xf_destroy_window(xfi);
-	/* xf_pre_connect */
 	XCloseDisplay(xfi->display);
 }
 
