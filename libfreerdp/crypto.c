@@ -186,13 +186,13 @@ crypto_cert_free(CRYPTO_CERT * cert)
 #endif
 }
 
-CRYPTO_RKEY *
-crypto_cert_to_rkey(CRYPTO_CERT * cert, uint32 * key_len)
+CRYPTO_PUBLIC_KEY *
+crypto_cert_get_public_key(CRYPTO_CERT * cert, uint32 * key_len)
 {
 #ifdef CRYPTO_OPENSSL
 	
 	int nid;
-	CRYPTO_RKEY *lkey;
+	CRYPTO_PUBLIC_KEY *lkey;
 	EVP_PKEY *epk = NULL;
 
 	/* For some reason, Microsoft sets the OID of the Public RSA key to
@@ -222,7 +222,7 @@ crypto_cert_to_rkey(CRYPTO_CERT * cert, uint32 * key_len)
 
 #else /* built-in crypto */
 
-	return ssl_cert_to_rkey(cert, key_len);
+	return ssl_cert_get_public_key(cert, key_len);
 	
 #endif
 }
@@ -250,36 +250,36 @@ crypto_cert_print_fp(FILE * fp, CRYPTO_CERT * cert)
 }
 
 void
-crypto_rkey_free(CRYPTO_RKEY * rkey)
+crypto_public_key_free(CRYPTO_PUBLIC_KEY * public_key)
 {
 #ifdef CRYPTO_OPENSSL
-	RSA_free(rkey);
+	RSA_free(public_key);
 #else /* built-in crypto */
-	ssl_rkey_free(rkey);
+	ssl_public_key_free(public_key);
 #endif
 }
 
 int
-crypto_rkey_get_exp_mod(CRYPTO_RKEY * rkey, uint8 * exponent, uint32 max_exp_len, uint8 * modulus, uint32 max_mod_len)
+crypto_public_key_get_exp_mod(CRYPTO_PUBLIC_KEY * public_key, uint8 * exponent, uint32 max_exp_len, uint8 * modulus, uint32 max_mod_len)
 {
 #ifdef CRYPTO_OPENSSL
 	
 	int len;
 
-	if ((BN_num_bytes(rkey->e) > (int) max_exp_len) || (BN_num_bytes(rkey->n) > (int) max_mod_len))
+	if ((BN_num_bytes(public_key->e) > (int) max_exp_len) || (BN_num_bytes(public_key->n) > (int) max_mod_len))
 		return 1;
 	
-	len = BN_bn2bin(rkey->e, exponent);
+	len = BN_bn2bin(public_key->e, exponent);
 	reverse(exponent, len);
 	
-	len = BN_bn2bin(rkey->n, modulus);
+	len = BN_bn2bin(public_key->n, modulus);
 	reverse(modulus, len);
 	
 	return 0;
 	
 #else /* built-in crypto */
 
-	return ssl_rkey_get_exp_mod(rkey, exponent, max_exp_len, modulus, max_mod_len);
+	return ssl_public_key_get_exp_mod(public_key, exponent, max_exp_len, modulus, max_mod_len);
 	
 #endif
 }

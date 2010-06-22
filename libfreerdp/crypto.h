@@ -48,7 +48,7 @@
 #define CRYPTO_SHA1 SHA_CTX
 #define CRYPTO_MD5 MD5_CTX
 #define CRYPTO_CERT X509
-#define CRYPTO_RKEY RSA
+#define CRYPTO_PUBLIC_KEY RSA
 
 #else /* built-in crypto */
 
@@ -58,7 +58,7 @@
 #define CRYPTO_SHA1 struct sha1_context
 #define CRYPTO_MD5 struct md5_context
 #define CRYPTO_CERT char
-#define CRYPTO_RKEY char
+#define CRYPTO_PUBLIC_KEY char
 
 #endif
 
@@ -88,16 +88,16 @@ CRYPTO_CERT *
 crypto_cert_read(uint8 * data, uint32 len);
 void
 crypto_cert_free(CRYPTO_CERT * cert);
-CRYPTO_RKEY *
-crypto_cert_to_rkey(CRYPTO_CERT * cert, uint32 * key_len);
+CRYPTO_PUBLIC_KEY *
+crypto_cert_get_public_key(CRYPTO_CERT * cert, uint32 * key_len);
 RD_BOOL
 crypto_cert_verify(CRYPTO_CERT * server_cert, CRYPTO_CERT * cacert);
 int
 crypto_cert_print_fp(FILE * fp, CRYPTO_CERT * cert);
 
 void
-crypto_rkey_free(CRYPTO_RKEY * rkey);
+crypto_public_key_free(CRYPTO_PUBLIC_KEY * rkey);
 int
-crypto_rkey_get_exp_mod(CRYPTO_RKEY * rkey, uint8 * exponent, uint32 max_exp_len, uint8 * modulus, uint32 max_mod_len);
+crypto_public_key_get_exp_mod(CRYPTO_PUBLIC_KEY * rkey, uint8 * exponent, uint32 max_exp_len, uint8 * modulus, uint32 max_mod_len);
 
 #endif // __CRYPTO_H

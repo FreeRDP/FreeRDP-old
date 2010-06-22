@@ -547,7 +547,7 @@ sec_parse_crypt_info(rdpSec * sec, STREAM s, uint32 * rc4_key_size, uint8 ** ser
 	uint32 crypt_level, random_len, rsa_info_len;
 	uint32 cacert_len, cert_len, flags;
 	CRYPTO_CERT *cacert, *server_cert;
-	CRYPTO_RKEY *server_public_key;
+	CRYPTO_PUBLIC_KEY *server_public_key;
 	uint16 tag, length;
 	uint8 *next_tag, *end;
 
@@ -676,7 +676,7 @@ sec_parse_crypt_info(rdpSec * sec, STREAM s, uint32 * rc4_key_size, uint8 ** ser
 		}
 		crypto_cert_free(cacert);
 		in_uint8s(s, 16);	/* Padding */
-		server_public_key = crypto_cert_to_rkey(server_cert, &(sec->server_public_key_len));
+		server_public_key = crypto_cert_get_public_key(server_cert, &(sec->server_public_key_len));
 		if (NULL == server_public_key)
 		{
 			DEBUG_RDP5("Didn't parse X509 correctly\n");
@@ -689,17 +689,17 @@ sec_parse_crypt_info(rdpSec * sec, STREAM s, uint32 * rc4_key_size, uint8 ** ser
 		{
 			ui_error(sec->rdp->inst, "Bad server public key size (%u bits)\n",
 			         sec->server_public_key_len * 8);
-			crypto_rkey_free(server_public_key);
+			crypto_public_key_free(server_public_key);
 			return False;
 		}
-		if (crypto_rkey_get_exp_mod(server_public_key, exponent, SEC_EXPONENT_SIZE,
+		if (crypto_public_key_get_exp_mod(server_public_key, exponent, SEC_EXPONENT_SIZE,
 					 modulus, SEC_MAX_MODULUS_SIZE) != 0)
 		{
 			ui_error(sec->rdp->inst, "Problem extracting RSA exponent, modulus");
-			crypto_rkey_free(server_public_key);
+			crypto_public_key_free(server_public_key);
 			return False;
 		}
-		crypto_rkey_free(server_public_key);
+		crypto_public_key_free(server_public_key);
 		return True;	/* There's some garbage here we don't care about */
 	}
 	return s_check_end(s);
