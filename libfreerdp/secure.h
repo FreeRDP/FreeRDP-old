@@ -41,7 +41,6 @@ struct rdp_sec
 	uint8 sec_decrypt_update_key[16];
 	uint8 sec_encrypt_update_key[16];
 	uint8 sec_crypted_random[SEC_MAX_MODULUS_SIZE];
-	uint16 server_rdp_version;
 	/* These values must be available to reset state - Session Directory */
 	int sec_encrypt_use_count;
 	int sec_decrypt_use_count;
