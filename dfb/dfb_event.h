@@ -17,13 +17,13 @@ struct _PIXEL
 };
 typedef struct _PIXEL PIXEL;
 
-struct _BITMAP
+struct _BMP
 {
 	uint8 * data;
 	uint32 width;
 	uint32 height;
 };
-typedef struct _BITMAP BITMAP;
+typedef struct _BMP BMP;
 
 struct dfb_info
 {
