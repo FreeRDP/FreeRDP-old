@@ -19,51 +19,69 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "stdlib.h"
+#include <stdlib.h>
 #include "dfb_gdi.h"
 
 HDC GetDC()
 {
 	HDC hDC = (HDC) malloc(sizeof(DC));
-	return HDC;
+	return hDC;
 }
 
 HDC CreateCompatibleDC(HDC hdc)
 {
 	HDC hDC = (HDC) malloc(sizeof(DC));
+	hDC->bpp = hdc->bpp;
 	return hDC;
 }
 
-HBITMAP CreateBitmap(int nWidth, int nHeight, int cBitsPerPixel, void* data)
+HBITMAP CreateBitmap(int nWidth, int nHeight, int cBitsPerPixel, unsigned char* data)
 {
 	HBITMAP hBitmap = (HBITMAP) malloc(sizeof(BITMAP));
-	return hPen;
+	hBitmap->objectType = GDIOBJ_BITMAP;
+	hBitmap->bpp = cBitsPerPixel;
+	hBitmap->width = nWidth;
+	hBitmap->height = nHeight;
+	hBitmap->data = (unsigned char*) data;
+	return hBitmap;
+}
+
+HBITMAP CreateCompatibleBitmap(HDC hdc, int nWidth, int nHeight)
+{
+	HBITMAP hBitmap = (HBITMAP) malloc(sizeof(BITMAP));
+	hBitmap->objectType = GDIOBJ_BITMAP;
+	hBitmap->width = nWidth;
+	hBitmap->height = nHeight;
+	return hBitmap;
 }
 
 HPEN CreatePen(int fnPenStyle, int nWidth, int crColor)
 {
 	HPEN hPen = (HPEN) malloc(sizeof(PEN));
+	hPen->objectType = GDIOBJ_PEN;
 	return hPen;
 }
 
 HBRUSH CreateSolidBrush(int crColor)
 {
 	HBRUSH hBrush = (HBRUSH) malloc(sizeof(BRUSH));
+	hBrush->objectType = GDIOBJ_BRUSH;
 	return hBrush;
 }
 
 HBRUSH CreatePatternBrush(HBITMAP hbmp)
 {
 	HBRUSH hBrush = (HBRUSH) malloc(sizeof(BRUSH));
+	hBrush->objectType = GDIOBJ_BRUSH;
 	return hBrush;
 }
 
-int SetRect(HRECT rc, int xLeft, int xTop, int xRight, int yBottom)
+int SetRect(HRECT rc, int xLeft, int yTop, int xRight, int yBottom)
 {
 	rc->left = xLeft;
-	rc->top = xTop;
+	rc->top = yTop;
 	rc->right = xRight;
-	rc->bottom = xBottom;
+	rc->bottom = yBottom;
 	return 1;
 }
 
@@ -109,6 +127,70 @@ int PatBlt(HDC hdc, int nXLeft, int nXYLeft, int nWidth, int nHeight, int rop)
 int BitBlt(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, int hdcSrc, int nXSrc, int nYSrc, int rop)
 {
 	return 1; /* 0 = failure */
+}
+
+int SelectObject(HDC hdc, HGDIOBJ hgdiobj)
+{
+	if (hgdiobj->objectType == GDIOBJ_BITMAP)
+	{
+		//HBITMAP hBitmap = (HBITMAP) hgdiobj;
+		hdc->selectedObject = hgdiobj;
+	}
+	else if (hgdiobj->objectType == GDIOBJ_PEN)
+	{
+		//HPEN hPen = (HPEN) hgdiobj;
+		hdc->selectedObject = hgdiobj;
+	}
+	else if (hgdiobj->objectType == GDIOBJ_BRUSH)
+	{
+		//HBRUSH hBrush = (HBRUSH) hgdiobj;
+		hdc->selectedObject = hgdiobj;
+	}
+	else if (hgdiobj->objectType == GDIOBJ_RECT)
+	{
+		//HRECT hRect = (HRECT) hgdiobj;
+		hdc->selectedObject = hgdiobj;
+	}
+	else
+	{
+		/* Unknown GDI Object Type */
+		return 0;
+	}
+	
+	return 1;
+}
+
+int DeleteObject(HGDIOBJ hgdiobj)
+{
+	if (hgdiobj->objectType == GDIOBJ_BITMAP)
+	{
+		HBITMAP hBitmap = (HBITMAP) hgdiobj;
+		free(hBitmap->data);
+		free(hBitmap);
+	}
+	else if (hgdiobj->objectType == GDIOBJ_PEN)
+	{
+		HPEN hPen = (HPEN) hgdiobj;
+		free(hPen);
+	}
+	else if (hgdiobj->objectType == GDIOBJ_BRUSH)
+	{
+		HBRUSH hBrush = (HBRUSH) hgdiobj;
+		free(hBrush);
+	}
+	else if (hgdiobj->objectType == GDIOBJ_RECT)
+	{
+		HRECT hRect = (HRECT) hgdiobj;
+		free(hRect);
+	}
+	else
+	{
+		/* Unknown GDI Object Type */
+		free(hgdiobj);
+		return 0;
+	}
+	
+	return 1;
 }
 
 int DeleteDC(HDC hdc)

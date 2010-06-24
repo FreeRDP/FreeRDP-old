@@ -56,9 +56,6 @@ dfb_update_screen(dfbInfo * dfbi)
 	{
 		dfbi->primary->Blit(dfbi->primary, dfbi->screen_surface,
 	                    &(dfbi->update_rect), dfbi->update_rect.x, dfbi->update_rect.y);
-
-		//printf("updating screen x: %d y: %d w: %d h: %d\n",
-		//       dfbi->update_rect.x, dfbi->update_rect.y, dfbi->update_rect.w, dfbi->update_rect.h);
 		
 		dfbi->update_rect.x = 0;
 		dfbi->update_rect.y = 0;
@@ -97,13 +94,6 @@ dfb_invalidate_rect(dfbInfo * dfbi, int x1, int y1, int x2, int y2)
 		dfbi->update_rect.w = right - dfbi->update_rect.x;
 		dfbi->update_rect.h = bottom - dfbi->update_rect.y;
 	}
-
-	/*
-	dfbi->update_rect.x = 0;
-	dfbi->update_rect.y = 0;
-	dfbi->update_rect.w = dfbi->width;
-	dfbi->update_rect.h = dfbi->height;
-	*/
 }
 
 static char *
@@ -170,63 +160,43 @@ l_ui_desktop_restore(struct rdp_inst * inst, int offset, int x, int y, int cx, i
 
 static RD_HGLYPH
 l_ui_create_glyph(struct rdp_inst * inst, int width, int height, uint8 * data)
-{
-	dfbInfo * dfbi;
-	BMP * glyph;
-	dfbi = GET_DFBI(inst);
-
-	glyph = malloc(sizeof(BMP));
-	glyph->data = dfb_image_convert(dfbi, inst->settings, width, height, data);
-	glyph->width = width;
-	glyph->height = height;
-	
-	return (RD_HGLYPH) glyph;
+{	
+	return (RD_HGLYPH) NULL;
 }
 
 static void
 l_ui_destroy_glyph(struct rdp_inst * inst, RD_HGLYPH glyph)
 {
-	BMP * g = (BMP *) glyph;
 
-	if (g != NULL)
-	{
-		if (g->data != NULL)
-			free(g->data);
-		free(g);
-	}
 }
 
 static RD_HBITMAP
 l_ui_create_bitmap(struct rdp_inst * inst, int width, int height, uint8 * data)
 {
-	BMP * bmp;
+	HBITMAP bitmap;
 	dfbInfo * dfbi;
 	dfbi = GET_DFBI(inst);
 
-	bmp = (BMP*) malloc(sizeof(BMP));
-	bmp->data = dfb_image_convert(dfbi, inst->settings, width, height, data);
-	bmp->width = width;
-	bmp->height = height;
-
-	return (RD_HBITMAP) bmp;
+	bitmap = CreateBitmap(width, height, dfbi->bpp, dfb_image_convert(dfbi, inst->settings, width, height, data));
+	return (RD_HBITMAP) bitmap;
 }
 
 static void
 l_ui_paint_bitmap(struct rdp_inst * inst, int x, int y, int cx, int cy, int width, int height, uint8 * data)
 {
-	BMP* bmp;
+	HBITMAP bitmap;
 	dfbInfo * dfbi;
 	dfbi = GET_DFBI(inst);
 
-	bmp = (BMP*) inst->ui_create_bitmap(inst, width, height, data);
-	inst->ui_memblt(inst, 12, x, y, cx, cy, (RD_HBITMAP) bmp, 0, 0);
+	bitmap = (HBITMAP) inst->ui_create_bitmap(inst, width, height, data);
+	inst->ui_memblt(inst, 12, x, y, cx, cy, (RD_HBITMAP) bitmap, 0, 0);
 }
 
 static void
 l_ui_destroy_bitmap(struct rdp_inst * inst, RD_HBITMAP bmp)
 {
-	BMP * bitmap = (BMP *) bmp;
-
+	HBITMAP bitmap = (HBITMAP) bmp;
+	
 	if (bitmap != NULL)
 	{
 		if (bitmap->data != NULL)
@@ -282,8 +252,7 @@ l_ui_start_draw_glyphs(struct rdp_inst * inst, int bgcolour, int fgcolour)
 static void
 l_ui_draw_glyph(struct rdp_inst * inst, int x, int y, int cx, int cy, RD_HGLYPH glyph)
 {
-	//BMP * bmp = (BMP *) glyph;
-	//inst->ui_paint_bitmap(inst, x, y, cx, cy, bmp->width, bmp->height, bmp->data);
+
 }
 
 static void
@@ -358,12 +327,12 @@ l_ui_memblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy, 
 	int i;
 	char * dst;
 	char * srcp;
-	BMP * bmp;
+	HBITMAP bitmap;
 	dfbInfo * dfbi;
 	dfbi = GET_DFBI(inst);
 
-	bmp = (BMP*) src;
-	srcp = (char *) (((unsigned int *) bmp->data) + srcy * bmp->width + srcx);
+	bitmap = (HBITMAP) src;
+	srcp = (char *) (((unsigned int *) bitmap->data) + srcy * bitmap->width + srcx);
 	
 	if (opcode == 0xC) /* ??? */
 	{
@@ -373,7 +342,7 @@ l_ui_memblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy, 
 			if (dst != 0)
 			{
 				dfb_copy_mem(dst, srcp, cx * dfbi->bytes_per_pixel);
-				srcp += bmp->width * dfbi->bytes_per_pixel;
+				srcp += bitmap->width * dfbi->bytes_per_pixel;
 			}
 		}
 
@@ -388,7 +357,7 @@ l_ui_memblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy, 
 			if (dst != 0)
 			{
 				dfb_copy_mem(dst, srcp, cx * dfbi->bytes_per_pixel);
-				srcp += bmp->width * dfbi->bytes_per_pixel;
+				srcp += bitmap->width * dfbi->bytes_per_pixel;
 			}
 		}
 
@@ -403,7 +372,7 @@ l_ui_memblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy, 
 			if (dst != 0)
 			{
 				dfb_copy_mem(dst, srcp, cx * dfbi->bytes_per_pixel);
-				srcp += bmp->width * dfbi->bytes_per_pixel;
+				srcp += bitmap->width * dfbi->bytes_per_pixel;
 			}
 		}
 
@@ -418,7 +387,7 @@ l_ui_memblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy, 
 			if (dst != 0)
 			{
 				dfb_copy_mem(dst, srcp, cx * dfbi->bytes_per_pixel);
-				srcp += bmp->width * dfbi->bytes_per_pixel;
+				srcp += bitmap->width * dfbi->bytes_per_pixel;
 			}
 		}
 

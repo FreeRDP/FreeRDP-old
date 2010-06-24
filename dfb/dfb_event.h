@@ -17,14 +17,6 @@ struct _PIXEL
 };
 typedef struct _PIXEL PIXEL;
 
-struct _BMP
-{
-	uint8 * data;
-	uint32 width;
-	uint32 height;
-};
-typedef struct _BMP BMP;
-
 struct dfb_info
 {
 	int bpp;

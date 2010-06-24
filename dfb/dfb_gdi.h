@@ -78,15 +78,38 @@
 #define PS_DASH			0x01
 #define PS_NULL			0x05
 
+/* GDI Object Types */
+#define GDIOBJ_BITMAP		0x00
+#define GDIOBJ_PEN		0x01
+#define GDIOBJ_BRUSH		0x02
+#define GDIOBJ_RECT		0x03
+
+struct _GDIOBJ
+{
+	unsigned char objectType;
+};
+typedef struct _GDIOBJ GDIOBJ;
+typedef GDIOBJ* HGDIOBJ;
+
+/* RGB encoded as 0x00BBGGRR */
+typedef unsigned int COLORREF;
+typedef COLORREF* LPCOLORREF;
+
+#define RGB(_red, _green, _blue) \
+  (_red << 16) | (_green << 8) | _blue;
+
 struct _DC
 {
-	unsigned int bkColor;
+	HGDIOBJ selectedObject;
+	unsigned char* data;
+	unsigned int bpp;
 };
 typedef struct _DC DC;
 typedef DC* HDC;
 
 struct _RECT
 {
+	unsigned char objectType;
 	unsigned int left;
 	unsigned int top;
 	unsigned int right;
@@ -97,6 +120,7 @@ typedef RECT* HRECT;
 
 struct _PEN
 {
+	unsigned char objectType;
 	unsigned int style;
 	unsigned int width;
 };
@@ -105,6 +129,7 @@ typedef PEN* HPEN;
 
 struct _BRUSH
 {
+	unsigned char objectType;
 	unsigned int style;
 };
 typedef struct _BRUSH BRUSH;
@@ -112,20 +137,23 @@ typedef BRUSH* HBRUSH;
 
 struct _BITMAP
 {
+	unsigned char objectType;
+	unsigned char* data;
 	unsigned int width;
 	unsigned int height;
-	unsigned int bitsPerPixel;
+	unsigned int bpp;
 };
 typedef struct _BITMAP BITMAP;
 typedef BITMAP* HBITMAP;
 
 HDC GetDC();
 HDC CreateCompatibleDC(HDC hdc);
-HBITMAP CreateBitmap(int nWidth, int nHeight, int cBitsPerPixel, void* data);
+HBITMAP CreateBitmap(int nWidth, int nHeight, int cBitsPerPixel, unsigned char* data);
+HBITMAP CreateCompatibleBitmap(HDC hdc, int nWidth, int nHeight);
 HPEN CreatePen(int fnPenStyle, int nWidth, int crColor);
 HBRUSH CreateSolidBrush(int crColor);
 HBRUSH CreatePatternBrush(HBITMAP hbmp);
-int SetRect(HRECT rc, int xLeft, int xTop, int xRight, int yBottom);
+int SetRect(HRECT rc, int xLeft, int yTop, int xRight, int yBottom);
 int CopyRect(HRECT dst, HRECT src);
 int FillRect(HDC hdc, HRECT rect, HBRUSH hbr);
 int GetPixel(HDC hdc, int nXPos, int nYPos);
