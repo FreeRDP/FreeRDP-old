@@ -4,6 +4,7 @@
 
 #include <directfb.h>
 #include <freerdp/freerdp.h>
+#include "dfb_gdi.h"
 
 #define SET_DFBI(_inst, _dfbi) (_inst)->param1 = _dfbi
 #define GET_DFBI(_inst) ((dfbInfo *) ((_inst)->param1))
@@ -41,6 +42,7 @@ struct dfb_info
 	PIXEL bgcolour;
 	PIXEL fgcolour;
 	PIXEL pixel;
+	HDC hdc;
 };
 typedef struct dfb_info dfbInfo;
 

@@ -35,7 +35,7 @@ HDC CreateCompatibleDC(HDC hdc)
 	return hDC;
 }
 
-HBITMAP CreateBitmap(int nWidth, int nHeight, int cBitsPerPixel, unsigned char* data)
+HBITMAP CreateBitmap(int nWidth, int nHeight, int cBitsPerPixel, char* data)
 {
 	HBITMAP hBitmap = (HBITMAP) malloc(sizeof(BITMAP));
 	hBitmap->objectType = GDIOBJ_BITMAP;

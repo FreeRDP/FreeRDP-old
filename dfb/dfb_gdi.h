@@ -101,7 +101,6 @@ typedef COLORREF* LPCOLORREF;
 struct _DC
 {
 	HGDIOBJ selectedObject;
-	unsigned char* data;
 	unsigned int bpp;
 };
 typedef struct _DC DC;
@@ -138,17 +137,17 @@ typedef BRUSH* HBRUSH;
 struct _BITMAP
 {
 	unsigned char objectType;
-	unsigned char* data;
 	unsigned int width;
 	unsigned int height;
 	unsigned int bpp;
+	char* data;
 };
 typedef struct _BITMAP BITMAP;
 typedef BITMAP* HBITMAP;
 
 HDC GetDC();
 HDC CreateCompatibleDC(HDC hdc);
-HBITMAP CreateBitmap(int nWidth, int nHeight, int cBitsPerPixel, unsigned char* data);
+HBITMAP CreateBitmap(int nWidth, int nHeight, int cBitsPerPixel, char* data);
 HBITMAP CreateCompatibleBitmap(HDC hdc, int nWidth, int nHeight);
 HPEN CreatePen(int fnPenStyle, int nWidth, int crColor);
 HBRUSH CreateSolidBrush(int crColor);
@@ -162,6 +161,8 @@ int GetBkColor(HDC hdc);
 int SetBkColor(HDC hdc, int crColor);
 int PatBlt(HDC hdc, int nXLeft, int nXYLeft, int nWidth, int nHeight, int rop);
 int BitBlt(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, int hdcSrc, int nXSrc, int nYSrc, int rop);
+int SelectObject(HDC hdc, HGDIOBJ hgdiobj);
+int DeleteObject(HGDIOBJ hgdiobj);
 int DeleteDC(HDC hdc);
 
 #endif /* __DFB_GDI_H */

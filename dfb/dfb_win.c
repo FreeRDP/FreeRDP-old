@@ -177,7 +177,7 @@ l_ui_create_bitmap(struct rdp_inst * inst, int width, int height, uint8 * data)
 	dfbInfo * dfbi;
 	dfbi = GET_DFBI(inst);
 
-	bitmap = CreateBitmap(width, height, dfbi->bpp, dfb_image_convert(dfbi, inst->settings, width, height, data));
+	bitmap = CreateBitmap(width, height, dfbi->bpp, dfb_image_convert(dfbi, inst->settings, width, height, (char*) data));
 	return (RD_HBITMAP) bitmap;
 }
 
@@ -195,14 +195,7 @@ l_ui_paint_bitmap(struct rdp_inst * inst, int x, int y, int cx, int cy, int widt
 static void
 l_ui_destroy_bitmap(struct rdp_inst * inst, RD_HBITMAP bmp)
 {
-	HBITMAP bitmap = (HBITMAP) bmp;
-	
-	if (bitmap != NULL)
-	{
-		if (bitmap->data != NULL)
-			free(bitmap->data);
-		free(bitmap);
-	}
+	DeleteObject((HGDIOBJ) bmp);
 }
 
 static void
@@ -629,6 +622,12 @@ dfb_post_connect(rdpInst * inst)
 	dfbi->dsc.preallocated[0].data = dfbi->screen;
 	dfbi->dsc.preallocated[0].pitch = dfbi->width * dfbi->bytes_per_pixel;
 	dfbi->dfb->CreateSurface(dfbi->dfb, &(dfbi->dsc), &(dfbi->screen_surface));
+
+	dfbi->hdc = GetDC();
+	dfbi->hdc->bpp = dfbi->bpp;
+
+	HBITMAP hScreen = CreateBitmap(inst->settings->width, inst->settings->height, dfbi->bpp, (char*) dfbi->screen);
+	SelectObject(dfbi->hdc, (HGDIOBJ) hScreen);
 	
 	return 0;
 }
