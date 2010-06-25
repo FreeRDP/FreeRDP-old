@@ -930,7 +930,8 @@ keyboardLayoutVariant keyboardLayoutVariants[] =
 	{ KBD_UNITED_STATES_DVORAK_FOR_RIGHT_HAND,	0x001B, "United States-Dvorak for right hand" },
 	{ KBD_GREEK_LATIN,				0x0019, "Greek Latin" },
 	{ KBD_US_ENGLISH_TABLE_FOR_IBM_ARABIC_238_L,	0x000B, "US English Table for IBM Arabic 238_L" },
-	{ KBD_GREEK_POLYTONIC,				0x001F, "Greek Polytonic" }
+	{ KBD_GREEK_POLYTONIC,				0x001F, "Greek Polytonic" },
+	{ KBD_GERMAN_NEO,				0x00C0, "German Neo" }
 };
 
 
