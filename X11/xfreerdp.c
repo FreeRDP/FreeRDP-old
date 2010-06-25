@@ -67,6 +67,7 @@ set_default_params(xfInfo * xfi)
 	return 0;
 }
 
+/* Returns "true" on errors or other reasons to not continue normal operation */
 static int
 process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 {
@@ -338,7 +339,7 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 			printf(help);
 			exit(0);
 		}
-		else
+		else if (argv[*pindex][0] != '-')
 		{
 			settings->server[sizeof(settings->server) - 1] = 0;
 			if (argv[*pindex][0] == '[' && (p = strchr(argv[*pindex], ']'))
@@ -367,6 +368,11 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 			   followed will be parsed for the next session. */
 			*pindex = *pindex + 1;
 			return 0;
+		}
+		else
+		{
+			printf("invalid option: %s\n", argv[*pindex]);
+			return 1;
 		}
 		*pindex = *pindex + 1;
 	}
