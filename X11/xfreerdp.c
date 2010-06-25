@@ -169,7 +169,7 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 				printf("0x%08X\t%s\n", layouts[i].code, layouts[i].name);
 			free(layouts);
 
-			exit(0);
+			return 1;
 		}
 		else if (strcmp("-s", argv[*pindex]) == 0)
 		{
@@ -337,7 +337,7 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 				"\n";
 
 			printf(help);
-			exit(0);
+			return 1;
 		}
 		else if (argv[*pindex][0] != '-')
 		{
@@ -563,22 +563,19 @@ main(int argc, char ** argv)
 		xfi->settings = (rdpSet *) malloc(sizeof(rdpSet));
 		xfi->chan_man = freerdp_chanman_new();
 		rv = process_params(xfi, argc, argv, &index);
-		xf_kb_init(xfi->keyboard_layout_id);
-
-		if (rv == 0)
-		{
-			g_thread_count++;
-			printf("starting thread %d to %s:%d\n", g_thread_count,
-				xfi->settings->server, xfi->settings->tcp_port_rdp);
-			pthread_create(&thread, 0, thread_func, xfi);
-		}
-		else
+		if (rv)
 		{
 			free(xfi->settings);
 			freerdp_chanman_free(xfi->chan_man);
 			free(xfi);
 			break;
 		}
+
+		xf_kb_init(xfi->keyboard_layout_id);
+		g_thread_count++;
+		printf("starting thread %d to %s:%d\n", g_thread_count,
+			xfi->settings->server, xfi->settings->tcp_port_rdp);
+		pthread_create(&thread, 0, thread_func, xfi);
 	}
 
 	while (g_thread_count > 0)
