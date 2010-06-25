@@ -536,7 +536,7 @@ sec_parse_public_sig(STREAM s, uint32 len)
 	 * That is completely nonsense, so we won't bother checking it. */
 
 	in_uint8s(s, len);
-	
+
 	return len == 72;
 }
 
@@ -594,49 +594,44 @@ sec_parse_server_security_data(rdpSec * sec, STREAM s, uint32 * encryptionMethod
 	}
 	else if (certChainVersion == 2)	 /* X.509 */
 	{
-		uint32 certcount;
+		uint32 cert_total_count, cert_counter;
 		uint32 license_cert_len, ts_cert_len;
 		CRYPTO_CERT *license_cert, *ts_cert;
 		CRYPTO_PUBLIC_KEY *server_public_key;
 
 		DEBUG_RDP5("We're going for a X.509 Certificate (TS license)\n");
-		in_uint32_le(s, certcount);	/* Number of certificates */
-		if (certcount < 2)
+		in_uint32_le(s, cert_total_count);	/* Number of certificates */
+		DEBUG_RDP5("Cert chain length: %d\n", cert_total_count);
+		if (cert_total_count < 2)
 		{
 			ui_error(sec->rdp->inst, "Server didn't send enough X509 certificates\n");
 			return False;
 		}
 		/* X.509 Certificate Chain: */
-		for (; certcount > 2; certcount--) /* Only the 2 last certificates are _really_ interesting */
+		/* Only the 2 last certificates in chain are _really_ interesting */
+		for (cert_counter=0; cert_counter < cert_total_count - 2; cert_counter++)
 		{
 			uint32 ignorelen;
 			CRYPTO_CERT *ignorecert;
 
-			DEBUG_RDP5("Ignored certs left: %d\n", certcount);
+			DEBUG_RDP5("Ignoring cert: %d\n", cert_counter);
 			in_uint32_le(s, ignorelen);
 			DEBUG_RDP5("Ignored Certificate length is %d\n", ignorelen);
 			ignorecert = crypto_cert_read(s->p, ignorelen);
 			in_uint8s(s, ignorelen);
 			if (ignorecert == NULL)
-			{	/* XXX: error out? */
-				DEBUG_RDP5("got a bad cert: this will probably screw up the rest of the communication\n");
+			{
+				ui_error(sec->rdp->inst, "Couldn't read certificate %d from server certificate chain\n", cert_counter);
+				return False;
 			}
 
 #ifdef WITH_DEBUG_RDP5
-			DEBUG_RDP5("cert #%d (ignored):\n", certcount);
+			DEBUG_RDP5("cert #%d (ignored):\n", cert_counter);
 			crypto_cert_print_fp(stdout, ignorecert);
 #endif
 			/* TODO: Verify the certificate chain all the way from CA root to prevent MITM attacks */
 			crypto_cert_free(ignorecert);
 		}
-		/* Do da funky X.509 stuffy
-
-		   "How did I find out about this?  I looked up and saw a
-		   bright light and when I came to I had a scar on my forehead
-		   and knew about X.500"
-		   - Peter Gutman in a early version of
-		   http://www.cs.auckland.ac.nz/~pgut001/pubs/x509guide.txt
-		 */
 		/* The second to last certificate is the license server */
 		in_uint32_le(s, license_cert_len);
 		DEBUG_RDP5("License Server Certificate length is %d\n", license_cert_len);
@@ -647,6 +642,9 @@ sec_parse_server_security_data(rdpSec * sec, STREAM s, uint32 * encryptionMethod
 			ui_error(sec->rdp->inst, "Couldn't load License Server Certificate from server\n");
 			return False;
 		}
+#ifdef WITH_DEBUG_RDP5
+		crypto_cert_print_fp(stdout, license_cert);
+#endif
 		/* The last certificate is the Terminal Server */
 		in_uint32_le(s, ts_cert_len);
 		DEBUG_RDP5("TS Certificate length is %d\n", ts_cert_len);
@@ -658,6 +656,9 @@ sec_parse_server_security_data(rdpSec * sec, STREAM s, uint32 * encryptionMethod
 			ui_error(sec->rdp->inst, "Couldn't load TS Certificate from server\n");
 			return False;
 		}
+#ifdef WITH_DEBUG_RDP5
+		crypto_cert_print_fp(stdout, ts_cert);
+#endif
 		if (!crypto_cert_verify(ts_cert, license_cert))
 		{
 			crypto_cert_free(ts_cert);
@@ -691,7 +692,7 @@ sec_parse_server_security_data(rdpSec * sec, STREAM s, uint32 * encryptionMethod
 			return False;
 		}
 		crypto_public_key_free(server_public_key);
-		in_uint8s(s, 8 + 4 * certcount); /* Padding */
+		in_uint8s(s, 8 + 4 * cert_total_count); /* Padding */
 	}
 	else
 	{
@@ -800,7 +801,7 @@ sec_process_mcs_data(rdpSec * sec, STREAM s)
 	}
 	sec_process_server_core_data(sec, s, length);
 	if(s->p != next_tag)
-		ui_error(sec->rdp->inst, "lost track a\n");
+		ui_error(sec->rdp->inst, "Server Core Data length error\n");
 
 	/* Server Network Data structure with User Data Header */
 	in_uint16_le(s, type);
@@ -813,7 +814,7 @@ sec_process_mcs_data(rdpSec * sec, STREAM s)
 	}
 	sec_process_server_network_data(sec, s);
 	if(s->p != next_tag)
-		ui_error(sec->rdp->inst, "lost track c\n");
+		ui_error(sec->rdp->inst, "Server Network Data length error\n");
 
 	/* Server Security Data structure with User Data Header */
 	in_uint16_le(s, type);
@@ -826,7 +827,7 @@ sec_process_mcs_data(rdpSec * sec, STREAM s)
 	}
 	sec_process_server_security_data(sec, s);
 	if(s->p != next_tag)
-		ui_error(sec->rdp->inst, "lost track b\n");
+		ui_error(sec->rdp->inst, "Server Security Data length error\n");
 }
 
 /* Receive secure transport packet */
