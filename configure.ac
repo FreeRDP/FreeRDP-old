@@ -75,7 +75,16 @@ AC_ARG_WITH([crypto],
 disable_tls=yes
 case $with_crypto in
 	openssl)
-		PKG_CHECK_MODULES(CRYPTO, [openssl >= 0.9.8a])
+		PKG_CHECK_MODULES(CRYPTO, [openssl >= 0.9.8a], [], [
+			# For systems like FreeBSD, openssl.pc is not installed. Detect it directly in a more common way
+			AC_CHECK_LIB(crypto, [CRYPTO_new_ex_data], [], [AC_MSG_ERROR([library 'crypto' is required for OpenSSL])])
+			AC_CHECK_LIB(ssl, [SSL_library_init], [], [AC_MSG_ERROR([library 'ssl' is required for OpenSSL])])
+			AC_CHECK_HEADER(openssl/ssl.h, [], [AC_MSG_ERROR(OpenSSL development header not found)])
+			CRYPTO_LIBS="-lssl -lcrypto"
+			CRYPTO_CFLAGS=
+			AC_SUBST(CRYPTO_LIBS)
+			AC_SUBST(CRYPTO_CFLAGS)
+		])
 		disable_tls=no
 		;;
 
@@ -86,6 +95,8 @@ case $with_crypto in
 		AC_CHECK_HEADER(polarssl/ssl.h,
 			[CRYPTO_CFLAGS=],
 			[AC_MSG_ERROR(PolarSSL development header not found)])
+		AC_SUBST(CRYPTO_LIBS)
+		AC_SUBST(CRYPTO_CFLAGS)
 		disable_tls=no
 		;;
 
