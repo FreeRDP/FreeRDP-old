@@ -307,7 +307,7 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 			}
 			freerdp_chanman_load_plugin(xfi->chan_man, settings, argv[index], plugin_data);
 		}
-		else if (strcmp("-h", argv[*pindex]) == 0)
+		else if ((strcmp("-h", argv[*pindex]) == 0) || strcmp("--help", argv[*pindex]) == 0)
 		{
 			char help[] =
 				"\n"
@@ -341,7 +341,7 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 		else
 		{
 			settings->server[sizeof(settings->server) - 1] = 0;
-			if (argv[*pindex][0] == '[' && (p = strchr(argv[*pindex], ']')) 
+			if (argv[*pindex][0] == '[' && (p = strchr(argv[*pindex], ']'))
 				&& (p[1] == 0 || (p[1] == ':' && !strchr(p + 2, ':'))))
 			{
 				/* Either "[...]" or "[...]:..." with at most one : after the brackets */
@@ -558,7 +558,7 @@ main(int argc, char ** argv)
 		xfi->chan_man = freerdp_chanman_new();
 		rv = process_params(xfi, argc, argv, &index);
 		xf_kb_init(xfi->keyboard_layout_id);
-		
+
 		if (rv == 0)
 		{
 			g_thread_count++;
