@@ -967,9 +967,11 @@ EXTRA_SUBDIRS=""
 #
 # X11
 #
+AM_CONDITIONAL(WITH_X11, true)
 AC_PATH_XTRA
 if test "$no_x" = "yes"; then
 	x11="no"
+	AM_CONDITIONAL(WITH_X11, false)
 else
 	AC_CHECK_LIB(X11, XOpenDisplay, [X_LIBS="$X_LIBS -lX11"])
 	PKG_CHECK_MODULES(XCURSOR, [xcursor])
