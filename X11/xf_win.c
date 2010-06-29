@@ -1050,7 +1050,13 @@ xf_post_connect(xfInfo * xfi)
 		XFree(sizehints);
 	}
 
-	XStoreName(xfi->display, xfi->wnd, "freerdp");
+	char win_title[64];
+	if (xfi->settings->tcp_port_rdp == 3389)
+		snprintf(win_title, sizeof(win_title), "%s - freerdp", xfi->settings->server);
+	else
+		snprintf(win_title, sizeof(win_title), "%s:%d - freerdp", xfi->settings->server, xfi->settings->tcp_port_rdp);
+	XStoreName(xfi->display, xfi->wnd, win_title);
+
 	input_mask =
 		KeyPressMask | KeyReleaseMask | ButtonPressMask | ButtonReleaseMask |
 		VisibilityChangeMask | FocusChangeMask | StructureNotifyMask |
