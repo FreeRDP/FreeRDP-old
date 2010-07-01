@@ -23,36 +23,48 @@
 #include "rdp.h"
 #include "rdpset.h"
 #include "secure.h"
+#include "mem.h"
 #include "rail.h"
 
 void
 rdp_out_rail_pdu_header(STREAM s, uint16 orderType, uint16 orderLength)
 {
-        out_uint16_le(s, orderType); // orderType
-        out_uint16_le(s, orderLength); // orderLength
+	out_uint16_le(s, orderType); // orderType
+	out_uint16_le(s, orderLength); // orderLength
 }
 
 void
 rdp_send_client_execute_pdu(rdpRdp * rdp)
 {
-        STREAM s;
+	STREAM s;
 
-        /* Still lacking proper packet initialization */
+	/* Still lacking proper packet initialization */
 	s = NULL;
 
-        rdp_out_rail_pdu_header(s, RDP_RAIL_ORDER_EXEC, 12);
+	rdp_out_rail_pdu_header(s, RDP_RAIL_ORDER_EXEC, 12);
 
-        out_uint16_le(s,
-                RAIL_EXEC_FLAG_EXPAND_WORKINGDIRECTORY |
-                RAIL_EXEC_FLAG_EXPAND_ARGUMENTS); // flags
-        out_uint16_le(s, 2 * strlen(rdp->app->application_name)); // ExeOrFileLength
-        out_uint16_le(s, 2 * strlen(rdp->app->working_directory)); // WorkingDirLength
-        out_uint16_le(s, 2 * strlen(rdp->app->arguments)); // ArgumentsLength
-        rdp_out_unistr(rdp, s, rdp->app->application_name); // ExeOrFile
-        rdp_out_unistr(rdp, s, rdp->app->working_directory); // WorkingDir
-        rdp_out_unistr(rdp, s, rdp->app->arguments); // Arguments
+	size_t application_name_len, working_directory_len, arguments_len;
+	char * application_name = xstrdup_out_unistr(rdp,
+			rdp->app->application_name, &application_name_len);
+	char * working_directory = xstrdup_out_unistr(rdp,
+			rdp->app->working_directory, &working_directory_len);
+	char * arguments = xstrdup_out_unistr(rdp,
+			rdp->app->arguments, &arguments_len);
 
-        s_mark_end(s);
+	out_uint16_le(s,
+			RAIL_EXEC_FLAG_EXPAND_WORKINGDIRECTORY |
+			RAIL_EXEC_FLAG_EXPAND_ARGUMENTS); // flags
+	out_uint16_le(s, application_name_len); // ExeOrFileLength
+	out_uint16_le(s, working_directory_len); // WorkingDirLength
+	out_uint16_le(s, arguments_len); // ArgumentsLength
+	out_uint8a(s, application_name, application_name_len + 2); // ExeOrFile
+	out_uint8a(s, working_directory, working_directory_len + 2); // WorkingDir
+	out_uint8a(s, arguments, arguments_len + 2); // Arguments
+
+	xfree(application_name);
+	xfree(working_directory);
+	xfree(arguments);
+
+	s_mark_end(s);
 	sec_send(rdp->sec, s, rdp->settings->encryption ? SEC_ENCRYPT : 0);
 }
-

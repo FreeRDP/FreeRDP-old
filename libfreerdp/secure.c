@@ -366,8 +366,9 @@ sec_out_connectdata(rdpSec * sec, STREAM s)
 {
 	int i;
 	rdpSet * settings = sec->rdp->settings;
-	int out_len;
 	int length = 158 + 76 + 12 + 4;
+	char * p;
+	size_t len;
 
 	if (settings->num_channels > 0)
 		length += settings->num_channels * 12 + 8;
@@ -395,47 +396,47 @@ sec_out_connectdata(rdpSec * sec, STREAM s)
 	out_uint16_le(s, UDH_CS_CORE);	/* User Data Header type */
 	out_uint16_le(s, 212);	/* total length */
 
-	out_uint32_le(s, sec->rdp->settings->rdp_version >= 5 ? 0x00080004 : 0x00080001);	/* client version */
-	out_uint16_le(s, sec->rdp->settings->width);	// desktopWidth
-	out_uint16_le(s, sec->rdp->settings->height);	// desktopHeight
+	out_uint32_le(s, settings->rdp_version >= 5 ? 0x00080004 : 0x00080001);	/* client version */
+	out_uint16_le(s, settings->width);	// desktopWidth
+	out_uint16_le(s, settings->height);	// desktopHeight
 	out_uint16_le(s, RNS_UD_COLOR_8BPP);	// colorDepth - ignored because of postBeta2ColorDepth
 	out_uint16_le(s, RNS_UD_SAS_DEL); // SASSequence (Secure Access Sequence)
-	out_uint32_le(s, sec->rdp->settings->keyboard_layout); // keyboardLayout
+	out_uint32_le(s, settings->keyboard_layout); // keyboardLayout
 	out_uint32_le(s, 2600);	// clientBuild
 
 	/* Unicode name of client, truncated to 15 characters */
-	if (strlen(sec->rdp->settings->hostname) > 15)
+	p = xstrdup_out_unistr(sec->rdp, settings->hostname, &len);
+	if (len > 30)
 	{
-		sec->rdp->settings->hostname[15] = 0; /* Modified in-place! */
+		len = 30;
+		p[len] = 0;
+		p[len + 1] = 0;
 	}
-	out_len = rdp_out_unistr(sec->rdp, s, sec->rdp->settings->hostname);
-	out_uint8s(s, 30 - out_len);	/* pad to 32 bytes (double zero termination has already been added) */
+	out_uint8a(s, p, len + 2);
+	out_uint8s(s, 32 - len - 2);
+	xfree(p);
 
-	out_uint32_le(s, sec->rdp->settings->keyboard_type);	/* keyboardType */
-	out_uint32_le(s, sec->rdp->settings->keyboard_subtype);	/* keyboardSubType */
-	out_uint32_le(s, sec->rdp->settings->keyboard_functionkeys);	/* keyboardFunctionKey */
+	out_uint32_le(s, settings->keyboard_type);	/* keyboardType */
+	out_uint32_le(s, settings->keyboard_subtype);	/* keyboardSubType */
+	out_uint32_le(s, settings->keyboard_functionkeys);	/* keyboardFunctionKey */
 
 	/* Input Method Editor (IME) file name associated with the input locale.
 	   Up to 31 Unicode characters plus a NULL terminator */
 	// FIXME:
-	// if (strlen(sec->rdp->settings->keyboard_ime) > 31)
-	// 	sec->rdp->settings->keyboard_ime[31] = 0; /* Modified in-place! */
-	// out_len = rdp_out_unistr(sec->rdp, s, sec->rdp->settings->hostname);
-	// out_uint8s(s, 62 - out_len); /* pad to 64 bytes (double zero termination has already been added) */
 	out_uint8s(s, 64);	/* imeFileName */
 
 	out_uint16_le(s, RNS_UD_COLOR_8BPP); // postBeta2ColorDepth
 	out_uint16_le(s, 1); // clientProductID
 	out_uint32_le(s, 0); // serialNumber (should be initialized to 0)
 
-	i = MIN(sec->rdp->settings->server_depth, 24);	/* 32 must be reported as 24 and RNS_UD_CS_WANT_32BPP_SESSION */
+	i = MIN(settings->server_depth, 24);	/* 32 must be reported as 24 and RNS_UD_CS_WANT_32BPP_SESSION */
 	out_uint16_le(s, i); // (requested) highColorDepth
 
 	i = RNS_UD_32BPP_SUPPORT | RNS_UD_24BPP_SUPPORT | RNS_UD_16BPP_SUPPORT | RNS_UD_15BPP_SUPPORT;
 	out_uint16_le(s, i); // supportedColorDepths
 
 	i = RNS_UD_CS_SUPPORT_ERRINFO_PDU;
-	if (sec->rdp->settings->server_depth == 32)
+	if (settings->server_depth == 32)
 	{
 		i |= RNS_UD_CS_WANT_32BPP_SESSION;
 	}
@@ -455,7 +456,7 @@ sec_out_connectdata(rdpSec * sec, STREAM s)
 	out_uint16_le(s, UDH_CS_SECURITY);	/* User Data Header type */
 	out_uint16_le(s, 12);	/* total length */
 
-	out_uint32_le(s, sec->rdp->settings->encryption ? ENCRYPTION_40BIT_FLAG | ENCRYPTION_128BIT_FLAG : 0); // encryptionMethods
+	out_uint32_le(s, settings->encryption ? ENCRYPTION_40BIT_FLAG | ENCRYPTION_128BIT_FLAG : 0); // encryptionMethods
 	out_uint32_le(s, 0); // extEncryptionMethods
 
 	/*
@@ -483,7 +484,7 @@ sec_out_connectdata(rdpSec * sec, STREAM s)
 
 	out_uint16_le(s, UDH_CS_CLUSTER);	/* User Data Header type */
 	out_uint16_le(s, 12);	/* total length */
-	out_uint32_le(s, (sec->rdp->settings->console_session || sec->rdp->redirect_session_id) ?
+	out_uint32_le(s, (settings->console_session || sec->rdp->redirect_session_id) ?
 		REDIRECTED_SESSIONID_FIELD_VALID | REDIRECTION_SUPPORTED | REDIRECTION_VERSION4 :
 		REDIRECTION_SUPPORTED | REDIRECTION_VERSION4); // flags
 	out_uint32_le(s, sec->rdp->redirect_session_id); // RedirectedSessionID
@@ -740,7 +741,7 @@ sec_process_server_core_data(rdpSec * sec, STREAM s, uint16 length)
 	}
 	else if(server_rdp_version == 0x00080004)
 	{
-		sec->rdp->settings->rdp_version = 5;
+		sec->rdp->settings->rdp_version = 5;	/* FIXME: We can't just upgrade the RDP version! */
 	}
 	else
 		ui_error(sec->rdp->inst, "Invalid server rdp version %ul\n", server_rdp_version);

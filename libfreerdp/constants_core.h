@@ -142,5 +142,9 @@
 #define PERF_ENABLE_FONT_SMOOTHING	0x00000080
 #define PERF_ENABLE_DESKTOP_COMPOSITION	0x00000100
 
+/* Extended Info Packet clientAddressFamily */
+#define CLIENT_INFO_AF_INET 0x0002
+#define CLIENT_INFO_AF_INET6 0x0017
+
 #endif /* __CONSTANTS_CORE_H */
 
