@@ -70,8 +70,10 @@ int
 mppc_expand(rdpRdp * rdp, uint8 * data, uint32 clen, uint8 ctype, uint32 * roff, uint32 * rlen);
 void
 rdp5_process(rdpRdp * rdp, STREAM s);
-int
-rdp_out_unistr(rdpRdp * rdp, STREAM s, char *string);
+char*
+xstrdup_out_unistr(rdpRdp * rdp, char *str, size_t *pout_len);
+char*
+xstrdup_in_unistr(rdpRdp * rdp, unsigned char* pin, size_t in_len);
 void
 rdp_send_input(rdpRdp * rdp, time_t time, uint16 message_type, uint16 device_flags, uint16 param1,
 	       uint16 param2);

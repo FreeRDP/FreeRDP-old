@@ -711,6 +711,8 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 	uint32 EncryptedRandomSessionKeyBufferOffset;
 
 	rdpSet *settings;
+	void * p;
+	size_t len;
 
 	s = tcp_init(sec->mcs->iso->tcp, 256);
 	settings = sec->rdp->settings;
@@ -780,9 +782,15 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 
 	/* Payload (variable) */
 
-	rdp_out_unistr(sec->rdp, s, settings->domain);
-	rdp_out_unistr(sec->rdp, s, settings->username);
-	rdp_out_unistr(sec->rdp, s, settings->domain);
+	p = xstrdup_out_unistr(sec->rdp, settings->domain, &len);
+	out_uint8a(s, p, len + 2);
+	xfree(p);
+	p = xstrdup_out_unistr(sec->rdp, settings->username, &len);
+	out_uint8a(s, p, len + 2);
+	xfree(p);
+	p = xstrdup_out_unistr(sec->rdp, settings->domain, &len);
+	out_uint8a(s, p, len + 2);
+	xfree(p);
 
 	out_uint8s(s, 24); /* LmChallengeResponse is left blank */
 
