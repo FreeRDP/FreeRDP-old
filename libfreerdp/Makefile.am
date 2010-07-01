@@ -47,7 +47,7 @@ libfreerdp_la_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include -I$(top_srcdir)/i
 
 libfreerdp_la_LDFLAGS =
 
-libfreerdp_la_LIBADD = ../asn1/libasn1.la @CRYPTO_LIBS@
+libfreerdp_la_LIBADD = ../asn1/libasn1.la @CRYPTO_LIBS@ @LIBICONV@
 
 # extra
 EXTRA_DIST =

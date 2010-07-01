@@ -12,7 +12,7 @@ libcommon_la_CFLAGS = -I../../include -I.
 
 libcommon_la_LDFLAGS =
 
-libcommon_la_LIBADD = -lpthread
+libcommon_la_LIBADD = -lpthread @LIBICONV@
 
 # extra
 EXTRA_DIST =
