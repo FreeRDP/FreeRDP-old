@@ -436,6 +436,11 @@ thread_process_message(rdpdrPlugin * plugin, char * data, int data_size)
 			case PAKID_CORE_CLIENTID_CONFIRM:
 				LLOGLN(10, ("PAKID_CORE_CLIENTID_CONFIRM"));
 				rdpdr_process_server_clientid_confirm(plugin, &data[4], data_size - 4);
+
+				/* versionMinor 0x0005 doesn't send PAKID_CORE_USER_LOGGEDON,
+					so we have to send it here */
+				if (plugin->versionMinor == 0x0005)
+					rdpdr_send_device_list_announce_request(plugin);
 				break;
 
 			case PAKID_CORE_USER_LOGGEDON:
