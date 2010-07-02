@@ -6,6 +6,8 @@
 
 void
 dfb_colour_convert(dfbInfo * dfbi, int in_colour, PIXEL * pixel, int in_bpp, int out_bpp);
+unsigned int
+dfb_make_colorref(PIXEL * pixel, int bpp);
 uint8 *
 dfb_image_convert(dfbInfo * dfbi, rdpSet * settings, int width, int height,
 	uint8 * in_data);

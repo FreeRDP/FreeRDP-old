@@ -110,6 +110,33 @@ dfb_colour_convert(dfbInfo * dfbi, int in_colour, PIXEL * pixel, int in_bpp, int
 	}
 }
 
+unsigned int
+dfb_make_colorref(PIXEL * pixel, int bpp)
+{
+	unsigned int colorref = 0;
+	
+	switch (bpp)
+	{
+		case 32:
+			colorref = MAKE32RGB(pixel->alpha, pixel->red, pixel->green, pixel->blue);
+			break;
+		case 24:
+			colorref = MAKE24RGB(pixel->red, pixel->green, pixel->blue);
+			break;
+		case 16:
+			colorref = MAKE16RGB(pixel->red, pixel->green, pixel->blue);
+			break;
+		case 15:
+			colorref = MAKE15RGB(pixel->red, pixel->green, pixel->blue);
+			break;
+		case 8:
+			colorref = MAKE24RGB(pixel->red, pixel->green, pixel->blue);
+			break;
+	}
+
+	return colorref;
+}
+
 uint8 *
 dfb_image_convert(dfbInfo * dfbi, rdpSet * settings, int width, int height, uint8 * in_data)
 {

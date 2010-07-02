@@ -84,6 +84,10 @@
 #define GDIOBJ_BRUSH		0x02
 #define GDIOBJ_RECT		0x03
 
+/* Background Modes */
+#define OPAQUE			0x00000001
+#define TRANSPARENT		0x00000002
+
 struct _GDIOBJ
 {
 	unsigned char objectType;
@@ -101,8 +105,11 @@ typedef COLORREF* LPCOLORREF;
 struct _DC
 {
 	HGDIOBJ selectedObject;
-	unsigned int Bpp; /* bytes per pixel */
-	unsigned int bpp; /* bits per pixel */
+	unsigned int bytesPerPixel;
+	unsigned int bitsPerPixel;
+	COLORREF bkColor;
+	COLORREF textColor;
+	int bkMode;
 };
 typedef struct _DC DC;
 typedef DC* HDC;
@@ -118,6 +125,18 @@ struct _RECT
 typedef struct _RECT RECT;
 typedef RECT* HRECT;
 
+struct _BITMAP
+{
+	unsigned char objectType;
+	unsigned int bytesPerPixel;
+	unsigned int bitsPerPixel;
+	unsigned int width;
+	unsigned int height;
+	char* data;
+};
+typedef struct _BITMAP BITMAP;
+typedef BITMAP* HBITMAP;
+
 struct _PEN
 {
 	unsigned char objectType;
@@ -131,20 +150,10 @@ struct _BRUSH
 {
 	unsigned char objectType;
 	unsigned int style;
+	HBITMAP pattern;
 };
 typedef struct _BRUSH BRUSH;
 typedef BRUSH* HBRUSH;
-
-struct _BITMAP
-{
-	unsigned char objectType;
-	unsigned int width;
-	unsigned int height;
-	unsigned int bpp;
-	char* data;
-};
-typedef struct _BITMAP BITMAP;
-typedef BITMAP* HBITMAP;
 
 HDC GetDC();
 HDC CreateCompatibleDC(HDC hdc);
@@ -156,13 +165,15 @@ HBRUSH CreatePatternBrush(HBITMAP hbmp);
 int SetRect(HRECT rc, int xLeft, int yTop, int xRight, int yBottom);
 int CopyRect(HRECT dst, HRECT src);
 int FillRect(HDC hdc, HRECT rect, HBRUSH hbr);
-int GetPixel(HDC hdc, int nXPos, int nYPos);
-int SetPixel(HDC hdc, int X, int Y, int crColor);
-int GetBkColor(HDC hdc);
-int SetBkColor(HDC hdc, int crColor);
-int PatBlt(HDC hdc, int nXLeft, int nXYLeft, int nWidth, int nHeight, int rop);
+COLORREF GetPixel(HDC hdc, int nXPos, int nYPos);
+COLORREF SetPixel(HDC hdc, int X, int Y, COLORREF crColor);
+COLORREF GetBkColor(HDC hdc);
+COLORREF SetBkColor(HDC hdc, COLORREF crColor);
+COLORREF SetTextColor(HDC hdc, COLORREF crColor);
+int SetBkMode(HDC hdc, int iBkMode);
+int PatBlt(HDC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight, int rop);
 int BitBlt(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc, int rop);
-int SelectObject(HDC hdc, HGDIOBJ hgdiobj);
+HGDIOBJ SelectObject(HDC hdc, HGDIOBJ hgdiobj);
 int DeleteObject(HGDIOBJ hgdiobj);
 int DeleteDC(HDC hdc);
 

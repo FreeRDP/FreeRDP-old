@@ -24,7 +24,7 @@ dfb_process_event(rdpInst * inst, DFBEvent * event)
 
 		if (input_event->type == DIET_AXISMOTION)
 		{
-			printf("DIET_AXISMOTION\n");
+			//printf("DIET_AXISMOTION\n");
 			if (input_event->flags & DIEF_AXISABS)
 			{
 				if (input_event->axis == DIAI_X)

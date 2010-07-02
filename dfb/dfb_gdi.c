@@ -21,6 +21,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "dfb_gdi.h"
 
 HDC GetDC()
@@ -32,8 +33,8 @@ HDC GetDC()
 HDC CreateCompatibleDC(HDC hdc)
 {
 	HDC hDC = (HDC) malloc(sizeof(DC));
-	hDC->Bpp = hdc->Bpp;
-	hDC->bpp = hdc->bpp;
+	hDC->bytesPerPixel = hdc->bytesPerPixel;
+	hDC->bitsPerPixel = hdc->bitsPerPixel;
 	return hDC;
 }
 
@@ -41,7 +42,7 @@ HBITMAP CreateBitmap(int nWidth, int nHeight, int cBitsPerPixel, char* data)
 {
 	HBITMAP hBitmap = (HBITMAP) malloc(sizeof(BITMAP));
 	hBitmap->objectType = GDIOBJ_BITMAP;
-	hBitmap->bpp = cBitsPerPixel;
+	hBitmap->bitsPerPixel = cBitsPerPixel;
 	hBitmap->width = nWidth;
 	hBitmap->height = nHeight;
 	hBitmap->data = (char*) data;
@@ -75,6 +76,7 @@ HBRUSH CreatePatternBrush(HBITMAP hbmp)
 {
 	HBRUSH hBrush = (HBRUSH) malloc(sizeof(BRUSH));
 	hBrush->objectType = GDIOBJ_BRUSH;
+	hBrush->pattern = hbmp;
 	return hBrush;
 }
 
@@ -98,33 +100,46 @@ int CopyRect(HRECT dst, HRECT src)
 
 int FillRect(HDC hdc, HRECT rect, HBRUSH hbr)
 {
-	return 1; /* 0 = failure */
-}
-
-int GetPixel(HDC hdc, int nXPos, int nYPos)
-{
-	return 0;
-}
-
-int SetPixel(HDC hdc, int X, int Y, int crColor)
-{
-	return 0;
-}
-
-int GetBkColor(HDC hdc)
-{
-	return 0;
-}
-
-int SetBkColor(HDC hdc, int crColor)
-{
-	return 0;
-}
-
-int PatBlt(HDC hdc, int nXLeft, int nXYLeft, int nWidth, int nHeight, int rop)
-{
-	/* Raster Operation is either PATCOPY, PATINVERT, DSTINVERT, BLACKNESS or WHITENESS */
 	return 1;
+}
+
+COLORREF GetPixel(HDC hdc, int nXPos, int nYPos)
+{
+	return 0;
+}
+
+COLORREF SetPixel(HDC hdc, int X, int Y, COLORREF crColor)
+{
+	return 0;
+}
+
+COLORREF GetBkColor(HDC hdc)
+{
+	return hdc->bkColor;
+}
+
+COLORREF SetBkColor(HDC hdc, COLORREF crColor)
+{
+	COLORREF previousBkColor = hdc->bkColor;
+	hdc->bkColor = crColor;
+	return previousBkColor;
+}
+
+COLORREF SetTextColor(HDC hdc, COLORREF crColor)
+{
+	COLORREF previousTextColor = hdc->textColor;
+	hdc->textColor = crColor;
+	return previousTextColor;
+}
+
+int SetBkMode(HDC hdc, int iBkMode)
+{
+	if (iBkMode == OPAQUE || iBkMode == TRANSPARENT)
+		hdc->bkMode = iBkMode;
+	else
+		hdc->bkMode = OPAQUE; /* unknown background mode, default to sane value of OPAQUE */
+	
+	return 0;
 }
 
 static void
@@ -160,7 +175,7 @@ gdi_get_bitmap_pointer(HDC hdcBmp, int x, int y)
 	
 	if (x >= 0 && x < hBmp->width && y >= 0 && y < hBmp->height)
 	{
-		p = hBmp->data + (y * hBmp->width * hdcBmp->Bpp) + (x * hdcBmp->Bpp);
+		p = hBmp->data + (y * hBmp->width * hdcBmp->bytesPerPixel) + (x * hdcBmp->bytesPerPixel);
 		return p;
 	}
 	else
@@ -178,32 +193,85 @@ int BitBlt(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdc
 	/*printf("nXDest: %d nYDest: %d nWidth: %d nHeight: %d nXSrc: %d nYSrc: %d rop: 0x%X\n",
 	       nXDest, nYDest, nWidth, nHeight, nXSrc, nYSrc, rop);*/
 
-	if (rop == 0xC || rop == 0xCC || rop == 0x66 || rop == 0x88)
+	/*
+	 	0x00CC0020	SRCCOPY
+		0x000C0324	SPna
+		0x00000042	BLACKNESS
+		0x00F00021	PATCOPY
+	*/
+
+	if (rop == SRCCOPY || rop == 0x000C0324)
 	{
-		if (hdcDest->selectedObject->objectType == GDIOBJ_BITMAP && hdcSrc->selectedObject->objectType == GDIOBJ_BITMAP)
-		{
-			HBITMAP hSrcBmp = (HBITMAP) hdcSrc->selectedObject;
-
-			srcp = (char *) (((unsigned int *) hSrcBmp->data) + nYSrc * hSrcBmp->width + nXSrc);
+		HBITMAP hSrcBmp = (HBITMAP) hdcSrc->selectedObject;
 		
-			for (i = 0; i < nHeight; i++)
-			{
-				dstp = gdi_get_bitmap_pointer(hdcDest, nXDest, nYDest + i);
+		srcp = (char *) (((unsigned int *) hSrcBmp->data) + nYSrc * hSrcBmp->width + nXSrc);
+		
+		for (i = 0; i < nHeight; i++)
+		{
+			dstp = gdi_get_bitmap_pointer(hdcDest, nXDest, nYDest + i);
 
-				if (dstp != 0)
-				{
-					gdi_copy_mem(dstp, srcp, nWidth * hdcDest->Bpp);
-					srcp += hSrcBmp->width * hdcDest->Bpp;
-				}
+			if (dstp != 0)
+			{
+				gdi_copy_mem(dstp, srcp, nWidth * hdcDest->bytesPerPixel);
+				srcp += hSrcBmp->width * hdcDest->bytesPerPixel;
 			}
+		}				
+	}
+	else if (rop == BLACKNESS)
+	{
+		for (i = 0; i < nHeight; i++)
+		{
+			dstp = gdi_get_bitmap_pointer(hdcDest, nXDest, nYDest + i);
+
+			if (dstp != 0)
+				memset(dstp, 0, nWidth * hdcDest->bytesPerPixel);
 		}
+	}
+	else
+	{
+		printf("unknown rop: %X\n", rop);
 	}
 	
 	return 1;
 }
 
-int SelectObject(HDC hdc, HGDIOBJ hgdiobj)
+int PatBlt(HDC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight, int rop)
 {
+	int i;
+	char* srcp;
+	char* dstp;
+
+	/* PATCOPY, PATINVERT, DSTINVERT, BLACKNESS or WHITENESS */
+	
+	if (rop == PATCOPY)
+	{
+		HBRUSH hBrush;
+		HBITMAP hPattern;
+		
+		hBrush = (HBRUSH) hdc->selectedObject;
+		hPattern = hBrush->pattern;
+		
+		srcp = (char *) hPattern->data;
+		
+		for (i = 0; i < nHeight; i++)
+		{
+			dstp = gdi_get_bitmap_pointer(hdc, nXLeft, nYLeft + i);
+
+			if (dstp != 0)
+			{
+				gdi_copy_mem(dstp, srcp, nWidth * hdc->bytesPerPixel);
+				srcp += hPattern->width * hdc->bytesPerPixel;
+			}
+		}	
+	}
+	
+	return 1;
+}
+
+HGDIOBJ SelectObject(HDC hdc, HGDIOBJ hgdiobj)
+{
+	HGDIOBJ previousSelectedObject = hdc->selectedObject;
+
 	if (hgdiobj->objectType == GDIOBJ_BITMAP)
 	{
 		//HBITMAP hBitmap = (HBITMAP) hgdiobj;
@@ -230,7 +298,7 @@ int SelectObject(HDC hdc, HGDIOBJ hgdiobj)
 		return 0;
 	}
 	
-	return 1;
+	return previousSelectedObject;
 }
 
 int DeleteObject(HGDIOBJ hgdiobj)
