@@ -42,6 +42,7 @@ struct dfb_info
 	PIXEL bgcolour;
 	PIXEL fgcolour;
 	PIXEL pixel;
+	HDC hdcBmp;
 	HDC hdc;
 };
 typedef struct dfb_info dfbInfo;

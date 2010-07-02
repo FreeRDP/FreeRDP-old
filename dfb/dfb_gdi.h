@@ -101,7 +101,8 @@ typedef COLORREF* LPCOLORREF;
 struct _DC
 {
 	HGDIOBJ selectedObject;
-	unsigned int bpp;
+	unsigned int Bpp; /* bytes per pixel */
+	unsigned int bpp; /* bits per pixel */
 };
 typedef struct _DC DC;
 typedef DC* HDC;
@@ -160,7 +161,7 @@ int SetPixel(HDC hdc, int X, int Y, int crColor);
 int GetBkColor(HDC hdc);
 int SetBkColor(HDC hdc, int crColor);
 int PatBlt(HDC hdc, int nXLeft, int nXYLeft, int nWidth, int nHeight, int rop);
-int BitBlt(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, int hdcSrc, int nXSrc, int nYSrc, int rop);
+int BitBlt(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc, int rop);
 int SelectObject(HDC hdc, HGDIOBJ hgdiobj);
 int DeleteObject(HGDIOBJ hgdiobj);
 int DeleteDC(HDC hdc);

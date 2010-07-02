@@ -96,44 +96,6 @@ dfb_invalidate_rect(dfbInfo * dfbi, int x1, int y1, int x2, int y2)
 	}
 }
 
-static char *
-dfb_get_screen_pointer(dfbInfo * dfbi, int x, int y)
-{
-	char * p;
-
-	if (x >= 0 && x < dfbi->width && y >= 0 && y < dfbi->height)
-	{
-		p = dfbi->screen + (y * dfbi->width * dfbi->bytes_per_pixel) + (x * dfbi->bytes_per_pixel);
-		return p;
-	}
-	else
-	{
-		return 0;
-	}
-}
-
-static void
-dfb_copy_mem(char * d, char * s, int n)
-{
-	while (n & (~7))
-	{
-		*(d++) = *(s++);
-		*(d++) = *(s++);
-		*(d++) = *(s++);
-		*(d++) = *(s++);
-		*(d++) = *(s++);
-		*(d++) = *(s++);
-		*(d++) = *(s++);
-		*(d++) = *(s++);
-		n = n - 8;
-	}
-	while (n > 0)
-	{
-		*(d++) = *(s++);
-		n--;
-	}
-}
-
 static void
 l_ui_begin_update(struct rdp_inst * inst)
 {
@@ -317,6 +279,20 @@ l_ui_screenblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int c
 static void
 l_ui_memblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy, RD_HBITMAP src, int srcx, int srcy)
 {
+	dfbInfo * dfbi;
+	dfbi = GET_DFBI(inst);
+
+	SelectObject(dfbi->hdcBmp, (HGDIOBJ) src);
+	BitBlt(dfbi->hdc, x, y, cx, cy, dfbi->hdcBmp, srcx, srcy, opcode);
+	dfb_invalidate_rect(dfbi, x, y, x + cx, y + cy);
+	dfb_update_screen(dfbi);
+}
+
+#if 0
+
+static void
+l_ui_memblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy, RD_HBITMAP src, int srcx, int srcy)
+{
 	int i;
 	char * dst;
 	char * srcp;
@@ -393,6 +369,8 @@ l_ui_memblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy, 
 		       opcode, x, y, cx, cy, srcx, srcy);
 	}
 }
+
+#endif
 
 static void
 l_ui_triblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy,
@@ -625,9 +603,12 @@ dfb_post_connect(rdpInst * inst)
 
 	dfbi->hdc = GetDC();
 	dfbi->hdc->bpp = dfbi->bpp;
+	dfbi->hdc->Bpp = 4;
 
 	HBITMAP hScreen = CreateBitmap(inst->settings->width, inst->settings->height, dfbi->bpp, (char*) dfbi->screen);
 	SelectObject(dfbi->hdc, (HGDIOBJ) hScreen);
+
+	dfbi->hdcBmp = CreateCompatibleDC(dfbi->hdc);
 	
 	return 0;
 }

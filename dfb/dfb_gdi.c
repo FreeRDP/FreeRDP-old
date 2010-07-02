@@ -19,6 +19,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#include <stdio.h>
 #include <stdlib.h>
 #include "dfb_gdi.h"
 
@@ -31,6 +32,7 @@ HDC GetDC()
 HDC CreateCompatibleDC(HDC hdc)
 {
 	HDC hDC = (HDC) malloc(sizeof(DC));
+	hDC->Bpp = hdc->Bpp;
 	hDC->bpp = hdc->bpp;
 	return hDC;
 }
@@ -42,7 +44,7 @@ HBITMAP CreateBitmap(int nWidth, int nHeight, int cBitsPerPixel, char* data)
 	hBitmap->bpp = cBitsPerPixel;
 	hBitmap->width = nWidth;
 	hBitmap->height = nHeight;
-	hBitmap->data = (unsigned char*) data;
+	hBitmap->data = (char*) data;
 	return hBitmap;
 }
 
@@ -122,11 +124,82 @@ int SetBkColor(HDC hdc, int crColor)
 int PatBlt(HDC hdc, int nXLeft, int nXYLeft, int nWidth, int nHeight, int rop)
 {
 	/* Raster Operation is either PATCOPY, PATINVERT, DSTINVERT, BLACKNESS or WHITENESS */
+	return 1;
 }
 
-int BitBlt(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, int hdcSrc, int nXSrc, int nYSrc, int rop)
+static void
+gdi_copy_mem(char * d, char * s, int n)
 {
-	return 1; /* 0 = failure */
+	while (n & (~7))
+	{
+		*(d++) = *(s++);
+		*(d++) = *(s++);
+		*(d++) = *(s++);
+		*(d++) = *(s++);
+		*(d++) = *(s++);
+		*(d++) = *(s++);
+		*(d++) = *(s++);
+		*(d++) = *(s++);
+		n = n - 8;
+	}
+	while (n > 0)
+	{
+		*(d++) = *(s++);
+		n--;
+	}
+}
+
+static char *
+gdi_get_bitmap_pointer(HDC hdcBmp, int x, int y)
+{
+	char * p;
+	HBITMAP hBmp = (HBITMAP) hdcBmp->selectedObject;
+
+	/*printf("x: %d y: %d width: %d height: %d bpp: %d\n",
+	       x, y, hBmp->width, hBmp->height, hdcBmp->Bpp);*/
+	
+	if (x >= 0 && x < hBmp->width && y >= 0 && y < hBmp->height)
+	{
+		p = hBmp->data + (y * hBmp->width * hdcBmp->Bpp) + (x * hdcBmp->Bpp);
+		return p;
+	}
+	else
+	{
+		return 0;
+	}
+}
+
+int BitBlt(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc, int rop)
+{
+	int i;
+	char* srcp;
+	char* dstp;
+
+	/*printf("nXDest: %d nYDest: %d nWidth: %d nHeight: %d nXSrc: %d nYSrc: %d rop: 0x%X\n",
+	       nXDest, nYDest, nWidth, nHeight, nXSrc, nYSrc, rop);*/
+
+	if (rop == 0xC || rop == 0xCC || rop == 0x66 || rop == 0x88)
+	{
+		if (hdcDest->selectedObject->objectType == GDIOBJ_BITMAP && hdcSrc->selectedObject->objectType == GDIOBJ_BITMAP)
+		{
+			HBITMAP hSrcBmp = (HBITMAP) hdcSrc->selectedObject;
+
+			srcp = (char *) (((unsigned int *) hSrcBmp->data) + nYSrc * hSrcBmp->width + nXSrc);
+		
+			for (i = 0; i < nHeight; i++)
+			{
+				dstp = gdi_get_bitmap_pointer(hdcDest, nXDest, nYDest + i);
+
+				if (dstp != 0)
+				{
+					gdi_copy_mem(dstp, srcp, nWidth * hdcDest->Bpp);
+					srcp += hSrcBmp->width * hdcDest->Bpp;
+				}
+			}
+		}
+	}
+	
+	return 1;
 }
 
 int SelectObject(HDC hdc, HGDIOBJ hgdiobj)
