@@ -151,6 +151,7 @@ struct _BRUSH
 	unsigned char objectType;
 	unsigned int style;
 	HBITMAP pattern;
+	COLORREF color;
 };
 typedef struct _BRUSH BRUSH;
 typedef BRUSH* HBRUSH;
@@ -160,7 +161,7 @@ HDC CreateCompatibleDC(HDC hdc);
 HBITMAP CreateBitmap(int nWidth, int nHeight, int cBitsPerPixel, char* data);
 HBITMAP CreateCompatibleBitmap(HDC hdc, int nWidth, int nHeight);
 HPEN CreatePen(int fnPenStyle, int nWidth, int crColor);
-HBRUSH CreateSolidBrush(int crColor);
+HBRUSH CreateSolidBrush(COLORREF crColor);
 HBRUSH CreatePatternBrush(HBITMAP hbmp);
 int SetRect(HRECT rc, int xLeft, int yTop, int xRight, int yBottom);
 int CopyRect(HRECT dst, HRECT src);

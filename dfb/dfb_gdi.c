@@ -24,6 +24,48 @@
 #include <string.h>
 #include "dfb_gdi.h"
 
+static void
+gdi_copy_mem(char * d, char * s, int n)
+{
+	while (n & (~7))
+	{
+		*(d++) = *(s++);
+		*(d++) = *(s++);
+		*(d++) = *(s++);
+		*(d++) = *(s++);
+		*(d++) = *(s++);
+		*(d++) = *(s++);
+		*(d++) = *(s++);
+		*(d++) = *(s++);
+		n = n - 8;
+	}
+	while (n > 0)
+	{
+		*(d++) = *(s++);
+		n--;
+	}
+}
+
+static char *
+gdi_get_bitmap_pointer(HDC hdcBmp, int x, int y)
+{
+	char * p;
+	HBITMAP hBmp = (HBITMAP) hdcBmp->selectedObject;
+
+	/*printf("x: %d y: %d width: %d height: %d bpp: %d\n",
+	       x, y, hBmp->width, hBmp->height, hdcBmp->Bpp);*/
+	
+	if (x >= 0 && x < hBmp->width && y >= 0 && y < hBmp->height)
+	{
+		p = hBmp->data + (y * hBmp->width * hdcBmp->bytesPerPixel) + (x * hdcBmp->bytesPerPixel);
+		return p;
+	}
+	else
+	{
+		return 0;
+	}
+}
+
 HDC GetDC()
 {
 	HDC hDC = (HDC) malloc(sizeof(DC));
@@ -65,10 +107,11 @@ HPEN CreatePen(int fnPenStyle, int nWidth, int crColor)
 	return hPen;
 }
 
-HBRUSH CreateSolidBrush(int crColor)
+HBRUSH CreateSolidBrush(COLORREF crColor)
 {
 	HBRUSH hBrush = (HBRUSH) malloc(sizeof(BRUSH));
 	hBrush->objectType = GDIOBJ_BRUSH;
+	hBrush->color = crColor;
 	return hBrush;
 }
 
@@ -100,6 +143,25 @@ int CopyRect(HRECT dst, HRECT src)
 
 int FillRect(HDC hdc, HRECT rect, HBRUSH hbr)
 {
+	int i;
+	int j;
+	char* dstp;
+	COLORREF* pxlp;
+	
+	for (i = rect->top; i < rect->bottom; i++)
+	{
+		dstp = gdi_get_bitmap_pointer(hdc, rect->left, rect->top + i);
+
+		if (dstp != 0)
+		{
+			for (j = 0; j < (rect->right - rect->left); j++)
+			{
+				pxlp = (COLORREF*) dstp[j * hdc->bytesPerPixel];
+				*pxlp = hbr->color; 
+			}
+		}
+	}
+	
 	return 1;
 }
 
@@ -140,48 +202,6 @@ int SetBkMode(HDC hdc, int iBkMode)
 		hdc->bkMode = OPAQUE; /* unknown background mode, default to sane value of OPAQUE */
 	
 	return 0;
-}
-
-static void
-gdi_copy_mem(char * d, char * s, int n)
-{
-	while (n & (~7))
-	{
-		*(d++) = *(s++);
-		*(d++) = *(s++);
-		*(d++) = *(s++);
-		*(d++) = *(s++);
-		*(d++) = *(s++);
-		*(d++) = *(s++);
-		*(d++) = *(s++);
-		*(d++) = *(s++);
-		n = n - 8;
-	}
-	while (n > 0)
-	{
-		*(d++) = *(s++);
-		n--;
-	}
-}
-
-static char *
-gdi_get_bitmap_pointer(HDC hdcBmp, int x, int y)
-{
-	char * p;
-	HBITMAP hBmp = (HBITMAP) hdcBmp->selectedObject;
-
-	/*printf("x: %d y: %d width: %d height: %d bpp: %d\n",
-	       x, y, hBmp->width, hBmp->height, hdcBmp->Bpp);*/
-	
-	if (x >= 0 && x < hBmp->width && y >= 0 && y < hBmp->height)
-	{
-		p = hBmp->data + (y * hBmp->width * hdcBmp->bytesPerPixel) + (x * hdcBmp->bytesPerPixel);
-		return p;
-	}
-	else
-	{
-		return 0;
-	}
 }
 
 int BitBlt(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc, int rop)
@@ -263,6 +283,10 @@ int PatBlt(HDC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight, int rop)
 				srcp += hPattern->width * hdc->bytesPerPixel;
 			}
 		}	
+	}
+	else
+	{
+		printf("PatBlt rop: 0x%X\n", rop);
 	}
 	
 	return 1;

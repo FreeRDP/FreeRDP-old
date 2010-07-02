@@ -411,7 +411,10 @@ l_ui_paint_bitmap(struct rdp_inst * inst, int x, int y, int cx, int cy, int widt
 	dfbi = GET_DFBI(inst);
 
 	bitmap = (HBITMAP) inst->ui_create_bitmap(inst, width, height, data);
-	inst->ui_memblt(inst, 12, x, y, cx, cy, (RD_HBITMAP) bitmap, 0, 0);
+	SelectObject(dfbi->hdcBmp, (HGDIOBJ) bitmap);	
+	BitBlt(dfbi->hdc, x, y, cx, cy, dfbi->hdcBmp, 0, 0, SRCCOPY);
+	dfb_invalidate_rect(dfbi, x, y, x + cx, y + cy);
+	dfb_update_screen(dfbi);
 }
 
 static void
@@ -426,14 +429,48 @@ l_ui_line(struct rdp_inst * inst, uint8 opcode, int startx, int starty, int endx
 	printf("ui_line\n");
 }
 
+#if 0
 static void
 l_ui_rect(struct rdp_inst * inst, int x, int y, int cx, int cy, int colour)
 {
+	wfInfo * wfi;
+	RECT rect;
+	HBRUSH brush;
+
+	wfi = GET_WFI(inst);
+	colour = wf_colour_convert(wfi, colour, inst->settings->server_depth);
+	//printf("ui_rect %i %i %i %i %i\n", x, y, cx, cy, colour);
+	rect.left = x;
+	rect.top = y;
+	rect.right = x + cx;
+	rect.bottom = y + cy;
+	brush = CreateSolidBrush(colour);
+	FillRect(wfi->drw->hdc, &rect, brush);
+	DeleteObject(brush);
+	if (wfi->drw == wfi->backstore)
+	{
+		wf_invalidate_region(wfi, rect.left, rect.top, rect.right, rect.bottom);
+	}
+}
+#endif
+
+static void
+l_ui_rect(struct rdp_inst * inst, int x, int y, int cx, int cy, int colour)
+{
+	RECT rect;
+	HBRUSH hBrush;
 	dfbInfo * dfbi;
 	dfbi = GET_DFBI(inst);
+	
+	rect.left = x;
+	rect.top = y;
+	rect.right = x + cx;
+	rect.bottom = y + cy;
+
 	dfb_colour_convert(dfbi, colour, &(dfbi->pixel), inst->settings->server_depth, dfbi->bpp);
-	dfbi->primary->SetColor(dfbi->primary, dfbi->pixel.red, dfbi->pixel.green, dfbi->pixel.blue, dfbi->pixel.alpha);
-	dfbi->primary->FillRectangle(dfbi->primary, x, y, cx, cy);
+	hBrush = CreateSolidBrush((COLORREF) dfb_make_colorref(&(dfbi->pixel), dfbi->bpp));
+	//FillRect(dfbi->hdc, &rect, hBrush);
+	                          
 	dfb_invalidate_rect(dfbi, x, y, x + cx, y + cy);
 	dfb_update_screen(dfbi);
 }
@@ -491,61 +528,21 @@ l_ui_destblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy)
 {
 	dfbInfo * dfbi;
 	dfbi = GET_DFBI(inst);
-	//printf("ui_destblt opcode: 0x%X\n", rop3_code_table[opcode]);
 
-	//if (rop3_code_table[opcode] == BLACKNESS)
-	//	inst->ui_rect(inst, x, y, cx, cy, 0);
-	
-	BitBlt(dfbi->hdc, x, y, cx, cy, NULL, 0, 0, rop3_code_table[opcode]);
-	dfb_invalidate_rect(dfbi, x, y, x + cx, y + cy);
-	dfb_update_screen(dfbi);
+	//BitBlt(dfbi->hdc, x, y, cx, cy, NULL, 0, 0, rop3_code_table[opcode]);
+	//dfb_invalidate_rect(dfbi, x, y, x + cx, y + cy);
+	//dfb_update_screen(dfbi);
 }
-
-#if 0
-static void
-l_ui_patblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy,
-	RD_BRUSH * brush, int bgcolour, int fgcolour)
-{
-	wfInfo * wfi;
-	HBRUSH br;
-	HBRUSH org_br;
-	int org_bkmode;
-	COLORREF org_bkcolor;
-	COLORREF org_textcolor;
-
-	wfi = GET_WFI(inst);
-	//printf("ui_patblt: style %d x %d y %d cx %d cy %d\n", brush->style, x, y, cx, cy);
-	bgcolour = wf_colour_convert(wfi, bgcolour, inst->settings->server_depth);
-	fgcolour = wf_colour_convert(wfi, fgcolour, inst->settings->server_depth);
-
-	br = wf_create_brush(wfi, brush, fgcolour, inst->settings->server_depth);
-	org_bkmode = SetBkMode(wfi->drw->hdc, OPAQUE);
-	org_bkcolor = SetBkColor(wfi->drw->hdc, bgcolour);
-	org_textcolor = SetTextColor(wfi->drw->hdc, fgcolour);
-	org_br = (HBRUSH)SelectObject(wfi->drw->hdc, br);
-	PatBlt(wfi->drw->hdc, x, y, cx, cy, rop3_code_table[opcode]);
-	SelectObject(wfi->drw->hdc, org_br);
-	DeleteObject(br);
-	SetBkMode(wfi->drw->hdc, org_bkmode);
-	SetBkColor(wfi->drw->hdc, org_bkcolor);
-	SetTextColor(wfi->drw->hdc, org_textcolor);
-	if (wfi->drw == wfi->backstore)
-	{
-		wf_invalidate_region(wfi, x, y, x + cx, y + cy);
-	}
-}
-#endif
 
 static void
 l_ui_patblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy, RD_BRUSH * brush, int bgcolour, int fgcolour)
 {
+#if 0
 	dfbInfo * dfbi;
 	dfbi = GET_DFBI(inst);
 	dfb_colour_convert(dfbi, bgcolour, &(dfbi->bgcolour), inst->settings->server_depth, dfbi->bpp);
 	dfb_colour_convert(dfbi, fgcolour, &(dfbi->fgcolour), inst->settings->server_depth, dfbi->bpp);
 
-	printf("ui_patblt rop: 0x%X\n", rop3_code_table[opcode]);
-	
 	if (brush->style == BS_PATTERN)
 	{
 		HBITMAP hBmp;
@@ -554,6 +551,8 @@ l_ui_patblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy, 
 		COLORREF originalBkColor;
 		COLORREF originalTextColor;
 		HGDIOBJ originalSelectedObject;
+
+		printf("BS_PATTERN\n");
 		
 		hBmp = CreateBitmap(8, 8, dfbi->hdc->bitsPerPixel,
 		                            (char*) dfb_image_convert(dfbi, inst->settings, 8, 8, (uint8*) brush->bd->data));
@@ -574,23 +573,27 @@ l_ui_patblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy, 
 	}
 	else if (brush->style == BS_SOLID)
 	{
+		printf("BS_SOLID\n");
 	}
 	else if (brush->style == BS_HATCHED)
 	{
+		printf("BS_HATCHED\n");
 	}
 	else if (brush->style == BS_NULL)
 	{
+		printf("BS_NULL\n");
 	}
 	else
 	{
 		printf("unknown brush style: %d\n", brush->style);
 	}
+#endif
 }
 
 static void
 l_ui_screenblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy, int srcx, int srcy)
 {
-	printf("ui_screenblt opcode: 0x%X\n", opcode);
+	printf("ui_screenblt rop: 0x%X\n", rop3_code_table[opcode]);
 }
 
 static void
@@ -600,7 +603,7 @@ l_ui_memblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy, 
 	dfbi = GET_DFBI(inst);
 	SelectObject(dfbi->hdcBmp, (HGDIOBJ) src);
 	BitBlt(dfbi->hdc, x, y, cx, cy, dfbi->hdcBmp, srcx, srcy, rop3_code_table[opcode]);
-	//printf("x: %d y: %d x + cx: %d y + cy: %d\n", x, y, x + cx, y + cy);
+	printf("memblt x: %d y: %d x + cx: %d y + cy: %d\n", x, y, x + cx, y + cy);
 	dfb_invalidate_rect(dfbi, x, y, x + cx, y + cy);
 	dfb_update_screen(dfbi);
 }
@@ -609,7 +612,7 @@ static void
 l_ui_triblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy,
 	RD_HBITMAP src, int srcx, int srcy, RD_BRUSH * brush, int bgcolour, int fgcolour)
 {
-	printf("ui_screenblt opcode: 0x%X\n", opcode);
+	printf("ui_screenblt opcode: 0x%X\n", rop3_code_table[opcode]);
 }
 
 static int
