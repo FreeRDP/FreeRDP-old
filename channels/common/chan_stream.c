@@ -18,18 +18,25 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#include "config.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef HAVE_ICONV
+#ifdef HAVE_ICONV_H
 #include <iconv.h>
+#endif
+#endif
 #include "chan_stream.h"
 
 int
 set_wstr(char* dst, int dstlen, char* src, int srclen)
 {
+#ifdef HAVE_ICONV
 	iconv_t cd;
 	size_t avail;
 	size_t in_size;
+printf("*****************\n");
 
 	cd = iconv_open("UTF-16LE", "UTF-8");
 	if (cd == (iconv_t) - 1)
@@ -42,11 +49,25 @@ set_wstr(char* dst, int dstlen, char* src, int srclen)
 	iconv(cd, &src, &in_size, &dst, &avail);
 	iconv_close(cd);
 	return dstlen - (int)avail;
+#else
+	int avail;
+
+	avail = dstlen;
+	while (srclen > 0 && avail > 0)
+	{
+		*dst++ = *src++;
+		*dst++ = '\0';
+		srclen--;
+		avail -= 2;
+	}
+	return dstlen - avail;
+#endif
 }
 
 int
 get_wstr(char* dst, int dstlen, char* src, int srclen)
 {
+#ifdef HAVE_ICONV
 	iconv_t cd;
 	size_t avail;
 	size_t in_size;
@@ -62,5 +83,18 @@ get_wstr(char* dst, int dstlen, char* src, int srclen)
 	iconv(cd, &src, &in_size, &dst, &avail);
 	iconv_close(cd);
 	return dstlen - (int)avail;
+#else
+	int avail;
+
+	avail = dstlen;
+	while (srclen > 0 && avail > 0)
+	{
+		*dst++ = *src++;
+		src++;
+		avail--;
+		srclen -= 2;
+	}
+	return dstlen - avail;
+#endif
 }
 

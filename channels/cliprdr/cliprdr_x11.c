@@ -27,12 +27,17 @@
    http://msdn.microsoft.com/en-us/library/ff468800%28v=VS.85%29.aspx
 */
 
+#include "config.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
 #include <unistd.h>
+#ifdef HAVE_ICONV
+#ifdef HAVE_ICONV_H
 #include <iconv.h>
+#endif
+#endif
 #include <semaphore.h>
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
@@ -459,6 +464,7 @@ clipboard_process_requested_raw(struct clipboard_data * cdata,
 	return outbuf;
 }
 
+#ifdef HAVE_ICONV
 static char *
 clipboard_process_requested_unicodetext(struct clipboard_data * cdata,
 	char * data, int * length)
@@ -474,7 +480,7 @@ clipboard_process_requested_unicodetext(struct clipboard_data * cdata,
 	cd = iconv_open("UTF-16LE", "UTF-8");
 	if (cd == (iconv_t) - 1)
 	{
-		LLOGLN(0, ("clipboard_handle_unicodetext: iconv_open failed."));
+		LLOGLN(0, ("clipboard_process_requested_unicodetext: iconv_open failed."));
 		return NULL;
 	}
 	inbuf = lf2crlf(data, length);
@@ -490,6 +496,7 @@ clipboard_process_requested_unicodetext(struct clipboard_data * cdata,
 	*length = out - outbuf + 2;
 	return outbuf;
 }
+#endif
 
 static char *
 clipboard_process_requested_text(struct clipboard_data * cdata,
@@ -526,6 +533,7 @@ clipboard_process_requested_dib(struct clipboard_data * cdata,
 	return outbuf;
 }
 
+#ifdef HAVE_ICONV
 static char *
 clipboard_process_requested_html(struct clipboard_data * cdata,
 	char * data, int * length)
@@ -616,6 +624,7 @@ clipboard_process_requested_html(struct clipboard_data * cdata,
 	*length = strlen(outbuf) + 1;
 	return outbuf;
 }
+#endif
 
 static int
 clipboard_process_requested_data(struct clipboard_data * cdata,
@@ -653,10 +662,12 @@ clipboard_process_requested_data(struct clipboard_data * cdata,
 			outbuf = clipboard_process_requested_raw(cdata,
 				data, &length);
 			break;
+#ifdef HAVE_ICONV
 		case CF_UNICODETEXT:
 			outbuf = clipboard_process_requested_unicodetext(cdata,
 				data, &length);
 			break;
+#endif
 		case CF_TEXT:
 			outbuf = clipboard_process_requested_text(cdata,
 				data, &length);
@@ -665,10 +676,12 @@ clipboard_process_requested_data(struct clipboard_data * cdata,
 			outbuf = clipboard_process_requested_dib(cdata,
 				data, &length);
 			break;
+#ifdef HAVE_ICONV
 		case CF_FREERDP_HTML:
 			outbuf = clipboard_process_requested_html(cdata,
 				data, &length);
 			break;
+#endif
 		default:
 			outbuf = NULL;
 			break;
@@ -977,6 +990,7 @@ clipboard_new(cliprdrPlugin * plugin)
 	struct clipboard_data * cdata;
 	pthread_t thread;
 	uint32 id;
+	int n;
 
 	cdata = (struct clipboard_data *) malloc(sizeof(struct clipboard_data));
 	memset(cdata, 0, sizeof(struct clipboard_data));
@@ -1019,43 +1033,53 @@ clipboard_new(cliprdrPlugin * plugin)
 		XSelectInput(cdata->display, cdata->window, PropertyChangeMask);
 		XSelectInput(cdata->display, cdata->root_window, PropertyChangeMask);
 
-		cdata->format_mappings[0].target_format = XInternAtom(cdata->display, "_FREERDP_RAW", False);
-		cdata->format_mappings[0].format_id = CF_RAW;
-		cdata->format_mappings[0].local_format_id = CF_RAW;
+		n = 0;
+		cdata->format_mappings[n].target_format = XInternAtom(cdata->display, "_FREERDP_RAW", False);
+		cdata->format_mappings[n].format_id = CF_RAW;
+		cdata->format_mappings[n].local_format_id = CF_RAW;
 
-		cdata->format_mappings[1].target_format = XInternAtom(cdata->display, "UTF8_STRING", False);
-		cdata->format_mappings[1].format_id = CF_UNICODETEXT;
-		cdata->format_mappings[1].local_format_id = CF_UNICODETEXT;
+#ifdef HAVE_ICONV
+		n++;
+		cdata->format_mappings[n].target_format = XInternAtom(cdata->display, "UTF8_STRING", False);
+		cdata->format_mappings[n].format_id = CF_UNICODETEXT;
+		cdata->format_mappings[n].local_format_id = CF_UNICODETEXT;
+#endif
 
-		cdata->format_mappings[2].target_format = XA_STRING;
-		cdata->format_mappings[2].format_id = CF_TEXT;
-		cdata->format_mappings[2].local_format_id = CF_TEXT;
+		n++;
+		cdata->format_mappings[n].target_format = XA_STRING;
+		cdata->format_mappings[n].format_id = CF_TEXT;
+		cdata->format_mappings[n].local_format_id = CF_TEXT;
 
-		cdata->format_mappings[3].target_format = XInternAtom(cdata->display, "image/png", False);
-		cdata->format_mappings[3].format_id = 0;
-		cdata->format_mappings[3].local_format_id = CF_FREERDP_PNG;
-		clipboard_copy_format_name(cdata->format_mappings[3].name, CFSTR_PNG);
+		n++;
+		cdata->format_mappings[n].target_format = XInternAtom(cdata->display, "image/png", False);
+		cdata->format_mappings[n].format_id = 0;
+		cdata->format_mappings[n].local_format_id = CF_FREERDP_PNG;
+		clipboard_copy_format_name(cdata->format_mappings[n].name, CFSTR_PNG);
 
-		cdata->format_mappings[4].target_format = XInternAtom(cdata->display, "image/jpeg", False);
-		cdata->format_mappings[4].format_id = 0;
-		cdata->format_mappings[4].local_format_id = CF_FREERDP_JPEG;
-		clipboard_copy_format_name(cdata->format_mappings[4].name, CFSTR_JPEG);
+		n++;
+		cdata->format_mappings[n].target_format = XInternAtom(cdata->display, "image/jpeg", False);
+		cdata->format_mappings[n].format_id = 0;
+		cdata->format_mappings[n].local_format_id = CF_FREERDP_JPEG;
+		clipboard_copy_format_name(cdata->format_mappings[n].name, CFSTR_JPEG);
 
-		cdata->format_mappings[5].target_format = XInternAtom(cdata->display, "image/gif", False);
-		cdata->format_mappings[5].format_id = 0;
-		cdata->format_mappings[5].local_format_id = CF_FREERDP_GIF;
-		clipboard_copy_format_name(cdata->format_mappings[5].name, CFSTR_GIF);
+		n++;
+		cdata->format_mappings[n].target_format = XInternAtom(cdata->display, "image/gif", False);
+		cdata->format_mappings[n].format_id = 0;
+		cdata->format_mappings[n].local_format_id = CF_FREERDP_GIF;
+		clipboard_copy_format_name(cdata->format_mappings[n].name, CFSTR_GIF);
 
-		cdata->format_mappings[6].target_format = XInternAtom(cdata->display, "image/bmp", False);
-		cdata->format_mappings[6].format_id = CF_DIB;
-		cdata->format_mappings[6].local_format_id = CF_DIB;
+		n++;
+		cdata->format_mappings[n].target_format = XInternAtom(cdata->display, "image/bmp", False);
+		cdata->format_mappings[n].format_id = CF_DIB;
+		cdata->format_mappings[n].local_format_id = CF_DIB;
 
-		cdata->format_mappings[7].target_format = XInternAtom(cdata->display, "text/html", False);
-		cdata->format_mappings[7].format_id = 0;
-		cdata->format_mappings[7].local_format_id = CF_FREERDP_HTML;
-		clipboard_copy_format_name(cdata->format_mappings[7].name, CFSTR_HTML);
+		n++;
+		cdata->format_mappings[n].target_format = XInternAtom(cdata->display, "text/html", False);
+		cdata->format_mappings[n].format_id = 0;
+		cdata->format_mappings[n].local_format_id = CF_FREERDP_HTML;
+		clipboard_copy_format_name(cdata->format_mappings[n].name, CFSTR_HTML);
 
-		cdata->num_format_mappings = 8;
+		cdata->num_format_mappings = n + 1;
 
 		cdata->targets[0] = XInternAtom(cdata->display, "TIMESTAMP", False);
 		cdata->targets[1] = XInternAtom(cdata->display, "TARGETS", False);
@@ -1255,6 +1279,7 @@ clipboard_handle_text(struct clipboard_data * cdata,
 	crlf2lf(cdata->data, &cdata->data_length);
 }
 
+#ifdef HAVE_ICONV
 static void
 clipboard_handle_unicodetext(struct clipboard_data * cdata,
 	char * data, int length)
@@ -1281,6 +1306,7 @@ clipboard_handle_unicodetext(struct clipboard_data * cdata,
 	cdata->data_length = out - cdata->data + 2;
 	crlf2lf(cdata->data, &cdata->data_length);
 }
+#endif
 
 static void
 clipboard_handle_dib(struct clipboard_data * cdata,
@@ -1397,9 +1423,11 @@ clipboard_handle_data(void * device_data, int flag,
 		case CF_TEXT:
 			clipboard_handle_text(cdata, data, length);
 			break;
+#ifdef HAVE_ICONV
 		case CF_UNICODETEXT:
 			clipboard_handle_unicodetext(cdata, data, length);
 			break;
+#endif
 		case CF_DIB:
 			clipboard_handle_dib(cdata, data, length);
 			break;
