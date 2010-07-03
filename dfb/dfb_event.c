@@ -24,7 +24,6 @@ dfb_process_event(rdpInst * inst, DFBEvent * event)
 
 		if (input_event->type == DIET_AXISMOTION)
 		{
-			//printf("DIET_AXISMOTION\n");
 			if (input_event->flags & DIEF_AXISABS)
 			{
 				if (input_event->axis == DIAI_X)
@@ -60,7 +59,7 @@ dfb_process_event(rdpInst * inst, DFBEvent * event)
 		}
 	}
 	
-	//dfbi->primary->SetColor(dfbi->primary, 0xFF, 0xFF, 0xFF, 0xFF);
-	//dfbi->primary->FillRectangle(dfbi->primary, cursor_x, cursor_y, 16, 16);
+	inst->ui_rect(inst, cursor_x, cursor_y, 16, 16, 0xFFFFFFFF);
+	inst->rdp_send_input(inst, RDP_INPUT_MOUSE, PTRFLAGS_MOVE, cursor_x, cursor_y);
 	return 1;
 }

@@ -143,7 +143,9 @@ int SelectClipRgn(HDC hdc, HRGN hrgn)
 
 COLORREF GetPixel(HDC hdc, int nXPos, int nYPos)
 {
-	return 0;
+	HBITMAP hBmp = (HBITMAP) hdc->selectedObject;
+	COLORREF* colorp = (COLORREF*)&(hBmp->data[nXPos * hBmp->width * hdc->bytesPerPixel + nYPos * hdc->bytesPerPixel]);
+	return (COLORREF) *colorp;
 }
 
 COLORREF SetPixel(HDC hdc, int X, int Y, COLORREF crColor)
@@ -223,14 +225,13 @@ int BitBlt(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdc
 	char* srcp;
 	char* dstp;
 
-	printf("nXDest: %d nYDest: %d nWidth: %d nHeight: %d nXSrc: %d nYSrc: %d rop: 0x%X\n",
-	       nXDest, nYDest, nWidth, nHeight, nXSrc, nYSrc, rop);
+	//printf("nXDest: %d nYDest: %d nWidth: %d nHeight: %d nXSrc: %d nYSrc: %d rop: 0x%X\n",
+	//       nXDest, nYDest, nWidth, nHeight, nXSrc, nYSrc, rop);
 
 	/*
 	 	0x00CC0020	SRCCOPY
 		0x000C0324	SPna
 		0x00000042	BLACKNESS
-		0x00F00021	PATCOPY
 	*/
 	
 	if (rop == SRCCOPY || rop == 0x000C0324)

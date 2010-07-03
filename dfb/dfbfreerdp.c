@@ -52,6 +52,7 @@ set_default_params(rdpSet * settings)
 	settings->bitmap_cache = 1;
 	settings->bitmap_compression = 1;
 	settings->desktop_save = 0;
+	//settings->rdp5_performanceflags = RDP5_NO_FULLWINDOWDRAG | RDP5_NO_MENUANIMATIONS | RDP5_NO_WALLPAPER;
 	settings->rdp5_performanceflags = RDP5_NO_FULLWINDOWDRAG | RDP5_NO_MENUANIMATIONS;
 	settings->off_screen_bitmaps = 1;
 	settings->triblt = 0;
