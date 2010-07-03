@@ -51,9 +51,6 @@ gdi_get_bitmap_pointer(HDC hdcBmp, int x, int y)
 {
 	char * p;
 	HBITMAP hBmp = (HBITMAP) hdcBmp->selectedObject;
-
-	/*printf("x: %d y: %d width: %d height: %d bpp: %d\n",
-	       x, y, hBmp->width, hBmp->height, hdcBmp->Bpp);*/
 	
 	if (x >= 0 && x < hBmp->width && y >= 0 && y < hBmp->height)
 	{
@@ -95,8 +92,11 @@ HBITMAP CreateCompatibleBitmap(HDC hdc, int nWidth, int nHeight)
 {
 	HBITMAP hBitmap = (HBITMAP) malloc(sizeof(BITMAP));
 	hBitmap->objectType = GDIOBJ_BITMAP;
+	hBitmap->bytesPerPixel = hdc->bytesPerPixel;
+	hBitmap->bitsPerPixel = hdc->bitsPerPixel;
 	hBitmap->width = nWidth;
 	hBitmap->height = nHeight;
+	hBitmap->data = malloc(nWidth * nHeight * hBitmap->bytesPerPixel);
 	return hBitmap;
 }
 
@@ -111,6 +111,7 @@ HBRUSH CreateSolidBrush(COLORREF crColor)
 {
 	HBRUSH hBrush = (HBRUSH) malloc(sizeof(BRUSH));
 	hBrush->objectType = GDIOBJ_BRUSH;
+	hBrush->style = BS_SOLID;
 	hBrush->color = crColor;
 	return hBrush;
 }
@@ -119,8 +120,37 @@ HBRUSH CreatePatternBrush(HBITMAP hbmp)
 {
 	HBRUSH hBrush = (HBRUSH) malloc(sizeof(BRUSH));
 	hBrush->objectType = GDIOBJ_BRUSH;
+	hBrush->style = BS_PATTERN;
 	hBrush->pattern = hbmp;
 	return hBrush;
+}
+
+HRGN CreateRectRgn(int nLeftRect, int nTopRect, int nRightRect, int nBottomRect)
+{
+	HRGN hRgn = (HRGN) malloc(sizeof(RGN));
+	hRgn->left = nLeftRect;
+	hRgn->top = nTopRect;
+	hRgn->right = nRightRect;
+	hRgn->bottom = nBottomRect;
+	return hRgn;
+}
+
+int SelectClipRgn(HDC hdc, HRGN hrgn)
+{
+	hdc->clippingRegion = hrgn;
+	return 0;
+}
+
+COLORREF GetPixel(HDC hdc, int nXPos, int nYPos)
+{
+	return 0;
+}
+
+COLORREF SetPixel(HDC hdc, int X, int Y, COLORREF crColor)
+{
+	HBITMAP hBmp = (HBITMAP) hdc->selectedObject;
+	*((COLORREF*)&(hBmp->data[X * hBmp->width * hdc->bytesPerPixel + Y * hdc->bytesPerPixel])) = crColor;
+	return 0;
 }
 
 int SetRect(HRECT rc, int xLeft, int yTop, int xRight, int yBottom)
@@ -145,34 +175,17 @@ int FillRect(HDC hdc, HRECT rect, HBRUSH hbr)
 {
 	int i;
 	int j;
-	char* dstp;
-	COLORREF* pxlp;
+	HBITMAP hBmp = (HBITMAP) hdc->selectedObject;
 	
 	for (i = rect->top; i < rect->bottom; i++)
 	{
-		dstp = gdi_get_bitmap_pointer(hdc, rect->left, rect->top + i);
-
-		if (dstp != 0)
+		for (j = rect->left; j < rect->right; j++)
 		{
-			for (j = 0; j < (rect->right - rect->left); j++)
-			{
-				pxlp = (COLORREF*) dstp[j * hdc->bytesPerPixel];
-				*pxlp = hbr->color; 
-			}
+			*((COLORREF*)&(hBmp->data[i * hBmp->width * hdc->bytesPerPixel + j * hdc->bytesPerPixel])) = hbr->color;
 		}
 	}
 	
 	return 1;
-}
-
-COLORREF GetPixel(HDC hdc, int nXPos, int nYPos)
-{
-	return 0;
-}
-
-COLORREF SetPixel(HDC hdc, int X, int Y, COLORREF crColor)
-{
-	return 0;
 }
 
 COLORREF GetBkColor(HDC hdc)
@@ -210,8 +223,8 @@ int BitBlt(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdc
 	char* srcp;
 	char* dstp;
 
-	/*printf("nXDest: %d nYDest: %d nWidth: %d nHeight: %d nXSrc: %d nYSrc: %d rop: 0x%X\n",
-	       nXDest, nYDest, nWidth, nHeight, nXSrc, nYSrc, rop);*/
+	printf("nXDest: %d nYDest: %d nWidth: %d nHeight: %d nXSrc: %d nYSrc: %d rop: 0x%X\n",
+	       nXDest, nYDest, nWidth, nHeight, nXSrc, nYSrc, rop);
 
 	/*
 	 	0x00CC0020	SRCCOPY
@@ -219,7 +232,7 @@ int BitBlt(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdc
 		0x00000042	BLACKNESS
 		0x00F00021	PATCOPY
 	*/
-
+	
 	if (rop == SRCCOPY || rop == 0x000C0324)
 	{
 		HBITMAP hSrcBmp = (HBITMAP) hdcSrc->selectedObject;

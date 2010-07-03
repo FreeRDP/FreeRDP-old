@@ -102,21 +102,8 @@ typedef COLORREF* LPCOLORREF;
 #define RGB(_red, _green, _blue) \
   (_red << 16) | (_green << 8) | _blue;
 
-struct _DC
-{
-	HGDIOBJ selectedObject;
-	unsigned int bytesPerPixel;
-	unsigned int bitsPerPixel;
-	COLORREF bkColor;
-	COLORREF textColor;
-	int bkMode;
-};
-typedef struct _DC DC;
-typedef DC* HDC;
-
 struct _RECT
 {
-	unsigned char objectType;
 	unsigned int left;
 	unsigned int top;
 	unsigned int right;
@@ -124,6 +111,29 @@ struct _RECT
 };
 typedef struct _RECT RECT;
 typedef RECT* HRECT;
+
+struct _RGN
+{
+	unsigned int left;
+	unsigned int top;
+	unsigned int right;
+	unsigned int bottom;
+};
+typedef struct _RGN RGN;
+typedef RGN* HRGN;
+
+struct _DC
+{
+	HGDIOBJ selectedObject;
+	unsigned int bytesPerPixel;
+	unsigned int bitsPerPixel;
+	HRGN clippingRegion;
+	COLORREF bkColor;
+	COLORREF textColor;
+	int bkMode;
+};
+typedef struct _DC DC;
+typedef DC* HDC;
 
 struct _BITMAP
 {
@@ -166,6 +176,8 @@ HBRUSH CreatePatternBrush(HBITMAP hbmp);
 int SetRect(HRECT rc, int xLeft, int yTop, int xRight, int yBottom);
 int CopyRect(HRECT dst, HRECT src);
 int FillRect(HDC hdc, HRECT rect, HBRUSH hbr);
+HRGN CreateRectRgn(int nLeftRect, int nTopRect, int nRightRect, int nBottomRect);
+int SelectClipRgn(HDC hdc, HRGN hrgn);
 COLORREF GetPixel(HDC hdc, int nXPos, int nYPos);
 COLORREF SetPixel(HDC hdc, int X, int Y, COLORREF crColor);
 COLORREF GetBkColor(HDC hdc);

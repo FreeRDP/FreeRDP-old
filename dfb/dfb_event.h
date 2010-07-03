@@ -30,13 +30,14 @@ struct dfb_info
 	IDirectFB * dfb;
 	DFBRegion region;
 	DFBEvent events[16];
-	IDirectFBSurface * drw;
 	DFBSurfaceDescription dsc;
 	IDirectFBSurface * primary;
 	IDirectFBEventBuffer * event;
 	IDirectFBSurface * screen_surface;
 	IDirectFBDisplayLayer * layer;
 	DFBRectangle update_rect;
+	HBITMAP backingstore;
+	HBITMAP surface;
 	int bytes_per_pixel;
 	int * colourmap;
 	PIXEL bgcolour;
