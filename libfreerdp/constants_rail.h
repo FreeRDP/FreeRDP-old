@@ -69,7 +69,7 @@ enum RDP_RAIL_PDU_TYPE
 #define RAIL_EXEC_E_SESSION_LOCKED	0x0007
 
 /* Client System Parameters Update PDU */
-#ifndef WIN32
+#ifndef _WIN32
 #define SPI_SETDRAGFULLWINDOWS	0x00000025
 #define SPI_SETKEYBOARDCUES	0x0000100B
 #define SPI_SETKEYBOARDPREF	0x00000045
@@ -81,7 +81,7 @@ enum RDP_RAIL_PDU_TYPE
 #define RAIL_SPI_TASKBARPOS	0x0000F000
 
 /* Server System Parameters Update PDU */
-#ifndef WIN32
+#ifndef _WIN32
 #define SPI_SETSCREENSAVEACTIVE		0x00000011
 #define SPI_SETSCREENSAVESECURE		0x00000077
 #endif
@@ -97,7 +97,7 @@ enum RDP_RAIL_PDU_TYPE
 #define SC_DEFAULT	0xF160
 
 /* Client Notify Event PDU */
-#ifndef WIN32
+#ifndef _WIN32
 #define WM_LBUTTONDOWN		0x00000201
 #define WM_LBUTTONUP		0x00000202
 #define WM_RBUTTONDOWN		0x00000204
