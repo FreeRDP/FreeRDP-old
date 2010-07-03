@@ -33,8 +33,13 @@ typedef unsigned short uint16;
 typedef signed short sint16;
 typedef unsigned int uint32;
 typedef signed int sint32;
+#ifdef _WIN32
+typedef unsigned __int64 uint64;
+typedef signed __int64 sint64;
+#else
 typedef unsigned long long uint64;
 typedef signed long long sint64;
+#endif
 
 typedef int RD_BOOL;
 typedef void *RD_HBITMAP;

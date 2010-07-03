@@ -73,7 +73,7 @@
 #define CFSTR_JPEG      "JFIF"
 #define CFSTR_GIF       "GIF"
 
-#ifndef WIN32
+#ifndef _WIN32
 
 #ifndef CF_TEXT
 #define CF_TEXT         1
