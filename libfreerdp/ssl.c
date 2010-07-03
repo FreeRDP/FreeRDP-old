@@ -941,7 +941,7 @@ s_mp_lshd(mp_int * mp, mp_size p)
 	for (ix = pos - p; ix >= 0; ix--)
 		dp[ix + p] = dp[ix];
 	/* Fill the bottom digits with zeroes */
-	for (ix = 0; ix < p; ix++)
+	for (ix = 0; ix < ((int) p); ix++)
 		dp[ix] = 0;
 	return MP_OKAY;
 } /* end s_mp_lshd() */
@@ -972,7 +972,7 @@ s_mp_mul_2d(mp_int * mp, mp_digit d)
 {
 	mp_err res;
 	mp_digit save, next, mask, *dp;
-	mp_size  used;
+	mp_size used;
 	int ix;
 
 	if ((res = s_mp_lshd(mp, d / DIGIT_BIT)) != MP_OKAY)
@@ -990,7 +990,7 @@ s_mp_mul_2d(mp_int * mp, mp_digit d)
 	}
 	/* Do the shifting... */
 	save = 0;
-	for (ix = 0; ix < used; ix++)
+	for (ix = 0; ix < ((int) used); ix++)
 	{
 		next = (dp[ix] >> (DIGIT_BIT - d)) & mask;
 		dp[ix] = (dp[ix] << d) | save;
@@ -1618,7 +1618,7 @@ s_mp_div(mp_int * a, mp_int * b)
 			break;
 		/* Compute a guess for the next quotient digit       */
 		q = DIGIT(&rem, USED(&rem) - 1);
-		if (q <= DIGIT(b, USED(b) - 1) && USED(&rem) > 1)
+		if (q <= ((mp_word) (DIGIT(b, USED(b) - 1))) && USED(&rem) > 1)
 			q = (q << DIGIT_BIT) | DIGIT(&rem, USED(&rem) - 2);
 		q /= DIGIT(b, USED(b) - 1);
 		/* The guess can be as much as RADIX + 1 */
@@ -2305,7 +2305,7 @@ mp_exptmod(mp_int * a, mp_int * b, mp_int * m, mp_int * c)
 	if ((res = mp_div(&mu, m, &mu, NULL)) != MP_OKAY)
 		goto CLEANUP;
 	/* Loop over digits of b in ascending order, except highest order */
-	for (dig = 0; dig < (ub - 1); dig++)
+	for (dig = 0; dig < ((int) (ub - 1)); dig++)
 	{
 		d = *db++;
 		/* Loop over the bits of the lower-order digits */
