@@ -36,7 +36,6 @@ set_wstr(char* dst, int dstlen, char* src, int srclen)
 	iconv_t cd;
 	size_t avail;
 	size_t in_size;
-printf("*****************\n");
 
 	cd = iconv_open("UTF-16LE", "UTF-8");
 	if (cd == (iconv_t) - 1)
