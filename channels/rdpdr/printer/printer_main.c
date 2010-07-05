@@ -228,6 +228,7 @@ printer_register_service(PDEVMAN pDevman, PDEVMAN_ENTRY_POINTS pEntryPoints)
 	srv->free = printer_free;
 	srv->process_data = printer_process_data;
 	srv->type = RDPDR_DTYP_PRINT;
+	srv->get_event = NULL;
 
 	return srv;
 }

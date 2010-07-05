@@ -928,6 +928,7 @@ disk_register_service(PDEVMAN pDevman, PDEVMAN_ENTRY_POINTS pEntryPoints)
 	srv->lock_control = disk_lock_control;
 	srv->free = disk_free;
 	srv->type = RDPDR_DTYP_FILESYSTEM;
+	srv->get_event = NULL;
 
 	return srv;
 }

@@ -57,6 +57,7 @@ struct _SERVICE
 	uint32 (*lock_control) (IRP * irp);
 	uint32 (*free) (DEVICE * dev);
 	uint32 (*process_data) (SERVICE * srv, int type, const char * data, int data_len);
+	int    (*get_event) (IRP * irp, uint32 * result);
 };
 typedef SERVICE * PSERVICE;
 

@@ -50,6 +50,8 @@ void
 irp_process_query_directory_request(IRP* irp, char* data, int data_size);
 void
 irp_process_notify_change_directory_request(IRP* irp, char* data, int data_size);
+int
+irp_get_event(IRP * irp, uint32 * result);
 
 #endif // __IRP_H
 

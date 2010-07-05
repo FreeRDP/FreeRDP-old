@@ -378,3 +378,11 @@ irp_process_notify_change_directory_request(IRP* irp, char* data, int data_size)
 	}
 }
 
+int
+irp_get_event(IRP * irp, uint32 * result)
+{
+	if (irp->dev->service->get_event)
+		return irp->dev->service->get_event(irp, result);
+
+	return 0;
+}
