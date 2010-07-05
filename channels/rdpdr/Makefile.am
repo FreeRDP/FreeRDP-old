@@ -11,7 +11,8 @@ rdpdr_la_SOURCES = \
 	rdpdr_capabilities.c rdpdr_capabilities.h \
 	rdpdr_constants.h \
 	devman.c devman.h \
-	irp.c irp.h
+	irp.c irp.h \
+	irp_queue.c irp_queue.h
 
 rdpdr_la_CFLAGS = -I../../include -I../common -I. \
 	-DPLUGIN_PATH=\"$(PLUGIN_PATH)\"
