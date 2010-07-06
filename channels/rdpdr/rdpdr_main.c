@@ -34,6 +34,10 @@
 #include "rdpdr_capabilities.h"
 #include "devman.h"
 #include "irp.h"
+#include "irp_queue.h"
+
+
+IRPQueue *queue = 0;
 
 /* called by main thread
    add item to linked list and inform worker thread that there is data */
@@ -255,6 +259,7 @@ rdpdr_process_irp(rdpdrPlugin * plugin, char* data, int data_size)
 	char * out;
 	int out_size;
 	int error;
+	uint32 result;
 
 	memset((void*)&irp, '\0', sizeof(IRP));
 
@@ -339,8 +344,31 @@ rdpdr_process_irp(rdpdrPlugin * plugin, char* data, int data_size)
 				"VirtualChannelWrite failed %d", error));
 		}
 	}
+	else
+	{
+		LLOGLN(10, ("IRP enqueue event"));
+		irp_queue_push(queue, &irp);
+	}
+
 	if (irp.outputBuffer)
 		free(irp.outputBuffer);
+
+	if (irp_get_event(&irp, &result))
+	{
+		LLOGLN(10, ("IRP process pending events"));
+		IRP * pending = 0;
+		while (!irp_queue_empty(queue))
+		{
+			pending = irp_queue_first(queue);
+			pending->outputBuffer = malloc(pending->outputBufferLength);
+			pending->ioStatus = RD_STATUS_SUCCESS;
+			SET_UINT32(pending->outputBuffer, 0, result);
+			out = irp_output_device_io_completion(pending, &out_size);
+			error = plugin->ep.pVirtualChannelWrite(plugin->open_handle, out, out_size, out);
+			free(pending->outputBuffer);
+			irp_queue_pop(queue);
+		}
+	}
 }
 
 static int
@@ -535,7 +563,7 @@ thread_func(void * arg)
 	int numobj;
 
 	plugin = (rdpdrPlugin *) arg;
-
+	queue = irp_queue_new();
 	plugin->thread_status = 1;
 	LLOGLN(10, ("thread_func: in"));
 
@@ -560,6 +588,7 @@ thread_func(void * arg)
 
 	LLOGLN(10, ("thread_func: out"));
 	plugin->thread_status = -1;
+	irp_queue_free(queue);
 	return 0;
 }
 
