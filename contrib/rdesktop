@@ -1,0 +1,131 @@
+#!/bin/bash
+# FreeRDP: A Remote Desktop Protocol client.
+# rdesktop - command line compatibility layer
+
+# Copyright (C) Otavio Salvador <otavio@ossystems.com.br> 2010
+
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+usage() {
+	cat <<EOF
+FreeRDP - A Free Remote Desktop Protocol Client
+See http://freerdp.sourceforge.net for more information
+
+This is a command line compatibility layer to allow for a drop-in move
+from rdesktop users to xfreerdp. Please take a look at xfreerdp
+manpage and stop using this script as soon as possible since it is not
+going to be supported for next releases.
+
+EOF
+}
+
+run_test() {
+	local in=$1
+	local exp=$2
+
+	out=`DRY=true ${in/rdesktop/$0}`
+
+	if [ "$exp" = "$out" ]; then
+		echo " - $in ... ok"
+	else
+		echo " - $in ... err"
+		echo "   wanted: '$exp'"
+		echo "      got: '$out'"
+		echo
+	fi
+}
+
+if [ $# = 0 ]; then
+	usage
+	exit 1
+fi
+
+args=''
+while [ -n "$1" ]; do
+	arg=$1
+
+	case "$arg" in
+		-h|--help)
+		usage
+		exit 0
+		;;
+		# same in xfreerdp
+		-0|-f|-z|-a*|-c*|-u*|-p*|-n*|-g*|-s*|-x*)
+		if test ${#arg} = 2; then
+			shift
+			args="$args $arg $1"
+		else
+			args="$args ${arg:0:2} ${arg:2}"
+		fi
+		;;
+		-r)
+		shift
+		case "${1/:*/}" in
+			disk|printer)
+			args="$args --plugin rdpdr --data ${1/=/:}"
+			;;
+			clipboard)
+			case "${1/*:/}" in
+				off)
+				;;
+				*)
+				args="$args --plugin cliprdr"
+				;;
+			esac
+			;;
+			sound)
+			case "${1/*:/}" in
+				off)
+				;;
+				*)
+				args="$args --plugin rdpsnd"
+				;;
+			esac
+			;;
+		esac
+		;;
+		run-tests)
+		echo "Running tests..."
+		run_test "rdesktop -n name" "xfreerdp -n name"
+		run_test "rdesktop -nname" "xfreerdp -n name"
+		run_test "rdesktop host" "xfreerdp host"
+		run_test "rdesktop host:port" "xfreerdp host -t port"
+		run_test "rdesktop -r clipboard" "xfreerdp --plugin cliprdr"
+		run_test "rdesktop -r clipboard:off" "xfreerdp"
+		run_test "rdesktop -r clipboard:PRIMARYCLIPBOARD" "xfreerdp --plugin cliprdr"
+		run_test "rdesktop -r disk:floppy=/mnt/floppy" "xfreerdp --plugin rdpdr --data disk:floppy:/mnt/floppy"
+		run_test "rdesktop -r sound:off" "xfreerdp"
+		run_test "rdesktop -r sound:remote" "xfreerdp --plugin rdpsnd"
+		run_test "rdesktop -r printer:mydeskjet=\"HP LaserJet IIIP\"" "xfreerdp --plugin rdpdr --data printer:mydeskjet:\"HP LaserJet IIIP\""
+		exit 0
+		;;
+		*)
+		if [ "$arg" = "${arg/:*/}" ]; then
+			args="$args $arg"
+		else
+			args="$args ${arg/:*/} -t ${arg/*:/}"
+		fi
+	esac
+
+	shift
+done
+
+if [ "$DRY" ]; then
+	echo "xfreerdp$args"
+else
+	usage
+
+	xfreerdp$args
+fi

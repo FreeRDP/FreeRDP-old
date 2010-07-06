@@ -3,6 +3,7 @@ REQUIRED_SUBDIRS = \
 	asn1 \
 	libfreerdp \
 	doc \
+	contrib \
 	include \
 	libfreerdpkbd \
 	keymaps \
