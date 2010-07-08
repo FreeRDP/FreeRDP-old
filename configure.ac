@@ -1036,6 +1036,7 @@ channels/rdpdr/Makefile
 channels/rdpdr/disk/Makefile
 channels/rdpdr/printer/Makefile
 channels/rdpdr/serial/Makefile
+channels/rdpdr/parallel/Makefile
 contrib/Makefile
 ])
 

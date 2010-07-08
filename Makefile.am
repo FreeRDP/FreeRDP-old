@@ -17,7 +17,8 @@ REQUIRED_SUBDIRS = \
 	channels/rdpdr \
 	channels/rdpdr/disk \
 	channels/rdpdr/printer \
-	channels/rdpdr/serial
+	channels/rdpdr/serial \
+	channels/rdpdr/parallel
 
 OPTIONAL_SUBDIRS = \
 	X11 \
