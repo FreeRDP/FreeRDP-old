@@ -229,8 +229,8 @@ tcp_recv(rdpTcp * tcp, STREAM s, uint32 length)
 		{
 			if (tcp->iso->mcs->sec->negotiation_state < 2)
 			{
-				/* Disconnection is due to an encryption negotiation failure */
-				tcp->iso->mcs->sec->negotiation_state = -1;	/* failure */
+				/* disconnection is due to an encryption protocol negotiation failure */
+				tcp->iso->mcs->sec->denied_protocols |= tcp->iso->mcs->sec->requested_protocol;
 				return NULL;
 			}
 			else

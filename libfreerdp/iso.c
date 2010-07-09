@@ -88,7 +88,7 @@ x224_send_connection_request(rdpIso * iso, char *username)
 	STREAM s;
 	int length = 30 + strlen(username);
 
-	if (iso->mcs->sec->tls)
+	if (iso->mcs->sec->requested_protocol > PROTOCOL_RDP)
 		length += 8;
 
 	/*
@@ -119,13 +119,12 @@ x224_send_connection_request(rdpIso * iso, char *username)
 	out_uint8(s, 0x0D);	/* CR */
 	out_uint8(s, 0x0A);	/* LF */
 
-	if (iso->mcs->sec->tls)
-	{
-		/* When using TLS + NLA, the RDP_NEG_DATA field should be present */
-		out_uint8(s, TYPE_RDP_NEG_REQ);
+	if (iso->mcs->sec->requested_protocol > PROTOCOL_RDP)
+	{	
+		out_uint8(s, TYPE_RDP_NEG_REQ); /* When using TLS, NLA, or both, RDP_NEG_DATA should be present */
 		out_uint8(s, 0x00);	/* flags, must be set to zero */
 		out_uint16_le(s, 8);	/* RDP_NEG_DATA length (8) */
-		out_uint32_le(s, PROTOCOL_HYBRID | PROTOCOL_SSL);	/* requestedProtocols */
+		out_uint32_le(s, iso->mcs->sec->requested_protocol); /* requestedProtocols */
 	}
 
 	s_mark_end(s);
@@ -145,21 +144,22 @@ rdp_process_negotiation_response(rdpIso * iso, STREAM s)
 	in_uint16_le(s, length);
 	in_uint32_le(s, selectedProtocol);
 
-	if (iso->mcs->sec->tls)
+	if (iso->mcs->sec->requested_protocol > PROTOCOL_RDP)
 	{
 		switch (selectedProtocol)
 		{
 			case PROTOCOL_RDP:
-				printf("Selected PROTOCOL_RDP Security\n");
+				iso->mcs->sec->negotiated_protocol = PROTOCOL_RDP;
 				break;
-			case PROTOCOL_SSL:
-				printf("Selected PROTOCOL_SSL Security\n");
+			case PROTOCOL_TLS:
+				iso->mcs->sec->negotiated_protocol = PROTOCOL_TLS;
 				break;
-			case PROTOCOL_HYBRID:
-				printf("Selected PROTOCOL_HYBRID Security\n");
+			case PROTOCOL_NLA:
+				iso->mcs->sec->negotiated_protocol = PROTOCOL_NLA;
 				break;
 			default:
-				printf("Error: Unknown protocol security\n");
+				iso->mcs->sec->negotiated_protocol = PROTOCOL_RDP;
+				printf("Error: unknown protocol security\n");
 				break;
 		}
 	}
@@ -179,7 +179,7 @@ rdp_process_negotiation_failure(rdpIso * iso, STREAM s)
 	in_uint16_le(s, length);
 	in_uint32_le(s, failureCode);
 
-	if (iso->mcs->sec->tls)
+	if (iso->mcs->sec->requested_protocol > PROTOCOL_RDP)
 	{
 		switch (failureCode)
 		{
@@ -338,10 +338,9 @@ iso_negotiate_encryption(rdpIso * iso, char *username)
 {
 	uint8 code;
 
-	if (iso->mcs->sec->tls == 0)
+	if (iso->mcs->sec->requested_protocol == PROTOCOL_RDP)
 	{
-		/* We do no use TLS + NLA, so we won't attempt to negotiate */
-
+		/* We use legacy RDP encryption, so we won't attempt to negotiate */
 		iso->mcs->sec->negotiation_state = 2;
 		x224_send_connection_request(iso, username);
 
@@ -359,11 +358,10 @@ iso_negotiate_encryption(rdpIso * iso, char *username)
 		/* Attempt to receive negotiation response */
 		if (tpkt_recv(iso, &code, NULL) == NULL)
 		{
-			if (iso->mcs->sec->negotiation_state == -1)
+			if (iso->mcs->sec->requested_protocol & iso->mcs->sec->denied_protocols)
 			{
 				/* Negotiation failure, downgrade encryption and try again */
-
-				iso->mcs->sec->tls = 0;
+				iso->mcs->sec->requested_protocol = PROTOCOL_RDP;
 
 				/* second negotiation attempt */
 				iso->mcs->sec->negotiation_state = 2;

@@ -355,7 +355,7 @@ run_dfbfreerdp(rdpSet * settings, rdpChanMan * chan_man)
 			printf("run_dfbfreerdp: inst->rdp_get_fds failed\n");
 			break;
 		}
-		/* get x fds */
+		/* get DirectFB fds */
 		if (dfb_get_fds(inst, read_fds, &read_count, write_fds, &write_count) != 0)
 		{
 			printf("run_dfbfreerdp: dfb_get_fds failed\n");
@@ -411,12 +411,12 @@ run_dfbfreerdp(rdpSet * settings, rdpChanMan * chan_man)
 			printf("run_dfbfreerdp: inst->rdp_check_fds failed\n");
 			break;
 		}
-		/* check x fds */
+		/* check DirectFB fds */
 		if (dfb_check_fds(inst) != 0)
 		{
 			printf("run_dfbfreerdp: dfb_check_fds failed\n");
 			break;
-		}
+		}		
 		/* check channel fds */
 		if (freerdp_chanman_check_fds(chan_man, inst) != 0)
 		{

@@ -895,29 +895,36 @@ RD_BOOL
 sec_connect(rdpSec * sec, char *server, char *username, int port)
 {
 	/* Don't forget to set this *before* iso_connect(), otherwise you'll bang your head on the wall */
-	/* sec->tls = 1; */
+	sec->requested_protocol = PROTOCOL_RDP;
 
 	if (!iso_connect(sec->mcs->iso, server, username, port))
 		return False;
 
 #ifndef DISABLE_TLS
-
-	if(sec->tls)
+	if(sec->negotiated_protocol == PROTOCOL_NLA)
 	{
 		/* TLS with NLA was successfully negotiated */
-
+		printf("PROTOCOL_NLA negotiated\n");
 		sec->ctx = tls_create_context();
 		sec->ssl = tls_connect(sec->ctx, sec->mcs->iso->tcp->sock, server);
 		ntlm_send_negotiate_message(sec);
 		credssp_recv(sec);
-		exit(0);
+		exit(0); /* not implemented from this point */
+	}
+	else if(sec->negotiated_protocol == PROTOCOL_TLS)
+	{
+		/* TLS without NLA was successfully negotiated */
+		printf("PROTOCOL_TLS negotiated\n");
+		sec->ctx = tls_create_context();
+		sec->ssl = tls_connect(sec->ctx, sec->mcs->iso->tcp->sock, server);
+		exit(0); /* not implemented from this point */
 	}
 	else
 #endif
 	{
 		RD_BOOL success;
 		struct stream connectdata;
-
+		printf("PROTOCOL_RDP negotiated\n");
 		/* We exchange some RDP data during the MCS-Connect */
 		connectdata.size = 512;
 		connectdata.p = connectdata.data = (uint8 *) xmalloc(connectdata.size);

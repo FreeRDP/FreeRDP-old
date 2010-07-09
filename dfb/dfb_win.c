@@ -875,6 +875,10 @@ dfb_uninit(void * dfb_info)
 int
 dfb_get_fds(rdpInst * inst, void ** read_fds, int * read_count, void ** write_fds, int * write_count)
 {
+	dfbInfo * dfbi;
+	dfbi = GET_DFBI(inst);
+	dfbi->event->CreateFileDescriptor(dfbi->event, read_fds[*read_count]);
+	(*read_count)++;
 	return 0;
 }
 
@@ -884,7 +888,7 @@ dfb_check_fds(rdpInst * inst)
 	dfbInfo * dfbi;
 	dfbi = GET_DFBI(inst);
 	
-	if (dfbi->event->HasEvent(dfbi->event) == DFB_OK)
+	while (dfbi->event->HasEvent(dfbi->event) == DFB_OK)
 	{
 		if (dfbi->event->GetEvent(dfbi->event, &(dfbi->events[0])) == 0)
 		{

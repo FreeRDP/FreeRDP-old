@@ -76,9 +76,9 @@ mcs_send_connect_initial(rdpMcs * mcs, STREAM connectdata)
 	ber_out_header(s, BER_TAG_BOOLEAN, 1);	/* upwardFlag */
 	out_uint8(s, 0xff);
 
-	mcs_out_domain_params(s, 34, 2, 0, 0xffff);	/* targetParameters */
+	mcs_out_domain_params(s, 34, 2, 0, 0xFFFF);	/* targetParameters */
 	mcs_out_domain_params(s, 1, 1, 1, 0x420);	/* minimumParameters */
-	mcs_out_domain_params(s, 0xffff, 0xfc17, 0xffff, 0xffff);	/* maximumParameters */
+	mcs_out_domain_params(s, 0xFFFF, 0xFC17, 0xFFFF, 0xFFFF);	/* maximumParameters */
 
 	ber_out_header(s, BER_TAG_OCTET_STRING, datalen);	/* userData */
 	out_uint8p(s, connectdata->data, datalen);
