@@ -96,6 +96,7 @@ mcs_recv_connect_response(rdpMcs * mcs)
 	STREAM s;
 
 	s = iso_recv(mcs->iso, NULL);
+	
 	if (s == NULL)
 		return False;
 

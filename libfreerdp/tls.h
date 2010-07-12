@@ -22,6 +22,7 @@
 #ifndef __TLS_H
 #define	__TLS_H
 
+#include "tcp.h"
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 #include <openssl/rc4.h>
@@ -40,5 +41,7 @@ int
 tls_write(SSL *ssl, char* b, int size);
 int
 tls_read(SSL *ssl, char* b, int size);
+STREAM
+tls_recv(rdpTcp * tcp, STREAM s, uint32 length);
 
 #endif	// __TLS_H

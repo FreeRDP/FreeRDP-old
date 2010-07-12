@@ -275,7 +275,7 @@ tls_disconnect(SSL *ssl)
 	ssl = NULL;
 }
 
-/* Send data over TLS connection */
+/* Write data over TLS connection */
 int tls_write(SSL *ssl, char* b, int size)
 {
 	int write_status;
@@ -300,7 +300,7 @@ int tls_write(SSL *ssl, char* b, int size)
 		return bytesWritten;
 }
 
-/* Receive data over TLS connection */
+/* Read data over TLS connection */
 int tls_read(SSL *ssl, char* b, int size)
 {
 	int read_status;
@@ -332,4 +332,27 @@ int tls_read(SSL *ssl, char* b, int size)
 	}
 
 	return bytesRead;
+}
+
+/* Receive data over TLS connection */
+STREAM
+tls_recv(rdpTcp * tcp, STREAM s, uint32 length)
+{
+	int bytesRead = 0;
+	
+	if (s == NULL)
+	{
+		/* read into "new" stream */
+		if (length > tcp->in.size)
+		{
+			tcp->in.data = (uint8 *) xrealloc(tcp->in.data, length);
+			tcp->in.size = length;
+		}
+		tcp->in.end = tcp->in.p = tcp->in.data;
+		s = &(tcp->in);
+	}
+
+	bytesRead = tls_read(tcp->iso->mcs->sec->ssl, (char*) s->data, length);
+	s->size = bytesRead;
+	return s;
 }

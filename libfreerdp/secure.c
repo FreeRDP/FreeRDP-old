@@ -907,6 +907,7 @@ sec_connect(rdpSec * sec, char *server, char *username, int port)
 		printf("PROTOCOL_NLA negotiated\n");
 		sec->ctx = tls_create_context();
 		sec->ssl = tls_connect(sec->ctx, sec->mcs->iso->tcp->sock, server);
+		sec->tls_connected = 1;
 		ntlm_send_negotiate_message(sec);
 		credssp_recv(sec);
 		exit(0); /* not implemented from this point */
@@ -914,10 +915,19 @@ sec_connect(rdpSec * sec, char *server, char *username, int port)
 	else if(sec->negotiated_protocol == PROTOCOL_TLS)
 	{
 		/* TLS without NLA was successfully negotiated */
+		RD_BOOL success;
+		struct stream connectdata;
 		printf("PROTOCOL_TLS negotiated\n");
 		sec->ctx = tls_create_context();
 		sec->ssl = tls_connect(sec->ctx, sec->mcs->iso->tcp->sock, server);
-		exit(0); /* not implemented from this point */
+		sec->tls_connected = 1;
+
+		/* We exchange some RDP data during the MCS-Connect */
+		connectdata.size = 512;
+		connectdata.p = connectdata.data = (uint8 *) xmalloc(connectdata.size);
+		sec_out_connectdata(sec, &connectdata);
+		success = mcs_connect(sec->mcs, &connectdata);
+		xfree(connectdata.data);
 	}
 	else
 #endif
@@ -937,6 +947,8 @@ sec_connect(rdpSec * sec, char *server, char *username, int port)
 
 		return success;
 	}
+
+	return 0;
 }
 
 /* Reestablish a secure connection */

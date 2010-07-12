@@ -214,8 +214,11 @@ x224_recv(rdpIso * iso, STREAM s, int length, uint8 * pcode)
 	uint8 subcode;
 	uint8 type;
 
-	s = tcp_recv(iso->tcp, s, length - 4);
-
+	if (iso->mcs->sec->tls_connected)
+		s = tls_recv(iso->tcp, s, length - 4);
+	else
+		s = tcp_recv(iso->tcp, s, length - 4);
+	
 	if (s == NULL)
 		return NULL;
 
@@ -298,7 +301,10 @@ tpkt_recv(rdpIso * iso, uint8 * pcode, isoRecvType * ptype)
 	STREAM s;
 	int length;
 
-	s = tcp_recv(iso->tcp, NULL, 4);
+	if (iso->mcs->sec->tls_connected)
+		s = tls_recv(iso->tcp, NULL, 4);
+	else
+		s = tcp_recv(iso->tcp, NULL, 4);
 
 	if (s == NULL)
 		return NULL;
@@ -327,7 +333,10 @@ tpkt_recv(rdpIso * iso, uint8 * pcode, isoRecvType * ptype)
 			length &= ~0x80;
 			next_be(s, length);
 		}
-		s = tcp_recv(iso->tcp, s, length - 4);
+		if (iso->mcs->sec->tls_connected)
+			s = tls_recv(iso->tcp, s, length - 4);
+		else
+			s = tcp_recv(iso->tcp, s, length - 4);
 		return s;
 	}
 	return NULL;	/* Fast-Path not allowed */
@@ -425,7 +434,10 @@ iso_send(rdpIso * iso, STREAM s)
 	out_uint8(s, X224_TPDU_DATA);	/* code */
 	out_uint8(s, 0x80);	/* eot */
 
-	tcp_send(iso->tcp, s);
+	if (iso->mcs->sec->tls_connected)
+		tls_write(iso->mcs->sec->ssl, (char*) s->data, length);
+	else
+		tcp_send(iso->tcp, s);
 }
 
 /* Send an fast path data PDU */
@@ -459,7 +471,11 @@ iso_fp_send(rdpIso * iso, STREAM s, uint32 flags)
 		s->end--;
 		out_uint8(s, len);
 	}
-	tcp_send(iso->tcp, s);
+
+	if (iso->mcs->sec->tls_connected)
+		tls_write(iso->mcs->sec->ssl, (char*) s->data, len);
+	else
+		tcp_send(iso->tcp, s);
 }
 
 /* Receive ISO transport data packet
