@@ -79,9 +79,9 @@ void
 irp_queue_pop(IRPQueue * queue)
 {
 	if (irp_queue_empty(queue))
-		return NULL;
+		return;
 
-	IRP *taken = queue->head->irp;
+	/* IRP *taken = queue->head->irp; */
 	struct irp_queue_node *dying = queue->head;
 
 	queue->head = queue->head->next;
