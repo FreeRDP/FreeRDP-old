@@ -58,8 +58,8 @@ set_default_params(rdpSet * settings)
 	settings->bitmap_cache = 1;
 	settings->bitmap_compression = 1;
 	settings->desktop_save = 0;
-	settings->performanceflags =
-		PERF_DISABLE_WALLPAPER | PERF_DISABLE_FULLWINDOWDRAG | PERF_DISABLE_MENUANIMATIONS;
+	settings->rdp5_performanceflags =
+		RDP5_NO_WALLPAPER | RDP5_NO_FULLWINDOWDRAG | RDP5_NO_MENUANIMATIONS;
 	settings->off_screen_bitmaps = 1;
 	settings->triblt = 0;
 	settings->new_cursors = 1;
@@ -152,21 +152,21 @@ process_params(rdpSet * settings, rdpChanMan * chan_man, int argc, LPWSTR * argv
 			}
 			if (wcsncmp(L"m", argv[*pindex], 1) == 0) /* modem */
 			{
-				settings->performanceflags = PERF_DISABLE_WALLPAPER |
-					PERF_DISABLE_FULLWINDOWDRAG | PERF_DISABLE_MENUANIMATIONS |
-					PERF_DISABLE_THEMING;
+				settings->rdp5_performanceflags = RDP5_NO_WALLPAPER |
+					RDP5_NO_FULLWINDOWDRAG |  RDP5_NO_MENUANIMATIONS |
+					RDP5_NO_THEMING;
 			}
 			else if (wcsncmp(L"b", argv[*pindex], 1) == 0) /* broadband */
 			{
-				settings->performanceflags = PERF_DISABLE_WALLPAPER;
+				settings->rdp5_performanceflags = RDP5_NO_WALLPAPER;
 			}
 			else if (wcsncmp(L"l", argv[*pindex], 1) == 0) /* lan */
 			{
-				settings->performanceflags = PERF_FLAG_NONE;
+				settings->rdp5_performanceflags = RDP5_DISABLE_NOTHING;
 			}
 			else
 			{
-				settings->performanceflags = wcstol(argv[*pindex], 0, 16);
+				settings->rdp5_performanceflags = wcstol(argv[*pindex], 0, 16);
 			}
 		}
 		else if (wcscmp(L"-plugin", argv[*pindex]) == 0)

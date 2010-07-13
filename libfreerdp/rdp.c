@@ -424,7 +424,7 @@ rdp_send_client_info(rdpRdp * rdp, uint32 flags, char *domain, char *user,
 		rdp_out_client_timezone_info(rdp, s); // clientTimeZone
 
 		out_uint32_le(s, 0); // clientSessionId, should be set to zero
-		out_uint32_le(s, rdp->settings->performanceflags); // performanceFlags
+		out_uint32_le(s, rdp->settings->rdp5_performanceflags); // performanceFlags
 		out_uint16_le(s, 0); // cbAutoReconnectLen
 		// autoReconnectCookie (length specified by cbAutoReconnectLen)
 	}

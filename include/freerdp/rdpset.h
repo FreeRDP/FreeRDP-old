@@ -56,7 +56,7 @@ struct rdp_set
 	int bitmap_cache_persist_enable;
 	int bitmap_cache_precache;
 	int bitmap_compression;
-	int performanceflags;
+	int rdp5_performanceflags;
 	int desktop_save;
 	int polygon_ellipse_orders;
 	int autologin;
