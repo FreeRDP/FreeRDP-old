@@ -8,7 +8,7 @@ libcommon_la_SOURCES = \
 	wait_obj.c wait_obj.h \
 	types.h
 
-libcommon_la_CFLAGS = -I../../include -I.
+libcommon_la_CFLAGS = -I$(top_srcdir)/include -I.
 
 libcommon_la_LDFLAGS =
 

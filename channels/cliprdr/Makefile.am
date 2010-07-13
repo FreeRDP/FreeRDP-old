@@ -8,7 +8,7 @@ cliprdr_LTLIBRARIES = cliprdr.la
 cliprdr_la_SOURCES = \
 	cliprdr_main.h cliprdr_main.c
 
-cliprdr_la_CFLAGS = -I../../include -I../common
+cliprdr_la_CFLAGS = -I$(top_srcdir)/include -I$(srcdir)/../common
 
 cliprdr_la_LDFLAGS = -avoid-version -module
 

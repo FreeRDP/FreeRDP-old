@@ -8,8 +8,8 @@ disk_LTLIBRARIES = disk.la
 disk_la_SOURCES = \
 	disk_main.c
 
-disk_la_CFLAGS = -I../../../include -I../../common -I../ \
-	-DPLUGIN_PATH=\"$(PLUGIN_PATH)\"
+disk_la_CFLAGS = -I$(top_srcdir)/include -I$(srcdir)/../../common \
+	-I$(srcdir)/.. -DPLUGIN_PATH=\"$(PLUGIN_PATH)\"
 
 disk_la_LDFLAGS = -avoid-version -module
 

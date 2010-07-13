@@ -11,7 +11,7 @@ rdpsnd_la_SOURCES = \
 	rdpsnd_dsp.h rdpsnd.h \
 	rdpsnd_main.c
 
-rdpsnd_la_CFLAGS = -I../../include -I../common \
+rdpsnd_la_CFLAGS = -I$(top_srcdir)/include -I$(srcdir)/../common \
 	-DPLUGIN_PATH=\"$(PLUGIN_PATH)\"
 
 rdpsnd_la_LDFLAGS = -avoid-version -module

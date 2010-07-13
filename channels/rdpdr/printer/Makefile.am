@@ -8,8 +8,8 @@ printer_LTLIBRARIES = printer.la
 printer_la_SOURCES = \
 	printer_main.c printer_main.h
 
-printer_la_CFLAGS = -I../../../include -I../../common -I../ \
-	-DPLUGIN_PATH=\"$(PLUGIN_PATH)\"
+printer_la_CFLAGS = -I$(top_srcdir)/include -I$(srcdir)/../../common \
+	-I$(srcdir)/.. -DPLUGIN_PATH=\"$(PLUGIN_PATH)\"
 
 printer_la_LDFLAGS = -avoid-version -module
 
