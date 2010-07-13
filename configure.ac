@@ -1015,6 +1015,7 @@ channels/rdpdr/Makefile
 channels/rdpdr/disk/Makefile
 channels/rdpdr/printer/Makefile
 channels/rdpdr/serial/Makefile
+contrib/Makefile
 ])
 
 AC_OUTPUT
