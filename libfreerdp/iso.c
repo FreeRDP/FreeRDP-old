@@ -512,31 +512,6 @@ iso_connect(rdpIso * iso, char *server, char *username, int port)
 	return iso_negotiate_encryption(iso, username);
 }
 
-/* Establish a reconnection up to the ISO layer */
-RD_BOOL
-iso_reconnect(rdpIso * iso, char *server, int port)
-{
-	uint8 code = 0;
-
-	if (!tcp_connect(iso->tcp, server, port))
-		return False;
-
-	x224_send_dst_src_class(iso, X224_TPDU_CONNECTION_REQUEST);
-
-	if (iso_recv_msg(iso, &code, NULL) == NULL)
-		return False;
-
-	if (code != X224_TPDU_CONNECTION_CONFIRM)
-	{
-		ui_error(iso->mcs->sec->rdp->inst,
-			 "expected X224_TPDU_CONNECTION_CONFIRM, got 0x%x\n", code);
-		tcp_disconnect(iso->tcp);
-		return False;
-	}
-
-	return True;
-}
-
 /* Disconnect from the ISO layer */
 void
 iso_disconnect(rdpIso * iso)

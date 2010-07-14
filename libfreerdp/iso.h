@@ -51,8 +51,6 @@ STREAM
 iso_recv(rdpIso * iso, isoRecvType * ptype);
 RD_BOOL
 iso_connect(rdpIso * iso, char * server, char * username, int port);
-RD_BOOL
-iso_reconnect(rdpIso * iso, char * server, int port);
 void
 iso_disconnect(rdpIso * iso);
 rdpIso *

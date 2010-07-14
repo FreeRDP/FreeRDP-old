@@ -363,50 +363,6 @@ mcs_connect(rdpMcs * mcs, STREAM connectdata)
 	return False;
 }
 
-/* Establish a connection up to the MCS layer */
-RD_BOOL
-mcs_reconnect(rdpMcs * mcs, STREAM connectdata)
-{
-	int i;
-	int mcs_id;
-	rdpSet * settings;
-
-	mcs_send_connect_initial(mcs, connectdata);
-	if (!mcs_recv_connect_response(mcs))
-		goto error;
-
-	mcs_send_edrq(mcs);
-
-	mcs_send_aurq(mcs);
-	if (!mcs_recv_aucf(mcs, &(mcs->mcs_userid)))
-		goto error;
-
-	mcs_send_cjrq(mcs, mcs->mcs_userid + MCS_USERCHANNEL_BASE);
-
-	if (!mcs_recv_cjcf(mcs))
-		goto error;
-
-	mcs_send_cjrq(mcs, MCS_GLOBAL_CHANNEL);
-	if (!mcs_recv_cjcf(mcs))
-		goto error;
-
-	settings = mcs->sec->rdp->settings;
-	for (i = 0; i < settings->num_channels; i++)
-	{
-		mcs_id = settings->channels[i].chan_id;
-		if (mcs_id >= mcs->mcs_userid + MCS_USERCHANNEL_BASE)
-			goto error;
-		mcs_send_cjrq(mcs, mcs_id);
-		if (!mcs_recv_cjcf(mcs))
-			goto error;
-	}
-	return True;
-
-      error:
-	iso_disconnect(mcs->iso);
-	return False;
-}
-
 /* Disconnect from the MCS layer */
 void
 mcs_disconnect(rdpMcs * mcs)

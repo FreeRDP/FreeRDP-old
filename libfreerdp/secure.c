@@ -951,29 +951,6 @@ sec_connect(rdpSec * sec, char *server, char *username, int port)
 	return 0;
 }
 
-/* Reestablish a secure connection */
-RD_BOOL
-sec_reconnect(rdpSec * sec, char *server, int port)
-{
-	RD_BOOL success;
-	struct stream connectdata;
-
-	if (!iso_reconnect(sec->mcs->iso, server, port))
-		return False;
-
-	/* We exchange some RDP data during the MCS-Connect */
-	connectdata.size = 512;
-	connectdata.p = connectdata.data = (uint8 *) xmalloc(connectdata.size);
-	sec_out_connectdata(sec, &connectdata);
-	success = mcs_reconnect(sec->mcs, &connectdata);
-	xfree(connectdata.data);
-
-	if (success && sec->rdp->settings->encryption)
-		sec_establish_key(sec);
-
-	return success;
-}
-
 /* Disconnect a connection */
 void
 sec_disconnect(rdpSec * sec)

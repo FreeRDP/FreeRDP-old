@@ -1443,19 +1443,6 @@ rdp_connect(rdpRdp * rdp)
 	return True;
 }
 
-/* Establish a reconnection up to the RDP layer */
-RD_BOOL
-rdp_reconnect(rdpRdp * rdp)
-{
-	/* FIXME: Cookie is unused? */
-	if (!sec_reconnect(rdp->sec, rdp->redirect_server, rdp->settings->tcp_port_rdp))
-		return False;
-
-	rdp_send_client_info(rdp, INFO_NORMALLOGON | INFO_AUTOLOGON, rdp->redirect_domain, rdp->redirect_username,
-			rdp->redirect_password, rdp->redirect_password_len, rdp->settings->shell, rdp->settings->directory);
-	return True;
-}
-
 /* Disconnect from the RDP layer */
 void
 rdp_disconnect(rdpRdp * rdp)

@@ -94,8 +94,6 @@ STREAM
 sec_recv(rdpSec * sec, secRecvType * type);
 RD_BOOL
 sec_connect(rdpSec * sec, char *server, char *username, int port);
-RD_BOOL
-sec_reconnect(rdpSec * sec, char *server, int port);
 void
 sec_disconnect(rdpSec * sec);
 rdpSec *

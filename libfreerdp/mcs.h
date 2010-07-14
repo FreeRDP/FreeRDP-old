@@ -46,8 +46,6 @@ STREAM
 mcs_recv(rdpMcs * mcs, uint16 * channel, isoRecvType * ptype);
 RD_BOOL
 mcs_connect(rdpMcs * mcs, STREAM mcs_data);
-RD_BOOL
-mcs_reconnect(rdpMcs * mcs, STREAM mcs_data);
 void
 mcs_disconnect(rdpMcs * mcs);
 rdpMcs *
