@@ -149,6 +149,10 @@ tcp_send(rdpTcp * tcp, STREAM s)
 	int length = s->end - s->data;
 	int sent, total = 0;
 
+	if (tcp->iso->mcs->sec->tls_connected)
+	{
+		tls_write(tcp->iso->mcs->sec->ssl, (char*) s->data, length);
+	}
 	while (total < length)
 	{
 		sent = send(tcp->sock, s->data + total, length - total, MSG_NOSIGNAL);
@@ -207,36 +211,46 @@ tcp_recv(rdpTcp * tcp, STREAM s, uint32 length)
 
 	while (length > 0)
 	{
-		if (!ui_select(tcp->iso->mcs->sec->rdp->inst, tcp->sock))
-			/* User quit */
-			return NULL;
+		if (tcp->iso->mcs->sec->tls_connected)
+		{
+			rcvd = tls_read(tcp->iso->mcs->sec->ssl, (char*) s->end, length);
 
-		rcvd = recv(tcp->sock, s->end, length, 0);
-		if (rcvd < 0)
-		{
-			if (rcvd == -1 && TCP_BLOCKS)
-			{
-				tcp_can_recv(tcp->sock, 1);
-				rcvd = 0;
-			}
-			else
-			{
-				ui_error(tcp->iso->mcs->sec->rdp->inst, "recv: %s\n", TCP_STRERROR);
+			if (rcvd < 0)
 				return NULL;
-			}
 		}
-		else if (rcvd == 0)
+		else
 		{
-			if (tcp->iso->mcs->sec->negotiation_state < 2)
-			{
-				/* disconnection is due to an encryption protocol negotiation failure */
-				tcp->iso->mcs->sec->denied_protocols |= tcp->iso->mcs->sec->requested_protocol;
+			if (!ui_select(tcp->iso->mcs->sec->rdp->inst, tcp->sock))
+				/* User quit */
 				return NULL;
+
+			rcvd = recv(tcp->sock, s->end, length, 0);
+			if (rcvd < 0)
+			{
+				if (rcvd == -1 && TCP_BLOCKS)
+				{
+					tcp_can_recv(tcp->sock, 1);
+					rcvd = 0;
+				}
+				else
+				{
+					ui_error(tcp->iso->mcs->sec->rdp->inst, "recv: %s\n", TCP_STRERROR);
+					return NULL;
+				}
 			}
-			else
+			else if (rcvd == 0)
 			{
-				ui_error(tcp->iso->mcs->sec->rdp->inst, "Connection closed\n");
-				return NULL;
+				if (tcp->iso->mcs->sec->negotiation_state < 2)
+				{
+					/* disconnection is due to an encryption protocol negotiation failure */
+					tcp->iso->mcs->sec->denied_protocols |= tcp->iso->mcs->sec->requested_protocol;
+					return NULL;
+				}
+				else
+				{
+					ui_error(tcp->iso->mcs->sec->rdp->inst, "Connection closed\n");
+					return NULL;
+				}
 			}
 		}
 
