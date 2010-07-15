@@ -149,10 +149,12 @@ tcp_send(rdpTcp * tcp, STREAM s)
 	int length = s->end - s->data;
 	int sent, total = 0;
 
+#ifndef DISABLE_TLS
 	if (tcp->iso->mcs->sec->tls_connected)
 	{
 		tls_write(tcp->iso->mcs->sec->ssl, (char*) s->data, length);
 	}
+#endif
 	while (total < length)
 	{
 		sent = send(tcp->sock, s->data + total, length - total, MSG_NOSIGNAL);
@@ -211,6 +213,7 @@ tcp_recv(rdpTcp * tcp, STREAM s, uint32 length)
 
 	while (length > 0)
 	{
+#ifndef DISABLE_TLS
 		if (tcp->iso->mcs->sec->tls_connected)
 		{
 			rcvd = tls_read(tcp->iso->mcs->sec->ssl, (char*) s->end, length);
@@ -219,6 +222,7 @@ tcp_recv(rdpTcp * tcp, STREAM s, uint32 length)
 				return NULL;
 		}
 		else
+#endif
 		{
 			if (!ui_select(tcp->iso->mcs->sec->rdp->inst, tcp->sock))
 				/* User quit */
