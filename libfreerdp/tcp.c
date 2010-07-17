@@ -146,32 +146,39 @@ tcp_init(rdpTcp * tcp, uint32 minsize)
 void
 tcp_send(rdpTcp * tcp, STREAM s)
 {
-	int length = s->end - s->data;
 	int sent, total = 0;
+	int length = s->end - s->data;
 
 #ifndef DISABLE_TLS
 	if (tcp->iso->mcs->sec->tls_connected)
 	{
 		tls_write(tcp->iso->mcs->sec->ssl, (char*) s->data, length);
 	}
+<<<<<<< HEAD
+	else
+=======
 #endif
 	while (total < length)
+>>>>>>> 209484b5521f2bef96acd386fe1b9db451e9c74c
 	{
-		sent = send(tcp->sock, s->data + total, length - total, MSG_NOSIGNAL);
-		if (sent <= 0)
+		while (total < length)
 		{
-			if (sent == -1 && TCP_BLOCKS)
+			sent = send(tcp->sock, s->data + total, length - total, MSG_NOSIGNAL);
+			if (sent <= 0)
 			{
-				tcp_can_send(tcp->sock, 100);
-				sent = 0;
+				if (sent == -1 && TCP_BLOCKS)
+				{
+					tcp_can_send(tcp->sock, 100);
+					sent = 0;
+				}
+				else
+				{
+					ui_error(tcp->iso->mcs->sec->rdp->inst, "send: %s\n", TCP_STRERROR);
+					return;
+				}
 			}
-			else
-			{
-				ui_error(tcp->iso->mcs->sec->rdp->inst, "send: %s\n", TCP_STRERROR);
-				return;
-			}
+			total += sent;
 		}
-		total += sent;
 	}
 }
 
@@ -182,8 +189,10 @@ tcp_send(rdpTcp * tcp, STREAM s)
 STREAM
 tcp_recv(rdpTcp * tcp, STREAM s, uint32 length)
 {
-	uint32 new_length, end_offset, p_offset;
 	int rcvd = 0;
+	uint32 p_offset;
+	uint32 new_length;
+	uint32 end_offset;
 
 	if (s == NULL)
 	{

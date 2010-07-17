@@ -27,8 +27,8 @@
 
 struct rdp_tcp
 {
-	struct rdp_iso * iso;
 	int sock;
+	struct rdp_iso * iso;
 	struct stream in;
 	struct stream out;
 	int tcp_port_rdp;
