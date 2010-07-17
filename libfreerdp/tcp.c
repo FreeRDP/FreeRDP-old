@@ -154,30 +154,29 @@ tcp_send(rdpTcp * tcp, STREAM s)
 	{
 		tls_write(tcp->iso->mcs->sec->ssl, (char*) s->data, length);
 	}
-<<<<<<< HEAD
 	else
-=======
 #endif
-	while (total < length)
->>>>>>> 209484b5521f2bef96acd386fe1b9db451e9c74c
 	{
 		while (total < length)
 		{
-			sent = send(tcp->sock, s->data + total, length - total, MSG_NOSIGNAL);
-			if (sent <= 0)
+			while (total < length)
 			{
-				if (sent == -1 && TCP_BLOCKS)
+				sent = send(tcp->sock, s->data + total, length - total, MSG_NOSIGNAL);
+				if (sent <= 0)
 				{
-					tcp_can_send(tcp->sock, 100);
-					sent = 0;
+					if (sent == -1 && TCP_BLOCKS)
+					{
+						tcp_can_send(tcp->sock, 100);
+						sent = 0;
+					}
+					else
+					{
+						ui_error(tcp->iso->mcs->sec->rdp->inst, "send: %s\n", TCP_STRERROR);
+						return;
+					}
 				}
-				else
-				{
-					ui_error(tcp->iso->mcs->sec->rdp->inst, "send: %s\n", TCP_STRERROR);
-					return;
-				}
+				total += sent;
 			}
-			total += sent;
 		}
 	}
 }
