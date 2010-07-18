@@ -360,49 +360,25 @@ sec_establish_key(rdpSec * sec)
 	sec_send(sec, s, flags);
 }
 
-/* Prepare PER encoded T.125 ConnectData for ConferenceCreateRequest connect-initial */
 static void
-sec_out_connectdata(rdpSec * sec, STREAM s)
+sec_out_client_core_data(rdpSec * sec, rdpSet * settings, STREAM s)
 {
-	int i;
-	rdpSet * settings = sec->rdp->settings;
-	int length = 158 + 76 + 12 + 4;
 	char * p;
 	size_t len;
-
-	if (settings->num_channels > 0)
-		length += settings->num_channels * 12 + 8;
-
-	/* t124Identifier = 0.0.20.124.0.1 */
-	out_uint16_be(s, 5);
-	out_uint16_be(s, 0x14);
-	out_uint8(s, 0x7c);
-	out_uint16_be(s, 1);
-	/* connectPDU octet string */
-	out_uint16_be(s, (length | 0x8000));	/* connectPDU length in two bytes*/
-	/* connectPDU content is ConnectGCCPDU PER encoded: */
-	out_uint16_be(s, 8);	/* ConferenceCreateRequest ... */
-	out_uint16_be(s, 16);
-	out_uint8(s, 0);
-	out_uint16_le(s, 0xc001);	/* userData key is h221NonStandard */
-	out_uint8(s, 0);	/* 4 bytes: */
-	out_uint32_le(s, 0x61637544);	/* "Duca" */
-	out_uint16_be(s, ((length - 14) | 0x8000));	/* userData value length in two bytes */
-
-	/*
-	 * Client Core Data (216 bytes plus optional connectionType, pad1octet and serverSelectedProtocol)
-	 */
-
+	uint16 highColorDepth;
+	uint16 supportedColorDepths;
+	uint32 earlyCapabilityFlags;
+	
 	out_uint16_le(s, UDH_CS_CORE);	/* User Data Header type */
-	out_uint16_le(s, 212);	/* total length */
+	out_uint16_le(s, 218);	/* total length */
 
 	out_uint32_le(s, settings->rdp_version >= 5 ? 0x00080004 : 0x00080001);	/* client version */
-	out_uint16_le(s, settings->width);	// desktopWidth
-	out_uint16_le(s, settings->height);	// desktopHeight
-	out_uint16_le(s, RNS_UD_COLOR_8BPP);	// colorDepth - ignored because of postBeta2ColorDepth
-	out_uint16_le(s, RNS_UD_SAS_DEL); // SASSequence (Secure Access Sequence)
-	out_uint32_le(s, settings->keyboard_layout); // keyboardLayout
-	out_uint32_le(s, 2600);	// clientBuild
+	out_uint16_le(s, settings->width);	/* desktopWidth */
+	out_uint16_le(s, settings->height);	/* desktopHeight */
+	out_uint16_le(s, RNS_UD_COLOR_8BPP);	/* colorDepth, ignored because of postBeta2ColorDepth */
+	out_uint16_le(s, RNS_UD_SAS_DEL); /* SASSequence (Secure Access Sequence) */
+	out_uint32_le(s, settings->keyboard_layout); /* keyboardLayout */
+	out_uint32_le(s, 2600);	/* clientBuild */
 
 	/* Unicode name of client, truncated to 15 characters */
 	p = xstrdup_out_unistr(sec->rdp, settings->hostname, &len);
@@ -422,47 +398,46 @@ sec_out_connectdata(rdpSec * sec, STREAM s)
 
 	/* Input Method Editor (IME) file name associated with the input locale.
 	   Up to 31 Unicode characters plus a NULL terminator */
-	// FIXME:
+	/* FIXME: populate this field with real data */
 	out_uint8s(s, 64);	/* imeFileName */
 
-	out_uint16_le(s, RNS_UD_COLOR_8BPP); // postBeta2ColorDepth
-	out_uint16_le(s, 1); // clientProductID
-	out_uint32_le(s, 0); // serialNumber (should be initialized to 0)
+	out_uint16_le(s, RNS_UD_COLOR_8BPP); /* postBeta2ColorDepth */
+	out_uint16_le(s, 1); /* clientProductID */
+	out_uint32_le(s, 0); /* serialNumber (should be initialized to 0) */
 
-	i = MIN(settings->server_depth, 24);	/* 32 must be reported as 24 and RNS_UD_CS_WANT_32BPP_SESSION */
-	out_uint16_le(s, i); // (requested) highColorDepth
+	highColorDepth = MIN(settings->server_depth, 24);	/* 32 must be reported as 24 and RNS_UD_CS_WANT_32BPP_SESSION */
+	out_uint16_le(s, highColorDepth); /* (requested) highColorDepth */
 
-	i = RNS_UD_32BPP_SUPPORT | RNS_UD_24BPP_SUPPORT | RNS_UD_16BPP_SUPPORT | RNS_UD_15BPP_SUPPORT;
-	out_uint16_le(s, i); // supportedColorDepths
+	supportedColorDepths = RNS_UD_32BPP_SUPPORT | RNS_UD_24BPP_SUPPORT | RNS_UD_16BPP_SUPPORT | RNS_UD_15BPP_SUPPORT;
+	out_uint16_le(s, supportedColorDepths); /* supportedColorDepths */
 
-	i = RNS_UD_CS_SUPPORT_ERRINFO_PDU;
+	earlyCapabilityFlags = RNS_UD_CS_SUPPORT_ERRINFO_PDU;
+
 	if (settings->server_depth == 32)
-	{
-		i |= RNS_UD_CS_WANT_32BPP_SESSION;
-	}
-	out_uint32_le(s, i); // earlyCapabilityFlags
-
+		earlyCapabilityFlags |= RNS_UD_CS_WANT_32BPP_SESSION;
+	
+	out_uint32_le(s, earlyCapabilityFlags); // earlyCapabilityFlags
 	out_uint8s(s, 64); // clientDigProductId (64 bytes)
+	out_uint8s(s, 1); /* connectionType (considered invalid without RNS_UD_CS_VALID_CONNECTION_TYPE) */
+	out_uint8s(s, 1); /* pad1octect */
+	out_uint32_le(s, sec->negotiated_protocol); /* serverSelectedProtocol */
+}
 
-	/* Optional fields left out:
-	   connectionType (1 byte) and pad1octet (1 byte) (because no earlyCapabilityFlags RNS_UD_CS_VALID_CONNECTION_TYPE)
-	   serverSelectedProtocol (4 bytes) (default 0 = PROTOCOL_RDP)
-	*/
-
-	/*
-	 * Client Security Data (12 bytes)
-	 */
-
+static void
+sec_out_client_security_data(rdpSec * sec, rdpSet * settings, STREAM s)
+{
 	out_uint16_le(s, UDH_CS_SECURITY);	/* User Data Header type */
 	out_uint16_le(s, 12);	/* total length */
 
-	out_uint32_le(s, settings->encryption ? ENCRYPTION_40BIT_FLAG | ENCRYPTION_128BIT_FLAG : 0); // encryptionMethods
-	out_uint32_le(s, 0); // extEncryptionMethods
+	out_uint32_le(s, settings->encryption ? ENCRYPTION_40BIT_FLAG | ENCRYPTION_128BIT_FLAG : 0); /* encryptionMethods */
+	out_uint32_le(s, 0); /* extEncryptionMethods */
+}
 
-	/*
-	 * Client Network Data (optional and variable-length)
-	 */
-
+static void
+sec_out_client_network_data(rdpSec * sec, rdpSet * settings, STREAM s)
+{
+	int i;
+	
 	DEBUG_RDP5("num_channels is %d\n", settings->num_channels);
 	if (settings->num_channels > 0)
 	{
@@ -477,17 +452,56 @@ sec_out_connectdata(rdpSec * sec, STREAM s)
 			out_uint32_be(s, settings->channels[i].flags); // options (4 bytes)
 		}
 	}
+}
 
-	/*
-	 * Client Cluster Data (12 bytes)
-	 */
-
+static void
+sec_out_client_cluster_data(rdpSec * sec, rdpSet * settings, STREAM s)
+{	
 	out_uint16_le(s, UDH_CS_CLUSTER);	/* User Data Header type */
-	out_uint16_le(s, 12);	/* total length */
+	out_uint16_le(s, 12);			/* total length */
+	
 	out_uint32_le(s, (settings->console_session || sec->rdp->redirect_session_id) ?
 		REDIRECTED_SESSIONID_FIELD_VALID | REDIRECTION_SUPPORTED | REDIRECTION_VERSION4 :
-		REDIRECTION_SUPPORTED | REDIRECTION_VERSION4); // flags
-	out_uint32_le(s, sec->rdp->redirect_session_id); // RedirectedSessionID
+		REDIRECTION_SUPPORTED | REDIRECTION_VERSION4); /* flags */
+	
+	out_uint32_le(s, sec->rdp->redirect_session_id); /* RedirectedSessionID */
+}
+
+void
+sec_out_gcc_conference_create_request(rdpSec * sec, STREAM s)
+{
+	int length;
+	rdpSet * settings = sec->rdp->settings;
+
+	/* See ITU-T Rec. T.124 (02/98) Generic Conference Control */
+
+	/* the part before userData is of a fixed size, making things convenient */
+	s->p = s->data + 23;
+	sec_out_client_core_data(sec, settings, s);
+	sec_out_client_security_data(sec, settings, s);
+	sec_out_client_network_data(sec, settings, s);
+	sec_out_client_cluster_data(sec, settings, s);
+	length = (s->p - s->data) - 9;
+	s->p = s->data;
+	
+	/* t124Identifier = 0.0.20.124.0.1 */
+	out_uint16_be(s, 5);
+	out_uint16_be(s, 0x14);
+	out_uint8(s, 0x7c);
+	out_uint16_be(s, 1);
+	
+	/* connectPDU octet string */
+	out_uint16_be(s, (length | 0x8000));		/* connectPDU length in two bytes*/
+	
+	/* connectPDU content is ConnectGCCPDU PER encoded: */
+	out_uint16_be(s, 8);				/* ConferenceCreateRequest ... */
+	out_uint16_be(s, 16);
+	out_uint8(s, 0);
+	out_uint16_le(s, 0xC001);			/* userData key is h221NonStandard */
+	out_uint8(s, 0);				/* 4 bytes: */
+	out_uint32_le(s, 0x61637544);			/* "Duca" */
+	out_uint16_be(s, ((length - 14) | 0x8000));	/* userData value length in two bytes */
+	s->p += length; 				/* userData (outputted earlier) */
 
 	s_mark_end(s);
 }
@@ -916,31 +930,18 @@ sec_connect(rdpSec * sec, char *server, char *username, int port)
 	{
 		/* TLS without NLA was successfully negotiated */
 		RD_BOOL success;
-		struct stream connectdata;
 		printf("PROTOCOL_TLS negotiated\n");
 		sec->ctx = tls_create_context();
 		sec->ssl = tls_connect(sec->ctx, sec->mcs->iso->tcp->sock, server);
 		sec->tls_connected = 1;
-
-		/* We exchange some RDP data during the MCS-Connect */
-		connectdata.size = 512;
-		connectdata.p = connectdata.data = (uint8 *) xmalloc(connectdata.size);
-		sec_out_connectdata(sec, &connectdata);
-		success = mcs_connect(sec->mcs, &connectdata);
-		xfree(connectdata.data);
+		success = mcs_connect(sec->mcs);
 	}
 	else
 #endif
 	{
 		RD_BOOL success;
-		struct stream connectdata;
 		printf("PROTOCOL_RDP negotiated\n");
-		/* We exchange some RDP data during the MCS-Connect */
-		connectdata.size = 512;
-		connectdata.p = connectdata.data = (uint8 *) xmalloc(connectdata.size);
-		sec_out_connectdata(sec, &connectdata);
-		success = mcs_connect(sec->mcs, &connectdata);
-		xfree(connectdata.data);
+		success = mcs_connect(sec->mcs);
 
 		if (success && sec->rdp->settings->encryption)
 			sec_establish_key(sec);

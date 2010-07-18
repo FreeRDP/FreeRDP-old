@@ -59,14 +59,21 @@ mcs_parse_domain_params(rdpMcs * mcs, STREAM s)
 
 /* Send an MCS_CONNECT_INITIAL message (ASN.1 BER) */
 static void
-mcs_send_connect_initial(rdpMcs * mcs, STREAM connectdata)
+mcs_send_connect_initial(rdpMcs * mcs)
 {
-	int datalen = connectdata->end - connectdata->data;
-	int length = 9 + 3 * 34 + 4 + datalen;
 	STREAM s;
+	int length;
+	int gccCCrq_length;
+	struct stream gccCCrq;
+
+	gccCCrq.size = 512;
+	gccCCrq.p = gccCCrq.data = (uint8 *) xmalloc(gccCCrq.size);
+	sec_out_gcc_conference_create_request(mcs->sec, &gccCCrq);
+	gccCCrq_length = gccCCrq.end - gccCCrq.data;
+	length = 9 + 3 * 34 + 4 + gccCCrq_length;
 
 	s = iso_init(mcs->iso, length + 5);
-
+	
 	ber_out_header(s, MCS_CONNECT_INITIAL, length);	/* ConnectMCSPDU connect-initial */
 	ber_out_header(s, BER_TAG_OCTET_STRING, 1);	/* callingDomainSelector */
 	out_uint8(s, 1);
@@ -80,9 +87,10 @@ mcs_send_connect_initial(rdpMcs * mcs, STREAM connectdata)
 	mcs_out_domain_params(s, 1, 1, 1, 0x420);	/* minimumParameters */
 	mcs_out_domain_params(s, 0xFFFF, 0xFC17, 0xFFFF, 0xFFFF);	/* maximumParameters */
 
-	ber_out_header(s, BER_TAG_OCTET_STRING, datalen);	/* userData */
-	out_uint8p(s, connectdata->data, datalen);
-
+	ber_out_header(s, BER_TAG_OCTET_STRING, gccCCrq_length);	/* userData */
+	out_uint8p(s, gccCCrq.data, gccCCrq_length);
+	xfree(gccCCrq.data);
+	
 	s_mark_end(s);
 	iso_send(mcs->iso, s);
 }
@@ -321,13 +329,13 @@ mcs_recv(rdpMcs * mcs, uint16 * channel, isoRecvType * ptype)
 
 /* Establish a connection up to the MCS layer */
 RD_BOOL
-mcs_connect(rdpMcs * mcs, STREAM connectdata)
+mcs_connect(rdpMcs * mcs)
 {
 	int i;
 	int mcs_id;
 	rdpSet * settings;
 
-	mcs_send_connect_initial(mcs, connectdata);
+	mcs_send_connect_initial(mcs);
 	if (!mcs_recv_connect_response(mcs))
 		goto error;
 

@@ -92,6 +92,8 @@ void
 sec_process_mcs_data(rdpSec * sec, STREAM s);
 STREAM
 sec_recv(rdpSec * sec, secRecvType * type);
+void
+sec_out_gcc_conference_create_request(rdpSec * sec, STREAM s);
 RD_BOOL
 sec_connect(rdpSec * sec, char *server, char *username, int port);
 void
