@@ -415,14 +415,14 @@ iso_send(rdpIso * iso, STREAM s)
 	s_pop_layer(s, iso_hdr);
 	length = s->end - s->p;
 
-	out_uint8(s, 3);	/* version */
-	out_uint8(s, 0);	/* reserved */
+	out_uint8(s, 3);		/* version */
+	out_uint8(s, 0);		/* reserved */
 	out_uint16_be(s, length);
 
-	out_uint8(s, 2);	/* hdrlen */
+	out_uint8(s, 2);		/* hdrlen */
 	out_uint8(s, X224_TPDU_DATA);	/* code */
-	out_uint8(s, 0x80);	/* eot */
-
+	out_uint8(s, 0x80);		/* eot */
+	
 	tcp_send(iso->tcp, s);
 }
 

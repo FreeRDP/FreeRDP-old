@@ -146,9 +146,10 @@ tcp_init(rdpTcp * tcp, uint32 minsize)
 void
 tcp_send(rdpTcp * tcp, STREAM s)
 {
-	int sent, total = 0;
+	int sent = 0;
+	int total = 0;
 	int length = s->end - s->data;
-
+	
 #ifndef DISABLE_TLS
 	if (tcp->iso->mcs->sec->tls_connected)
 	{

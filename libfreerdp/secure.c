@@ -414,10 +414,10 @@ sec_out_client_core_data(rdpSec * sec, rdpSet * settings, STREAM s)
 	if (settings->server_depth == 32)
 		earlyCapabilityFlags |= RNS_UD_CS_WANT_32BPP_SESSION;
 	
-	out_uint32_le(s, earlyCapabilityFlags); // earlyCapabilityFlags
-	out_uint8s(s, 64); // clientDigProductId (64 bytes)
-	out_uint8s(s, 1); /* connectionType (considered invalid without RNS_UD_CS_VALID_CONNECTION_TYPE) */
-	out_uint8s(s, 1); /* pad1octect */
+	out_uint32_le(s, earlyCapabilityFlags); /* earlyCapabilityFlags */
+	out_uint8s(s, 64); /* clientDigProductId (64 bytes) */
+	out_uint8(s, 0); /* connectionType (considered invalid without RNS_UD_CS_VALID_CONNECTION_TYPE) */
+	out_uint8(s, 0); /* pad1octet */
 	out_uint32_le(s, sec->negotiated_protocol); /* serverSelectedProtocol */
 }
 
@@ -425,7 +425,7 @@ static void
 sec_out_client_security_data(rdpSec * sec, rdpSet * settings, STREAM s)
 {
 	out_uint16_le(s, UDH_CS_SECURITY);	/* User Data Header type */
-	out_uint16_le(s, 12);	/* total length */
+	out_uint16_le(s, 12);			/* total length */
 	
 	out_uint32_le(s, settings->encryption ? ENCRYPTION_40BIT_FLAG | ENCRYPTION_128BIT_FLAG : 0); /* encryptionMethods */
 	out_uint32_le(s, 0); /* extEncryptionMethods */
@@ -489,7 +489,7 @@ sec_out_gcc_conference_create_request(rdpSec * sec, STREAM s)
 	out_uint16_be(s, 1);
 	
 	/* connectPDU octet string */
-	out_uint16_be(s, (length | 0x8000));		/* connectPDU length in two bytes*/
+	out_uint16_be(s, ((length + 14) | 0x8000));		/* connectPDU length in two bytes*/
 	
 	/* connectPDU content is ConnectGCCPDU PER encoded: */
 	out_uint16_be(s, 8);				/* ConferenceCreateRequest ... */
@@ -498,8 +498,8 @@ sec_out_gcc_conference_create_request(rdpSec * sec, STREAM s)
 	out_uint16_le(s, 0xC001);			/* userData key is h221NonStandard */
 	out_uint8(s, 0);				/* 4 bytes: */
 	out_uint32_le(s, 0x61637544);			/* "Duca" */
-	out_uint16_be(s, ((length) | 0x8000));	/* userData value length in two bytes */
-	s->p += length; 				/* userData (outputted earlier) */
+	out_uint16_be(s, (length | 0x8000));		/* userData value length in two bytes */
+	s->p = s->data + length + 23; 			/* userData (outputted earlier) */
 
 	s_mark_end(s);
 }
@@ -767,8 +767,9 @@ sec_process_server_core_data(rdpSec * sec, STREAM s, uint16 length)
 static void
 sec_process_server_network_data(rdpSec * sec, STREAM s)
 {
-	uint16 io_channel_id, channelCount;
 	int i;
+	uint16 channelCount;
+	uint16 io_channel_id;
 
 	in_uint16_le(s, io_channel_id);
 	in_uint16_le(s, channelCount);
@@ -792,7 +793,8 @@ sec_process_server_network_data(rdpSec * sec, STREAM s)
 void
 sec_process_mcs_data(rdpSec * sec, STREAM s)
 {
-	uint16 type, length;
+	uint16 type;
+	uint16 length;
 	uint8 *next_tag;
 	uint8 value_len;
 
@@ -845,11 +847,11 @@ sec_process_mcs_data(rdpSec * sec, STREAM s)
 STREAM
 sec_recv(rdpSec * sec, secRecvType * type)
 {
-	isoRecvType iso_type;
-	uint32 sec_flags;
-	uint16 channel;
 	STREAM s;
-
+	uint16 channel;
+	uint32 sec_flags;
+	isoRecvType iso_type;
+	
 	while ((s = mcs_recv(sec->mcs, &channel, &iso_type)) != NULL)
 	{
 		if ((iso_type == ISO_RECV_FAST_PATH) ||
