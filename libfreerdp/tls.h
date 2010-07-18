@@ -38,10 +38,10 @@ tls_connect(SSL_CTX *ctx, int sockfd, char *server);
 void
 tls_disconnect(SSL *ssl);
 int
-tls_write(SSL *ssl, char* b, int size);
+tls_write(SSL *ssl, char* b, int length);
 int
-tls_read(SSL *ssl, char* b, int size);
+tls_read(SSL *ssl, char* b, int length);
 STREAM
-tls_recv(rdpTcp * tcp, STREAM s, uint32 length);
+tls_recv(rdpTcp * tcp, STREAM s, int length);
 
 #endif	// __TLS_H

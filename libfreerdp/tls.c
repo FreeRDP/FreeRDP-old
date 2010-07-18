@@ -276,12 +276,12 @@ tls_disconnect(SSL *ssl)
 }
 
 /* Write data over TLS connection */
-int tls_write(SSL *ssl, char* b, int size)
+int tls_write(SSL *ssl, char* b, int length)
 {
 	int write_status;
 	int bytesWritten = 0;
 
-	write_status = SSL_write(ssl, b, size);
+	write_status = SSL_write(ssl, b, length);
 
 	switch (SSL_get_error(ssl, write_status))
 	{
@@ -294,19 +294,19 @@ int tls_write(SSL *ssl, char* b, int size)
 			break;
 	}
 
-	if (bytesWritten < size)
-		return bytesWritten += tls_write(ssl, &b[bytesWritten], size - bytesWritten);
+	if (bytesWritten < length)
+		return bytesWritten += tls_write(ssl, &b[bytesWritten], length - bytesWritten);
 	else
 		return bytesWritten;
 }
 
 /* Read data over TLS connection */
-int tls_read(SSL *ssl, char* b, int size)
+int tls_read(SSL *ssl, char* b, int length)
 {
 	int read_status;
 	int bytesRead = 0;
 
-	read_status = SSL_read(ssl, b, size);
+	read_status = SSL_read(ssl, b, length);
 
 	switch (SSL_get_error(ssl, read_status))
 	{
@@ -316,14 +316,14 @@ int tls_read(SSL *ssl, char* b, int size)
 
 		case SSL_ERROR_WANT_READ:
 
-			if (size - bytesRead < 128)
+			if (length - bytesRead < 128)
 			{
 					/* the buffer is almost full, allocate more memory */
-					size += 1024;
-					xrealloc(b, size);
+					length += 1024;
+					xrealloc(b, length);
 			}
 
-			bytesRead += tls_read(ssl, &b[bytesRead], size - bytesRead);
+			bytesRead += tls_read(ssl, &b[bytesRead], length - bytesRead);
 			break;
 
 		default:
@@ -332,4 +332,53 @@ int tls_read(SSL *ssl, char* b, int size)
 	}
 
 	return bytesRead;
+}
+
+/* Receive data over TLS connection */
+STREAM
+tls_recv(rdpTcp * tcp, STREAM s, int length)
+{
+	int read_status;
+	int bytesRead = 0;
+	SSL *ssl = tcp->iso->mcs->sec->ssl;
+	
+	if (s == NULL)
+	{
+		/* read into "new" stream */
+		if (length > tcp->in.size)
+		{
+			tcp->in.data = (uint8 *) xrealloc(tcp->in.data, length);
+			tcp->in.size = length;
+		}
+			
+		tcp->in.end = tcp->in.p = tcp->in.data;
+		s = &(tcp->in);
+	}
+	
+	read_status = SSL_read(ssl, s->end, length);
+
+	switch (SSL_get_error(ssl, read_status))
+	{
+		case SSL_ERROR_NONE:
+			bytesRead += read_status;
+			s->end += bytesRead;
+			break;
+
+		case SSL_ERROR_WANT_READ:
+
+			if (length - bytesRead < 128)
+			{
+					length += 1024;
+					xrealloc(s->data, length);
+			}
+
+			return tls_recv(tcp, s, length);
+			break;
+
+		default:
+			tls_printf("SSL_read", ssl, read_status);
+			break;
+	}
+
+	return s;
 }

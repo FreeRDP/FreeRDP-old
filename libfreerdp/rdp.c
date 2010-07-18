@@ -695,10 +695,10 @@ rdp_send_fonts(rdpRdp * rdp, uint16 seq)
 static void
 rdp_send_confirm_active(rdpRdp * rdp)
 {
-	STREAM caps;
 	STREAM s;
-	uint32 sec_flags = rdp->settings->encryption ? SEC_ENCRYPT : 0;
+	STREAM caps;
 	int caplen;
+	uint32 sec_flags;
 	uint16 numberCapabilities = 14;
 
 	caps = (STREAM) xmalloc(sizeof(struct stream));
@@ -741,6 +741,11 @@ rdp_send_confirm_active(rdpRdp * rdp)
 	s_mark_end(caps);
 	caplen = (int) (caps->end - caps->data);
 
+	if (rdp->sec->negotiated_protocol > PROTOCOL_RDP)
+		sec_flags = 0;
+	else
+		sec_flags = rdp->settings->encryption ? SEC_ENCRYPT : 0;
+	
 	s = sec_init(rdp->sec, sec_flags, 6 + 14 + caplen + 4 + sizeof(RDP_SOURCE));
 
 	out_uint16_le(s, (2 + 14 + caplen + sizeof(RDP_SOURCE)) + 4);

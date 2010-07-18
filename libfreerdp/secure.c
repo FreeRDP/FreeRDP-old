@@ -252,8 +252,7 @@ sec_decrypt(rdpSec * sec, uint8 * data, int length)
 
 /* Perform an RSA public key encryption operation */
 static void
-sec_rsa_encrypt(uint8 * out, uint8 * in, int len, uint32 modulus_size, uint8 * modulus,
-		uint8 * exponent)
+sec_rsa_encrypt(uint8 * out, uint8 * in, int len, uint32 modulus_size, uint8 * modulus, uint8 * exponent)
 {
 	crypto_rsa_encrypt(len, in, out, modulus_size, modulus, exponent);
 }
@@ -295,7 +294,6 @@ void
 sec_send_to_channel(rdpSec * sec, STREAM s, uint32 flags, uint16 channel)
 {
 	int datalen;
-
 	s_pop_layer(s, sec_hdr);
 
 	if (!(sec->licence->licence_issued) || (flags & SEC_ENCRYPT))
@@ -368,17 +366,17 @@ sec_out_client_core_data(rdpSec * sec, rdpSet * settings, STREAM s)
 	uint16 highColorDepth;
 	uint16 supportedColorDepths;
 	uint32 earlyCapabilityFlags;
-	
+
 	out_uint16_le(s, UDH_CS_CORE);	/* User Data Header type */
-	out_uint16_le(s, 218);	/* total length */
+	out_uint16_le(s, 218);		/* total length */
 
 	out_uint32_le(s, settings->rdp_version >= 5 ? 0x00080004 : 0x00080001);	/* client version */
-	out_uint16_le(s, settings->width);	/* desktopWidth */
-	out_uint16_le(s, settings->height);	/* desktopHeight */
-	out_uint16_le(s, RNS_UD_COLOR_8BPP);	/* colorDepth, ignored because of postBeta2ColorDepth */
-	out_uint16_le(s, RNS_UD_SAS_DEL); /* SASSequence (Secure Access Sequence) */
-	out_uint32_le(s, settings->keyboard_layout); /* keyboardLayout */
-	out_uint32_le(s, 2600);	/* clientBuild */
+	out_uint16_le(s, settings->width);		/* desktopWidth */
+	out_uint16_le(s, settings->height);		/* desktopHeight */
+	out_uint16_le(s, RNS_UD_COLOR_8BPP);		/* colorDepth, ignored because of postBeta2ColorDepth */
+	out_uint16_le(s, RNS_UD_SAS_DEL);		/* SASSequence (Secure Access Sequence) */
+	out_uint32_le(s, settings->keyboard_layout);	/* keyboardLayout */
+	out_uint32_le(s, 2600);				/* clientBuild */
 
 	/* Unicode name of client, truncated to 15 characters */
 	p = xstrdup_out_unistr(sec->rdp, settings->hostname, &len);
@@ -392,8 +390,8 @@ sec_out_client_core_data(rdpSec * sec, rdpSet * settings, STREAM s)
 	out_uint8s(s, 32 - len - 2);
 	xfree(p);
 
-	out_uint32_le(s, settings->keyboard_type);	/* keyboardType */
-	out_uint32_le(s, settings->keyboard_subtype);	/* keyboardSubType */
+	out_uint32_le(s, settings->keyboard_type);		/* keyboardType */
+	out_uint32_le(s, settings->keyboard_subtype);		/* keyboardSubType */
 	out_uint32_le(s, settings->keyboard_functionkeys);	/* keyboardFunctionKey */
 
 	/* Input Method Editor (IME) file name associated with the input locale.
@@ -428,7 +426,7 @@ sec_out_client_security_data(rdpSec * sec, rdpSet * settings, STREAM s)
 {
 	out_uint16_le(s, UDH_CS_SECURITY);	/* User Data Header type */
 	out_uint16_le(s, 12);	/* total length */
-
+	
 	out_uint32_le(s, settings->encryption ? ENCRYPTION_40BIT_FLAG | ENCRYPTION_128BIT_FLAG : 0); /* encryptionMethods */
 	out_uint32_le(s, 0); /* extEncryptionMethods */
 }
@@ -481,7 +479,7 @@ sec_out_gcc_conference_create_request(rdpSec * sec, STREAM s)
 	sec_out_client_security_data(sec, settings, s);
 	sec_out_client_network_data(sec, settings, s);
 	sec_out_client_cluster_data(sec, settings, s);
-	length = (s->p - s->data) - 9;
+	length = (s->p - s->data) - 23;
 	s->p = s->data;
 	
 	/* t124Identifier = 0.0.20.124.0.1 */
@@ -500,7 +498,7 @@ sec_out_gcc_conference_create_request(rdpSec * sec, STREAM s)
 	out_uint16_le(s, 0xC001);			/* userData key is h221NonStandard */
 	out_uint8(s, 0);				/* 4 bytes: */
 	out_uint32_le(s, 0x61637544);			/* "Duca" */
-	out_uint16_be(s, ((length - 14) | 0x8000));	/* userData value length in two bytes */
+	out_uint16_be(s, ((length) | 0x8000));	/* userData value length in two bytes */
 	s->p += length; 				/* userData (outputted earlier) */
 
 	s_mark_end(s);
@@ -550,7 +548,6 @@ sec_parse_public_sig(STREAM s, uint32 len)
 	 * That is completely nonsense, so we won't bother checking it. */
 
 	in_uint8s(s, len);
-
 	return len == 72;
 }
 

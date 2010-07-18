@@ -65,7 +65,7 @@ mcs_send_connect_initial(rdpMcs * mcs)
 	int length;
 	int gccCCrq_length;
 	struct stream gccCCrq;
-
+	
 	gccCCrq.size = 512;
 	gccCCrq.p = gccCCrq.data = (uint8 *) xmalloc(gccCCrq.size);
 	sec_out_gcc_conference_create_request(mcs->sec, &gccCCrq);
@@ -81,7 +81,7 @@ mcs_send_connect_initial(rdpMcs * mcs)
 	out_uint8(s, 1);
 
 	ber_out_header(s, BER_TAG_BOOLEAN, 1);	/* upwardFlag */
-	out_uint8(s, 0xff);
+	out_uint8(s, 0xFF);
 
 	mcs_out_domain_params(s, 34, 2, 0, 0xFFFF);	/* targetParameters */
 	mcs_out_domain_params(s, 1, 1, 1, 0x420);	/* minimumParameters */

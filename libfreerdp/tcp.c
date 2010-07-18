@@ -193,6 +193,9 @@ tcp_recv(rdpTcp * tcp, STREAM s, uint32 length)
 	uint32 new_length;
 	uint32 end_offset;
 
+	if (tcp->iso->mcs->sec->tls_connected)
+		return tls_recv(tcp, s, length);
+	
 	if (s == NULL)
 	{
 		/* read into "new" stream */
@@ -201,6 +204,7 @@ tcp_recv(rdpTcp * tcp, STREAM s, uint32 length)
 			tcp->in.data = (uint8 *) xrealloc(tcp->in.data, length);
 			tcp->in.size = length;
 		}
+				
 		tcp->in.end = tcp->in.p = tcp->in.data;
 		s = &(tcp->in);
 	}
@@ -221,48 +225,36 @@ tcp_recv(rdpTcp * tcp, STREAM s, uint32 length)
 
 	while (length > 0)
 	{
-#ifndef DISABLE_TLS
-		if (tcp->iso->mcs->sec->tls_connected)
-		{
-			rcvd = tls_read(tcp->iso->mcs->sec->ssl, (char*) s->end, length);
+		if (!ui_select(tcp->iso->mcs->sec->rdp->inst, tcp->sock))
+			/* User quit */
+			return NULL;
 
-			if (rcvd < 0)
-				return NULL;
-		}
-		else
-#endif
+		rcvd = recv(tcp->sock, s->end, length, 0);
+		if (rcvd < 0)
 		{
-			if (!ui_select(tcp->iso->mcs->sec->rdp->inst, tcp->sock))
-				/* User quit */
-				return NULL;
-
-			rcvd = recv(tcp->sock, s->end, length, 0);
-			if (rcvd < 0)
+			if (rcvd == -1 && TCP_BLOCKS)
 			{
-				if (rcvd == -1 && TCP_BLOCKS)
-				{
-					tcp_can_recv(tcp->sock, 1);
-					rcvd = 0;
-				}
-				else
-				{
-					ui_error(tcp->iso->mcs->sec->rdp->inst, "recv: %s\n", TCP_STRERROR);
-					return NULL;
-				}
+				tcp_can_recv(tcp->sock, 1);
+				rcvd = 0;
 			}
-			else if (rcvd == 0)
+			else
 			{
-				if (tcp->iso->mcs->sec->negotiation_state < 2)
-				{
-					/* disconnection is due to an encryption protocol negotiation failure */
-					tcp->iso->mcs->sec->denied_protocols |= tcp->iso->mcs->sec->requested_protocol;
-					return NULL;
-				}
-				else
-				{
-					ui_error(tcp->iso->mcs->sec->rdp->inst, "Connection closed\n");
-					return NULL;
-				}
+				ui_error(tcp->iso->mcs->sec->rdp->inst, "recv: %s\n", TCP_STRERROR);
+				return NULL;
+			}
+		}
+		else if (rcvd == 0)
+		{
+			if (tcp->iso->mcs->sec->negotiation_state < 2)
+			{
+				/* disconnection is due to an encryption protocol negotiation failure */
+				tcp->iso->mcs->sec->denied_protocols |= tcp->iso->mcs->sec->requested_protocol;
+				return NULL;
+			}
+			else
+			{
+				ui_error(tcp->iso->mcs->sec->rdp->inst, "Connection closed\n");
+				return NULL;
 			}
 		}
 
