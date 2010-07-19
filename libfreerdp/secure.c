@@ -239,6 +239,9 @@ sec_encrypt(rdpSec * sec, uint8 * data, int length)
 static void
 sec_decrypt(rdpSec * sec, uint8 * data, int length)
 {
+	if (sec->tls_connected)
+		return;
+	
 	if (sec->sec_decrypt_use_count == 4096)
 	{
 		sec_update(sec, sec->sec_decrypt_key, sec->sec_decrypt_update_key);
@@ -440,12 +443,12 @@ sec_out_client_network_data(rdpSec * sec, rdpSet * settings, STREAM s)
 		out_uint16_le(s, UDH_CS_NET);	/* User Data Header type */
 		out_uint16_le(s, settings->num_channels * 12 + 8);	/* total length */
 
-		out_uint32_le(s, settings->num_channels);	// channelCount
+		out_uint32_le(s, settings->num_channels);	/* channelCount */
 		for (i = 0; i < settings->num_channels; i++)
 		{
 			DEBUG_RDP5("Requesting channel %s\n", settings->channels[i].name);
-			out_uint8a(s, settings->channels[i].name, 8); // name (8 bytes) 7 characters with null terminator
-			out_uint32_be(s, settings->channels[i].flags); // options (4 bytes)
+			out_uint8a(s, settings->channels[i].name, 8); /* name (8 bytes) 7 characters with null terminator */
+			out_uint32_be(s, settings->channels[i].flags); /* options (4 bytes) */
 		}
 	}
 }
@@ -562,7 +565,7 @@ sec_parse_server_security_data(rdpSec * sec, STREAM s, uint32 * encryptionMethod
 
 	in_uint32_le(s, *encryptionMethod);	/* 1 = 40-bit, 2 = 128-bit, 0 for TLS/CredSSP */
 	in_uint32_le(s, encryptionLevel);	/* 1 = low, 2 = client compatible, 3 = high */
-	if (encryptionLevel == 0)	/* no encryption */
+	if (encryptionLevel == 0)		/* no encryption */
 		return False;
 	in_uint32_le(s, serverRandomLen);
 	in_uint32_le(s, serverCertLen);
@@ -577,7 +580,7 @@ sec_parse_server_security_data(rdpSec * sec, STREAM s, uint32 * encryptionMethod
 
 	/* Server Certificate: */
 	in_uint32_le(s, dwVersion); /* bit 0x80000000 = temporary certificate */
-	certChainVersion = dwVersion & 0x7fffffff;
+	certChainVersion = dwVersion & 0x7FFFFFFF;
 
 	if (certChainVersion == 1)	 /* Server Proprietary Certificate */
 	{
@@ -720,19 +723,24 @@ sec_parse_server_security_data(rdpSec * sec, STREAM s, uint32 * encryptionMethod
 static void
 sec_process_server_security_data(rdpSec * sec, STREAM s)
 {
+	uint32 rc4_key_size;
 	uint8 server_random[SEC_RANDOM_SIZE];
 	uint8 client_random[SEC_RANDOM_SIZE];
 	uint8 modulus[SEC_MAX_MODULUS_SIZE];
 	uint8 exponent[SEC_EXPONENT_SIZE];
-	uint32 rc4_key_size;
-
+	
 	memset(modulus, 0, sizeof(modulus));
 	memset(exponent, 0, sizeof(exponent));
 	if (!sec_parse_server_security_data(sec, s, &rc4_key_size, server_random, modulus, exponent))
 	{
-		DEBUG("Failed to parse crypt info\n");
+		/* encryptionMethod (rc4_key_size) = 0 means TLS */
+		if (rc4_key_size > 0)
+		{
+			DEBUG("Failed to parse crypt info\n");
+		}
 		return;
 	}
+	
 	DEBUG("Generating client random\n");
 	generate_random(client_random);
 	sec_rsa_encrypt(sec->sec_crypted_random, client_random, SEC_RANDOM_SIZE,
@@ -757,7 +765,10 @@ sec_process_server_core_data(rdpSec * sec, STREAM s, uint16 length)
 		sec->rdp->settings->rdp_version = 5;	/* FIXME: We can't just upgrade the RDP version! */
 	}
 	else
+	{
 		ui_error(sec->rdp->inst, "Invalid server rdp version %ul\n", server_rdp_version);
+	}
+	
 	DEBUG_RDP5("Server RDP version is %d\n", sec->rdp->settings->rdp_version);
 	if (length >= 12)
 	{
@@ -936,8 +947,8 @@ sec_connect(rdpSec * sec, char *server, char *username, int port)
 		sec->ssl = tls_connect(sec->ctx, sec->mcs->iso->tcp->sock, server);
 		sec->rdp->settings->encryption = 0;
 		sec->tls_connected = 1;
-		
 		success = mcs_connect(sec->mcs);
+		return success;
 	}
 	else
 #endif

@@ -125,10 +125,8 @@ static STREAM
 rdp_init_data(rdpRdp * rdp, int maxlen)
 {
 	STREAM s;
-
 	s = sec_init(rdp->sec, rdp->settings->encryption ? SEC_ENCRYPT : 0, maxlen + 18);
 	s_push_layer(s, rdp_hdr, 18);
-
 	return s;
 }
 
@@ -137,7 +135,6 @@ static STREAM
 rdp_fp_init(rdpRdp * rdp, int maxlen)
 {
 	STREAM s;
-
 	s = sec_fp_init(rdp->sec, rdp->settings->encryption ? SEC_ENCRYPT : 0, maxlen);
 	return s;
 }
@@ -342,7 +339,7 @@ static char dll[] = "C:\\Windows\\System32\\mstscax.dll";
 static void
 rdp_send_client_info(rdpRdp * rdp, uint32 flags, char *domain, char *user,
 		    char *password, size_t len_password, char *program, char *directory)
-{
+{	
 	size_t len_domain_win, len_username_win, len_alternateshell_win, len_workingdir_win,
 		len_clientaddress_win, len_clientdir_win;
 	char *domain_win = xstrdup_out_unistr(rdp,
@@ -473,8 +470,7 @@ rdp_send_synchronize(rdpRdp * rdp)
 
 /* Send a single input event */
 void
-rdp_send_input(rdpRdp * rdp, time_t time, uint16 message_type, uint16 device_flags, uint16 param1,
-	       uint16 param2)
+rdp_send_input(rdpRdp * rdp, time_t time, uint16 message_type, uint16 device_flags, uint16 param1, uint16 param2)
 {
 	STREAM s;
 	int fp_flags;

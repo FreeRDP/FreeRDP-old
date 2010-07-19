@@ -349,11 +349,11 @@ mcs_connect(rdpMcs * mcs)
 
 	if (!mcs_recv_cjcf(mcs))
 		goto error;
-
+	
 	mcs_send_cjrq(mcs, MCS_GLOBAL_CHANNEL);
 	if (!mcs_recv_cjcf(mcs))
 		goto error;
-
+	
 	settings = mcs->sec->rdp->settings;
 	for (i = 0; i < settings->num_channels; i++)
 	{

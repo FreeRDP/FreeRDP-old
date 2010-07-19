@@ -487,7 +487,6 @@ l_rdp_send_input(rdpInst * inst, int message_type, int device_flags,
 	int param1, int param2)
 {
 	rdpRdp * rdp;
-
 	rdp = RDP_FROM_INST(inst);
 	rdp_send_input(rdp, time(NULL), message_type, device_flags, param1, param2);
 	return 0;
@@ -497,7 +496,6 @@ static int
 l_rdp_sync_input(rdpInst * inst, int toggle_flags)
 {
 	rdpRdp * rdp;
-
 	rdp = (rdpRdp *) (inst->rdp);
 	rdp_sync_input(rdp, time(NULL), toggle_flags);
 	return 0;
