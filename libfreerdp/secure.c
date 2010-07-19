@@ -368,7 +368,7 @@ sec_out_client_core_data(rdpSec * sec, rdpSet * settings, STREAM s)
 	uint32 earlyCapabilityFlags;
 
 	out_uint16_le(s, UDH_CS_CORE);	/* User Data Header type */
-	out_uint16_le(s, 218);		/* total length */
+	out_uint16_le(s, 216);		/* total length */
 
 	out_uint32_le(s, settings->rdp_version >= 5 ? 0x00080004 : 0x00080001);	/* client version */
 	out_uint16_le(s, settings->width);		/* desktopWidth */
@@ -416,8 +416,6 @@ sec_out_client_core_data(rdpSec * sec, rdpSet * settings, STREAM s)
 	
 	out_uint32_le(s, earlyCapabilityFlags); /* earlyCapabilityFlags */
 	out_uint8s(s, 64); /* clientDigProductId (64 bytes) */
-	out_uint8(s, 0); /* connectionType (considered invalid without RNS_UD_CS_VALID_CONNECTION_TYPE) */
-	out_uint8(s, 0); /* pad1octet */
 	out_uint32_le(s, sec->negotiated_protocol); /* serverSelectedProtocol */
 }
 
@@ -426,7 +424,7 @@ sec_out_client_security_data(rdpSec * sec, rdpSet * settings, STREAM s)
 {
 	out_uint16_le(s, UDH_CS_SECURITY);	/* User Data Header type */
 	out_uint16_le(s, 12);			/* total length */
-	
+		
 	out_uint32_le(s, settings->encryption ? ENCRYPTION_40BIT_FLAG | ENCRYPTION_128BIT_FLAG : 0); /* encryptionMethods */
 	out_uint32_le(s, 0); /* extEncryptionMethods */
 }
@@ -508,7 +506,8 @@ sec_out_gcc_conference_create_request(rdpSec * sec, STREAM s)
 static RD_BOOL
 sec_parse_public_key(rdpSec * sec, STREAM s, uint32 len, uint8 * modulus, uint8 * exponent)
 {
-	uint32 magic, modulus_len;
+	uint32 magic;
+	uint32 modulus_len;
 
 	in_uint32_le(s, magic);
 	if (magic != SEC_RSA_MAGIC)
@@ -555,8 +554,11 @@ sec_parse_public_sig(STREAM s, uint32 len)
 static RD_BOOL
 sec_parse_server_security_data(rdpSec * sec, STREAM s, uint32 * encryptionMethod, uint8 server_random[SEC_RANDOM_SIZE], uint8 * modulus, uint8 * exponent)
 {
-	uint32 encryptionLevel, serverRandomLen, serverCertLen;
-	uint32 dwVersion, certChainVersion;
+	uint32 encryptionLevel;
+	uint32 serverRandomLen;
+	uint32 serverCertLen;
+	uint32 certChainVersion;
+	uint32 dwVersion;
 
 	in_uint32_le(s, *encryptionMethod);	/* 1 = 40-bit, 2 = 128-bit, 0 for TLS/CredSSP */
 	in_uint32_le(s, encryptionLevel);	/* 1 = low, 2 = client compatible, 3 = high */
@@ -932,7 +934,9 @@ sec_connect(rdpSec * sec, char *server, char *username, int port)
 		printf("PROTOCOL_TLS negotiated\n");
 		sec->ctx = tls_create_context();
 		sec->ssl = tls_connect(sec->ctx, sec->mcs->iso->tcp->sock, server);
+		sec->rdp->settings->encryption = 0;
 		sec->tls_connected = 1;
+		
 		success = mcs_connect(sec->mcs);
 	}
 	else

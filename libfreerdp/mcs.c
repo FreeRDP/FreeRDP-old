@@ -99,9 +99,9 @@ mcs_send_connect_initial(rdpMcs * mcs)
 static RD_BOOL
 mcs_recv_connect_response(rdpMcs * mcs)
 {
-	uint8 result;
-	int length;
 	STREAM s;
+	int length;
+	uint8 result;
 
 	s = iso_recv(mcs->iso, NULL);
 	

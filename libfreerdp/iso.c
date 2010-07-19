@@ -213,18 +213,18 @@ x224_recv(rdpIso * iso, STREAM s, int length, uint8 * pcode)
 	uint8 code;
 	uint8 subcode;
 	uint8 type;
-
+	
 	s = tcp_recv(iso->tcp, s, length - 4);
 	
 	if (s == NULL)
 		return NULL;
-
+	
 	/* X.224 TPDU Header */
 	in_uint8(s, lengthIndicator);
 	in_uint8(s, code);
 
 	subcode = code & 0x0F;	/* get the lower nibble */
-	code &= 0xF0;	/* take out lower nibble */
+	code &= 0xF0;		/* take out lower nibble */
 
 	*pcode = code;
 
@@ -299,7 +299,7 @@ tpkt_recv(rdpIso * iso, uint8 * pcode, isoRecvType * ptype)
 	int length;
 
 	s = tcp_recv(iso->tcp, NULL, 4);
-
+	
 	if (s == NULL)
 		return NULL;
 
@@ -317,7 +317,7 @@ tpkt_recv(rdpIso * iso, uint8 * pcode, isoRecvType * ptype)
 	{
 		/* Fast-Path header */
 		uint8 fpInputHeader;
-
+		
 		in_uint8(s, fpInputHeader);
 		*ptype = (fpInputHeader & 0x80) ? ISO_RECV_FAST_PATH_ENCRYPTED : ISO_RECV_FAST_PATH;
 
@@ -470,7 +470,7 @@ iso_recv(rdpIso * iso, isoRecvType * ptype)
 	uint8 code = 0;
 
 	s = iso_recv_msg(iso, &code, ptype);
-
+	
 	if (s == NULL)
 		return NULL;
 

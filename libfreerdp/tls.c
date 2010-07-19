@@ -338,8 +338,11 @@ int tls_read(SSL *ssl, char* b, int length)
 STREAM
 tls_recv(rdpTcp * tcp, STREAM s, int length)
 {
-	int read_status;
-	int bytesRead = 0;
+	int rcvd;
+	int available;
+	uint32 p_offset;
+	uint32 new_length;
+	uint32 end_offset;
 	SSL *ssl = tcp->iso->mcs->sec->ssl;
 	
 	if (s == NULL)
@@ -354,29 +357,54 @@ tls_recv(rdpTcp * tcp, STREAM s, int length)
 		tcp->in.end = tcp->in.p = tcp->in.data;
 		s = &(tcp->in);
 	}
-	
-	read_status = SSL_read(ssl, s->end, length);
-
-	switch (SSL_get_error(ssl, read_status))
+	else
 	{
-		case SSL_ERROR_NONE:
-			bytesRead += read_status;
-			s->end += bytesRead;
-			break;
+		/* append to existing stream */
+		new_length = (s->end - s->data) + length;
+		if (new_length > s->size)
+		{
+			p_offset = s->p - s->data;
+			end_offset = s->end - s->data;
+			s->data = (uint8 *) xrealloc(s->data, new_length);
+			s->size = new_length;
+			s->p = s->data + p_offset;
+			s->end = s->data + end_offset;
+		}
+	}
 
-		case SSL_ERROR_WANT_READ:
+	while (length > 0)
+	{
+		available = s->size - (s->end - s->data);
+		rcvd = SSL_read(ssl, s->end, available);
 
-			if (length - bytesRead < 128)
-			{
-					length += 1024;
-					xrealloc(s->data, length);
-			}
+		switch (SSL_get_error(ssl, rcvd))
+		{
+			case SSL_ERROR_NONE:
+				break;
+			
+			case SSL_ERROR_WANT_READ:
+				
+				if (available < length)
+				{
+					s->size += 1024;
+					xrealloc(s->data, s->size);
+				}
 
-			return tls_recv(tcp, s, length);
-			break;
+				if (rcvd < 0)
+					rcvd = 0;
+				
+				break;
 
-		default:
-			tls_printf("SSL_read", ssl, read_status);
+			default:
+				tls_printf("SSL_read", ssl, rcvd);
+				exit(0);
+				break;
+		}
+
+		s->end += rcvd;
+		length -= rcvd;
+
+		if ((s->end - s->data) > length)
 			break;
 	}
 
