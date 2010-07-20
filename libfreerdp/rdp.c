@@ -144,21 +144,29 @@ static void
 rdp_send_data(rdpRdp * rdp, STREAM s, uint8 data_pdu_type)
 {
 	uint16 length;
+	uint16 uncompressedLength;
 
 	s_pop_layer(s, rdp_hdr);
 	length = (int) (s->end - s->p);
 
-	out_uint16_le(s, length);
-	out_uint16_le(s, (RDP_PDU_DATA | 0x10));
-	out_uint16_le(s, (rdp->sec->mcs->mcs_userid + 1001));
+	if (rdp->settings->encryption)
+		uncompressedLength = length - 14;
+	else
+		uncompressedLength = length;
+	
+	/* Share Control Header */
+	out_uint16_le(s, length); /* totalLength */
+	out_uint16_le(s, (RDP_PDU_DATA | 0x10)); /* pduType */
+	out_uint16_le(s, (rdp->sec->mcs->mcs_userid + 1001)); /* PDUSource */
 
-	out_uint32_le(s, rdp->rdp_shareid);
-	out_uint8(s, 0);	/* pad */
-	out_uint8(s, 1);	/* streamid */
-	out_uint16_le(s, (length - 14));
-	out_uint8(s, data_pdu_type);
-	out_uint8(s, 0);	/* compress_type */
-	out_uint16_le(s, 0);	/* compress_len */
+	/* Share Data Header */
+	out_uint32_le(s, rdp->rdp_shareid); 	/* shareId */
+	out_uint8(s, 0);			/* pad1 */
+	out_uint8(s, STREAM_LOW);		/* streamId */
+	out_uint16_le(s, uncompressedLength);	/* uncompressedLength */
+	out_uint8(s, data_pdu_type);		/* pduType2 */
+	out_uint8(s, 0);			/* compressedType */
+	out_uint16_le(s, 0);			/* compressedLength */
 
 	sec_send(rdp->sec, s, rdp->settings->encryption ? SEC_ENCRYPT : 0);
 }
@@ -474,7 +482,7 @@ rdp_send_input(rdpRdp * rdp, time_t time, uint16 message_type, uint16 device_fla
 {
 	STREAM s;
 	int fp_flags;
-
+	
 	if (rdp->use_input_fast_path)
 	{
 		switch (message_type)
@@ -537,7 +545,7 @@ rdp_sync_input(rdpRdp * rdp, time_t time, uint32 toggle_keys_state)
 {
 	STREAM s;
 	int fp_flags;
-
+	
 	if (rdp->use_input_fast_path)
 	{
 		fp_flags = 3 << 5; /* FASTPATH_INPUT_EVENT_SYNC */

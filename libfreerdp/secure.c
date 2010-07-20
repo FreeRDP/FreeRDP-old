@@ -299,21 +299,25 @@ sec_send_to_channel(rdpSec * sec, STREAM s, uint32 flags, uint16 channel)
 	int datalen;
 	s_pop_layer(s, sec_hdr);
 
-	if (!(sec->licence->licence_issued) || (flags & SEC_ENCRYPT))
-		out_uint32_le(s, flags);
-
-	if (flags & SEC_ENCRYPT)
+	if (sec->rdp->settings->encryption)
 	{
-		flags &= ~SEC_ENCRYPT;
-		datalen = s->end - s->p - 8;
+		/* Basic Security Header */
+		if (!(sec->licence->licence_issued) || (flags & SEC_ENCRYPT))
+			out_uint32_le(s, flags); /* flags */
+
+		if (flags & SEC_ENCRYPT)
+		{
+			flags &= ~SEC_ENCRYPT;
+			datalen = s->end - s->p - 8;
 
 #if WITH_DEBUG
-		DEBUG("Sending encrypted packet:\n");
-		hexdump(s->p + 8, datalen);
+			DEBUG("Sending encrypted packet:\n");
+			hexdump(s->p + 8, datalen);
 #endif
 
-		sec_sign(s->p, 8, sec->sec_sign_key, sec->rc4_key_len, s->p + 8, datalen);
-		sec_encrypt(sec, s->p + 8, datalen);
+			sec_sign(s->p, 8, sec->sec_sign_key, sec->rc4_key_len, s->p + 8, datalen);
+			sec_encrypt(sec, s->p + 8, datalen);
+		}
 	}
 
 	mcs_send_to_channel(sec->mcs, s, channel);
@@ -332,7 +336,6 @@ void
 sec_fp_send(rdpSec * sec, STREAM s, uint32 flags)
 {
 	int datalen;
-
 	s_pop_layer(s, sec_hdr);
 	if (flags & SEC_ENCRYPT)
 	{
@@ -904,7 +907,7 @@ sec_recv(rdpSec * sec, secRecvType * type)
 				return s;
 			}
 		}
-
+		
 		if (channel != MCS_GLOBAL_CHANNEL)
 		{
 			vchan_process(sec->mcs->chan, s, channel);
