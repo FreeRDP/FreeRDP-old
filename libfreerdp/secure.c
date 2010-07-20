@@ -368,7 +368,7 @@ sec_out_client_core_data(rdpSec * sec, rdpSet * settings, STREAM s)
 	size_t len;
 	uint16 highColorDepth;
 	uint16 supportedColorDepths;
-	uint32 earlyCapabilityFlags;
+	uint16 earlyCapabilityFlags;
 
 	out_uint16_le(s, UDH_CS_CORE);	/* User Data Header type */
 	out_uint16_le(s, 216);		/* total length */
@@ -417,8 +417,10 @@ sec_out_client_core_data(rdpSec * sec, rdpSet * settings, STREAM s)
 	if (settings->server_depth == 32)
 		earlyCapabilityFlags |= RNS_UD_CS_WANT_32BPP_SESSION;
 	
-	out_uint32_le(s, earlyCapabilityFlags); /* earlyCapabilityFlags */
+	out_uint16_le(s, earlyCapabilityFlags); /* earlyCapabilityFlags */
 	out_uint8s(s, 64); /* clientDigProductId (64 bytes) */
+	out_uint8(s, 0); /* connectionType, only valid when RNS_UD_CS_VALID_CONNECTION_TYPE is set in earlyCapabilityFlags */
+	out_uint8(s, 0); /* pad1octet */
 	out_uint32_le(s, sec->negotiated_protocol); /* serverSelectedProtocol */
 }
 
