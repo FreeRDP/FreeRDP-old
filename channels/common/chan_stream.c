@@ -30,7 +30,7 @@
 #include "chan_stream.h"
 
 int
-set_wstr(char* dst, int dstlen, char* src, int srclen)
+freerdp_set_wstr(char* dst, int dstlen, char* src, int srclen)
 {
 #ifdef HAVE_ICONV
 	iconv_t cd;
@@ -64,7 +64,7 @@ set_wstr(char* dst, int dstlen, char* src, int srclen)
 }
 
 int
-get_wstr(char* dst, int dstlen, char* src, int srclen)
+freerdp_get_wstr(char* dst, int dstlen, char* src, int srclen)
 {
 #ifdef HAVE_ICONV
 	iconv_t cd;

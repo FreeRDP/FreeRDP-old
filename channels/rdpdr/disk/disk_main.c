@@ -549,7 +549,7 @@ disk_query_volume_info(IRP * irp)
 			memset(buf, 0, 256);
 			SET_UINT64(buf, 0, 0); /* VolumeCreationTime */
 			SET_UINT32(buf, 8, 0); /* VolumeSerialNumber */
-			len = set_wstr(buf + 17, size - 17, "FREERDP", strlen("FREERDP") + 1);
+			len = freerdp_set_wstr(buf + 17, size - 17, "FREERDP", strlen("FREERDP") + 1);
 			SET_UINT32(buf, 12, len); /* VolumeLabelLength */
 			SET_UINT8(buf, 16, 0);	/* SupportsObjects */
 			size = 17 + len;
@@ -570,7 +570,7 @@ disk_query_volume_info(IRP * irp)
 			memset(buf, 0, 256);
 			SET_UINT32(buf, 0, FILE_CASE_SENSITIVE_SEARCH | FILE_CASE_PRESERVED_NAMES | FILE_UNICODE_ON_DISK); /* FileSystemAttributes */
 			SET_UINT32(buf, 4, F_NAMELEN(stat_fs)); /* MaximumComponentNameLength */
-			len = set_wstr(buf + 12, 256 - 12, "FREERDP", 8);
+			len = freerdp_set_wstr(buf + 12, 256 - 12, "FREERDP", 8);
 			SET_UINT32(buf, 8, len); /* FileSystemNameLength */
 			size = 12 + len;
 			break;
@@ -733,7 +733,7 @@ disk_set_info(IRP * irp)
 			size = len * 2;
 			buf = malloc(size);
 			memset(buf, 0, size);
-			get_wstr(buf, size, irp->inputBuffer + 6, len);
+			freerdp_get_wstr(buf, size, irp->inputBuffer + 6, len);
 			fullpath = disk_get_fullpath(irp->dev, buf);
 			free(buf);
 			LLOGLN(10, ("disk_set_info: rename %s to %s", finfo->fullpath, fullpath));
@@ -838,7 +838,7 @@ disk_query_directory(IRP * irp, uint8 initialQuery, const char * path)
 			/* [MS-FSCC] has one byte padding here but RDP does not! */
 			//SET_UINT8(buf, 69, 0); /* Reserved */
 			/* ShortName 24  bytes */
-			len = set_wstr(buf + 93, size - 93, pdirent->d_name, strlen(pdirent->d_name));
+			len = freerdp_set_wstr(buf + 93, size - 93, pdirent->d_name, strlen(pdirent->d_name));
 			SET_UINT32(buf, 60, len); /* FileNameLength */
 			size = 93 + len;
 			break;
@@ -859,7 +859,7 @@ disk_query_directory(IRP * irp, uint8 initialQuery, const char * path)
 			SET_UINT64(buf, 48, file_stat.st_size); /* AllocationSize */
 			SET_UINT32(buf, 56, attr); /* FileAttributes */
 			SET_UINT32(buf, 64, 0); /* EaSize */
-			len = set_wstr(buf + 68, size - 68, pdirent->d_name, strlen(pdirent->d_name));
+			len = freerdp_set_wstr(buf + 68, size - 68, pdirent->d_name, strlen(pdirent->d_name));
 			SET_UINT32(buf, 60, len); /* FileNameLength */
 			size = 68 + len;
 			break;

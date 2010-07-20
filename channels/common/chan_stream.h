@@ -60,8 +60,8 @@
 	*(((uint8 *) _p1) + _offset + 7) = (uint8) ((((uint64) (_value)) >> 56) & 0xff)
 
 int
-set_wstr(char* dst, int dstlen, char* src, int srclen);
+freerdp_set_wstr(char* dst, int dstlen, char* src, int srclen);
 int
-get_wstr(char* dst, int dstlen, char* src, int srclen);
+freerdp_get_wstr(char* dst, int dstlen, char* src, int srclen);
 
 #endif
