@@ -125,7 +125,7 @@ printer_process_update_printer_event(SERVICE * srv, const char * data, int data_
 	size = printerNameLen * 3 / 2 + 2;
 	printerName = (char *) malloc(size);
 	memset(printerName, 0, size);
-	get_wstr(printerName, size, (char *)(data + 8), printerNameLen);
+	freerdp_get_wstr(printerName, size, (char *)(data + 8), printerNameLen);
 	LLOGLN(10, ("printer_process_update_printer_event: %s %d", printerName, configDataLen));
 	printer_save_data(printerName, data + 8 + printerNameLen, configDataLen);
 	free(printerName);
@@ -146,7 +146,7 @@ printer_process_delete_printer_event(SERVICE * srv, const char * data, int data_
 	size = printerNameLen * 3 / 2 + 2;
 	printerName = (char *) malloc(size);
 	memset(printerName, 0, size);
-	get_wstr(printerName, size, (char *)(data + 4), printerNameLen);
+	freerdp_get_wstr(printerName, size, (char *)(data + 4), printerNameLen);
 
 	filename = printer_get_filename(printerName);
 	remove(filename);
@@ -275,10 +275,10 @@ printer_register(PDEVMAN pDevman, PDEVMAN_ENTRY_POINTS pEntryPoints, SERVICE * s
 	SET_UINT32 (dev->data, 8, 0); /* PnPNameLen */
 	SET_UINT32 (dev->data, 20, cache_data_len); /* CachedFieldsLen */
 	offset = 24;
-	len = set_wstr(&dev->data[offset], size - offset, (char *) driver, strlen(driver) + 1);
+	len = freerdp_set_wstr(&dev->data[offset], size - offset, (char *) driver, strlen(driver) + 1);
 	SET_UINT32 (dev->data, 12, len); /* DriverNameLen */
 	offset += len;
-	len = set_wstr(&dev->data[offset], size - offset, (char *) name, strlen(name) + 1);
+	len = freerdp_set_wstr(&dev->data[offset], size - offset, (char *) name, strlen(name) + 1);
 	SET_UINT32 (dev->data, 16, len); /* PrintNameLen */
 	offset += len;
 	if (cache_data)

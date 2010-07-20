@@ -69,7 +69,7 @@ irp_process_create_request(IRP* irp, char* data, int data_size)
 	memset(path, 0, size);
 	if (pathLength > 0)
 	{
-		get_wstr(path, size, &data[32], pathLength);
+		freerdp_get_wstr(path, size, &data[32], pathLength);
 	}
 
 	if (!irp->dev->service->create)
@@ -335,7 +335,7 @@ irp_process_query_directory_request(IRP* irp, char* data, int data_size)
 	memset(path, 0, size);
 	if (pathLength > 0)
 	{
-		get_wstr(path, size, &data[32], pathLength);
+		freerdp_get_wstr(path, size, &data[32], pathLength);
 	}
 
 	if (!irp->dev->service->query_directory)
