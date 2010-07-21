@@ -166,7 +166,7 @@ rdpdr_send_client_name_request(rdpdrPlugin * plugin)
 	SET_UINT32(data, 4, 1); // unicodeFlag, 0 for ASCII and 1 for Unicode
 	SET_UINT32(data, 8, 0); // codePage, must be set to zero
 
-	computerNameLenW = set_wstr(&data[16], size - 16, computerName, computerNameLen); /* computerName */
+	computerNameLenW = freerdp_set_wstr(&data[16], size - 16, computerName, computerNameLen); /* computerName */
 	SET_UINT32(data, 12, computerNameLenW + 2); /* computerNameLen, including null terminator */
 
 	error = plugin->ep.pVirtualChannelWrite(plugin->open_handle,
