@@ -258,14 +258,14 @@ xstrdup_in_unistr(rdpRdp * rdp, unsigned char* pin, size_t in_len)
 void
 rdp_out_systemtime(STREAM s, systemTime sysTime)
 {
-	out_uint16_le(s, sysTime.wYear); /* wYear, must be set to zero */
-	out_uint16_le(s, sysTime.wMonth); /* wMonth */
-	out_uint16_le(s, sysTime.wDayOfWeek); /* wDayOfWeek */
-	out_uint16_le(s, sysTime.wDay); /* wDay */
-	out_uint16_le(s, sysTime.wHour); /* wHour */
-	out_uint16_le(s, sysTime.wMinute); /* wMinute */
-	out_uint16_le(s, sysTime.wSecond); /* wSecond */
-	out_uint16_le(s, sysTime.wMilliseconds); /* wMilliseconds */
+	out_uint16_le(s, sysTime.wYear);		/* wYear, must be set to zero */
+	out_uint16_le(s, sysTime.wMonth);		/* wMonth */
+	out_uint16_le(s, sysTime.wDayOfWeek);		/* wDayOfWeek */
+	out_uint16_le(s, sysTime.wDay);			/* wDay */
+	out_uint16_le(s, sysTime.wHour);		/* wHour */
+	out_uint16_le(s, sysTime.wMinute);		/* wMinute */
+	out_uint16_le(s, sysTime.wSecond);		/* wSecond */
+	out_uint16_le(s, sysTime.wMilliseconds);	/* wMilliseconds */
 }
 
 /* Output client time zone information structure */
@@ -320,127 +320,116 @@ rdp_out_client_timezone_info(rdpRdp * rdp, STREAM s)
 		memset((void*)&standardDate, '\0', sizeof(systemTime));
 		memset((void*)&daylightDate, '\0', sizeof(systemTime));
 
-		out_uint32_le(s, bias); /* bias */
+		out_uint32_le(s, bias);			/* bias */
 
 		p = xstrdup_out_unistr(rdp, standardName, &len);
 		assert(len <= 64 - 2);
 		out_uint8a(s, p, len + 2);
-		out_uint8s(s, 64 - len - 2);	/* standardName (64 bytes) */
+		out_uint8s(s, 64 - len - 2);		/* standardName (64 bytes) */
 		xfree(p);
 
-		rdp_out_systemtime(s, standardDate); /* standardDate */
-		out_uint32_le(s, standardBias);	/* standardBias */
+		rdp_out_systemtime(s, standardDate);	/* standardDate */
+		out_uint32_le(s, standardBias);		/* standardBias */
 
 		p = xstrdup_out_unistr(rdp, daylightName, &len);
 		assert(len <= 64 - 2);
 		out_uint8a(s, p, len + 2);
-		out_uint8s(s, 64 - len - 2);	/* daylightName (64 bytes) */
+		out_uint8s(s, 64 - len - 2);		/* daylightName (64 bytes) */
 		xfree(p);
 
-		rdp_out_systemtime(s, daylightDate); /* daylightDate */
-		out_uint32_le(s, daylightBias); /* daylightBias */
+		rdp_out_systemtime(s, daylightDate);	/* daylightDate */
+		out_uint32_le(s, daylightBias);		/* daylightBias */
 }
 
 static char dll[] = "C:\\Windows\\System32\\mstscax.dll";
 
 /* Send Client Info PDU Data */
 static void
-rdp_send_client_info(rdpRdp * rdp, uint32 flags, char *domain, char *user,
-		    char *password, size_t len_password, char *program, char *directory)
-{	
-	size_t len_domain_win, len_username_win, len_alternateshell_win, len_workingdir_win,
-		len_clientaddress_win, len_clientdir_win;
-	char *domain_win = xstrdup_out_unistr(rdp,
-		domain, &len_domain_win);
-	char *username_win = xstrdup_out_unistr(rdp,
-		user, &len_username_win);
-	char *alternateshell_win = xstrdup_out_unistr(rdp,
-		program, &len_alternateshell_win);
-	char *workingdirectory_win = xstrdup_out_unistr(rdp,
-		directory, &len_workingdir_win);
-	char *clientaddress_win = xstrdup_out_unistr(rdp,
-		tcp_get_address(rdp->sec->mcs->iso->tcp), &len_clientaddress_win);
-	char *clientdir_win = xstrdup_out_unistr(rdp,
-		dll, &len_clientdir_win);	/* Client working directory OR binary name ... */
-	int packetlen = 0;
-	uint32 sec_flags = SEC_INFO_PKT | (rdp->settings->encryption ? SEC_ENCRYPT : 0);
+rdp_send_client_info(rdpRdp * rdp, uint32 flags, char *domain_name,
+                     char *username, char *password, size_t cbPassword, char *shell, char *dir)
+{
 	STREAM s;
-
-	DEBUG_RDP5("Sending Client Info Packet, rdp version %d\n", rdp->settings->rdp_version);
-
-	packetlen =
-		4 +	/* Codepage */
-		4 +	/* flags */
-		2 +	/* length of Domain field */
-		2 +	/* length of UserName field */
-		2 +	/* length of Password field */
-		2 + /* length of AlternateShell */
-		2 +	/* length of WorkingDir */
-		len_domain_win + 2 +
-		len_username_win + 2 +
-		len_password + 2 +
-		len_alternateshell_win + 2 +
-		len_workingdir_win + 2 +
-		((rdp->settings->rdp_version >= 5) ? (
-			/* Extended Info Packet for RDP 5+ */
-			2 +	/* clientAddressFamily */
-			2 +	len_clientaddress_win + 2 +
-			2 +	len_clientdir_win + 2 +
-			172 +	/* clientTimeZone */
-			4 +	/* clientSessionId */
-			4 +	/* performanceFlags */
-			2	/* cbAutoReconnectLen */
-		) : 0);
-
-	s = sec_init(rdp->sec, sec_flags, packetlen);
-	DEBUG_RDP5("Called sec_init with packetlen %d\n", packetlen);
-
-	/* "Codepage" field, but flags has INFO_UNICODE set, so it contains active input locale identifier in the low word */
-	out_uint32_le(s, 0);	/* FIXME: 0 seems to be an illegal value */
-
+	int length;
+	char* domain;
+	char* userName;
+	char* alternateShell;
+	char* workingDir;
+	char* clientAddress;
+	char* clientDir;
+	size_t cbDomain;
+	size_t cbUserName;
+	size_t cbAlternateShell;
+	size_t cbWorkingDir;
+	size_t cbClientAddress;
+	size_t cbClientDir;
+	uint32 sec_flags;
+	
 	flags |= INFO_ENABLEWINDOWSKEY;
+	
 	if(rdp->settings->autologin)
 		flags |= INFO_AUTOLOGON;
+	
 	if(rdp->settings->bulk_compression)
 		flags |= INFO_COMPRESSION | PACKET_COMPR_TYPE_64K;
-	out_uint32_le(s, flags);
 
-	out_uint16_le(s, len_domain_win);
-	out_uint16_le(s, len_username_win);
-	out_uint16_le(s, len_password);
-	out_uint16_le(s, len_alternateshell_win);
-	out_uint16_le(s, len_workingdir_win);
-	out_uint8a(s, domain_win, len_domain_win + 2);
-	out_uint8a(s, username_win, len_username_win + 2);
-	out_uint8p(s, password, len_password);
-	out_uint8s(s, 2);	/* zero termination */
-	out_uint8a(s, alternateshell_win, len_alternateshell_win + 2);
-	out_uint8a(s, workingdirectory_win, len_workingdir_win + 2);
+	domain = xstrdup_out_unistr(rdp, domain_name, &cbDomain);
+	userName = xstrdup_out_unistr(rdp, username, &cbUserName);
+	alternateShell = xstrdup_out_unistr(rdp, shell, &cbAlternateShell);
+	workingDir = xstrdup_out_unistr(rdp, dir, &cbWorkingDir);
+	clientAddress = xstrdup_out_unistr(rdp, tcp_get_address(rdp->sec->mcs->iso->tcp), &cbClientAddress);
+	clientDir = xstrdup_out_unistr(rdp, dll, &cbClientDir); /* client working directory OR binary name */
+
+	length = 8 + (5 * 4) + cbDomain + cbUserName + cbPassword + cbAlternateShell + cbWorkingDir;
 
 	if (rdp->settings->rdp_version >= 5)
-	{
-		/* Extended Info (Optional) RDP 5.0 and later */
-		out_uint16_le(s, CLIENT_INFO_AF_INET);	/* clientAddressFamily */
-		out_uint16_le(s, len_clientaddress_win + 2);
-		out_uint8a(s, clientaddress_win, len_clientaddress_win + 2);
-		out_uint16_le(s, len_clientdir_win + 2);
-		out_uint8a(s, clientdir_win, len_clientdir_win + 2);
-		rdp_out_client_timezone_info(rdp, s); /* clientTimeZone */
-		out_uint32_le(s, 0); /* clientSessionId, should be set to zero */
-		out_uint32_le(s, rdp->settings->performanceflags); /* performanceFlags */
-		out_uint16_le(s, 0); /* cbAutoReconnectLen */
-		/* autoReconnectCookie (length specified by cbAutoReconnectLen) */
-	}
+		length += 180 + (2 * 4) + cbClientAddress + cbClientDir;
 
-	xfree(domain_win);
-	xfree(username_win);
-	xfree(alternateshell_win);
-	xfree(workingdirectory_win);
-	xfree(clientaddress_win);
-	xfree(clientdir_win);
+	sec_flags = SEC_INFO_PKT | (rdp->settings->encryption ? SEC_ENCRYPT : 0);	
+	s = sec_init(rdp->sec, sec_flags, length);
+	
+	/* INFO_UNICODE is set, so codePage contains the active locale identifier in the low word (see MSDN-MUI) */
+	out_uint32_le(s, 0);		/* codePage */ /* FIXME: 0 seems to be an illegal value */
+	out_uint32_le(s, flags);	/* flags */
+
+	out_uint16_le(s, cbDomain);		/* cbDomain */
+	out_uint16_le(s, cbUserName); 		/* cbUserName */
+	out_uint16_le(s, cbPassword);		/* cbPassword */
+	out_uint16_le(s, cbAlternateShell);	/* cbAlternateShell */
+	out_uint16_le(s, cbWorkingDir);		/* cbWorkingDir */
+	
+	out_uint8a(s, domain, cbDomain + 2); 			/* domain */
+	out_uint8a(s, userName, cbUserName + 2); 		/* userName */
+	out_uint8p(s, password, cbPassword);			/* password */
+	out_uint8s(s, 2);					/* password null termination */
+	out_uint8a(s, alternateShell, cbAlternateShell + 2); 	/* alternateShell */ 
+	out_uint8a(s, workingDir, cbWorkingDir + 2);		/* workingDir */
+
+	/* extraInfo: optional, used in RDP 5.0, 5.1, 5.2, 6.0, 6.1 and 7.0 */
+	if (rdp->settings->rdp_version >= 5)
+	{		
+		out_uint16_le(s, CLIENT_INFO_AF_INET);			/* clientAddressFamily (IPv4) */
+		out_uint16_le(s, cbClientAddress + 2);			/* cbClientAddress */
+		out_uint8a(s, clientAddress, cbClientAddress + 2);	/* clientAddress */
+		out_uint16_le(s, cbClientDir + 2);			/* cbClientDir */
+		out_uint8a(s, clientDir, cbClientDir + 2);		/* clientDir */
+		rdp_out_client_timezone_info(rdp, s);			/* clientTimeZone (172 bytes) */
+		out_uint32_le(s, 0);					/* clientSessionId, should be set to zero */
+		out_uint32_le(s, rdp->settings->performanceflags);	/* performanceFlags */
+		out_uint16_le(s, 0);					/* cbAutoReconnectLen */
+		/* autoReconnectCookie */ /* FIXME: populate this field */
+		/* reserved1 (2 bytes) */
+		/* reserved2 (2 bytes) */
+	}
 
 	s_mark_end(s);
 	sec_send(rdp->sec, s, sec_flags);
+	
+	xfree(domain);
+	xfree(userName);
+	xfree(alternateShell);
+	xfree(workingDir);
+	xfree(clientAddress);
+	xfree(clientDir);
 }
 
 /* Send a control PDU */
@@ -796,8 +785,8 @@ rdp_process_server_caps(rdpRdp * rdp, STREAM s, uint16 length)
 
 	start = s->p;
 
-        in_uint16_le(s, numberCapabilities);
-        in_uint8s(s, 2); // pad
+        in_uint16_le(s, numberCapabilities); /* numberCapabilities */
+        in_uint8s(s, 2); /* pad */
 
 	for (n = 0; n < numberCapabilities; n++)
 	{
