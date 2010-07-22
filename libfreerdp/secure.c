@@ -239,8 +239,10 @@ sec_encrypt(rdpSec * sec, uint8 * data, int length)
 static void
 sec_decrypt(rdpSec * sec, uint8 * data, int length)
 {
+#ifndef DISABLE_TLS
 	if (sec->tls_connected)
 		return;
+#endif
 	
 	if (sec->sec_decrypt_use_count == 4096)
 	{

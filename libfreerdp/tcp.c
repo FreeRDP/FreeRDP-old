@@ -194,10 +194,12 @@ tcp_recv(rdpTcp * tcp, STREAM s, uint32 length)
 	uint32 new_length;
 	uint32 end_offset;
 
+#ifndef DISABLE_TLS
 	if (tcp->iso->mcs->sec->tls_connected)
 	{
 		return tls_recv(tcp, s, length);
 	}
+#endif
 	
 	if (s == NULL)
 	{
