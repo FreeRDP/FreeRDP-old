@@ -429,11 +429,16 @@ sec_out_client_core_data(rdpSec * sec, rdpSet * settings, STREAM s)
 static void
 sec_out_client_security_data(rdpSec * sec, rdpSet * settings, STREAM s)
 {
+	uint16 encryptionMethods = 0;
+
 	out_uint16_le(s, UDH_CS_SECURITY);	/* User Data Header type */
 	out_uint16_le(s, 12);			/* total length */
-		
-	out_uint32_le(s, settings->encryption ? ENCRYPTION_40BIT_FLAG | ENCRYPTION_128BIT_FLAG : 0); /* encryptionMethods */
-	out_uint32_le(s, 0); /* extEncryptionMethods */
+
+	if (settings->encryption || sec->tls_connected)
+		encryptionMethods = ENCRYPTION_40BIT_FLAG | ENCRYPTION_128BIT_FLAG;
+
+	out_uint32_le(s, encryptionMethods);	/* encryptionMethods */
+	out_uint32_le(s, 0);			/* extEncryptionMethods */
 }
 
 static void
@@ -481,9 +486,9 @@ sec_out_gcc_conference_create_request(rdpSec * sec, STREAM s)
 	/* the part before userData is of a fixed size, making things convenient */
 	s->p = s->data + 23;
 	sec_out_client_core_data(sec, settings, s);
+	sec_out_client_cluster_data(sec, settings, s);
 	sec_out_client_security_data(sec, settings, s);
 	sec_out_client_network_data(sec, settings, s);
-	sec_out_client_cluster_data(sec, settings, s);
 	length = (s->p - s->data) - 23;
 	s->p = s->data;
 	
@@ -949,9 +954,12 @@ sec_connect(rdpSec * sec, char *server, char *username, int port)
 		printf("PROTOCOL_TLS negotiated\n");
 		sec->ctx = tls_create_context();
 		sec->ssl = tls_connect(sec->ctx, sec->mcs->iso->tcp->sock, server);
-		sec->rdp->settings->encryption = 0;
 		sec->tls_connected = 1;
 		success = mcs_connect(sec->mcs);
+		
+		if (success)
+			sec_establish_key(sec);
+		
 		return success;
 	}
 	else

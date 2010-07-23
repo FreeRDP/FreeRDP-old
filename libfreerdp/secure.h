@@ -50,8 +50,8 @@ struct rdp_sec
 	int requested_protocol;
 	int negotiated_protocol;
 	int denied_protocols;
-#ifndef DISABLE_TLS
 	int tls_connected;
+#ifndef DISABLE_TLS
 	SSL *ssl;
 	SSL_CTX *ctx;
 	struct rdp_nla * nla;
