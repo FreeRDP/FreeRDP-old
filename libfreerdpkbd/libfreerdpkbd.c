@@ -43,12 +43,11 @@ find_keyboard_layout_in_xorg_rules(char* layout, char* variant)
 	{
 		if (strcmp(xkbLayouts[i].layout, layout) == 0)
 		{
-			for (j = 0; xkbLayouts[i].variants[j].variant != NULL; j++)
+			for (j = 0; xkbLayouts[i].variants[j].variant != NULL && strlen(xkbLayouts[i].variants[j].variant) > 0; j++)
 			{
 				if (strcmp(xkbLayouts[i].variants[j].variant, variant) == 0)
 				{
-					if (strlen(xkbLayouts[i].variants[j].variant) > 0)
-						return xkbLayouts[i].variants[j].keyboardLayoutID;
+					return xkbLayouts[i].variants[j].keyboardLayoutID;
 				}
 			}
 
