@@ -163,6 +163,7 @@ detect_keyboard_layout_from_xkb()
 			variant = beg;
 		}
         }
+        pclose(xprop);
 
 	keyboard_layout = find_keyboard_layout_in_xorg_rules(layout, variant);
 
@@ -203,6 +204,7 @@ detect_keyboard_layout_from_xkb()
 			variant = beg;
 		}
         }
+        pclose(xprop);
 
 	keyboard_layout = find_keyboard_layout_in_xorg_rules(layout, variant);
 	return keyboard_layout;
