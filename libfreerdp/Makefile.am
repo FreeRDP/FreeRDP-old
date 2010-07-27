@@ -41,6 +41,14 @@ if CRYPTO_NSS
 libfreerdp_la_SOURCES += crypto_nss.c
 endif
 
+if CRYPTO_GNUTLS
+libfreerdp_la_SOURCES += crypto_gnutls.c
+endif
+
+if CRYPTO_GNUTLS
+libfreerdp_la_SOURCES += crypto_gnutls.c ssl.c ssl.h
+endif
+
 if CRYPTO_OPENSSL
 libfreerdp_la_SOURCES += crypto_openssl.c
 endif

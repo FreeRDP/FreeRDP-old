@@ -68,18 +68,24 @@ AC_SUBST(PLUGIN_PATH)
 #
 AC_ARG_WITH([crypto],
 	[AS_HELP_STRING([--with-crypto=ARG],
-		[Choose the crypto library. Valid arguments are nss, openssl (the default) or simple])],
+		[Choose the crypto library. Valid arguments are nss, gnutls, openssl (the default) or simple])],
 	[with_crypto=$withval],
 	[with_crypto=openssl])
 
 disable_tls=yes
 AM_CONDITIONAL(CRYPTO_NSS, false)
+AM_CONDITIONAL(CRYPTO_GNUTLS, false)
 AM_CONDITIONAL(CRYPTO_OPENSSL, false)
 AM_CONDITIONAL(CRYPTO_SIMPLE, false)
 case $with_crypto in
 	nss)
 		PKG_CHECK_MODULES(CRYPTO, [nss])
 		AM_CONDITIONAL(CRYPTO_NSS, true)
+		;;
+
+	gnutls)
+		PKG_CHECK_MODULES(CRYPTO, [gnutls >= 2.10.1])
+		AM_CONDITIONAL(CRYPTO_GNUTLS, true)
 		;;
 
 	openssl)
