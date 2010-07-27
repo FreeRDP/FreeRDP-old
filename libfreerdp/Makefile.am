@@ -33,10 +33,17 @@ libfreerdp_la_SOURCES = \
 	rdp.c rdp.h \
 	rdp5.c \
 	secure.c secure.h \
-	ssl.c ssl.h \
-	crypto.c crypto.h \
+	crypto.h \
 	tcp.c tcp.h \
 	types.h debug.h frdp.h
+
+if CRYPTO_OPENSSL
+libfreerdp_la_SOURCES += crypto_openssl.c
+endif
+
+if CRYPTO_SIMPLE
+libfreerdp_la_SOURCES += crypto_simple.c ssl.c ssl.h
+endif
 
 if ENABLE_TLS
 libfreerdp_la_SOURCES += tls.c tls.h credssp.c credssp.h

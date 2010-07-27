@@ -68,11 +68,13 @@ AC_SUBST(PLUGIN_PATH)
 #
 AC_ARG_WITH([crypto],
 	[AS_HELP_STRING([--with-crypto=ARG],
-		[Choose the crypto library. Valid arguments are openssl, polarssl, no (default is openssl)])],
+		[Choose the crypto library. Valid arguments are openssl (the default) or simple])],
 	[with_crypto=$withval],
 	[with_crypto=openssl])
 
 disable_tls=yes
+AM_CONDITIONAL(CRYPTO_OPENSSL, false)
+AM_CONDITIONAL(CRYPTO_SIMPLE, false)
 case $with_crypto in
 	openssl)
 		PKG_CHECK_MODULES(CRYPTO, [openssl >= 0.9.8a], [], [
@@ -85,23 +87,13 @@ case $with_crypto in
 			AC_SUBST(CRYPTO_LIBS)
 			AC_SUBST(CRYPTO_CFLAGS)
 		])
+		AM_CONDITIONAL(CRYPTO_OPENSSL, true)
 		disable_tls=no
 		;;
 
-	polarssl)
-		AC_CHECK_LIB(polarssl, ssl_init,
-			[CRYPTO_LIBS=-lpolarssl],
-			[AC_MSG_ERROR(PolarSSL library not found)])
-		AC_CHECK_HEADER(polarssl/ssl.h,
-			[CRYPTO_CFLAGS=],
-			[AC_MSG_ERROR(PolarSSL development header not found)])
-		AC_SUBST(CRYPTO_LIBS)
-		AC_SUBST(CRYPTO_CFLAGS)
-		disable_tls=no
-		;;
-
-	no)
-		AC_MSG_WARN([Cryptographic disabled.])
+	simple)
+		AC_MSG_WARN([Using simple built-in cryptographic library.])
+		AM_CONDITIONAL(CRYPTO_SIMPLE, true)
 		;;
 
 	*)
