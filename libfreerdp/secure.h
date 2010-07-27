@@ -32,8 +32,8 @@ struct rdp_sec
 {
 	struct rdp_rdp * rdp;
 	int rc4_key_len;
-	CRYPTO_RC4 rc4_decrypt_key;
-	CRYPTO_RC4 rc4_encrypt_key;
+	CryptoRc4 rc4_decrypt_key;
+	CryptoRc4 rc4_encrypt_key;
 	uint32 server_public_key_len;
 	uint8 sec_sign_key[16];
 	uint8 sec_decrypt_key[16];

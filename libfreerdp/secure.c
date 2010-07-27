@@ -63,24 +63,24 @@ sec_hash_48(uint8 * out, uint8 * in, uint8 * salt1, uint8 * salt2, uint8 salt)
 	int i;
 	uint8 pad[4];
 	uint8 shasig[20];
-	CRYPTO_MD5 md5;
-	CRYPTO_SHA1 sha1;
+	CryptoMd5 md5;
+	CryptoSha1 sha1;
 
 	for (i = 0; i < 3; i++)
 	{
 		memset(pad, salt + i, i + 1);
 
-		crypto_sha1_init(&sha1);
-		crypto_sha1_update(&sha1, pad, i + 1);
-		crypto_sha1_update(&sha1, in, 48);
-		crypto_sha1_update(&sha1, salt1, 32);
-		crypto_sha1_update(&sha1, salt2, 32);
-		crypto_sha1_final(&sha1, shasig);
+		sha1 = crypto_sha1_init();
+		crypto_sha1_update(sha1, pad, i + 1);
+		crypto_sha1_update(sha1, in, 48);
+		crypto_sha1_update(sha1, salt1, 32);
+		crypto_sha1_update(sha1, salt2, 32);
+		crypto_sha1_final(sha1, shasig);
 
-		crypto_md5_init(&md5);
-		crypto_md5_update(&md5, in, 48);
-		crypto_md5_update(&md5, shasig, 20);
-		crypto_md5_final(&md5, &out[i * 16]);
+		md5 = crypto_md5_init();
+		crypto_md5_update(md5, in, 48);
+		crypto_md5_update(md5, shasig, 20);
+		crypto_md5_final(md5, &out[i * 16]);
 	}
 }
 
@@ -90,13 +90,11 @@ sec_hash_48(uint8 * out, uint8 * in, uint8 * salt1, uint8 * salt2, uint8 salt)
 void
 sec_hash_16(uint8 * out, uint8 * in, uint8 * salt1, uint8 * salt2)
 {
-	CRYPTO_MD5 md5;
-
-	crypto_md5_init(&md5);
-	crypto_md5_update(&md5, in, 16);
-	crypto_md5_update(&md5, salt1, 32);
-	crypto_md5_update(&md5, salt2, 32);
-	crypto_md5_final(&md5, out);
+	CryptoMd5 md5 = crypto_md5_init();
+	crypto_md5_update(md5, in, 16);
+	crypto_md5_update(md5, salt1, 32);
+	crypto_md5_update(md5, salt2, 32);
+	crypto_md5_final(md5, out);
 }
 
 /* Reduce key entropy from 64 to 40 bits */
@@ -150,8 +148,8 @@ sec_generate_keys(rdpSec * sec, uint8 * client_random, uint8 * server_random, in
 	memcpy(sec->sec_encrypt_update_key, sec->sec_encrypt_key, 16);
 
 	/* Initialise RC4 state arrays */
-	crypto_rc4_set_key((CRYPTO_RC4*)&(sec->rc4_decrypt_key), sec->sec_decrypt_key, sec->rc4_key_len);
-	crypto_rc4_set_key((CRYPTO_RC4*)&(sec->rc4_encrypt_key), sec->sec_encrypt_key, sec->rc4_key_len);
+	sec->rc4_decrypt_key = crypto_rc4_init(sec->sec_decrypt_key, sec->rc4_key_len);
+	sec->rc4_encrypt_key = crypto_rc4_init(sec->sec_encrypt_key, sec->rc4_key_len);
 }
 
 /* Output a uint32 into a buffer (little-endian) */
@@ -171,23 +169,23 @@ sec_sign(uint8 * signature, int siglen, uint8 * session_key, int keylen, uint8 *
 	uint8 shasig[20];
 	uint8 md5sig[16];
 	uint8 lenhdr[4];
-	CRYPTO_SHA1 sha1;
-	CRYPTO_MD5 md5;
+	CryptoSha1 sha1;
+	CryptoMd5 md5;
 
 	buf_out_uint32(lenhdr, datalen);
 
-	crypto_sha1_init(&sha1);
-	crypto_sha1_update(&sha1, session_key, keylen);
-	crypto_sha1_update(&sha1, pad_54, 40);
-	crypto_sha1_update(&sha1, lenhdr, 4);
-	crypto_sha1_update(&sha1, data, datalen);
-	crypto_sha1_final(&sha1, shasig);
+	sha1 = crypto_sha1_init();
+	crypto_sha1_update(sha1, session_key, keylen);
+	crypto_sha1_update(sha1, pad_54, 40);
+	crypto_sha1_update(sha1, lenhdr, 4);
+	crypto_sha1_update(sha1, data, datalen);
+	crypto_sha1_final(sha1, shasig);
 
-	crypto_md5_init(&md5);
-	crypto_md5_update(&md5, session_key, keylen);
-	crypto_md5_update(&md5, pad_92, 48);
-	crypto_md5_update(&md5, shasig, 20);
-	crypto_md5_final(&md5, md5sig);
+	md5 = crypto_md5_init();
+	crypto_md5_update(md5, session_key, keylen);
+	crypto_md5_update(md5, pad_92, 48);
+	crypto_md5_update(md5, shasig, 20);
+	crypto_md5_final(md5, md5sig);
 
 	memcpy(signature, md5sig, siglen);
 }
@@ -197,24 +195,25 @@ static void
 sec_update(rdpSec * sec, uint8 * key, uint8 * update_key)
 {
 	uint8 shasig[20];
-	CRYPTO_SHA1 sha1;
-	CRYPTO_MD5 md5;
-	CRYPTO_RC4 update;
+	CryptoSha1 sha1;
+	CryptoMd5 md5;
+	CryptoRc4 update;
 
-	crypto_sha1_init(&sha1);
-	crypto_sha1_update(&sha1, update_key, sec->rc4_key_len);
-	crypto_sha1_update(&sha1, pad_54, 40);
-	crypto_sha1_update(&sha1, key, sec->rc4_key_len);
-	crypto_sha1_final(&sha1, shasig);
+	sha1 = crypto_sha1_init();
+	crypto_sha1_update(sha1, update_key, sec->rc4_key_len);
+	crypto_sha1_update(sha1, pad_54, 40);
+	crypto_sha1_update(sha1, key, sec->rc4_key_len);
+	crypto_sha1_final(sha1, shasig);
 
-	crypto_md5_init(&md5);
-	crypto_md5_update(&md5, update_key, sec->rc4_key_len);
-	crypto_md5_update(&md5, pad_92, 48);
-	crypto_md5_update(&md5, shasig, 20);
-	crypto_md5_final(&md5, key);
+	md5 = crypto_md5_init();
+	crypto_md5_update(md5, update_key, sec->rc4_key_len);
+	crypto_md5_update(md5, pad_92, 48);
+	crypto_md5_update(md5, shasig, 20);
+	crypto_md5_final(md5, key);
 
-	crypto_rc4_set_key(&update, key, sec->rc4_key_len);
-	crypto_rc4(&update, sec->rc4_key_len, key, key);
+	update = crypto_rc4_init(key, sec->rc4_key_len);
+	crypto_rc4(update, sec->rc4_key_len, key, key);
+	crypto_rc4_free(update);
 
 	if (sec->rc4_key_len == 8)
 		sec_make_40bit(key);
@@ -227,11 +226,12 @@ sec_encrypt(rdpSec * sec, uint8 * data, int length)
 	if (sec->sec_encrypt_use_count == 4096)
 	{
 		sec_update(sec, sec->sec_encrypt_key, sec->sec_encrypt_update_key);
-		crypto_rc4_set_key((CRYPTO_RC4*)&(sec->rc4_encrypt_key), sec->sec_encrypt_key, sec->rc4_key_len);
+		crypto_rc4_free(sec->rc4_encrypt_key);
+		sec->rc4_encrypt_key = crypto_rc4_init(sec->sec_encrypt_key, sec->rc4_key_len);
 		sec->sec_encrypt_use_count = 0;
 	}
 
-	crypto_rc4((CRYPTO_RC4*)&(sec->rc4_encrypt_key), length, data, data);
+	crypto_rc4(sec->rc4_encrypt_key, length, data, data);
 	sec->sec_encrypt_use_count++;
 }
 
@@ -247,11 +247,12 @@ sec_decrypt(rdpSec * sec, uint8 * data, int length)
 	if (sec->sec_decrypt_use_count == 4096)
 	{
 		sec_update(sec, sec->sec_decrypt_key, sec->sec_decrypt_update_key);
-		crypto_rc4_set_key((CRYPTO_RC4*)&(sec->rc4_decrypt_key), sec->sec_decrypt_key, sec->rc4_key_len);
+		crypto_rc4_free(sec->rc4_decrypt_key);
+		sec->rc4_decrypt_key = crypto_rc4_init(sec->sec_decrypt_key, sec->rc4_key_len);
 		sec->sec_decrypt_use_count = 0;
 	}
 
-	crypto_rc4((CRYPTO_RC4*)&(sec->rc4_decrypt_key), length, data, data);
+	crypto_rc4(sec->rc4_decrypt_key, length, data, data);
 	sec->sec_decrypt_use_count++;
 }
 
@@ -621,8 +622,8 @@ sec_parse_server_security_data(rdpSec * sec, STREAM s, uint32 * encryptionMethod
 	{
 		uint32 cert_total_count, cert_counter;
 		uint32 license_cert_len, ts_cert_len;
-		CRYPTO_CERT *license_cert, *ts_cert;
-		CRYPTO_PUBLIC_KEY *server_public_key;
+		CryptoCert license_cert, ts_cert;
+		CryptoPublicKey server_public_key;
 
 		DEBUG_RDP5("We're going for a X.509 Certificate (TS license)\n");
 		in_uint32_le(s, cert_total_count);	/* Number of certificates */
@@ -637,7 +638,7 @@ sec_parse_server_security_data(rdpSec * sec, STREAM s, uint32 * encryptionMethod
 		for (cert_counter=0; cert_counter < cert_total_count - 2; cert_counter++)
 		{
 			uint32 ignorelen;
-			CRYPTO_CERT *ignorecert;
+			CryptoCert ignorecert;
 
 			DEBUG_RDP5("Ignoring cert: %d\n", cert_counter);
 			in_uint32_le(s, ignorelen);
@@ -1002,6 +1003,8 @@ sec_new(struct rdp_rdp * rdp)
 		self->nla = nla_new(self);
 #endif
 
+		self->rc4_decrypt_key = NULL;
+		self->rc4_encrypt_key = NULL;
 	}
 	return self;
 }
@@ -1017,6 +1020,11 @@ sec_free(rdpSec * sec)
 #ifndef DISABLE_TLS
 		nla_free(sec->nla);
 #endif
+
+		if (sec->rc4_decrypt_key)
+			crypto_rc4_free(sec->rc4_decrypt_key);
+		if (sec->rc4_encrypt_key)
+			crypto_rc4_free(sec->rc4_encrypt_key);
 
 		xfree(sec);
 	}

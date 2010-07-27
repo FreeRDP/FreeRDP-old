@@ -22,82 +22,54 @@
 #ifndef __CRYPTO_H
 #define __CRYPTO_H
 
-#ifdef DISABLE_TLS
-	#undef CRYPTO_OPENSSL
-#else
-	#define CRYPTO_OPENSSL
-#endif
+typedef struct crypto_sha1_struct * CryptoSha1;
 
-#ifdef CRYPTO_OPENSSL
-
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include <openssl/rc4.h>
-#include <openssl/md5.h>
-#include <openssl/sha.h>
-#include <openssl/bn.h>
-#include <openssl/x509v3.h>
-
-#if defined(OPENSSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER >= 0x0090800f)
-#define D2I_X509_CONST const
-#else
-#define D2I_X509_CONST
-#endif
-
-#define CRYPTO_RC4 RC4_KEY
-#define CRYPTO_SHA1 SHA_CTX
-#define CRYPTO_MD5 MD5_CTX
-#define CRYPTO_CERT X509
-#define CRYPTO_PUBLIC_KEY RSA
-
-#else /* built-in crypto */
-
-#include "ssl.h"
-
-#define CRYPTO_RC4 struct rc4_state
-#define CRYPTO_SHA1 struct sha1_context
-#define CRYPTO_MD5 struct md5_context
-#define CRYPTO_CERT char
-#define CRYPTO_PUBLIC_KEY char
-
-#endif
-
+CryptoSha1
+crypto_sha1_init(void);
 void
-crypto_sha1_init(CRYPTO_SHA1 * sha1);
+crypto_sha1_update(CryptoSha1 sha1, uint8 * data, uint32 len);
 void
-crypto_sha1_update(CRYPTO_SHA1 * sha1, uint8 * data, uint32 len);
-void
-crypto_sha1_final(CRYPTO_SHA1 * sha1, uint8 * out_data);
+crypto_sha1_final(CryptoSha1 sha1, uint8 * out_data);
 
-void
-crypto_md5_init(CRYPTO_MD5 * md5);
-void
-crypto_md5_update(CRYPTO_MD5 * md5, uint8 * data, uint32 len);
-void
-crypto_md5_final(CRYPTO_MD5 * md5, uint8 * out_data);
+typedef struct crypto_md5_struct * CryptoMd5;
 
+CryptoMd5
+crypto_md5_init(void);
 void
-crypto_rc4_set_key(CRYPTO_RC4 * rc4, uint8 * key, uint32 len);
+crypto_md5_update(CryptoMd5 md5, uint8 * data, uint32 len);
 void
-crypto_rc4(CRYPTO_RC4 * rc4, uint32 len, uint8 * in_data, uint8 * out_data);
+crypto_md5_final(CryptoMd5 md5, uint8 * out_data);
+
+typedef struct crypto_rc4_struct * CryptoRc4;
+
+CryptoRc4
+crypto_rc4_init(uint8 * key, uint32 len);
+void
+crypto_rc4(CryptoRc4 rc4, uint32 len, uint8 * in_data, uint8 * out_data);
+void
+crypto_rc4_free(CryptoRc4 rc4);
 
 void
 crypto_rsa_encrypt(int len, uint8 * in, uint8 * out, uint32 modulus_size, uint8 * modulus, uint8 * exponent);
 
-CRYPTO_CERT *
+typedef struct crypto_cert_struct * CryptoCert;
+
+CryptoCert
 crypto_cert_read(uint8 * data, uint32 len);
 void
-crypto_cert_free(CRYPTO_CERT * cert);
-CRYPTO_PUBLIC_KEY *
-crypto_cert_get_public_key(CRYPTO_CERT * cert, uint32 * key_len);
+crypto_cert_free(CryptoCert cert);
 RD_BOOL
-crypto_cert_verify(CRYPTO_CERT * server_cert, CRYPTO_CERT * cacert);
+crypto_cert_verify(CryptoCert server_cert, CryptoCert cacert);
 int
-crypto_cert_print_fp(FILE * fp, CRYPTO_CERT * cert);
+crypto_cert_print_fp(FILE * fp, CryptoCert cert);
 
+typedef struct crypto_public_key_struct * CryptoPublicKey;
+
+CryptoPublicKey
+crypto_cert_get_public_key(CryptoCert cert, uint32 * key_len);
 void
-crypto_public_key_free(CRYPTO_PUBLIC_KEY * rkey);
+crypto_public_key_free(CryptoPublicKey public_key);
 int
-crypto_public_key_get_exp_mod(CRYPTO_PUBLIC_KEY * rkey, uint8 * exponent, uint32 max_exp_len, uint8 * modulus, uint32 max_mod_len);
+crypto_public_key_get_exp_mod(CryptoPublicKey public_key, uint8 * exponent, uint32 max_exp_len, uint8 * modulus, uint32 max_mod_len);
 
 #endif // __CRYPTO_H

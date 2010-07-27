@@ -153,7 +153,7 @@ licence_process_demand(rdpLicence * licence, STREAM s)
 	uint8 hwid[LICENCE_HWID_SIZE];
 	uint8 *licence_data;
 	int licence_size;
-	CRYPTO_RC4 crypt_key;
+	CryptoRc4 crypt_key;
 
 	/* Retrieve the server random from the incoming packet */
 	in_uint8p(s, server_random, SEC_RANDOM_SIZE);	/* ServerRandom */
@@ -172,8 +172,9 @@ licence_process_demand(rdpLicence * licence, STREAM s)
 		sec_sign(signature, 16, licence->licence_sign_key, 16, hwid, sizeof(hwid));
 
 		/* Now encrypt the HWID */
-		crypto_rc4_set_key(&crypt_key, licence->licence_key, 16);
-		crypto_rc4(&crypt_key, sizeof(hwid), hwid, hwid);
+		crypt_key = crypto_rc4_init(licence->licence_key, 16);
+		crypto_rc4(crypt_key, sizeof(hwid), hwid, hwid);
+		crypto_rc4_free(crypt_key);
 
 		licence_present(licence, null_data, null_data, licence_data, licence_size, hwid, signature);
 		xfree(licence_data);
@@ -248,15 +249,16 @@ licence_process_authreq(rdpLicence * licence, STREAM s)
 	uint8 hwid[LICENCE_HWID_SIZE], crypt_hwid[LICENCE_HWID_SIZE];
 	uint8 sealed_buffer[LICENCE_TOKEN_SIZE + LICENCE_HWID_SIZE];
 	uint8 out_sig[LICENCE_SIGNATURE_SIZE];
-	CRYPTO_RC4 crypt_key;
+	CryptoRc4 crypt_key;
 
 	/* Parse incoming packet and save the encrypted token */
 	licence_parse_authreq(licence, s, &in_token, &in_sig);
 	memcpy(out_token, in_token, LICENCE_TOKEN_SIZE);
 
 	/* Decrypt the token. It should read TEST in Unicode. */
-	crypto_rc4_set_key(&crypt_key, licence->licence_key, 16);
-	crypto_rc4(&crypt_key, LICENCE_TOKEN_SIZE, in_token, decrypt_token);
+	crypt_key = crypto_rc4_init(licence->licence_key, 16);
+	crypto_rc4(crypt_key, LICENCE_TOKEN_SIZE, in_token, decrypt_token);
+	crypto_rc4_free(crypt_key);
 
 	/* Generate a signature for a buffer of token and HWID */
 	licence_generate_hwid(licence, hwid);
@@ -265,8 +267,9 @@ licence_process_authreq(rdpLicence * licence, STREAM s)
 	sec_sign(out_sig, 16, licence->licence_sign_key, 16, sealed_buffer, sizeof(sealed_buffer));
 
 	/* Now encrypt the HWID */
-	crypto_rc4_set_key(&crypt_key, licence->licence_key, 16);
-	crypto_rc4(&crypt_key, LICENCE_HWID_SIZE, hwid, crypt_hwid);
+	crypt_key = crypto_rc4_init(licence->licence_key, 16);
+	crypto_rc4(crypt_key, LICENCE_HWID_SIZE, hwid, crypt_hwid);
+	crypto_rc4_free(crypt_key);
 
 	licence_send_authresp(licence, out_token, crypt_hwid, out_sig);
 }
@@ -279,23 +282,24 @@ licence_process_issue(rdpLicence * licence, STREAM s)
 	uint32 length;
 	uint32 os_major;
 	uint32 os_minor;
-	CRYPTO_RC4 crypt_key;
-	
+	CryptoRc4 crypt_key;
+
 	/* Licensing Binary BLOB with EncryptedLicenseInfo: */
 	in_uint8s(s, 2);	/* wBlobType should be 0x0009 (BB_ENCRYPTED_DATA_BLOB) */
 	in_uint16_le(s, length);	/* wBlobLen */
-	
+
 	/* RC4-encrypted New License Information */
 	if (!s_check_rem(s, length))
 		return;
-	
-	crypto_rc4_set_key(&crypt_key, licence->licence_key, 16);
-	crypto_rc4(&crypt_key, length, s->p, s->p);	/* decrypt in place */
+
+	crypt_key = crypto_rc4_init(licence->licence_key, 16);
+	crypto_rc4(crypt_key, length, s->p, s->p);	/* decrypt in place */
+	crypto_rc4_free(crypt_key);
 
 	/* dwVersion */
 	in_uint16_le(s, os_major);	/* OS major version */
 	in_uint16_le(s, os_minor);	/* OS minor version */
-		
+
 	/* Skip Scope, CompanyName and ProductId */
 	for (i = 0; i < 3; i++)
 	{
