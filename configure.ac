@@ -68,14 +68,20 @@ AC_SUBST(PLUGIN_PATH)
 #
 AC_ARG_WITH([crypto],
 	[AS_HELP_STRING([--with-crypto=ARG],
-		[Choose the crypto library. Valid arguments are openssl (the default) or simple])],
+		[Choose the crypto library. Valid arguments are nss, openssl (the default) or simple])],
 	[with_crypto=$withval],
 	[with_crypto=openssl])
 
 disable_tls=yes
+AM_CONDITIONAL(CRYPTO_NSS, false)
 AM_CONDITIONAL(CRYPTO_OPENSSL, false)
 AM_CONDITIONAL(CRYPTO_SIMPLE, false)
 case $with_crypto in
+	nss)
+		PKG_CHECK_MODULES(CRYPTO, [nss])
+		AM_CONDITIONAL(CRYPTO_NSS, true)
+		;;
+
 	openssl)
 		PKG_CHECK_MODULES(CRYPTO, [openssl >= 0.9.8a], [], [
 			# For systems like FreeBSD, openssl.pc is not installed. Detect it directly in a more common way

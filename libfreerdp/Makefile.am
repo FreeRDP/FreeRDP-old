@@ -37,6 +37,10 @@ libfreerdp_la_SOURCES = \
 	tcp.c tcp.h \
 	types.h debug.h frdp.h
 
+if CRYPTO_NSS
+libfreerdp_la_SOURCES += crypto_nss.c
+endif
+
 if CRYPTO_OPENSSL
 libfreerdp_la_SOURCES += crypto_openssl.c
 endif
