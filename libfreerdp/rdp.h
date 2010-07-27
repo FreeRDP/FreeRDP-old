@@ -26,6 +26,11 @@
 #include "types.h"
 #include "types_ui.h"
 
+RD_BOOL
+rdp_global_init(void);
+void
+rdp_global_finish(void);
+
 struct rdp_rdp
 {
 	uint8 * next_packet;

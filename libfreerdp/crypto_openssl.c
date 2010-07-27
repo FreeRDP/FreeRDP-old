@@ -37,6 +37,17 @@
 #define D2I_X509_CONST
 #endif
 
+RD_BOOL
+crypto_global_init(void)
+{
+	return True;
+}
+
+void
+crypto_global_finish(void)
+{
+}
+
 struct crypto_sha1_struct
 {
 	SHA_CTX sha_ctx;
@@ -126,41 +137,6 @@ reverse(uint8 * p, int len)
 		p[i] = p[j];
 		p[j] = temp;
 	}
-}
-
-void
-crypto_rsa_encrypt(int len, uint8 * in, uint8 * out, uint32 modulus_size, uint8 * modulus, uint8 * exponent)
-{
-	BN_CTX *ctx;
-	BIGNUM mod, exp, x, y;
-	uint8 inr[SEC_MAX_MODULUS_SIZE];
-	int outlen;
-
-	reverse(modulus, modulus_size);
-	reverse(exponent, SEC_EXPONENT_SIZE);
-	memcpy(inr, in, len);
-	reverse(inr, len);
-
-	ctx = BN_CTX_new();
-	BN_init(&mod);
-	BN_init(&exp);
-	BN_init(&x);
-	BN_init(&y);
-
-	BN_bin2bn(modulus, modulus_size, &mod);
-	BN_bin2bn(exponent, SEC_EXPONENT_SIZE, &exp);
-	BN_bin2bn(inr, len, &x);
-	BN_mod_exp(&y, &x, &exp, &mod, ctx);
-	outlen = BN_bn2bin(&y, out);
-	reverse(out, outlen);
-	if (outlen < (int) modulus_size)
-		memset(out + outlen, 0, modulus_size - outlen);
-
-	BN_free(&y);
-	BN_clear_free(&x);
-	BN_free(&exp);
-	BN_free(&mod);
-	BN_CTX_free(ctx);
 }
 
 struct crypto_cert_struct
@@ -256,4 +232,39 @@ crypto_public_key_get_exp_mod(CryptoPublicKey public_key, uint8 * exponent, uint
 	reverse(modulus, len);
 	
 	return 0;
+}
+
+void
+crypto_rsa_encrypt(int len, uint8 * in, uint8 * out, uint32 modulus_size, uint8 * modulus, uint8 * exponent)
+{
+	BN_CTX *ctx;
+	BIGNUM mod, exp, x, y;
+	uint8 inr[SEC_MAX_MODULUS_SIZE];
+	int outlen;
+
+	reverse(modulus, modulus_size);
+	reverse(exponent, SEC_EXPONENT_SIZE);
+	memcpy(inr, in, len);
+	reverse(inr, len);
+
+	ctx = BN_CTX_new();
+	BN_init(&mod);
+	BN_init(&exp);
+	BN_init(&x);
+	BN_init(&y);
+
+	BN_bin2bn(modulus, modulus_size, &mod);
+	BN_bin2bn(exponent, SEC_EXPONENT_SIZE, &exp);
+	BN_bin2bn(inr, len, &x);
+	BN_mod_exp(&y, &x, &exp, &mod, ctx);
+	outlen = BN_bn2bin(&y, out);
+	reverse(out, outlen);
+	if (outlen < (int) modulus_size)
+		memset(out + outlen, 0, modulus_size - outlen);
+
+	BN_free(&y);
+	BN_clear_free(&x);
+	BN_free(&exp);
+	BN_free(&mod);
+	BN_CTX_free(ctx);
 }

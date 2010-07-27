@@ -35,6 +35,18 @@
 #include "credssp.h"
 #endif
 
+RD_BOOL
+sec_global_init(void)
+{
+	return crypto_global_init();
+}
+
+void
+sec_global_finish(void)
+{
+	crypto_global_finish();
+}
+
 /* these are read only */
 static uint8 pad_54[40] = {
 	54, 54, 54, 54, 54, 54, 54, 54,

@@ -28,6 +28,11 @@
 #include "tls.h"
 #endif
 
+RD_BOOL
+sec_global_init(void);
+void
+sec_global_finish(void);
+
 struct rdp_sec
 {
 	struct rdp_rdp * rdp;

@@ -22,6 +22,11 @@
 #ifndef __CRYPTO_H
 #define __CRYPTO_H
 
+RD_BOOL
+crypto_global_init(void);	/* returns True on success */
+void
+crypto_global_finish(void);
+
 typedef struct crypto_sha1_struct * CryptoSha1;
 
 CryptoSha1

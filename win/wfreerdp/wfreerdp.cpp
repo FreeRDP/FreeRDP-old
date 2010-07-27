@@ -346,6 +346,11 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdS
 		return 1;
 	}
 	create_console();
+	if (!freerdp_global_init())
+	{
+		printf("Error initializing freerdp\n");
+		return 1;
+	}
 	freerdp_chanman_init();
 	g_default_cursor = LoadCursor(NULL, IDC_ARROW);
 
@@ -401,6 +406,7 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdS
 	}
 
 	freerdp_chanman_uninit();
+	freerdp_global_finish();
 	WSACleanup();
 	return 0;
 }

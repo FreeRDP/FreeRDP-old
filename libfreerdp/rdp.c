@@ -52,6 +52,18 @@
 #endif
 #endif
 
+RD_BOOL
+rdp_global_init(void)
+{
+	return sec_global_init();
+}
+
+void
+rdp_global_finish(void)
+{
+	sec_global_finish();
+}
+
 static void
 process_redirect_pdu(rdpRdp * rdp, STREAM s);
 

@@ -521,6 +521,18 @@ l_rdp_disconnect(rdpInst * inst)
 	rdp_disconnect(rdp);
 }
 
+RD_BOOL
+freerdp_global_init(void)
+{
+	return rdp_global_init();
+}
+
+void
+freerdp_global_finish(void)
+{
+	rdp_global_finish();
+}
+
 rdpInst *
 freerdp_new(rdpSet * settings)
 {

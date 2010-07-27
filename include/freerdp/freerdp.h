@@ -55,6 +55,11 @@
 extern "C" {
 #endif
 
+RD_BOOL
+freerdp_global_init(void);
+void
+freerdp_global_finish(void);
+
 struct rdp_inst
 {
 	int version;

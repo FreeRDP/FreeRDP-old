@@ -26,6 +26,17 @@
 /* TODO: Merge with ssl.c */
 #include "ssl.h"
 
+RD_BOOL
+crypto_global_init(void)
+{
+	return True;
+}
+
+void
+crypto_global_finish(void)
+{
+}
+
 struct crypto_sha1_struct
 {
 	struct sha1_context data;
@@ -103,12 +114,6 @@ crypto_rc4_free(CryptoRc4 rc4)
 	xfree(rc4);
 }
 
-void
-crypto_rsa_encrypt(int len, uint8 * in, uint8 * out, uint32 modulus_size, uint8 * modulus, uint8 * exponent)
-{
-	ssl_rsa_encrypt(out, in, len, modulus_size, modulus, exponent);
-}
-
 struct crypto_cert_struct
 {
 	char * data;
@@ -166,4 +171,10 @@ int
 crypto_public_key_get_exp_mod(CryptoPublicKey public_key, uint8 * exponent, uint32 max_exp_len, uint8 * modulus, uint32 max_mod_len)
 {
 	return ssl_public_key_get_exp_mod(public_key->data, exponent, max_exp_len, modulus, max_mod_len);
+}
+
+void
+crypto_rsa_encrypt(int len, uint8 * in, uint8 * out, uint32 modulus_size, uint8 * modulus, uint8 * exponent)
+{
+	ssl_rsa_encrypt(out, in, len, modulus_size, modulus, exponent);
 }
