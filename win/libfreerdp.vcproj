@@ -41,7 +41,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\include;..\include\freerdp;C:\OpenSSL\include;..\asn1"
+				AdditionalIncludeDirectories="..\include;..\include\freerdp;C:\OpenSSL\include;&quot;C:\OpenSSL-Win32\include&quot;;..\asn1"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;FREERDP_EXPORTS;_CRT_SECURE_NO_WARNINGS;L_ENDIAN"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -63,7 +63,7 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="ws2_32.lib libeay32.lib ssleay32.lib"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="C:\OpenSSL\lib"
+				AdditionalLibraryDirectories="C:\OpenSSL\lib;&quot;C:\OpenSSL-Win32\lib&quot;"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				TargetMachine="1"
@@ -199,6 +199,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\libfreerdp\crypto_openssl.c"
+				>
+			</File>
+			<File
 				RelativePath="..\libfreerdp\freerdp.c"
 				>
 			</File>
@@ -231,10 +235,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\rail.c"
-				>
-			</File>
-			<File
 				RelativePath="..\libfreerdp\rdp.c"
 				>
 			</File>
@@ -252,6 +252,10 @@
 			</File>
 			<File
 				RelativePath="..\libfreerdp\tcp.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libfreerdp\tls.c"
 				>
 			</File>
 		</Filter>
@@ -282,6 +286,10 @@
 			</File>
 			<File
 				RelativePath="..\libfreerdp\credssp.h"
+				>
+			</File>
+			<File
+				RelativePath="..\libfreerdp\crypto.h"
 				>
 			</File>
 			<File
@@ -318,10 +326,6 @@
 			</File>
 			<File
 				RelativePath="..\libfreerdp\pstcache.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libfreerdp\rail.h"
 				>
 			</File>
 			<File
@@ -397,6 +401,10 @@
 				</File>
 				<File
 					RelativePath="..\include\freerdp\rdpset.h"
+					>
+				</File>
+				<File
+					RelativePath="..\libfreerdp\tls.h"
 					>
 				</File>
 				<File
