@@ -312,11 +312,14 @@ void
 sec_send_to_channel(rdpSec * sec, STREAM s, uint32 flags, uint16 channel)
 {
 	int datalen;
-	s_pop_layer(s, sec_hdr);
 
+if (flags)
+{
+	s_pop_layer(s, sec_hdr);
+	
 	/* Basic Security Header */
 	if (!(sec->licence->licence_issued) || (flags & SEC_ENCRYPT))
-			out_uint32_le(s, flags); /* flags */
+		out_uint32_le(s, flags); /* flags */
 
 	if (flags & SEC_ENCRYPT)
 	{
@@ -331,7 +334,7 @@ sec_send_to_channel(rdpSec * sec, STREAM s, uint32 flags, uint16 channel)
 		sec_sign(s->p, 8, sec->sec_sign_key, sec->rc4_key_len, s->p + 8, datalen);
 		sec_encrypt(sec, s->p + 8, datalen);
 	}
-
+}
 	mcs_send_to_channel(sec->mcs, s, channel);
 }
 
@@ -924,6 +927,10 @@ sec_recv(rdpSec * sec, secRecvType * type)
 				return s;
 			}
 		}
+		if (sec->tls_connected)
+		{
+			in_uint8s(s, 2);	
+		}
 		
 		if (channel != MCS_GLOBAL_CHANNEL)
 		{
@@ -968,9 +975,10 @@ sec_connect(rdpSec * sec, char *server, char *username, int port)
 		sec->ctx = tls_create_context();
 		sec->ssl = tls_connect(sec->ctx, sec->mcs->iso->tcp->sock, server);
 		sec->tls_connected = 1;
+		sec->rdp->settings->encryption = 0;
 		success = mcs_connect(sec->mcs);
 		
-		if (success)
+		if (success && sec->rdp->settings->encryption)
 			sec_establish_key(sec);
 		
 		return success;

@@ -71,7 +71,8 @@ process_redirect_pdu(rdpRdp * rdp, STREAM s);
 static STREAM
 rdp_recv(rdpRdp * rdp, uint8 * type)
 {
-	uint16 length, pdu_type;
+	uint16 length;
+	uint16 pdu_type;
 	secRecvType sec_type;
 
 	if ((rdp->rdp_s == NULL) || (rdp->next_packet >= rdp->rdp_s->end) ||
@@ -358,7 +359,6 @@ rdp_send_client_info(rdpRdp * rdp, uint32 flags, char *domain_name,
 {
 	STREAM s;
 	int length;
-	int codePage;
 	char* domain;
 	char* userName;
 	char* alternateShell;
@@ -378,10 +378,12 @@ rdp_send_client_info(rdpRdp * rdp, uint32 flags, char *domain_name,
 	flags |= INFO_LOGONNOTIFY;
 	flags |= INFO_ENABLEWINDOWSKEY;
 	
-	if(rdp->settings->autologin)
+	if (rdp->settings->autologin)
 		flags |= INFO_AUTOLOGON;
+	else
+		cbPassword = 0;
 	
-	if(rdp->settings->bulk_compression)
+	if (rdp->settings->bulk_compression)
 		flags |= INFO_COMPRESSION | PACKET_COMPR_TYPE_64K;
 
 	domain = xstrdup_out_unistr(rdp, domain_name, &cbDomain);
@@ -392,16 +394,15 @@ rdp_send_client_info(rdpRdp * rdp, uint32 flags, char *domain_name,
 	clientDir = xstrdup_out_unistr(rdp, dll, &cbClientDir); /* client working directory OR binary name */
 
 	length = 8 + (5 * 4) + cbDomain + cbUserName + cbPassword + cbAlternateShell + cbWorkingDir;
-
+	
 	if (rdp->settings->rdp_version >= 5)
-		length += 180 + (2 * 4) + cbClientAddress + cbClientDir;
+		length += 184 + (2 * 4) + cbClientAddress + cbClientDir;
 
 	sec_flags = SEC_INFO_PKT | (rdp->settings->encryption ? SEC_ENCRYPT : 0);
 	s = sec_init(rdp->sec, sec_flags, length);
 	
 	/* INFO_UNICODE is set, so codePage contains the active locale identifier in the low word (see MSDN-MUI) */
-	codePage = 0x04090409;		/* US locale */
-	out_uint32_le(s, codePage);	/* codePage */
+	out_uint32_le(s, 0);	/* codePage */
 	out_uint32_le(s, flags);	/* flags */
 
 	out_uint16_le(s, cbDomain);		/* cbDomain */
@@ -410,11 +411,24 @@ rdp_send_client_info(rdpRdp * rdp, uint32 flags, char *domain_name,
 	out_uint16_le(s, cbAlternateShell);	/* cbAlternateShell */
 	out_uint16_le(s, cbWorkingDir);		/* cbWorkingDir */
 	
-	out_uint8a(s, domain, cbDomain + 2); 			/* domain */
-	out_uint8a(s, userName, cbUserName + 2); 		/* userName */
-	out_uint8p(s, password, cbPassword + 2);		/* password */
-	out_uint8a(s, alternateShell, cbAlternateShell + 2); 	/* alternateShell */ 
-	out_uint8a(s, workingDir, cbWorkingDir + 2);		/* workingDir */
+	if (cbDomain > 0)
+		out_uint8p(s, domain, cbDomain); 			/* domain */
+	out_uint16_le(s, 0);
+
+	out_uint8a(s, userName, cbUserName); 				/* userName */
+	out_uint16_le(s, 0);
+
+	if (cbPassword > 0)
+		out_uint8p(s, password, cbPassword);			/* password */
+	out_uint16_le(s, 0);
+
+	if (cbAlternateShell > 0)
+		out_uint8p(s, alternateShell, cbAlternateShell); 	/* alternateShell */
+	out_uint16_le(s, 0);
+
+	if (cbWorkingDir > 0)
+		out_uint8p(s, workingDir, cbWorkingDir);		/* workingDir */
+	out_uint16_le(s, 0);
 
 	/* extraInfo: optional, used in RDP 5.0, 5.1, 5.2, 6.0, 6.1 and 7.0 */
 	if (rdp->settings->rdp_version >= 5)
@@ -701,6 +715,7 @@ rdp_send_confirm_active(rdpRdp * rdp)
 	STREAM s;
 	STREAM caps;
 	int caplen;
+	int length;
 	uint32 sec_flags;
 	uint16 numberCapabilities = 14;
 
@@ -744,18 +759,22 @@ rdp_send_confirm_active(rdpRdp * rdp)
 	s_mark_end(caps);
 	caplen = (int) (caps->end - caps->data);
 
-	sec_flags = rdp->settings->encryption ? SEC_ENCRYPT : 0;
+	if (rdp->sec->tls_connected)
+		sec_flags = 0;
+	else
+		sec_flags = rdp->settings->encryption ? SEC_ENCRYPT : 0;
 	
-	s = sec_init(rdp->sec, sec_flags, 6 + 14 + caplen + 4 + sizeof(RDP_SOURCE));
+	length = 6 + 14 + caplen + 4 + sizeof(RDP_SOURCE);
+	s = sec_init(rdp->sec, sec_flags, length);
 
-	out_uint16_le(s, (2 + 14 + caplen + sizeof(RDP_SOURCE)) + 4);
+	out_uint16_le(s, length);
 	out_uint16_le(s, (RDP_PDU_CONFIRM_ACTIVE | 0x10));	/* Version 1 */
 	out_uint16_le(s, (rdp->sec->mcs->mcs_userid + 1001));
 
 	out_uint32_le(s, rdp->rdp_shareid);
         /* originatorID must be set to the server channel ID
             This value is always 0x3EA for Microsoft RDP server implementations */
-	out_uint16_le(s, 0x3EA); /* originatorID */
+	out_uint16_le(s, 0x03EA); /* originatorID */
 	out_uint16_le(s, sizeof(RDP_SOURCE)); /* lengthSourceDescriptor */
         /* lengthCombinedCapabilities is the combined size of
             numberCapabilities, pad2Octets and capabilitySets */
@@ -1304,8 +1323,8 @@ process_data_pdu(rdpRdp * rdp, STREAM s)
 static void
 process_server_redir_pdu(rdpRdp * rdp, STREAM s)
 {
-	in_uint8s(s, 1);
-	process_redirect_pdu(rdp, s);	/* serverRedirectionPDU (embedded standard server redirection packet) */
+	//in_uint8s(s, 2);
+	//process_redirect_pdu(rdp, s);	/* serverRedirectionPDU (embedded standard server redirection packet) */
 }
 
 /* Read 32 bit length field followed by binary data, returns xmalloc'ed memory and length */
@@ -1400,6 +1419,7 @@ rdp_loop(rdpRdp * rdp, RD_BOOL * deactivated)
 		s = rdp_recv(rdp, &type);
 		if (s == NULL)
 			return False;
+
 		switch (type)
 		{
 			case RDP_PDU_DEMAND_ACTIVE:
