@@ -282,10 +282,15 @@ sec_init(rdpSec * sec, uint32 flags, int maxlen)
 	STREAM s;
 	int hdrlen;
 
-	if (!(sec->licence->licence_issued))
-		hdrlen = (flags & SEC_ENCRYPT) ? 12 : 4;
+	if (flags)
+	{
+		if (!(sec->licence->licence_issued))
+			hdrlen = (flags & SEC_ENCRYPT) ? 12 : 4;
+		else
+			hdrlen = (flags & SEC_ENCRYPT) ? 12 : 0;
+	}
 	else
-		hdrlen = (flags & SEC_ENCRYPT) ? 12 : 0;
+		hdrlen = 0;
 	
 	s = mcs_init(sec->mcs, maxlen + hdrlen);
 	s_push_layer(s, sec_hdr, hdrlen);
@@ -311,30 +316,30 @@ sec_fp_init(rdpSec * sec, uint32 flags, int maxlen)
 void
 sec_send_to_channel(rdpSec * sec, STREAM s, uint32 flags, uint16 channel)
 {
-	int datalen;
-
-if (flags)
-{
+	int datalen;	
 	s_pop_layer(s, sec_hdr);
-	
-	/* Basic Security Header */
-	if (!(sec->licence->licence_issued) || (flags & SEC_ENCRYPT))
-		out_uint32_le(s, flags); /* flags */
 
-	if (flags & SEC_ENCRYPT)
+	if (flags)
 	{
-		flags &= ~SEC_ENCRYPT;
-		datalen = s->end - s->p - 8;
+		/* Basic Security Header */
+		if (!(sec->licence->licence_issued) || (flags & SEC_ENCRYPT))
+			out_uint32_le(s, flags); /* flags */
+
+		if (flags & SEC_ENCRYPT)
+		{
+			flags &= ~SEC_ENCRYPT;
+			datalen = s->end - s->p - 8;
 
 #if WITH_DEBUG
-		DEBUG("Sending encrypted packet:\n");
-		hexdump(s->p + 8, datalen);
+			DEBUG("Sending encrypted packet:\n");
+			hexdump(s->p + 8, datalen);
 #endif
 
-		sec_sign(s->p, 8, sec->sec_sign_key, sec->rc4_key_len, s->p + 8, datalen);
-		sec_encrypt(sec, s->p + 8, datalen);
+			sec_sign(s->p, 8, sec->sec_sign_key, sec->rc4_key_len, s->p + 8, datalen);
+			sec_encrypt(sec, s->p + 8, datalen);
+		}
 	}
-}
+	
 	mcs_send_to_channel(sec->mcs, s, channel);
 }
 

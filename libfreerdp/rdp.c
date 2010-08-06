@@ -767,14 +767,15 @@ rdp_send_confirm_active(rdpRdp * rdp)
 	length = 6 + 14 + caplen + 4 + sizeof(RDP_SOURCE);
 	s = sec_init(rdp->sec, sec_flags, length);
 
+	/* share control header */
 	out_uint16_le(s, length);
 	out_uint16_le(s, (RDP_PDU_CONFIRM_ACTIVE | 0x10));	/* Version 1 */
 	out_uint16_le(s, (rdp->sec->mcs->mcs_userid + 1001));
 
-	out_uint32_le(s, rdp->rdp_shareid);
-        /* originatorID must be set to the server channel ID
+	out_uint32_le(s, rdp->rdp_shareid); /* sharedId */
+        /* originatorId must be set to the server channel ID
             This value is always 0x3EA for Microsoft RDP server implementations */
-	out_uint16_le(s, 0x03EA); /* originatorID */
+	out_uint16_le(s, 0x03EA); /* originatorId */
 	out_uint16_le(s, sizeof(RDP_SOURCE)); /* lengthSourceDescriptor */
         /* lengthCombinedCapabilities is the combined size of
             numberCapabilities, pad2Octets and capabilitySets */
