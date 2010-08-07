@@ -41,6 +41,8 @@ gint mcs_offset = 0;
 gint ts_security_header_offset = 0;
 gint ts_share_control_header_offset = 0;
 gint ts_share_data_header_offset = 0;
+gint ts_confirm_active_pdu_offset = 0;
+gint ts_caps_set_offset = 0;
 
 int proto_rdp = -1;
 static int hf_rdp_rdp = -1;
@@ -50,7 +52,27 @@ static int hf_rdp_mcs = -1;
 static int hf_ts_security_header = -1;
 static int hf_ts_share_control_header = -1;
 static int hf_ts_share_data_header = -1;
+
+static int hf_ts_confirm_active_pdu = -1;
+static int hf_ts_confirm_active_pdu_shareid = -1;
+static int hf_ts_confirm_active_pdu_originatorid = -1;
+static int hf_ts_confirm_active_pdu_length_source_descriptor = -1;
+static int hf_ts_confirm_active_pdu_length_combined_capabilities = -1;
+static int hf_ts_confirm_active_pdu_source_descriptor = -1;
+static int hf_ts_confirm_active_pdu_number_capabilities = -1;
+static int hf_ts_confirm_active_pdu_pad2octets = -1;
+
+static int hf_ts_capability_sets = -1;
+
+static int hf_ts_caps_set = -1;
+static int hf_ts_caps_set_capability_set_type = -1;
+static int hf_ts_caps_set_length_capability = -1;
+static int hf_ts_caps_set_capability_data = -1;
+
 static gint ett_rdp = -1;
+static gint ett_ts_confirm_active_pdu = -1;
+static gint ett_ts_capability_sets = -1;
+static gint ett_ts_caps_set = -1;
 
 #define SEC_EXCHANGE_PKT			0x0001
 #define SEC_ENCRYPT				0x0008
@@ -95,6 +117,34 @@ static gint ett_rdp = -1;
 #define	PDUTYPE2_STATUS_INFO_PDU		54
 #define	PDUTYPE2_MONITOR_LAYOUT_PDU		55
 
+#define CAPSET_TYPE_GENERAL                     0x0001
+#define CAPSET_TYPE_BITMAP                      0x0002
+#define CAPSET_TYPE_ORDER                       0x0003
+#define CAPSET_TYPE_BITMAPCACHE                 0x0004
+#define CAPSET_TYPE_CONTROL                     0x0005
+#define CAPSET_TYPE_ACTIVATION                  0x0007
+#define CAPSET_TYPE_POINTER                     0x0008
+#define CAPSET_TYPE_SHARE                       0x0009
+#define CAPSET_TYPE_COLORCACHE                  0x000A
+#define CAPSET_TYPE_SOUND                       0x000C
+#define CAPSET_TYPE_INPUT                       0x000D
+#define CAPSET_TYPE_FONT                        0x000E
+#define CAPSET_TYPE_BRUSH                       0x000F
+#define CAPSET_TYPE_GLYPHCACHE                  0x0010
+#define CAPSET_TYPE_OFFSCREENCACHE              0x0011
+#define CAPSET_TYPE_BITMAPCACHE_HOSTSUPPORT     0x0012
+#define CAPSET_TYPE_BITMAPCACHE_REV2            0x0013
+#define CAPSET_TYPE_VIRTUALCHANNEL              0x0014
+#define CAPSET_TYPE_DRAWNINEGRIDCACHE           0x0015
+#define CAPSET_TYPE_DRAWGDIPLUS                 0x0016
+#define CAPSET_TYPE_RAIL                        0x0017
+#define CAPSET_TYPE_WINDOW                      0x0018
+#define CAPSET_TYPE_COMPDESK                    0x0019
+#define CAPSET_TYPE_MULTIFRAGMENTUPDATE         0x001A
+#define CAPSET_TYPE_LARGE_POINTER               0x001B
+#define CAPSET_TYPE_SURFACE_COMMANDS            0x001C
+#define CAPSET_TYPE_BITMAP_CODECS               0x001D
+
 #define MCS_ERECT_DOMAIN_REQUEST		0x01
 #define MCS_DISCONNECT_PROVIDER_ULTIMATUM	0x08
 #define MCS_ATTACH_USER_REQUEST			0x0A
@@ -111,6 +161,37 @@ static gint ett_rdp = -1;
 #define X224_DISCONNECT_REQUEST			0x8
 #define X224_DISCONNECT_CONFIRM			0xC
 #define X224_DATA				0xF
+
+static const value_string capability_set_types[] = {
+	{ CAPSET_TYPE_GENERAL,			"General" },
+	{ CAPSET_TYPE_BITMAP,			"Bitmap" },
+	{ CAPSET_TYPE_ORDER,			"Order" },
+	{ CAPSET_TYPE_BITMAPCACHE,		"Bitmap Cache Revision 1" },
+	{ CAPSET_TYPE_CONTROL,			"Control" },
+	{ CAPSET_TYPE_ACTIVATION,		"Window Activation" },
+	{ CAPSET_TYPE_POINTER,			"Pointer" },
+	{ CAPSET_TYPE_SHARE,			"Share" },
+	{ CAPSET_TYPE_COLORCACHE,		"Color Table Cache" },
+	{ CAPSET_TYPE_SOUND,			"Sound" },
+	{ CAPSET_TYPE_INPUT,			"Input" },
+	{ CAPSET_TYPE_FONT,			"Font" },
+	{ CAPSET_TYPE_BRUSH,			"Brush" },
+	{ CAPSET_TYPE_GLYPHCACHE,		"Glyph" },
+	{ CAPSET_TYPE_OFFSCREENCACHE,		"Offscreen" },
+	{ CAPSET_TYPE_BITMAPCACHE_HOSTSUPPORT,	"Bitmap Cache Host Support" },
+	{ CAPSET_TYPE_BITMAPCACHE_REV2,		"Bitmap Cache Revison 2" },
+	{ CAPSET_TYPE_VIRTUALCHANNEL,		"Virtual Channel" },
+	{ CAPSET_TYPE_DRAWNINEGRIDCACHE,	"DrawNineGrid Cache" },
+	{ CAPSET_TYPE_DRAWGDIPLUS,		"Draw GDI+ Cache" },
+	{ CAPSET_TYPE_RAIL,			"Remote Programs" },
+	{ CAPSET_TYPE_WINDOW,			"Window List" },
+	{ CAPSET_TYPE_COMPDESK,			"Desktop Composition Extension" },
+	{ CAPSET_TYPE_MULTIFRAGMENTUPDATE,	"Multifragment Update" },
+	{ CAPSET_TYPE_LARGE_POINTER,		"Large Pointer" },
+	{ CAPSET_TYPE_SURFACE_COMMANDS,		"Surface Commands" },
+	{ CAPSET_TYPE_BITMAP_CODECS,		"Bitmap Codecs" },
+	{ 0x0,	NULL }
+};
 
 static const value_string pdu_types[] = {
 	{ PDUTYPE_DEMAND_ACTIVE_PDU,		"Demand Active" },
@@ -173,10 +254,85 @@ static const value_string x224_tpdu_types[] = {
 };
 
 void proto_reg_handoff_rdp(void);
+void dissect_ts_caps_set(tvbuff_t *tvb, packet_info *pinfo _U_ , proto_tree *tree);
+void dissect_ts_confirm_active_pdu(tvbuff_t *tvb, packet_info *pinfo _U_ , proto_tree *tree);
 void dissect_ts_info_packet(tvbuff_t *tvb, packet_info *pinfo _U_ , proto_tree *tree);
 void dissect_ts_share_control_header(tvbuff_t *tvb, packet_info *pinfo _U_ , proto_tree *tree);
 void dissect_ts_share_data_header(tvbuff_t *tvb, packet_info *pinfo _U_ , proto_tree *tree);
 void dissect_ts_security_header(tvbuff_t *tvb, packet_info *pinfo _U_ , proto_tree *tree);
+
+void
+dissect_ts_caps_set(tvbuff_t *tvb, packet_info *pinfo _U_ , proto_tree *tree)
+{
+	guint16 capabilitySetType;
+	guint16 lengthCapability;
+	
+	if (tree)
+	{
+		proto_item *ti;
+		proto_tree *ts_caps_set_tree;
+
+		ts_caps_set_offset = offset;
+		capabilitySetType = tvb_get_letohs(tvb, offset);
+		lengthCapability = tvb_get_letohs(tvb, offset + 2);
+
+		ti = proto_tree_add_item(tree, hf_ts_caps_set, tvb, ts_caps_set_offset, lengthCapability, TRUE);
+		ts_caps_set_tree = proto_item_add_subtree(ti, ett_ts_caps_set);
+
+		proto_item_set_text(ti, "%s Capability Set", val_to_str(capabilitySetType, capability_set_types, "Unknown %d Capability Set"));
+		proto_item_append_text(ti, ", Length = %d", lengthCapability - 4);
+
+		proto_tree_add_item(ts_caps_set_tree, hf_ts_caps_set_capability_set_type, tvb, offset, 2, TRUE);
+		proto_tree_add_item(ts_caps_set_tree, hf_ts_caps_set_length_capability, tvb, offset + 2, 2, TRUE);
+		proto_tree_add_item(ts_caps_set_tree, hf_ts_caps_set_capability_data, tvb, offset + 4, lengthCapability - 4, TRUE);
+		offset += lengthCapability;
+	}
+}
+
+void
+dissect_ts_confirm_active_pdu(tvbuff_t *tvb, packet_info *pinfo _U_ , proto_tree *tree)
+{
+	guint32 shareId;
+	guint16 originatorId;
+	guint16 lengthSourceDescriptor;
+	guint16 lengthCombinedCapabilities;
+	guint16 numberCapabilities;
+	
+	if (tree)
+	{
+		int i;
+		proto_item *ti;
+		proto_tree *ts_confirm_active_pdu_tree;
+		proto_tree *ts_capability_sets_tree;
+
+		ts_confirm_active_pdu_offset = offset;
+		shareId = tvb_get_letohl(tvb, offset);
+		originatorId = tvb_get_letohs(tvb, offset + 4);
+		lengthSourceDescriptor = tvb_get_letohs(tvb, offset + 6);
+		lengthCombinedCapabilities = tvb_get_letohs(tvb, offset + 8);
+		numberCapabilities = tvb_get_letohs(tvb, offset + 10 + lengthSourceDescriptor);
+
+		ti = proto_tree_add_item(tree, hf_ts_confirm_active_pdu, tvb, ts_confirm_active_pdu_offset, -1, TRUE);
+		ts_confirm_active_pdu_tree = proto_item_add_subtree(ti, ett_ts_confirm_active_pdu);
+
+		proto_tree_add_item(ts_confirm_active_pdu_tree, hf_ts_confirm_active_pdu_shareid, tvb, offset, 4, TRUE);
+		proto_tree_add_item(ts_confirm_active_pdu_tree, hf_ts_confirm_active_pdu_originatorid, tvb, offset + 4, 2, TRUE);
+		proto_tree_add_item(ts_confirm_active_pdu_tree, hf_ts_confirm_active_pdu_length_source_descriptor, tvb, offset + 6, 2, TRUE);
+		proto_tree_add_item(ts_confirm_active_pdu_tree, hf_ts_confirm_active_pdu_length_combined_capabilities, tvb, offset + 8, 2, TRUE);
+		proto_tree_add_item(ts_confirm_active_pdu_tree, hf_ts_confirm_active_pdu_source_descriptor, tvb, offset + 10, lengthSourceDescriptor, TRUE);
+		offset += (10 + lengthSourceDescriptor);
+
+		proto_tree_add_item(ts_confirm_active_pdu_tree, hf_ts_confirm_active_pdu_number_capabilities, tvb, offset, 2, TRUE);
+		proto_tree_add_item(ts_confirm_active_pdu_tree, hf_ts_confirm_active_pdu_pad2octets, tvb, offset + 2, 2, TRUE);
+		offset += 4;
+
+		ti = proto_tree_add_item(ts_confirm_active_pdu_tree, hf_ts_capability_sets, tvb, offset, lengthCombinedCapabilities - 4, TRUE);
+		ts_capability_sets_tree = proto_item_add_subtree(ti, ett_ts_capability_sets);
+
+		for (i = 0; i < numberCapabilities; i++)
+			dissect_ts_caps_set(tvb, pinfo, ts_capability_sets_tree);
+	}
+}
 
 void
 dissect_ts_info_packet(tvbuff_t *tvb, packet_info *pinfo _U_ , proto_tree *tree)
@@ -266,6 +422,7 @@ dissect_ts_share_control_header(tvbuff_t *tvb, packet_info *pinfo _U_ , proto_tr
 
 				case PDUTYPE_CONFIRM_ACTIVE_PDU:
 					col_set_str(pinfo->cinfo, COL_INFO, "Confirm Active PDU");
+					dissect_ts_confirm_active_pdu(tvb, pinfo, tree);
 					break;
 
 				case PDUTYPE_DATA_PDU:
@@ -455,6 +612,75 @@ dissect_rdp(tvbuff_t *tvb, packet_info *pinfo _U_ , proto_tree *tree)
 }
 
 void
+proto_register_ts_caps_set(void)
+{
+	static hf_register_info hf[] =
+	{
+		{ &hf_ts_caps_set_capability_set_type,
+		  { "capabilitySetType", "rdp.capset_type", FT_UINT16, BASE_DEC, VALS(capability_set_types), 0x0, NULL, HFILL } },
+		{ &hf_ts_caps_set_length_capability,
+		  { "lengthCapability", "rdp.capset_len", FT_UINT16, BASE_DEC, NULL, 0x0, NULL, HFILL } },
+		{ &hf_ts_caps_set_capability_data,
+		  { "capabilityData", "rdp.capset_data", FT_BYTES, BASE_NONE, NULL, 0x0, NULL, HFILL } }
+	};
+
+	static gint *ett[] = {
+		&ett_ts_caps_set
+	};
+
+	proto_register_field_array(proto_rdp, hf, array_length(hf));
+	proto_register_subtree_array(ett, array_length(ett));
+}
+
+void
+proto_register_ts_capability_sets(void)
+{
+	static hf_register_info hf[] =
+	{
+		{ &hf_ts_caps_set,
+		  { "capabilitySet", "rdp.capset", FT_NONE, BASE_NONE, NULL, 0x0, NULL, HFILL } }
+	};
+
+	static gint *ett[] = {
+		&ett_ts_capability_sets
+	};
+
+	proto_register_field_array(proto_rdp, hf, array_length(hf));
+	proto_register_subtree_array(ett, array_length(ett));
+}
+
+void
+proto_register_ts_confirm_active_pdu(void)
+{
+	static hf_register_info hf[] =
+	{
+		{ &hf_ts_confirm_active_pdu_shareid,
+		  { "shareId", "rdp.shareid", FT_UINT32, BASE_HEX, NULL, 0x0, NULL, HFILL } },
+		{ &hf_ts_confirm_active_pdu_originatorid,
+		  { "originatorId", "rdp.originatorid", FT_UINT16, BASE_HEX, NULL, 0x0, NULL, HFILL } },
+		{ &hf_ts_confirm_active_pdu_length_source_descriptor,
+		  { "lengthSourceDescriptor", "rdp.len_src_desc", FT_UINT16, BASE_DEC, NULL, 0x0, NULL, HFILL } },
+		{ &hf_ts_confirm_active_pdu_length_combined_capabilities,
+		  { "lengthCombinedCapabilities", "rdp.caplen", FT_UINT16, BASE_DEC, NULL, 0x0, NULL, HFILL } },
+		{ &hf_ts_confirm_active_pdu_source_descriptor,
+		  { "sourceDescriptor", "rdp.src_desc", FT_STRING, BASE_NONE, NULL, 0x0, NULL, HFILL } },
+		{ &hf_ts_confirm_active_pdu_number_capabilities,
+		  { "numberCapabilities", "rdp.capnum", FT_UINT16, BASE_DEC, NULL, 0x0, NULL, HFILL } },
+		{ &hf_ts_confirm_active_pdu_pad2octets,
+		  { "pad2Octets", "rdp.pad2octets", FT_NONE, BASE_NONE, NULL, 0x0, NULL, HFILL } },
+		{ &hf_ts_capability_sets,
+		  { "capabilitySets", "rdp.capsets", FT_NONE, BASE_NONE, NULL, 0x0, NULL, HFILL } }
+	};
+
+	static gint *ett[] = {
+		&ett_ts_confirm_active_pdu
+	};
+
+	proto_register_field_array(proto_rdp, hf, array_length(hf));
+	proto_register_subtree_array(ett, array_length(ett));
+}
+
+void
 proto_register_rdp(void)
 {
 	module_t *module_rdp;
@@ -474,7 +700,9 @@ proto_register_rdp(void)
 		{ &hf_ts_share_control_header,
 		  { "TS_SHARE_CONTROL_HEADER", "rdp.share_ctrl", FT_BYTES, BASE_NONE, NULL, 0x0, NULL, HFILL } },
 		{ &hf_ts_share_data_header,
-		  { "TS_SHARE_DATA_HEADER", "rdp.share_data", FT_BYTES, BASE_NONE, NULL, 0x0, NULL, HFILL } }
+		  { "TS_SHARE_DATA_HEADER", "rdp.share_data", FT_BYTES, BASE_NONE, NULL, 0x0, NULL, HFILL } },
+		{ &hf_ts_confirm_active_pdu,
+		  { "Confirm Active PDU", "rdp.confirm_active", FT_NONE, BASE_NONE, NULL, 0x0, NULL, HFILL } }
 	};
 
 	static gint *ett[] = {
