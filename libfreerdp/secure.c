@@ -896,7 +896,7 @@ sec_recv(rdpSec * sec, secRecvType * type)
 	isoRecvType iso_type;
 	
 	while ((s = mcs_recv(sec->mcs, &channel, &iso_type)) != NULL)
-	{
+	{	
 		if ((iso_type == ISO_RECV_FAST_PATH) ||
 			(iso_type == ISO_RECV_FAST_PATH_ENCRYPTED))
 		{
@@ -908,8 +908,8 @@ sec_recv(rdpSec * sec, secRecvType * type)
 			}
 			return s;
 		}
-		if (sec->rdp->settings->encryption || !(sec->licence->licence_issued))
-		{
+		if (sec->rdp->settings->encryption || (!(sec->licence->licence_issued) && !(sec->tls_connected)))
+		{			
 			/* basicSecurityHeader: */
 			in_uint32_le(s, sec_flags);
 
@@ -931,10 +931,6 @@ sec_recv(rdpSec * sec, secRecvType * type)
 				*type = SEC_RECV_REDIRECT;
 				return s;
 			}
-		}
-		if (sec->tls_connected)
-		{
-			in_uint8s(s, 2);	
 		}
 		
 		if (channel != MCS_GLOBAL_CHANNEL)

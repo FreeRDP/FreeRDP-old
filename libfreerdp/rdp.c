@@ -71,16 +71,17 @@ process_redirect_pdu(rdpRdp * rdp, STREAM s);
 static STREAM
 rdp_recv(rdpRdp * rdp, uint8 * type)
 {
-	uint16 length;
-	uint16 pdu_type;
+	uint16 totalLength;
+	uint16 pduType;
 	secRecvType sec_type;
 
-	if ((rdp->rdp_s == NULL) || (rdp->next_packet >= rdp->rdp_s->end) ||
-	    (rdp->next_packet == NULL))
+	if ((rdp->rdp_s == NULL) || (rdp->next_packet >= rdp->rdp_s->end) || (rdp->next_packet == NULL))
 	{
 		rdp->rdp_s = sec_recv(rdp->sec, &sec_type);
+		
 		if (rdp->rdp_s == NULL)
 			return NULL;
+		
 		if (sec_type == SEC_RECV_IOCHANNEL)
 		{
 			rdp->next_packet = rdp->rdp_s->end;
@@ -110,26 +111,27 @@ rdp_recv(rdpRdp * rdp, uint8 * type)
 	}
 
 	/* Share Control Header: */
-	in_uint16_le(rdp->rdp_s, length);
+	in_uint16_le(rdp->rdp_s, totalLength); /* totalLength */
 
 	/* Undocumented!(?): 32k packets are keepalive packages of length 8: */
-	if (length == 0x8000)
+	if (totalLength == 0x8000)
 	{
 		rdp->next_packet += 8;
 		*type = 0;
 		return rdp->rdp_s;
 	}
 
-	in_uint16_le(rdp->rdp_s, pdu_type);
-	in_uint8s(rdp->rdp_s, 2);	/* PDUSource (Watch out: Might be missing for RDP_PDU_DEACTIVATE) */
-	*type = pdu_type & 0xf;	 /* version in high bits */
+	in_uint16_le(rdp->rdp_s, pduType); /* pduType */
+	pduType &= 0xF; /* type is in 4 lower bits */
+	*type = pduType; /* version in high bits */
+	in_uint8s(rdp->rdp_s, 2); /* PDUSource */
 
 #if WITH_DEBUG
 	DEBUG("RDP packet #%d, (type %x)\n", ++(rdp->packetno), *type);
-	hexdump(rdp->next_packet, length);
-#endif /*  */
+	hexdump(rdp->next_packet, totalLength);
+#endif
 
-	rdp->next_packet += length;
+	rdp->next_packet += totalLength;
 	return rdp->rdp_s;
 }
 
@@ -138,7 +140,15 @@ static STREAM
 rdp_init_data(rdpRdp * rdp, int maxlen)
 {
 	STREAM s;
-	s = sec_init(rdp->sec, rdp->settings->encryption ? SEC_ENCRYPT : 0, maxlen + 18);
+	
+	uint32 sec_flags;
+
+	if (rdp->sec->tls_connected)
+		sec_flags = 0;
+	else
+		sec_flags = rdp->settings->encryption ? SEC_ENCRYPT : 0;
+	
+	s = sec_init(rdp->sec, sec_flags, maxlen + 18);
 	s_push_layer(s, rdp_hdr, 18);
 	return s;
 }
@@ -1418,25 +1428,26 @@ rdp_loop(rdpRdp * rdp, RD_BOOL * deactivated)
 	while (cont)
 	{
 		s = rdp_recv(rdp, &type);
+
 		if (s == NULL)
 			return False;
-
+		
 		switch (type)
 		{
 			case RDP_PDU_DEMAND_ACTIVE:
 				process_demand_active(rdp, s);
 				*deactivated = False;
 				break;
-			case RDP_PDU_DEACTIVATE:
-				DEBUG("RDP_PDU_DEACTIVATE\n");
+			case RDP_PDU_DEACTIVATE_ALL:
+				DEBUG("RDP_PDU_DEACTIVATE_ALL\n");
 				*deactivated = True;
+				break;
+			case RDP_PDU_SERVER_REDIR_PKT:
+				/* Only sent by server when using TLS, never sent with standard RDP encryption */
+				process_server_redir_pdu(rdp, s);
 				break;
 			case RDP_PDU_DATA:
 				disc = process_data_pdu(rdp, s);
-				break;
-			case RDP_PDU_SERVER_REDIR:
-				/* Only sent by server when using TLS, never sent with standard RDP encryption */
-				process_server_redir_pdu(rdp, s);
 				break;
 			case 0:
 				break;
