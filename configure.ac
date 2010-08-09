@@ -1012,6 +1012,7 @@ keymaps/Makefile
 libfreerdpchanman/Makefile
 X11/Makefile
 dfb/Makefile
+win/Makefile
 channels/common/Makefile
 channels/rdpsnd/Makefile
 channels/cliprdr/Makefile
