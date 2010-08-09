@@ -390,8 +390,6 @@ rdp_send_client_info(rdpRdp * rdp, uint32 flags, char *domain_name,
 	
 	if (rdp->settings->autologin)
 		flags |= INFO_AUTOLOGON;
-	else
-		cbPassword = 0;
 	
 	if (rdp->settings->bulk_compression)
 		flags |= INFO_COMPRESSION | PACKET_COMPR_TYPE_64K;
@@ -406,13 +404,18 @@ rdp_send_client_info(rdpRdp * rdp, uint32 flags, char *domain_name,
 	length = 8 + (5 * 4) + cbDomain + cbUserName + cbPassword + cbAlternateShell + cbWorkingDir;
 	
 	if (rdp->settings->rdp_version >= 5)
-		length += 184 + (2 * 4) + cbClientAddress + cbClientDir;
+		length += 180 + (2 * 4) + cbClientAddress + cbClientDir;
 
 	sec_flags = SEC_INFO_PKT | (rdp->settings->encryption ? SEC_ENCRYPT : 0);
 	s = sec_init(rdp->sec, sec_flags, length);
 	
 	/* INFO_UNICODE is set, so codePage contains the active locale identifier in the low word (see MSDN-MUI) */
-	out_uint32_le(s, 0);	/* codePage */
+	
+	/* 
+	 * When codePage is non-zero, the server seems to be using it to determine the keyboard layout ID,
+	 * with the side effect of ignoring the keyboard layout ID sent in the Client Core Data
+	 */
+	out_uint32_le(s, 0);		/* codePage */
 	out_uint32_le(s, flags);	/* flags */
 
 	out_uint16_le(s, cbDomain);		/* cbDomain */
@@ -1330,14 +1333,6 @@ process_data_pdu(rdpRdp * rdp, STREAM s)
 	return False;
 }
 
-/* Process Enhanced Security Server Redirection PDU */
-static void
-process_server_redir_pdu(rdpRdp * rdp, STREAM s)
-{
-	//in_uint8s(s, 2);
-	//process_redirect_pdu(rdp, s);	/* serverRedirectionPDU (embedded standard server redirection packet) */
-}
-
 /* Read 32 bit length field followed by binary data, returns xmalloc'ed memory and length */
 static char*
 xmalloc_in_len32_data(rdpRdp * rdp, STREAM s, uint32 *plen)
@@ -1441,10 +1436,6 @@ rdp_loop(rdpRdp * rdp, RD_BOOL * deactivated)
 			case RDP_PDU_DEACTIVATE_ALL:
 				DEBUG("RDP_PDU_DEACTIVATE_ALL\n");
 				*deactivated = True;
-				break;
-			case RDP_PDU_SERVER_REDIR_PKT:
-				/* Only sent by server when using TLS, never sent with standard RDP encryption */
-				process_server_redir_pdu(rdp, s);
 				break;
 			case RDP_PDU_DATA:
 				disc = process_data_pdu(rdp, s);
