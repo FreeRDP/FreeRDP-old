@@ -811,24 +811,34 @@ static void
 sec_process_server_network_data(rdpSec * sec, STREAM s)
 {
 	int i;
+	uint16 MCSChannelId;
 	uint16 channelCount;
-	uint16 io_channel_id;
 
-	in_uint16_le(s, io_channel_id);
-	in_uint16_le(s, channelCount);
+	in_uint16_le(s, MCSChannelId); /* MCSChannelId */
+	in_uint16_le(s, channelCount); /* channelCount */
+	
 	/* TODO: Check that it matches rdp->settings->num_channels */
-
+	if (channelCount != sec->rdp->settings->num_channels)
+	{
+		ui_error(sec->rdp->inst, "client requested %d channels, server replied with %d channels",
+		         sec->rdp->settings->num_channels, channelCount);
+	}
+	
+	/* channelIdArray */
 	for (i = 0; i < channelCount; i++)
 	{
-		uint16 channel_id;
-		in_uint16_le(s, channel_id);	/* Channel id allocated to requested channel number i */
+		uint16 channelId;
+		in_uint16_le(s, channelId);	/* Channel ID allocated to requested channel number i */
+		
 		/* TODO: Assign channel ids here instead of in freerdp.c l_rdp_connect */
-		if (channel_id != sec->rdp->settings->channels[i].chan_id)
+		if (channelId != sec->rdp->settings->channels[i].chan_id)
 		{
-			ui_error(sec->rdp->inst, "channel %d is %d but should have been %d\n", i, channel_id, sec->rdp->settings->channels[i].chan_id);
+			ui_error(sec->rdp->inst, "channel %d is %d but should have been %d\n",
+			         i, channelId, sec->rdp->settings->channels[i].chan_id);
 		}
 	}
-	if (channelCount & 1)
+
+	if (channelCount % 2 == 1)
 		in_uint8s(s, 2);	/* Padding */
 }
 
@@ -836,54 +846,52 @@ sec_process_server_network_data(rdpSec * sec, STREAM s)
 void
 sec_process_mcs_data(rdpSec * sec, STREAM s)
 {
+	uint8 byte;
 	uint16 type;
 	uint16 length;
+	uint16 totalLength;
 	uint8 *next_tag;
-	uint8 value_len;
 
 	in_uint8s(s, 21);	/* TODO: T.124 ConferenceCreateResponse userData with key h221NonStandard McDn */
-	in_uint8(s, value_len);
-	if (value_len & 0x80)
-		in_uint8(s, value_len);
-
-	/* Server Core Data structure with User Data Header */
-	in_uint16_le(s, type);
-	in_uint16_le(s, length);
-	next_tag = s->p + length - 4;
-	if (type != UDH_SC_CORE)
+	
+	in_uint8(s, byte);
+	totalLength = (uint16) byte;
+		
+	if (byte & 0x80)
 	{
-		ui_error(sec->rdp->inst, "UDH_SC_CORE response tag 0x%x\n", type);
-		return;
+		totalLength &= ~0x80;
+		totalLength <<= 8;
+		in_uint8(s, byte);
+		totalLength += (uint16) byte;
 	}
-	sec_process_server_core_data(sec, s, length);
-	if(s->p != next_tag)
-		ui_error(sec->rdp->inst, "Server Core Data length error\n");
 
-	/* Server Network Data structure with User Data Header */
-	in_uint16_le(s, type);
-	in_uint16_le(s, length);
-	next_tag = s->p + length - 4;
-	if (type != UDH_SC_NET)
+	while (s->p < s->end)
 	{
-		ui_error(sec->rdp->inst, "UDH_SC_NET response tag 0x%x\n", type);
-		return;
-	}
-	sec_process_server_network_data(sec, s);
-	if(s->p != next_tag)
-		ui_error(sec->rdp->inst, "Server Network Data length error\n");
+		in_uint16_le(s, type);
+		in_uint16_le(s, length);
+		
+		if (length <= 4)
+			return;
 
-	/* Server Security Data structure with User Data Header */
-	in_uint16_le(s, type);
-	in_uint16_le(s, length);
-	next_tag = s->p + length - 4;
-	if (type != UDH_SC_SECURITY)
-	{
-		ui_error(sec->rdp->inst, "UDH_SC_SECURITY response tag 0x%x\n", type);
-		return;
+		next_tag = s->p + length - 4;
+
+		switch (type)
+		{
+			case UDH_SC_CORE: /* Server Core Data */
+				sec_process_server_core_data(sec, s, length);
+				break;
+
+			case UDH_SC_NET: /* Server Network Data */
+				sec_process_server_network_data(sec, s);
+				break;
+
+			case UDH_SC_SECURITY: /* Server Security Data */
+				sec_process_server_security_data(sec, s);
+				break;
+		}
+
+		s->p = next_tag;
 	}
-	sec_process_server_security_data(sec, s);
-	if(s->p != next_tag)
-		ui_error(sec->rdp->inst, "Server Security Data length error\n");
 }
 
 /* Receive secure transport packet */
