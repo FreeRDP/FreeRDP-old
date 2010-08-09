@@ -247,7 +247,7 @@ crypto_cert_get_public_key(CryptoCert cert, uint32 * key_len)
 	CryptoPublicKey public_key = xmalloc(sizeof(*public_key));
 
 	SECOidTag tag = SECOID_GetAlgorithmTag(&cert->cert->subjectPublicKeyInfo.algorithm);
-	if (tag == SEC_OID_PKCS1_MD5_WITH_RSA_ENCRYPTION)
+	if ((tag == SEC_OID_PKCS1_MD5_WITH_RSA_ENCRYPTION) || (tag == SEC_OID_ISO_SHA_WITH_RSA_SIGNATURE))
 	{
 		/* For some reason, Microsoft sets the OID of the Public RSA key to
 		 the oid for "MD5 with RSA Encryption" instead of "RSA Encryption". */
