@@ -65,7 +65,7 @@ mcs_send_connect_initial(rdpMcs * mcs)
 	int length;
 	int gccCCrq_length;
 	struct stream gccCCrq;
-	
+
 	gccCCrq.size = 512;
 	gccCCrq.p = gccCCrq.data = (uint8 *) xmalloc(gccCCrq.size);
 	sec_out_gcc_conference_create_request(mcs->sec, &gccCCrq);
@@ -73,7 +73,7 @@ mcs_send_connect_initial(rdpMcs * mcs)
 	length = 9 + 3 * 34 + 4 + gccCCrq_length;
 
 	s = iso_init(mcs->iso, length + 5);
-	
+
 	ber_out_header(s, MCS_CONNECT_INITIAL, length);	/* ConnectMCSPDU connect-initial */
 	ber_out_header(s, BER_TAG_OCTET_STRING, 1);	/* callingDomainSelector */
 	out_uint8(s, 1);
@@ -90,7 +90,7 @@ mcs_send_connect_initial(rdpMcs * mcs)
 	ber_out_header(s, BER_TAG_OCTET_STRING, gccCCrq_length);	/* userData */
 	out_uint8p(s, gccCCrq.data, gccCCrq_length);
 	xfree(gccCCrq.data);
-	
+
 	s_mark_end(s);
 	iso_send(mcs->iso, s);
 }
@@ -104,7 +104,7 @@ mcs_recv_connect_response(rdpMcs * mcs)
 	uint8 result;
 
 	s = iso_recv(mcs->iso, NULL);
-	
+
 	if (s == NULL)
 		return False;
 
@@ -304,14 +304,14 @@ mcs_recv(rdpMcs * mcs, uint16 * channel, isoRecvType * ptype)
 	uint16 length;
 
 	s = iso_recv(mcs->iso, ptype);
-	
+
 	if (s == NULL)
 		return NULL;
-	
+
 	if (*ptype == ISO_RECV_X224)
 	{
 		/* Parse mcsSDin (MCS Send Data Indication PDU, see [T125] section 7, part 7): */
-		
+
 		in_uint8(s, pduType);
 		pduType >>= 2;
 
@@ -323,14 +323,14 @@ mcs_recv(rdpMcs * mcs, uint16 * channel, isoRecvType * ptype)
 			}
 			return NULL;
 		}
-		
+
 		in_uint8s(s, 2);		/* initiator */
 		in_uint16_be(s, *channel);	/* channelId */
 		in_uint8s(s, 1);		/* flags */
-		
+
 		in_uint8(s, byte);
 		length = (uint16) byte;
-		
+
 		if (byte & 0x80)
 		{
 			length &= ~0x80;
@@ -339,7 +339,7 @@ mcs_recv(rdpMcs * mcs, uint16 * channel, isoRecvType * ptype)
 			length += (uint16) byte;
 		}
 	}
-	
+
 	return s;
 }
 
@@ -365,11 +365,11 @@ mcs_connect(rdpMcs * mcs)
 
 	if (!mcs_recv_cjcf(mcs))
 		goto error;
-	
+
 	mcs_send_cjrq(mcs, MCS_GLOBAL_CHANNEL);
 	if (!mcs_recv_cjcf(mcs))
 		goto error;
-	
+
 	settings = mcs->sec->rdp->settings;
 	for (i = 0; i < settings->num_channels; i++)
 	{

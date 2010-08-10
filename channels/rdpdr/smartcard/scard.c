@@ -253,13 +253,13 @@ scard_enum_devices(uint32 * id, char *optarg)
  *               (dwContext + 1) << (sizeof(DWORD) / 2) * 8;
  *
  * dwContext must be less than PCSCLITE_MAX_READERS_CONTEXTS, which is defined
- * to be 16 in the 1.3.1 release. 
+ * to be 16 in the 1.3.1 release.
  *
  * The use of "(sizeof(DWORD) / 2) * 8" is what makes conversion necessary in
  * order to use 64-bit card handles when talking to PC/SC Lite, and 32-bit card
  * handles when talking with the server, without losing any data: a card handle
  * made by a 32-bit PC/SC Lite looks like 0x00014d32, where the 4d32 is the
- * random 16 bits, 01 is the reader context index + 1, and it's left-shifted by 
+ * random 16 bits, 01 is the reader context index + 1, and it's left-shifted by
  * 16 bits (sizeof(DWORD) == 4, divided by 2 is 2, times 8 is 16.) But a 64-bit
  * PC/SC Lite makes a card handle that looks like 0x0000000100004d32. The
  * reader context index+1 is left-shifted 32 bits because sizeof(DWORD) is 8,

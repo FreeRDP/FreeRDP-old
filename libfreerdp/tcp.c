@@ -149,7 +149,7 @@ tcp_send(rdpTcp * tcp, STREAM s)
 	int sent = 0;
 	int total = 0;
 	int length = s->end - s->data;
-	
+
 #ifndef DISABLE_TLS
 	if (tcp->iso->mcs->sec->tls_connected)
 	{
@@ -193,7 +193,7 @@ tcp_recv(rdpTcp * tcp, STREAM s, uint32 length)
 	uint32 p_offset;
 	uint32 new_length;
 	uint32 end_offset;
-	
+
 	if (s == NULL)
 	{
 		/* read into "new" stream */
@@ -202,7 +202,7 @@ tcp_recv(rdpTcp * tcp, STREAM s, uint32 length)
 			tcp->in.data = (uint8 *) xrealloc(tcp->in.data, length);
 			tcp->in.size = length;
 		}
-				
+
 		tcp->in.end = tcp->in.p = tcp->in.data;
 		s = &(tcp->in);
 	}
@@ -236,7 +236,7 @@ tcp_recv(rdpTcp * tcp, STREAM s, uint32 length)
 		{
 			if (!ui_select(tcp->iso->mcs->sec->rdp->inst, tcp->sock))
 				return NULL; /* user quit */
-		
+
 			rcvd = recv(tcp->sock, s->end, length, 0);
 			if (rcvd < 0)
 			{

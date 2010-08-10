@@ -106,7 +106,7 @@ struct _IRP
 	uint32 createDisposition;
 	uint32 createOptions;
 	uint32 ioControlCode;
-	uint8 watchTree;	
+	uint8 watchTree;
 	uint32 completionFilter;
 	uint32 length;
 	uint64 offset;

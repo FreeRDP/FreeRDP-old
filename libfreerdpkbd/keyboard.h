@@ -133,7 +133,7 @@
 #define VK_KEY_Y	0x59 // 'Y' key
 #define VK_KEY_Z	0x5A // 'Z' key
 
-#define VK_LWIN		0x5B // Left Windows key (Microsoft Natural keyboard) 
+#define VK_LWIN		0x5B // Left Windows key (Microsoft Natural keyboard)
 #define VK_RWIN		0x5C // Right Windows key (Natural keyboard)
 #define VK_APPS		0x5D // Applications key (Natural keyboard)
 
@@ -213,7 +213,7 @@
 #define VK_BROWSER_FORWARD	0xA7 // Windows 2000/XP: Browser Forward key
 #define VK_BROWSER_REFRESH	0xA8 // Windows 2000/XP: Browser Refresh key
 #define VK_BROWSER_STOP		0xA9 // Windows 2000/XP: Browser Stop key
-#define VK_BROWSER_SEARCH	0xAA // Windows 2000/XP: Browser Search key 
+#define VK_BROWSER_SEARCH	0xAA // Windows 2000/XP: Browser Search key
 #define VK_BROWSER_FAVORITES	0xAB // Windows 2000/XP: Browser Favorites key
 #define VK_BROWSER_HOME		0xAC // Windows 2000/XP: Browser Start and Home key
 
@@ -242,7 +242,7 @@
 /* OEM keys */
 
 #define VK_OEM_1	0xBA // Used for miscellaneous characters; it can vary by keyboard.
-			     // Windows 2000/XP: For the US standard keyboard, the ';:' key 
+			     // Windows 2000/XP: For the US standard keyboard, the ';:' key
 
 #define VK_OEM_PLUS	0xBB // Windows 2000/XP: For any country/region, the '+' key
 #define VK_OEM_COMMA	0xBC // Windows 2000/XP: For any country/region, the ',' key
@@ -253,7 +253,7 @@
 			     // Windows 2000/XP: For the US standard keyboard, the '/?' key
 
 #define VK_OEM_3	0xC0 // Used for miscellaneous characters; it can vary by keyboard.
-			     // Windows 2000/XP: For the US standard keyboard, the '`~' key 
+			     // Windows 2000/XP: For the US standard keyboard, the '`~' key
 
 /* 0xC1 to 0xD7 are reserved */
 /* 0xD8 to 0xDA are unassigned */
@@ -298,7 +298,7 @@
 #define VK_EREOF	0xF9 // Erase EOF key
 #define VK_PLAY		0xFA // Play key
 #define VK_ZOOM		0xFB // Zoom key
-#define VK_NONAME	0xFC // Reserved 
+#define VK_NONAME	0xFC // Reserved
 #define VK_PA1		0xFD // PA1 key
 #define VK_OEM_CLEAR	0xFE // Clear key
 
@@ -343,14 +343,14 @@ unsigned char keycodeToVkcode[256] =
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
 
-// Use the virtual key code as an index in this array in order to get its associated scan code		
+// Use the virtual key code as an index in this array in order to get its associated scan code
 
 typedef struct _virtualKey
 {
 	// Scan code
 	int scancode;
 
-	// Flags	
+	// Flags
 	int flags;
 
 	// Name of virtual key
@@ -877,7 +877,7 @@ typedef struct
 {
 	// Keyboard layout code
 	unsigned int code;
-	
+
 	// Keyboard variant ID
 	unsigned short id;
 
@@ -978,7 +978,7 @@ typedef struct
 {
 	// XKB Keyboard layout variant
 	char* variant;
-	
+
 	// Keyboard Layout ID
 	unsigned int keyboardLayoutID;
 
@@ -988,7 +988,7 @@ typedef struct
 {
 	// XKB Keyboard layout
 	char* layout;
-	
+
 	// Keyboard Layout ID
 	unsigned int keyboardLayoutID;
 
@@ -999,7 +999,7 @@ typedef struct
 /* Those have been generated automatically and are waiting to be filled by hand */
 
 /* USA */
-xkbVariant us_variants[] = 
+xkbVariant us_variants[] =
 {
 	{ "chr",		0 }, // Cherokee
 	{ "euro",		0 }, // With EuroSign on 5
@@ -1020,7 +1020,7 @@ xkbVariant us_variants[] =
 };
 
 /* Afghanistan */
-xkbVariant af_variants[] = 
+xkbVariant af_variants[] =
 {
 	{ "ps",			KBD_PASHTO }, // Pashto
 	{ "uz",			KBD_UZBEK_CYRILLIC }, // Southern Uzbek
@@ -1031,7 +1031,7 @@ xkbVariant af_variants[] =
 };
 
 /* Arabic */
-xkbVariant ara_variants[] = 
+xkbVariant ara_variants[] =
 {
 	{ "azerty",		KBD_ARABIC_102_AZERTY }, // azerty
 	{ "azerty_digits",	KBD_ARABIC_102_AZERTY }, // azerty/digits
@@ -1043,7 +1043,7 @@ xkbVariant ara_variants[] =
 };
 
 /* Armenia */
-xkbVariant am_variants[] = 
+xkbVariant am_variants[] =
 {
 	{ "phonetic",		0 }, // Phonetic
 	{ "phonetic-alt",	0 }, // Alternative Phonetic
@@ -1054,14 +1054,14 @@ xkbVariant am_variants[] =
 };
 
 /* Azerbaijan */
-xkbVariant az_variants[] = 
+xkbVariant az_variants[] =
 {
 	{ "cyrillic",		KBD_AZERI_CYRILLIC }, // Cyrillic
 	{ "",			0 },
 };
 
 /* Belarus */
-xkbVariant by_variants[] = 
+xkbVariant by_variants[] =
 {
 	{ "winkeys",		KBD_BELARUSIAN }, // Winkeys
 	{ "latin",		KBD_BELARUSIAN }, // Latin
@@ -1069,7 +1069,7 @@ xkbVariant by_variants[] =
 };
 
 /* Belgium */
-xkbVariant be_variants[] = 
+xkbVariant be_variants[] =
 {
 	{ "oss",		KBD_BELGIAN_FRENCH }, // Alternative
 	{ "oss_latin9",		KBD_BELGIAN_FRENCH }, // Alternative, latin-9 only
@@ -1082,14 +1082,14 @@ xkbVariant be_variants[] =
 };
 
 /* Bangladesh */
-xkbVariant bd_variants[] = 
+xkbVariant bd_variants[] =
 {
 	{ "probhat",		KBD_BENGALI_INSCRIPT }, // Probhat
 	{ "",			0 },
 };
 
 /* India */
-xkbVariant in_variants[] = 
+xkbVariant in_variants[] =
 {
 	{ "ben",		KBD_BENGALI }, // Bengali
 	{ "ben_probhat",	KBD_BENGALI_INSCRIPT }, // Bengali Probhat
@@ -1114,7 +1114,7 @@ xkbVariant in_variants[] =
 };
 
 /* Bosnia and Herzegovina */
-xkbVariant ba_variants[] = 
+xkbVariant ba_variants[] =
 {
 	{ "alternatequotes",	KBD_BOSNIAN }, // Use guillemets for quotes
 	{ "unicode",		KBD_BOSNIAN }, // Use Bosnian digraphs
@@ -1124,7 +1124,7 @@ xkbVariant ba_variants[] =
 };
 
 /* Brazil */
-xkbVariant br_variants[] = 
+xkbVariant br_variants[] =
 {
 	{ "nodeadkeys",		KBD_PORTUGUESE_BRAZILIAN_ABNT2 }, // Eliminate dead keys
 	{ "dvorak",		KBD_UNITED_STATES_DVORAK }, // Dvorak
@@ -1922,7 +1922,7 @@ SunOSKeyboard SunOSKeyboards[] =
 	{ 4,   48,   "sun(type5)",               KBD_CHINESE_TRADITIONAL_PHONETIC	}, //  Taiwan5
 	{ 4,   49,   "sun(type5jp)",             KBD_JAPANESE_INPUT_SYSTEM_MS_IME2002	}, //  Japan5
 	{ 4,   50,   "sun(type5tuv)",            KBD_CANADIAN_FRENCH			}, //  Canada_Fr5
-	{ 4,   51,   "sun(type5tuv)",            KBD_HUNGARIAN 				}, //  Hungary5
+	{ 4,   51,   "sun(type5tuv)",            KBD_HUNGARIAN				}, //  Hungary5
 	{ 4,   52,   "sun(type5tuv)",            KBD_POLISH_214				}, //  Poland5
 	{ 4,   53,   "sun(type5tuv)",            KBD_CZECH				}, //  Czech5
 	{ 4,   54,   "sun(type5tuv)",            KBD_RUSSIAN				}, //  Russia5

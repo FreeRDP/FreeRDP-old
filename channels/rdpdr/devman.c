@@ -159,11 +159,11 @@ devman_unregister_device(DEVMAN* devman, DEVICE* dev)
 	while (devman_has_next(devman) != 0)
 	{
 		pdev = devman_get_next(devman);
-		
+
 		if (pdev == dev) /* device exists */
 		{
 			/* set previous device to point to next device */
-			
+
 			if (dev->prev != NULL)
 			{
 				/* unregistered device is not the head */
@@ -175,7 +175,7 @@ devman_unregister_device(DEVMAN* devman, DEVICE* dev)
 				/* unregistered device is the head, update head */
 				devman->head = (DEVICE*)dev->next;
 			}
-			
+
 			/* set next device to point to previous device */
 
 			if (dev->next != NULL)

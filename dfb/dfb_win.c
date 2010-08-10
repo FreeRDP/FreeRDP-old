@@ -316,7 +316,7 @@ dfb_update_screen(dfbInfo * dfbi)
 	{
 		dfbi->primary->Blit(dfbi->primary, dfbi->screen_surface,
 	                    &(dfbi->update_rect), dfbi->update_rect.x, dfbi->update_rect.y);
-		
+
 		dfbi->update_rect.x = 0;
 		dfbi->update_rect.y = 0;
 		dfbi->update_rect.w = 0;
@@ -338,7 +338,7 @@ dfb_invalidate_rect(dfbInfo * dfbi, int x1, int y1, int x2, int y2)
 	{
 		int right = dfbi->update_rect.x + dfbi->update_rect.w;
 		int bottom = dfbi->update_rect.y + dfbi->update_rect.h;
-		
+
 		if (x1 < dfbi->update_rect.x)
 			dfbi->update_rect.x = x1;
 
@@ -381,7 +381,7 @@ l_ui_desktop_restore(struct rdp_inst * inst, int offset, int x, int y, int cx, i
 
 static RD_HGLYPH
 l_ui_create_glyph(struct rdp_inst * inst, int width, int height, uint8 * data)
-{	
+{
 	return (RD_HGLYPH) NULL;
 }
 
@@ -407,9 +407,9 @@ l_ui_paint_bitmap(struct rdp_inst * inst, int x, int y, int cx, int cy, int widt
 	dfbInfo * dfbi;
 	dfbi = GET_DFBI(inst);
 	bitmap = (HBITMAP) inst->ui_create_bitmap(inst, width, height, data);
-	SelectObject(dfbi->hdcBmp, (HGDIOBJ) bitmap);	
+	SelectObject(dfbi->hdcBmp, (HGDIOBJ) bitmap);
 	BitBlt(dfbi->hdc, x, y, cx, cy, dfbi->hdcBmp, 0, 0, SRCCOPY);
-	
+
 	if (dfbi->surface == dfbi->backingstore)
 	{
 		dfb_invalidate_rect(dfbi, x, y, x + cx, y + cy);
@@ -436,14 +436,14 @@ l_ui_rect(struct rdp_inst * inst, int x, int y, int cx, int cy, int colour)
 	HBRUSH hBrush;
 	dfbInfo * dfbi;
 	dfbi = GET_DFBI(inst);
-	
+
 	printf("ui_rect: x: %d y: %d cx: %d cy: %d\n", x, y, cx, cy);
-	
+
 	rect.left = x;
 	rect.top = y;
 	rect.right = x + cx;
 	rect.bottom = y + cy;
-	
+
 	dfb_colour_convert(dfbi, colour, &(dfbi->pixel), inst->settings->server_depth, dfbi->bpp);
 	hBrush = CreateSolidBrush((COLORREF) dfb_make_colorref(&(dfbi->pixel), dfbi->bpp));
 	FillRect(dfbi->hdc, &rect, hBrush);
@@ -512,7 +512,7 @@ l_ui_destblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy)
 	dfbi = GET_DFBI(inst);
 
 	printf("ui_destblt: x: %d y: %d cx: %d cy: %d rop: 0x%X\n", x, y, cx, cy, rop3_code_table[opcode]);
-	
+
 	BitBlt(dfbi->hdc, x, y, cx, cy, NULL, 0, 0, rop3_code_table[opcode]);
 
 	if (dfbi->surface == dfbi->backingstore)
@@ -540,10 +540,10 @@ l_ui_patblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy, 
 		HGDIOBJ originalSelectedObject;
 
 		printf("BS_PATTERN\n");
-		
+
 		hBmp = CreateBitmap(8, 8, dfbi->hdc->bitsPerPixel,
 		                            (char*) dfb_image_convert(dfbi, inst->settings, 8, 8, (uint8*) brush->bd->data));
-		
+
 		hBrush = CreatePatternBrush(hBmp);
 
 		originalBkMode = SetBkMode(dfbi->hdc, OPAQUE);
@@ -629,7 +629,7 @@ l_ui_set_clip(struct rdp_inst * inst, int x, int y, int cx, int cy)
 static void
 l_ui_reset_clip(struct rdp_inst * inst)
 {
-	dfbInfo * dfbi;	
+	dfbInfo * dfbi;
 	dfbi = GET_DFBI(inst);
 	SelectClipRgn(dfbi->hdc, NULL);
 	printf("ui_reset_clip\n");
@@ -700,7 +700,7 @@ l_ui_create_surface(struct rdp_inst * inst, int width, int height, RD_HBITMAP ol
 	HBITMAP new_bitmap;
 	HBITMAP old_bitmap;
 	dfbi = GET_DFBI(inst);
-	
+
 	//printf("ui_create_surface\n");
 	new_bitmap = CreateCompatibleBitmap(dfbi->hdc, width, height);
 	old_bitmap = (HBITMAP) old_surface;
@@ -716,7 +716,7 @@ l_ui_create_surface(struct rdp_inst * inst, int width, int height, RD_HBITMAP ol
 	{
 		dfbi->surface = new_bitmap;
 	}
-	
+
 	return (RD_HBITMAP) new_bitmap;
 }
 
@@ -727,7 +727,7 @@ l_ui_set_surface(struct rdp_inst * inst, RD_HBITMAP surface)
 	dfbi = GET_DFBI(inst);
 
 	//printf("ui_set_surface\n");
-	
+
 	if (surface != 0)
 	{
 		dfbi->surface = surface;
@@ -839,7 +839,7 @@ dfb_post_connect(rdpInst * inst)
 
 	dfbi->dfb->GetDisplayLayer(dfbi->dfb, 0, &(dfbi->layer));
 	dfbi->layer->EnableCursor(dfbi->layer, 1);
-	
+
 	dfbi->width = inst->settings->width;
 	dfbi->height = inst->settings->height;
 	dfbi->screen = malloc(dfbi->width * dfbi->height * dfbi->bytes_per_pixel);
@@ -859,7 +859,7 @@ dfb_post_connect(rdpInst * inst)
 	dfbi->backingstore = CreateBitmap(inst->settings->width, inst->settings->height, dfbi->bpp, (char*) dfbi->screen);
 	SelectObject(dfbi->hdc, (HGDIOBJ) dfbi->backingstore);
 	dfbi->hdcBmp = CreateCompatibleDC(dfbi->hdc);
-	
+
 	return 0;
 }
 
@@ -887,7 +887,7 @@ dfb_check_fds(rdpInst * inst)
 {
 	dfbInfo * dfbi;
 	dfbi = GET_DFBI(inst);
-	
+
 	while (dfbi->event->HasEvent(dfbi->event) == DFB_OK)
 	{
 		if (dfbi->event->GetEvent(dfbi->event, &(dfbi->events[0])) == 0)

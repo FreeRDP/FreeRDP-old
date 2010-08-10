@@ -244,7 +244,7 @@ disk_get_fullpath(DEVICE * dev, const char * path)
 	}
 	if (len > 0 && fullpath[len - 1] == '/')
 		fullpath[len - 1] = '\0';
-		
+
 	return fullpath;
 }
 
@@ -301,7 +301,7 @@ disk_create_fullpath(IRP * irp, FILE_INFO * finfo, const char * fullpath)
 		}
 
 		if ((irp->desiredAccess & GENERIC_ALL)
-		    || (irp->desiredAccess & GENERIC_WRITE)
+			|| (irp->desiredAccess & GENERIC_WRITE)
 			|| (irp->desiredAccess & FILE_WRITE_DATA)
 			|| (irp->desiredAccess & FILE_APPEND_DATA))
 		{
@@ -803,7 +803,7 @@ disk_query_directory(IRP * irp, uint8 initialQuery, const char * path)
 	if (pdirent == NULL)
 	{
 		return RD_STATUS_NO_MORE_FILES;
-	}		
+	}
 
 	memset(&file_stat, 0, sizeof(struct stat));
 	p = malloc(strlen(finfo->fullpath) + strlen(pdirent->d_name) + 2);

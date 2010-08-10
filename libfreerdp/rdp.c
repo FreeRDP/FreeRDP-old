@@ -78,10 +78,10 @@ rdp_recv(rdpRdp * rdp, uint8 * type)
 	if ((rdp->rdp_s == NULL) || (rdp->next_packet >= rdp->rdp_s->end) || (rdp->next_packet == NULL))
 	{
 		rdp->rdp_s = sec_recv(rdp->sec, &sec_type);
-		
+
 		if (rdp->rdp_s == NULL)
 			return NULL;
-		
+
 		if (sec_type == SEC_RECV_IOCHANNEL)
 		{
 			rdp->next_packet = rdp->rdp_s->end;
@@ -130,7 +130,7 @@ rdp_recv(rdpRdp * rdp, uint8 * type)
 	DEBUG("RDP packet #%d, (type %x)\n", ++(rdp->packetno), *type);
 	hexdump(rdp->next_packet, totalLength);
 #endif
-	
+
 	rdp->next_packet += totalLength;
 	return rdp->rdp_s;
 }
@@ -140,14 +140,14 @@ static STREAM
 rdp_init_data(rdpRdp * rdp, int maxlen)
 {
 	STREAM s;
-	
+
 	uint32 sec_flags;
 
 	if (rdp->sec->tls_connected)
 		sec_flags = 0;
 	else
 		sec_flags = rdp->settings->encryption ? SEC_ENCRYPT : 0;
-	
+
 	s = sec_init(rdp->sec, sec_flags, maxlen + 18);
 	s_push_layer(s, rdp_hdr, 18);
 	return s;
@@ -172,14 +172,14 @@ rdp_send_data(rdpRdp * rdp, STREAM s, uint8 data_pdu_type)
 	s_pop_layer(s, rdp_hdr);
 	length = (int) (s->end - s->p);
 	uncompressedLength = length - 14;
-	
+
 	/* Share Control Header */
 	out_uint16_le(s, length); /* totalLength */
 	out_uint16_le(s, (RDP_PDU_DATA | 0x10)); /* pduType */
 	out_uint16_le(s, (rdp->sec->mcs->mcs_userid + 1001)); /* PDUSource */
 
 	/* Share Data Header */
-	out_uint32_le(s, rdp->rdp_shareid); 	/* shareId */
+	out_uint32_le(s, rdp->rdp_shareid);	/* shareId */
 	out_uint8(s, 0);			/* pad1 */
 	out_uint8(s, STREAM_LOW);		/* streamId */
 	out_uint16_le(s, uncompressedLength);	/* uncompressedLength */
@@ -387,10 +387,10 @@ rdp_send_client_info(rdpRdp * rdp, uint32 flags, char *domain_name,
 	flags |= INFO_LOGONERRORS;
 	flags |= INFO_LOGONNOTIFY;
 	flags |= INFO_ENABLEWINDOWSKEY;
-	
+
 	if (rdp->settings->autologin)
 		flags |= INFO_AUTOLOGON;
-	
+
 	if (rdp->settings->bulk_compression)
 		flags |= INFO_COMPRESSION | PACKET_COMPR_TYPE_64K;
 
@@ -402,16 +402,16 @@ rdp_send_client_info(rdpRdp * rdp, uint32 flags, char *domain_name,
 	clientDir = xstrdup_out_unistr(rdp, dll, &cbClientDir); /* client working directory OR binary name */
 
 	length = 8 + (5 * 4) + cbDomain + cbUserName + cbPassword + cbAlternateShell + cbWorkingDir;
-	
+
 	if (rdp->settings->rdp_version >= 5)
 		length += 180 + (2 * 4) + cbClientAddress + cbClientDir;
 
 	sec_flags = SEC_INFO_PKT | (rdp->settings->encryption ? SEC_ENCRYPT : 0);
 	s = sec_init(rdp->sec, sec_flags, length);
-	
+
 	/* INFO_UNICODE is set, so codePage contains the active locale identifier in the low word (see MSDN-MUI) */
-	
-	/* 
+
+	/*
 	 * When codePage is non-zero, the server seems to be using it to determine the keyboard layout ID,
 	 * with the side effect of ignoring the keyboard layout ID sent in the Client Core Data
 	 */
@@ -419,16 +419,16 @@ rdp_send_client_info(rdpRdp * rdp, uint32 flags, char *domain_name,
 	out_uint32_le(s, flags);	/* flags */
 
 	out_uint16_le(s, cbDomain);		/* cbDomain */
-	out_uint16_le(s, cbUserName); 		/* cbUserName */
+	out_uint16_le(s, cbUserName);		/* cbUserName */
 	out_uint16_le(s, cbPassword);		/* cbPassword */
 	out_uint16_le(s, cbAlternateShell);	/* cbAlternateShell */
 	out_uint16_le(s, cbWorkingDir);		/* cbWorkingDir */
-	
+
 	if (cbDomain > 0)
-		out_uint8p(s, domain, cbDomain); 			/* domain */
+		out_uint8p(s, domain, cbDomain);			/* domain */
 	out_uint16_le(s, 0);
 
-	out_uint8a(s, userName, cbUserName); 				/* userName */
+	out_uint8a(s, userName, cbUserName);				/* userName */
 	out_uint16_le(s, 0);
 
 	if (cbPassword > 0)
@@ -436,7 +436,7 @@ rdp_send_client_info(rdpRdp * rdp, uint32 flags, char *domain_name,
 	out_uint16_le(s, 0);
 
 	if (cbAlternateShell > 0)
-		out_uint8p(s, alternateShell, cbAlternateShell); 	/* alternateShell */
+		out_uint8p(s, alternateShell, cbAlternateShell);	/* alternateShell */
 	out_uint16_le(s, 0);
 
 	if (cbWorkingDir > 0)
@@ -445,7 +445,7 @@ rdp_send_client_info(rdpRdp * rdp, uint32 flags, char *domain_name,
 
 	/* extraInfo: optional, used in RDP 5.0, 5.1, 5.2, 6.0, 6.1 and 7.0 */
 	if (rdp->settings->rdp_version >= 5)
-	{		
+	{
 		out_uint16_le(s, CLIENT_INFO_AF_INET);			/* clientAddressFamily (IPv4) */
 		out_uint16_le(s, cbClientAddress + 2);			/* cbClientAddress */
 		out_uint8a(s, clientAddress, cbClientAddress + 2);	/* clientAddress */
@@ -462,7 +462,7 @@ rdp_send_client_info(rdpRdp * rdp, uint32 flags, char *domain_name,
 
 	s_mark_end(s);
 	sec_send(rdp->sec, s, sec_flags);
-	
+
 	xfree(domain);
 	xfree(userName);
 	xfree(alternateShell);
@@ -508,7 +508,7 @@ rdp_send_input(rdpRdp * rdp, time_t time, uint16 message_type, uint16 device_fla
 {
 	STREAM s;
 	int fp_flags;
-	
+
 	if (rdp->use_input_fast_path)
 	{
 		switch (message_type)
@@ -571,7 +571,7 @@ rdp_sync_input(rdpRdp * rdp, time_t time, uint32 toggle_keys_state)
 {
 	STREAM s;
 	int fp_flags;
-	
+
 	if (rdp->use_input_fast_path)
 	{
 		fp_flags = 3 << 5; /* FASTPATH_INPUT_EVENT_SYNC */
@@ -776,7 +776,7 @@ rdp_send_confirm_active(rdpRdp * rdp)
 		sec_flags = 0;
 	else
 		sec_flags = rdp->settings->encryption ? SEC_ENCRYPT : 0;
-	
+
 	length = 6 + 14 + caplen + 4 + sizeof(RDP_SOURCE);
 	s = sec_init(rdp->sec, sec_flags, length);
 
@@ -1127,7 +1127,7 @@ process_bitmap_updates(rdpRdp * rdp, STREAM s)
 			rdp->buffer = xrealloc(rdp->buffer, buffer_size);
 			rdp->buffer_size = buffer_size;
 		}
-		
+
 		if (!compress)
 		{
 			int y;
@@ -1152,7 +1152,7 @@ process_bitmap_updates(rdpRdp * rdp, STREAM s)
 			in_uint8s(s, 4);	/* line_size, final_size */
 		}
 		in_uint8p(s, data, size);
-		
+
 		buffer_size = width * height * Bpp;
 
 		if (buffer_size > rdp->buffer_size)
@@ -1162,7 +1162,7 @@ process_bitmap_updates(rdpRdp * rdp, STREAM s)
 		}
 
 		bmpdata = (uint8 *) rdp->buffer;
-		
+
 		if (bitmap_decompress(rdp->inst, bmpdata, width, height, data, size, Bpp))
 		{
 			ui_paint_bitmap(rdp->inst, left, top, cx, cy, width, height, bmpdata);
@@ -1195,7 +1195,7 @@ process_palette(rdpRdp * rdp, STREAM s)
 		rdp->buffer = xrealloc(rdp->buffer, size);
 		rdp->buffer_size = size;
 	}
-	
+
 	map.colours = (RD_COLOURENTRY *) rdp->buffer;
 
 	DEBUG("PALETTE(c=%d)\n", map.ncolours);
@@ -1363,7 +1363,7 @@ process_redirect_pdu(rdpRdp * rdp, STREAM s)
 	uint16 length;
 	uint32 redirFlags;
 
-	in_uint8s(s, 2);				/* flags, MUST be set to SEC_REDIRECTION_PKT = 0x0400 */	
+	in_uint8s(s, 2);				/* flags, MUST be set to SEC_REDIRECTION_PKT = 0x0400 */
 	in_uint16_le(s, length);			/* length */
 	in_uint32_le(s, rdp->redirect_session_id);	/* sessionID, must be used in Client Cluster Data as RedirectedSessionID */
 	in_uint32_le(s, redirFlags);			/* redirFlags */
@@ -1403,7 +1403,7 @@ process_redirect_pdu(rdpRdp * rdp, STREAM s)
 		rdp->redirect_target_net_addresses = xmalloc_in_len32_data(rdp, s,
 			&rdp->redirect_target_net_addresses_len);
 	}
-	
+
 	/* Skip optional padding up to length */
 	rdp->next_packet += length; /* FIXME: Is this correct? */
 	rdp->redirect = True;
@@ -1426,7 +1426,7 @@ rdp_loop(rdpRdp * rdp, RD_BOOL * deactivated)
 
 		if (s == NULL)
 			return False;
-		
+
 		switch (type)
 		{
 			case RDP_PDU_DEMAND_ACTIVE:
@@ -1475,7 +1475,7 @@ rdp_connect(rdpRdp * rdp)
 
 	if (!sec_connect(rdp->sec, rdp->settings->server, rdp->settings->username, rdp->settings->tcp_port_rdp))
 		return False;
-	
+
 	password_encoded = xstrdup_out_unistr(rdp, rdp->settings->password, &password_encoded_len);
 	rdp_send_client_info(rdp, connect_flags, rdp->settings->domain, rdp->settings->username, password_encoded, password_encoded_len, rdp->settings->shell, rdp->settings->directory);
 	xfree(password_encoded);
@@ -1483,7 +1483,7 @@ rdp_connect(rdpRdp * rdp)
 	/* by setting encryption to False here, we have an encrypted login packet but unencrypted transfer of other packets */
 	if (rdp->sec->tls_connected)
 		rdp->settings->encryption = 0;
-	
+
 	return True;
 }
 

@@ -284,7 +284,7 @@ sgi_play(void)
 			else
 			{
 #if (defined(IRIX_DEBUG))
-/*  				fprintf(stderr,"Busy playing...\n"); */
+/*				fprintf(stderr,"Busy playing...\n"); */
 #endif
 				usleep(10);
 				return;

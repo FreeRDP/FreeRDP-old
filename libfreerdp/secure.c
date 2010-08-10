@@ -255,7 +255,7 @@ sec_decrypt(rdpSec * sec, uint8 * data, int length)
 	if (sec->tls_connected)
 		return;
 #endif
-	
+
 	if (sec->sec_decrypt_use_count == 4096)
 	{
 		sec_update(sec, sec->sec_decrypt_key, sec->sec_decrypt_update_key);
@@ -291,7 +291,7 @@ sec_init(rdpSec * sec, uint32 flags, int maxlen)
 	}
 	else
 		hdrlen = 0;
-	
+
 	s = mcs_init(sec->mcs, maxlen + hdrlen);
 	s_push_layer(s, sec_hdr, hdrlen);
 
@@ -316,7 +316,7 @@ sec_fp_init(rdpSec * sec, uint32 flags, int maxlen)
 void
 sec_send_to_channel(rdpSec * sec, STREAM s, uint32 flags, uint16 channel)
 {
-	int datalen;	
+	int datalen;
 	s_pop_layer(s, sec_hdr);
 
 	if (flags)
@@ -339,7 +339,7 @@ sec_send_to_channel(rdpSec * sec, STREAM s, uint32 flags, uint16 channel)
 			sec_encrypt(sec, s->p + 8, datalen);
 		}
 	}
-	
+
 	mcs_send_to_channel(sec->mcs, s, channel);
 }
 
@@ -439,7 +439,7 @@ sec_out_client_core_data(rdpSec * sec, rdpSet * settings, STREAM s)
 
 	if (settings->server_depth == 32)
 		earlyCapabilityFlags |= RNS_UD_CS_WANT_32BPP_SESSION;
-	
+
 	out_uint16_le(s, earlyCapabilityFlags); /* earlyCapabilityFlags */
 	out_uint8s(s, 64); /* clientDigProductId (64 bytes) */
 	out_uint8(s, 0); /* connectionType, only valid when RNS_UD_CS_VALID_CONNECTION_TYPE is set in earlyCapabilityFlags */
@@ -466,7 +466,7 @@ static void
 sec_out_client_network_data(rdpSec * sec, rdpSet * settings, STREAM s)
 {
 	int i;
-	
+
 	DEBUG_RDP5("num_channels is %d\n", settings->num_channels);
 	if (settings->num_channels > 0)
 	{
@@ -485,14 +485,14 @@ sec_out_client_network_data(rdpSec * sec, rdpSet * settings, STREAM s)
 
 static void
 sec_out_client_cluster_data(rdpSec * sec, rdpSet * settings, STREAM s)
-{	
+{
 	out_uint16_le(s, UDH_CS_CLUSTER);	/* User Data Header type */
 	out_uint16_le(s, 12);			/* total length */
-	
+
 	out_uint32_le(s, (settings->console_session || sec->rdp->redirect_session_id) ?
 		REDIRECTED_SESSIONID_FIELD_VALID | REDIRECTION_SUPPORTED | REDIRECTION_VERSION4 :
 		REDIRECTION_SUPPORTED | REDIRECTION_VERSION4); /* flags */
-	
+
 	out_uint32_le(s, sec->rdp->redirect_session_id); /* RedirectedSessionID */
 }
 
@@ -512,16 +512,16 @@ sec_out_gcc_conference_create_request(rdpSec * sec, STREAM s)
 	sec_out_client_network_data(sec, settings, s);
 	length = (s->p - s->data) - 23;
 	s->p = s->data;
-	
+
 	/* t124Identifier = 0.0.20.124.0.1 */
 	out_uint16_be(s, 5);
 	out_uint16_be(s, 0x14);
 	out_uint8(s, 0x7c);
 	out_uint16_be(s, 1);
-	
+
 	/* connectPDU octet string */
 	out_uint16_be(s, ((length + 14) | 0x8000));		/* connectPDU length in two bytes*/
-	
+
 	/* connectPDU content is ConnectGCCPDU PER encoded: */
 	out_uint16_be(s, 8);				/* ConferenceCreateRequest ... */
 	out_uint16_be(s, 16);
@@ -530,7 +530,7 @@ sec_out_gcc_conference_create_request(rdpSec * sec, STREAM s)
 	out_uint8(s, 0);				/* 4 bytes: */
 	out_uint32_le(s, 0x61637544);			/* "Duca" */
 	out_uint16_be(s, (length | 0x8000));		/* userData value length in two bytes */
-	s->p = s->data + length + 23; 			/* userData (outputted earlier) */
+	s->p = s->data + length + 23;			/* userData (outputted earlier) */
 
 	s_mark_end(s);
 }
@@ -758,7 +758,7 @@ sec_process_server_security_data(rdpSec * sec, STREAM s)
 	uint8 client_random[SEC_RANDOM_SIZE];
 	uint8 modulus[SEC_MAX_MODULUS_SIZE];
 	uint8 exponent[SEC_EXPONENT_SIZE];
-	
+
 	memset(modulus, 0, sizeof(modulus));
 	memset(exponent, 0, sizeof(exponent));
 	if (!sec_parse_server_security_data(sec, s, &rc4_key_size, server_random, modulus, exponent))
@@ -770,7 +770,7 @@ sec_process_server_security_data(rdpSec * sec, STREAM s)
 		}
 		return;
 	}
-	
+
 	DEBUG("Generating client random\n");
 	generate_random(client_random);
 	sec_rsa_encrypt(sec->sec_crypted_random, client_random, SEC_RANDOM_SIZE,
@@ -798,7 +798,7 @@ sec_process_server_core_data(rdpSec * sec, STREAM s, uint16 length)
 	{
 		ui_error(sec->rdp->inst, "Invalid server rdp version %ul\n", server_rdp_version);
 	}
-	
+
 	DEBUG_RDP5("Server RDP version is %d\n", sec->rdp->settings->rdp_version);
 	if (length >= 12)
 	{
@@ -816,20 +816,20 @@ sec_process_server_network_data(rdpSec * sec, STREAM s)
 
 	in_uint16_le(s, MCSChannelId); /* MCSChannelId */
 	in_uint16_le(s, channelCount); /* channelCount */
-	
+
 	/* TODO: Check that it matches rdp->settings->num_channels */
 	if (channelCount != sec->rdp->settings->num_channels)
 	{
 		ui_error(sec->rdp->inst, "client requested %d channels, server replied with %d channels",
 		         sec->rdp->settings->num_channels, channelCount);
 	}
-	
+
 	/* channelIdArray */
 	for (i = 0; i < channelCount; i++)
 	{
 		uint16 channelId;
 		in_uint16_le(s, channelId);	/* Channel ID allocated to requested channel number i */
-		
+
 		/* TODO: Assign channel ids here instead of in freerdp.c l_rdp_connect */
 		if (channelId != sec->rdp->settings->channels[i].chan_id)
 		{
@@ -853,10 +853,10 @@ sec_process_mcs_data(rdpSec * sec, STREAM s)
 	uint8 *next_tag;
 
 	in_uint8s(s, 21);	/* TODO: T.124 ConferenceCreateResponse userData with key h221NonStandard McDn */
-	
+
 	in_uint8(s, byte);
 	totalLength = (uint16) byte;
-		
+
 	if (byte & 0x80)
 	{
 		totalLength &= ~0x80;
@@ -869,7 +869,7 @@ sec_process_mcs_data(rdpSec * sec, STREAM s)
 	{
 		in_uint16_le(s, type);
 		in_uint16_le(s, length);
-		
+
 		if (length <= 4)
 			return;
 
@@ -902,9 +902,9 @@ sec_recv(rdpSec * sec, secRecvType * type)
 	uint16 channel;
 	uint32 sec_flags;
 	isoRecvType iso_type;
-	
+
 	while ((s = mcs_recv(sec->mcs, &channel, &iso_type)) != NULL)
-	{	
+	{
 		if ((iso_type == ISO_RECV_FAST_PATH) ||
 			(iso_type == ISO_RECV_FAST_PATH_ENCRYPTED))
 		{
@@ -917,7 +917,7 @@ sec_recv(rdpSec * sec, secRecvType * type)
 			return s;
 		}
 		if (sec->rdp->settings->encryption || (!(sec->licence->licence_issued) && !(sec->tls_connected)))
-		{			
+		{
 			/* basicSecurityHeader: */
 			in_uint32_le(s, sec_flags);
 
@@ -940,7 +940,7 @@ sec_recv(rdpSec * sec, secRecvType * type)
 				return s;
 			}
 		}
-		
+
 		if (channel != MCS_GLOBAL_CHANNEL)
 		{
 			vchan_process(sec->mcs->chan, s, channel);
@@ -963,7 +963,7 @@ sec_connect(rdpSec * sec, char *server, char *username, int port)
 	if (sec->rdp->settings->tls)
 		sec->requested_protocol = PROTOCOL_TLS;
 	else
-		sec->requested_protocol = PROTOCOL_RDP;		
+		sec->requested_protocol = PROTOCOL_RDP;
 
 	if (!iso_connect(sec->mcs->iso, server, username, port))
 		return False;
@@ -989,7 +989,7 @@ sec_connect(rdpSec * sec, char *server, char *username, int port)
 		sec->ssl = tls_connect(sec->ctx, sec->mcs->iso->tcp->sock, server);
 		sec->tls_connected = 1;
 		sec->rdp->settings->encryption = 0;
-		success = mcs_connect(sec->mcs);		
+		success = mcs_connect(sec->mcs);
 		return success;
 	}
 	else
@@ -1002,7 +1002,7 @@ sec_connect(rdpSec * sec, char *server, char *username, int port)
 			/* only tell about the legacy RDP negotiation success when it wasn't the requested encryption */
 			printf("Legacy RDP encryption negotiated\n");
 		}
-		
+
 		success = mcs_connect(sec->mcs);
 
 		if (success && sec->rdp->settings->encryption)

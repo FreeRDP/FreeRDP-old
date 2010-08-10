@@ -574,13 +574,13 @@ process_polygon(rdpOrders * orders, STREAM s, POLYGON_ORDER * os, uint32 present
 	}
 
 	size = (os->npoints + 1) * sizeof(RD_POINT);
-	
+
 	if (size > orders->buffer_size)
 	{
 		orders->buffer = xrealloc(orders->buffer, size);
 		orders->buffer_size = size;
 	}
-	
+
 	points = (RD_POINT *) orders->buffer;
 	memset(points, 0, size);
 
@@ -669,13 +669,13 @@ process_polygon2(rdpOrders * orders, STREAM s, POLYGON2_ORDER * os, uint32 prese
 	setup_brush(orders, &brush, &os->brush);
 
 	size = (os->npoints + 1) * sizeof(RD_POINT);
-	
+
 	if (size > orders->buffer_size)
 	{
 		orders->buffer = xrealloc(orders->buffer, size);
 		orders->buffer_size = size;
 	}
-	
+
 	points = (RD_POINT *) orders->buffer;
 	memset(points, 0, size);
 
@@ -751,15 +751,15 @@ process_polyline(rdpOrders * orders, STREAM s, POLYLINE_ORDER * os, uint32 prese
 		ui_error(orders->rdp->inst, "bad ROP2 0x%x\n", os->opcode);
 		return;
 	}
-	
+
 	size = (os->lines + 1) * sizeof(RD_POINT);
-	
+
 	if (size > orders->buffer_size)
 	{
 		orders->buffer = xrealloc(orders->buffer, size);
 		orders->buffer_size = size;
 	}
-	
+
 	points = (RD_POINT *) orders->buffer;
 	memset(points, 0, size);
 
@@ -1113,14 +1113,14 @@ process_raw_bmpcache(rdpOrders * orders, STREAM s)
 	DEBUG("RAW_BMPCACHE(cx=%d,cy=%d,id=%d,idx=%d)\n", width, height, cache_id, cache_idx);
 
 	size = width * height * Bpp;
-	
+
 	if (size > orders->buffer_size)
 	{
 		orders->buffer = xrealloc(orders->buffer, size);
 		orders->buffer_size = size;
 	}
 	inverted = (uint8 *) orders->buffer;
-	
+
 	for (y = 0; y < height; y++)
 	{
 		memcpy(&inverted[(height - y - 1) * (width * Bpp)], &data[y * (width * Bpp)],
@@ -1180,7 +1180,7 @@ process_bmpcache(rdpOrders * orders, STREAM s, uint16 flags)
 		orders->buffer = xrealloc(orders->buffer, buffer_size);
 		orders->buffer_size = buffer_size;
 	}
-	
+
 	bmpdata = (uint8 *) orders->buffer;
 
 	if (bitmap_decompress(orders->rdp->inst, bmpdata, width, height, data, size, Bpp))
@@ -1247,7 +1247,7 @@ process_bmpcache2(rdpOrders * orders, STREAM s, uint16 flags, RD_BOOL compressed
 		orders->buffer = xrealloc(orders->buffer, size);
 		orders->buffer_size = size;
 	}
-	
+
 	bmpdata = (uint8 *) orders->buffer;
 
 	if (compressed)
@@ -1302,7 +1302,7 @@ process_colcache(rdpOrders * orders, STREAM s)
 		orders->buffer = xrealloc(orders->buffer, size);
 		orders->buffer_size = size;
 	}
-	
+
 	map.colours = (RD_COLOURENTRY *) orders->buffer;
 
 	for (i = 0; i < map.ncolours; i++)

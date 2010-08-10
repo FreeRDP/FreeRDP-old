@@ -415,7 +415,7 @@ run_dfbfreerdp(rdpSet * settings, rdpChanMan * chan_man)
 		{
 			printf("run_dfbfreerdp: dfb_check_fds failed\n");
 			break;
-		}		
+		}
 		/* check channel fds */
 		if (freerdp_chanman_check_fds(chan_man, inst) != 0)
 		{

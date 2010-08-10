@@ -723,7 +723,7 @@ clipboard_get_requested_targets(struct clipboard_data * cdata)
 	pthread_mutex_unlock(cdata->mutex);
 	LLOGLN(10, ("clipboard_get_requested_targets: type=%d format=%d len=%d bytes_left=%d",
 		(int)atom, format, (int)len, (int)bytes_left));
-	
+
 	if (len > 0)
 	{
 		size = 36 * len;

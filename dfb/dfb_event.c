@@ -13,11 +13,11 @@ dfb_process_event(rdpInst * inst, DFBEvent * event)
 	int cursor_y;
 	dfbInfo * dfbi;
 	DFBInputEvent * input_event;
-	
+
 	dfbi = GET_DFBI(inst);
 	cursor_x = dfbi->cursor_x;
 	cursor_y = dfbi->cursor_y;
-	
+
 	if (event->clazz == DFEC_INPUT)
 	{
 		input_event = (DFBInputEvent *) event;
@@ -38,7 +38,7 @@ dfb_process_event(rdpInst * inst, DFBEvent * event)
 				else if (input_event->axis == DIAI_Y)
 					cursor_y += input_event->axisrel;
 			}
-			
+
 			inst->ui_move_pointer(inst, cursor_x, cursor_y);
 		}
 		else if (input_event->type == DIET_BUTTONPRESS)
@@ -58,7 +58,7 @@ dfb_process_event(rdpInst * inst, DFBEvent * event)
 			printf("DIET_KEYRELEASE\n");
 		}
 	}
-	
+
 	inst->ui_rect(inst, cursor_x, cursor_y, 16, 16, 0xFFFFFFFF);
 	inst->rdp_send_input(inst, RDP_INPUT_MOUSE, PTRFLAGS_MOVE, cursor_x, cursor_y);
 	return 1;

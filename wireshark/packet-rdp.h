@@ -26,8 +26,8 @@
 #ifndef __PACKET_RDP_H__
 #define __PACKET_RDP_H__
 
-/* "proto_rdp" is exported from libwireshark.dll. 
- * Thus we need a special declaration. 
+/* "proto_rdp" is exported from libwireshark.dll.
+ * Thus we need a special declaration.
  */
 WS_VAR_IMPORT int proto_rdp;
 

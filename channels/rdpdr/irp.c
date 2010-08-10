@@ -177,7 +177,7 @@ irp_process_query_volume_information_request(IRP* irp, char* data, int data_size
 	irp->infoClass = GET_UINT32(data, 0); /* fsInformationClass */
 	irp->inputBufferLength = GET_UINT32(data, 4); /* length */
 	/* 24-byte pad */
-	
+
 	/* queryVolumeBuffer */
 	irp->inputBuffer = data + 32;
 
@@ -202,7 +202,7 @@ irp_process_set_volume_information_request(IRP* irp, char* data, int data_size)
 	fsInformationClass = GET_UINT32(data, 0); /* fsInformationClass */
 	length = GET_UINT32(data, 4); /* length */
 	/* 24-byte pad */
-	
+
 	/* setVolumeBuffer */
 #endif
 }
@@ -234,7 +234,7 @@ irp_process_set_information_request(IRP* irp, char* data, int data_size)
 	irp->infoClass = GET_UINT32(data, 0); /* fsInformationClass */
 	irp->inputBufferLength = GET_UINT32(data, 4); /* length */
 	/* 24-byte pad */
-	
+
 	/* setBuffer */
 	irp->inputBuffer = data + 32;
 
@@ -258,7 +258,7 @@ irp_process_directory_control_request(IRP* irp, char* data, int data_size)
 			LLOGLN(10, ("IRP_MN_QUERY_DIRECTORY"));
 			irp_process_query_directory_request(irp, data, data_size);
 			break;
-		
+
 		case IRP_MN_NOTIFY_CHANGE_DIRECTORY:
 			LLOGLN(10, ("IRP_MN_NOTIFY_CHANGE_DIRECTORY"));
 			irp_process_notify_change_directory_request(irp, data, data_size);

@@ -190,17 +190,17 @@ crypto_cert_get_public_key(CryptoCert cert, uint32 * key_len)
 
 	   Kudos to Richard Levitte for the following (intuitive)
 	   lines of code that resets the OID and lets us extract the key. */
-	
+
 	nid = OBJ_obj2nid(cert->px509->cert_info->key->algor->algorithm);
-	
+
 	if ((nid == NID_md5WithRSAEncryption) || (nid == NID_shaWithRSAEncryption))
 	{
 		ASN1_OBJECT_free(cert->px509->cert_info->key->algor->algorithm);
 		cert->px509->cert_info->key->algor->algorithm = OBJ_nid2obj(NID_rsaEncryption);
 	}
-	
+
 	epk = X509_get_pubkey(cert->px509);
-	
+
 	if (NULL == epk)
 		return NULL;
 
@@ -224,13 +224,13 @@ crypto_public_key_get_exp_mod(CryptoPublicKey public_key, uint8 * exponent, uint
 
 	if ((BN_num_bytes(public_key->prsa->e) > (int) max_exp_len) || (BN_num_bytes(public_key->prsa->n) > (int) max_mod_len))
 		return 1;
-	
+
 	len = BN_bn2bin(public_key->prsa->e, exponent);
 	reverse(exponent, len);
-	
+
 	len = BN_bn2bin(public_key->prsa->n, modulus);
 	reverse(modulus, len);
-	
+
 	return 0;
 }
 

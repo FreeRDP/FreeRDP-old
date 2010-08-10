@@ -242,7 +242,7 @@ static const value_string t125_mcs_tpdu_types[] = {
 	{ MCS_CONNECT_INITIAL,			"Connect Initial" },
 	{ MCS_CONNECT_RESPONSE,			"Connect Response" },
 	{ 0x0,	NULL }
-};	
+};
 
 static const value_string x224_tpdu_types[] = {
 	{ X224_CONNECTION_REQUEST,		"Connection Request" },
@@ -266,7 +266,7 @@ dissect_ts_caps_set(tvbuff_t *tvb, packet_info *pinfo _U_ , proto_tree *tree)
 {
 	guint16 capabilitySetType;
 	guint16 lengthCapability;
-	
+
 	if (tree)
 	{
 		proto_item *ti;
@@ -297,7 +297,7 @@ dissect_ts_confirm_active_pdu(tvbuff_t *tvb, packet_info *pinfo _U_ , proto_tree
 	guint16 lengthSourceDescriptor;
 	guint16 lengthCombinedCapabilities;
 	guint16 numberCapabilities;
-	
+
 	if (tree)
 	{
 		int i;
@@ -373,7 +373,7 @@ dissect_ts_share_data_header(tvbuff_t *tvb, packet_info *pinfo _U_ , proto_tree 
 		{
 			proto_item *ti;
 			ts_share_control_header_offset = offset;
-			shareId = tvb_get_letohl(tvb, offset);	
+			shareId = tvb_get_letohl(tvb, offset);
 			streamId = tvb_get_guint8(tvb, offset + 5);
 			uncompressedLength = tvb_get_letohs(tvb, offset + 6);
 			pduType2 = tvb_get_guint8(tvb, offset + 8);
@@ -708,12 +708,12 @@ proto_register_rdp(void)
 	static gint *ett[] = {
 		&ett_rdp
 	};
-	
+
 	proto_rdp = proto_register_protocol("Remote Desktop Protocol", "RDP", "rdp");
 	register_dissector("rdp", dissect_rdp, proto_rdp);
 
 	proto_register_field_array(proto_rdp, hf, array_length(hf));
-	proto_register_subtree_array(ett, array_length(ett));	
+	proto_register_subtree_array(ett, array_length(ett));
 	module_rdp = prefs_register_protocol( proto_rdp, proto_reg_handoff_rdp);
 }
 

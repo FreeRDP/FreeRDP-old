@@ -362,7 +362,7 @@ rdp_process_input_capset(rdpRdp * rdp, STREAM s)
 	uint32 keyboardType;
 	uint32 keyboardSubType;
 	uint32 keyboardFunctionKeys;
-	
+
 	in_uint16_le(s, rdp->input_flags); // inputFlags
 	if ((rdp->input_flags & INPUT_FLAG_FASTPATH_INPUT) ||
 		(rdp->input_flags & INPUT_FLAG_FASTPATH_INPUT2))

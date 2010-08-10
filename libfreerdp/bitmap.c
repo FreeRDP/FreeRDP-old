@@ -666,7 +666,7 @@ bitmap_decompress3(void * inst, uint8 * output, int width, int height, uint8 * i
 							MASK_UPDATE();
 							if (mask & mixmask)
 							{
-								line[x * 3] = 
+								line[x * 3] =
 								 prevline[x * 3] ^ mix [0];
 								line[x * 3 + 1] =
 								 prevline[x * 3 + 1] ^ mix [1];

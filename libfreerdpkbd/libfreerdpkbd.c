@@ -614,7 +614,7 @@ detect_and_load_keyboard()
 
 	int keymapLoaded = 0;
 	memset(xkbfile, '\0', sizeof(xkbfile));
-	
+
 #if defined(sun)
 	keyboardLayoutID = detect_keyboard_type_and_layout_sunos(xkbfile, sizeof(xkbfile));
 #endif
@@ -694,7 +694,7 @@ freerdp_kbd_init(unsigned int keyboard_layout_id)
 
 	if (keyboard_layout_id == 0)
 		keyboard_layout_id = rv;
-	
+
 	printf("kbd_init: detect_and_load_keyboard returned %d\n", keyboard_layout_id);
 
 	if (keyboard_layout_id == 0)

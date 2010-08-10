@@ -85,7 +85,7 @@ dfb_colour_convert(dfbInfo * dfbi, int in_colour, PIXEL * pixel, int in_bpp, int
 	pixel->green = 0;
 	pixel->blue = 0;
 	pixel->alpha = 0xFF;
-	
+
 	switch (in_bpp)
 	{
 		case 32:
@@ -114,7 +114,7 @@ unsigned int
 dfb_make_colorref(PIXEL * pixel, int bpp)
 {
 	unsigned int colorref = 0;
-	
+
 	switch (bpp)
 	{
 		case 32:
@@ -270,7 +270,7 @@ dfb_image_convert(dfbInfo * dfbi, rdpSet * settings, int width, int height, uint
 		}
 		return out_data;
 	}
-	
+
 	return in_data;
 }
 
@@ -283,14 +283,14 @@ dfb_create_colourmap(dfbInfo * dfbi, rdpSet * settings, RD_COLOURMAP * colours)
 	int blue;
 	int count;
 	int * colourmap;
-	
+
 	colourmap = (int *) malloc(sizeof(int) * 256);
 	memset(colourmap, 0, sizeof(int) * 256);
 	count = colours->ncolours;
-	
+
 	if (count > 256)
 		count = 256;
-	
+
 	for (index = count - 1; index >= 0; index--)
 	{
 		red = colours->colours[index].red;
@@ -298,7 +298,7 @@ dfb_create_colourmap(dfbInfo * dfbi, rdpSet * settings, RD_COLOURMAP * colours)
 		blue = colours->colours[index].blue;
 		colourmap[index] = MAKE24RGB(red, green, blue);
 	}
-	
+
 	return (RD_HCOLOURMAP) colourmap;
 }
 
@@ -309,7 +309,7 @@ dfb_set_colourmap(dfbInfo * dfbi, rdpSet * settings, RD_HCOLOURMAP map)
 		free(dfbi->colourmap);
 
 	dfbi->colourmap = (int *) map;
-	
+
 	return 0;
 }
 

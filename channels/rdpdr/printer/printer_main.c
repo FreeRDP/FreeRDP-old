@@ -207,7 +207,7 @@ printer_process_data(SERVICE * srv, int type, const char * data, int data_len)
 	return 0;
 }
 
-static SERVICE * 
+static SERVICE *
 printer_register_service(PDEVMAN pDevman, PDEVMAN_ENTRY_POINTS pEntryPoints)
 {
 	SERVICE * srv;

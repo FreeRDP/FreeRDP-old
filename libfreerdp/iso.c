@@ -120,7 +120,7 @@ x224_send_connection_request(rdpIso * iso, char *username)
 	out_uint8(s, 0x0A);	/* LF */
 
 	if (iso->mcs->sec->requested_protocol > PROTOCOL_RDP)
-	{	
+	{
 		out_uint8(s, TYPE_RDP_NEG_REQ); /* When using TLS, NLA, or both, RDP_NEG_DATA should be present */
 		out_uint8(s, 0x00);	/* flags, must be set to zero */
 		out_uint16_le(s, 8);	/* RDP_NEG_DATA length (8) */
@@ -213,12 +213,12 @@ x224_recv(rdpIso * iso, STREAM s, int length, uint8 * pcode)
 	uint8 code;
 	uint8 subcode;
 	uint8 type;
-	
+
 	s = tcp_recv(iso->tcp, s, length - 4);
-	
+
 	if (s == NULL)
 		return NULL;
-	
+
 	/* X.224 TPDU Header */
 	in_uint8(s, lengthIndicator);
 	in_uint8(s, code);
@@ -299,7 +299,7 @@ tpkt_recv(rdpIso * iso, uint8 * pcode, isoRecvType * ptype)
 	int length;
 
 	s = tcp_recv(iso->tcp, NULL, 4);
-	
+
 	if (s == NULL)
 		return NULL;
 
@@ -317,7 +317,7 @@ tpkt_recv(rdpIso * iso, uint8 * pcode, isoRecvType * ptype)
 	{
 		/* Fast-Path header */
 		uint8 fpInputHeader;
-		
+
 		in_uint8(s, fpInputHeader);
 		*ptype = (fpInputHeader & 0x80) ? ISO_RECV_FAST_PATH_ENCRYPTED : ISO_RECV_FAST_PATH;
 
@@ -327,7 +327,7 @@ tpkt_recv(rdpIso * iso, uint8 * pcode, isoRecvType * ptype)
 			length &= ~0x80;
 			next_be(s, length);
 		}
-		
+
 		s = tcp_recv(iso->tcp, s, length - 4);
 		return s;
 	}
@@ -422,7 +422,7 @@ iso_send(rdpIso * iso, STREAM s)
 	out_uint8(s, 2);		/* hdrlen */
 	out_uint8(s, X224_TPDU_DATA);	/* code */
 	out_uint8(s, 0x80);		/* eot */
-	
+
 	tcp_send(iso->tcp, s);
 }
 
@@ -470,7 +470,7 @@ iso_recv(rdpIso * iso, isoRecvType * ptype)
 	uint8 code = 0;
 
 	s = iso_recv_msg(iso, &code, ptype);
-	
+
 	if (s == NULL)
 		return NULL;
 
