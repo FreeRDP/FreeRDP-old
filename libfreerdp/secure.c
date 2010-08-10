@@ -1019,6 +1019,13 @@ void
 sec_disconnect(rdpSec * sec)
 {
 	mcs_disconnect(sec->mcs);
+
+	if (sec->rc4_decrypt_key)
+		crypto_rc4_free(sec->rc4_decrypt_key);
+	sec->rc4_decrypt_key = NULL;
+	if (sec->rc4_encrypt_key)
+		crypto_rc4_free(sec->rc4_encrypt_key);
+	sec->rc4_encrypt_key = NULL;
 }
 
 rdpSec *
@@ -1055,11 +1062,6 @@ sec_free(rdpSec * sec)
 #ifndef DISABLE_TLS
 		nla_free(sec->nla);
 #endif
-
-		if (sec->rc4_decrypt_key)
-			crypto_rc4_free(sec->rc4_decrypt_key);
-		if (sec->rc4_encrypt_key)
-			crypto_rc4_free(sec->rc4_encrypt_key);
 
 		xfree(sec);
 	}

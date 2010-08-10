@@ -1111,7 +1111,7 @@ xf_destroy_window(xfInfo * xfi)
 	xfi->gc_default = 0;
 	XFreeGC(xfi->display, xfi->gc_mono);
 	xfi->gc_mono = 0;
-	XFreePixmap(xfi->display, xfi->bitmap_mono);
+	XFreePixmap(xfi->display, xfi->bitmap_mono);	/* Note: valgrind reports this at lost no matter what */
 	xfi->bitmap_mono = 0;
 	XFreeGC(xfi->display, xfi->gc);
 	xfi->gc = 0;
