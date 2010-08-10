@@ -303,110 +303,25 @@ int tls_write(SSL *ssl, char* b, int length)
 /* Read data over TLS connection */
 int tls_read(SSL *ssl, char* b, int length)
 {
-	int read_status;
-	int bytesRead = 0;
+	int status;
 
-	read_status = SSL_read(ssl, b, length);
-
-	switch (SSL_get_error(ssl, read_status))
+	while (True)
 	{
-		case SSL_ERROR_NONE:
-			bytesRead += read_status;
-			break;
+		status = SSL_read(ssl, b, length);
 
-		case SSL_ERROR_WANT_READ:
-
-			if (length - bytesRead < 128)
-			{
-					/* the buffer is almost full, allocate more memory */
-					length += 1024;
-					xrealloc(b, length);
-			}
-
-			bytesRead += tls_read(ssl, &b[bytesRead], length - bytesRead);
-			break;
-
-		default:
-			tls_printf("SSL_read", ssl, read_status);
-			break;
-	}
-
-	return bytesRead;
-}
-
-/* Receive data over TLS connection */
-STREAM
-tls_recv(rdpTcp * tcp, STREAM s, int length)
-{
-	int rcvd;
-	int available;
-	uint32 p_offset;
-	uint32 new_length;
-	uint32 end_offset;
-	SSL *ssl = tcp->iso->mcs->sec->ssl;
-	
-	if (s == NULL)
-	{
-		/* read into "new" stream */
-		if (length > tcp->in.size)
-		{
-			tcp->in.data = (uint8 *) xrealloc(tcp->in.data, length);
-			tcp->in.size = length;
-		}
-			
-		tcp->in.end = tcp->in.p = tcp->in.data;
-		s = &(tcp->in);
-	}
-	else
-	{
-		/* append to existing stream */
-		new_length = (s->end - s->data) + length;
-		if (new_length > s->size)
-		{
-			p_offset = s->p - s->data;
-			end_offset = s->end - s->data;
-			s->data = (uint8 *) xrealloc(s->data, new_length);
-			s->size = new_length;
-			s->p = s->data + p_offset;
-			s->end = s->data + end_offset;
-		}
-	}
-
-	while (length > 0)
-	{
-		available = s->size - (s->end - s->data);
-		rcvd = SSL_read(ssl, s->end, available);
-
-		switch (SSL_get_error(ssl, rcvd))
+		switch (SSL_get_error(ssl, status))
 		{
 			case SSL_ERROR_NONE:
+				return status;
 				break;
-			
-			case SSL_ERROR_WANT_READ:
-				
-				if (available < length)
-				{
-					s->size += 1024;
-					xrealloc(s->data, s->size);
-				}
 
-				if (rcvd < 0)
-					rcvd = 0;
-				
+			case SSL_ERROR_WANT_READ:
 				break;
 
 			default:
-				tls_printf("SSL_read", ssl, rcvd);
-				exit(0);
+				tls_printf("SSL_read", ssl, status);
+				return -1;
 				break;
 		}
-
-		s->end += rcvd;
-		length -= rcvd;
-
-		if ((s->end - s->data) > length)
-			break;
 	}
-
-	return s;
 }

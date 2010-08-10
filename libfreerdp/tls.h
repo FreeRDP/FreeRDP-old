@@ -41,7 +41,5 @@ int
 tls_write(SSL *ssl, char* b, int length);
 int
 tls_read(SSL *ssl, char* b, int length);
-STREAM
-tls_recv(rdpTcp * tcp, STREAM s, int length);
 
 #endif	// __TLS_H

@@ -130,7 +130,7 @@ rdp_recv(rdpRdp * rdp, uint8 * type)
 	DEBUG("RDP packet #%d, (type %x)\n", ++(rdp->packetno), *type);
 	hexdump(rdp->next_packet, totalLength);
 #endif
-
+	
 	rdp->next_packet += totalLength;
 	return rdp->rdp_s;
 }
@@ -1443,7 +1443,7 @@ rdp_loop(rdpRdp * rdp, RD_BOOL * deactivated)
 			case 0:
 				break;
 			default:
-				ui_unimpl(rdp->inst, "PDU %d\n", type);
+				ui_unimpl(rdp->inst, "PDU %d", type);
 		}
 		if (disc)
 			return False;

@@ -959,7 +959,11 @@ RD_BOOL
 sec_connect(rdpSec * sec, char *server, char *username, int port)
 {
 	/* Don't forget to set this *before* iso_connect(), otherwise you'll bang your head on the wall */
-	sec->requested_protocol = PROTOCOL_RDP;
+
+	if (sec->rdp->settings->tls)
+		sec->requested_protocol = PROTOCOL_TLS;
+	else
+		sec->requested_protocol = PROTOCOL_RDP;		
 
 	if (!iso_connect(sec->mcs->iso, server, username, port))
 		return False;
@@ -968,7 +972,7 @@ sec_connect(rdpSec * sec, char *server, char *username, int port)
 	if(sec->negotiated_protocol == PROTOCOL_NLA)
 	{
 		/* TLS with NLA was successfully negotiated */
-		printf("PROTOCOL_NLA negotiated\n");
+		printf("TLS encryption with NLA negotiated\n");
 		sec->ctx = tls_create_context();
 		sec->ssl = tls_connect(sec->ctx, sec->mcs->iso->tcp->sock, server);
 		sec->tls_connected = 1;
@@ -980,23 +984,25 @@ sec_connect(rdpSec * sec, char *server, char *username, int port)
 	{
 		/* TLS without NLA was successfully negotiated */
 		RD_BOOL success;
-		printf("PROTOCOL_TLS negotiated\n");
+		printf("TLS Encryption negotiated\n");
 		sec->ctx = tls_create_context();
 		sec->ssl = tls_connect(sec->ctx, sec->mcs->iso->tcp->sock, server);
 		sec->tls_connected = 1;
 		sec->rdp->settings->encryption = 0;
-		success = mcs_connect(sec->mcs);
-		
-		if (success && sec->rdp->settings->encryption)
-			sec_establish_key(sec);
-		
+		success = mcs_connect(sec->mcs);		
 		return success;
 	}
 	else
 #endif
 	{
 		RD_BOOL success;
-		printf("PROTOCOL_RDP negotiated\n");
+
+		if (sec->requested_protocol > PROTOCOL_RDP)
+		{
+			/* only tell about the legacy RDP negotiation success when it wasn't the requested encryption */
+			printf("Legacy RDP encryption negotiated\n");
+		}
+		
 		success = mcs_connect(sec->mcs);
 
 		if (success && sec->rdp->settings->encryption)

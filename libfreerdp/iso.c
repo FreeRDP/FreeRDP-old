@@ -243,27 +243,27 @@ x224_recv(rdpIso * iso, STREAM s, int length, uint8 * pcode)
 	{
 		/* Connection Request */
 		case X224_TPDU_CONNECTION_REQUEST:
-			printf("X224_TPDU_CONNECTION_REQUEST\n");
+			//printf("X224_TPDU_CONNECTION_REQUEST\n");
 			break;
 
 		/* Connection Confirm */
 		case X224_TPDU_CONNECTION_CONFIRM:
-			printf("X224_TPDU_CONNECTION_CONFIRM\n");
+			//printf("X224_TPDU_CONNECTION_CONFIRM\n");
 			break;
 
 		/* Disconnect Request */
 		case X224_TPDU_DISCONNECT_REQUEST:
-			printf("X224_TPDU_DISCONNECT_REQUEST\n");
+			//printf("X224_TPDU_DISCONNECT_REQUEST\n");
 			break;
 
 		/* Data */
 		case X224_TPDU_DATA:
-			printf("X224_TPDU_DATA\n");
+			//printf("X224_TPDU_DATA\n");
 			break;
 
 		/* Error */
 		case X224_TPDU_ERROR:
-			printf("X224_TPDU_ERROR\n");
+			//printf("X224_TPDU_ERROR\n");
 			break;
 	}
 
@@ -275,11 +275,11 @@ x224_recv(rdpIso * iso, STREAM s, int length, uint8 * pcode)
 		switch (type)
 		{
 			case TYPE_RDP_NEG_RSP:
-				printf("TYPE_RDP_NEG_RSP\n");
+				//printf("TYPE_RDP_NEG_RSP\n");
 				rdp_process_negotiation_response(iso, s);
 				break;
 			case TYPE_RDP_NEG_FAILURE:
-				printf("TYPE_RDP_NEG_FAILURE\n");
+				//printf("TYPE_RDP_NEG_FAILURE\n");
 				rdp_process_negotiation_failure(iso, s);
 				break;
 		}

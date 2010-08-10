@@ -193,13 +193,6 @@ tcp_recv(rdpTcp * tcp, STREAM s, uint32 length)
 	uint32 p_offset;
 	uint32 new_length;
 	uint32 end_offset;
-
-#ifndef DISABLE_TLS
-	if (tcp->iso->mcs->sec->tls_connected)
-	{
-		return tls_recv(tcp, s, length);
-	}
-#endif
 	
 	if (s == NULL)
 	{
@@ -230,36 +223,47 @@ tcp_recv(rdpTcp * tcp, STREAM s, uint32 length)
 
 	while (length > 0)
 	{
-		if (!ui_select(tcp->iso->mcs->sec->rdp->inst, tcp->sock))
-			/* User quit */
-			return NULL;
+#ifndef DISABLE_TLS
+		if (tcp->iso->mcs->sec->tls_connected)
+		{
+			rcvd = tls_read(tcp->iso->mcs->sec->ssl, (char*) s->end, length);
 
-		rcvd = recv(tcp->sock, s->end, length, 0);
-		if (rcvd < 0)
-		{
-			if (rcvd == -1 && TCP_BLOCKS)
-			{
-				tcp_can_recv(tcp->sock, 1);
-				rcvd = 0;
-			}
-			else
-			{
-				ui_error(tcp->iso->mcs->sec->rdp->inst, "recv: %s\n", TCP_STRERROR);
+			if (rcvd < 0)
 				return NULL;
-			}
 		}
-		else if (rcvd == 0)
+		else
+#endif
 		{
-			if (tcp->iso->mcs->sec->negotiation_state < 2)
+			if (!ui_select(tcp->iso->mcs->sec->rdp->inst, tcp->sock))
+				return NULL; /* user quit */
+		
+			rcvd = recv(tcp->sock, s->end, length, 0);
+			if (rcvd < 0)
 			{
-				/* disconnection is due to an encryption protocol negotiation failure */
-				tcp->iso->mcs->sec->denied_protocols |= tcp->iso->mcs->sec->requested_protocol;
-				return NULL;
+				if (rcvd == -1 && TCP_BLOCKS)
+				{
+					tcp_can_recv(tcp->sock, 1);
+					rcvd = 0;
+				}
+				else
+				{
+					ui_error(tcp->iso->mcs->sec->rdp->inst, "recv: %s\n", TCP_STRERROR);
+					return NULL;
+				}
 			}
-			else
+			else if (rcvd == 0)
 			{
-				ui_error(tcp->iso->mcs->sec->rdp->inst, "Connection closed\n");
-				return NULL;
+				if (tcp->iso->mcs->sec->negotiation_state < 2)
+				{
+					/* disconnection is due to an encryption protocol negotiation failure */
+					tcp->iso->mcs->sec->denied_protocols |= tcp->iso->mcs->sec->requested_protocol;
+					return NULL;
+				}
+				else
+				{
+					ui_error(tcp->iso->mcs->sec->rdp->inst, "Connection closed\n");
+					return NULL;
+				}
 			}
 		}
 

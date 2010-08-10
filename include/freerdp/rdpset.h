@@ -31,9 +31,10 @@ struct rdp_chan
 
 struct rdp_set
 {
-	char hostname[16];
+	int tls;
 	int width;
 	int height;
+	char hostname[16];
 	char server[64];
 	char domain[16];
 	char password[64];
