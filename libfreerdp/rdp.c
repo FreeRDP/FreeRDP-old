@@ -69,7 +69,7 @@ process_redirect_pdu(rdpRdp * rdp, STREAM s);
 
 /* Receive an RDP packet */
 static STREAM
-rdp_recv(rdpRdp * rdp, uint8 * type)
+rdp_recv(rdpRdp * rdp, uint8 * type, uint16 * source)
 {
 	uint16 totalLength;
 	uint16 pduType;
@@ -124,7 +124,7 @@ rdp_recv(rdpRdp * rdp, uint8 * type)
 	in_uint16_le(rdp->rdp_s, pduType); /* pduType */
 	pduType &= 0xF; /* type is in 4 lower bits */
 	*type = pduType; /* version in high bits */
-	in_uint8s(rdp->rdp_s, 2); /* PDUSource */
+	in_uint16_le(rdp->rdp_s, *source);	/* PDUSource */
 
 #if WITH_DEBUG
 	DEBUG("RDP packet #%d, (type %x)\n", ++(rdp->packetno), *type);
@@ -496,7 +496,7 @@ rdp_send_synchronize(rdpRdp * rdp)
 	s = rdp_init_data(rdp, 4);
 
 	out_uint16_le(s, 1);		/* messageType */
-	out_uint16_le(s, 1002);		/* targetUser, the MCS channel ID of the target user */
+	out_uint16_le(s, rdp->rdp_serverid);		/* targetUser, the MCS channel ID of the target user */
 
 	s_mark_end(s);
 	rdp_send_data(rdp, s, RDP_DATA_PDU_SYNCHRONIZE);
@@ -788,7 +788,7 @@ rdp_send_confirm_active(rdpRdp * rdp)
 	out_uint32_le(s, rdp->rdp_shareid); /* sharedId */
         /* originatorId must be set to the server channel ID
             This value is always 0x3EA for Microsoft RDP server implementations */
-	out_uint16_le(s, 0x03EA); /* originatorId */
+	out_uint16_le(s, rdp->rdp_serverid); /* originatorId */
 	out_uint16_le(s, sizeof(RDP_SOURCE)); /* lengthSourceDescriptor */
         /* lengthCombinedCapabilities is the combined size of
             numberCapabilities, pad2Octets and capabilitySets */
@@ -922,14 +922,16 @@ rdp_process_server_caps(rdpRdp * rdp, STREAM s, uint16 length)
 	}
 }
 
-/* Respond to a demand active PDU */
+/* Process demand active PDU and respond */
 static void
-process_demand_active(rdpRdp * rdp, STREAM s)
+process_demand_active(rdpRdp * rdp, STREAM s, uint16 serverChannelId)
 {
 	uint8 type;
+	uint16 source;
 	uint16 lengthSourceDescriptor;
 	uint16 lengthCombinedCapabilities;
 
+	rdp->rdp_serverid = serverChannelId;	/* confirm active response implies that this "must" be 0x3ea */
 	in_uint32_le(s, rdp->rdp_shareid);		/* shareId */
 	in_uint16_le(s, lengthSourceDescriptor);	/* lengthSourceDescriptor */
 	in_uint16_le(s, lengthCombinedCapabilities);	/* lengthCombinedCapabilities */
@@ -943,9 +945,9 @@ process_demand_active(rdpRdp * rdp, STREAM s)
 	rdp_send_synchronize(rdp);
 	rdp_send_control(rdp, RDP_CTL_COOPERATE);
 	rdp_send_control(rdp, RDP_CTL_REQUEST_CONTROL);
-	rdp_recv(rdp, &type);	/* RDP_PDU_SYNCHRONIZE */
-	rdp_recv(rdp, &type);	/* RDP_CTL_COOPERATE */
-	rdp_recv(rdp, &type);	/* RDP_CTL_GRANTED_CONTROL */
+	rdp_recv(rdp, &type, &source);	/* RDP_PDU_SYNCHRONIZE */
+	rdp_recv(rdp, &type, &source);	/* RDP_CTL_COOPERATE */
+	rdp_recv(rdp, &type, &source);	/* RDP_CTL_GRANTED_CONTROL */
 
 	/* Synchronize toggle keys */
 	rdp_sync_input(rdp, time(NULL), ui_get_toggle_keys_state(rdp->inst));
@@ -961,7 +963,7 @@ process_demand_active(rdpRdp * rdp, STREAM s)
 		rdp_send_fonts(rdp, 2);
 	}
 
-	rdp_recv(rdp, &type);
+	rdp_recv(rdp, &type, &source);	/* ??? */
 	reset_order_state(rdp->orders);
 }
 
@@ -1416,13 +1418,14 @@ RD_BOOL
 rdp_loop(rdpRdp * rdp, RD_BOOL * deactivated)
 {
 	uint8 type;
+	uint16 source;
 	RD_BOOL disc = False;	/* True when a disconnect PDU was received */
 	RD_BOOL cont = True;
 	STREAM s;
 
 	while (cont)
 	{
-		s = rdp_recv(rdp, &type);
+		s = rdp_recv(rdp, &type, &source);
 
 		if (s == NULL)
 			return False;
@@ -1430,7 +1433,7 @@ rdp_loop(rdpRdp * rdp, RD_BOOL * deactivated)
 		switch (type)
 		{
 			case RDP_PDU_DEMAND_ACTIVE:
-				process_demand_active(rdp, s);
+				process_demand_active(rdp, s, source);
 				*deactivated = False;
 				break;
 			case RDP_PDU_DEACTIVATE_ALL:

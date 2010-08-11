@@ -34,6 +34,7 @@ rdp_global_finish(void);
 struct rdp_rdp
 {
 	uint8 * next_packet;
+	uint32 rdp_serverid;
 	uint32 rdp_shareid;
 	uint32 packetno;
 	STREAM rdp_s;
