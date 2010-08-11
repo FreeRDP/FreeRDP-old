@@ -1,4 +1,4 @@
-# This file was generated with xkb.pl (Sat Jun 19 10:21:16 2010)
+# This file was generated with xkb.pl (Wed Aug 11 09:09:10 2010)
 # and is based on the X Keyboard Configuration Database version 1.9
 # Please use xkb.pl to re-export newer versions of XKB
 
@@ -59,7 +59,7 @@ keyboard "pc98"
 	VK_OEM_COMMA	<56>
 	VK_OEM_PERIOD	<57>
 	VK_OEM_2	<58>
-	VK_RSHIFT	<59>
+	VK_ABNT_C1	<59>
 	VK_LMENU	<123>
 	VK_SPACE	<60>
 	VK_SNAPSHOT	<105>

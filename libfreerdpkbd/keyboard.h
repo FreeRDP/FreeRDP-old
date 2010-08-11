@@ -256,6 +256,9 @@
 			     // Windows 2000/XP: For the US standard keyboard, the '`~' key 
 
 /* 0xC1 to 0xD7 are reserved */
+#define VK_ABNT_C1	0xC1 // Brazilian (ABNT) Keyboard
+#define VK_ABNT_C2	0xC2 // Brazilian (ABNT) Keyboard
+
 /* 0xD8 to 0xDA are unassigned */
 
 #define VK_OEM_4	0xDB // Used for miscellaneous characters; it can vary by keyboard.
@@ -553,8 +556,8 @@ virtualKey virtualKeyboard[256] =
 	{ 0x34, 0, "VK_OEM_PERIOD" },
 	{ 0x35, 0, "VK_OEM_2" },
 	{ 0x29, 0, "VK_OEM_3" },
-	{ 0x00, 0, "" },
-	{ 0x00, 0, "" },
+	{ 0x73, 0, "VK_ABNT_C1" },
+	{ 0x7E, 0, "VK_ABNT_C2" },
 	{ 0x00, 0, "" },
 	{ 0x00, 0, "" },
 	{ 0x00, 0, "" },
