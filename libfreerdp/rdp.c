@@ -777,7 +777,7 @@ rdp_send_confirm_active(rdpRdp * rdp)
 	else
 		sec_flags = rdp->settings->encryption ? SEC_ENCRYPT : 0;
 
-	length = 6 + 14 + caplen + 4 + sizeof(RDP_SOURCE);
+	length = 6 + 14 + caplen + sizeof(RDP_SOURCE);
 	s = sec_init(rdp->sec, sec_flags, length);
 
 	/* share control header */
