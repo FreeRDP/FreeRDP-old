@@ -253,8 +253,7 @@ foreach $keymapFile (@keymapFiles) {
 		open("IN", $inDir . "keycodes/" . $keymapFile);
 		open("OUT", ">" . "$outDir" . $keymapFile);
 
-		$time = localtime();
-		print OUT "# This file was generated with xkb.pl ($time)\n";
+		print OUT "# This file was generated with xkb.pl\n";
 		print OUT "# and is based on the X Keyboard Configuration Database $xkbVersion\n";
 		print OUT "# Please use xkb.pl to re-export newer versions of XKB\n";
 		print OUT "\n\n";
