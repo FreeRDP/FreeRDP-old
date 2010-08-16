@@ -15,7 +15,7 @@ static asn_TYPE_member_t asn_MBR_TSSmartCardCreds_1[] = {
 		+1,	/* EXPLICIT tag at current level */
 		&asn_DEF_OCTET_STRING,
 		0,	/* Defer constraints checking to the member type */
-		0,	/* No PER visible constraints */
+		0,	/* PER is not compiled, use -gen-PER */
 		0,
 		"pin"
 		},
@@ -24,7 +24,7 @@ static asn_TYPE_member_t asn_MBR_TSSmartCardCreds_1[] = {
 		+1,	/* EXPLICIT tag at current level */
 		&asn_DEF_TSCspDataDetail,
 		0,	/* Defer constraints checking to the member type */
-		0,	/* No PER visible constraints */
+		0,	/* PER is not compiled, use -gen-PER */
 		0,
 		"cspData"
 		},
@@ -33,7 +33,7 @@ static asn_TYPE_member_t asn_MBR_TSSmartCardCreds_1[] = {
 		+1,	/* EXPLICIT tag at current level */
 		&asn_DEF_OCTET_STRING,
 		0,	/* Defer constraints checking to the member type */
-		0,	/* No PER visible constraints */
+		0,	/* PER is not compiled, use -gen-PER */
 		0,
 		"userHint"
 		},
@@ -42,12 +42,11 @@ static asn_TYPE_member_t asn_MBR_TSSmartCardCreds_1[] = {
 		+1,	/* EXPLICIT tag at current level */
 		&asn_DEF_OCTET_STRING,
 		0,	/* Defer constraints checking to the member type */
-		0,	/* No PER visible constraints */
+		0,	/* PER is not compiled, use -gen-PER */
 		0,
 		"domainHint"
 		},
 };
-static int asn_MAP_TSSmartCardCreds_oms_1[] = { 2, 3 };
 static ber_tlv_tag_t asn_DEF_TSSmartCardCreds_tags_1[] = {
 	(ASN_TAG_CLASS_UNIVERSAL | (16 << 2))
 };
@@ -62,8 +61,7 @@ static asn_SEQUENCE_specifics_t asn_SPC_TSSmartCardCreds_specs_1 = {
 	offsetof(struct TSSmartCardCreds, _asn_ctx),
 	asn_MAP_TSSmartCardCreds_tag2el_1,
 	4,	/* Count of tags in the map */
-	asn_MAP_TSSmartCardCreds_oms_1,	/* Optional members */
-	2, 0,	/* Root/Additions */
+	0, 0, 0,	/* Optional elements (not needed) */
 	-1,	/* Start extensions */
 	-1	/* Stop extensions */
 };
@@ -77,8 +75,7 @@ asn_TYPE_descriptor_t asn_DEF_TSSmartCardCreds = {
 	SEQUENCE_encode_der,
 	SEQUENCE_decode_xer,
 	SEQUENCE_encode_xer,
-	SEQUENCE_decode_uper,
-	SEQUENCE_encode_uper,
+	0, 0,	/* No PER support, use "-gen-PER" to enable */
 	0,	/* Use generic outmost tag fetcher */
 	asn_DEF_TSSmartCardCreds_tags_1,
 	sizeof(asn_DEF_TSSmartCardCreds_tags_1)

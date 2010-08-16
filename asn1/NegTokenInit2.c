@@ -15,7 +15,7 @@ static asn_TYPE_member_t asn_MBR_NegTokenInit2_1[] = {
 		+1,	/* EXPLICIT tag at current level */
 		&asn_DEF_MechTypeList,
 		0,	/* Defer constraints checking to the member type */
-		0,	/* No PER visible constraints */
+		0,	/* PER is not compiled, use -gen-PER */
 		0,
 		"mechTypes"
 		},
@@ -24,7 +24,7 @@ static asn_TYPE_member_t asn_MBR_NegTokenInit2_1[] = {
 		+1,	/* EXPLICIT tag at current level */
 		&asn_DEF_ContextFlags,
 		0,	/* Defer constraints checking to the member type */
-		0,	/* No PER visible constraints */
+		0,	/* PER is not compiled, use -gen-PER */
 		0,
 		"reqFlags"
 		},
@@ -33,7 +33,7 @@ static asn_TYPE_member_t asn_MBR_NegTokenInit2_1[] = {
 		+1,	/* EXPLICIT tag at current level */
 		&asn_DEF_OCTET_STRING,
 		0,	/* Defer constraints checking to the member type */
-		0,	/* No PER visible constraints */
+		0,	/* PER is not compiled, use -gen-PER */
 		0,
 		"mechToken"
 		},
@@ -42,7 +42,7 @@ static asn_TYPE_member_t asn_MBR_NegTokenInit2_1[] = {
 		+1,	/* EXPLICIT tag at current level */
 		&asn_DEF_NegHints,
 		0,	/* Defer constraints checking to the member type */
-		0,	/* No PER visible constraints */
+		0,	/* PER is not compiled, use -gen-PER */
 		0,
 		"negHints"
 		},
@@ -51,12 +51,11 @@ static asn_TYPE_member_t asn_MBR_NegTokenInit2_1[] = {
 		+1,	/* EXPLICIT tag at current level */
 		&asn_DEF_OCTET_STRING,
 		0,	/* Defer constraints checking to the member type */
-		0,	/* No PER visible constraints */
+		0,	/* PER is not compiled, use -gen-PER */
 		0,
 		"mechListMIC"
 		},
 };
-static int asn_MAP_NegTokenInit2_oms_1[] = { 0, 1, 2, 3, 4 };
 static ber_tlv_tag_t asn_DEF_NegTokenInit2_tags_1[] = {
 	(ASN_TAG_CLASS_UNIVERSAL | (16 << 2))
 };
@@ -72,8 +71,7 @@ static asn_SEQUENCE_specifics_t asn_SPC_NegTokenInit2_specs_1 = {
 	offsetof(struct NegTokenInit2, _asn_ctx),
 	asn_MAP_NegTokenInit2_tag2el_1,
 	5,	/* Count of tags in the map */
-	asn_MAP_NegTokenInit2_oms_1,	/* Optional members */
-	5, 0,	/* Root/Additions */
+	0, 0, 0,	/* Optional elements (not needed) */
 	-1,	/* Start extensions */
 	-1	/* Stop extensions */
 };
@@ -87,8 +85,7 @@ asn_TYPE_descriptor_t asn_DEF_NegTokenInit2 = {
 	SEQUENCE_encode_der,
 	SEQUENCE_decode_xer,
 	SEQUENCE_encode_xer,
-	SEQUENCE_decode_uper,
-	SEQUENCE_encode_uper,
+	0, 0,	/* No PER support, use "-gen-PER" to enable */
 	0,	/* Use generic outmost tag fetcher */
 	asn_DEF_NegTokenInit2_tags_1,
 	sizeof(asn_DEF_NegTokenInit2_tags_1)

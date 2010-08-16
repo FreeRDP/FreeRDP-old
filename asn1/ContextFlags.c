@@ -105,26 +105,6 @@ ContextFlags_encode_xer(asn_TYPE_descriptor_t *td, void *structure,
 	return td->xer_encoder(td, structure, ilevel, flags, cb, app_key);
 }
 
-asn_dec_rval_t
-ContextFlags_decode_uper(asn_codec_ctx_t *opt_codec_ctx, asn_TYPE_descriptor_t *td,
-		asn_per_constraints_t *constraints, void **structure, asn_per_data_t *per_data) {
-	ContextFlags_1_inherit_TYPE_descriptor(td);
-	return td->uper_decoder(opt_codec_ctx, td, constraints, structure, per_data);
-}
-
-asn_enc_rval_t
-ContextFlags_encode_uper(asn_TYPE_descriptor_t *td,
-		asn_per_constraints_t *constraints,
-		void *structure, asn_per_outp_t *per_out) {
-	ContextFlags_1_inherit_TYPE_descriptor(td);
-	return td->uper_encoder(td, constraints, structure, per_out);
-}
-
-static asn_per_constraints_t asn_PER_type_ContextFlags_constr_1 = {
-	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
-	{ APC_CONSTRAINED,	 0,  0,  32,  32 }	/* (SIZE(32..32)) */,
-	0, 0	/* No PER value map */
-};
 static ber_tlv_tag_t asn_DEF_ContextFlags_tags_1[] = {
 	(ASN_TAG_CLASS_UNIVERSAL | (3 << 2))
 };
@@ -138,8 +118,7 @@ asn_TYPE_descriptor_t asn_DEF_ContextFlags = {
 	ContextFlags_encode_der,
 	ContextFlags_decode_xer,
 	ContextFlags_encode_xer,
-	ContextFlags_decode_uper,
-	ContextFlags_encode_uper,
+	0, 0,	/* No PER support, use "-gen-PER" to enable */
 	0,	/* Use generic outmost tag fetcher */
 	asn_DEF_ContextFlags_tags_1,
 	sizeof(asn_DEF_ContextFlags_tags_1)
@@ -147,7 +126,7 @@ asn_TYPE_descriptor_t asn_DEF_ContextFlags = {
 	asn_DEF_ContextFlags_tags_1,	/* Same as above */
 	sizeof(asn_DEF_ContextFlags_tags_1)
 		/sizeof(asn_DEF_ContextFlags_tags_1[0]), /* 1 */
-	&asn_PER_type_ContextFlags_constr_1,
+	0,	/* No PER visible constraints */
 	0, 0,	/* Defined elsewhere */
 	0	/* No specifics */
 };

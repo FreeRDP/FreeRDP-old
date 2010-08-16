@@ -98,11 +98,13 @@ libasn1_la_LDFLAGS = -avoid-version -module
 
 libasn1_la_LIBADD =
 
-ASN1_MODULES = credssp.asn1 spnego.asn1 mcs.asn1
+ASN1_MODULES_BER = credssp.asn1 spnego.asn1
+ASN1_MODULES_PER = mcs.asn1
+ASN1_MODULES = $(ASN1_MODULES_BER) $(ASN1_MODULES_PER)
 
 asn1_modules:
 	rm -f *.c *.h
-	asn1c -fnative-types -fskeletons-copy -gen-PER $(ASN1_MODULES)
+	asn1c -fnative-types -fskeletons-copy -fskeletons-copy $(ASN1_MODULES_BER)
 	rm converter-sample.c Makefile.am.sample
 
 EXTRA_DIST = $(ASN1_MODULES)

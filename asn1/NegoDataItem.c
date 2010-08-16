@@ -15,7 +15,7 @@ static asn_TYPE_member_t asn_MBR_NegoDataItem_1[] = {
 		+1,	/* EXPLICIT tag at current level */
 		&asn_DEF_OCTET_STRING,
 		0,	/* Defer constraints checking to the member type */
-		0,	/* No PER visible constraints */
+		0,	/* PER is not compiled, use -gen-PER */
 		0,
 		"negoToken"
 		},
@@ -45,8 +45,7 @@ asn_TYPE_descriptor_t asn_DEF_NegoDataItem = {
 	SEQUENCE_encode_der,
 	SEQUENCE_decode_xer,
 	SEQUENCE_encode_xer,
-	SEQUENCE_decode_uper,
-	SEQUENCE_encode_uper,
+	0, 0,	/* No PER support, use "-gen-PER" to enable */
 	0,	/* Use generic outmost tag fetcher */
 	asn_DEF_NegoDataItem_tags_1,
 	sizeof(asn_DEF_NegoDataItem_tags_1)

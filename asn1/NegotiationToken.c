@@ -9,18 +9,13 @@
 
 #include "NegotiationToken.h"
 
-static asn_per_constraints_t asn_PER_type_NegotiationToken_constr_1 = {
-	{ APC_CONSTRAINED,	 1,  1,  0,  1 }	/* (0..1) */,
-	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
-	0, 0	/* No PER value map */
-};
 static asn_TYPE_member_t asn_MBR_NegotiationToken_1[] = {
 	{ ATF_NOFLAGS, 0, offsetof(struct NegotiationToken, choice.negTokenInit),
 		(ASN_TAG_CLASS_CONTEXT | (0 << 2)),
 		+1,	/* EXPLICIT tag at current level */
 		&asn_DEF_NegTokenInit,
 		0,	/* Defer constraints checking to the member type */
-		0,	/* No PER visible constraints */
+		0,	/* PER is not compiled, use -gen-PER */
 		0,
 		"negTokenInit"
 		},
@@ -29,7 +24,7 @@ static asn_TYPE_member_t asn_MBR_NegotiationToken_1[] = {
 		+1,	/* EXPLICIT tag at current level */
 		&asn_DEF_NegTokenResp,
 		0,	/* Defer constraints checking to the member type */
-		0,	/* No PER visible constraints */
+		0,	/* PER is not compiled, use -gen-PER */
 		0,
 		"negTokenResp"
 		},
@@ -58,14 +53,13 @@ asn_TYPE_descriptor_t asn_DEF_NegotiationToken = {
 	CHOICE_encode_der,
 	CHOICE_decode_xer,
 	CHOICE_encode_xer,
-	CHOICE_decode_uper,
-	CHOICE_encode_uper,
+	0, 0,	/* No PER support, use "-gen-PER" to enable */
 	CHOICE_outmost_tag,
 	0,	/* No effective tags (pointer) */
 	0,	/* No effective tags (count) */
 	0,	/* No tags (pointer) */
 	0,	/* No tags (count) */
-	&asn_PER_type_NegotiationToken_constr_1,
+	0,	/* No PER visible constraints */
 	asn_MBR_NegotiationToken_1,
 	2,	/* Elements count */
 	&asn_SPC_NegotiationToken_specs_1	/* Additional specs */

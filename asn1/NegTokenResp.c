@@ -82,26 +82,6 @@ negState_2_encode_xer(asn_TYPE_descriptor_t *td, void *structure,
 	return td->xer_encoder(td, structure, ilevel, flags, cb, app_key);
 }
 
-static asn_dec_rval_t
-negState_2_decode_uper(asn_codec_ctx_t *opt_codec_ctx, asn_TYPE_descriptor_t *td,
-		asn_per_constraints_t *constraints, void **structure, asn_per_data_t *per_data) {
-	negState_2_inherit_TYPE_descriptor(td);
-	return td->uper_decoder(opt_codec_ctx, td, constraints, structure, per_data);
-}
-
-static asn_enc_rval_t
-negState_2_encode_uper(asn_TYPE_descriptor_t *td,
-		asn_per_constraints_t *constraints,
-		void *structure, asn_per_outp_t *per_out) {
-	negState_2_inherit_TYPE_descriptor(td);
-	return td->uper_encoder(td, constraints, structure, per_out);
-}
-
-static asn_per_constraints_t asn_PER_type_negState_constr_2 = {
-	{ APC_CONSTRAINED,	 2,  2,  0,  3 }	/* (0..3) */,
-	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
-	0, 0	/* No PER value map */
-};
 static asn_INTEGER_enum_map_t asn_MAP_negState_value2enum_2[] = {
 	{ 0,	16,	"accept-completed" },
 	{ 1,	17,	"accept-incomplete" },
@@ -138,8 +118,7 @@ asn_TYPE_descriptor_t asn_DEF_negState_2 = {
 	negState_2_encode_der,
 	negState_2_decode_xer,
 	negState_2_encode_xer,
-	negState_2_decode_uper,
-	negState_2_encode_uper,
+	0, 0,	/* No PER support, use "-gen-PER" to enable */
 	0,	/* Use generic outmost tag fetcher */
 	asn_DEF_negState_tags_2,
 	sizeof(asn_DEF_negState_tags_2)
@@ -147,7 +126,7 @@ asn_TYPE_descriptor_t asn_DEF_negState_2 = {
 	asn_DEF_negState_tags_2,	/* Same as above */
 	sizeof(asn_DEF_negState_tags_2)
 		/sizeof(asn_DEF_negState_tags_2[0]), /* 2 */
-	&asn_PER_type_negState_constr_2,
+	0,	/* No PER visible constraints */
 	0, 0,	/* Defined elsewhere */
 	&asn_SPC_negState_specs_2	/* Additional specs */
 };
@@ -158,7 +137,7 @@ static asn_TYPE_member_t asn_MBR_NegTokenResp_1[] = {
 		+1,	/* EXPLICIT tag at current level */
 		&asn_DEF_negState_2,
 		0,	/* Defer constraints checking to the member type */
-		0,	/* No PER visible constraints */
+		0,	/* PER is not compiled, use -gen-PER */
 		0,
 		"negState"
 		},
@@ -167,7 +146,7 @@ static asn_TYPE_member_t asn_MBR_NegTokenResp_1[] = {
 		+1,	/* EXPLICIT tag at current level */
 		&asn_DEF_MechType,
 		0,	/* Defer constraints checking to the member type */
-		0,	/* No PER visible constraints */
+		0,	/* PER is not compiled, use -gen-PER */
 		0,
 		"supportedMech"
 		},
@@ -176,7 +155,7 @@ static asn_TYPE_member_t asn_MBR_NegTokenResp_1[] = {
 		+1,	/* EXPLICIT tag at current level */
 		&asn_DEF_OCTET_STRING,
 		0,	/* Defer constraints checking to the member type */
-		0,	/* No PER visible constraints */
+		0,	/* PER is not compiled, use -gen-PER */
 		0,
 		"responseToken"
 		},
@@ -185,12 +164,11 @@ static asn_TYPE_member_t asn_MBR_NegTokenResp_1[] = {
 		+1,	/* EXPLICIT tag at current level */
 		&asn_DEF_OCTET_STRING,
 		0,	/* Defer constraints checking to the member type */
-		0,	/* No PER visible constraints */
+		0,	/* PER is not compiled, use -gen-PER */
 		0,
 		"mechListMIC"
 		},
 };
-static int asn_MAP_NegTokenResp_oms_1[] = { 0, 1, 2, 3 };
 static ber_tlv_tag_t asn_DEF_NegTokenResp_tags_1[] = {
 	(ASN_TAG_CLASS_UNIVERSAL | (16 << 2))
 };
@@ -205,8 +183,7 @@ static asn_SEQUENCE_specifics_t asn_SPC_NegTokenResp_specs_1 = {
 	offsetof(struct NegTokenResp, _asn_ctx),
 	asn_MAP_NegTokenResp_tag2el_1,
 	4,	/* Count of tags in the map */
-	asn_MAP_NegTokenResp_oms_1,	/* Optional members */
-	4, 0,	/* Root/Additions */
+	0, 0, 0,	/* Optional elements (not needed) */
 	-1,	/* Start extensions */
 	-1	/* Stop extensions */
 };
@@ -220,8 +197,7 @@ asn_TYPE_descriptor_t asn_DEF_NegTokenResp = {
 	SEQUENCE_encode_der,
 	SEQUENCE_decode_xer,
 	SEQUENCE_encode_xer,
-	SEQUENCE_decode_uper,
-	SEQUENCE_encode_uper,
+	0, 0,	/* No PER support, use "-gen-PER" to enable */
 	0,	/* Use generic outmost tag fetcher */
 	asn_DEF_NegTokenResp_tags_1,
 	sizeof(asn_DEF_NegTokenResp_tags_1)

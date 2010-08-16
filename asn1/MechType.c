@@ -82,21 +82,6 @@ MechType_encode_xer(asn_TYPE_descriptor_t *td, void *structure,
 	return td->xer_encoder(td, structure, ilevel, flags, cb, app_key);
 }
 
-asn_dec_rval_t
-MechType_decode_uper(asn_codec_ctx_t *opt_codec_ctx, asn_TYPE_descriptor_t *td,
-		asn_per_constraints_t *constraints, void **structure, asn_per_data_t *per_data) {
-	MechType_1_inherit_TYPE_descriptor(td);
-	return td->uper_decoder(opt_codec_ctx, td, constraints, structure, per_data);
-}
-
-asn_enc_rval_t
-MechType_encode_uper(asn_TYPE_descriptor_t *td,
-		asn_per_constraints_t *constraints,
-		void *structure, asn_per_outp_t *per_out) {
-	MechType_1_inherit_TYPE_descriptor(td);
-	return td->uper_encoder(td, constraints, structure, per_out);
-}
-
 static ber_tlv_tag_t asn_DEF_MechType_tags_1[] = {
 	(ASN_TAG_CLASS_UNIVERSAL | (6 << 2))
 };
@@ -110,8 +95,7 @@ asn_TYPE_descriptor_t asn_DEF_MechType = {
 	MechType_encode_der,
 	MechType_decode_xer,
 	MechType_encode_xer,
-	MechType_decode_uper,
-	MechType_encode_uper,
+	0, 0,	/* No PER support, use "-gen-PER" to enable */
 	0,	/* Use generic outmost tag fetcher */
 	asn_DEF_MechType_tags_1,
 	sizeof(asn_DEF_MechType_tags_1)
