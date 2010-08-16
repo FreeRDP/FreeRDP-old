@@ -21,6 +21,8 @@ shared_sources = \
 	ber_tlv_tag.h \
 	BIT_STRING.c \
 	BIT_STRING.h \
+	BOOLEAN.c \
+	BOOLEAN.h \
 	constraints.c \
 	constraints.h \
 	constr_CHOICE.c \
@@ -43,6 +45,8 @@ shared_sources = \
 	NativeEnumerated.h \
 	NativeInteger.c \
 	NativeInteger.h \
+	NULL.c \
+	NULL.h \
 	OBJECT_IDENTIFIER.c \
 	OBJECT_IDENTIFIER.h \
 	OCTET_STRING.c \
@@ -96,10 +100,165 @@ spnego_sources = \
 	NegTokenResp.c \
 	NegTokenResp.h
 
+mcs_sources = \
+	AssignedChannelId.c \
+	AssignedChannelId.h \
+	AttachUserConfirm.c \
+	AttachUserConfirm.h \
+	AttachUserRequest.c \
+	AttachUserRequest.h \
+	CapabilitiesNotificationIndication.c \
+	CapabilitiesNotificationIndication.h \
+	CapabilitiesNotificationRequest.c \
+	CapabilitiesNotificationRequest.h \
+	CapabilityClass.c \
+	CapabilityClass.h \
+	CapabilityID.c \
+	CapabilityID.h \
+	ChannelAdmitIndication.c \
+	ChannelAdmitIndication.h \
+	ChannelAdmitRequest.c \
+	ChannelAdmitRequest.h \
+	ChannelAttributes.c \
+	ChannelAttributes.h \
+	ChannelConveneConfirm.c \
+	ChannelConveneConfirm.h \
+	ChannelConveneRequest.c \
+	ChannelConveneRequest.h \
+	ChannelDisbandIndication.c \
+	ChannelDisbandIndication.h \
+	ChannelDisbandRequest.c \
+	ChannelDisbandRequest.h \
+	ChannelExpelIndication.c \
+	ChannelExpelIndication.h \
+	ChannelExpelRequest.c \
+	ChannelExpelRequest.h \
+	ChannelId.c \
+	ChannelId.h \
+	ChannelJoinConfirm.c \
+	ChannelJoinConfirm.h \
+	ChannelJoinRequest.c \
+	ChannelJoinRequest.h \
+	ChannelLeaveRequest.c \
+	ChannelLeaveRequest.h \
+	DataPriority.c \
+	DataPriority.h \
+	DetachUserIndication.c \
+	DetachUserIndication.h \
+	DetachUserRequest.c \
+	DetachUserRequest.h \
+	Diagnostic.c \
+	Diagnostic.h \
+	DisconnectProviderUltimatum.c \
+	DisconnectProviderUltimatum.h \
+	DomainMCSPDU.c \
+	DomainMCSPDU.h \
+	DynamicChannelId.c \
+	DynamicChannelId.h \
+	ErectDomainRequest.c \
+	ErectDomainRequest.h \
+	ExtendedParameterAccept.c \
+	ExtendedParameterAccept.h \
+	ExtendedParameterMCSPDU.c \
+	ExtendedParameterMCSPDU.h \
+	ExtendedParameterPropose.c \
+	ExtendedParameterPropose.h \
+	ExtendedParameters.c \
+	ExtendedParameters.h \
+	H221NonStandardIdentifier.c \
+	H221NonStandardIdentifier.h \
+	IndicationCapability.c \
+	IndicationCapability.h \
+	Key.c \
+	Key.h \
+	MergeChannelsConfirm.c \
+	MergeChannelsConfirm.h \
+	MergeChannelsRequest.c \
+	MergeChannelsRequest.h \
+	MergeTokensConfirm.c \
+	MergeTokensConfirm.h \
+	MergeTokensRequest.c \
+	MergeTokensRequest.h \
+	NonStandardParameter.c \
+	NonStandardParameter.h \
+	NonStandardPDU.c \
+	NonStandardPDU.h \
+	ParticipationIndicator.c \
+	ParticipationIndicator.h \
+	PlumbDomainIndication.c \
+	PlumbDomainIndication.h \
+	PrivateChannelId.c \
+	PrivateChannelId.h \
+	PurgeChannelsIndication.c \
+	PurgeChannelsIndication.h \
+	PurgeTokensIndication.c \
+	PurgeTokensIndication.h \
+	Reason.c \
+	Reason.h \
+	RejectMCSPDUUltimatum.c \
+	RejectMCSPDUUltimatum.h \
+	RequestCapability.c \
+	RequestCapability.h \
+	Result.c \
+	Result.h \
+	Segmentation.c \
+	Segmentation.h \
+	SendDataIndication.c \
+	SendDataIndication.h \
+	SendDataRequest.c \
+	SendDataRequest.h \
+	SeqOfIndicationCapabilities.c \
+	SeqOfIndicationCapabilities.h \
+	SeqOfRequestCapabilities.c \
+	SeqOfRequestCapabilities.h \
+	StaticChannelId.c \
+	StaticChannelId.h \
+	TokenAttributes.c \
+	TokenAttributes.h \
+	TokenGiveConfirm.c \
+	TokenGiveConfirm.h \
+	TokenGiveIndication.c \
+	TokenGiveIndication.h \
+	TokenGiveRequest.c \
+	TokenGiveRequest.h \
+	TokenGiveResponse.c \
+	TokenGiveResponse.h \
+	TokenGrabConfirm.c \
+	TokenGrabConfirm.h \
+	TokenGrabRequest.c \
+	TokenGrabRequest.h \
+	TokenId.c \
+	TokenId.h \
+	TokenInhibitConfirm.c \
+	TokenInhibitConfirm.h \
+	TokenInhibitRequest.c \
+	TokenInhibitRequest.h \
+	TokenPleaseIndication.c \
+	TokenPleaseIndication.h \
+	TokenPleaseRequest.c \
+	TokenPleaseRequest.h \
+	TokenReleaseConfirm.c \
+	TokenReleaseConfirm.h \
+	TokenReleaseRequest.c \
+	TokenReleaseRequest.h \
+	TokenStatus.c \
+	TokenStatus.h \
+	TokenTestConfirm.c \
+	TokenTestConfirm.h \
+	TokenTestRequest.c \
+	TokenTestRequest.h \
+	UniformSendDataIndication.c \
+	UniformSendDataIndication.h \
+	UniformSendDataRequest.c \
+	UniformSendDataRequest.h \
+	UserId.c \
+	UserId.h
+
 libasn1_la_SOURCES = \
 	$(shared_sources) \
 	$(credssp_sources) \
 	$(spnego_sources)
+#	$(mcs_sources)
 
 libasn1_la_CFLAGS = -O2 -w -I.
 
@@ -115,6 +274,7 @@ asn1_modules:
 	rm -f *.c *.h
 # Note: extra redundant parameter given to asn1c because it forgets one
 	asn1c -fnative-types -fskeletons-copy -fcompound-names -fskeletons-copy $(ASN1_MODULES_BER)
+	asn1c -fnative-types -fskeletons-copy -fcompound-names -gen-PER -fskeletons-copy $(ASN1_MODULES_PER)
 	rm converter-sample.c Makefile.am.sample
 
 EXTRA_DIST = $(ASN1_MODULES)
