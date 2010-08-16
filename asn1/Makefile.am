@@ -2,7 +2,7 @@
 
 noinst_LTLIBRARIES = libasn1.la
 
-libasn1_la_SOURCES = \
+shared_sources = \
 	asn_application.h \
 	asn_codecs.h \
 	asn_codecs_prim.c \
@@ -33,36 +33,16 @@ libasn1_la_SOURCES = \
 	constr_SET_OF.h \
 	constr_TYPE.c \
 	constr_TYPE.h \
-	ContextFlags.c \
-	ContextFlags.h \
 	der_encoder.c \
 	der_encoder.h \
 	GeneralString.c \
 	GeneralString.h \
 	INTEGER.c \
 	INTEGER.h \
-	MechType.c \
-	MechType.h \
-	MechTypeList.c \
-	MechTypeList.h \
 	NativeEnumerated.c \
 	NativeEnumerated.h \
 	NativeInteger.c \
 	NativeInteger.h \
-	NegHints.c \
-	NegHints.h \
-	NegoData.c \
-	NegoData.h \
-	NegoDataItem.c \
-	NegoDataItem.h \
-	NegotiationToken.c \
-	NegotiationToken.h \
-	NegTokenInit2.c \
-	NegTokenInit2.h \
-	NegTokenInit.c \
-	NegTokenInit.h \
-	NegTokenResp.c \
-	NegTokenResp.h \
 	OBJECT_IDENTIFIER.c \
 	OBJECT_IDENTIFIER.h \
 	OCTET_STRING.c \
@@ -75,6 +55,18 @@ libasn1_la_SOURCES = \
 	per_opentype.h \
 	per_support.c \
 	per_support.h \
+	xer_decoder.c \
+	xer_decoder.h \
+	xer_encoder.c \
+	xer_encoder.h \
+	xer_support.c \
+	xer_support.h
+
+credssp_sources = \
+	NegoData.c \
+	NegoData.h \
+	NegoDataItem.c \
+	NegoDataItem.h \
 	TSCredentials.c \
 	TSCredentials.h \
 	TSCspDataDetail.c \
@@ -84,13 +76,30 @@ libasn1_la_SOURCES = \
 	TSRequest.c \
 	TSRequest.h \
 	TSSmartCardCreds.c \
-	TSSmartCardCreds.h \
-	xer_decoder.c \
-	xer_decoder.h \
-	xer_encoder.c \
-	xer_encoder.h \
-	xer_support.c \
-	xer_support.h
+	TSSmartCardCreds.h
+
+spnego_sources = \
+	ContextFlags.c \
+	ContextFlags.h \
+	MechType.c \
+	MechType.h \
+	MechTypeList.c \
+	MechTypeList.h \
+	NegHints.c \
+	NegHints.h \
+	NegotiationToken.c \
+	NegotiationToken.h \
+	NegTokenInit2.c \
+	NegTokenInit2.h \
+	NegTokenInit.c \
+	NegTokenInit.h \
+	NegTokenResp.c \
+	NegTokenResp.h
+
+libasn1_la_SOURCES = \
+	$(shared_sources) \
+	$(credssp_sources) \
+	$(spnego_sources)
 
 libasn1_la_CFLAGS = -O2 -w -I.
 
@@ -104,7 +113,8 @@ ASN1_MODULES = $(ASN1_MODULES_BER) $(ASN1_MODULES_PER)
 
 asn1_modules:
 	rm -f *.c *.h
-	asn1c -fnative-types -fskeletons-copy -fskeletons-copy $(ASN1_MODULES_BER)
+# Note: extra redundant parameter given to asn1c because it forgets one
+	asn1c -fnative-types -fskeletons-copy -fcompound-names -fskeletons-copy $(ASN1_MODULES_BER)
 	rm converter-sample.c Makefile.am.sample
 
 EXTRA_DIST = $(ASN1_MODULES)
