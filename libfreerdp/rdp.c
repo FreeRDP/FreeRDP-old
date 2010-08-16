@@ -75,6 +75,8 @@ rdp_recv(rdpRdp * rdp, uint8 * type, uint16 * source)
 	uint16 pduType;
 	secRecvType sec_type;
 
+	*type = 0;
+	*source = 0;
 	if ((rdp->rdp_s == NULL) || (rdp->next_packet >= rdp->rdp_s->end) || (rdp->next_packet == NULL))
 	{
 		rdp->rdp_s = sec_recv(rdp->sec, &sec_type);
@@ -85,20 +87,17 @@ rdp_recv(rdpRdp * rdp, uint8 * type, uint16 * source)
 		if (sec_type == SEC_RECV_IOCHANNEL)
 		{
 			rdp->next_packet = rdp->rdp_s->end;
-			*type = 0;
 			return rdp->rdp_s;
 		}
 		else if (sec_type == SEC_RECV_FAST_PATH)
 		{
 			/* rdp5_process should move rdp->next_packet ok */
 			rdp5_process(rdp, rdp->rdp_s);
-			*type = 0;
 			return rdp->rdp_s;
 		}
 		else if (sec_type == SEC_RECV_REDIRECT)
 		{
 			process_redirect_pdu(rdp, rdp->rdp_s);
-			*type = 0;
 			return rdp->rdp_s;
 		}
 		/* else rdptype == SEC_RECV_SHARE_CONTROL */
@@ -117,7 +116,6 @@ rdp_recv(rdpRdp * rdp, uint8 * type, uint16 * source)
 	if (totalLength == 0x8000)
 	{
 		rdp->next_packet += 8;
-		*type = 0;
 		return rdp->rdp_s;
 	}
 
@@ -931,7 +929,7 @@ process_demand_active(rdpRdp * rdp, STREAM s, uint16 serverChannelId)
 	uint16 lengthSourceDescriptor;
 	uint16 lengthCombinedCapabilities;
 
-	rdp->rdp_serverid = serverChannelId;	/* confirm active response implies that this "must" be 0x3ea */
+	rdp->rdp_serverid = serverChannelId;
 	in_uint32_le(s, rdp->rdp_shareid);		/* shareId */
 	in_uint16_le(s, lengthSourceDescriptor);	/* lengthSourceDescriptor */
 	in_uint16_le(s, lengthCombinedCapabilities);	/* lengthCombinedCapabilities */
