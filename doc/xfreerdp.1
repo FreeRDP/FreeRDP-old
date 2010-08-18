@@ -10,7 +10,8 @@
 is a front-end for various FreeRDP components, which implement a client of the
 Remote Desktop Protocol (RDP), used in a number of Microsoft products including
 Windows NT Terminal Server, Windows 2000 Server, Windows XP, Windows 2003
-Server, Windows Vista, Windows 2008 Server and Windows 7.
+Server, Windows Vista, Windows 2008 Server and Windows 7, but also implemented
+by xrdp and VirtualBox.
 
 xfreerdp can connect to multiple servers if more than one server
 addresses are specified, and each session runs in a separate window.
@@ -22,31 +23,29 @@ Username for authentication on the server.
 .BR "-d <domain>"
 Domain for authentication.
 .TP
-.BR "-s <shell>"
-Startup shell for the user - starts a specific application instead of Explorer.
-.TP
-.BR "-c <directory>"
-The initial working directory for the user.  Often used in combination with -s
-to set up a fixed login environment.
-.TP
 .BR "-p <password>"
 The password to authenticate with.  Note that this may have no effect if
 "Always prompt for password" is enabled on the server.  WARNING: if you specify
 a password on the command line it may be visible to other users when they use
 tools like ps.
 .TP
+.BR "-s <shell>"
+Startup shell for the session - starts a specific application instead of Explorer.
+.TP
+.BR "-c <directory>"
+The initial working directory for the session.  Often used in combination with -s
+to set up a fixed login environment.
+.TP
 .BR "-n <hostname>"
-Client hostname.  Normally xfreerdp automatically obtains the hostname of the
-client.
+Client hostname reported to the server.  Normally xfreerdp automatically
+obtains the hostname of the client.
 .TP
 .BR "-t <port>"
-Server port number. Default is the standard RDP port 3389.
+Server port number. Default is the standard RDP port 3389. Can also be
+specified as ":<port>" after the server hostname.
 .TP
 .BR "-g <geometry>"
-Desktop geometry (WxH). If geometry is the special word "workarea", the geometry
-will be fetched from the extended window manager hints property _NET_WORKAREA, from
-the root window. The geometry can also be specified as a percentage of the whole
-screen, e.g. "-g 80%". 
+Desktop geometry (WxH). 
 .TP
 .BR "-a <bpp>"
 Sets the colour depth for the connection (8, 15, 16, 24 or 32).
@@ -56,7 +55,7 @@ limited by the server configuration. The default value is the depth
 of the root window. 
 .TP
 .BR "-z"
-Enable compression of the RDP datastream.
+Enable compression inside the encrypted RDP datastream.
 .TP
 .BR "-f"
 Full screen mode. Causes the window to fully cover the current screen.
@@ -72,11 +71,11 @@ disables all (including themes). Experience can also be a hexidecimal
 number containing the flags.
 .TP
 .BR "-0"
-Attach to the console of the server (requires Windows Server 2003
-or newer).
+Attach to the admin console of the server. This is the default if no
+server license is available.
 .TP
 .BR "-o"
-Enable console audio.
+Play audio on the server side.
 .TP
 .BR "-k"
 Force particular keyboard layout ID.
