@@ -10,6 +10,7 @@ REQUIRED_SUBDIRS = \
 	libfreerdpchanman \
 	channels/common \
 	channels/rdpsnd \
+	channels/drdynvc \
 	channels/cliprdr \
 	channels/rdpdr \
 	channels/rdpdr/disk \
