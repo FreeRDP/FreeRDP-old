@@ -386,3 +386,12 @@ irp_get_event(IRP * irp, uint32 * result)
 
 	return 0;
 }
+
+int
+irp_file_descriptor(IRP * irp)
+{
+	if (irp->dev->service->file_descriptor)
+		return irp->dev->service->file_descriptor(irp);
+
+	return -1;
+}
