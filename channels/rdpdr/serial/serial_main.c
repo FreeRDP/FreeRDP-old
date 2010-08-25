@@ -298,6 +298,12 @@ serial_get_event(IRP * irp, uint32 * result)
 	return ret;
 }
 
+static int
+serial_get_fd(IRP * irp)
+{
+	return 	((SERIAL_DEVICE_INFO *) irp->dev->info)->file;
+}
+
 static uint32
 serial_control(IRP * irp)
 {
@@ -1110,6 +1116,7 @@ serial_register_service(PDEVMAN pDevman, PDEVMAN_ENTRY_POINTS pEntryPoints)
 	srv->free = serial_free;
 	srv->type = RDPDR_DTYP_SERIAL;
 	srv->get_event = serial_get_event;
+	srv->file_descriptor = serial_get_fd;
 
 	return srv;
 }
