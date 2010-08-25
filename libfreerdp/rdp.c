@@ -1345,7 +1345,7 @@ xmalloc_in_len32_data(rdpRdp * rdp, STREAM s, uint32 *plen)
 	return (char*) p;
 }
 
-/* Read 32 bit length field followed by WINDOWS_CODEPAGE - return like xstrdup, 0-terminated */
+/* Read 32 bit length field followed by WINDOWS_CODEPAGE string - return like xstrdup, 0-terminated */
 static char*
 xstrdup_in_len32_unistr(rdpRdp * rdp, STREAM s)
 {
@@ -1371,44 +1371,56 @@ process_redirect_pdu(rdpRdp * rdp, STREAM s)
 	if (redirFlags & LB_TARGET_NET_ADDRESS)
 	{
 		rdp->redirect_server = xstrdup_in_len32_unistr(rdp, s);
+		printf("redirect_server: %s\n", rdp->redirect_server);
 	}
 	if (redirFlags & LB_LOAD_BALANCE_INFO)
 	{
 		rdp->redirect_cookie = xmalloc_in_len32_data(rdp, s,
 			&rdp->redirect_cookie_len);
+		printf("redirect_cookie_len: %d\n", rdp->redirect_cookie_len);
 	}
 	if (redirFlags & LB_USERNAME)
 	{
 		rdp->redirect_username = xstrdup_in_len32_unistr(rdp, s);
+		printf("redirect_username: %s\n", rdp->redirect_username);
 	}
 	if (redirFlags & LB_DOMAIN)
 	{
 		rdp->redirect_domain = xstrdup_in_len32_unistr(rdp, s);
+		printf("redirect_domain: %s\n", rdp->redirect_domain);
 	}
 	if (redirFlags & LB_PASSWORD)
 	{
 		rdp->redirect_password = xmalloc_in_len32_data(rdp, s,
 			&rdp->redirect_password_len);
+		printf("redirect_password_len: %d\n", rdp->redirect_password_len);
 	}
 	if (redirFlags & LB_TARGET_FQDN)
 	{
 		rdp->redirect_target_fqdn = xstrdup_in_len32_unistr(rdp, s);
+		printf("redirect_target_fqdn: %s\n", rdp->redirect_target_fqdn);
 	}
 	if (redirFlags & LB_TARGET_NETBIOS_NAME)
 	{
 		rdp->redirect_target_netbios_name = xstrdup_in_len32_unistr(rdp, s);
+		printf("redirect_target_netbios_name: %s\n", rdp->redirect_target_netbios_name);
 	}
 	if (redirFlags & LB_TARGET_NET_ADDRESSES)
 	{
 		rdp->redirect_target_net_addresses = xmalloc_in_len32_data(rdp, s,
 			&rdp->redirect_target_net_addresses_len);
+		printf("redirect_target_net_addresses_len: %d\n", rdp->redirect_target_net_addresses_len);
 	}
+	/* TODO: LB_DONTSTOREUSERNAME? It means the opposite of what it says - but now we use the the username no matter what.
+	 * TODO: LB_SMARTCARD_LOGON?
+	 * TODO: LB_NOREDIRECT? Now we redirect when we get a redirect package. Period.
+	 */
 
 	/* Skip optional padding up to length */
 	rdp->next_packet += length; /* FIXME: Is this correct? */
 	rdp->redirect = True;
 
-	DEBUG("Redirecting to %s as %s@%s\n", rdp->redirect_server, rdp->redirect_username, rdp->redirect_domain);
+	printf("Redirecting to %s as %s@%s\n", rdp->redirect_server, rdp->redirect_username, rdp->redirect_domain);
 }
 
 /* used in uiports and rdp_main_loop, processes the rdp packets waiting */
