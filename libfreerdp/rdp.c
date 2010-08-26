@@ -1411,16 +1411,21 @@ process_redirect_pdu(rdpRdp * rdp, STREAM s)
 			&rdp->redirect_target_net_addresses_len);
 		printf("redirect_target_net_addresses_len: %d\n", rdp->redirect_target_net_addresses_len);
 	}
+	if (redirFlags & LB_NOREDIRECT)
+	{
+		printf("no redirect\n");
+	}
+	else
+	{
+		printf("Redirecting to %s as %s@%s\n", rdp->redirect_server, rdp->redirect_username, rdp->redirect_domain);
+		rdp->redirect = True;
+	}
 	/* TODO: LB_DONTSTOREUSERNAME? It means the opposite of what it says - but now we use the the username no matter what.
 	 * TODO: LB_SMARTCARD_LOGON?
-	 * TODO: LB_NOREDIRECT? Now we redirect when we get a redirect package. Period.
 	 */
 
 	/* Skip optional padding up to length */
 	rdp->next_packet += length; /* FIXME: Is this correct? */
-	rdp->redirect = True;
-
-	printf("Redirecting to %s as %s@%s\n", rdp->redirect_server, rdp->redirect_username, rdp->redirect_domain);
 }
 
 /* used in uiports and rdp_main_loop, processes the rdp packets waiting */
