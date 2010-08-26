@@ -46,5 +46,11 @@ void
 irp_queue_pop(IRPQueue * queue);
 IRP *
 irp_queue_first(IRPQueue * queue);
+void
+irp_queue_remove(IRPQueue * queue, IRP * irp);
+IRP *
+irp_queue_next(IRPQueue * queue, IRP * irp);
+int
+irp_queue_size(IRPQueue * queue);
 
 #endif

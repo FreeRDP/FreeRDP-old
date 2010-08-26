@@ -94,3 +94,66 @@ irp_queue_first(IRPQueue * queue)
 {
 	return !irp_queue_empty(queue) ? queue->head->irp : NULL;
 }
+
+void
+irp_queue_remove(IRPQueue * queue, IRP * irp)
+{
+	struct irp_queue_node *walker = NULL;
+	struct irp_queue_node *prev = NULL;
+	int found = 0;
+
+	if (irp_queue_empty(queue))
+		return;
+
+	for (walker = queue->head; walker; walker = walker->next)
+	{
+		if (walker->irp->completionID == irp->completionID)
+		{
+			found = 1;
+			break;
+		}
+		prev = walker;
+	}
+
+	if (found)
+	{
+		if (prev)
+			prev->next = walker->next;
+		else
+			queue->head = walker->next;
+
+		free(walker->irp);
+		free(walker);
+	}
+}
+
+IRP *
+irp_queue_next(IRPQueue * queue, IRP * irp)
+{
+	struct irp_queue_node *walker = NULL;
+	struct irp_queue_node *prev = NULL;
+
+	if (irp_queue_empty(queue))
+		return;
+
+	for (walker = queue->head; walker; walker = walker->next)
+		if (walker->irp == irp)
+			return walker->next ? walker->next->irp : NULL;
+
+	return NULL;
+}
+
+int
+irp_queue_size(IRPQueue * queue)
+{
+	struct irp_queue_node *walker = NULL;
+	int size = 0;
+
+	if (irp_queue_empty(queue))
+		return 0;
+
+	for (walker = queue->head; walker; walker = walker->next)
+		size++;
+
+	return size;
+}
