@@ -1367,6 +1367,7 @@ process_redirect_pdu(rdpRdp * rdp, STREAM s)
 	in_uint16_le(s, length);			/* length */
 	in_uint32_le(s, rdp->redirect_session_id);	/* sessionID, must be used in Client Cluster Data as RedirectedSessionID */
 	in_uint32_le(s, redirFlags);			/* redirFlags */
+	printf("redirect flags: %x\n", redirFlags);
 
 	if (redirFlags & LB_TARGET_NET_ADDRESS)
 	{
@@ -1378,6 +1379,7 @@ process_redirect_pdu(rdpRdp * rdp, STREAM s)
 		rdp->redirect_cookie = xmalloc_in_len32_data(rdp, s,
 			&rdp->redirect_cookie_len);
 		printf("redirect_cookie_len: %d\n", rdp->redirect_cookie_len);
+		hexdump((void*)rdp->redirect_cookie, rdp->redirect_cookie_len);
 	}
 	if (redirFlags & LB_USERNAME)
 	{
@@ -1410,6 +1412,7 @@ process_redirect_pdu(rdpRdp * rdp, STREAM s)
 		rdp->redirect_target_net_addresses = xmalloc_in_len32_data(rdp, s,
 			&rdp->redirect_target_net_addresses_len);
 		printf("redirect_target_net_addresses_len: %d\n", rdp->redirect_target_net_addresses_len);
+		hexdump((void*)rdp->redirect_target_net_addresses, rdp->redirect_target_net_addresses_len);
 	}
 	if (redirFlags & LB_NOREDIRECT)
 	{
