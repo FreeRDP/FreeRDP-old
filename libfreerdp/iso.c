@@ -86,7 +86,14 @@ static void
 x224_send_connection_request(rdpIso * iso, char *username)
 {
 	STREAM s;
-	int length = 30 + strlen(username);
+	int length = 11 + strlen(username);
+
+	if (iso->mcs->sec->rdp->redirect_routingtoken)
+		/* routingToken */
+		length += iso->mcs->sec->rdp->redirect_routingtoken_len;
+	else
+		/* cookie */
+		length += 19;
 
 	if (iso->mcs->sec->requested_protocol > PROTOCOL_RDP)
 		length += 8;
@@ -111,13 +118,19 @@ x224_send_connection_request(rdpIso * iso, char *username)
 	out_uint16_le(s, 0);	/* src_ref */
 	out_uint8(s, 0);	/* class */
 
-	/* cookie */
-	out_uint8p(s, "Cookie: mstshash=", strlen("Cookie: mstshash="));
-	out_uint8p(s, username, strlen(username));
-
-	/* routingToken */
-	out_uint8(s, 0x0D);	/* CR */
-	out_uint8(s, 0x0A);	/* LF */
+	if (iso->mcs->sec->rdp->redirect_routingtoken)
+	{
+		/* routingToken */
+		out_uint8p(s, iso->mcs->sec->rdp->redirect_routingtoken, iso->mcs->sec->rdp->redirect_routingtoken_len);
+	}
+	else
+	{
+		/* cookie */
+		out_uint8p(s, "Cookie: mstshash=", strlen("Cookie: mstshash="));
+		out_uint8p(s, username, strlen(username));
+		out_uint8(s, 0x0D);	/* CR */
+		out_uint8(s, 0x0A);	/* LF */
+	}
 
 	if (iso->mcs->sec->requested_protocol > PROTOCOL_RDP)
 	{

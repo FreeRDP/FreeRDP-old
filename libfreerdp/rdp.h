@@ -58,8 +58,8 @@ struct rdp_rdp
 	char* redirect_password;
 	uint32 redirect_password_len;
 	char* redirect_username;
-	char* redirect_cookie;
-	uint32 redirect_cookie_len;
+	char* redirect_routingtoken;
+	uint32 redirect_routingtoken_len;
 	char* redirect_target_fqdn;
 	char* redirect_target_netbios_name;
 	char* redirect_target_net_addresses;

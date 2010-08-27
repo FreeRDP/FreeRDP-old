@@ -1376,10 +1376,10 @@ process_redirect_pdu(rdpRdp * rdp, STREAM s)
 	}
 	if (redirFlags & LB_LOAD_BALANCE_INFO)
 	{
-		rdp->redirect_cookie = xmalloc_in_len32_data(rdp, s,
-			&rdp->redirect_cookie_len);
-		printf("redirect_cookie_len: %d\n", rdp->redirect_cookie_len);
-		hexdump((void*)rdp->redirect_cookie, rdp->redirect_cookie_len);
+		rdp->redirect_routingtoken = xmalloc_in_len32_data(rdp, s,
+			&rdp->redirect_routingtoken_len);
+		printf("redirect_cookie_len: %d\n", rdp->redirect_routingtoken_len);
+		hexdump((void*)rdp->redirect_routingtoken, rdp->redirect_routingtoken_len);
 	}
 	if (redirFlags & LB_USERNAME)
 	{
@@ -1511,7 +1511,6 @@ rdp_connect(rdpRdp * rdp)
 RD_BOOL
 rdp_reconnect(rdpRdp * rdp)
 {
-       /* FIXME: Cookie is unused? */
 	char * server = rdp->redirect_server ? rdp->redirect_server : rdp->settings->server;
 	char * username = rdp->redirect_username ? rdp->redirect_username : rdp->settings->username;
 	if (!sec_connect(rdp->sec, server, username, rdp->settings->tcp_port_rdp))
@@ -1592,7 +1591,7 @@ rdp_free(rdpRdp * rdp)
 		xfree(rdp->buffer);
 		sec_free(rdp->sec);
 		xfree(rdp->redirect_server);
-		xfree(rdp->redirect_cookie);
+		xfree(rdp->redirect_routingtoken);
 		xfree(rdp->redirect_username);
 		xfree(rdp->redirect_domain);
 		xfree(rdp->redirect_password);
