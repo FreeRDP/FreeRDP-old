@@ -1393,6 +1393,7 @@ process_redirect_pdu(rdpRdp * rdp, STREAM s)
 	}
 	if (redirFlags & LB_PASSWORD)
 	{
+		/* LB_DONTSTOREUSERNAME apparently means that we shouldn't store the password we got. It makes no difference for us. */
 		rdp->redirect_password = xmalloc_in_len32_data(rdp, s,
 			&rdp->redirect_password_len);
 		printf("redirect_password_len: %d\n", rdp->redirect_password_len);
@@ -1423,9 +1424,7 @@ process_redirect_pdu(rdpRdp * rdp, STREAM s)
 		printf("Redirecting to %s as %s@%s\n", rdp->redirect_server, rdp->redirect_username, rdp->redirect_domain);
 		rdp->redirect = True;
 	}
-	/* TODO: LB_DONTSTOREUSERNAME? It means the opposite of what it says - but now we use the the username no matter what.
-	 * TODO: LB_SMARTCARD_LOGON?
-	 */
+	/* TODO: LB_SMARTCARD_LOGON */
 
 	/* Skip optional padding up to length */
 	rdp->next_packet += length; /* FIXME: Is this correct? */
@@ -1513,12 +1512,27 @@ RD_BOOL
 rdp_reconnect(rdpRdp * rdp)
 {
        /* FIXME: Cookie is unused? */
-       if (!sec_connect(rdp->sec, rdp->redirect_server, rdp->settings->username, rdp->settings->tcp_port_rdp))
-               return False;
+	char * server = rdp->redirect_server ? rdp->redirect_server : rdp->settings->server;
+	char * username = rdp->redirect_username ? rdp->redirect_username : rdp->settings->username;
+	if (!sec_connect(rdp->sec, server, username, rdp->settings->tcp_port_rdp))
+		return False;
 
-       rdp_send_client_info(rdp, INFO_NORMALLOGON | INFO_AUTOLOGON, rdp->redirect_domain, rdp->redirect_username,
-                       rdp->redirect_password, rdp->redirect_password_len, rdp->settings->shell, rdp->settings->directory);
-       return True;
+	char * domain = rdp->redirect_domain ? rdp->redirect_domain : rdp->settings->domain;
+	size_t password_len;
+	char * password;
+	if (rdp->redirect_password)
+	{
+		password = rdp->redirect_password;
+		password_len = rdp->redirect_password_len;
+	}
+	else
+		password = xstrdup_out_unistr(rdp, rdp->settings->password, &password_len);
+	rdp_send_client_info(rdp, INFO_NORMALLOGON | INFO_AUTOLOGON,
+			domain, username, password, password_len,
+			rdp->settings->shell, rdp->settings->directory);
+	if (!rdp->redirect_password)
+		xfree(password);
+	return True;
 }
 
 /* Disconnect from the RDP layer */
