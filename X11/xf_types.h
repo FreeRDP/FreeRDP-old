@@ -27,6 +27,10 @@
 #include <freerdp/chanman.h>
 #include <X11/Xlib.h>
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #define SET_XFI(_inst, _xfi) (_inst)->param1 = _xfi
 #define GET_XFI(_inst) ((xfInfo *) ((_inst)->param1))
 
@@ -80,6 +84,12 @@ struct xf_info
 	RD_BOOL mouse_into;
 };
 typedef struct xf_info xfInfo;
+
+#ifdef WITH_DEBUG
+#define DEBUG(fmt, ...)	fprintf(stderr, "DBG %s (%d): " fmt, __FUNCTION__, __LINE__, ## __VA_ARGS__)
+#else
+#define DEBUG(fmt, ...) do { } while (0)
+#endif
 
 #endif
 

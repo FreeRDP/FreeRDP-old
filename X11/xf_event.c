@@ -308,19 +308,19 @@ xf_handle_event(xfInfo * xfi, XEvent * xevent)
 			rv = xf_handle_event_LeaveNotify(xfi, xevent);
 			break;
 		case NoExpose:
-			printf("xf_handle_event: NoExpose\n");
+			DEBUG("xf_handle_event: NoExpose\n");
 			break;
 		case GraphicsExpose:
-			printf("xf_handle_event: GraphicsExpose\n");
+			DEBUG("xf_handle_event: GraphicsExpose\n");
 			break;
 		case ConfigureNotify:
-			printf("xf_handle_event: ConfigureNotify\n");
+			DEBUG("xf_handle_event: ConfigureNotify\n");
 			break;
 		case MapNotify:
-			printf("xf_handle_event: MapNotify\n");
+			DEBUG("xf_handle_event: MapNotify\n");
 			break;
 		case ReparentNotify:
-			printf("xf_handle_event: ReparentNotify\n");
+			DEBUG("xf_handle_event: ReparentNotify\n");
 			break;
 		case MappingNotify:
 			rv = xf_handle_event_MappingNotify(xfi, xevent);
