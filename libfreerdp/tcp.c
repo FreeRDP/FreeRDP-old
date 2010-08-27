@@ -281,6 +281,7 @@ tcp_connect(rdpTcp * tcp, char * server, int port)
 	socklen_t option_len;
 	uint32 option_value;
 	int sock;
+	printf("connecting to %s:%d\n", server, port);
 
 #ifdef IPv6
 

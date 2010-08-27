@@ -86,14 +86,14 @@ static void
 x224_send_connection_request(rdpIso * iso, char *username)
 {
 	STREAM s;
-	int length = 11 + strlen(username);
+	int length = 11;
 
 	if (iso->mcs->sec->rdp->redirect_routingtoken)
 		/* routingToken */
 		length += iso->mcs->sec->rdp->redirect_routingtoken_len;
 	else
 		/* cookie */
-		length += 19;
+		length += 19 + strlen(username);
 
 	if (iso->mcs->sec->requested_protocol > PROTOCOL_RDP)
 		length += 8;
