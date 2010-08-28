@@ -1017,7 +1017,7 @@ process_cached_pointer_pdu(rdpRdp * rdp, STREAM s)
 }
 
 /* Process a system pointer PDU */
-void
+static void
 process_system_pointer_pdu(rdpRdp * rdp, STREAM s)
 {
 	uint16 system_pointer_type;
@@ -1247,12 +1247,12 @@ process_update_pdu(rdpRdp * rdp, STREAM s)
 	ui_end_update(rdp->inst);
 }
 
-/* Process a disconnect PDU */
-void
-process_disconnect_pdu(STREAM s, struct rdp_inst *inst)
+/* Process a Set Error Information PDU */
+static void
+process_set_error_info_pdu(STREAM s, struct rdp_inst *inst)
 {
-	in_uint32_le(s, inst->disc_reason);
-	DEBUG("Received disconnect PDU\n");
+	in_uint32_le(s, inst->disc_reason); /* Note: reason 0 is _not_ an error */
+	printf("Received Set Error Information PDU with reason %x\n", inst->disc_reason);
 }
 
 /* Process data PDU */
@@ -1318,13 +1318,8 @@ process_data_pdu(rdpRdp * rdp, STREAM s)
 			break;
 
 		case RDP_DATA_PDU_SET_ERROR_INFO:
-			process_disconnect_pdu(s, rdp->inst);
-
-			/* We used to return true and disconnect immediately here, but
-			 * Windows Vista sends a disconnect PDU with reason 0 when
-			 * reconnecting to a disconnected session, and MSTSC doesn't
-			 * drop the connection.  I think we should just save the status.
-			 */
+			/* A FYI message - don't give up yet */
+			process_set_error_info_pdu(s, rdp->inst);
 			break;
 
 		default:
