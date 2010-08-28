@@ -27,23 +27,15 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <sys/time.h>
-#include <freerdp/types_ui.h>
-#include <freerdp/vchan.h>
-#include "chan_stream.h"
-#include "chan_plugin.h"
+#include "drdynvc_types.h"
 #include "wait_obj.h"
+#include "dvcman.h"
 
 #define CREATE_REQUEST_PDU     0x01
 #define DATA_FIRST_PDU         0x02
 #define DATA_PDU               0x03
 #define CLOSE_REQUEST_PDU      0x04
 #define CAPABILITY_REQUEST_PDU 0x05
-
-#define LOG_LEVEL 11
-#define LLOG(_level, _args) \
-  do { if (_level < LOG_LEVEL) { printf _args ; } } while (0)
-#define LLOGLN(_level, _args) \
-  do { if (_level < LOG_LEVEL) { printf _args ; printf("\n"); } } while (0)
 
 struct data_in_item
 {
@@ -75,6 +67,8 @@ struct drdynvc_plugin
 	int PriorityCharge1;
 	int PriorityCharge2;
 	int PriorityCharge3;
+
+	IWTSVirtualChannelManager * channel_mgr;
 };
 
 void
@@ -351,6 +345,8 @@ InitEventProcessConnected(void * pInitHandle, void * pData, uint32 dataLength)
 	}
 	chan_plugin_register_open_handle((rdpChanPlugin *) plugin, plugin->open_handle);
 
+	dvcman_initialize(plugin->channel_mgr);
+
 	pthread_create(&thread, 0, thread_func, plugin);
 	pthread_detach(thread);
 }
@@ -390,6 +386,8 @@ InitEventProcessTerminated(void * pInitHandle)
 		free(in_item->data);
 		free(in_item);
 	}
+
+	dvcman_free(plugin->channel_mgr);
 
 	chan_plugin_uninit((rdpChanPlugin *) plugin);
 	free(plugin);
@@ -440,5 +438,9 @@ VirtualChannelEntry(PCHANNEL_ENTRY_POINTS pEntryPoints)
 	plugin->thread_status = 0;
 	plugin->ep.pVirtualChannelInit(&plugin->chan_plugin.init_handle, &plugin->channel_def, 1,
 		VIRTUAL_CHANNEL_VERSION_WIN2000, InitEvent);
+
+	plugin->channel_mgr = dvcman_new();
+	dvcman_load_plugin(plugin->channel_mgr, "channels/drdynvc/audin/.libs/audin.so");
+
 	return 1;
 }

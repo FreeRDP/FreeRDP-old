@@ -11,6 +11,7 @@ REQUIRED_SUBDIRS = \
 	channels/common \
 	channels/rdpsnd \
 	channels/drdynvc \
+	channels/drdynvc/audin \
 	channels/cliprdr \
 	channels/rdpdr \
 	channels/rdpdr/disk \

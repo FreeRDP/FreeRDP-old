@@ -1016,6 +1016,7 @@ win/Makefile
 channels/common/Makefile
 channels/rdpsnd/Makefile
 channels/drdynvc/Makefile
+channels/drdynvc/audin/Makefile
 channels/cliprdr/Makefile
 channels/rdpdr/Makefile
 channels/rdpdr/disk/Makefile

@@ -6,6 +6,8 @@ drdynvcdir = $(PLUGIN_PATH)
 drdynvc_LTLIBRARIES = drdynvc.la
 
 drdynvc_la_SOURCES = \
+	dvcman.c dvcman.h \
+	drdynvc_types.h \
 	drdynvc_main.c
 
 drdynvc_la_CFLAGS = -I$(top_srcdir)/include -I$(srcdir)/../common \
