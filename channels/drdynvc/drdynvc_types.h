@@ -144,7 +144,8 @@ struct _IWTSVirtualChannelCallback
 typedef struct _IDRDYNVC_ENTRY_POINTS IDRDYNVC_ENTRY_POINTS;
 struct _IDRDYNVC_ENTRY_POINTS
 {
-	IWTSPlugin * (*CreatePlugin) (IDRDYNVC_ENTRY_POINTS * pEntryPoints);
+	int (*RegisterPlugin) (IDRDYNVC_ENTRY_POINTS * pEntryPoints,
+		IWTSPlugin * pPlugin);
 };
 
 typedef int (*PDVC_PLUGIN_ENTRY) (IDRDYNVC_ENTRY_POINTS *);

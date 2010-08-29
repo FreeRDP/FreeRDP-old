@@ -37,6 +37,20 @@ struct _DVCMAN
 
 	IWTSPlugin * plugins[MAX_PLUGINS];
 	int num_plugins;
+
+	IWTSListener * listeners[MAX_PLUGINS];
+	int num_listeners;
+};
+
+typedef struct _DVCMAN_LISTENER DVCMAN_LISTENER;
+struct _DVCMAN_LISTENER
+{
+	IWTSListener iface;
+
+	DVCMAN * dvcman;
+	char * channel_name;
+	uint32 flags;
+	IWTSListenerCallback * listener_callback;
 };
 
 typedef struct _DVCMAN_ENTRY_POINTS DVCMAN_ENTRY_POINTS;
@@ -47,13 +61,13 @@ struct _DVCMAN_ENTRY_POINTS
 	DVCMAN * dvcman;
 };
 
-typedef struct _DVC_PLUGIN DVC_PLUGIN;
-struct _DVC_PLUGIN
+static int
+dvcman_get_configuration(IWTSListener * pListener,
+	void ** ppPropertyBag)
 {
-	IWTSPlugin iface;
-
-	DVCMAN * dvcman;
-};
+	*ppPropertyBag = NULL;
+	return 1;
+}
 
 static int
 dvcman_create_listener(IWTSVirtualChannelManager * pChannelMgr,
@@ -62,27 +76,48 @@ dvcman_create_listener(IWTSVirtualChannelManager * pChannelMgr,
 	IWTSListenerCallback * pListenerCallback,
 	IWTSListener ** ppListener)
 {
-	return 0;
-}
+	DVCMAN * dvcman = (DVCMAN *) pChannelMgr;
+	DVCMAN_LISTENER * listener;
 
-static IWTSPlugin *
-dvcman_create_plugin(IDRDYNVC_ENTRY_POINTS * pEntryPoints)
-{
-	DVCMAN * dvcman = ((DVCMAN_ENTRY_POINTS *)pEntryPoints)->dvcman;
-	DVC_PLUGIN * pPlugin;
-
-	if (dvcman->num_plugins < MAX_PLUGINS)
+	if (dvcman->num_listeners < MAX_PLUGINS)
 	{
-		pPlugin = (DVC_PLUGIN *) malloc(sizeof(DVC_PLUGIN));
-		memset(pPlugin, 0, sizeof(DVC_PLUGIN));
-		pPlugin->dvcman = dvcman;
-		dvcman->plugins[dvcman->num_plugins++] = (IWTSPlugin *) pPlugin;
-		return (IWTSPlugin *) pPlugin;
+		LLOGLN(10, ("dvcman_create_listener: %d.%s.", dvcman->num_listeners, pszChannelName));
+		listener = (DVCMAN_LISTENER *) malloc(sizeof(DVCMAN_LISTENER));
+		memset(listener, 0, sizeof(DVCMAN_LISTENER));
+		listener->iface.GetConfiguration = dvcman_get_configuration;
+		listener->dvcman = dvcman;
+		listener->channel_name = strdup(pszChannelName);
+		listener->flags = ulFlags;
+		listener->listener_callback = pListenerCallback;
+
+		if (ppListener)
+			*ppListener = (IWTSListener *) listener;
+		dvcman->listeners[dvcman->num_listeners++] = (IWTSListener *) listener;
+		return 0;
 	}
 	else
 	{
-		LLOGLN(0, ("Maximum DVC plugin number reached."));
-		return NULL;
+		LLOGLN(0, ("dvcman_create_listener: Maximum DVC listener number reached."));
+		return 1;
+	}
+}
+
+static int
+dvcman_register_plugin(IDRDYNVC_ENTRY_POINTS * pEntryPoints,
+	IWTSPlugin * pPlugin)
+{
+	DVCMAN * dvcman = ((DVCMAN_ENTRY_POINTS *)pEntryPoints)->dvcman;
+
+	if (dvcman->num_plugins < MAX_PLUGINS)
+	{
+		LLOGLN(0, ("dvcman_register_plugin: %d", dvcman->num_plugins));
+		dvcman->plugins[dvcman->num_plugins++] = pPlugin;
+		return 0;
+	}
+	else
+	{
+		LLOGLN(0, ("dvcman_register_plugin: Maximum DVC plugin number reached."));
+		return 1;
 	}
 }
 
@@ -95,6 +130,7 @@ dvcman_new(void)
 	memset(dvcman, 0, sizeof(DVCMAN));
 	dvcman->iface.CreateListener = dvcman_create_listener;
 	dvcman->num_plugins = 0;
+	dvcman->num_listeners = 0;
 
 	return (IWTSVirtualChannelManager *) dvcman;
 }
@@ -122,7 +158,7 @@ dvcman_load_plugin(IWTSVirtualChannelManager * pChannelMgr, char* filename)
 
 	if(pDVCPluginEntry != NULL)
 	{
-		entryPoints.iface.CreatePlugin = dvcman_create_plugin;
+		entryPoints.iface.RegisterPlugin = dvcman_register_plugin;
 		entryPoints.dvcman = (DVCMAN *) pChannelMgr;
 		pDVCPluginEntry((IDRDYNVC_ENTRY_POINTS *) &entryPoints);
 		LLOGLN(0, ("loaded DVC plugin: %s", fn));
@@ -138,13 +174,19 @@ dvcman_free(IWTSVirtualChannelManager * pChannelMgr)
 	DVCMAN * dvcman = (DVCMAN *) pChannelMgr;
 	int i;
 	IWTSPlugin * pPlugin;
+	DVCMAN_LISTENER * listener;
 
 	for (i = 0; i < dvcman->num_plugins; i++)
 	{
 		pPlugin = dvcman->plugins[i];
 		if (pPlugin->Terminated)
 			pPlugin->Terminated(pPlugin);
-		free(dvcman->plugins[i]);
+	}
+	for (i = 0; i < dvcman->num_listeners; i++)
+	{
+		listener = (DVCMAN_LISTENER *) dvcman->listeners[i];
+		free(listener->channel_name);
+		free(listener);
 	}
 	free(dvcman);
 }

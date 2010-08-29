@@ -26,31 +26,72 @@
 #include <string.h>
 #include "drdynvc_types.h"
 
-static int
-MyPluginInitialize(IWTSPlugin * pPlugin, IWTSVirtualChannelManager * pChannelMgr)
+typedef struct _AUDIN_LISTENER_CALLBACK AUDIN_LISTENER_CALLBACK;
+struct _AUDIN_LISTENER_CALLBACK
 {
-	LLOGLN(10, ("MyPluginInitialize: audin"));
+	IWTSListenerCallback iface;
+
+	IWTSPlugin * plugin;
+	IWTSVirtualChannelManager * channel_mgr;
+};
+
+typedef struct _AUDIN_PLUGIN AUDIN_PLUGIN;
+struct _AUDIN_PLUGIN
+{
+	IWTSPlugin iface;
+
+	AUDIN_LISTENER_CALLBACK * listener_callback;
+};
+
+static int
+audin_on_new_channel_connection(IWTSListenerCallback * pListenerCallback,
+	IWTSVirtualChannel * pChannel,
+	char * Data,
+	int * pbAccept)
+{
+	LLOGLN(10, ("audin_on_new_channel_connection:"));
 	return 0;
 }
 
 static int
-MyPluginTerminated(IWTSPlugin * pPlugin)
+audin_plugin_initialize(IWTSPlugin * pPlugin, IWTSVirtualChannelManager * pChannelMgr)
 {
-	LLOGLN(10, ("MyPluginTerminated: audin"));
+	AUDIN_PLUGIN * audin = (AUDIN_PLUGIN *) pPlugin;
+
+	LLOGLN(10, ("audin_plugin_initialize:"));
+	audin->listener_callback = (AUDIN_LISTENER_CALLBACK *) malloc(sizeof(AUDIN_LISTENER_CALLBACK));
+	memset(audin->listener_callback, 0, sizeof(AUDIN_LISTENER_CALLBACK));
+
+	audin->listener_callback->iface.OnNewChannelConnection = audin_on_new_channel_connection;
+	audin->listener_callback->plugin = pPlugin;
+	audin->listener_callback->channel_mgr = pChannelMgr;
+	return pChannelMgr->CreateListener(pChannelMgr, "AUDIO_INPUT", 0, audin->listener_callback, NULL);
+}
+
+static int
+audin_plugin_terminated(IWTSPlugin * pPlugin)
+{
+	AUDIN_PLUGIN * audin = (AUDIN_PLUGIN *) pPlugin;
+
+	LLOGLN(10, ("audin_plugin_terminated:"));
+	if (audin->listener_callback)
+		free(audin->listener_callback);
+	free(audin);
 	return 0;
 }
 
 int
 DVCPluginEntry(IDRDYNVC_ENTRY_POINTS * pEntryPoints)
 {
-	IWTSPlugin * plugin;
+	AUDIN_PLUGIN * audin;
 
-	plugin = pEntryPoints->CreatePlugin(pEntryPoints);
-	plugin->Initialize = MyPluginInitialize;
-	plugin->Connected = NULL;
-	plugin->Disconnected = NULL;
-	plugin->Terminated = MyPluginTerminated;
+	audin = (AUDIN_PLUGIN *) malloc(sizeof(AUDIN_PLUGIN));
+	memset(audin, 0, sizeof(AUDIN_PLUGIN));
 
-	return 0;
+	audin->iface.Initialize = audin_plugin_initialize;
+	audin->iface.Connected = NULL;
+	audin->iface.Disconnected = NULL;
+	audin->iface.Terminated = audin_plugin_terminated;
+	return pEntryPoints->RegisterPlugin(pEntryPoints, (IWTSPlugin *) audin);
 }
 
