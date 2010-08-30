@@ -65,7 +65,8 @@ audin_plugin_initialize(IWTSPlugin * pPlugin, IWTSVirtualChannelManager * pChann
 	audin->listener_callback->iface.OnNewChannelConnection = audin_on_new_channel_connection;
 	audin->listener_callback->plugin = pPlugin;
 	audin->listener_callback->channel_mgr = pChannelMgr;
-	return pChannelMgr->CreateListener(pChannelMgr, "AUDIO_INPUT", 0, audin->listener_callback, NULL);
+	return pChannelMgr->CreateListener(pChannelMgr, "AUDIO_INPUT", 0,
+		(IWTSListenerCallback *) audin->listener_callback, NULL);
 }
 
 static int
