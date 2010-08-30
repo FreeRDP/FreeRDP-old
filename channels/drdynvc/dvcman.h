@@ -32,6 +32,9 @@ void
 dvcman_free(IWTSVirtualChannelManager * pChannelMgr);
 int
 dvcman_initialize(IWTSVirtualChannelManager * pChannelMgr);
-
+int
+dvcman_create_channel(IWTSVirtualChannelManager * pChannelMgr, uint32 ChannelId, const char * ChannelName);
+int
+dvcman_close_channel(IWTSVirtualChannel * pChannel);
 #endif
 

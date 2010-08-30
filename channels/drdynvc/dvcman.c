@@ -40,6 +40,9 @@ struct _DVCMAN
 
 	IWTSListener * listeners[MAX_PLUGINS];
 	int num_listeners;
+
+	IWTSVirtualChannel * channel_list_head;
+	IWTSVirtualChannel * channel_list_tail;
 };
 
 typedef struct _DVCMAN_LISTENER DVCMAN_LISTENER;
@@ -59,6 +62,16 @@ struct _DVCMAN_ENTRY_POINTS
 	IDRDYNVC_ENTRY_POINTS iface;
 
 	DVCMAN * dvcman;
+};
+
+typedef struct _DVCMAN_CHANNEL DVCMAN_CHANNEL;
+struct _DVCMAN_CHANNEL
+{
+	IWTSVirtualChannel iface;
+
+	DVCMAN * dvcman;
+	DVCMAN_CHANNEL * next;
+	uint32 channel_id;
 };
 
 static int
@@ -131,6 +144,8 @@ dvcman_new(void)
 	dvcman->iface.CreateListener = dvcman_create_listener;
 	dvcman->num_plugins = 0;
 	dvcman->num_listeners = 0;
+	dvcman->channel_list_head = NULL;
+	dvcman->channel_list_tail = NULL;
 
 	return (IWTSVirtualChannelManager *) dvcman;
 }
@@ -188,6 +203,8 @@ dvcman_free(IWTSVirtualChannelManager * pChannelMgr)
 		free(listener->channel_name);
 		free(listener);
 	}
+	while (dvcman->channel_list_head)
+		dvcman_close_channel(dvcman->channel_list_head);
 	free(dvcman);
 }
 
@@ -205,6 +222,82 @@ dvcman_initialize(IWTSVirtualChannelManager * pChannelMgr)
 			pPlugin->Initialize(pPlugin, pChannelMgr);
 	}
 	return 0;
+}
+
+static int
+dvcman_write_channel(IWTSVirtualChannel * pChannel,
+	uint32 cbSize,
+	char * pBuffer,
+	void * pReserved)
+{
+	DVCMAN_CHANNEL * channel = (DVCMAN_CHANNEL *) pChannel;
+
+	LLOGLN(10, ("dvcman_channel_write: id=%d size=%d", channel->channel_id, cbSize));
+	return 0;
+}
+
+int
+dvcman_close_channel(IWTSVirtualChannel * pChannel)
+{
+	DVCMAN_CHANNEL * channel = (DVCMAN_CHANNEL *) pChannel;
+	DVCMAN * dvcman = channel->dvcman;
+	DVCMAN_CHANNEL * prev;
+	DVCMAN_CHANNEL * curr;
+
+	LLOGLN(10, ("dvcman_channel_close: id=%d", channel->channel_id));
+	for (prev = NULL, curr = (DVCMAN_CHANNEL *) dvcman->channel_list_head; curr; prev = curr, curr = curr->next)
+	{
+		if (curr == channel)
+		{
+			if (prev)
+				prev->next = curr->next;
+			if (dvcman->channel_list_head == pChannel)
+				dvcman->channel_list_head = (IWTSVirtualChannel *) curr->next;
+			if (dvcman->channel_list_tail == pChannel)
+				dvcman->channel_list_tail = (IWTSVirtualChannel *) prev;
+			free(channel);
+			return 0;
+		}
+	}
+	LLOGLN(0, ("dvcman_channel_close: channel not found"));
+	return 1;
+}
+
+int
+dvcman_create_channel(IWTSVirtualChannelManager * pChannelMgr, uint32 ChannelId, const char * ChannelName)
+{
+	DVCMAN * dvcman = (DVCMAN *) pChannelMgr;
+	int i;
+	DVCMAN_LISTENER * listener;
+	DVCMAN_CHANNEL * channel;
+
+	for (i = 0; i < dvcman->num_listeners; i++)
+	{
+		listener = (DVCMAN_LISTENER *) dvcman->listeners[i];
+		if (strcmp(listener->channel_name, ChannelName) == 0)
+		{
+			channel = (DVCMAN_CHANNEL *) malloc(sizeof(DVCMAN_CHANNEL));
+			memset(channel, 0, sizeof(DVCMAN_CHANNEL));
+			channel->iface.Write = dvcman_write_channel;
+			channel->iface.Close = dvcman_close_channel;
+			channel->dvcman = dvcman;
+			channel->next = NULL;
+			channel->channel_id = ChannelId;
+
+			if (dvcman->channel_list_tail)
+			{
+				((DVCMAN_CHANNEL *) dvcman->channel_list_tail)->next = channel;
+				dvcman->channel_list_tail = (IWTSVirtualChannel *) channel;
+			}
+			else
+			{
+				dvcman->channel_list_head = (IWTSVirtualChannel *) channel;
+				dvcman->channel_list_tail = (IWTSVirtualChannel *) channel;
+			}
+			return 0;
+		}
+	}
+	return 1;
 }
 
 

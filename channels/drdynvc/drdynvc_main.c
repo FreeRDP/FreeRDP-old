@@ -144,7 +144,7 @@ process_CAPABILITY_REQUEST_PDU(drdynvcPlugin * plugin, int Sp, int cbChId,
 	int size;
 	char * out_data;
 
-	LLOGLN(0, ("process_CAPABILITY_REQUEST_PDU:"));
+	LLOGLN(10, ("process_CAPABILITY_REQUEST_PDU:"));
 	plugin->version = GET_UINT16(data, 2);
 	if (plugin->version == 2)
 	{
@@ -163,6 +163,64 @@ process_CAPABILITY_REQUEST_PDU(drdynvcPlugin * plugin, int Sp, int cbChId,
 	if (error != CHANNEL_RC_OK)
 	{
 		LLOGLN(0, ("process_CAPABILITY_REQUEST_PDU: "
+			"VirtualChannelWrite "
+			"failed %d", error));
+		return 1;
+	}
+	return 0;
+}
+
+static int
+process_CREATE_REQUEST_PDU(drdynvcPlugin * plugin, int Sp, int cbChId,
+	char * data, int data_size)
+{
+	int pos;
+	int error;
+	int size;
+	char * out_data;
+	uint32 ChannelId;
+
+	LLOGLN(10, ("process_CREATE_REQUEST_PDU:"));
+	pos = 1;
+	switch (cbChId)
+	{
+		case 0:
+			ChannelId = (uint32) GET_UINT8(data, pos);
+			pos += 1;
+			break;
+		case 1:
+			ChannelId = (uint32) GET_UINT16(data, pos);
+			pos += 2;
+			break;
+		default:
+			ChannelId = (uint32) GET_UINT32(data, pos);
+			pos += 4;
+			break;
+	}
+	LLOGLN(10, ("process_CREATE_REQUEST_PDU: ChannelId=%d ChannelName=%s", ChannelId, data + pos));
+
+	size = pos + 4;
+	out_data = (char *) malloc(size);
+	SET_UINT8(out_data, 0, 0x10 | cbChId);
+	memcpy(out_data + 1, data + 1, pos - 1);
+	
+	error = dvcman_create_channel(plugin->channel_mgr, ChannelId, data + pos);
+	if (error == 0)
+	{
+		LLOGLN(10, ("process_CREATE_REQUEST_PDU: channel created"));
+		SET_UINT32(out_data, pos, 0);
+	}
+	else
+	{
+		LLOGLN(10, ("process_CREATE_REQUEST_PDU: no listener"));
+		SET_UINT32(out_data, pos, (uint32)(-1));
+	}
+	hexdump(out_data, size);
+	error = plugin->ep.pVirtualChannelWrite(plugin->open_handle,
+	out_data, size, out_data);
+	if (error != CHANNEL_RC_OK)
+	{
+		LLOGLN(0, ("process_CREATE_REQUEST_PDU: "
 			"VirtualChannelWrite "
 			"failed %d", error));
 		return 1;
@@ -190,6 +248,9 @@ thread_process_message(drdynvcPlugin * plugin, char * data, int data_size)
 	{
 		case CAPABILITY_REQUEST_PDU:
 			rv = process_CAPABILITY_REQUEST_PDU(plugin, Sp, cbChId, data, data_size);
+			break;
+		case CREATE_REQUEST_PDU:
+			rv = process_CREATE_REQUEST_PDU(plugin, Sp, cbChId, data, data_size);
 			break;
 	}
 	return rv;
