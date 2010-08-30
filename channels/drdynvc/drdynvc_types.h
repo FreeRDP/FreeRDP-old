@@ -127,7 +127,8 @@ struct _IWTSListenerCallback
 	int (*OnNewChannelConnection) (IWTSListenerCallback * pListenerCallback,
 		IWTSVirtualChannel * pChannel,
 		char * Data,
-		int * pbAccept);
+		int * pbAccept,
+		IWTSVirtualChannelCallback ** ppCallback);
 };
 
 struct _IWTSVirtualChannelCallback

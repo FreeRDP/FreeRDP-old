@@ -21,24 +21,13 @@
 
 */
 
-#ifndef __DVCMAN_H
-#define __DVCMAN_H
+#ifndef __DRDYNVC_MAIN_H
+#define __DRDYNVC_MAIN_H
 
-#include "drdynvc_main.h"
+typedef struct drdynvc_plugin drdynvcPlugin;
 
-IWTSVirtualChannelManager *
-dvcman_new(drdynvcPlugin * plugin);
 int
-dvcman_load_plugin(IWTSVirtualChannelManager * pChannelMgr, char* filename);
-void
-dvcman_free(IWTSVirtualChannelManager * pChannelMgr);
-int
-dvcman_initialize(IWTSVirtualChannelManager * pChannelMgr);
-int
-dvcman_create_channel(IWTSVirtualChannelManager * pChannelMgr, uint32 ChannelId, const char * ChannelName);
-int
-dvcman_close_channel(IWTSVirtualChannel * pChannel);
-int
-dvcman_receive_channel_data(IWTSVirtualChannelManager * pChannelMgr, uint32 ChannelId, char * data, uint32 data_size);
+drdynvc_write_data(drdynvcPlugin * plugin, uint32 ChannelId, char * data, uint32 data_size);
+
 #endif
 

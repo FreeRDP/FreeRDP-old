@@ -30,6 +30,7 @@
 #include "drdynvc_types.h"
 #include "wait_obj.h"
 #include "dvcman.h"
+#include "drdynvc_main.h"
 
 #define CREATE_REQUEST_PDU     0x01
 #define DATA_FIRST_PDU         0x02
@@ -37,6 +38,7 @@
 #define CLOSE_REQUEST_PDU      0x04
 #define CAPABILITY_REQUEST_PDU 0x05
 
+#define MAX_DATA_SIZE          1600
 struct data_in_item
 {
 	struct data_in_item * next;
@@ -44,7 +46,6 @@ struct data_in_item
 	int data_size;
 };
 
-typedef struct drdynvc_plugin drdynvcPlugin;
 struct drdynvc_plugin
 {
 	rdpChanPlugin chan_plugin;
@@ -69,6 +70,9 @@ struct drdynvc_plugin
 	int PriorityCharge3;
 
 	IWTSVirtualChannelManager * channel_mgr;
+	char * dvc_data;
+	uint32 dvc_data_pos;
+	uint32 dvc_data_size;
 };
 
 void
@@ -107,6 +111,93 @@ hexdump(char* p, int len)
   }
 }
 
+static int
+set_variable_uint(uint32 val, char * data, uint32 * pos)
+{
+	int cb;
+
+	if (val <= 0xFF)
+	{
+		cb = 0;
+		SET_UINT8(data, *pos, val);
+		*pos += 1;
+	}
+	else if (val <= 0xFFFF)
+	{
+		cb = 1;
+		SET_UINT16(data, *pos, val);
+		*pos += 2;
+	}
+	else
+	{
+		cb = 3;
+		SET_UINT32(data, *pos, val);
+		*pos += 4;
+	}
+	return cb;
+}
+
+int
+drdynvc_write_data(drdynvcPlugin * plugin, uint32 ChannelId, char * data, uint32 data_size)
+{
+	uint32 pos;
+	uint32 t;
+	int cbChId;
+	int cbLen;
+	char * out_data;
+	int error;
+	uint32 data_pos;
+
+	LLOGLN(10, ("drdynvc_write_data: ChannelId=%d size=%d", ChannelId, data_size));
+
+	out_data = (char *) malloc(MAX_DATA_SIZE);
+	memset(out_data, 0, MAX_DATA_SIZE);
+	pos = 1;
+	cbChId = set_variable_uint(ChannelId, out_data, &pos);
+
+	if (data_size <= MAX_DATA_SIZE - pos)
+	{
+		SET_UINT8(out_data, 0, 0x30 | cbChId);
+		memcpy(out_data + pos, data, data_size);
+		error = plugin->ep.pVirtualChannelWrite(plugin->open_handle,
+			out_data, data_size + pos, out_data);
+	}
+	else
+	{
+		/* Fragment the data */
+		cbLen = set_variable_uint(data_size, out_data, &pos);
+		SET_UINT8(out_data, 0, 0x20 | cbChId | (cbLen << 2));
+		data_pos = MAX_DATA_SIZE - pos;
+		memcpy(out_data + pos, data, data_pos);
+		error = plugin->ep.pVirtualChannelWrite(plugin->open_handle,
+			out_data, MAX_DATA_SIZE, out_data);
+
+		while (error == CHANNEL_RC_OK && data_pos < data_size)
+		{
+			out_data = (char *) malloc(MAX_DATA_SIZE);
+			memset(out_data, 0, MAX_DATA_SIZE);
+			pos = 1;
+			cbChId = set_variable_uint(ChannelId, out_data, &pos);
+
+			SET_UINT8(out_data, 0, 0x30 | cbChId);
+			t = data_size - data_pos;
+			if (t > MAX_DATA_SIZE - pos)
+				t = MAX_DATA_SIZE - pos;
+			memcpy(out_data + pos, data + data_pos, t);
+			data_pos += t;
+			error = plugin->ep.pVirtualChannelWrite(plugin->open_handle,
+				out_data, MAX_DATA_SIZE, out_data);
+		}
+	}
+	if (error != CHANNEL_RC_OK)
+	{
+		LLOGLN(0, ("drdynvc_write_data: "
+			"VirtualChannelWrite "
+			"failed %d", error));
+		return 1;
+	}
+	return 0;
+}
 
 /* called by main thread
    add item to linked list and inform worker thread that there is data */
@@ -170,6 +261,29 @@ process_CAPABILITY_REQUEST_PDU(drdynvcPlugin * plugin, int Sp, int cbChId,
 	return 0;
 }
 
+static uint32
+get_variable_uint(int cbLen, char * data, int * pos)
+{
+	uint32 val;
+
+	switch (cbLen)
+	{
+		case 0:
+			val = (uint32) GET_UINT8(data, *pos);
+			*pos += 1;
+			break;
+		case 1:
+			val = (uint32) GET_UINT16(data, *pos);
+			*pos += 2;
+			break;
+		default:
+			val = (uint32) GET_UINT32(data, *pos);
+			*pos += 4;
+			break;
+	}
+	return val;
+}
+
 static int
 process_CREATE_REQUEST_PDU(drdynvcPlugin * plugin, int Sp, int cbChId,
 	char * data, int data_size)
@@ -180,23 +294,8 @@ process_CREATE_REQUEST_PDU(drdynvcPlugin * plugin, int Sp, int cbChId,
 	char * out_data;
 	uint32 ChannelId;
 
-	LLOGLN(10, ("process_CREATE_REQUEST_PDU:"));
 	pos = 1;
-	switch (cbChId)
-	{
-		case 0:
-			ChannelId = (uint32) GET_UINT8(data, pos);
-			pos += 1;
-			break;
-		case 1:
-			ChannelId = (uint32) GET_UINT16(data, pos);
-			pos += 2;
-			break;
-		default:
-			ChannelId = (uint32) GET_UINT32(data, pos);
-			pos += 4;
-			break;
-	}
+	ChannelId = get_variable_uint(cbChId, data, &pos);
 	LLOGLN(10, ("process_CREATE_REQUEST_PDU: ChannelId=%d ChannelName=%s", ChannelId, data + pos));
 
 	size = pos + 4;
@@ -229,6 +328,77 @@ process_CREATE_REQUEST_PDU(drdynvcPlugin * plugin, int Sp, int cbChId,
 }
 
 static int
+process_DATA(drdynvcPlugin * plugin, uint32 ChannelId,
+	char * data, int data_size)
+{
+	int error = 0;
+
+	if (plugin->dvc_data)
+	{
+		/* Fragmented data */
+		if (plugin->dvc_data_pos + (uint32) data_size > plugin->dvc_data_size)
+		{
+			LLOGLN(0, ("process_DATA: data exceeding declared length!"));
+			free(plugin->dvc_data);
+			plugin->dvc_data = NULL;
+			return 1;
+		}
+		memcpy(plugin->dvc_data + plugin->dvc_data_pos, data, data_size);
+		plugin->dvc_data_pos += (uint32) data_size;
+		if (plugin->dvc_data_pos >= plugin->dvc_data_size)
+		{
+			error = dvcman_receive_channel_data(plugin->channel_mgr,
+				ChannelId, plugin->dvc_data, plugin->dvc_data_size);
+			free(plugin->dvc_data);
+			plugin->dvc_data = NULL;
+		}
+	}
+	else
+	{
+		error = dvcman_receive_channel_data(plugin->channel_mgr,
+			ChannelId, data, (uint32) data_size);
+	}
+	return error;
+}
+
+static int
+process_DATA_FIRST_PDU(drdynvcPlugin * plugin, int Sp, int cbChId,
+	char * data, int data_size)
+{
+	int pos;
+	uint32 ChannelId;
+	uint32 Length;
+
+	pos = 1;
+	ChannelId = get_variable_uint(cbChId, data, &pos);
+	Length = get_variable_uint(Sp, data, &pos);
+	LLOGLN(10, ("process_DATA_FIRST_PDU: ChannelId=%d Length=%d", ChannelId, Length));
+
+	if (plugin->dvc_data)
+		free(plugin->dvc_data);
+	plugin->dvc_data = (char *) malloc(Length);
+	memset(plugin->dvc_data, 0, Length);
+	plugin->dvc_data_pos = 0;
+	plugin->dvc_data_size = Length;
+
+	return process_DATA(plugin, ChannelId, data + pos, data_size - pos);
+}
+
+static int
+process_DATA_PDU(drdynvcPlugin * plugin, int Sp, int cbChId,
+	char * data, int data_size)
+{
+	int pos;
+	uint32 ChannelId;
+
+	pos = 1;
+	ChannelId = get_variable_uint(cbChId, data, &pos);
+	LLOGLN(10, ("process_DATA_PDU: ChannelId=%d", ChannelId));
+
+	return process_DATA(plugin, ChannelId, data + pos, data_size - pos);
+}
+
+static int
 thread_process_message(drdynvcPlugin * plugin, char * data, int data_size)
 {
 	int value;
@@ -251,6 +421,12 @@ thread_process_message(drdynvcPlugin * plugin, char * data, int data_size)
 			break;
 		case CREATE_REQUEST_PDU:
 			rv = process_CREATE_REQUEST_PDU(plugin, Sp, cbChId, data, data_size);
+			break;
+		case DATA_FIRST_PDU:
+			rv = process_DATA_FIRST_PDU(plugin, Sp, cbChId, data, data_size);
+			break;
+		case DATA_PDU:
+			rv = process_DATA_PDU(plugin, Sp, cbChId, data, data_size);
 			break;
 	}
 	return rv;
@@ -449,6 +625,11 @@ InitEventProcessTerminated(void * pInitHandle)
 	}
 
 	dvcman_free(plugin->channel_mgr);
+	if (plugin->dvc_data)
+	{
+		free(plugin->dvc_data);
+		plugin->dvc_data = NULL;
+	}
 
 	chan_plugin_uninit((rdpChanPlugin *) plugin);
 	free(plugin);
@@ -500,7 +681,7 @@ VirtualChannelEntry(PCHANNEL_ENTRY_POINTS pEntryPoints)
 	plugin->ep.pVirtualChannelInit(&plugin->chan_plugin.init_handle, &plugin->channel_def, 1,
 		VIRTUAL_CHANNEL_VERSION_WIN2000, InitEvent);
 
-	plugin->channel_mgr = dvcman_new();
+	plugin->channel_mgr = dvcman_new(plugin);
 	dvcman_load_plugin(plugin->channel_mgr, "channels/drdynvc/audin/.libs/audin.so");
 
 	return 1;

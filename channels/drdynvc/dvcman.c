@@ -35,6 +35,8 @@ struct _DVCMAN
 {
 	IWTSVirtualChannelManager iface;
 
+	drdynvcPlugin * drdynvc;
+
 	IWTSPlugin * plugins[MAX_PLUGINS];
 	int num_plugins;
 
@@ -72,6 +74,7 @@ struct _DVCMAN_CHANNEL
 	DVCMAN * dvcman;
 	DVCMAN_CHANNEL * next;
 	uint32 channel_id;
+	IWTSVirtualChannelCallback * channel_callback;
 };
 
 static int
@@ -135,13 +138,14 @@ dvcman_register_plugin(IDRDYNVC_ENTRY_POINTS * pEntryPoints,
 }
 
 IWTSVirtualChannelManager *
-dvcman_new(void)
+dvcman_new(drdynvcPlugin * plugin)
 {
 	DVCMAN * dvcman;
 
 	dvcman = (DVCMAN *) malloc(sizeof(DVCMAN));
 	memset(dvcman, 0, sizeof(DVCMAN));
 	dvcman->iface.CreateListener = dvcman_create_listener;
+	dvcman->drdynvc = plugin;
 	dvcman->num_plugins = 0;
 	dvcman->num_listeners = 0;
 	dvcman->channel_list_head = NULL;
@@ -232,7 +236,7 @@ dvcman_write_channel(IWTSVirtualChannel * pChannel,
 {
 	DVCMAN_CHANNEL * channel = (DVCMAN_CHANNEL *) pChannel;
 
-	LLOGLN(10, ("dvcman_channel_write: id=%d size=%d", channel->channel_id, cbSize));
+	drdynvc_write_data(channel->dvcman->drdynvc, channel->channel_id, pBuffer, cbSize);
 	return 0;
 }
 
@@ -255,6 +259,9 @@ dvcman_close_channel(IWTSVirtualChannel * pChannel)
 				dvcman->channel_list_head = (IWTSVirtualChannel *) curr->next;
 			if (dvcman->channel_list_tail == pChannel)
 				dvcman->channel_list_tail = (IWTSVirtualChannel *) prev;
+
+			if (channel->channel_callback)
+				channel->channel_callback->OnClose(channel->channel_callback);
 			free(channel);
 			return 0;
 		}
@@ -270,6 +277,8 @@ dvcman_create_channel(IWTSVirtualChannelManager * pChannelMgr, uint32 ChannelId,
 	int i;
 	DVCMAN_LISTENER * listener;
 	DVCMAN_CHANNEL * channel;
+	int bAccept;
+	IWTSVirtualChannelCallback * pCallback;
 
 	for (i = 0; i < dvcman->num_listeners; i++)
 	{
@@ -284,20 +293,64 @@ dvcman_create_channel(IWTSVirtualChannelManager * pChannelMgr, uint32 ChannelId,
 			channel->next = NULL;
 			channel->channel_id = ChannelId;
 
-			if (dvcman->channel_list_tail)
+			bAccept = 1;
+			pCallback = NULL;
+			if (listener->listener_callback->OnNewChannelConnection(listener->listener_callback,
+				(IWTSVirtualChannel *) channel, NULL, &bAccept, &pCallback) == 0 && bAccept == 1)
 			{
-				((DVCMAN_CHANNEL *) dvcman->channel_list_tail)->next = channel;
-				dvcman->channel_list_tail = (IWTSVirtualChannel *) channel;
+				channel->channel_callback = pCallback;
+				if (dvcman->channel_list_tail)
+				{
+					((DVCMAN_CHANNEL *) dvcman->channel_list_tail)->next = channel;
+					dvcman->channel_list_tail = (IWTSVirtualChannel *) channel;
+				}
+				else
+				{
+					dvcman->channel_list_head = (IWTSVirtualChannel *) channel;
+					dvcman->channel_list_tail = (IWTSVirtualChannel *) channel;
+				}
+				return 0;
 			}
 			else
 			{
-				dvcman->channel_list_head = (IWTSVirtualChannel *) channel;
-				dvcman->channel_list_tail = (IWTSVirtualChannel *) channel;
+				LLOGLN(0, ("dvcman_create_channel: channel rejected by plugin"));
+				free(channel);
+				return 1;
 			}
-			return 0;
 		}
 	}
 	return 1;
 }
 
+static DVCMAN_CHANNEL *
+dvcman_find_channel_by_id(IWTSVirtualChannelManager * pChannelMgr, uint32 ChannelId)
+{
+	DVCMAN * dvcman = (DVCMAN *) pChannelMgr;
+	DVCMAN_CHANNEL * curr;
+
+	for (curr = (DVCMAN_CHANNEL *) dvcman->channel_list_head; curr; curr = curr->next)
+	{
+		if (curr->channel_id == ChannelId)
+		{
+			return curr;
+		}
+	}
+	return NULL;
+}
+
+int
+dvcman_receive_channel_data(IWTSVirtualChannelManager * pChannelMgr, uint32 ChannelId, char * data, uint32 data_size)
+{
+	DVCMAN_CHANNEL * channel;
+
+	channel = dvcman_find_channel_by_id(pChannelMgr, ChannelId);
+	if (channel == NULL)
+	{
+		LLOGLN(0, ("dvcman_receive_channel_data: ChannelId %d not found!", ChannelId));
+		return 1;
+	}
+	channel->channel_callback->OnDataReceived(channel->channel_callback,
+		data_size, data);
+	return 0;
+}
 

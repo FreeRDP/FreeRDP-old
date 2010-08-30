@@ -35,6 +35,16 @@ struct _AUDIN_LISTENER_CALLBACK
 	IWTSVirtualChannelManager * channel_mgr;
 };
 
+typedef struct _AUDIN_CHANNEL_CALLBACK AUDIN_CHANNEL_CALLBACK;
+struct _AUDIN_CHANNEL_CALLBACK
+{
+	IWTSVirtualChannelCallback iface;
+
+	IWTSPlugin * plugin;
+	IWTSVirtualChannelManager * channel_mgr;
+	IWTSVirtualChannel * channel;
+};
+
 typedef struct _AUDIN_PLUGIN AUDIN_PLUGIN;
 struct _AUDIN_PLUGIN
 {
@@ -44,12 +54,40 @@ struct _AUDIN_PLUGIN
 };
 
 static int
+audin_on_data_received(IWTSVirtualChannelCallback * pChannelCallback,
+	uint32 cbSize,
+	char * pBuffer)
+{
+	LLOGLN(10, ("audin_on_data_received:"));
+	return 0;
+}
+
+static int
+audin_on_close(IWTSVirtualChannelCallback * pChannelCallback)
+{
+	LLOGLN(10, ("audin_on_close:"));
+	free(pChannelCallback);
+	return 0;
+}
+
+static int
 audin_on_new_channel_connection(IWTSListenerCallback * pListenerCallback,
 	IWTSVirtualChannel * pChannel,
 	char * Data,
-	int * pbAccept)
+	int * pbAccept,
+	IWTSVirtualChannelCallback ** ppCallback)
 {
+	AUDIN_LISTENER_CALLBACK * listener_callback = (AUDIN_LISTENER_CALLBACK *) pListenerCallback;
+	AUDIN_CHANNEL_CALLBACK * callback;
+
 	LLOGLN(10, ("audin_on_new_channel_connection:"));
+	callback = (AUDIN_CHANNEL_CALLBACK *) malloc(sizeof(AUDIN_CHANNEL_CALLBACK));
+	callback->iface.OnDataReceived = audin_on_data_received;
+	callback->iface.OnClose = audin_on_close;
+	callback->plugin = listener_callback->plugin;
+	callback->channel_mgr = listener_callback->channel_mgr;
+	callback->channel = pChannel;
+	*ppCallback = (IWTSVirtualChannelCallback *) callback;
 	return 0;
 }
 
