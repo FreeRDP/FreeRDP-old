@@ -129,9 +129,12 @@ irp_process_close_request(IRP* irp, char* data, int data_size)
 void
 irp_process_read_request(IRP* irp, char* data, int data_size)
 {
-	irp->length = GET_UINT32(data, 0); /* length */
-	irp->offset = GET_UINT64(data, 4); /* offset */
-	/* 20-byte pad */
+	if (data)
+	{
+		irp->length = GET_UINT32(data, 0); /* length */
+		irp->offset = GET_UINT64(data, 4); /* offset */
+		/* 20-byte pad */
+	}
 
 	if (!irp->dev->service->read)
 	{
@@ -147,11 +150,14 @@ irp_process_read_request(IRP* irp, char* data, int data_size)
 void
 irp_process_write_request(IRP* irp, char* data, int data_size)
 {
-	irp->length = GET_UINT32(data, 0); /* length */
-	irp->offset = GET_UINT64(data, 4); /* offset */
-	/* 20-byte pad */
-	irp->inputBuffer = data + 32;
-	irp->inputBufferLength = irp->length;
+	if (data)
+	{
+		irp->length = GET_UINT32(data, 0); /* length */
+		irp->offset = GET_UINT64(data, 4); /* offset */
+		/* 20-byte pad */
+		irp->inputBuffer = data + 32;
+		irp->inputBufferLength = irp->length;
+	}
 
 	if (!irp->dev->service->write)
 	{
