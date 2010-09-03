@@ -273,6 +273,34 @@ rdpdr_process_irp(rdpdrPlugin * plugin, char* data, int data_size)
 	irp.minorFunction = GET_UINT32(data, 16); /* minorFunction */
 
 	irp.dev = devman_get_device_by_id(plugin->devman, deviceID);
+	switch (irp.dev->service->type)
+	{
+		case RDPDR_DTYP_SERIAL:
+			irp.rwBlocking = 0;
+			break;
+
+		/* parallel, filesystem and smart card are supposed to be non-blocking
+			but my goal so far is to deal only with the serial stuff */
+		case RDPDR_DTYP_PARALLEL:
+			irp.rwBlocking = 1;
+			break;
+
+		case RDPDR_DTYP_FILESYSTEM:
+			irp.rwBlocking = 1;
+			break;
+
+		case RDPDR_DTYP_SMARTCARD:
+			irp.rwBlocking = 1;
+			break;
+
+		case RDPDR_DTYP_PRINT:
+			irp.rwBlocking = 1;
+			break;
+
+		default:
+			irp.rwBlocking = 1;
+			break;
+	}
 
 	LLOGLN(10, ("IRP MAJOR: %d MINOR: %d", irp.majorFunction, irp.minorFunction));
 
