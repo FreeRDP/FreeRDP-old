@@ -38,7 +38,6 @@
 #define CLOSE_REQUEST_PDU      0x04
 #define CAPABILITY_REQUEST_PDU 0x05
 
-#define MAX_DATA_SIZE          1600
 struct data_in_item
 {
 	struct data_in_item * next;
@@ -150,15 +149,16 @@ drdynvc_write_data(drdynvcPlugin * plugin, uint32 ChannelId, char * data, uint32
 
 	LLOGLN(10, ("drdynvc_write_data: ChannelId=%d size=%d", ChannelId, data_size));
 
-	out_data = (char *) malloc(MAX_DATA_SIZE);
-	memset(out_data, 0, MAX_DATA_SIZE);
+	out_data = (char *) malloc(CHANNEL_CHUNK_LENGTH);
+	memset(out_data, 0, CHANNEL_CHUNK_LENGTH);
 	pos = 1;
 	cbChId = set_variable_uint(ChannelId, out_data, &pos);
 
-	if (data_size <= MAX_DATA_SIZE - pos)
+	if (data_size <= CHANNEL_CHUNK_LENGTH - pos)
 	{
 		SET_UINT8(out_data, 0, 0x30 | cbChId);
 		memcpy(out_data + pos, data, data_size);
+		hexdump(out_data, data_size + pos);
 		error = plugin->ep.pVirtualChannelWrite(plugin->open_handle,
 			out_data, data_size + pos, out_data);
 	}
@@ -167,26 +167,28 @@ drdynvc_write_data(drdynvcPlugin * plugin, uint32 ChannelId, char * data, uint32
 		/* Fragment the data */
 		cbLen = set_variable_uint(data_size, out_data, &pos);
 		SET_UINT8(out_data, 0, 0x20 | cbChId | (cbLen << 2));
-		data_pos = MAX_DATA_SIZE - pos;
+		data_pos = CHANNEL_CHUNK_LENGTH - pos;
 		memcpy(out_data + pos, data, data_pos);
+		hexdump(out_data, CHANNEL_CHUNK_LENGTH);
 		error = plugin->ep.pVirtualChannelWrite(plugin->open_handle,
-			out_data, MAX_DATA_SIZE, out_data);
+			out_data, CHANNEL_CHUNK_LENGTH, out_data);
 
 		while (error == CHANNEL_RC_OK && data_pos < data_size)
 		{
-			out_data = (char *) malloc(MAX_DATA_SIZE);
-			memset(out_data, 0, MAX_DATA_SIZE);
+			out_data = (char *) malloc(CHANNEL_CHUNK_LENGTH);
+			memset(out_data, 0, CHANNEL_CHUNK_LENGTH);
 			pos = 1;
 			cbChId = set_variable_uint(ChannelId, out_data, &pos);
 
 			SET_UINT8(out_data, 0, 0x30 | cbChId);
 			t = data_size - data_pos;
-			if (t > MAX_DATA_SIZE - pos)
-				t = MAX_DATA_SIZE - pos;
+			if (t > CHANNEL_CHUNK_LENGTH - pos)
+				t = CHANNEL_CHUNK_LENGTH - pos;
 			memcpy(out_data + pos, data + data_pos, t);
 			data_pos += t;
+			hexdump(out_data, t + pos);
 			error = plugin->ep.pVirtualChannelWrite(plugin->open_handle,
-				out_data, MAX_DATA_SIZE, out_data);
+				out_data, t + pos, out_data);
 		}
 	}
 	if (error != CHANNEL_RC_OK)
@@ -246,7 +248,7 @@ process_CAPABILITY_REQUEST_PDU(drdynvcPlugin * plugin, int Sp, int cbChId,
 	}
 	size = 4;
 	out_data = (char *) malloc(size);
-	SET_UINT16(out_data, 0, 0x0050);
+	SET_UINT16(out_data, 0, 0x0050); /* Cmd+Sp+cbChId+Pad. Note: MSTSC sends 0x005c */
 	SET_UINT16(out_data, 2, plugin->version);
 	hexdump(out_data, 4);
 	error = plugin->ep.pVirtualChannelWrite(plugin->open_handle,
@@ -669,7 +671,7 @@ VirtualChannelEntry(PCHANNEL_ENTRY_POINTS pEntryPoints)
 	plugin->ep = *pEntryPoints;
 	memset(&(plugin->channel_def), 0, sizeof(plugin->channel_def));
 	plugin->channel_def.options = CHANNEL_OPTION_INITIALIZED |
-		CHANNEL_OPTION_ENCRYPT_RDP;
+		CHANNEL_OPTION_ENCRYPT_RDP | CHANNEL_OPTION_COMPRESS_RDP;
 	strcpy(plugin->channel_def.name, "drdynvc");
 	plugin->in_mutex = (pthread_mutex_t *) malloc(sizeof(pthread_mutex_t));
 	pthread_mutex_init(plugin->in_mutex, 0);
