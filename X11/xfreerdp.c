@@ -30,6 +30,7 @@
 #include <errno.h>
 #include <pwd.h>
 #include <pthread.h>
+#include <semaphore.h>
 #include <freerdp/freerdp.h>
 #include <freerdp/chanman.h>
 #include <freerdp/kbd.h>
@@ -38,6 +39,9 @@
 #include "xf_keyboard.h"
 
 #define MAX_PLUGIN_DATA 20
+
+static volatile int g_thread_count = 0;
+static sem_t g_sem;
 
 static int
 set_default_params(xfInfo * xfi)
@@ -558,8 +562,6 @@ run_xfreerdp(xfInfo * xfi)
 	return 0;
 }
 
-static int g_thread_count = 0;
-
 static void *
 thread_func(void * arg)
 {
@@ -573,7 +575,10 @@ thread_func(void * arg)
 
 	pthread_detach(pthread_self());
 	g_thread_count--;
-
+	if (g_thread_count < 1)
+	{
+		sem_post(&g_sem);
+	}
 	return NULL;
 }
 
@@ -597,7 +602,7 @@ main(int argc, char ** argv)
 		return 1;
 	}
 	freerdp_chanman_init();
-
+	sem_init(&g_sem, 0, 0);
 	while (1)
 	{
 		xfi = (xfInfo *) malloc(sizeof(xfInfo));
@@ -614,16 +619,17 @@ main(int argc, char ** argv)
 		}
 
 		xf_kb_init(xfi->keyboard_layout_id);
-		g_thread_count++;
 		printf("starting thread %d to %s:%d\n", g_thread_count,
 			xfi->settings->server, xfi->settings->tcp_port_rdp);
-		pthread_create(&thread, 0, thread_func, xfi);
+		if (pthread_create(&thread, 0, thread_func, xfi) == 0)
+		{
+			g_thread_count++;
+		}
 	}
 
-	while (g_thread_count > 0)
-	{
-		sleep(1);
-	}
+	printf("main thread, waiting for all threads to exit\n");
+	sem_wait(&g_sem);
+	printf("main thread, all threads did exit\n");
 
 	freerdp_chanman_uninit();
 	freerdp_global_finish();
