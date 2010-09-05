@@ -745,7 +745,8 @@ VirtualChannelEntry(PCHANNEL_ENTRY_POINTS pEntryPoints)
 	plugin->ep = *pEntryPoints;
 
 	memset(&(plugin->channel_def), 0, sizeof(plugin->channel_def));
-	plugin->channel_def.options = CHANNEL_OPTION_INITIALIZED | CHANNEL_OPTION_ENCRYPT_RDP;
+	plugin->channel_def.options = CHANNEL_OPTION_INITIALIZED |
+		CHANNEL_OPTION_ENCRYPT_RDP | CHANNEL_OPTION_COMPRESS_RDP;
 	strcpy(plugin->channel_def.name, "rdpdr");
 
 	plugin->mutex = (pthread_mutex_t *) malloc(sizeof(pthread_mutex_t));

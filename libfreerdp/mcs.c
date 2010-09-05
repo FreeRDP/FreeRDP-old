@@ -137,8 +137,8 @@ mcs_send_edrq(rdpMcs * mcs)
 	s = iso_init(mcs->iso, 5);
 
 	out_uint8(s, (T125_DOMAINMCSPDU_ErectDomainRequest << 2));
-	out_uint16_be(s, 1);	/* height */
-	out_uint16_be(s, 1);	/* interval */
+	out_uint16_le(s, 1);	/* height */
+	out_uint16_le(s, 1);	/* interval */
 
 	s_mark_end(s);
 	iso_send(mcs->iso, s);

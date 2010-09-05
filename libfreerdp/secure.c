@@ -478,7 +478,7 @@ sec_out_client_network_data(rdpSec * sec, rdpSet * settings, STREAM s)
 		{
 			DEBUG_RDP5("Requesting channel %s\n", settings->channels[i].name);
 			out_uint8a(s, settings->channels[i].name, 8); /* name (8 bytes) 7 characters with null terminator */
-			out_uint32_be(s, settings->channels[i].flags); /* options (4 bytes) */
+			out_uint32_le(s, settings->channels[i].flags); /* options (4 bytes) */
 		}
 	}
 }
