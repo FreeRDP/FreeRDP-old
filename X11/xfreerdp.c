@@ -627,9 +627,12 @@ main(int argc, char ** argv)
 		}
 	}
 
-	printf("main thread, waiting for all threads to exit\n");
-	sem_wait(&g_sem);
-	printf("main thread, all threads did exit\n");
+	if (g_thread_count > 0)
+	{
+		printf("main thread, waiting for all threads to exit\n");
+		sem_wait(&g_sem);
+		printf("main thread, all threads did exit\n");
+	}
 
 	freerdp_chanman_uninit();
 	freerdp_global_finish();
