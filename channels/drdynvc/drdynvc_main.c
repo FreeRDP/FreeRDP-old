@@ -684,6 +684,7 @@ VirtualChannelEntry(PCHANNEL_ENTRY_POINTS pEntryPoints)
 		VIRTUAL_CHANNEL_VERSION_WIN2000, InitEvent);
 
 	plugin->channel_mgr = dvcman_new(plugin);
+	dvcman_load_plugin(plugin->channel_mgr, "channels/drdynvc/pnpdr/.libs/pnpdr.so");
 	dvcman_load_plugin(plugin->channel_mgr, "channels/drdynvc/audin/.libs/audin.so");
 
 	return 1;
