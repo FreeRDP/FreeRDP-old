@@ -131,10 +131,9 @@ IRP *
 irp_queue_next(IRPQueue * queue, IRP * irp)
 {
 	struct irp_queue_node *walker = NULL;
-	struct irp_queue_node *prev = NULL;
 
 	if (irp_queue_empty(queue))
-		return;
+		return NULL;
 
 	for (walker = queue->head; walker; walker = walker->next)
 		if (walker->irp == irp)
