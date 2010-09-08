@@ -385,6 +385,7 @@ rdp_send_client_info(rdpRdp * rdp, uint32 flags, char *domain_name,
 	flags |= INFO_LOGONERRORS;
 	flags |= INFO_LOGONNOTIFY;
 	flags |= INFO_ENABLEWINDOWSKEY;
+	flags |= RNS_INFO_AUDIOCAPTURE;
 
 	if (rdp->settings->autologin)
 		flags |= INFO_AUTOLOGON;
