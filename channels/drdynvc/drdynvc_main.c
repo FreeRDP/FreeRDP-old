@@ -401,6 +401,21 @@ process_DATA_PDU(drdynvcPlugin * plugin, int Sp, int cbChId,
 }
 
 static int
+process_CLOSE_REQUEST_PDU(drdynvcPlugin * plugin, int Sp, int cbChId,
+	char * data, int data_size)
+{
+	int pos;
+	uint32 ChannelId;
+
+	pos = 1;
+	ChannelId = get_variable_uint(cbChId, data, &pos);
+	LLOGLN(10, ("process_CLOSE_REQUEST_PDU: ChannelId=%d", ChannelId));
+	dvcman_close_channel(plugin->channel_mgr, ChannelId);
+
+	return 0;
+}
+
+static int
 thread_process_message(drdynvcPlugin * plugin, char * data, int data_size)
 {
 	int value;
@@ -429,6 +444,12 @@ thread_process_message(drdynvcPlugin * plugin, char * data, int data_size)
 			break;
 		case DATA_PDU:
 			rv = process_DATA_PDU(plugin, Sp, cbChId, data, data_size);
+			break;
+		case CLOSE_REQUEST_PDU:
+			rv = process_CLOSE_REQUEST_PDU(plugin, Sp, cbChId, data, data_size);
+			break;
+		default:
+			LLOGLN(0, ("thread_process_message: unknown drdynvc cmd 0x%x", Cmd));
 			break;
 	}
 	return rv;

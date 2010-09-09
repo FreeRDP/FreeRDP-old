@@ -195,20 +195,20 @@ dvcman_free(IWTSVirtualChannelManager * pChannelMgr)
 	IWTSPlugin * pPlugin;
 	DVCMAN_LISTENER * listener;
 
-	for (i = 0; i < dvcman->num_plugins; i++)
-	{
-		pPlugin = dvcman->plugins[i];
-		if (pPlugin->Terminated)
-			pPlugin->Terminated(pPlugin);
-	}
+	while (dvcman->channel_list_head)
+		dvcman->channel_list_head->Close(dvcman->channel_list_head);
 	for (i = 0; i < dvcman->num_listeners; i++)
 	{
 		listener = (DVCMAN_LISTENER *) dvcman->listeners[i];
 		free(listener->channel_name);
 		free(listener);
 	}
-	while (dvcman->channel_list_head)
-		dvcman_close_channel(dvcman->channel_list_head);
+	for (i = 0; i < dvcman->num_plugins; i++)
+	{
+		pPlugin = dvcman->plugins[i];
+		if (pPlugin->Terminated)
+			pPlugin->Terminated(pPlugin);
+	}
 	free(dvcman);
 }
 
@@ -240,8 +240,8 @@ dvcman_write_channel(IWTSVirtualChannel * pChannel,
 	return 0;
 }
 
-int
-dvcman_close_channel(IWTSVirtualChannel * pChannel)
+static int
+dvcman_close_channel_iface(IWTSVirtualChannel * pChannel)
 {
 	DVCMAN_CHANNEL * channel = (DVCMAN_CHANNEL *) pChannel;
 	DVCMAN * dvcman = channel->dvcman;
@@ -288,7 +288,7 @@ dvcman_create_channel(IWTSVirtualChannelManager * pChannelMgr, uint32 ChannelId,
 			channel = (DVCMAN_CHANNEL *) malloc(sizeof(DVCMAN_CHANNEL));
 			memset(channel, 0, sizeof(DVCMAN_CHANNEL));
 			channel->iface.Write = dvcman_write_channel;
-			channel->iface.Close = dvcman_close_channel;
+			channel->iface.Close = dvcman_close_channel_iface;
 			channel->dvcman = dvcman;
 			channel->next = NULL;
 			channel->channel_id = ChannelId;
@@ -336,6 +336,23 @@ dvcman_find_channel_by_id(IWTSVirtualChannelManager * pChannelMgr, uint32 Channe
 		}
 	}
 	return NULL;
+}
+
+int
+dvcman_close_channel(IWTSVirtualChannelManager * pChannelMgr, uint32 ChannelId)
+{
+	DVCMAN_CHANNEL * channel;
+	IWTSVirtualChannel * ichannel;
+
+	channel = dvcman_find_channel_by_id(pChannelMgr, ChannelId);
+	if (channel == NULL)
+	{
+		LLOGLN(0, ("dvcman_close_channel: ChannelId %d not found!", ChannelId));
+		return 1;
+	}
+	ichannel = (IWTSVirtualChannel *) channel;
+	ichannel->Close(ichannel);
+	return 0;
 }
 
 int
