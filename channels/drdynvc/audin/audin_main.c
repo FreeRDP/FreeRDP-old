@@ -26,6 +26,14 @@
 #include <string.h>
 #include "drdynvc_types.h"
 
+#define MSG_SNDIN_VERSION       0x01
+#define MSG_SNDIN_FORMATS       0x02
+#define MSG_SNDIN_OPEN          0x03
+#define MSG_SNDIN_OPEN_REPLY    0x04
+#define MSG_SNDIN_DATA_INCOMING 0x05
+#define MSG_SNDIN_DATA          0x06
+#define MSG_SNDIN_FORMATCHANGE  0x07
+
 typedef struct _AUDIN_LISTENER_CALLBACK AUDIN_LISTENER_CALLBACK;
 struct _AUDIN_LISTENER_CALLBACK
 {
@@ -54,11 +62,46 @@ struct _AUDIN_PLUGIN
 };
 
 static int
+audin_process_version(IWTSVirtualChannelCallback * pChannelCallback,
+	char * data, uint32 data_size)
+{
+	AUDIN_CHANNEL_CALLBACK * callback = (AUDIN_CHANNEL_CALLBACK *) pChannelCallback;
+	uint32 Version;
+	uint32 out_size;
+	char * out_data;
+
+	Version = GET_UINT32(data, 0);
+	LLOGLN(10, ("audin_process_version: Version=%d", Version));
+
+	out_size = 5;
+	out_data = (char *) malloc(out_size);
+	memset(out_data, 0, out_size);
+	SET_UINT8(out_data, 0, MSG_SNDIN_VERSION);
+	SET_UINT32(out_data, 1, Version);
+	callback->channel->Write(callback->channel, out_size, out_data, NULL);
+	free(out_data);
+
+	return 0;
+}
+
+static int
 audin_on_data_received(IWTSVirtualChannelCallback * pChannelCallback,
 	uint32 cbSize,
 	char * pBuffer)
 {
-	LLOGLN(10, ("audin_on_data_received:"));
+	uint8 MessageId;
+
+	MessageId = GET_UINT8(pBuffer, 0);
+	LLOGLN(10, ("audin_on_data_received: MessageId=0x%x", MessageId));
+	switch (MessageId)
+	{
+		case MSG_SNDIN_VERSION:
+			audin_process_version(pChannelCallback, pBuffer + 1, cbSize - 1);
+			break;
+		default:
+			LLOGLN(0, ("audin_on_data_received: unknown MessageId=0x%x", MessageId));
+			break;
+	}
 	return 0;
 }
 
