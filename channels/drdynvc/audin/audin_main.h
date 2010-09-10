@@ -24,12 +24,20 @@
 #ifndef __AUDIN_MAIN_H
 #define __AUDIN_MAIN_H
 
+typedef int (*wave_in_receive_func) (char * wave_data, int size, void * user_data);
+
 void *
 wave_in_new(void);
 void
 wave_in_free(void * device_data);
 int
 wave_in_format_supported(void * device_data, char * snd_format, int size);
+int
+wave_in_set_format(void * device_data, uint32 FramesPerPacket, char * snd_format, int size);
+int
+wave_in_open(void * device_data, wave_in_receive_func receive_func, void * user_data);
+int
+wave_in_close(void * device_data);
 
 #endif
 

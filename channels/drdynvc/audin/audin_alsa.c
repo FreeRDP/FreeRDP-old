@@ -27,15 +27,33 @@
 #include "drdynvc_types.h"
 #include "audin_main.h"
 
+struct alsa_device_data
+{
+	uint32 FramesPerPacket;
+	uint16 wFormatTag;
+	uint16 nChannels;
+	uint32 nSamplesPerSec;
+	uint16 nBlockAlign;
+	uint16 wBitsPerSample;
+	wave_in_receive_func receive_func;
+	void * user_data;
+};
+
 void *
 wave_in_new(void)
 {
-	return NULL;
+	struct alsa_device_data * alsa_data;
+
+	alsa_data = (struct alsa_device_data *) malloc(sizeof(struct alsa_device_data));
+	memset(alsa_data, 0, sizeof(struct alsa_device_data));
+
+	return alsa_data;
 }
 
 void
 wave_in_free(void * device_data)
 {
+	free(device_data);
 }
 
 int
@@ -63,6 +81,45 @@ wave_in_format_supported(void * device_data, char * snd_format, int size)
 		LLOGLN(0, ("wave_in_format_supported: ok."));
 		return 1;
 	}
+	return 0;
+}
+
+int
+wave_in_set_format(void * device_data, uint32 FramesPerPacket, char * snd_format, int size)
+{
+	struct alsa_device_data * alsa_data = (struct alsa_device_data *) device_data;
+
+	if (FramesPerPacket > 0)
+	{
+		alsa_data->FramesPerPacket = FramesPerPacket;
+	}
+	alsa_data->wFormatTag = GET_UINT16(snd_format, 0);
+	alsa_data->nChannels = GET_UINT16(snd_format, 2);
+	alsa_data->nSamplesPerSec = GET_UINT32(snd_format, 4);
+	alsa_data->nBlockAlign = GET_UINT16(snd_format, 12);
+	alsa_data->wBitsPerSample = GET_UINT16(snd_format, 14);
+	return 0;
+}
+
+int
+wave_in_open(void * device_data, wave_in_receive_func receive_func, void * user_data)
+{
+	struct alsa_device_data * alsa_data = (struct alsa_device_data *) device_data;
+
+	LLOGLN(10, ("wave_in_open:"));
+	alsa_data->receive_func = receive_func;
+	alsa_data->user_data = user_data;
+	return 0;
+}
+
+int
+wave_in_close(void * device_data)
+{
+	struct alsa_device_data * alsa_data = (struct alsa_device_data *) device_data;
+
+	LLOGLN(10, ("wave_in_close:"));
+	alsa_data->receive_func = NULL;
+	alsa_data->user_data = NULL;
 	return 0;
 }
 
