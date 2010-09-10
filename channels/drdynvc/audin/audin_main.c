@@ -25,6 +25,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "drdynvc_types.h"
+#include "audin_main.h"
 
 #define MSG_SNDIN_VERSION       0x01
 #define MSG_SNDIN_FORMATS       0x02
@@ -51,6 +52,7 @@ struct _AUDIN_CHANNEL_CALLBACK
 	IWTSPlugin * plugin;
 	IWTSVirtualChannelManager * channel_mgr;
 	IWTSVirtualChannel * channel;
+	void * device_data;
 };
 
 typedef struct _AUDIN_PLUGIN AUDIN_PLUGIN;
@@ -85,6 +87,73 @@ audin_process_version(IWTSVirtualChannelCallback * pChannelCallback,
 }
 
 static int
+audin_send_incoming_data_pdu(IWTSVirtualChannelCallback * pChannelCallback)
+{
+	AUDIN_CHANNEL_CALLBACK * callback = (AUDIN_CHANNEL_CALLBACK *) pChannelCallback;
+	char out_data[1];
+
+	SET_UINT8(out_data, 0, MSG_SNDIN_DATA_INCOMING);
+	callback->channel->Write(callback->channel, 1, out_data, NULL);
+	return 0;
+}
+
+static int
+audin_process_formats(IWTSVirtualChannelCallback * pChannelCallback,
+	char * data, uint32 data_size)
+{
+	AUDIN_CHANNEL_CALLBACK * callback = (AUDIN_CHANNEL_CALLBACK *) pChannelCallback;
+	uint32 NumFormats;
+	uint32 i;
+	int size;
+	int out_size;
+	char * ldata;
+	char * out_data;
+	char * lout_formats;
+	int out_format_count;
+
+	NumFormats = GET_UINT32(data, 0);
+	if ((NumFormats < 1) || (NumFormats > 1000))
+	{
+		LLOGLN(0, ("audin_process_formats: bad NumFormats %d",
+			NumFormats));
+		return 1;
+	}
+	/* Ignore cbSizeFormatsPacket */
+
+	out_size = data_size + 1;
+	out_data = (char *) malloc(out_size);
+	memset(out_data, 0, out_size);
+
+	lout_formats = out_data + 9;
+	/* remainder is sndFormats (variable) */
+	ldata = data + 8;
+	out_format_count = 0;
+	for (i = 0; i < NumFormats; i++)
+	{
+		size = 18 + GET_UINT16(ldata, 16);
+		if (wave_in_format_supported(callback->device_data, ldata, size))
+		{
+			memcpy(lout_formats, ldata, size);
+			lout_formats += size;
+			out_format_count++;
+		}
+		ldata += size;
+	}
+
+	audin_send_incoming_data_pdu(pChannelCallback);
+
+	/* cbSizeFormatsPacket: the size of the entire PDU minus the size of ExtraData */
+	size = lout_formats - out_data;	
+	SET_UINT8(out_data, 0, MSG_SNDIN_FORMATS);
+	SET_UINT32(out_data, 1, out_format_count);
+	SET_UINT32(out_data, 5, size);
+	callback->channel->Write(callback->channel, size, out_data, NULL);
+	free(out_data);
+
+	return 0;
+}
+
+static int
 audin_on_data_received(IWTSVirtualChannelCallback * pChannelCallback,
 	uint32 cbSize,
 	char * pBuffer)
@@ -98,6 +167,9 @@ audin_on_data_received(IWTSVirtualChannelCallback * pChannelCallback,
 		case MSG_SNDIN_VERSION:
 			audin_process_version(pChannelCallback, pBuffer + 1, cbSize - 1);
 			break;
+		case MSG_SNDIN_FORMATS:
+			audin_process_formats(pChannelCallback, pBuffer + 1, cbSize - 1);
+			break;
 		default:
 			LLOGLN(0, ("audin_on_data_received: unknown MessageId=0x%x", MessageId));
 			break;
@@ -108,8 +180,11 @@ audin_on_data_received(IWTSVirtualChannelCallback * pChannelCallback,
 static int
 audin_on_close(IWTSVirtualChannelCallback * pChannelCallback)
 {
+	AUDIN_CHANNEL_CALLBACK * callback = (AUDIN_CHANNEL_CALLBACK *) pChannelCallback;
+
 	LLOGLN(10, ("audin_on_close:"));
-	free(pChannelCallback);
+	wave_in_free(callback->device_data);
+	free(callback);
 	return 0;
 }
 
@@ -130,6 +205,7 @@ audin_on_new_channel_connection(IWTSListenerCallback * pListenerCallback,
 	callback->plugin = listener_callback->plugin;
 	callback->channel_mgr = listener_callback->channel_mgr;
 	callback->channel = pChannel;
+	callback->device_data = wave_in_new();
 	*ppCallback = (IWTSVirtualChannelCallback *) callback;
 	return 0;
 }
