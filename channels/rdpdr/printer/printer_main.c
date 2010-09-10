@@ -229,6 +229,7 @@ printer_register_service(PDEVMAN pDevman, PDEVMAN_ENTRY_POINTS pEntryPoints)
 	srv->process_data = printer_process_data;
 	srv->type = RDPDR_DTYP_PRINT;
 	srv->get_event = NULL;
+	srv->file_descriptor = NULL;
 
 	return srv;
 }
