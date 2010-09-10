@@ -307,6 +307,16 @@ serial_get_fd(IRP * irp)
 	return 	((SERIAL_DEVICE_INFO *) irp->dev->info)->file;
 }
 
+static void
+serial_get_timeouts(IRP * irp, uint32 * timeout, uint32 * interval_timeout)
+{
+	SERIAL_DEVICE_INFO *info = (SERIAL_DEVICE_INFO *) irp->dev->info;
+
+	*timeout = info->read_total_timeout_multiplier * irp->length +
+				info->read_total_timeout_constant;
+	*interval_timeout = info->read_interval_timeout;
+}
+
 static uint32
 serial_control(IRP * irp)
 {
@@ -1129,6 +1139,7 @@ serial_register_service(PDEVMAN pDevman, PDEVMAN_ENTRY_POINTS pEntryPoints)
 	srv->type = RDPDR_DTYP_SERIAL;
 	srv->get_event = serial_get_event;
 	srv->file_descriptor = serial_get_fd;
+	srv->get_timeouts = serial_get_timeouts;
 
 	return srv;
 }
