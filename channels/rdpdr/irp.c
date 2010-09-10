@@ -401,3 +401,10 @@ irp_file_descriptor(IRP * irp)
 
 	return -1;
 }
+
+void
+irp_get_timeouts(IRP * irp, uint32 * timeout, uint32 * interval_timeout)
+{
+	if (irp->dev->service->get_timeouts)
+		irp->dev->service->get_timeouts(irp, timeout, interval_timeout);
+}
