@@ -141,6 +141,9 @@
 #define SERIAL_CHAR_XON     4
 #define SERIAL_CHAR_XOFF    5
 
+/* http://www.codeproject.com/KB/system/chaiyasit_t.aspx */
+#define SERIAL_TIMEOUT_MAX 4294967295u
+
 #ifndef CRTSCTS
 #define CRTSCTS 0
 #endif
@@ -397,6 +400,15 @@ serial_control(IRP * irp)
 			info->read_total_timeout_constant = GET_UINT32(inbuf, 8);
 			info->write_total_timeout_multiplier = GET_UINT32(inbuf, 12);
 			info->write_total_timeout_constant = GET_UINT32(inbuf, 16);
+
+			/* http://www.codeproject.com/KB/system/chaiyasit_t.aspx, see 'ReadIntervalTimeout' section
+				http://msdn.microsoft.com/en-us/library/ms885171.aspx */
+			if (info->read_interval_timeout == SERIAL_TIMEOUT_MAX)
+			{
+				info->read_interval_timeout = 0;
+				info->read_total_timeout_multiplier = 0;
+			}
+
 			LLOGLN(10, ("serial_ioctl -> SERIAL_SET_TIMEOUTS read timeout %d %d %d",
 				      info->read_interval_timeout,
 				      info->read_total_timeout_multiplier,
