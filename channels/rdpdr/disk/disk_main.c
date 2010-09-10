@@ -947,6 +947,7 @@ disk_register_service(PDEVMAN pDevman, PDEVMAN_ENTRY_POINTS pEntryPoints)
 	srv->type = RDPDR_DTYP_FILESYSTEM;
 	srv->get_event = NULL;
 	srv->file_descriptor = disk_get_fd;
+	srv->get_timeouts = NULL;
 
 	return srv;
 }

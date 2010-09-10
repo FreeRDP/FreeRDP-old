@@ -230,6 +230,7 @@ printer_register_service(PDEVMAN pDevman, PDEVMAN_ENTRY_POINTS pEntryPoints)
 	srv->type = RDPDR_DTYP_PRINT;
 	srv->get_event = NULL;
 	srv->file_descriptor = NULL;
+	srv->get_timeouts = NULL;
 
 	return srv;
 }
