@@ -216,6 +216,7 @@ rdp_process_negotiation_failure(rdpIso * iso, STREAM s)
 				break;
 		}
 	}
+	iso->mcs->sec->denied_protocols |= iso->mcs->sec->requested_protocol;
 }
 
 /* Receive an X.224 TPDU */
@@ -352,6 +353,7 @@ iso_negotiate_encryption(rdpIso * iso, char *username)
 {
 	uint8 code;
 
+	iso->mcs->sec->denied_protocols = 0;
 	if (iso->mcs->sec->requested_protocol == PROTOCOL_RDP)
 	{
 		/* We use legacy RDP encryption, so we won't attempt to negotiate */
@@ -371,22 +373,10 @@ iso_negotiate_encryption(rdpIso * iso, char *username)
 
 		/* Attempt to receive negotiation response */
 		if (tpkt_recv(iso, &code, NULL) == NULL)
-		{
-			if (iso->mcs->sec->requested_protocol & iso->mcs->sec->denied_protocols)
-			{
-				/* Negotiation failure, downgrade encryption and try again */
-				iso->mcs->sec->requested_protocol = PROTOCOL_RDP;
+			return False;
 
-				/* second negotiation attempt */
-				iso->mcs->sec->negotiation_state = 2;
-
-				x224_send_connection_request(iso, username);
-
-				/* Receive negotiation response */
-				if (tpkt_recv(iso, &code, NULL) == NULL)
-					return False;
-			}
-		}
+		if (iso->mcs->sec->denied_protocols & iso->mcs->sec->requested_protocol)
+			return False;
 	}
 
 	return True;
@@ -502,10 +492,24 @@ iso_recv(rdpIso * iso, isoRecvType * ptype)
 RD_BOOL
 iso_connect(rdpIso * iso, char *server, char *username, int port)
 {
+	RD_BOOL ret;
+
 	if (!tcp_connect(iso->tcp, server, port))
 		return False;
 
-	return iso_negotiate_encryption(iso, username);
+	ret = iso_negotiate_encryption(iso, username);
+	if (!ret && iso->mcs->sec->negotiation_state == 1)
+	{
+		tcp_disconnect(iso->tcp);
+		if (!tcp_connect(iso->tcp, server, port))
+			return False;
+
+		/* Negotiation failure, downgrade encryption and try again */
+		iso->mcs->sec->requested_protocol = PROTOCOL_RDP;
+		ret = iso_negotiate_encryption(iso, username);
+	}
+
+	return ret;
 }
 
 /* Disconnect from the ISO layer */

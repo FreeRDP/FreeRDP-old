@@ -253,17 +253,8 @@ tcp_recv(rdpTcp * tcp, STREAM s, uint32 length)
 			}
 			else if (rcvd == 0)
 			{
-				if (tcp->iso->mcs->sec->negotiation_state < 2)
-				{
-					/* disconnection is due to an encryption protocol negotiation failure */
-					tcp->iso->mcs->sec->denied_protocols |= tcp->iso->mcs->sec->requested_protocol;
-					return NULL;
-				}
-				else
-				{
-					ui_error(tcp->iso->mcs->sec->rdp->inst, "Connection closed\n");
-					return NULL;
-				}
+				ui_error(tcp->iso->mcs->sec->rdp->inst, "Connection closed\n");
+				return NULL;
 			}
 		}
 
