@@ -74,6 +74,7 @@ struct drdynvc_plugin
 	uint32 dvc_data_size;
 };
 
+#if LOG_LEVEL > 10
 void
 hexdump(char* p, int len)
 {
@@ -109,6 +110,9 @@ hexdump(char* p, int len)
     line += thisline;
   }
 }
+#else
+#define hexdump(p,len)
+#endif
 
 static int
 set_variable_uint(uint32 val, char * data, uint32 * pos)

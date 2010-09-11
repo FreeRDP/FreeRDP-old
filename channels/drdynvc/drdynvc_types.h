@@ -29,7 +29,7 @@
 #include "chan_stream.h"
 #include "chan_plugin.h"
 
-#define LOG_LEVEL 11
+#define LOG_LEVEL 1
 #define LLOG(_level, _args) \
   do { if (_level < LOG_LEVEL) { printf _args ; } } while (0)
 #define LLOGLN(_level, _args) \
