@@ -683,6 +683,7 @@ int
 VirtualChannelEntry(PCHANNEL_ENTRY_POINTS pEntryPoints)
 {
 	drdynvcPlugin * plugin;
+	RD_PLUGIN_DATA * data;
 
 	LLOGLN(10, ("VirtualChannelEntry:"));
 
@@ -709,8 +710,16 @@ VirtualChannelEntry(PCHANNEL_ENTRY_POINTS pEntryPoints)
 		VIRTUAL_CHANNEL_VERSION_WIN2000, InitEvent);
 
 	plugin->channel_mgr = dvcman_new(plugin);
-	dvcman_load_plugin(plugin->channel_mgr, "channels/drdynvc/pnpdr/.libs/pnpdr.so");
-	dvcman_load_plugin(plugin->channel_mgr, "channels/drdynvc/audin/.libs/audin.so");
+
+	if (pEntryPoints->cbSize >= sizeof(CHANNEL_ENTRY_POINTS_EX))
+	{
+		data = (RD_PLUGIN_DATA *) (((PCHANNEL_ENTRY_POINTS_EX)pEntryPoints)->pExtendedData);
+		while (data && data->size > 0)
+		{
+			dvcman_load_plugin(plugin->channel_mgr, (char*)data->data[0]);
+			data = (RD_PLUGIN_DATA *) (((void *) data) + data->size);
+		}
+	}
 
 	return 1;
 }
