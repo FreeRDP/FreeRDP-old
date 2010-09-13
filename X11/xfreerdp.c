@@ -556,6 +556,7 @@ run_xfreerdp(xfInfo * xfi)
 		}
 	}
 	/* cleanup */
+	freerdp_chanman_close(xfi->chan_man, inst);
 	inst->rdp_disconnect(inst);
 	freerdp_free(inst);
 	xf_uninit(xfi);

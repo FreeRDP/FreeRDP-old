@@ -298,6 +298,8 @@ dvcman_create_channel(IWTSVirtualChannelManager * pChannelMgr, uint32 ChannelId,
 			if (listener->listener_callback->OnNewChannelConnection(listener->listener_callback,
 				(IWTSVirtualChannel *) channel, NULL, &bAccept, &pCallback) == 0 && bAccept == 1)
 			{
+				LLOGLN(0, ("dvcman_create_channel: listener %s created new channel %d",
+					listener->channel_name, channel->channel_id));
 				channel->channel_callback = pCallback;
 				if (dvcman->channel_list_tail)
 				{
@@ -350,6 +352,7 @@ dvcman_close_channel(IWTSVirtualChannelManager * pChannelMgr, uint32 ChannelId)
 		LLOGLN(0, ("dvcman_close_channel: ChannelId %d not found!", ChannelId));
 		return 1;
 	}
+	LLOGLN(0, ("dvcman_close_channel: channel %d closed", ChannelId));
 	ichannel = (IWTSVirtualChannel *) channel;
 	ichannel->Close(ichannel);
 	return 0;

@@ -533,6 +533,12 @@ MyVirtualChannelWrite(uint32 openHandle, void * pData, uint32 dataLength,
 		return CHANNEL_RC_NOT_OPEN;
 	}
 	SEMAPHORE_WAIT(chan_man->sem); /* lock chan_man->sync* vars */
+	if (!chan_man->is_connected)
+	{
+		SEMAPHORE_POST(chan_man->sem);
+		printf("MyVirtualChannelWrite: error not connected\n");
+		return CHANNEL_RC_NOT_CONNECTED;
+	}
 	chan_man->sync_data = pData;
 	chan_man->sync_data_length = dataLength;
 	chan_man->sync_user_data = pUserData;
@@ -609,19 +615,7 @@ freerdp_chanman_free(rdpChanMan * chan_man)
 {
 	rdpChanManList * list;
 	rdpChanManList * prev;
-	int index;
-	struct lib_data * llib;
 
-	/* tell all libraries we are shutting down */
-	for (index = 0; index < chan_man->num_libs; index++)
-	{
-		llib = chan_man->libs + index;
-		if (llib->init_event_proc != 0)
-		{
-			llib->init_event_proc(chan_man, CHANNEL_EVENT_TERMINATED,
-				0, 0);
-		}
-	}
 	SEMAPHORE_DESTROY(chan_man->sem);
 #ifdef _WIN32
 	if (chan_man->chan_event)
@@ -929,3 +923,24 @@ freerdp_chanman_check_fds(rdpChanMan * chan_man, rdpInst * inst)
 	}
 	return 0;
 }
+
+void
+freerdp_chanman_close(rdpChanMan * chan_man, rdpInst * inst)
+{
+	int index;
+	struct lib_data * llib;
+
+	chan_man->is_connected = 0;
+	freerdp_chanman_check_fds(chan_man, inst);
+	/* tell all libraries we are shutting down */
+	for (index = 0; index < chan_man->num_libs; index++)
+	{
+		llib = chan_man->libs + index;
+		if (llib->init_event_proc != 0)
+		{
+			llib->init_event_proc(chan_man, CHANNEL_EVENT_TERMINATED,
+				0, 0);
+		}
+	}
+}
+

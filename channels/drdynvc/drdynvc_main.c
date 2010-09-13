@@ -147,7 +147,7 @@ drdynvc_write_data(drdynvcPlugin * plugin, uint32 ChannelId, char * data, uint32
 	uint32 t;
 	int cbChId;
 	int cbLen;
-	char * out_data;
+	char * out_data = NULL;
 	int error;
 	uint32 data_pos;
 
@@ -197,6 +197,8 @@ drdynvc_write_data(drdynvcPlugin * plugin, uint32 ChannelId, char * data, uint32
 	}
 	if (error != CHANNEL_RC_OK)
 	{
+		if (out_data)
+			free(out_data);
 		LLOGLN(0, ("drdynvc_write_data: "
 			"VirtualChannelWrite "
 			"failed %d", error));
