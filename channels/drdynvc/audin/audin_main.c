@@ -78,6 +78,7 @@ audin_process_version(IWTSVirtualChannelCallback * pChannelCallback,
 	uint32 Version;
 	uint32 out_size;
 	char * out_data;
+	int error;
 
 	Version = GET_UINT32(data, 0);
 	LLOGLN(10, ("audin_process_version: Version=%d", Version));
@@ -87,10 +88,10 @@ audin_process_version(IWTSVirtualChannelCallback * pChannelCallback,
 	memset(out_data, 0, out_size);
 	SET_UINT8(out_data, 0, MSG_SNDIN_VERSION);
 	SET_UINT32(out_data, 1, Version);
-	callback->channel->Write(callback->channel, out_size, out_data, NULL);
+	error = callback->channel->Write(callback->channel, out_size, out_data, NULL);
 	free(out_data);
 
-	return 0;
+	return error;
 }
 
 static int
@@ -100,8 +101,7 @@ audin_send_incoming_data_pdu(IWTSVirtualChannelCallback * pChannelCallback)
 	char out_data[1];
 
 	SET_UINT8(out_data, 0, MSG_SNDIN_DATA_INCOMING);
-	callback->channel->Write(callback->channel, 1, out_data, NULL);
-	return 0;
+	return callback->channel->Write(callback->channel, 1, out_data, NULL);
 }
 
 static int
@@ -117,6 +117,7 @@ audin_process_formats(IWTSVirtualChannelCallback * pChannelCallback,
 	char * out_data;
 	char * lout_formats;
 	int out_format_count;
+	int error;
 
 	NumFormats = GET_UINT32(data, 0);
 	if ((NumFormats < 1) || (NumFormats > 1000))
@@ -163,10 +164,10 @@ audin_process_formats(IWTSVirtualChannelCallback * pChannelCallback,
 	SET_UINT8(out_data, 0, MSG_SNDIN_FORMATS);
 	SET_UINT32(out_data, 1, out_format_count);
 	SET_UINT32(out_data, 5, size);
-	callback->channel->Write(callback->channel, size, out_data, NULL);
+	error = callback->channel->Write(callback->channel, size, out_data, NULL);
 	free(out_data);
 
-	return 0;
+	return error;
 }
 
 static int
@@ -177,8 +178,7 @@ audin_send_format_change_pdu(IWTSVirtualChannelCallback * pChannelCallback, uint
 
 	SET_UINT8(out_data, 0, MSG_SNDIN_FORMATCHANGE);
 	SET_UINT32(out_data, 1, NewFormat);
-	callback->channel->Write(callback->channel, 5, out_data, NULL);
-	return 0;
+	return callback->channel->Write(callback->channel, 5, out_data, NULL);
 }
 
 static int
@@ -189,8 +189,7 @@ audin_send_open_reply_pdu(IWTSVirtualChannelCallback * pChannelCallback, uint32 
 
 	SET_UINT8(out_data, 0, MSG_SNDIN_OPEN_REPLY);
 	SET_UINT32(out_data, 1, Result);
-	callback->channel->Write(callback->channel, 5, out_data, NULL);
-	return 0;
+	return callback->channel->Write(callback->channel, 5, out_data, NULL);
 }
 
 static int
@@ -199,16 +198,19 @@ audin_receive_wave_data(char * wave_data, int size, void * user_data)
 	AUDIN_CHANNEL_CALLBACK * callback = (AUDIN_CHANNEL_CALLBACK *) user_data;
 	int out_size;
 	char * out_data;
+	int error;
 
-	audin_send_incoming_data_pdu((IWTSVirtualChannelCallback *) callback);
+	error = audin_send_incoming_data_pdu((IWTSVirtualChannelCallback *) callback);
+	if (error != 0)
+		return error;
 
 	out_size = size + 1;
 	out_data = (char *) malloc(out_size);
 	SET_UINT8(out_data, 0, MSG_SNDIN_DATA);
 	memcpy(out_data + 1, wave_data, size);
-	callback->channel->Write(callback->channel, out_size, out_data, NULL);
-
-	return 0;
+	error = callback->channel->Write(callback->channel, out_size, out_data, NULL);
+	free(out_data);
+	return error;
 }
 
 static int

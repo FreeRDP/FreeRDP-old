@@ -128,7 +128,8 @@ audin_alsa_thread_func(void * arg)
 			pindex += error * bytes_per_frame;
 			if (frames <= 0)
 			{
-				alsa_data->receive_func(buffer, buffer_size, alsa_data->user_data);
+				if (alsa_data->receive_func(buffer, buffer_size, alsa_data->user_data) != 0)
+					break;
 				frames = alsa_data->frames_per_packet;
 				pindex = buffer;
 			}

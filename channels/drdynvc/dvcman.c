@@ -236,8 +236,7 @@ dvcman_write_channel(IWTSVirtualChannel * pChannel,
 {
 	DVCMAN_CHANNEL * channel = (DVCMAN_CHANNEL *) pChannel;
 
-	drdynvc_write_data(channel->dvcman->drdynvc, channel->channel_id, pBuffer, cbSize);
-	return 0;
+	return drdynvc_write_data(channel->dvcman->drdynvc, channel->channel_id, pBuffer, cbSize);
 }
 
 static int
