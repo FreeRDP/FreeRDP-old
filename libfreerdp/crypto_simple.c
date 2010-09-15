@@ -147,30 +147,11 @@ crypto_cert_print_fp(FILE * fp, CryptoCert cert)
 	return ssl_cert_print_fp(fp, cert->data);
 }
 
-struct crypto_public_key_struct
-{
-	char * data;
-};
-
-CryptoPublicKey
-crypto_cert_get_public_key(CryptoCert cert, uint32 * key_len)
-{
-	CryptoPublicKey public_key = xmalloc(sizeof(*public_key));
-	public_key->data = ssl_cert_get_public_key(cert->data, key_len);
-	return public_key;
-}
-
-void
-crypto_public_key_free(CryptoPublicKey public_key)
-{
-	ssl_public_key_free(public_key->data);
-	xfree(public_key);
-}
-
 int
-crypto_public_key_get_exp_mod(CryptoPublicKey public_key, uint8 * exponent, uint32 max_exp_len, uint8 * modulus, uint32 max_mod_len)
+crypto_cert_get_pub_exp_mod(CryptoCert cert, uint32 * key_len,
+               uint8 * exponent, uint32 max_exp_len, uint8 * modulus, uint32 max_mod_len)
 {
-	return ssl_public_key_get_exp_mod(public_key->data, exponent, max_exp_len, modulus, max_mod_len);
+	return False;
 }
 
 void

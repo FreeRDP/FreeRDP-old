@@ -76,17 +76,9 @@ SSL_CERT *
 ssl_cert_read(uint8 * data, uint32 len);
 void
 ssl_cert_free(SSL_CERT * cert);
-SSL_PUBLIC_KEY *
-ssl_cert_get_public_key(SSL_CERT * cert, uint32 * key_len);
 RD_BOOL
 ssl_cert_verify(SSL_CERT * server_cert, SSL_CERT * cacert);
 int
 ssl_cert_print_fp(FILE * fp, SSL_CERT * cert);
-
-void
-ssl_public_key_free(SSL_PUBLIC_KEY * public_key);
-int
-ssl_public_key_get_exp_mod(SSL_PUBLIC_KEY * public_key, uint8 * exponent, uint32 max_exp_len,
-                     uint8 * modulus, uint32 max_mod_len);
 
 #endif

@@ -54,9 +54,6 @@ crypto_rc4(CryptoRc4 rc4, uint32 len, uint8 * in_data, uint8 * out_data);
 void
 crypto_rc4_free(CryptoRc4 rc4);
 
-void
-crypto_rsa_encrypt(int len, uint8 * in, uint8 * out, uint32 modulus_size, uint8 * modulus, uint8 * exponent);
-
 typedef struct crypto_cert_struct * CryptoCert;
 
 CryptoCert
@@ -67,14 +64,12 @@ RD_BOOL
 crypto_cert_verify(CryptoCert server_cert, CryptoCert cacert);
 int
 crypto_cert_print_fp(FILE * fp, CryptoCert cert);
-
-typedef struct crypto_public_key_struct * CryptoPublicKey;
-
-CryptoPublicKey
-crypto_cert_get_public_key(CryptoCert cert, uint32 * key_len);
-void
-crypto_public_key_free(CryptoPublicKey public_key);
 int
-crypto_public_key_get_exp_mod(CryptoPublicKey public_key, uint8 * exponent, uint32 max_exp_len, uint8 * modulus, uint32 max_mod_len);
+crypto_cert_get_pub_exp_mod(CryptoCert cert, uint32 * key_len,
+		uint8 * exponent, uint32 max_exp_len, uint8 * modulus, uint32 max_mod_len);
+
+void
+crypto_rsa_encrypt(int len, uint8 * in, uint8 * out, uint32 modulus_size, uint8 * modulus, uint8 * exponent);
+
 
 #endif // __CRYPTO_H

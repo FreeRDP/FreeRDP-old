@@ -173,15 +173,10 @@ crypto_cert_print_fp(FILE * fp, CryptoCert cert)
 	return X509_print_fp(fp, cert->px509);
 }
 
-struct crypto_public_key_struct
+int
+crypto_cert_get_pub_exp_mod(CryptoCert cert, uint32 * key_len,
+		uint8 * exponent, uint32 max_exp_len, uint8 * modulus, uint32 max_mod_len)
 {
-	RSA * prsa;
-};
-
-CryptoPublicKey
-crypto_cert_get_public_key(CryptoCert cert, uint32 * key_len)
-{
-	CryptoPublicKey public_key = xmalloc(sizeof(*public_key));
 	int nid;
 	EVP_PKEY *epk = NULL;
 
@@ -202,34 +197,21 @@ crypto_cert_get_public_key(CryptoCert cert, uint32 * key_len)
 	epk = X509_get_pubkey(cert->px509);
 
 	if (NULL == epk)
-		return NULL;
-
-	public_key->prsa = RSAPublicKey_dup((RSA *) epk->pkey.ptr);
-	*key_len = RSA_size(public_key->prsa);
-	EVP_PKEY_free(epk);
-	return public_key;
-}
-
-void
-crypto_public_key_free(CryptoPublicKey public_key)
-{
-	RSA_free(public_key->prsa);
-	xfree(public_key);
-}
-
-int
-crypto_public_key_get_exp_mod(CryptoPublicKey public_key, uint8 * exponent, uint32 max_exp_len, uint8 * modulus, uint32 max_mod_len)
-{
-	int len;
-
-	if ((BN_num_bytes(public_key->prsa->e) > (int) max_exp_len) || (BN_num_bytes(public_key->prsa->n) > (int) max_mod_len))
 		return 1;
 
-	len = BN_bn2bin(public_key->prsa->e, exponent);
+	if ((BN_num_bytes(((RSA *) epk->pkey.ptr)->e) > (int) max_exp_len) ||
+			(BN_num_bytes(((RSA *) epk->pkey.ptr)->n) > (int) max_mod_len))
+		return 1;
+
+	*key_len = RSA_size((RSA *) epk->pkey.ptr);
+
+	int len = BN_bn2bin(((RSA *) epk->pkey.ptr)->e, exponent);
 	reverse(exponent, len);
 
-	len = BN_bn2bin(public_key->prsa->n, modulus);
+	len = BN_bn2bin(((RSA *) epk->pkey.ptr)->n, modulus);
 	reverse(modulus, len);
+
+	EVP_PKEY_free(epk);
 
 	return 0;
 }

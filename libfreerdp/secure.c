@@ -643,7 +643,6 @@ sec_parse_server_security_data(rdpSec * sec, STREAM s, uint32 * encryptionMethod
 		uint32 cert_total_count, cert_counter;
 		uint32 license_cert_len, ts_cert_len;
 		CryptoCert license_cert, ts_cert;
-		CryptoPublicKey server_public_key;
 
 		DEBUG_RDP5("We're going for a X.509 Certificate (TS license)\n");
 		in_uint32_le(s, cert_total_count);	/* Number of certificates */
@@ -714,10 +713,10 @@ sec_parse_server_security_data(rdpSec * sec, STREAM s, uint32 * encryptionMethod
 		}
 		crypto_cert_free(license_cert);
 
-		server_public_key = crypto_cert_get_public_key(ts_cert, &(sec->server_public_key_len));
-		if (NULL == server_public_key)
+		if (crypto_cert_get_pub_exp_mod(ts_cert, &(sec->server_public_key_len),
+				exponent, SEC_EXPONENT_SIZE, modulus, SEC_MAX_MODULUS_SIZE) != 0)
 		{
-			DEBUG_RDP5("Could not read RSA key from TS Certificate\n");
+			ui_error(sec->rdp->inst, "Problem extracting RSA key from TS Certificate\n");
 			crypto_cert_free(ts_cert);
 			return False;
 		}
@@ -727,17 +726,8 @@ sec_parse_server_security_data(rdpSec * sec, STREAM s, uint32 * encryptionMethod
 		{
 			ui_error(sec->rdp->inst, "Bad TS Certificate public key size (%u bits)\n",
 			         sec->server_public_key_len * 8);
-			crypto_public_key_free(server_public_key);
 			return False;
 		}
-		if (crypto_public_key_get_exp_mod(server_public_key, exponent, SEC_EXPONENT_SIZE,
-					 modulus, SEC_MAX_MODULUS_SIZE) != 0)
-		{
-			ui_error(sec->rdp->inst, "Problem extracting RSA exponent, modulus\n");
-			crypto_public_key_free(server_public_key);
-			return False;
-		}
-		crypto_public_key_free(server_public_key);
 		in_uint8s(s, 8 + 4 * cert_total_count); /* Padding */
 	}
 	else

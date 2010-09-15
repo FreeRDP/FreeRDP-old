@@ -236,15 +236,11 @@ crypto_cert_print_fp(FILE * fp, CryptoCert cert)
 	return True;
 }
 
-struct crypto_public_key_struct
+int
+crypto_cert_get_pub_exp_mod(CryptoCert cert, uint32 * key_len,
+		uint8 * exponent, uint32 max_exp_len, uint8 * modulus, uint32 max_mod_len)
 {
-	SECKEYPublicKey *pubkey;
-};
-
-CryptoPublicKey
-crypto_cert_get_public_key(CryptoCert cert, uint32 * key_len)
-{
-	CryptoPublicKey public_key = xmalloc(sizeof(*public_key));
+	SECKEYPublicKey * pubkey;
 
 	SECOidTag tag = SECOID_GetAlgorithmTag(&cert->cert->subjectPublicKeyInfo.algorithm);
 	if ((tag == SEC_OID_PKCS1_MD5_WITH_RSA_ENCRYPTION) || (tag == SEC_OID_ISO_SHA_WITH_RSA_SIGNATURE))
@@ -256,43 +252,30 @@ crypto_cert_get_public_key(CryptoCert cert, uint32 * key_len)
 				&cert->cert->subjectPublicKeyInfo.algorithm,
 				SEC_OID_PKCS1_RSA_ENCRYPTION, NULL);
 		check(s, "Error setting temp algo oid");
-		public_key->pubkey = SECKEY_ExtractPublicKey(&cert->cert->subjectPublicKeyInfo);
+		pubkey = SECKEY_ExtractPublicKey(&cert->cert->subjectPublicKeyInfo);
 		SECOID_DestroyAlgorithmID(&cert->cert->subjectPublicKeyInfo.algorithm, False);
 		cert->cert->subjectPublicKeyInfo.algorithm = org;
 	}
 	else
 	{
-		public_key->pubkey = SECKEY_ExtractPublicKey(&cert->cert->subjectPublicKeyInfo);
+		pubkey = SECKEY_ExtractPublicKey(&cert->cert->subjectPublicKeyInfo);
 	}
-	assert(public_key->pubkey );
+	assert(pubkey);
+	assert(pubkey->keyType == rsaKey);
 
-	*key_len = SECKEY_PublicKeyStrength(public_key->pubkey);
+	*key_len = SECKEY_PublicKeyStrength(pubkey);
 
-	return public_key;
-}
-
-void
-crypto_public_key_free(CryptoPublicKey public_key)
-{
-	SECKEY_DestroyPublicKey(public_key->pubkey);
-	xfree(public_key);
-}
-
-int
-crypto_public_key_get_exp_mod(CryptoPublicKey public_key, uint8 * exponent, uint32 max_exp_len, uint8 * modulus, uint32 max_mod_len)
-{
-	assert(public_key->pubkey);
-	assert(public_key->pubkey->keyType == rsaKey);
-
-	size_t l = public_key->pubkey->u.rsa.publicExponent.len;
+	size_t l = pubkey->u.rsa.publicExponent.len;
 	assert(l <= max_exp_len);
-	revcpy(exponent, public_key->pubkey->u.rsa.publicExponent.data, l);
+	revcpy(exponent, pubkey->u.rsa.publicExponent.data, l);
 	memset(exponent + l, 0, max_exp_len - l);
 
-	l = public_key->pubkey->u.rsa.modulus.len;
+	l = pubkey->u.rsa.modulus.len;
 	assert(l <= max_mod_len);
-	revcpy(modulus, public_key->pubkey->u.rsa.modulus.data, l);
+	revcpy(modulus, pubkey->u.rsa.modulus.data, l);
 	memset(modulus + l, 0, max_mod_len - l);
+
+	SECKEY_DestroyPublicKey(pubkey);
 	return 0;
 }
 
