@@ -2425,24 +2425,6 @@ mp_to_unsigned_bin(mp_int * mp, unsigned char * str)
 } /* end mp_to_unsigned_bin() */
 
 /*****************************************************************************/
-static void
-ssl_reverse_it(char * p, int len)
-{
-	int i;
-	int j;
-	char temp;
-
-	i = 0;
-	j = len - 1;
-	while (i < j)
-	{
-		temp = p[i];
-		p[i] = p[j];
-		p[j] = temp;
-		i++;
-		j--;
-	}
-}
 
 #define PAR_MAX 1024
 
@@ -2483,18 +2465,14 @@ ssl_mod_exp(char * out, int out_len, char * in, int in_len,
 	mp_init(&lmod);
 	mp_init(&lexp);
 	memcpy(jin, in, in_len);
-	ssl_reverse_it(jin, in_len);
 	memcpy(jmod, mod, mod_len);
-	ssl_reverse_it(jmod, mod_len);
 	memcpy(jexp, exp, exp_len);
-	ssl_reverse_it(jexp, exp_len);
 	mp_read_unsigned_bin(&lin, (uint8 *) jin, in_len);
 	mp_read_unsigned_bin(&lmod, (uint8 *) jmod, mod_len);
 	mp_read_unsigned_bin(&lexp, (uint8 *) jexp, exp_len);
 	mp_exptmod(&lin, &lexp, &lmod, &lout);
 	sout = mp_unsigned_bin_size(&lout);
 	mp_to_unsigned_bin(&lout, (uint8 *) llout);
-	ssl_reverse_it(llout, sout);
 	memcpy(out, llout, out_len);
 	mp_clear(&lout);
 	mp_clear(&lin);

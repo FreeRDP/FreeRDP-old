@@ -125,20 +125,6 @@ crypto_rc4_free(CryptoRc4 rc4)
 	xfree(rc4);
 }
 
-static void
-reverse(uint8 * p, int len)
-{
-	int i, j;
-	uint8 temp;
-
-	for (i = 0, j = len - 1; i < j; i++, j--)
-	{
-		temp = p[i];
-		p[i] = p[j];
-		p[j] = temp;
-	}
-}
-
 struct crypto_cert_struct
 {
 	X509 * px509;
@@ -175,7 +161,7 @@ crypto_cert_print_fp(FILE * fp, CryptoCert cert)
 
 int
 crypto_cert_get_pub_exp_mod(CryptoCert cert, uint32 * key_len,
-		uint8 * exponent, uint32 max_exp_len, uint8 * modulus, uint32 max_mod_len)
+		uint8 * exponent, uint32 exp_len, uint8 * modulus, uint32 mod_len)
 {
 	int nid;
 	EVP_PKEY *epk = NULL;
@@ -199,17 +185,23 @@ crypto_cert_get_pub_exp_mod(CryptoCert cert, uint32 * key_len,
 	if (NULL == epk)
 		return 1;
 
-	if ((BN_num_bytes(((RSA *) epk->pkey.ptr)->e) > (int) max_exp_len) ||
-			(BN_num_bytes(((RSA *) epk->pkey.ptr)->n) > (int) max_mod_len))
+	if ((BN_num_bytes(((RSA *) epk->pkey.ptr)->e) > (int) exp_len) ||
+			(BN_num_bytes(((RSA *) epk->pkey.ptr)->n) > (int) mod_len))
 		return 1;
 
 	*key_len = RSA_size((RSA *) epk->pkey.ptr);
 
 	int len = BN_bn2bin(((RSA *) epk->pkey.ptr)->e, exponent);
-	reverse(exponent, len);
+	// assert len <= exp_len
+	memmove(exponent + exp_len - len, exponent, len);
+	memset(exponent, 0, exp_len - len);
 
+	// assert *key_len <= mod_len
 	len = BN_bn2bin(((RSA *) epk->pkey.ptr)->n, modulus);
-	reverse(modulus, len);
+	// assert len <= mod_len
+	// assert len == *key_len
+	memmove(modulus + *key_len - len, modulus, len);
+	memset(modulus, 0, *key_len - len);
 
 	EVP_PKEY_free(epk);
 
@@ -221,13 +213,7 @@ crypto_rsa_encrypt(int len, uint8 * in, uint8 * out, uint32 modulus_size, uint8 
 {
 	BN_CTX *ctx;
 	BIGNUM mod, exp, x, y;
-	uint8 inr[SEC_MAX_MODULUS_SIZE];
 	int outlen;
-
-	reverse(modulus, modulus_size);
-	reverse(exponent, SEC_EXPONENT_SIZE);
-	memcpy(inr, in, len);
-	reverse(inr, len);
 
 	ctx = BN_CTX_new();
 	BN_init(&mod);
@@ -237,12 +223,10 @@ crypto_rsa_encrypt(int len, uint8 * in, uint8 * out, uint32 modulus_size, uint8 
 
 	BN_bin2bn(modulus, modulus_size, &mod);
 	BN_bin2bn(exponent, SEC_EXPONENT_SIZE, &exp);
-	BN_bin2bn(inr, len, &x);
+	BN_bin2bn(in, len, &x);
 	BN_mod_exp(&y, &x, &exp, &mod, ctx);
 	outlen = BN_bn2bin(&y, out);
-	reverse(out, outlen);
-	if (outlen < (int) modulus_size)
-		memset(out + outlen, 0, modulus_size - outlen);
+	/* assert(outlen == modulus_size); */
 
 	BN_free(&y);
 	BN_clear_free(&x);

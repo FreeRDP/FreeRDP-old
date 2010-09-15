@@ -182,17 +182,6 @@ crypto_rc4_free(CryptoRc4 rc4)
 	xfree(rc4);
 }
 
-static void
-revcpy(uint8 * out, uint8 * in, int len)
-{
-	int i;
-	in += len;
-	for (i = 0; i < len; i++)
-	{
-		*out++ = *--in;
-	}
-}
-
 struct crypto_cert_struct
 {
     CERTCertificate * cert;
@@ -238,7 +227,7 @@ crypto_cert_print_fp(FILE * fp, CryptoCert cert)
 
 int
 crypto_cert_get_pub_exp_mod(CryptoCert cert, uint32 * key_len,
-		uint8 * exponent, uint32 max_exp_len, uint8 * modulus, uint32 max_mod_len)
+		uint8 * exponent, uint32 exp_len, uint8 * modulus, uint32 mod_len)
 {
 	SECKEYPublicKey * pubkey;
 
@@ -266,14 +255,15 @@ crypto_cert_get_pub_exp_mod(CryptoCert cert, uint32 * key_len,
 	*key_len = SECKEY_PublicKeyStrength(pubkey);
 
 	size_t l = pubkey->u.rsa.publicExponent.len;
-	assert(l <= max_exp_len);
-	revcpy(exponent, pubkey->u.rsa.publicExponent.data, l);
-	memset(exponent + l, 0, max_exp_len - l);
+	assert(l <= exp_len);
+	memset(exponent, 0, exp_len - l);
+	memcpy(exponent + exp_len - l, pubkey->u.rsa.publicExponent.data, l);
 
 	l = pubkey->u.rsa.modulus.len;
-	assert(l <= max_mod_len);
-	revcpy(modulus, pubkey->u.rsa.modulus.data, l);
-	memset(modulus + l, 0, max_mod_len - l);
+	assert(l <= mod_len);
+	assert(*key_len <= mod_len);
+	memset(modulus, 0, *key_len - l);
+	memcpy(modulus + *key_len - l, pubkey->u.rsa.modulus.data, l);
 
 	SECKEY_DestroyPublicKey(pubkey);
 	return 0;
@@ -288,29 +278,21 @@ crypto_rsa_encrypt(int len, uint8 * in, uint8 * out, uint32 modulus_size, uint8 
 	pubKey.pkcs11Slot = NULL;
 	pubKey.pkcs11ID = CK_INVALID_HANDLE;
 	pubKey.u.rsa.arena = NULL;
-	uint8 modulus_be[SEC_MAX_MODULUS_SIZE];
-	assert(modulus_size <= SEC_MAX_MODULUS_SIZE);
-	revcpy(modulus_be, modulus, modulus_size);
 	pubKey.u.rsa.modulus.type = siUnsignedInteger;
-	pubKey.u.rsa.modulus.data = modulus_be;
+	pubKey.u.rsa.modulus.data = modulus;
 	pubKey.u.rsa.modulus.len = modulus_size;
-	uint8 exponent_be[SEC_EXPONENT_SIZE];
-	revcpy(exponent_be, exponent, SEC_EXPONENT_SIZE);
 	pubKey.u.rsa.publicExponent.type = siUnsignedInteger;
-	pubKey.u.rsa.publicExponent.data = exponent_be;
+	pubKey.u.rsa.publicExponent.data = exponent;
 	pubKey.u.rsa.publicExponent.len = SEC_EXPONENT_SIZE;
 
+	assert(modulus_size <= SEC_MAX_MODULUS_SIZE);
 	uint8 in_be[SEC_MAX_MODULUS_SIZE];
 	memset(in_be, 0, modulus_size - len); /* must be padded to modulus_size */
-	revcpy(in_be + modulus_size - len, in, len);
+	memcpy(in_be + modulus_size - len, in, len);
 
-	uint8 out_be[SEC_MAX_MODULUS_SIZE];
-
-	SECStatus s = PK11_PubEncryptRaw(&pubKey, out_be, in_be, modulus_size, NULL);
+	SECStatus s = PK11_PubEncryptRaw(&pubKey, out, in_be, modulus_size, NULL);
 	check(s, "Error rsa-encrypting");
 
 	assert(pubKey.pkcs11Slot);
 	PK11_FreeSlot(pubKey.pkcs11Slot);
-
-	revcpy(out, out_be, modulus_size);
 }

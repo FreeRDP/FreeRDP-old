@@ -136,17 +136,6 @@ crypto_rc4_free(CryptoRc4 rc4)
 	xfree(rc4);
 }
 
-static void
-revcpy(uint8 * out, uint8 * in, int len)
-{
-	int i;
-	in += len;
-	for (i = 0; i < len; i++)
-	{
-		*out++ = *--in;
-	}
-}
-
 struct crypto_cert_struct
 {
 	gnutls_x509_crt_t cert;
@@ -196,7 +185,7 @@ crypto_cert_print_fp(FILE * fp, CryptoCert cert)
 
 int
 crypto_cert_get_pub_exp_mod(CryptoCert cert, uint32 * key_len,
-		uint8 * exponent, uint32 max_exp_len, uint8 * modulus, uint32 max_mod_len)
+		uint8 * exponent, uint32 exp_len, uint8 * modulus, uint32 mod_len)
 {
 	gnutls_datum_t m;
 	gnutls_datum_t e;
@@ -206,15 +195,15 @@ crypto_cert_get_pub_exp_mod(CryptoCert cert, uint32 * key_len,
 	*key_len = m.size;
 
 	size_t l = e.size;
-	assert(l <= max_exp_len);
-	revcpy(exponent, e.data, l);
-	memset(exponent + l, 0, max_exp_len - l);
+	assert(l <= exp_len);
+	memset(exponent, 0, exp_len - l);
+	memcpy(exponent + exp_len - l, e.data, l);
 	gnutls_free(e.data);
 
 	l = m.size;
-	assert(l <= max_mod_len);
-	revcpy(modulus, m.data, l);
-	memset(modulus + l, 0, max_mod_len - l);
+	assert(l <= *key_len);
+	memset(modulus, 0, *key_len - l);
+	memcpy(modulus + *key_len - l, m.data, l);
 	gnutls_free(m.data);
 
 	return 0;
@@ -226,16 +215,12 @@ crypto_rsa_encrypt(int len, uint8 * in, uint8 * out, uint32 modulus_size, uint8 
 	/* GnuTLS do not expose raw RSA, so we use the underlying gcrypt lib instead */
 	assert(modulus_size <= SEC_MAX_MODULUS_SIZE);
 
-	uint8 modulus_be[SEC_MAX_MODULUS_SIZE];
-	revcpy(modulus_be, modulus, modulus_size);
 	gcry_mpi_t m;
-	gcry_error_t rc = gcry_mpi_scan(&m, GCRYMPI_FMT_USG, modulus_be, modulus_size, NULL);
+	gcry_error_t rc = gcry_mpi_scan(&m, GCRYMPI_FMT_USG, modulus, modulus_size, NULL);
 	assert(!rc);
 
-	uint8 exponent_be[SEC_EXPONENT_SIZE];
-	revcpy(exponent_be, exponent, SEC_EXPONENT_SIZE);
 	gcry_mpi_t e;
-	rc = gcry_mpi_scan(&e, GCRYMPI_FMT_USG, exponent_be, SEC_EXPONENT_SIZE, NULL);
+	rc = gcry_mpi_scan(&e, GCRYMPI_FMT_USG, exponent, SEC_EXPONENT_SIZE, NULL);
 
 	gcry_sexp_t publickey_sexp;
 	rc = gcry_sexp_build(&publickey_sexp, NULL, "(public-key(rsa(n%m)(e%m)))", m, e);
@@ -244,10 +229,8 @@ crypto_rsa_encrypt(int len, uint8 * in, uint8 * out, uint32 modulus_size, uint8 
 	gcry_mpi_release(m);
 	gcry_mpi_release(e);
 
-	uint8 in_be[SEC_MAX_MODULUS_SIZE];
-	revcpy(in_be, in, len);
 	gcry_mpi_t in_gcry;
-	rc = gcry_mpi_scan(&in_gcry, GCRYMPI_FMT_USG, in_be, len, NULL);
+	rc = gcry_mpi_scan(&in_gcry, GCRYMPI_FMT_USG, in, len, NULL);
 	assert(!rc);
 
 	gcry_sexp_t in_sexp;
@@ -265,9 +248,8 @@ crypto_rsa_encrypt(int len, uint8 * in, uint8 * out, uint32 modulus_size, uint8 
 	gcry_mpi_t out_gcry = gcry_sexp_nth_mpi(out_list_sexp, 1, GCRYMPI_FMT_NONE);
 	assert(out_gcry);
 
-	uint8 out_be[SEC_MAX_MODULUS_SIZE];
 	size_t s;
-	rc = gcry_mpi_print(GCRYMPI_FMT_USG, out_be, modulus_size, &s, out_gcry);
+	rc = gcry_mpi_print(GCRYMPI_FMT_USG, out, modulus_size, &s, out_gcry);
 	assert(!rc);
 	assert(s == modulus_size);
 
@@ -277,6 +259,4 @@ crypto_rsa_encrypt(int len, uint8 * in, uint8 * out, uint32 modulus_size, uint8 
 	gcry_sexp_release(out_sexp);
 	gcry_sexp_release(in_sexp);
 	gcry_sexp_release(publickey_sexp);
-
-	revcpy(out, out_be, modulus_size);
 }

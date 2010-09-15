@@ -268,13 +268,6 @@ sec_decrypt(rdpSec * sec, uint8 * data, int length)
 	sec->sec_decrypt_use_count++;
 }
 
-/* Perform an RSA public key encryption operation */
-static void
-sec_rsa_encrypt(uint8 * out, uint8 * in, int len, uint32 modulus_size, uint8 * modulus, uint8 * exponent)
-{
-	crypto_rsa_encrypt(len, in, out, modulus_size, modulus, exponent);
-}
-
 /* Initialise secure transport packet */
 STREAM
 sec_init(rdpSec * sec, uint32 flags, int maxlen)
@@ -535,6 +528,17 @@ sec_out_gcc_conference_create_request(rdpSec * sec, STREAM s)
 	s_mark_end(s);
 }
 
+static void
+revcpy(uint8 * out, uint8 * in, int len)
+{
+	int i;
+	in += len;
+	for (i = 0; i < len; i++)
+	{
+		*out++ = *--in;
+	}
+}
+
 /* Parse a Server Proprietary Certificate RSA Public Key */
 static RD_BOOL
 sec_parse_public_key(rdpSec * sec, STREAM s, uint32 len, uint8 * modulus, uint8 * exponent)
@@ -564,8 +568,10 @@ sec_parse_public_key(rdpSec * sec, STREAM s, uint32 len, uint8 * modulus, uint8 
 
 	in_uint8s(s, 4);	/* modulus_bits - must match modulus_len */
 	in_uint8s(s, 4);	/* datalen - how much data can be encoded */
-	in_uint8a(s, exponent, SEC_EXPONENT_SIZE);
-	in_uint8a(s, modulus, modulus_len);
+	revcpy(exponent, s->p, SEC_EXPONENT_SIZE);
+	in_uint8s(s, SEC_EXPONENT_SIZE);
+	revcpy(modulus, s->p, modulus_len);
+	in_uint8s(s, modulus_len);
 	in_uint8s(s, SEC_PADDING_SIZE);	/* zero padding - included in modulus_len but not in modulus_bits */
 	sec->server_public_key_len = modulus_len;
 
@@ -763,8 +769,12 @@ sec_process_server_security_data(rdpSec * sec, STREAM s)
 
 	DEBUG("Generating client random\n");
 	generate_random(client_random);
-	sec_rsa_encrypt(sec->sec_crypted_random, client_random, SEC_RANDOM_SIZE,
+	uint8 client_random_rev[SEC_RANDOM_SIZE];
+	revcpy(client_random_rev, client_random, SEC_RANDOM_SIZE);
+	uint8 crypted_random_rev[SEC_RANDOM_SIZE];
+	crypto_rsa_encrypt(SEC_RANDOM_SIZE, client_random_rev, crypted_random_rev,
 			sec->server_public_key_len, modulus, exponent);
+	revcpy(sec->sec_crypted_random, crypted_random_rev, sec->server_public_key_len);
 	sec_generate_keys(sec, client_random, server_random, rc4_key_size);
 }
 
