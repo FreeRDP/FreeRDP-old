@@ -68,7 +68,7 @@ AC_SUBST(PLUGIN_PATH)
 #
 AC_ARG_WITH([crypto],
 	[AS_HELP_STRING([--with-crypto=ARG],
-		[Choose the crypto library. Valid arguments are nss, gnutls, openssl (the default) or simple])],
+		[Choose the crypto library. Valid arguments are nss, gnutls, openssl (the default), polarssl or simple])],
 	[with_crypto=$withval],
 	[with_crypto=openssl])
 
@@ -76,6 +76,7 @@ disable_tls=yes
 AM_CONDITIONAL(CRYPTO_NSS, false)
 AM_CONDITIONAL(CRYPTO_GNUTLS, false)
 AM_CONDITIONAL(CRYPTO_OPENSSL, false)
+AM_CONDITIONAL(CRYPTO_POLARSSL, false)
 AM_CONDITIONAL(CRYPTO_SIMPLE, false)
 case $with_crypto in
 	nss)
@@ -101,6 +102,18 @@ case $with_crypto in
 		])
 		AM_CONDITIONAL(CRYPTO_OPENSSL, true)
 		disable_tls=no
+		;;
+
+	polarssl)
+		AC_CHECK_LIB(polarssl, ssl_init,
+			[CRYPTO_LIBS=-lpolarssl],
+			[AC_MSG_ERROR(PolarSSL library not found)])
+		AC_CHECK_HEADER(polarssl/ssl.h,
+			[CRYPTO_CFLAGS=],
+			[AC_MSG_ERROR(PolarSSL development header not found)])
+		AC_SUBST(CRYPTO_LIBS)
+		AC_SUBST(CRYPTO_CFLAGS)
+		AM_CONDITIONAL(CRYPTO_POLARSSL, true)
 		;;
 
 	simple)

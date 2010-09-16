@@ -49,6 +49,10 @@ if CRYPTO_OPENSSL
 libfreerdp_la_SOURCES += crypto_openssl.c
 endif
 
+if CRYPTO_POLARSSL
+libfreerdp_la_SOURCES += crypto_polarssl.c
+endif
+
 if CRYPTO_SIMPLE
 libfreerdp_la_SOURCES += crypto_simple.c ssl.c ssl.h
 endif
