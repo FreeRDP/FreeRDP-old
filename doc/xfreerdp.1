@@ -125,6 +125,22 @@ using the default PostScript driver "MS Publisher Imagesetter".
 serial:<sharename>:<device>
 Redirect serial <device> to the server. It will be referenced by <sharedname>.
 
+.TP
+.BR "--plugin drdynvc --data <subplugin> [<subplugin> ...] --"
+Load the Dynamic Virtual Channel. <subplugin> can be the DVC sub-plugin name,
+or a path specifying the sub-plugin module. If the DVC sub-plugin name was
+passed, xfreerdp will try to locate the sub-plugin in its plugin path
+${prefix}/lib/freerdp.
+
+Following DVC sub-plugins are currently supported:
+
+.B
+audin
+Redirect audio recording device to the server. This is an RDP 7.0 feature
+available in Windows 7, Windows 2008 and Windows 2008 R2. Note that Windows 7
+Enterprise edition and Windows 2008 Server has audio redirection disable by
+default.
+
 .PP
 .SH LINKS
 Main website of FreeRDP
