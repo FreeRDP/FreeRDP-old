@@ -771,7 +771,7 @@ sec_process_server_security_data(rdpSec * sec, STREAM s)
 	generate_random(client_random);
 	uint8 client_random_rev[SEC_RANDOM_SIZE];
 	revcpy(client_random_rev, client_random, SEC_RANDOM_SIZE);
-	uint8 crypted_random_rev[SEC_RANDOM_SIZE];
+	uint8 crypted_random_rev[sec->server_public_key_len];
 	crypto_rsa_encrypt(SEC_RANDOM_SIZE, client_random_rev, crypted_random_rev,
 			sec->server_public_key_len, modulus, exponent);
 	revcpy(sec->sec_crypted_random, crypted_random_rev, sec->server_public_key_len);
