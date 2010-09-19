@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <freerdp/freerdp.h>
+#include "dfbfreerdp.h"
 #include "dfb_event.h"
 #include "dfb_keyboard.h"
 

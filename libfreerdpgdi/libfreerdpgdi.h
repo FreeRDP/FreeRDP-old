@@ -1,6 +1,6 @@
 /* -*- c-basic-offset: 8 -*-
    FreeRDP: A Remote Desktop Protocol client.
-   DirectFB GDI Adapation Layer
+   RDP GDI Adaption Layer
 
    Copyright (C) Marc-Andre Moreau <marcandre.moreau@gmail.com> 2010
 
@@ -19,8 +19,10 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#ifndef __DFB_GDI_H
-#define __DFB_GDI_H
+#include <freerdp/freerdp.h>
+
+#ifndef __LIBFREERDPGDI_H
+#define __LIBFREERDPGDI_H
 
 /* For more information, see [MS-RDPEGDI].pdf */
 
@@ -81,12 +83,22 @@
 /* GDI Object Types */
 #define GDIOBJ_BITMAP		0x00
 #define GDIOBJ_PEN		0x01
-#define GDIOBJ_BRUSH		0x02
-#define GDIOBJ_RECT		0x03
+#define GDIOBJ_PALETTE		0x02
+#define GDIOBJ_BRUSH		0x03
+#define GDIOBJ_RECT		0x04
 
 /* Background Modes */
 #define OPAQUE			0x00000001
 #define TRANSPARENT		0x00000002
+
+struct _PIXEL
+{
+	int red;
+	int green;
+	int blue;
+	int alpha;
+};
+typedef struct _PIXEL PIXEL;
 
 struct _GDIOBJ
 {
@@ -98,9 +110,6 @@ typedef GDIOBJ* HGDIOBJ;
 /* RGB encoded as 0x00BBGGRR */
 typedef unsigned int COLORREF;
 typedef COLORREF* LPCOLORREF;
-
-#define RGB(_red, _green, _blue) \
-  (_red << 16) | (_green << 8) | _blue;
 
 struct _RECT
 {
@@ -156,6 +165,29 @@ struct _PEN
 typedef struct _PEN PEN;
 typedef PEN* HPEN;
 
+struct _PALETTEENTRY
+{
+	unsigned char red;
+	unsigned char green;
+	unsigned char blue;
+};
+typedef struct _PALETTEENTRY PALETTEENTRY;
+
+struct _LOGPALETTE
+{
+	unsigned int count;
+	PALETTEENTRY *entries;
+};
+typedef struct _LOGPALETTE LOGPALETTE;
+
+struct _PALETTE
+{
+	unsigned char objectType;
+	LOGPALETTE *logicalPalette;
+};
+typedef struct _PALETTE PALETTE;
+typedef PALETTE* HPALETTE;
+
 struct _BRUSH
 {
 	unsigned char objectType;
@@ -166,11 +198,25 @@ struct _BRUSH
 typedef struct _BRUSH BRUSH;
 typedef BRUSH* HBRUSH;
 
+struct _WND
+{
+	HRECT invalid;
+	int dirty;
+};
+typedef struct _WND WND;
+typedef WND* HWND;
+
+unsigned int gdi_rop3_code(unsigned char code);
+unsigned int gdi_make_colorref(PIXEL *pixel);
+void gdi_colour_convert(PIXEL *pixel, int colour, int bpp, HPALETTE palette);
+char* gdi_image_convert(char* srcData, int width, int height, int srcBpp, int dstBpp, HPALETTE palette);
+
 HDC GetDC();
 HDC CreateCompatibleDC(HDC hdc);
 HBITMAP CreateBitmap(int nWidth, int nHeight, int cBitsPerPixel, char* data);
 HBITMAP CreateCompatibleBitmap(HDC hdc, int nWidth, int nHeight);
 HPEN CreatePen(int fnPenStyle, int nWidth, int crColor);
+HPALETTE CreatePalette(LOGPALETTE *lplgpl);
 HBRUSH CreateSolidBrush(COLORREF crColor);
 HBRUSH CreatePatternBrush(HBITMAP hbmp);
 int SetRect(HRECT rc, int xLeft, int yTop, int xRight, int yBottom);
@@ -178,6 +224,7 @@ int CopyRect(HRECT dst, HRECT src);
 int FillRect(HDC hdc, HRECT rect, HBRUSH hbr);
 HRGN CreateRectRgn(int nLeftRect, int nTopRect, int nRightRect, int nBottomRect);
 int SelectClipRgn(HDC hdc, HRGN hrgn);
+int InvalidateRect(HWND hWnd, HRECT lpRect);
 COLORREF GetPixel(HDC hdc, int nXPos, int nYPos);
 COLORREF SetPixel(HDC hdc, int X, int Y, COLORREF crColor);
 COLORREF GetBkColor(HDC hdc);
@@ -190,4 +237,4 @@ HGDIOBJ SelectObject(HDC hdc, HGDIOBJ hgdiobj);
 int DeleteObject(HGDIOBJ hgdiobj);
 int DeleteDC(HDC hdc);
 
-#endif /* __DFB_GDI_H */
+#endif /* __LIBFREERDPGDI_H */

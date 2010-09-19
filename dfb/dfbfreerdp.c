@@ -1,23 +1,22 @@
-/*
-   Copyright (c) 2009 Jay Sorg
+/* -*- c-basic-offset: 8 -*-
+   FreeRDP: A Remote Desktop Protocol client.
+   DirectFB UI
 
-   Permission is hereby granted, free of charge, to any person obtaining a
-   copy of this software and associated documentation files (the "Software"),
-   to deal in the Software without restriction, including without limitation
-   the rights to use, copy, modify, merge, publish, distribute, sublicense,
-   and/or sell copies of the Software, and to permit persons to whom the
-   Software is furnished to do so, subject to the following conditions:
+   Copyright (C) Marc-Andre Moreau <marcandre.moreau@gmail.com> 2010
 
-   The above copyright notice and this permission notice shall be included
-   in all copies or substantial portions of the Software.
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
 
-   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-   OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-   DEALINGS IN THE SOFTWARE.
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
 #include <stdio.h>
@@ -32,6 +31,7 @@
 #include <pthread.h>
 #include <freerdp/freerdp.h>
 #include <freerdp/chanman.h>
+#include "dfbfreerdp.h"
 #include "dfb_win.h"
 #include "dfb_keyboard.h"
 
@@ -284,10 +284,43 @@ process_params(rdpSet * settings, rdpChanMan * chan_man, int argc, char ** argv,
 	return 1;
 }
 
+static void *
+graphics_update_thread(void * arg)
+{
+	rdpInst *inst = (rdpInst*) arg;
+	dfbInfo *dfbi = GET_DFBI(inst);
+
+	int interval = 400;
+	clock_t prev = clock();
+	clock_t curr = clock();
+
+	int clocksPerMS = CLOCKS_PER_SEC * 1000;
+
+	while (1)
+	{
+		usleep(interval);
+
+		if (dfbi->hwnd->dirty)
+		{
+			curr = clock();
+
+			if ((curr - prev) / clocksPerMS > 2 * interval)
+			{				
+				prev = curr;
+				inst->ui_begin_update(inst);
+			}
+		}
+	}
+
+	pthread_detach(pthread_self());
+	return NULL;
+}
+
 static int
 run_dfbfreerdp(rdpSet * settings, rdpChanMan * chan_man)
 {
 	rdpInst * inst;
+	pthread_t thread;
 	void * dfb_info;
 	void * read_fds[32];
 	void * write_fds[32];
@@ -343,6 +376,8 @@ run_dfbfreerdp(rdpSet * settings, rdpChanMan * chan_man)
 		printf("run_dfbfreerdp: dfb_post_connect failed\n");
 		return 1;
 	}
+	pthread_create(&thread, 0, graphics_update_thread, (void*) inst);
+	
 	/* program main loop */
 	while (1)
 	{
@@ -435,6 +470,7 @@ static int g_thread_count = 0;
 
 struct thread_data
 {
+	rdpInst * inst;
 	rdpSet * settings;
 	rdpChanMan * chan_man;
 };
@@ -443,9 +479,10 @@ static void *
 thread_func(void * arg)
 {
 	struct thread_data * data;
-
 	data = (struct thread_data *) arg;
+	
 	run_dfbfreerdp(data->settings, data->chan_man);
+	
 	free(data->settings);
 	freerdp_chanman_free(data->chan_man);
 	free(data);
