@@ -16,8 +16,8 @@ dfb_process_event(rdpInst * inst, DFBEvent * event)
 	DFBInputEvent * input_event;
 
 	dfbi = GET_DFBI(inst);
-	cursor_x = dfbi->cursor_x;
-	cursor_y = dfbi->cursor_y;
+	cursor_x = dfbi->gdi->cursor_x;
+	cursor_y = dfbi->gdi->cursor_y;
 
 	if (event->clazz == DFEC_INPUT)
 	{
@@ -60,7 +60,7 @@ dfb_process_event(rdpInst * inst, DFBEvent * event)
 		}
 	}
 
-	inst->ui_rect(inst, cursor_x, cursor_y, 16, 16, 0xFFFFFFFF);
+	//inst->ui_rect(inst, cursor_x, cursor_y, 16, 16, 0xFFFFFFFF);
 	inst->rdp_send_input(inst, RDP_INPUT_MOUSE, PTRFLAGS_MOVE, cursor_x, cursor_y);
 	return 1;
 }

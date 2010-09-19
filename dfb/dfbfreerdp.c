@@ -300,7 +300,7 @@ graphics_update_thread(void * arg)
 	{
 		usleep(interval);
 
-		if (dfbi->hwnd->dirty)
+		if (dfbi->gdi->hwnd->dirty)
 		{
 			curr = clock();
 

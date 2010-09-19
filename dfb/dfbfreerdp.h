@@ -32,36 +32,16 @@
 
 struct dfb_info
 {
+	GDI *gdi;
 	DFBResult err;
-	IDirectFB * dfb;
-	DFBRegion region;
+	IDirectFB *dfb;
 	DFBEvent events[16];
 	DFBSurfaceDescription dsc;
-	IDirectFBSurface * primary;
-	IDirectFBEventBuffer * event;
-	IDirectFBSurface * screen_surface;
-	IDirectFBDisplayLayer * layer;
+	IDirectFBSurface *primary;
+	IDirectFBEventBuffer *event;
+	IDirectFBSurface *screen_surface;
+	IDirectFBDisplayLayer *layer;
 	DFBRectangle update_rect;
-	int * colourmap;
-
-	char* screen;
-	int dstBpp;
-	int srcBpp;
-	int width;
-	int height;
-	int cursor_x;
-	int cursor_y;
-	HRECT rect;
-	HBITMAP backingstore;
-	HBITMAP surface;
-	HPALETTE palette;
-	COLORREF textColor;
-	PIXEL bgcolour;
-	PIXEL fgcolour;
-	PIXEL pixel;
-	HWND hwnd;
-	HDC hdcBmp;
-	HDC hdc;
 };
 typedef struct dfb_info dfbInfo;
 

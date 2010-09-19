@@ -53,29 +53,24 @@ l_ui_begin_update(struct rdp_inst * inst)
 {
 	dfbInfo *dfbi = GET_DFBI(inst);
 
-	dfbi->update_rect.x = dfbi->hwnd->invalid->left;
-	dfbi->update_rect.y = dfbi->hwnd->invalid->top;
-	dfbi->update_rect.w = dfbi->hwnd->invalid->right - dfbi->hwnd->invalid->left;
-	dfbi->update_rect.h = dfbi->hwnd->invalid->bottom - dfbi->hwnd->invalid->top;
+	dfbi->update_rect.x = dfbi->gdi->hwnd->invalid->left;
+	dfbi->update_rect.y = dfbi->gdi->hwnd->invalid->top;
+	dfbi->update_rect.w = dfbi->gdi->hwnd->invalid->right - dfbi->gdi->hwnd->invalid->left;
+	dfbi->update_rect.h = dfbi->gdi->hwnd->invalid->bottom - dfbi->gdi->hwnd->invalid->top;
 
 	if (dfbi->update_rect.w > 0 && dfbi->update_rect.h > 0)
 	{
-		printf("ui_begin_update: x:%d y:%d w:%d h:%d\n", dfbi->hwnd->invalid->left, dfbi->hwnd->invalid->top,
-		       dfbi->hwnd->invalid->right - dfbi->hwnd->invalid->left,
-		       dfbi->hwnd->invalid->bottom - dfbi->hwnd->invalid->top);
+		printf("ui_begin_update: x:%d y:%d w:%d h:%d\n", dfbi->gdi->hwnd->invalid->left, dfbi->gdi->hwnd->invalid->top,
+		       dfbi->gdi->hwnd->invalid->right - dfbi->gdi->hwnd->invalid->left,
+		       dfbi->gdi->hwnd->invalid->bottom - dfbi->gdi->hwnd->invalid->top);
 	
 		dfbi->primary->Blit(dfbi->primary, dfbi->screen_surface, &(dfbi->update_rect), dfbi->update_rect.x, dfbi->update_rect.y);
 
-		dfbi->update_rect.x = 0;
-		dfbi->update_rect.y = 0;
-		dfbi->update_rect.w = 0;
-		dfbi->update_rect.h = 0;
-
-		dfbi->hwnd->invalid->left = 0;
-		dfbi->hwnd->invalid->right = 0;
-		dfbi->hwnd->invalid->top = 0;
-		dfbi->hwnd->invalid->bottom = 0;
-		dfbi->hwnd->dirty = 0;
+		dfbi->gdi->hwnd->invalid->left = 0;
+		dfbi->gdi->hwnd->invalid->right = 0;
+		dfbi->gdi->hwnd->invalid->top = 0;
+		dfbi->gdi->hwnd->invalid->bottom = 0;
+		dfbi->gdi->hwnd->dirty = 0;
 	}
 }
 
@@ -101,7 +96,7 @@ l_ui_create_glyph(struct rdp_inst * inst, int width, int height, uint8 * data)
 	char* glyphData;
 	dfbInfo *dfbi = GET_DFBI(inst);
 
-	glyphData = (char*) gdi_image_convert((char*) data, width, height, 1, 1, dfbi->palette);
+	glyphData = (char*) gdi_image_convert((char*) data, width, height, 1, 1, dfbi->gdi->palette);
 	glyph = CreateBitmap(width, height, 1, glyphData);
 
 	return (RD_HGLYPH) glyph;
@@ -120,8 +115,8 @@ l_ui_create_bitmap(struct rdp_inst * inst, int width, int height, uint8 * data)
 	HBITMAP bitmap;
 	dfbInfo *dfbi = GET_DFBI(inst);
 	
-	bmpData = (char*) gdi_image_convert((char*) data, width, height, dfbi->srcBpp, dfbi->dstBpp, dfbi->palette);
-	bitmap = CreateBitmap(width, height, dfbi->dstBpp, bmpData);
+	bmpData = (char*) gdi_image_convert((char*) data, width, height, dfbi->gdi->srcBpp, dfbi->gdi->dstBpp, dfbi->gdi->palette);
+	bitmap = CreateBitmap(width, height, dfbi->gdi->dstBpp, bmpData);
 	
 	return (RD_HBITMAP) bitmap;
 }
@@ -134,14 +129,14 @@ l_ui_paint_bitmap(struct rdp_inst * inst, int x, int y, int cx, int cy, int widt
 	dfbi = GET_DFBI(inst);
 	
 	bitmap = (HBITMAP) inst->ui_create_bitmap(inst, width, height, data);
-	SelectObject(dfbi->hdcBmp, (HGDIOBJ) bitmap);
-	BitBlt(dfbi->hdc, x, y, cx, cy, dfbi->hdcBmp, 0, 0, SRCCOPY);
+	SelectObject(dfbi->gdi->hdcBmp, (HGDIOBJ) bitmap);
+	BitBlt(dfbi->gdi->hdc, x, y, cx, cy, dfbi->gdi->hdcBmp, 0, 0, SRCCOPY);
 
-	dfbi->rect->left = x;
-	dfbi->rect->top = y;
-	dfbi->rect->right = x + cx;
-	dfbi->rect->bottom = y + cy;
-	InvalidateRect(dfbi->hwnd, dfbi->rect);
+	dfbi->gdi->rect->left = x;
+	dfbi->gdi->rect->top = y;
+	dfbi->gdi->rect->right = x + cx;
+	dfbi->gdi->rect->bottom = y + cy;
+	InvalidateRect(dfbi->gdi->hwnd, dfbi->gdi->rect);
 	//inst->ui_begin_update(inst);
 }
 
@@ -171,15 +166,15 @@ l_ui_rect(struct rdp_inst * inst, int x, int y, int cx, int cy, int colour)
 	rect.right = x + cx;
 	rect.bottom = y + cy;
 
-	gdi_colour_convert(&(dfbi->pixel), colour, dfbi->srcBpp, dfbi->palette);
-	hBrush = CreateSolidBrush((COLORREF) gdi_make_colorref(&(dfbi->pixel)));
-	FillRect(dfbi->hdc, &rect, hBrush);
+	gdi_colour_convert(&(dfbi->gdi->pixel), colour, dfbi->gdi->srcBpp, dfbi->gdi->palette);
+	hBrush = CreateSolidBrush((COLORREF) gdi_make_colorref(&(dfbi->gdi->pixel)));
+	FillRect(dfbi->gdi->hdc, &rect, hBrush);
 
-	dfbi->rect->left = x;
-	dfbi->rect->top = y;
-	dfbi->rect->right = x + cx;
-	dfbi->rect->bottom = y + cy;
-	InvalidateRect(dfbi->hwnd, dfbi->rect);
+	dfbi->gdi->rect->left = x;
+	dfbi->gdi->rect->top = y;
+	dfbi->gdi->rect->right = x + cx;
+	dfbi->gdi->rect->bottom = y + cy;
+	InvalidateRect(dfbi->gdi->hwnd, dfbi->gdi->rect);
 	//inst->ui_begin_update(inst);
 }
 
@@ -203,8 +198,8 @@ l_ui_start_draw_glyphs(struct rdp_inst * inst, int bgcolour, int fgcolour)
 {
 	dfbInfo *dfbi = GET_DFBI(inst);
 	
-	gdi_colour_convert(&(dfbi->fgcolour), fgcolour, dfbi->dstBpp, dfbi->palette);
-	dfbi->textColor = SetTextColor(dfbi->hdc, gdi_make_colorref(&(dfbi->fgcolour)));
+	gdi_colour_convert(&(dfbi->gdi->pixel), fgcolour, dfbi->gdi->dstBpp, dfbi->gdi->palette);
+	dfbi->gdi->textColor = SetTextColor(dfbi->gdi->hdc, gdi_make_colorref(&(dfbi->gdi->pixel)));
 }
 
 static void
@@ -213,14 +208,14 @@ l_ui_draw_glyph(struct rdp_inst * inst, int x, int y, int cx, int cy, RD_HGLYPH 
 	HBITMAP glyphBitmap = (HBITMAP) glyph;
 	dfbInfo *dfbi = GET_DFBI(inst);
 	
-	SelectObject(dfbi->hdcBmp, (HGDIOBJ) glyphBitmap);
-	BitBlt(dfbi->hdc, x, y, cx, cy, dfbi->hdcBmp, 0, 0, 0x00E20746); /* DSPDxax */
+	SelectObject(dfbi->gdi->hdcBmp, (HGDIOBJ) glyphBitmap);
+	BitBlt(dfbi->gdi->hdc, x, y, cx, cy, dfbi->gdi->hdcBmp, 0, 0, 0x00E20746); /* DSPDxax */
 
-	dfbi->rect->left = x;
-	dfbi->rect->top = y;
-	dfbi->rect->right = x + cx;
-	dfbi->rect->bottom = y + cy;
-	InvalidateRect(dfbi->hwnd, dfbi->rect);
+	dfbi->gdi->rect->left = x;
+	dfbi->gdi->rect->top = y;
+	dfbi->gdi->rect->right = x + cx;
+	dfbi->gdi->rect->bottom = y + cy;
+	InvalidateRect(dfbi->gdi->hwnd, dfbi->gdi->rect);
 	//inst->ui_begin_update(inst);
 }
 
@@ -228,7 +223,7 @@ static void
 l_ui_end_draw_glyphs(struct rdp_inst * inst, int x, int y, int cx, int cy)
 {
 	dfbInfo *dfbi = GET_DFBI(inst);
-	SetTextColor(dfbi->hdc, dfbi->textColor);
+	SetTextColor(dfbi->gdi->hdc, dfbi->gdi->textColor);
 }
 
 static uint32
@@ -250,13 +245,13 @@ l_ui_destblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy)
 
 	printf("ui_destblt: x: %d y: %d cx: %d cy: %d rop: 0x%X\n", x, y, cx, cy, gdi_rop3_code(opcode));
 
-	BitBlt(dfbi->hdc, x, y, cx, cy, NULL, 0, 0, gdi_rop3_code(opcode));
+	BitBlt(dfbi->gdi->hdc, x, y, cx, cy, NULL, 0, 0, gdi_rop3_code(opcode));
 
-	dfbi->rect->left = x;
-	dfbi->rect->top = y;
-	dfbi->rect->right = x + cx;
-	dfbi->rect->bottom = y + cy;
-	InvalidateRect(dfbi->hwnd, dfbi->rect);
+	dfbi->gdi->rect->left = x;
+	dfbi->gdi->rect->top = y;
+	dfbi->gdi->rect->right = x + cx;
+	dfbi->gdi->rect->bottom = y + cy;
+	InvalidateRect(dfbi->gdi->hwnd, dfbi->gdi->rect);
 }
 
 static void
@@ -276,14 +271,14 @@ l_ui_memblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy, 
 {
 	dfbInfo *dfbi = GET_DFBI(inst);
 	
-	SelectObject(dfbi->hdcBmp, (HGDIOBJ) src);
-	BitBlt(dfbi->hdc, x, y, cx, cy, dfbi->hdcBmp, srcx, srcy, gdi_rop3_code(opcode));
+	SelectObject(dfbi->gdi->hdcBmp, (HGDIOBJ) src);
+	BitBlt(dfbi->gdi->hdc, x, y, cx, cy, dfbi->gdi->hdcBmp, srcx, srcy, gdi_rop3_code(opcode));
 
-	dfbi->rect->left = x;
-	dfbi->rect->top = y;
-	dfbi->rect->right = x + cx;
-	dfbi->rect->bottom = y + cy;
-	InvalidateRect(dfbi->hwnd, dfbi->rect);
+	dfbi->gdi->rect->left = x;
+	dfbi->gdi->rect->top = y;
+	dfbi->gdi->rect->right = x + cx;
+	dfbi->gdi->rect->bottom = y + cy;
+	InvalidateRect(dfbi->gdi->hwnd, dfbi->gdi->rect);
 }
 
 static void
@@ -306,14 +301,14 @@ l_ui_set_clip(struct rdp_inst * inst, int x, int y, int cx, int cy)
 	dfbInfo *dfbi = GET_DFBI(inst);
 	
 	clippingRegion = CreateRectRgn(x, y, x + cx, y + cy);
-	SelectClipRgn(dfbi->hdc, clippingRegion);
+	SelectClipRgn(dfbi->gdi->hdc, clippingRegion);
 }
 
 static void
 l_ui_reset_clip(struct rdp_inst * inst)
 {
 	dfbInfo *dfbi = GET_DFBI(inst);
-	SelectClipRgn(dfbi->hdc, NULL);
+	SelectClipRgn(dfbi->gdi->hdc, NULL);
 }
 
 static void
@@ -353,8 +348,8 @@ l_ui_move_pointer(struct rdp_inst * inst, int x, int y)
 	dfbInfo * dfbi;
 	dfbi = GET_DFBI(inst);
 
-	dfbi->cursor_x = x;
-	dfbi->cursor_y = y;
+	dfbi->gdi->cursor_x = x;
+	dfbi->gdi->cursor_y = y;
 }
 
 static RD_HCOLOURMAP
@@ -389,7 +384,7 @@ static void
 l_ui_set_colourmap(struct rdp_inst * inst, RD_HCOLOURMAP map)
 {
 	dfbInfo *dfbi = GET_DFBI(inst);
-	dfbi->palette = (HPALETTE) map;
+	dfbi->gdi->palette = (HPALETTE) map;
 }
 
 static RD_HBITMAP
@@ -399,18 +394,18 @@ l_ui_create_surface(struct rdp_inst * inst, int width, int height, RD_HBITMAP ol
 	HBITMAP old_bitmap;
 	dfbInfo *dfbi = GET_DFBI(inst);
 
-	new_bitmap = CreateCompatibleBitmap(dfbi->hdc, width, height);
+	new_bitmap = CreateCompatibleBitmap(dfbi->gdi->hdc, width, height);
 	old_bitmap = (HBITMAP) old_surface;
 
 	if (old_bitmap != 0)
 	{
-		SelectObject(dfbi->hdcBmp, (HGDIOBJ) old_bitmap);
-		SelectObject(dfbi->hdc, (HGDIOBJ) new_bitmap);
+		SelectObject(dfbi->gdi->hdcBmp, (HGDIOBJ) old_bitmap);
+		SelectObject(dfbi->gdi->hdc, (HGDIOBJ) new_bitmap);
 		DeleteObject((HGDIOBJ) old_bitmap);
 	}
 	else
 	{
-		dfbi->surface = new_bitmap;
+		dfbi->gdi->surface = new_bitmap;
 	}
 
 	return (RD_HBITMAP) new_bitmap;
@@ -423,13 +418,13 @@ l_ui_set_surface(struct rdp_inst * inst, RD_HBITMAP surface)
 
 	if (surface != 0)
 	{
-		dfbi->surface = surface;
-		SelectObject(dfbi->hdc, (HGDIOBJ) dfbi->surface);
+		dfbi->gdi->surface = surface;
+		SelectObject(dfbi->gdi->hdc, (HGDIOBJ) dfbi->gdi->surface);
 	}
 	else
 	{
-		dfbi->surface = dfbi->backingstore;
-		SelectObject(dfbi->hdc, (HGDIOBJ) dfbi->surface);
+		dfbi->gdi->surface = dfbi->gdi->backingstore;
+		SelectObject(dfbi->gdi->hdc, (HGDIOBJ) dfbi->gdi->surface);
 	}
 }
 
@@ -517,48 +512,51 @@ dfb_post_connect(rdpInst * inst)
 	dfbInfo * dfbi;
 	dfbi = GET_DFBI(inst);
 
+	dfbi->gdi = (GDI*) malloc(sizeof(GDI));
+	memset(dfbi->gdi, 0, sizeof(GDI));
+	
 	dfbi->err = DirectFBCreate(&(dfbi->dfb));
 
 	dfbi->dsc.flags = DSDESC_CAPS;
 	dfbi->dsc.caps = DSCAPS_PRIMARY;
 	dfbi->err = dfbi->dfb->CreateSurface(dfbi->dfb, &(dfbi->dsc), &(dfbi->primary));
-	dfbi->err = dfbi->primary->GetSize(dfbi->primary, &(dfbi->width), &(dfbi->height));
-	dfbi->dfb->SetVideoMode(dfbi->dfb, dfbi->width, dfbi->height, dfbi->dstBpp);
+	dfbi->err = dfbi->primary->GetSize(dfbi->primary, &(dfbi->gdi->width), &(dfbi->gdi->height));
+	dfbi->dfb->SetVideoMode(dfbi->dfb, dfbi->gdi->width, dfbi->gdi->height, dfbi->gdi->dstBpp);
 	dfbi->dfb->CreateInputEventBuffer(dfbi->dfb, DICAPS_ALL, 0, &(dfbi->event));
 
 	dfbi->dfb->GetDisplayLayer(dfbi->dfb, 0, &(dfbi->layer));
 	dfbi->layer->EnableCursor(dfbi->layer, 1);
 
-	dfbi->width = inst->settings->width;
-	dfbi->height = inst->settings->height;
+	dfbi->gdi->width = inst->settings->width;
+	dfbi->gdi->height = inst->settings->height;
 
-	dfbi->dstBpp = 32;
-	dfbi->srcBpp = inst->settings->server_depth;
+	dfbi->gdi->dstBpp = 32;
+	dfbi->gdi->srcBpp = inst->settings->server_depth;
 	
-	dfbi->screen = malloc(dfbi->width * dfbi->height * 4);
+	dfbi->gdi->screen = malloc(dfbi->gdi->width * dfbi->gdi->height * 4);
 	dfbi->dsc.flags = DSDESC_CAPS | DSDESC_WIDTH | DSDESC_HEIGHT | DSDESC_PREALLOCATED | DSDESC_PIXELFORMAT;
 	dfbi->dsc.caps = DSCAPS_SYSTEMONLY;
-	dfbi->dsc.width = dfbi->width;
-	dfbi->dsc.height = dfbi->height;
+	dfbi->dsc.width = dfbi->gdi->width;
+	dfbi->dsc.height = dfbi->gdi->height;
 	dfbi->dsc.pixelformat = DSPF_AiRGB;
-	dfbi->dsc.preallocated[0].data = dfbi->screen;
-	dfbi->dsc.preallocated[0].pitch = dfbi->width * 4;
+	dfbi->dsc.preallocated[0].data = dfbi->gdi->screen;
+	dfbi->dsc.preallocated[0].pitch = dfbi->gdi->width * 4;
 	dfbi->dfb->CreateSurface(dfbi->dfb, &(dfbi->dsc), &(dfbi->screen_surface));
 
-	dfbi->hwnd = (HWND) malloc(sizeof(WND));
-	dfbi->hwnd->invalid = (HRECT) malloc(sizeof(RECT));
-	memset(dfbi->hwnd->invalid, 0, sizeof(RECT));
+	dfbi->gdi->hwnd = (HWND) malloc(sizeof(WND));
+	dfbi->gdi->hwnd->invalid = (HRECT) malloc(sizeof(RECT));
+	memset(dfbi->gdi->hwnd->invalid, 0, sizeof(RECT));
 
-	dfbi->rect = (HRECT) malloc(sizeof(RECT));
-	memset(dfbi->rect, 0, sizeof(RECT));
+	dfbi->gdi->rect = (HRECT) malloc(sizeof(RECT));
+	memset(dfbi->gdi->rect, 0, sizeof(RECT));
 	
-	dfbi->hdc = GetDC();
-	dfbi->hdc->bitsPerPixel = dfbi->dstBpp;
-	dfbi->hdc->bytesPerPixel = 4;
+	dfbi->gdi->hdc = GetDC();
+	dfbi->gdi->hdc->bitsPerPixel = dfbi->gdi->dstBpp;
+	dfbi->gdi->hdc->bytesPerPixel = 4;
 
-	dfbi->backingstore = CreateBitmap(dfbi->width, dfbi->height, dfbi->dstBpp, (char*) dfbi->screen);
-	SelectObject(dfbi->hdc, (HGDIOBJ) dfbi->backingstore);
-	dfbi->hdcBmp = CreateCompatibleDC(dfbi->hdc);
+	dfbi->gdi->backingstore = CreateBitmap(dfbi->gdi->width, dfbi->gdi->height, dfbi->gdi->dstBpp, (char*) dfbi->gdi->screen);
+	SelectObject(dfbi->gdi->hdc, (HGDIOBJ) dfbi->gdi->backingstore);
+	dfbi->gdi->hdcBmp = CreateCompatibleDC(dfbi->gdi->hdc);
 
 	return 0;
 }

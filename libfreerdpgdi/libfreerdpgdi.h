@@ -206,6 +206,28 @@ struct _WND
 typedef struct _WND WND;
 typedef WND* HWND;
 
+struct _GDI
+{
+	int width;
+	int height;
+	int dstBpp;
+	int srcBpp;
+	int cursor_x;
+	int cursor_y;
+	char* screen;
+	
+	HWND hwnd;
+	HDC hdc;
+	HDC hdcBmp;
+	HBITMAP surface;	
+	HBITMAP backingstore;
+	COLORREF textColor;
+	HPALETTE palette;
+	PIXEL pixel;
+	HRECT rect;
+};
+typedef struct _GDI GDI;
+
 unsigned int gdi_rop3_code(unsigned char code);
 unsigned int gdi_make_colorref(PIXEL *pixel);
 void gdi_colour_convert(PIXEL *pixel, int colour, int bpp, HPALETTE palette);
