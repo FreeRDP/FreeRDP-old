@@ -52,7 +52,7 @@ set_default_params(rdpSet * settings)
 	settings->bitmap_cache = 1;
 	settings->bitmap_compression = 1;
 	settings->desktop_save = 0;
-	settings->performanceflags = PERF_DISABLE_FULLWINDOWDRAG | PERF_DISABLE_MENUANIMATIONS | PERF_DISABLE_WALLPAPER;
+	settings->performanceflags = PERF_DISABLE_FULLWINDOWDRAG | PERF_DISABLE_MENUANIMATIONS;
 	settings->off_screen_bitmaps = 1;
 	settings->triblt = 0;
 	settings->new_cursors = 1;
@@ -284,43 +284,10 @@ process_params(rdpSet * settings, rdpChanMan * chan_man, int argc, char ** argv,
 	return 1;
 }
 
-static void *
-graphics_update_thread(void * arg)
-{
-	rdpInst *inst = (rdpInst*) arg;
-	dfbInfo *dfbi = GET_DFBI(inst);
-
-	int interval = 400;
-	clock_t prev = clock();
-	clock_t curr = clock();
-
-	int clocksPerMS = CLOCKS_PER_SEC * 1000;
-
-	while (1)
-	{
-		usleep(interval);
-
-		if (dfbi->gdi->hwnd->dirty)
-		{
-			curr = clock();
-
-			if ((curr - prev) / clocksPerMS > 2 * interval)
-			{				
-				prev = curr;
-				inst->ui_begin_update(inst);
-			}
-		}
-	}
-
-	pthread_detach(pthread_self());
-	return NULL;
-}
-
 static int
 run_dfbfreerdp(rdpSet * settings, rdpChanMan * chan_man)
 {
 	rdpInst * inst;
-	pthread_t thread;
 	void * dfb_info;
 	void * read_fds[32];
 	void * write_fds[32];
@@ -376,7 +343,6 @@ run_dfbfreerdp(rdpSet * settings, rdpChanMan * chan_man)
 		printf("run_dfbfreerdp: dfb_post_connect failed\n");
 		return 1;
 	}
-	pthread_create(&thread, 0, graphics_update_thread, (void*) inst);
 	
 	/* program main loop */
 	while (1)

@@ -643,7 +643,7 @@ int SelectClipRgn(HDC hdc, HRGN hrgn)
 }
 
 int InvalidateRect(HWND hWnd, HRECT lpRect)
-{
+{	
 	if (lpRect->left < hWnd->invalid->left)
 		hWnd->invalid->left = lpRect->left;
 
@@ -655,9 +655,9 @@ int InvalidateRect(HWND hWnd, HRECT lpRect)
 
 	if (lpRect->bottom > hWnd->invalid->bottom)
 		hWnd->invalid->bottom = lpRect->bottom;
-
+	
 	hWnd->dirty = 1;
-
+	
 	return 0;
 }
 
@@ -697,11 +697,36 @@ int FillRect(HDC hdc, HRECT rect, HBRUSH hbr)
 {
 	int i;
 	int j;
-	HBITMAP hBmp = (HBITMAP) hdc->selectedObject;
+	RGN draw;
+	HRGN clip;
+	HBITMAP hBmp;
+
+	clip = hdc->clippingRegion;
+	draw.left = rect->left;
+	draw.right = rect->right;
+	draw.top = rect->top;
+	draw.bottom = rect->bottom;
 	
-	for (i = rect->top; i < rect->bottom; i++)
+	if (clip != NULL)
 	{
-		for (j = rect->left; j < rect->right; j++)
+		if (rect->left < clip->left)
+			draw.left = clip->left;
+
+		if (rect->top < clip->top)
+			draw.top = clip->top;
+		
+		if (rect->right > clip->right)
+			draw.right = clip->right;
+		
+		if (rect->bottom > clip->bottom)
+			draw.bottom = clip->bottom;
+	}
+
+	hBmp = (HBITMAP) hdc->selectedObject;
+	
+	for (i = draw.top; i < draw.bottom; i++)
+	{
+		for (j = draw.left; j < draw.right; j++)
 		{
 			*((COLORREF*)&(hBmp->data[i * hBmp->width * hdc->bytesPerPixel + j * hdc->bytesPerPixel])) = hbr->color;
 		}
@@ -742,6 +767,7 @@ int SetBkMode(HDC hdc, int iBkMode)
 int BitBlt(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc, int rop)
 {
 	int i;
+	HRGN clip;
 	char* srcp;
 	char* dstp;
 
@@ -751,10 +777,53 @@ int BitBlt(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdc
 		0x00000042	BLACKNESS
 		0x00E20746	DSPDxax
 	*/
+
+	clip = hdcSrc->clippingRegion;
+
+	if (clip != NULL)
+	{
+		printf("clipping region: x:%d y:%d cx:%d cy:%d\n", clip->left, clip->right,
+		       clip->right - clip->left, clip->bottom - clip->top);
+
+		int right = nXDest + nWidth;
+		int bottom = nYDest + nHeight;
+		
+		if (nXDest < clip->left)
+			nXDest = clip->left;
+
+		if (nYDest < clip->top)
+			nYDest = clip->top;
+		
+		if (right > clip->right)
+			right = clip->right;
+		
+		if (bottom > clip->bottom)
+			bottom = clip->bottom;
+
+		nWidth = right - nXDest;
+		nHeight = bottom - nYDest;
+	}
 	
-	if (rop == SRCCOPY || rop == 0x000C0324)
+	if (rop == SRCCOPY)
 	{
 		HBITMAP hSrcBmp = (HBITMAP) hdcSrc->selectedObject;
+		srcp = gdi_get_bitmap_pointer(hdcSrc, nXSrc, nYSrc);
+		
+		for (i = 0; i < nHeight; i++)
+		{
+			dstp = gdi_get_bitmap_pointer(hdcDest, nXDest, nYDest + i);
+
+			if (dstp != 0)
+			{
+				gdi_copy_mem(dstp, srcp, nWidth * hdcDest->bytesPerPixel);
+				srcp += hSrcBmp->width * hdcDest->bytesPerPixel;
+			}
+		}				
+	}
+	else if (rop == 0x000C0324)
+	{
+		printf("BitBlt: 0x000C0324 SPna\n");
+		/*HBITMAP hSrcBmp = (HBITMAP) hdcSrc->selectedObject;
 		
 		srcp = (char *) (((unsigned int *) hSrcBmp->data) + nYSrc * hSrcBmp->width + nXSrc);
 		
@@ -767,7 +836,7 @@ int BitBlt(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdc
 				gdi_copy_mem(dstp, srcp, nWidth * hdcDest->bytesPerPixel);
 				srcp += hSrcBmp->width * hdcDest->bytesPerPixel;
 			}
-		}				
+		}*/				
 	}
 	else if (rop == BLACKNESS)
 	{
@@ -808,6 +877,7 @@ int BitBlt(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdc
 	else
 	{
 		/* unknown raster operation */
+		printf("BitBlt: unknown rop: 0x%08X\n", rop);
 	}
 	
 	return 1;
@@ -816,6 +886,7 @@ int BitBlt(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdc
 int PatBlt(HDC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight, int rop)
 {
 	int i;
+	int j;
 	char* srcp;
 	char* dstp;
 
@@ -823,11 +894,9 @@ int PatBlt(HDC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight, int rop)
 	
 	if (rop == PATCOPY)
 	{
-		HBRUSH hBrush;
 		HBITMAP hPattern;
 		
-		hBrush = (HBRUSH) hdc->selectedObject;
-		hPattern = hBrush->pattern;
+		hPattern = hdc->brush->pattern;
 		
 		srcp = (char *) hPattern->data;
 		
@@ -837,14 +906,30 @@ int PatBlt(HDC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight, int rop)
 
 			if (dstp != 0)
 			{
-				//gdi_copy_mem(dstp, srcp, nWidth * hdc->bytesPerPixel);
-				//srcp += hPattern->width * hdc->bytesPerPixel;
+				gdi_copy_mem(dstp, srcp, nWidth * hdc->bytesPerPixel);
+				srcp += hPattern->width * hdc->bytesPerPixel;
 			}
-		}	
+		}
+	}
+	else if (rop == PATINVERT)
+	{		
+		for (i = 0; i < nWidth; i++)
+		{
+			for (j = 0; j < nHeight; j++)
+			{
+				dstp = gdi_get_bitmap_pointer(hdc, nXLeft + i, nYLeft + j);
+
+				/* this assumes ARGB_8888 in the destination buffer */
+
+				if (dstp != 0)
+					memset(dstp, hdc->textColor, hdc->bytesPerPixel);
+			}
+		}
 	}
 	else
 	{
 		/* unknown raster operation */
+		printf("PatBlt: unknown rop: 0x%08X", rop);
 	}
 	
 	return 1;

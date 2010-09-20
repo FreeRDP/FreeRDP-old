@@ -131,19 +131,6 @@ struct _RGN
 typedef struct _RGN RGN;
 typedef RGN* HRGN;
 
-struct _DC
-{
-	HGDIOBJ selectedObject;
-	unsigned int bytesPerPixel;
-	unsigned int bitsPerPixel;
-	HRGN clippingRegion;
-	COLORREF bkColor;
-	COLORREF textColor;
-	int bkMode;
-};
-typedef struct _DC DC;
-typedef DC* HDC;
-
 struct _BITMAP
 {
 	unsigned char objectType;
@@ -197,6 +184,20 @@ struct _BRUSH
 };
 typedef struct _BRUSH BRUSH;
 typedef BRUSH* HBRUSH;
+
+struct _DC
+{
+	HGDIOBJ selectedObject;
+	unsigned int bytesPerPixel;
+	unsigned int bitsPerPixel;
+	HRGN clippingRegion;
+	COLORREF bkColor;
+	COLORREF textColor;
+	HBRUSH brush;
+	int bkMode;
+};
+typedef struct _DC DC;
+typedef DC* HDC;
 
 struct _WND
 {
