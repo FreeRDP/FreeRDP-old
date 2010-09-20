@@ -39,7 +39,7 @@ struct dfb_info
 	DFBSurfaceDescription dsc;
 	IDirectFBSurface *primary;
 	IDirectFBEventBuffer *event;
-	IDirectFBSurface *screen_surface;
+	IDirectFBSurface *surface;
 	IDirectFBDisplayLayer *layer;
 	DFBRectangle update_rect;
 };

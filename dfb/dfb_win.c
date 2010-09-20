@@ -68,7 +68,7 @@ l_ui_end_update(struct rdp_inst * inst)
 		       dfbi->gdi->hwnd->invalid->right - dfbi->gdi->hwnd->invalid->left,
 		       dfbi->gdi->hwnd->invalid->bottom - dfbi->gdi->hwnd->invalid->top);*/
 	
-		dfbi->primary->Blit(dfbi->primary, dfbi->screen_surface, &(dfbi->update_rect), dfbi->update_rect.x, dfbi->update_rect.y);
+		dfbi->primary->Blit(dfbi->primary, dfbi->surface, &(dfbi->update_rect), dfbi->update_rect.x, dfbi->update_rect.y);
 
 		dfbi->gdi->hwnd->invalid->left = 0;
 		dfbi->gdi->hwnd->invalid->right = 0;
@@ -124,13 +124,17 @@ static void
 l_ui_paint_bitmap(struct rdp_inst * inst, int x, int y, int cx, int cy, int width, int height, uint8 * data)
 {
 	HBITMAP bitmap;
-	dfbInfo * dfbi;
-	dfbi = GET_DFBI(inst);
+	dfbInfo *dfbi = GET_DFBI(inst);
+
+	printf("ui_paint_bitmap: x:%d y:%d cx:%d cy:%d surface: 0x%08X\n", x, y, cx, cy, dfbi->gdi->drawing_surface);
 	
 	bitmap = (HBITMAP) inst->ui_create_bitmap(inst, width, height, data);
-	SelectObject(dfbi->gdi->hdc_drawing, (HGDIOBJ) bitmap);
-	BitBlt(dfbi->gdi->hdc_system, x, y, cx, cy, dfbi->gdi->hdc_drawing, 0, 0, SRCCOPY);
-
+	SelectObject(dfbi->gdi->hdc_bmp, (HGDIOBJ) bitmap);
+	
+	SelectObject(dfbi->gdi->hdc_system, (HGDIOBJ) dfbi->gdi->system_surface);
+	BitBlt(dfbi->gdi->hdc_system, x, y, cx, cy, dfbi->gdi->hdc_bmp, 0, 0, SRCCOPY);
+	DeleteObject((HGDIOBJ) bitmap);
+	
 	if (dfbi->gdi->drawing_surface == dfbi->gdi->system_surface)
 	{
 		dfbi->gdi->rect->left = x;
@@ -217,6 +221,7 @@ l_ui_draw_glyph(struct rdp_inst * inst, int x, int y, int cx, int cy, RD_HGLYPH 
 	dfbInfo *dfbi = GET_DFBI(inst);
 	
 	SelectObject(dfbi->gdi->hdc_bmp, (HGDIOBJ) glyph);
+	SelectObject(dfbi->gdi->hdc_drawing, (HGDIOBJ) dfbi->gdi->drawing_surface);
 	BitBlt(dfbi->gdi->hdc_drawing, x, y, cx, cy, dfbi->gdi->hdc_bmp, 0, 0, 0x00E20746); /* DSPDxax */
 
 	if (dfbi->gdi->drawing_surface == dfbi->gdi->system_surface)
@@ -252,7 +257,7 @@ l_ui_destblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy)
 {
 	dfbInfo *dfbi = GET_DFBI(inst);
 
-	printf("ui_destblt: x: %d y: %d cx: %d cy: %d rop: 0x%X hdc_drawing:0x%08X\n", x, y, cx, cy,
+	printf("ui_destblt: x: %d y: %d cx: %d cy: %d rop: 0x%X surface:0x%08X\n", x, y, cx, cy,
 	       gdi_rop3_code(opcode), dfbi->gdi->hdc_drawing);
 
 	SelectObject(dfbi->gdi->hdc_drawing, (HGDIOBJ) dfbi->gdi->drawing_surface);
@@ -300,6 +305,10 @@ l_ui_patblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy, 
 		PatBlt(dfbi->gdi->hdc_drawing, x, y, cx, cy, gdi_rop3_code(opcode));
 
 		SetTextColor(dfbi->gdi->hdc_drawing, dfbi->gdi->textColor);
+	}
+	else
+	{
+		printf("ui_patblt: unknown brush style: %d\n", brush->style);
 	}
 
 	if (dfbi->gdi->drawing_surface == dfbi->gdi->system_surface)
@@ -632,15 +641,15 @@ dfb_post_connect(rdpInst * inst)
 	dfbi->gdi->dstBpp = 32;
 	dfbi->gdi->srcBpp = inst->settings->server_depth;
 	
-	dfbi->gdi->screen = malloc(dfbi->gdi->width * dfbi->gdi->height * 4);
+	dfbi->gdi->system_buffer = malloc(dfbi->gdi->width * dfbi->gdi->height * 4);
 	dfbi->dsc.flags = DSDESC_CAPS | DSDESC_WIDTH | DSDESC_HEIGHT | DSDESC_PREALLOCATED | DSDESC_PIXELFORMAT;
 	dfbi->dsc.caps = DSCAPS_SYSTEMONLY;
 	dfbi->dsc.width = dfbi->gdi->width;
 	dfbi->dsc.height = dfbi->gdi->height;
 	dfbi->dsc.pixelformat = DSPF_AiRGB;
-	dfbi->dsc.preallocated[0].data = dfbi->gdi->screen;
+	dfbi->dsc.preallocated[0].data = dfbi->gdi->system_buffer;
 	dfbi->dsc.preallocated[0].pitch = dfbi->gdi->width * 4;
-	dfbi->dfb->CreateSurface(dfbi->dfb, &(dfbi->dsc), &(dfbi->screen_surface));
+	dfbi->dfb->CreateSurface(dfbi->dfb, &(dfbi->dsc), &(dfbi->surface));
 
 	dfbi->gdi->hwnd = (HWND) malloc(sizeof(WND));
 	dfbi->gdi->hwnd->invalid = (HRECT) malloc(sizeof(RECT));
@@ -653,7 +662,7 @@ dfb_post_connect(rdpInst * inst)
 	dfbi->gdi->hdc_system->bitsPerPixel = dfbi->gdi->dstBpp;
 	dfbi->gdi->hdc_system->bytesPerPixel = 4;
 
-	dfbi->gdi->system_surface = CreateBitmap(dfbi->gdi->width, dfbi->gdi->height, dfbi->gdi->dstBpp, (char*) dfbi->gdi->screen);
+	dfbi->gdi->system_surface = CreateBitmap(dfbi->gdi->width, dfbi->gdi->height, dfbi->gdi->dstBpp, (char*) dfbi->gdi->system_buffer);
 	SelectObject(dfbi->gdi->hdc_system, (HGDIOBJ) dfbi->gdi->system_surface);
 	dfbi->gdi->hdc_drawing = dfbi->gdi->hdc_system;
 	dfbi->gdi->hdc_bmp = CreateCompatibleDC(dfbi->gdi->hdc_system);

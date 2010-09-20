@@ -215,11 +215,11 @@ struct _GDI
 	int srcBpp;
 	int cursor_x;
 	int cursor_y;
-	char* screen;
 	
 	HWND hwnd;
 	HDC hdc_system;
 	HDC hdc_drawing;
+	char* system_buffer;
 	HBITMAP system_surface;
 	HBITMAP drawing_surface;
 	COLORREF textColor;
