@@ -299,6 +299,9 @@ run_dfbfreerdp(rdpSet * settings, rdpChanMan * chan_man)
 	fd_set rfds;
 	fd_set wfds;
 
+	memset(read_fds, 0, sizeof(read_fds));
+	memset(write_fds, 0, sizeof(write_fds));
+
 	printf("run_dfbfreerdp:\n");
 	/* create an instance of the library */
 	inst = freerdp_new(settings);

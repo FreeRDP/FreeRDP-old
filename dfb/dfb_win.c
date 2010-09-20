@@ -128,10 +128,10 @@ l_ui_paint_bitmap(struct rdp_inst * inst, int x, int y, int cx, int cy, int widt
 	dfbi = GET_DFBI(inst);
 	
 	bitmap = (HBITMAP) inst->ui_create_bitmap(inst, width, height, data);
-	SelectObject(dfbi->gdi->hdcBmp, (HGDIOBJ) bitmap);
-	BitBlt(dfbi->gdi->hdc, x, y, cx, cy, dfbi->gdi->hdcBmp, 0, 0, SRCCOPY);
+	SelectObject(dfbi->gdi->hdc_drawing, (HGDIOBJ) bitmap);
+	BitBlt(dfbi->gdi->hdc_system, x, y, cx, cy, dfbi->gdi->hdc_drawing, 0, 0, SRCCOPY);
 
-	if (dfbi->gdi->surface == dfbi->gdi->backingstore)
+	if (dfbi->gdi->drawing_surface == dfbi->gdi->system_surface)
 	{
 		dfbi->gdi->rect->left = x;
 		dfbi->gdi->rect->top = y;
@@ -161,8 +161,8 @@ l_ui_rect(struct rdp_inst * inst, int x, int y, int cx, int cy, int colour)
 	dfbInfo * dfbi;
 	dfbi = GET_DFBI(inst);
 
-	//printf("ui_rect: x: %d y: %d cx: %d cy: %d\n", x, y, cx, cy);
-
+	printf("ui_rect: x:%d y:%d cx:%d cy:%d surface: 0x%08X\n", x, y, cx, cy, dfbi->gdi->drawing_surface);
+	
 	rect.left = x;
 	rect.top = y;
 	rect.right = x + cx;
@@ -170,9 +170,11 @@ l_ui_rect(struct rdp_inst * inst, int x, int y, int cx, int cy, int colour)
 
 	gdi_colour_convert(&(dfbi->gdi->pixel), colour, dfbi->gdi->srcBpp, dfbi->gdi->palette);
 	hBrush = CreateSolidBrush((COLORREF) gdi_make_colorref(&(dfbi->gdi->pixel)));
-	FillRect(dfbi->gdi->hdc, &rect, hBrush);
 
-	if (dfbi->gdi->surface == dfbi->gdi->backingstore)
+	SelectObject(dfbi->gdi->hdc_drawing, (HGDIOBJ) dfbi->gdi->drawing_surface);
+	FillRect(dfbi->gdi->hdc_drawing, &rect, hBrush);
+
+	if (dfbi->gdi->drawing_surface == dfbi->gdi->system_surface)
 	{
 		dfbi->gdi->rect->left = x;
 		dfbi->gdi->rect->top = y;
@@ -206,19 +208,18 @@ l_ui_start_draw_glyphs(struct rdp_inst * inst, int bgcolour, int fgcolour)
 	dfbInfo *dfbi = GET_DFBI(inst);
 	
 	gdi_colour_convert(&(dfbi->gdi->pixel), fgcolour, dfbi->gdi->dstBpp, dfbi->gdi->palette);
-	dfbi->gdi->textColor = SetTextColor(dfbi->gdi->hdc, gdi_make_colorref(&(dfbi->gdi->pixel)));
+	dfbi->gdi->textColor = SetTextColor(dfbi->gdi->hdc_drawing, gdi_make_colorref(&(dfbi->gdi->pixel)));
 }
 
 static void
 l_ui_draw_glyph(struct rdp_inst * inst, int x, int y, int cx, int cy, RD_HGLYPH glyph)
 {
-	HBITMAP glyphBitmap = (HBITMAP) glyph;
 	dfbInfo *dfbi = GET_DFBI(inst);
 	
-	SelectObject(dfbi->gdi->hdcBmp, (HGDIOBJ) glyphBitmap);
-	BitBlt(dfbi->gdi->hdc, x, y, cx, cy, dfbi->gdi->hdcBmp, 0, 0, 0x00E20746); /* DSPDxax */
+	SelectObject(dfbi->gdi->hdc_bmp, (HGDIOBJ) glyph);
+	BitBlt(dfbi->gdi->hdc_drawing, x, y, cx, cy, dfbi->gdi->hdc_bmp, 0, 0, 0x00E20746); /* DSPDxax */
 
-	if (dfbi->gdi->surface == dfbi->gdi->backingstore)
+	if (dfbi->gdi->drawing_surface == dfbi->gdi->system_surface)
 	{
 		dfbi->gdi->rect->left = x;
 		dfbi->gdi->rect->top = y;
@@ -232,7 +233,7 @@ static void
 l_ui_end_draw_glyphs(struct rdp_inst * inst, int x, int y, int cx, int cy)
 {
 	dfbInfo *dfbi = GET_DFBI(inst);
-	SetTextColor(dfbi->gdi->hdc, dfbi->gdi->textColor);
+	SetTextColor(dfbi->gdi->hdc_drawing, dfbi->gdi->textColor);
 }
 
 static uint32
@@ -249,19 +250,22 @@ l_ui_bell(struct rdp_inst * inst)
 static void
 l_ui_destblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy)
 {
-	/*dfbInfo *dfbi = GET_DFBI(inst);
+	dfbInfo *dfbi = GET_DFBI(inst);
 
-	printf("ui_destblt: x: %d y: %d cx: %d cy: %d rop: 0x%X\n", x, y, cx, cy, gdi_rop3_code(opcode));
-	BitBlt(dfbi->gdi->hdc, x, y, cx, cy, NULL, 0, 0, gdi_rop3_code(opcode));
+	printf("ui_destblt: x: %d y: %d cx: %d cy: %d rop: 0x%X hdc_drawing:0x%08X\n", x, y, cx, cy,
+	       gdi_rop3_code(opcode), dfbi->gdi->hdc_drawing);
+
+	SelectObject(dfbi->gdi->hdc_drawing, (HGDIOBJ) dfbi->gdi->drawing_surface);
+	BitBlt(dfbi->gdi->hdc_drawing, x, y, cx, cy, NULL, 0, 0, gdi_rop3_code(opcode));
 	
-	if (dfbi->gdi->surface == dfbi->gdi->backingstore)
+	if (dfbi->gdi->drawing_surface == dfbi->gdi->system_surface)
 	{
 		dfbi->gdi->rect->left = x;
 		dfbi->gdi->rect->top = y;
 		dfbi->gdi->rect->right = x + cx;
 		dfbi->gdi->rect->bottom = y + cy;
 		InvalidateRect(dfbi->gdi->hwnd, dfbi->gdi->rect);
-	}*/
+	}
 }
 
 static void
@@ -269,6 +273,7 @@ l_ui_patblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy, 
 {
 	dfbInfo *dfbi = GET_DFBI(inst);
 
+	SelectObject(dfbi->gdi->hdc_drawing, (HGDIOBJ) dfbi->gdi->drawing_surface);
 	printf("ui_patblt: x: %d y: %d cx: %d cy: %d rop: 0x%X\n", x, y, cx, cy, gdi_rop3_code(opcode));
 	
 	if (brush->style == BS_PATTERN)
@@ -276,28 +281,28 @@ l_ui_patblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy, 
 		HBITMAP hBmp;
 		HBRUSH originalBrush;
 		
-		hBmp = CreateBitmap(8, 8, dfbi->gdi->hdc->bitsPerPixel,
+		hBmp = CreateBitmap(8, 8, dfbi->gdi->hdc_drawing->bitsPerPixel,
 			(char*) gdi_image_convert((char*) brush->bd->data, 8, 8, dfbi->gdi->srcBpp, dfbi->gdi->dstBpp, dfbi->gdi->palette));
 
-		originalBrush = dfbi->gdi->hdc->brush;
-		dfbi->gdi->hdc->brush = CreatePatternBrush(hBmp);
+		originalBrush = dfbi->gdi->hdc_drawing->brush;
+		dfbi->gdi->hdc_drawing->brush = CreatePatternBrush(hBmp);
 
-		PatBlt(dfbi->gdi->hdc, x, y, cx, cy, gdi_rop3_code(opcode));
+		PatBlt(dfbi->gdi->hdc_drawing, x, y, cx, cy, gdi_rop3_code(opcode));
 
-		DeleteObject((HGDIOBJ) dfbi->gdi->hdc->brush);
-		dfbi->gdi->hdc->brush = originalBrush;
+		DeleteObject((HGDIOBJ) dfbi->gdi->hdc_drawing->brush);
+		dfbi->gdi->hdc_drawing->brush = originalBrush;
 	}
-	if (brush->style == BS_SOLID)
+	else if (brush->style == BS_SOLID)
 	{
 		gdi_colour_convert(&(dfbi->gdi->pixel), fgcolour, dfbi->gdi->dstBpp, dfbi->gdi->palette);
-		dfbi->gdi->textColor = SetTextColor(dfbi->gdi->hdc, gdi_make_colorref(&(dfbi->gdi->pixel)));
+		dfbi->gdi->textColor = SetTextColor(dfbi->gdi->hdc_drawing, gdi_make_colorref(&(dfbi->gdi->pixel)));
 		
-		PatBlt(dfbi->gdi->hdc, x, y, cx, cy, gdi_rop3_code(opcode));
+		PatBlt(dfbi->gdi->hdc_drawing, x, y, cx, cy, gdi_rop3_code(opcode));
 
-		SetTextColor(dfbi->gdi->hdc, dfbi->gdi->textColor);
+		SetTextColor(dfbi->gdi->hdc_drawing, dfbi->gdi->textColor);
 	}
 
-	if (dfbi->gdi->surface == dfbi->gdi->backingstore)
+	if (dfbi->gdi->drawing_surface == dfbi->gdi->system_surface)
 	{
 		dfbi->gdi->rect->left = x;
 		dfbi->gdi->rect->top = y;
@@ -310,7 +315,21 @@ l_ui_patblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy, 
 static void
 l_ui_screenblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy, int srcx, int srcy)
 {
+	dfbInfo *dfbi = GET_DFBI(inst);
+	
 	printf("ui_screenblt rop: 0x%X\n", gdi_rop3_code(opcode));
+
+	SelectObject(dfbi->gdi->hdc_drawing, (HGDIOBJ) dfbi->gdi->drawing_surface);
+	BitBlt(dfbi->gdi->drawing_surface, x, y, cx, cy, dfbi->gdi->system_surface, srcx, srcy, gdi_rop3_code(opcode));
+
+	if (dfbi->gdi->drawing_surface == dfbi->gdi->system_surface)
+	{
+		dfbi->gdi->rect->left = x;
+		dfbi->gdi->rect->top = y;
+		dfbi->gdi->rect->right = x + cx;
+		dfbi->gdi->rect->bottom = y + cy;
+		InvalidateRect(dfbi->gdi->hwnd, dfbi->gdi->rect);
+	}
 }
 
 static void
@@ -320,10 +339,11 @@ l_ui_memblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy, 
 
 	printf("ui_memblt: x: %d y: %d cx: %d cy: %d rop: 0x%X\n", x, y, cx, cy, gdi_rop3_code(opcode));
 	
-	SelectObject(dfbi->gdi->hdcBmp, (HGDIOBJ) src);
-	BitBlt(dfbi->gdi->hdc, x, y, cx, cy, dfbi->gdi->hdcBmp, srcx, srcy, gdi_rop3_code(opcode));
+	SelectObject(dfbi->gdi->hdc_bmp, (HGDIOBJ) src);
+	SelectObject(dfbi->gdi->hdc_drawing, (HGDIOBJ) dfbi->gdi->drawing_surface);
+	BitBlt(dfbi->gdi->hdc_drawing, x, y, cx, cy, dfbi->gdi->hdc_bmp, srcx, srcy, gdi_rop3_code(opcode));
 
-	if (dfbi->gdi->surface == dfbi->gdi->backingstore)
+	if (dfbi->gdi->drawing_surface == dfbi->gdi->system_surface)
 	{
 		dfbi->gdi->rect->left = x;
 		dfbi->gdi->rect->top = y;
@@ -352,16 +372,8 @@ l_ui_set_clip(struct rdp_inst * inst, int x, int y, int cx, int cy)
 	HRGN clippingRegion;
 	dfbInfo *dfbi = GET_DFBI(inst);
 
-	if (dfbi->gdi->surface == dfbi->gdi->backingstore)
-	{
-		clippingRegion = CreateRectRgn(x, y, x + cx, y + cy);
-		SelectClipRgn(dfbi->gdi->hdc, clippingRegion);
-	}
-	else
-	{
-		clippingRegion = CreateRectRgn(x, y, x + cx, y + cy);
-		SelectClipRgn(dfbi->gdi->hdcBmp, clippingRegion);
-	}
+	clippingRegion = CreateRectRgn(x, y, x + cx, y + cy);
+	SelectClipRgn(dfbi->gdi->hdc_drawing, clippingRegion);
 }
 
 static void
@@ -369,20 +381,10 @@ l_ui_reset_clip(struct rdp_inst * inst)
 {
 	dfbInfo *dfbi = GET_DFBI(inst);
 
-	if (dfbi->gdi->surface == dfbi->gdi->backingstore)
-	{
-		if (dfbi->gdi->hdc->clippingRegion != NULL)
-			free(dfbi->gdi->hdc->clippingRegion);
+	if (dfbi->gdi->hdc_drawing->clippingRegion != NULL)
+		free(dfbi->gdi->hdc_drawing->clippingRegion);
 	
-		SelectClipRgn(dfbi->gdi->hdc, NULL);
-	}
-	else
-	{
-		if (dfbi->gdi->hdcBmp->clippingRegion != NULL)
-			free(dfbi->gdi->hdcBmp->clippingRegion);
-	
-		SelectClipRgn(dfbi->gdi->hdcBmp, NULL);
-	}
+	SelectClipRgn(dfbi->gdi->hdc_drawing, NULL);
 }
 
 static void
@@ -469,21 +471,27 @@ l_ui_create_surface(struct rdp_inst * inst, int width, int height, RD_HBITMAP ol
 	HBITMAP new_bitmap;
 	HBITMAP old_bitmap;
 	dfbInfo *dfbi = GET_DFBI(inst);
-
-	new_bitmap = CreateCompatibleBitmap(dfbi->gdi->hdc, width, height);
+	
+	new_bitmap = CreateCompatibleBitmap(dfbi->gdi->hdc_system, width, height);
 	old_bitmap = (HBITMAP) old_surface;
 
 	if (old_bitmap != 0)
 	{
-		SelectObject(dfbi->gdi->hdcBmp, (HGDIOBJ) old_bitmap);
-		SelectObject(dfbi->gdi->hdc, (HGDIOBJ) new_bitmap);
+		dfbi->gdi->drawing_surface = new_bitmap;
+		SelectObject(dfbi->gdi->hdc_drawing, (HGDIOBJ) dfbi->gdi->drawing_surface);
+		//SelectObject(dfbi->gdi->hdc_bmp, (HGDIOBJ) old_bitmap);
+		//BitBlt(dfbi->gdi->hdc_drawing, 0, 0, width, height, dfbi->gdi->hdc_bmp, 0, 0, SRCCOPY);
 		DeleteObject((HGDIOBJ) old_bitmap);
 	}
-	else
+	
+	if (dfbi->gdi->drawing_surface == old_bitmap)
 	{
-		dfbi->gdi->surface = new_bitmap;
+		dfbi->gdi->drawing_surface = new_bitmap;
+		SelectObject(dfbi->gdi->hdc_drawing, (HGDIOBJ) dfbi->gdi->drawing_surface);
 	}
 
+	printf("ui_create_surface: 0x%08X\n", dfbi->gdi->drawing_surface);
+	
 	return (RD_HBITMAP) new_bitmap;
 }
 
@@ -492,23 +500,37 @@ l_ui_set_surface(struct rdp_inst * inst, RD_HBITMAP surface)
 {
 	dfbInfo *dfbi = GET_DFBI(inst);
 
+	printf("ui_set_surface: 0x%08X\n", surface);
+	
 	if (surface != 0)
 	{
-		dfbi->gdi->surface = surface;
-		SelectObject(dfbi->gdi->hdc, (HGDIOBJ) dfbi->gdi->surface);
+		dfbi->gdi->drawing_surface = (HBITMAP) surface;
+		SelectObject(dfbi->gdi->hdc_drawing, (HGDIOBJ) dfbi->gdi->drawing_surface);
 	}
 	else
 	{
-		dfbi->gdi->surface = dfbi->gdi->backingstore;
-		SelectObject(dfbi->gdi->hdc, (HGDIOBJ) dfbi->gdi->surface);
+		dfbi->gdi->drawing_surface = dfbi->gdi->system_surface;
+		SelectObject(dfbi->gdi->hdc_drawing, (HGDIOBJ) dfbi->gdi->drawing_surface);
 	}
 }
 
 static void
 l_ui_destroy_surface(struct rdp_inst * inst, RD_HBITMAP surface)
 {
+	dfbInfo *dfbi = GET_DFBI(inst);
+
+	printf("ui_destroy_surface\n");
+	
+	if (dfbi->gdi->drawing_surface == surface)
+	{
+		dfbi->gdi->drawing_surface = dfbi->gdi->system_surface;
+		SelectObject(dfbi->gdi->hdc_drawing, (HGDIOBJ) dfbi->gdi->drawing_surface);
+	}
+	
 	if (surface != 0)
+	{
 		DeleteObject((HGDIOBJ) surface);
+	}
 }
 
 static void
@@ -627,13 +649,14 @@ dfb_post_connect(rdpInst * inst)
 	dfbi->gdi->rect = (HRECT) malloc(sizeof(RECT));
 	memset(dfbi->gdi->rect, 0, sizeof(RECT));
 	
-	dfbi->gdi->hdc = GetDC();
-	dfbi->gdi->hdc->bitsPerPixel = dfbi->gdi->dstBpp;
-	dfbi->gdi->hdc->bytesPerPixel = 4;
+	dfbi->gdi->hdc_system = GetDC();
+	dfbi->gdi->hdc_system->bitsPerPixel = dfbi->gdi->dstBpp;
+	dfbi->gdi->hdc_system->bytesPerPixel = 4;
 
-	dfbi->gdi->backingstore = CreateBitmap(dfbi->gdi->width, dfbi->gdi->height, dfbi->gdi->dstBpp, (char*) dfbi->gdi->screen);
-	SelectObject(dfbi->gdi->hdc, (HGDIOBJ) dfbi->gdi->backingstore);
-	dfbi->gdi->hdcBmp = CreateCompatibleDC(dfbi->gdi->hdc);
+	dfbi->gdi->system_surface = CreateBitmap(dfbi->gdi->width, dfbi->gdi->height, dfbi->gdi->dstBpp, (char*) dfbi->gdi->screen);
+	SelectObject(dfbi->gdi->hdc_system, (HGDIOBJ) dfbi->gdi->system_surface);
+	dfbi->gdi->hdc_drawing = dfbi->gdi->hdc_system;
+	dfbi->gdi->hdc_bmp = CreateCompatibleDC(dfbi->gdi->hdc_system);
 
 	return 0;
 }

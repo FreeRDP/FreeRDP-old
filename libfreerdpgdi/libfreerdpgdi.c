@@ -767,7 +767,6 @@ int SetBkMode(HDC hdc, int iBkMode)
 int BitBlt(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc, int rop)
 {
 	int i;
-	HRGN clip;
 	char* srcp;
 	char* dstp;
 
@@ -778,30 +777,30 @@ int BitBlt(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdc
 		0x00E20746	DSPDxax
 	*/
 
-	clip = hdcSrc->clippingRegion;
-
-	if (clip != NULL)
+	if (hdcSrc != NULL)
 	{
-		printf("clipping region: x:%d y:%d cx:%d cy:%d\n", clip->left, clip->right,
-		       clip->right - clip->left, clip->bottom - clip->top);
+		if (hdcSrc->clippingRegion != NULL)
+		{
+			HRGN clip = hdcSrc->clippingRegion;
 
-		int right = nXDest + nWidth;
-		int bottom = nYDest + nHeight;
+			int right = nXDest + nWidth;
+			int bottom = nYDest + nHeight;
 		
-		if (nXDest < clip->left)
-			nXDest = clip->left;
+			if (nXDest < clip->left)
+				nXDest = clip->left;
 
-		if (nYDest < clip->top)
-			nYDest = clip->top;
+			if (nYDest < clip->top)
+				nYDest = clip->top;
 		
-		if (right > clip->right)
-			right = clip->right;
+			if (right > clip->right)
+				right = clip->right;
 		
-		if (bottom > clip->bottom)
-			bottom = clip->bottom;
+			if (bottom > clip->bottom)
+				bottom = clip->bottom;
 
-		nWidth = right - nXDest;
-		nHeight = bottom - nYDest;
+			nWidth = right - nXDest;
+			nHeight = bottom - nYDest;
+		}
 	}
 	
 	if (rop == SRCCOPY)

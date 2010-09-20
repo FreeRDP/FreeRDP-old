@@ -218,14 +218,16 @@ struct _GDI
 	char* screen;
 	
 	HWND hwnd;
-	HDC hdc;
-	HDC hdcBmp;
-	HBITMAP surface;	
-	HBITMAP backingstore;
+	HDC hdc_system;
+	HDC hdc_drawing;
+	HBITMAP system_surface;
+	HBITMAP drawing_surface;
 	COLORREF textColor;
 	HPALETTE palette;
 	PIXEL pixel;
 	HRECT rect;
+	HBITMAP bmp;
+	HDC hdc_bmp;
 };
 typedef struct _GDI GDI;
 
