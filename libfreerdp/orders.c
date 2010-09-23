@@ -204,7 +204,7 @@ rdp_parse_brush(STREAM s, RD_BRUSH * brush, uint32 present)
 
 /* Process a destination blt order */
 static void
-process_destblt(rdpOrders * orders, STREAM s, DESTBLT_ORDER * os, uint32 present, RD_BOOL delta)
+process_dstblt(rdpOrders * orders, STREAM s, DSTBLT_ORDER * os, uint32 present, RD_BOOL delta)
 {
 	if (present & 0x01)
 		rdp_in_coord(s, &os->x, delta);
@@ -267,7 +267,7 @@ process_patblt(rdpOrders * orders, STREAM s, PATBLT_ORDER * os, uint32 present, 
 
 /* Process a screen blt order */
 static void
-process_screenblt(rdpOrders * orders, STREAM s, SCREENBLT_ORDER * os, uint32 present, RD_BOOL delta)
+process_scrblt(rdpOrders * orders, STREAM s, SCRBLT_ORDER * os, uint32 present, RD_BOOL delta)
 {
 	if (present & 0x0001)
 		rdp_in_coord(s, &os->x, delta);
@@ -299,7 +299,7 @@ process_screenblt(rdpOrders * orders, STREAM s, SCREENBLT_ORDER * os, uint32 pre
 
 /* Process a line order */
 static void
-process_line(rdpOrders * orders, STREAM s, LINE_ORDER * os, uint32 present, RD_BOOL delta)
+process_lineto(rdpOrders * orders, STREAM s, LINETO_ORDER * os, uint32 present, RD_BOOL delta)
 {
 	if (present & 0x0001)
 		in_uint16_le(s, os->mixmode);
@@ -339,7 +339,7 @@ process_line(rdpOrders * orders, STREAM s, LINE_ORDER * os, uint32 present, RD_B
 
 /* Process an opaque rectangle order */
 static void
-process_rect(rdpOrders * orders, STREAM s, RECT_ORDER * os, uint32 present, RD_BOOL delta)
+process_opaquerect(rdpOrders * orders, STREAM s, OPAQUERECT_ORDER * os, uint32 present, RD_BOOL delta)
 {
 	uint32 i;
 	if (present & 0x01)
@@ -379,7 +379,7 @@ process_rect(rdpOrders * orders, STREAM s, RECT_ORDER * os, uint32 present, RD_B
 
 /* Process a desktop save order */
 static void
-process_desksave(rdpOrders * orders, STREAM s, DESKSAVE_ORDER * os, uint32 present, RD_BOOL delta)
+process_savebitmap(rdpOrders * orders, STREAM s, SAVEBITMAP_ORDER * os, uint32 present, RD_BOOL delta)
 {
 	int width, height;
 	void * inst;
@@ -464,7 +464,7 @@ process_memblt(rdpOrders * orders, STREAM s, MEMBLT_ORDER * os, uint32 present, 
 
 /* Process a 3-way blt order */
 static void
-process_triblt(rdpOrders * orders, STREAM s, TRIBLT_ORDER * os, uint32 present, RD_BOOL delta)
+process_mem3blt(rdpOrders * orders, STREAM s, MEM3BLT_ORDER * os, uint32 present, RD_BOOL delta)
 {
 	RD_HBITMAP bitmap;
 	RD_BRUSH brush;
@@ -526,7 +526,7 @@ process_triblt(rdpOrders * orders, STREAM s, TRIBLT_ORDER * os, uint32 present, 
 
 /* Process a polygon order */
 static void
-process_polygon(rdpOrders * orders, STREAM s, POLYGON_ORDER * os, uint32 present, RD_BOOL delta)
+process_polygon_sc(rdpOrders * orders, STREAM s, POLYGON_SC_ORDER* os, uint32 present, RD_BOOL delta)
 {
 	int size;
 	int index, data, next;
@@ -612,7 +612,7 @@ process_polygon(rdpOrders * orders, STREAM s, POLYGON_ORDER * os, uint32 present
 
 /* Process a polygon2 order */
 static void
-process_polygon2(rdpOrders * orders, STREAM s, POLYGON2_ORDER * os, uint32 present, RD_BOOL delta)
+process_polygon_cb(rdpOrders * orders, STREAM s, POLYGON_CB_ORDER * os, uint32 present, RD_BOOL delta)
 {
 	int size;
 	int index, data, next;
@@ -790,9 +790,9 @@ process_polyline(rdpOrders * orders, STREAM s, POLYLINE_ORDER * os, uint32 prese
 		ui_error(orders->rdp->inst, "polyline parse error\n");
 }
 
-/* Process an ellipse order */
+/* Process an EllipseSC order */
 static void
-process_ellipse(rdpOrders * orders, STREAM s, ELLIPSE_ORDER * os, uint32 present, RD_BOOL delta)
+process_ellipse_sc(rdpOrders * orders, STREAM s, ELLIPSE_SC_ORDER * os, uint32 present, RD_BOOL delta)
 {
 	if (present & 0x01)
 		rdp_in_coord(s, &os->left, delta);
@@ -822,9 +822,9 @@ process_ellipse(rdpOrders * orders, STREAM s, ELLIPSE_ORDER * os, uint32 present
 		   os->right - os->left, os->bottom - os->top, NULL, 0, os->fgcolour);
 }
 
-/* Process an ellipse2 order */
+/* Process an EllipseCB order */
 static void
-process_ellipse2(rdpOrders * orders, STREAM s, ELLIPSE2_ORDER * os, uint32 present, RD_BOOL delta)
+process_ellipse_cb(rdpOrders * orders, STREAM s, ELLIPSE_CB_ORDER * os, uint32 present, RD_BOOL delta)
 {
 	RD_BRUSH brush;
 
@@ -1008,9 +1008,9 @@ draw_text(rdpOrders * orders, uint8 font, uint8 flags, uint8 opcode, int mixmode
 	}
 }
 
-/* Process a text order */
+/* Process a glyph index order */
 static void
-process_text2(rdpOrders * orders, STREAM s, TEXT2_ORDER * os, uint32 present, RD_BOOL delta)
+process_glyph_index(rdpOrders * orders, STREAM s, GLYPH_INDEX_ORDER * os, uint32 present, RD_BOOL delta)
 {
 	int i;
 	RD_BRUSH brush;
@@ -1610,16 +1610,16 @@ process_orders(rdpOrders * orders, STREAM s, uint16 num_orders)
 
 			switch (os->order_type)
 			{
-				case RDP_ORDER_TRIBLT:
-				case RDP_ORDER_TEXT2:
+				case RDP_ORDER_MEM3BLT:
+				case RDP_ORDER_GLYPH_INDEX:
 					size = 3;
 					break;
 
 				case RDP_ORDER_PATBLT:
 				case RDP_ORDER_MEMBLT:
-				case RDP_ORDER_LINE:
-				case RDP_ORDER_POLYGON2:
-				case RDP_ORDER_ELLIPSE2:
+				case RDP_ORDER_LINETO:
+				case RDP_ORDER_POLYGON_CB:
+				case RDP_ORDER_ELLIPSE_CB:
 					size = 2;
 					break;
 
@@ -1645,60 +1645,60 @@ process_orders(rdpOrders * orders, STREAM s, uint16 num_orders)
 
 			switch (os->order_type)
 			{
-				case RDP_ORDER_DESTBLT:
-					process_destblt(orders, s, &os->destblt, present, delta);
+				case RDP_ORDER_DSTBLT:
+					process_dstblt(orders, s, &os->dstblt, present, delta);
 					break;
 
 				case RDP_ORDER_PATBLT:
 					process_patblt(orders, s, &os->patblt, present, delta);
 					break;
 
-				case RDP_ORDER_SCREENBLT:
-					process_screenblt(orders, s, &os->screenblt, present, delta);
+				case RDP_ORDER_SCRBLT:
+					process_scrblt(orders, s, &os->scrblt, present, delta);
 					break;
 
-				case RDP_ORDER_LINE:
-					process_line(orders, s, &os->line, present, delta);
+				case RDP_ORDER_LINETO:
+					process_lineto(orders, s, &os->lineto, present, delta);
 					break;
 
-				case RDP_ORDER_RECT:
-					process_rect(orders, s, &os->rect, present, delta);
+				case RDP_ORDER_OPAQUERECT:
+					process_opaquerect(orders, s, &os->opaquerect, present, delta);
 					break;
 
-				case RDP_ORDER_DESKSAVE:
-					process_desksave(orders, s, &os->desksave, present, delta);
+				case RDP_ORDER_SAVEBITMAP:
+					process_savebitmap(orders, s, &os->savebitmap, present, delta);
 					break;
 
 				case RDP_ORDER_MEMBLT:
 					process_memblt(orders, s, &os->memblt, present, delta);
 					break;
 
-				case RDP_ORDER_TRIBLT:
-					process_triblt(orders, s, &os->triblt, present, delta);
+				case RDP_ORDER_MEM3BLT:
+					process_mem3blt(orders, s, &os->mem3blt, present, delta);
 					break;
 
-				case RDP_ORDER_POLYGON:
-					process_polygon(orders, s, &os->polygon, present, delta);
+				case RDP_ORDER_POLYGON_SC:
+					process_polygon_sc(orders, s, &os->polygon_sc, present, delta);
 					break;
 
-				case RDP_ORDER_POLYGON2:
-					process_polygon2(orders, s, &os->polygon2, present, delta);
+				case RDP_ORDER_POLYGON_CB:
+					process_polygon_cb(orders, s, &os->polygon_cb, present, delta);
 					break;
 
 				case RDP_ORDER_POLYLINE:
 					process_polyline(orders, s, &os->polyline, present, delta);
 					break;
 
-				case RDP_ORDER_ELLIPSE:
-					process_ellipse(orders, s, &os->ellipse, present, delta);
+				case RDP_ORDER_ELLIPSE_SC:
+					process_ellipse_sc(orders, s, &os->ellipse_sc, present, delta);
 					break;
 
-				case RDP_ORDER_ELLIPSE2:
-					process_ellipse2(orders, s, &os->ellipse2, present, delta);
+				case RDP_ORDER_ELLIPSE_CB:
+					process_ellipse_cb(orders, s, &os->ellipse_cb, present, delta);
 					break;
 
-				case RDP_ORDER_TEXT2:
-					process_text2(orders, s, &os->text2, present, delta);
+				case RDP_ORDER_GLYPH_INDEX:
+					process_glyph_index(orders, s, &os->glyph_index, present, delta);
 					break;
 
 				default:
