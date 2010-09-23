@@ -1091,7 +1091,7 @@ process_glyph_index(rdpOrders * orders, STREAM s, GLYPH_INDEX_ORDER * os, uint32
 
 /* Process a raw bitmap cache order */
 static void
-process_raw_bmpcache(rdpOrders * orders, STREAM s)
+process_cache_bitmap_uncompressed(rdpOrders * orders, STREAM s)
 {
 	int size;
 	RD_HBITMAP bitmap;
@@ -1196,7 +1196,7 @@ process_bmpcache(rdpOrders * orders, STREAM s, uint16 flags)
 
 /* Process a bitmap cache v2 order */
 static void
-process_bmpcache2(rdpOrders * orders, STREAM s, uint16 flags, RD_BOOL compressed)
+process_cache_bitmap_rev2(rdpOrders * orders, STREAM s, uint16 flags, RD_BOOL compressed)
 {
 	int y;
 	int size;
@@ -1277,13 +1277,13 @@ process_bmpcache2(rdpOrders * orders, STREAM s, uint16 flags, RD_BOOL compressed
 	}
 	else
 	{
-		DEBUG("process_bmpcache2: ui_create_bitmap failed\n");
+		DEBUG("process_cache_bitmap_rev2: ui_create_bitmap failed\n");
 	}
 }
 
 /* Process a colourmap cache order */
 static void
-process_colcache(rdpOrders * orders, STREAM s)
+process_cache_color_table(rdpOrders * orders, STREAM s)
 {
 	int i;
 	int size;
@@ -1325,7 +1325,7 @@ process_colcache(rdpOrders * orders, STREAM s)
 
 /* Process a font cache order */
 static void
-process_fontcache(rdpOrders * orders, STREAM s)
+process_cache_glyph(rdpOrders * orders, STREAM s)
 {
 	RD_HGLYPH bitmap;
 	uint8 font, nglyphs;
@@ -1390,7 +1390,7 @@ process_compressed_8x8_brush_data(uint8 * in, uint8 * out, int Bpp)
 
 /* Process a brush cache order */
 static void
-process_brushcache(rdpOrders * orders, STREAM s, uint16 flags)
+process_cache_brush(rdpOrders * orders, STREAM s, uint16 flags)
 {
 	RD_BRUSHDATA brush_data;
 	uint8 cache_idx, colour_code, width, height, size, type;
@@ -1531,45 +1531,46 @@ process_secondary_order(rdpOrders * orders, STREAM s)
 	/* The length isn't calculated correctly by the server.
 	 * For very compact orders the length becomes negative
 	 * so a signed integer must be used. */
+	
 	uint16 length;
 	uint16 flags;
 	uint8 type;
 	uint8 *next_order;
 
 	in_uint16_le(s, length);
-	in_uint16_le(s, flags);	/* used by bmpcache2 */
+	in_uint16_le(s, flags);	/* used by RDP_ORDER_CACHE_BITMAP_COMPRESSED_REV2 */
 	in_uint8(s, type);
 
 	next_order = s->p + ((sint16) length) + 7;
 
 	switch (type)
 	{
-		case RDP_ORDER_RAW_BMPCACHE:
-			process_raw_bmpcache(orders, s);
+		case RDP_ORDER_CACHE_BITMAP_UNCOMPRESSED:
+			process_cache_bitmap_uncompressed(orders, s);
 			break;
 
-		case RDP_ORDER_COLCACHE:
-			process_colcache(orders, s);
+		case RDP_ORDER_CACHE_COLOR_TABLE:
+			process_cache_color_table(orders, s);
 			break;
 
-		case RDP_ORDER_BMPCACHE:
+		case RDP_ORDER_CACHE_BITMAP_COMPRESSED:
 			process_bmpcache(orders, s, flags);
 			break;
 
-		case RDP_ORDER_FONTCACHE:
-			process_fontcache(orders, s);
+		case RDP_ORDER_CACHE_GLYPH:
+			process_cache_glyph(orders, s);
 			break;
 
-		case RDP_ORDER_RAW_BMPCACHE2:
-			process_bmpcache2(orders, s, flags, False);	/* uncompressed */
+		case RDP_ORDER_CACHE_BITMAP_UNCOMPRESSED_REV2:
+			process_cache_bitmap_rev2(orders, s, flags, False);
 			break;
 
-		case RDP_ORDER_BMPCACHE2:
-			process_bmpcache2(orders, s, flags, True);	/* compressed */
+		case RDP_ORDER_CACHE_BITMAP_COMPRESSED_REV2:
+			process_cache_bitmap_rev2(orders, s, flags, True);
 			break;
 
-		case RDP_ORDER_BRUSHCACHE:
-			process_brushcache(orders, s, flags);
+		case RDP_ORDER_CACHE_BRUSH:
+			process_cache_brush(orders, s, flags);
 			break;
 
 		default:
