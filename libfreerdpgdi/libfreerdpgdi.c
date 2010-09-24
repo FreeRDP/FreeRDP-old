@@ -348,6 +348,39 @@ gdi_split_colorref(unsigned int colorref, PIXEL *pixel)
 	SPLIT24BGR(pixel->red, pixel->green, pixel->blue, colorref);
 }
 
+int
+gdi_clip_coords(int *x, int *y, int *w, int *h, int *srcx, int *srcy, HRGN clip)
+{
+	int dx;
+	int dy;
+
+	dx = (clip->x > *x) ? (clip->x - *x) : 0;
+	dy = (clip->y > *y) ? (clip->y - *y) : 0;
+
+	if (*x + *w > clip->x + clip->w)
+		*w = (*w - ((*x + *w) - (clip->x + clip->w)));
+	if (*y + *h > clip->y + clip->h)
+		*h = (*h - ((*y + *h) - (clip->y + clip->h)));
+
+	*w = *w - dx;
+	*h = *h - dy;
+
+	if (*w <= 0)
+		return 0;
+	if (*h <= 0)
+		return 0;
+
+	*x = *x + dx;
+	*y = *y + dy;
+
+	if (srcx != 0)
+		*srcx = *srcx + dx;
+	if (srcy != 0)
+		*srcy = *srcy + dy;
+
+	return 1;
+}
+
 void
 gdi_color_convert(PIXEL *pixel, int color, int bpp, HPALETTE palette)
 {
@@ -629,17 +662,11 @@ HBRUSH CreatePatternBrush(HBITMAP hbmp)
 HRGN CreateRectRgn(int nLeftRect, int nTopRect, int nRightRect, int nBottomRect)
 {
 	HRGN hRgn = (HRGN) malloc(sizeof(RGN));
-	hRgn->left = nLeftRect;
-	hRgn->top = nTopRect;
-	hRgn->right = nRightRect;
-	hRgn->bottom = nBottomRect;
+	hRgn->x = nLeftRect;
+	hRgn->y = nTopRect;
+	hRgn->w = nRightRect - nLeftRect;
+	hRgn->h = nBottomRect - nTopRect;
 	return hRgn;
-}
-
-int SelectClipRgn(HDC hdc, HRGN hrgn)
-{
-	hdc->clippingRegion = hrgn;
-	return 0;
 }
 
 int InvalidateRect(HWND hWnd, HRECT lpRect)
@@ -697,36 +724,13 @@ int FillRect(HDC hdc, HRECT rect, HBRUSH hbr)
 {
 	int i;
 	int j;
-	RGN draw;
-	HRGN clip;
 	HBITMAP hBmp;
-
-	clip = hdc->clippingRegion;
-	draw.left = rect->left;
-	draw.right = rect->right;
-	draw.top = rect->top;
-	draw.bottom = rect->bottom;
-	
-	if (clip != NULL)
-	{
-		if (rect->left < clip->left)
-			draw.left = clip->left;
-
-		if (rect->top < clip->top)
-			draw.top = clip->top;
-		
-		if (rect->right > clip->right)
-			draw.right = clip->right;
-		
-		if (rect->bottom > clip->bottom)
-			draw.bottom = clip->bottom;
-	}
 
 	hBmp = (HBITMAP) hdc->selectedObject;
 	
-	for (i = draw.top; i < draw.bottom; i++)
+	for (i = rect->top; i < rect->bottom; i++)
 	{
-		for (j = draw.left; j < draw.right; j++)
+		for (j = rect->left; j < rect->right; j++)
 		{
 			*((COLORREF*)&(hBmp->data[i * hBmp->width * hdc->bytesPerPixel + j * hdc->bytesPerPixel])) = hbr->color;
 		}
@@ -776,32 +780,6 @@ int BitBlt(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdc
 		0x00000042	BLACKNESS
 		0x00E20746	DSPDxax
 	*/
-
-	if (hdcSrc != NULL)
-	{
-		if (hdcSrc->clippingRegion != NULL)
-		{
-			HRGN clip = hdcSrc->clippingRegion;
-
-			int right = nXDest + nWidth;
-			int bottom = nYDest + nHeight;
-		
-			if (nXDest < clip->left)
-				nXDest = clip->left;
-
-			if (nYDest < clip->top)
-				nYDest = clip->top;
-		
-			if (right > clip->right)
-				right = clip->right;
-		
-			if (bottom > clip->bottom)
-				bottom = clip->bottom;
-
-			nWidth = right - nXDest;
-			nHeight = bottom - nYDest;
-		}
-	}
 	
 	if (rop == SRCCOPY)
 	{

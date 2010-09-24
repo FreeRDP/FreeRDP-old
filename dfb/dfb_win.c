@@ -127,6 +127,8 @@ l_ui_paint_bitmap(struct rdp_inst * inst, int x, int y, int cx, int cy, int widt
 	dfbInfo *dfbi = GET_DFBI(inst);
 
 	printf("ui_paint_bitmap: x:%d y:%d cx:%d cy:%d surface: 0x%08X\n", x, y, cx, cy, dfbi->gdi->drawing_surface);
+
+	gdi_clip_coords(&x, &y, &cx, &cy, 0, 0, dfbi->gdi->clip);
 	
 	bitmap = (HBITMAP) inst->ui_create_bitmap(inst, width, height, data);
 	SelectObject(dfbi->gdi->hdc_bmp, (HGDIOBJ) bitmap);
@@ -172,6 +174,8 @@ l_ui_rect(struct rdp_inst * inst, int x, int y, int cx, int cy, int color)
 	rect.right = x + cx;
 	rect.bottom = y + cy;
 
+	gdi_clip_coords(&x, &y, &cx, &cy, 0, 0, dfbi->gdi->clip);
+	
 	gdi_color_convert(&(dfbi->gdi->pixel), color, dfbi->gdi->srcBpp, dfbi->gdi->palette);
 	hBrush = CreateSolidBrush((COLORREF) gdi_make_colorref(&(dfbi->gdi->pixel)));
 
@@ -219,6 +223,8 @@ static void
 l_ui_draw_glyph(struct rdp_inst * inst, int x, int y, int cx, int cy, RD_HGLYPH glyph)
 {
 	dfbInfo *dfbi = GET_DFBI(inst);
+
+	gdi_clip_coords(&x, &y, &cx, &cy, 0, 0, dfbi->gdi->clip);
 	
 	SelectObject(dfbi->gdi->hdc_bmp, (HGDIOBJ) glyph);
 	SelectObject(dfbi->gdi->hdc_drawing, (HGDIOBJ) dfbi->gdi->drawing_surface);
@@ -260,6 +266,8 @@ l_ui_destblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy)
 	printf("ui_destblt: x: %d y: %d cx: %d cy: %d rop: 0x%X surface:0x%08X\n", x, y, cx, cy,
 	       gdi_rop3_code(opcode), dfbi->gdi->hdc_drawing);
 
+	gdi_clip_coords(&x, &y, &cx, &cy, 0, 0, dfbi->gdi->clip);
+
 	SelectObject(dfbi->gdi->hdc_drawing, (HGDIOBJ) dfbi->gdi->drawing_surface);
 	BitBlt(dfbi->gdi->hdc_drawing, x, y, cx, cy, NULL, 0, 0, gdi_rop3_code(opcode));
 	
@@ -277,9 +285,11 @@ static void
 l_ui_patblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy, RD_BRUSH * brush, int bgcolor, int fgcolor)
 {
 	dfbInfo *dfbi = GET_DFBI(inst);
-
-	SelectObject(dfbi->gdi->hdc_drawing, (HGDIOBJ) dfbi->gdi->drawing_surface);
+	
 	printf("ui_patblt: x: %d y: %d cx: %d cy: %d rop: 0x%X\n", x, y, cx, cy, gdi_rop3_code(opcode));
+	
+	gdi_clip_coords(&x, &y, &cx, &cy, 0, 0, dfbi->gdi->clip);
+	SelectObject(dfbi->gdi->hdc_drawing, (HGDIOBJ) dfbi->gdi->drawing_surface);
 	
 	if (brush->style == BS_PATTERN)
 	{
@@ -328,6 +338,8 @@ l_ui_screenblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int c
 	
 	printf("ui_screenblt rop: 0x%X\n", gdi_rop3_code(opcode));
 
+	gdi_clip_coords(&x, &y, &cx, &cy, &srcx, &srcy, dfbi->gdi->clip);
+
 	SelectObject(dfbi->gdi->hdc_drawing, (HGDIOBJ) dfbi->gdi->drawing_surface);
 	BitBlt(dfbi->gdi->drawing_surface, x, y, cx, cy, dfbi->gdi->system_surface, srcx, srcy, gdi_rop3_code(opcode));
 
@@ -347,6 +359,8 @@ l_ui_memblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy, 
 	dfbInfo *dfbi = GET_DFBI(inst);
 
 	printf("ui_memblt: x: %d y: %d cx: %d cy: %d rop: 0x%X\n", x, y, cx, cy, gdi_rop3_code(opcode));
+
+	gdi_clip_coords(&x, &y, &cx, &cy, &srcx, &srcy, dfbi->gdi->clip);
 	
 	SelectObject(dfbi->gdi->hdc_bmp, (HGDIOBJ) src);
 	SelectObject(dfbi->gdi->hdc_drawing, (HGDIOBJ) dfbi->gdi->drawing_surface);
@@ -378,11 +392,12 @@ l_ui_select(struct rdp_inst * inst, int rdp_socket)
 static void
 l_ui_set_clip(struct rdp_inst * inst, int x, int y, int cx, int cy)
 {
-	HRGN clippingRegion;
 	dfbInfo *dfbi = GET_DFBI(inst);
-
-	clippingRegion = CreateRectRgn(x, y, x + cx, y + cy);
-	SelectClipRgn(dfbi->gdi->hdc_drawing, clippingRegion);
+	
+	dfbi->gdi->clip->x = x;
+	dfbi->gdi->clip->y = y;
+	dfbi->gdi->clip->w = cx;
+	dfbi->gdi->clip->h = cy;
 }
 
 static void
@@ -390,10 +405,10 @@ l_ui_reset_clip(struct rdp_inst * inst)
 {
 	dfbInfo *dfbi = GET_DFBI(inst);
 
-	if (dfbi->gdi->hdc_drawing->clippingRegion != NULL)
-		free(dfbi->gdi->hdc_drawing->clippingRegion);
-	
-	SelectClipRgn(dfbi->gdi->hdc_drawing, NULL);
+	dfbi->gdi->clip->x = 0;
+	dfbi->gdi->clip->y = 0;
+	dfbi->gdi->clip->w = dfbi->gdi->width;
+	dfbi->gdi->clip->h = dfbi->gdi->height;
 }
 
 static void
@@ -666,6 +681,7 @@ dfb_post_connect(rdpInst * inst)
 	SelectObject(dfbi->gdi->hdc_system, (HGDIOBJ) dfbi->gdi->system_surface);
 	dfbi->gdi->hdc_drawing = dfbi->gdi->hdc_system;
 	dfbi->gdi->hdc_bmp = CreateCompatibleDC(dfbi->gdi->hdc_system);
+	dfbi->gdi->clip = CreateRectRgn(0, 0, dfbi->gdi->width, dfbi->gdi->height);
 
 	return 0;
 }

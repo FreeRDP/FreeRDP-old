@@ -123,10 +123,10 @@ typedef RECT* HRECT;
 
 struct _RGN
 {
-	unsigned int left;
-	unsigned int top;
-	unsigned int right;
-	unsigned int bottom;
+	unsigned int x;
+	unsigned int y;
+	unsigned int w;
+	unsigned int h;
 };
 typedef struct _RGN RGN;
 typedef RGN* HRGN;
@@ -190,7 +190,6 @@ struct _DC
 	HGDIOBJ selectedObject;
 	unsigned int bytesPerPixel;
 	unsigned int bitsPerPixel;
-	HRGN clippingRegion;
 	COLORREF bkColor;
 	COLORREF textColor;
 	HBRUSH brush;
@@ -217,6 +216,7 @@ struct _GDI
 	int cursor_y;
 	
 	HWND hwnd;
+	HRGN clip;
 	HDC hdc_system;
 	HDC hdc_drawing;
 	char* system_buffer;
@@ -233,6 +233,7 @@ typedef struct _GDI GDI;
 
 unsigned int gdi_rop3_code(unsigned char code);
 unsigned int gdi_make_colorref(PIXEL *pixel);
+int gdi_clip_coords(int *x, int *y, int *w, int *h, int *srcx, int *srcy, HRGN clip);
 void gdi_colour_convert(PIXEL *pixel, int colour, int bpp, HPALETTE palette);
 char* gdi_image_convert(char* srcData, int width, int height, int srcBpp, int dstBpp, HPALETTE palette);
 
