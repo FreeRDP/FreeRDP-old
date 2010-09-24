@@ -290,14 +290,14 @@ process_scrblt(rdpOrders * orders, STREAM s, SCRBLT_ORDER * os, uint32 present, 
 	if (present & 0x0040)
 		rdp_in_coord(s, &os->srcy, delta);
 
-	DEBUG("SCREENBLT(op=0x%x,x=%d,y=%d,cx=%d,cy=%d,srcx=%d,srcy=%d)\n",
+	DEBUG("SCRBLT(op=0x%x,x=%d,y=%d,cx=%d,cy=%d,srcx=%d,srcy=%d)\n",
 	       os->opcode, os->x, os->y, os->cx, os->cy, os->srcx, os->srcy);
 
 	ui_screenblt(orders->rdp->inst, os->opcode, os->x, os->y, os->cx, os->cy,
 		     os->srcx, os->srcy);
 }
 
-/* Process a line order */
+/* Process a lineto order */
 static void
 process_lineto(rdpOrders * orders, STREAM s, LINETO_ORDER * os, uint32 present, RD_BOOL delta)
 {
@@ -324,7 +324,7 @@ process_lineto(rdpOrders * orders, STREAM s, LINETO_ORDER * os, uint32 present, 
 
 	rdp_parse_pen(s, &os->pen, present >> 7);
 
-	DEBUG("LINE(op=0x%x,sx=%d,sy=%d,dx=%d,dy=%d,fg=0x%x)\n",
+	DEBUG("LINETO(op=0x%x,sx=%d,sy=%d,dx=%d,dy=%d,fg=0x%x)\n",
 	       os->opcode, os->startx, os->starty, os->endx, os->endy, os->pen.colour);
 
 	if (os->opcode < 0x01 || os->opcode > 0x10)
@@ -372,12 +372,12 @@ process_opaquerect(rdpOrders * orders, STREAM s, OPAQUERECT_ORDER * os, uint32 p
 		os->colour = (os->colour & 0xff00ffff) | (i << 16);
 	}
 
-	DEBUG("RECT(x=%d,y=%d,cx=%d,cy=%d,fg=0x%x)\n", os->x, os->y, os->cx, os->cy, os->colour);
+	DEBUG("OPAQUERECT(x=%d,y=%d,cx=%d,cy=%d,fg=0x%x)\n", os->x, os->y, os->cx, os->cy, os->colour);
 
 	ui_rect(orders->rdp->inst, os->x, os->y, os->cx, os->cy, os->colour);
 }
 
-/* Process a desktop save order */
+/* Process a save bitmap order */
 static void
 process_savebitmap(rdpOrders * orders, STREAM s, SAVEBITMAP_ORDER * os, uint32 present, RD_BOOL delta)
 {
@@ -402,7 +402,7 @@ process_savebitmap(rdpOrders * orders, STREAM s, SAVEBITMAP_ORDER * os, uint32 p
 	if (present & 0x20)
 		in_uint8(s, os->action);
 
-	DEBUG("DESKSAVE(l=%d,t=%d,r=%d,b=%d,off=%d,op=%d)\n",
+	DEBUG("SAVEBITMAP(l=%d,t=%d,r=%d,b=%d,off=%d,op=%d)\n",
 	       os->left, os->top, os->right, os->bottom, os->offset, os->action);
 
 	width = os->right - os->left + 1;
@@ -415,7 +415,7 @@ process_savebitmap(rdpOrders * orders, STREAM s, SAVEBITMAP_ORDER * os, uint32 p
 		ui_desktop_restore(inst, os->offset, os->left, os->top, width, height);
 }
 
-/* Process a memory blt order */
+/* Process a memblt order */
 static void
 process_memblt(rdpOrders * orders, STREAM s, MEMBLT_ORDER * os, uint32 present, RD_BOOL delta)
 {
@@ -462,7 +462,7 @@ process_memblt(rdpOrders * orders, STREAM s, MEMBLT_ORDER * os, uint32 present, 
 		  bitmap, os->srcx, os->srcy);
 }
 
-/* Process a 3-way blt order */
+/* Process a mem3blt order */
 static void
 process_mem3blt(rdpOrders * orders, STREAM s, MEM3BLT_ORDER * os, uint32 present, RD_BOOL delta)
 {
@@ -510,7 +510,7 @@ process_mem3blt(rdpOrders * orders, STREAM s, MEM3BLT_ORDER * os, uint32 present
 	if (present & 0x010000)
 		in_uint16_le(s, os->unknown);
 
-	DEBUG("TRIBLT(op=0x%x,x=%d,y=%d,cx=%d,cy=%d,id=%d,idx=%d,bs=%d,bg=0x%x,fg=0x%x)\n",
+	DEBUG("MEM3BLT(op=0x%x,x=%d,y=%d,cx=%d,cy=%d,id=%d,idx=%d,bs=%d,bg=0x%x,fg=0x%x)\n",
 	       os->opcode, os->x, os->y, os->cx, os->cy, os->cache_id, os->cache_idx,
 	       os->brush.style, os->bgcolour, os->fgcolour);
 
@@ -557,7 +557,7 @@ process_polygon_sc(rdpOrders * orders, STREAM s, POLYGON_SC_ORDER* os, uint32 pr
 		in_uint8a(s, os->data, os->datasize);
 	}
 
-	DEBUG("POLYGON(x=%d,y=%d,op=0x%x,fm=%d,fg=0x%x,n=%d,sz=%d)\n",
+	DEBUG("POLYGON_SC(x=%d,y=%d,op=0x%x,fm=%d,fg=0x%x,n=%d,sz=%d)\n",
 	       os->x, os->y, os->opcode, os->fillmode, os->fgcolour, os->npoints, os->datasize);
 
 	DEBUG("Data: ");
@@ -607,7 +607,7 @@ process_polygon_sc(rdpOrders * orders, STREAM s, POLYGON_SC_ORDER* os, uint32 pr
 		ui_polygon(orders->rdp->inst, os->opcode, os->fillmode, points,
 			   os->npoints + 1, NULL, 0, os->fgcolour);
 	else
-		ui_error(orders->rdp->inst, "polygon parse error\n");
+		ui_error(orders->rdp->inst, "polygon_sc parse error\n");
 }
 
 /* Process a polygon2 order */
@@ -649,7 +649,7 @@ process_polygon_cb(rdpOrders * orders, STREAM s, POLYGON_CB_ORDER * os, uint32 p
 		in_uint8a(s, os->data, os->datasize);
 	}
 
-	DEBUG("POLYGON2(x=%d,y=%d,op=0x%x,fm=%d,bs=%d,bg=0x%x,fg=0x%x,n=%d,sz=%d)\n",
+	DEBUG("POLYGON_CB(x=%d,y=%d,op=0x%x,fm=%d,bs=%d,bg=0x%x,fg=0x%x,n=%d,sz=%d)\n",
 	       os->x, os->y, os->opcode, os->fillmode, os->brush.style, os->bgcolour, os->fgcolour,
 	       os->npoints, os->datasize);
 
@@ -702,7 +702,7 @@ process_polygon_cb(rdpOrders * orders, STREAM s, POLYGON_CB_ORDER * os, uint32 p
 		ui_polygon(orders->rdp->inst, os->opcode, os->fillmode, points,
 			   os->npoints + 1, &brush, os->bgcolour, os->fgcolour);
 	else
-		ui_error(orders->rdp->inst, "polygon2 parse error\n");
+		ui_error(orders->rdp->inst, "polygon_cb parse error\n");
 }
 
 /* Process a polyline order */
@@ -815,7 +815,7 @@ process_ellipse_sc(rdpOrders * orders, STREAM s, ELLIPSE_SC_ORDER * os, uint32 p
 	if (present & 0x40)
 		rdp_in_colour(s, &os->fgcolour);
 
-	DEBUG("ELLIPSE(l=%d,t=%d,r=%d,b=%d,op=0x%x,fm=%d,fg=0x%x)\n", os->left, os->top,
+	DEBUG("ELLIPSE_SC(l=%d,t=%d,r=%d,b=%d,op=0x%x,fm=%d,fg=0x%x)\n", os->left, os->top,
 	       os->right, os->bottom, os->opcode, os->fillmode, os->fgcolour);
 
 	ui_ellipse(orders->rdp->inst, os->opcode, os->fillmode, os->left, os->top,
@@ -854,7 +854,7 @@ process_ellipse_cb(rdpOrders * orders, STREAM s, ELLIPSE_CB_ORDER * os, uint32 p
 
 	rdp_parse_brush(s, &os->brush, present >> 8);
 
-	DEBUG("ELLIPSE2(l=%d,t=%d,r=%d,b=%d,op=0x%x,fm=%d,bs=%d,bg=0x%x,fg=0x%x)\n",
+	DEBUG("ELLIPSE_CB(l=%d,t=%d,r=%d,b=%d,op=0x%x,fm=%d,bs=%d,bg=0x%x,fg=0x%x)\n",
 	       os->left, os->top, os->right, os->bottom, os->opcode, os->fillmode, os->brush.style,
 	       os->bgcolour, os->fgcolour);
 
@@ -1071,9 +1071,9 @@ process_glyph_index(rdpOrders * orders, STREAM s, GLYPH_INDEX_ORDER * os, uint32
 		in_uint8a(s, os->text, os->length);
 	}
 
-	DEBUG("TEXT2(x=%d,y=%d,cl=%d,ct=%d,cr=%d,cb=%d,bl=%d,bt=%d,br=%d,bb=%d,bs=%d,bg=0x%x,fg=0x%x,font=%d,fl=0x%x,op=0x%x,mix=%d,n=%d)\n", os->x, os->y, os->clipleft, os->cliptop, os->clipright, os->clipbottom, os->boxleft, os->boxtop, os->boxright, os->boxbottom, os->brush.style, os->bgcolour, os->fgcolour, os->font, os->flags, os->opcode, os->mixmode, os->length);
+	DEBUG("GLYPH_INDEX(x=%d,y=%d,cl=%d,ct=%d,cr=%d,cb=%d,bl=%d,bt=%d,br=%d,bb=%d,bs=%d,bg=0x%x,fg=0x%x,font=%d,fl=0x%x,op=0x%x,mix=%d,n=%d)\n", os->x, os->y, os->clipleft, os->cliptop, os->clipright, os->clipbottom, os->boxleft, os->boxtop, os->boxright, os->boxbottom, os->brush.style, os->bgcolour, os->fgcolour, os->font, os->flags, os->opcode, os->mixmode, os->length);
 
-	DEBUG("Text: ");
+	DEBUG("Glyph: ");
 
 	for (i = 0; i < os->length; i++)
 		DEBUG("%02x ", os->text[i]);
@@ -1110,7 +1110,7 @@ process_cache_bitmap_uncompressed(rdpOrders * orders, STREAM s)
 	in_uint16_le(s, cache_idx);
 	in_uint8p(s, data, bufsize);
 
-	DEBUG("RAW_BMPCACHE(cx=%d,cy=%d,id=%d,idx=%d)\n", width, height, cache_id, cache_idx);
+	DEBUG("RAWBMPCACHE(cx=%d,cy=%d,id=%d,idx=%d)\n", width, height, cache_id, cache_idx);
 
 	size = width * height * Bpp;
 
@@ -1133,7 +1133,7 @@ process_cache_bitmap_uncompressed(rdpOrders * orders, STREAM s)
 
 /* Process a bitmap cache order */
 static void
-process_bmpcache(rdpOrders * orders, STREAM s, uint16 flags)
+process_cache_bitmap_compressed(rdpOrders * orders, STREAM s, uint16 flags)
 {
 	int buffer_size;
 	RD_HBITMAP bitmap;
@@ -1314,7 +1314,7 @@ process_cache_color_table(rdpOrders * orders, STREAM s)
 		in_uint8s(s, 1);	/* pad */
 	}
 
-	DEBUG("COLCACHE(id=%d,n=%d)\n", cache_id, map.ncolours);
+	DEBUG("COLORTABLECACHE(id=%d,n=%d)\n", cache_id, map.ncolours);
 
 	if (cache_id)
 	{
@@ -1336,7 +1336,7 @@ process_cache_glyph(rdpOrders * orders, STREAM s)
 	in_uint8(s, font);
 	in_uint8(s, nglyphs);
 
-	DEBUG("FONTCACHE(font=%d,n=%d)\n", font, nglyphs);
+	DEBUG("GLYPHCACHE(font=%d,n=%d)\n", font, nglyphs);
 
 	for (i = 0; i < nglyphs; i++)
 	{
@@ -1461,9 +1461,9 @@ process_cache_brush(rdpOrders * orders, STREAM s, uint16 flags)
 	}
 }
 
-/* Process a set drawing surface order */
+/* Process a switch surface alternate secondary drawing order */
 static void
-process_set_surface(rdpOrders * orders, STREAM s)
+process_switch_surface(rdpOrders * orders, STREAM s)
 {
 	sint16 idx;
 
@@ -1472,9 +1472,9 @@ process_set_surface(rdpOrders * orders, STREAM s)
 		cache_get_bitmap(orders->rdp->cache, 255, idx) : NULL);
 }
 
-/* Process a create off-screen drawing surface order */
+/* Process a create off-screen bitmap alternate secondary drawing order */
 static void
-process_create_surface(rdpOrders * orders, STREAM s)
+process_create_offscr_bitmap(rdpOrders * orders, STREAM s)
 {
 	RD_HBITMAP bitmap;
 	uint16 idx, width, height, free_num, free_idx;
@@ -1502,7 +1502,7 @@ process_create_surface(rdpOrders * orders, STREAM s)
 
 /* Process a non-standard order */
 static void
-process_non_standard_order(rdpOrders * orders, STREAM s, uint8 order_flags)
+process_alternate_secondary_order(rdpOrders * orders, STREAM s, uint8 order_flags)
 {
 	if (!(order_flags & 0x2))
 	{
@@ -1512,14 +1512,14 @@ process_non_standard_order(rdpOrders * orders, STREAM s, uint8 order_flags)
 	order_flags >>= 2;
 	switch (order_flags)
 	{
-		case 0:
-			process_set_surface(orders, s);
+		case RDP_ORDER_ALTSEC_SWITCH_SURFACE:
+			process_switch_surface(orders, s);
 			break;
-		case 1:
-			process_create_surface(orders, s);
+		case RDP_ORDER_ALTSEC_CREATE_OFFSCR_BITMAP:
+			process_create_offscr_bitmap(orders, s);
 			break;
 		default:
-			ui_unimpl(orders->rdp->inst, "non-standard order %d:\n", order_flags);
+			ui_unimpl(orders->rdp->inst, "alternate secondary order %d:\n", order_flags);
 			exit(1);
 	}
 }
@@ -1554,7 +1554,7 @@ process_secondary_order(rdpOrders * orders, STREAM s)
 			break;
 
 		case RDP_ORDER_CACHE_BITMAP_COMPRESSED:
-			process_bmpcache(orders, s, flags);
+			process_cache_bitmap_compressed(orders, s, flags);
 			break;
 
 		case RDP_ORDER_CACHE_GLYPH:
@@ -1596,7 +1596,7 @@ process_orders(rdpOrders * orders, STREAM s, uint16 num_orders)
 
 		if (!(order_flags & RDP_ORDER_STANDARD))
 		{
-			process_non_standard_order(orders, s, order_flags);
+			process_alternate_secondary_order(orders, s, order_flags);
 		}
 		else if (order_flags & RDP_ORDER_SECONDARY)
 		{
