@@ -141,7 +141,7 @@ set_pixel(uint8 * data, int x, int y, int width, int height, int bpp, int pixel)
 }
 
 int
-wf_colour_convert(wfInfo * wfi, int in_colour, int in_bpp)
+wf_color_convert(wfInfo * wfi, int in_color, int in_bpp)
 {
 	int alpha;
 	int red;
@@ -157,25 +157,25 @@ wf_colour_convert(wfInfo * wfi, int in_colour, int in_bpp)
 	switch (in_bpp)
 	{
 		case 32:
-			SPLIT32BGR(alpha, red, green, blue, in_colour);
+			SPLIT32BGR(alpha, red, green, blue, in_color);
 			break;
 		case 24:
-			SPLIT24BGR(red, green, blue, in_colour);
+			SPLIT24BGR(red, green, blue, in_color);
 			break;
 		case 16:
-			SPLIT16RGB(red, green, blue, in_colour);
+			SPLIT16RGB(red, green, blue, in_color);
 			break;
 		case 15:
-			SPLIT15RGB(red, green, blue, in_colour);
+			SPLIT15RGB(red, green, blue, in_color);
 			break;
 		case 8:
-			in_colour &= 0xff;
-			blue = *(wfi->colourmap + in_colour * 3);
-			green = *(wfi->colourmap + in_colour * 3 + 1);
-			red = *(wfi->colourmap + in_colour * 3 + 2);
+			in_color &= 0xff;
+			blue = *(wfi->colormap + in_color * 3);
+			green = *(wfi->colormap + in_color * 3 + 1);
+			red = *(wfi->colormap + in_color * 3 + 2);
 			break;
 		case 1:
-			if (in_colour != 0)
+			if (in_color != 0)
 			{
 				red = 0xff;
 				green = 0xff;
@@ -183,7 +183,7 @@ wf_colour_convert(wfInfo * wfi, int in_colour, int in_bpp)
 			}
 			break;
 		default:
-			printf("wf_colour: bad in_bpp %d\n", in_bpp);
+			printf("wf_color: bad in_bpp %d\n", in_bpp);
 			break;
 	}
 	rv = RGB(red, green, blue);
@@ -281,7 +281,7 @@ wf_image_convert(wfInfo * wfi, int width, int height, int bpp,
 			for (indexx = 0; indexx < width; indexx++)
 			{
 				pixel = *src8++;
-				memcpy(dst8, wfi->colourmap + pixel * 3, 3);
+				memcpy(dst8, wfi->colormap + pixel * 3, 3);
 				dst8 += 3;
 			}
 		}
@@ -289,39 +289,39 @@ wf_image_convert(wfInfo * wfi, int width, int height, int bpp,
 	return out_data;
 }
 
-RD_HCOLOURMAP
-wf_create_colourmap(wfInfo * wfi, RD_COLOURMAP * colours)
+RD_HCOLORMAP
+wf_create_colormap(wfInfo * wfi, RD_COLORMAP * colors)
 {
-	uint8 * colourmap;
+	uint8 * colormap;
 	uint8 * dst;
 	int index;
 	int count;
 
-	colourmap = (uint8 *) malloc(3 * 256);
-	memset(colourmap, 0, 3 * 256);
-	count = colours->ncolours;
+	colormap = (uint8 *) malloc(3 * 256);
+	memset(colormap, 0, 3 * 256);
+	count = colors->ncolors;
 	if (count > 256)
 	{
 		count = 256;
 	}
-	dst = colourmap;
+	dst = colormap;
 	for (index = 0; index < count; index++)
 	{
-		*dst++ = colours->colours[index].blue;
-		*dst++ = colours->colours[index].green;
-		*dst++ = colours->colours[index].red;
+		*dst++ = colors->colors[index].blue;
+		*dst++ = colors->colors[index].green;
+		*dst++ = colors->colors[index].red;
 	}
-	return (RD_HCOLOURMAP) colourmap;
+	return (RD_HCOLORMAP) colormap;
 }
 
 int
-wf_set_colourmap(wfInfo * wfi, RD_HCOLOURMAP map)
+wf_set_colormap(wfInfo * wfi, RD_HCOLORMAP map)
 {
-	if (wfi->colourmap != NULL)
+	if (wfi->colormap != NULL)
 	{
-		free(wfi->colourmap);
+		free(wfi->colormap);
 	}
-	wfi->colourmap = (uint8 *) map;
+	wfi->colormap = (uint8 *) map;
 	return 0;
 }
 

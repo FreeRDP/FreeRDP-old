@@ -44,7 +44,7 @@ typedef signed long long sint64;
 typedef int RD_BOOL;
 typedef void *RD_HBITMAP;
 typedef void *RD_HGLYPH;
-typedef void *RD_HCOLOURMAP;
+typedef void *RD_HCOLORMAP;
 typedef void *RD_HCURSOR;
 
 typedef struct _RD_POINT
@@ -53,33 +53,33 @@ typedef struct _RD_POINT
 }
 RD_POINT;
 
-typedef struct _RD_COLOURENTRY
+typedef struct _RD_COLORENTRY
 {
 	uint8 red;
 	uint8 green;
 	uint8 blue;
 }
-RD_COLOURENTRY;
+RD_COLORENTRY;
 
-typedef struct _RD_COLOURMAP
+typedef struct _RD_COLORMAP
 {
-	uint16 ncolours;
-	RD_COLOURENTRY *colours;
+	uint16 ncolors;
+	RD_COLORENTRY *colors;
 }
-RD_COLOURMAP;
+RD_COLORMAP;
 
 typedef struct _RD_PEN
 {
 	uint8 style;
 	uint8 width;
-	uint32 colour;
+	uint32 color;
 }
 RD_PEN;
 
 /* this is whats in the brush cache */
 typedef struct _RD_BRUSHDATA
 {
-	uint32 colour_code;
+	uint32 color_code;
 	uint32 data_size;
 	uint8 *data;
 }

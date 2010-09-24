@@ -105,8 +105,8 @@ typedef struct _PATBLT_ORDER
 	sint16 cx;
 	sint16 cy;
 	uint8 opcode;
-	uint32 bgcolour;
-	uint32 fgcolour;
+	uint32 bgcolor;
+	uint32 fgcolor;
 	RD_BRUSH brush;
 
 }
@@ -132,7 +132,7 @@ typedef struct _LINETO_ORDER
 	sint16 starty;
 	sint16 endx;
 	sint16 endy;
-	uint32 bgcolour;
+	uint32 bgcolor;
 	uint8 opcode;
 	RD_PEN pen;
 
@@ -145,7 +145,7 @@ typedef struct _OPAQUERECT_ORDER
 	sint16 y;
 	sint16 cx;
 	sint16 cy;
-	uint32 colour;
+	uint32 color;
 
 }
 OPAQUERECT_ORDER;
@@ -164,7 +164,7 @@ SAVEBITMAP_ORDER;
 
 typedef struct _MEM3BLT_ORDER
 {
-	uint8 colour_table;
+	uint8 color_table;
 	uint8 cache_id;
 	sint16 x;
 	sint16 y;
@@ -173,8 +173,8 @@ typedef struct _MEM3BLT_ORDER
 	uint8 opcode;
 	sint16 srcx;
 	sint16 srcy;
-	uint32 bgcolour;
-	uint32 fgcolour;
+	uint32 bgcolor;
+	uint32 fgcolor;
 	RD_BRUSH brush;
 	uint16 cache_idx;
 	uint16 unknown;
@@ -184,7 +184,7 @@ MEM3BLT_ORDER;
 
 typedef struct _MEMBLT_ORDER
 {
-	uint8 colour_table;
+	uint8 color_table;
 	uint8 cache_id;
 	sint16 x;
 	sint16 y;
@@ -206,7 +206,7 @@ typedef struct _POLYGON_SC_ORDER
 	sint16 y;
 	uint8 opcode;
 	uint8 fillmode;
-	uint32 fgcolour;
+	uint32 fgcolor;
 	uint8 npoints;
 	uint8 datasize;
 	uint8 data[MAX_DATA];
@@ -220,8 +220,8 @@ typedef struct _POLYGON_CB_ORDER
 	sint16 y;
 	uint8 opcode;
 	uint8 fillmode;
-	uint32 bgcolour;
-	uint32 fgcolour;
+	uint32 bgcolor;
+	uint32 fgcolor;
 	RD_BRUSH brush;
 	uint8 npoints;
 	uint8 datasize;
@@ -235,7 +235,7 @@ typedef struct _POLYLINE_ORDER
 	sint16 x;
 	sint16 y;
 	uint8 opcode;
-	uint32 fgcolour;
+	uint32 fgcolor;
 	uint8 lines;
 	uint8 datasize;
 	uint8 data[MAX_DATA];
@@ -251,7 +251,7 @@ typedef struct _ELLIPSE_SC_ORDER
 	sint16 bottom;
 	uint8 opcode;
 	uint8 fillmode;
-	uint32 fgcolour;
+	uint32 fgcolor;
 
 }
 ELLIPSE_SC_ORDER;
@@ -265,8 +265,8 @@ typedef struct _ELLIPSE_CB_ORDER
 	uint8 opcode;
 	uint8 fillmode;
 	RD_BRUSH brush;
-	uint32 bgcolour;
-	uint32 fgcolour;
+	uint32 bgcolor;
+	uint32 fgcolor;
 
 }
 ELLIPSE_CB_ORDER;
@@ -279,8 +279,8 @@ typedef struct _GLYPH_INDEX_ORDER
 	uint8 flags;
 	uint8 opcode;
 	uint8 mixmode;
-	uint32 bgcolour;
-	uint32 fgcolour;
+	uint32 bgcolor;
+	uint32 fgcolor;
 	sint16 clipleft;
 	sint16 cliptop;
 	sint16 clipright;
@@ -392,7 +392,7 @@ RDP_CACHE_GLYPH_ORDER;
 typedef struct _RDP_CACHE_COLOR_TABLE_ORDER
 {
 	uint8 cache_id;
-	RD_COLOURMAP map;
+	RD_COLORMAP map;
 
 }
 RDP_CACHE_COLOR_TABLE_ORDER;

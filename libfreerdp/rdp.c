@@ -966,9 +966,9 @@ process_demand_active(rdpRdp * rdp, STREAM s, uint16 serverChannelId)
 	reset_order_state(rdp->orders);
 }
 
-/* Process a colour pointer PDU */
+/* Process a color pointer PDU */
 static void
-process_colour_pointer_common(rdpRdp * rdp, STREAM s, int bpp)
+process_color_pointer_common(rdpRdp * rdp, STREAM s, int bpp)
 {
 	uint16 width, height, cache_idx, masklen, datalen;
 	sint16 x, y;
@@ -987,7 +987,7 @@ process_colour_pointer_common(rdpRdp * rdp, STREAM s, int bpp)
 	in_uint8p(s, mask, masklen);
 	if ((width != 32) || (height != 32))
 	{
-		ui_error(rdp->inst, "process_colour_pointer_common: error "
+		ui_error(rdp->inst, "process_color_pointer_common: error "
 			"width %d height %d\n", width, height);
 		return;
 	}
@@ -1000,11 +1000,11 @@ process_colour_pointer_common(rdpRdp * rdp, STREAM s, int bpp)
 	cache_put_cursor(rdp->cache, cache_idx, cursor);
 }
 
-/* Process a colour pointer PDU */
+/* Process a color pointer PDU */
 void
-process_colour_pointer_pdu(rdpRdp * rdp, STREAM s)
+process_color_pointer_pdu(rdpRdp * rdp, STREAM s)
 {
-	process_colour_pointer_common(rdp, s, 24);
+	process_color_pointer_common(rdp, s, 24);
 }
 
 /* Process a cached pointer PDU */
@@ -1046,7 +1046,7 @@ process_new_pointer_pdu(rdpRdp * rdp, STREAM s)
 	int xor_bpp;
 
 	in_uint16_le(s, xor_bpp);
-	process_colour_pointer_common(rdp, s, xor_bpp);
+	process_color_pointer_common(rdp, s, xor_bpp);
 }
 
 /* Process a pointer PDU */
@@ -1069,7 +1069,7 @@ process_pointer_pdu(rdpRdp * rdp, STREAM s)
 			break;
 
 		case RDP_PTRMSGTYPE_COLOR:
-			process_colour_pointer_pdu(rdp, s);
+			process_color_pointer_pdu(rdp, s);
 			break;
 
 		case RDP_PTRMSGTYPE_CACHED:
@@ -1181,15 +1181,15 @@ process_palette(rdpRdp * rdp, STREAM s)
 {
 	int i;
 	int size;
-	RD_COLOURENTRY *entry;
-	RD_COLOURMAP map;
-	RD_HCOLOURMAP hmap;
+	RD_COLORENTRY *entry;
+	RD_COLORMAP map;
+	RD_HCOLORMAP hmap;
 
 	in_uint8s(s, 2);	/* pad */
-	in_uint16_le(s, map.ncolours);
+	in_uint16_le(s, map.ncolors);
 	in_uint8s(s, 2);	/* pad */
 
-	size = sizeof(RD_COLOURENTRY) * map.ncolours;
+	size = sizeof(RD_COLORENTRY) * map.ncolors;
 
 	if (size > rdp->buffer_size)
 	{
@@ -1197,20 +1197,20 @@ process_palette(rdpRdp * rdp, STREAM s)
 		rdp->buffer_size = size;
 	}
 
-	map.colours = (RD_COLOURENTRY *) rdp->buffer;
+	map.colors = (RD_COLORENTRY *) rdp->buffer;
 
-	DEBUG("PALETTE(c=%d)\n", map.ncolours);
+	DEBUG("PALETTE(c=%d)\n", map.ncolors);
 
-	for (i = 0; i < map.ncolours; i++)
+	for (i = 0; i < map.ncolors; i++)
 	{
-		entry = &map.colours[i];
+		entry = &map.colors[i];
 		in_uint8(s, entry->red);
 		in_uint8(s, entry->green);
 		in_uint8(s, entry->blue);
 	}
 
-	hmap = ui_create_colourmap(rdp->inst, &map);
-	ui_set_colourmap(rdp->inst, hmap);
+	hmap = ui_create_colormap(rdp->inst, &map);
+	ui_set_colormap(rdp->inst, hmap);
 }
 
 /* Process an update PDU */

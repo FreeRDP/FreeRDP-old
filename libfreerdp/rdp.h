@@ -90,7 +90,7 @@ rdp_unicode_input(rdpRdp * rdp, time_t time, uint16 unicode_character);
 void
 rdp_send_client_window_status(rdpRdp * rdp, int status);
 void
-process_colour_pointer_pdu(rdpRdp * rdp, STREAM s);
+process_color_pointer_pdu(rdpRdp * rdp, STREAM s);
 void
 process_cached_pointer_pdu(rdpRdp * rdp, STREAM s);
 void

@@ -20,20 +20,20 @@
    DEALINGS IN THE SOFTWARE.
 */
 
-#ifndef __XF_COLOUR_H
-#define __XF_COLOUR_H
+#ifndef __XF_COLOR_H
+#define __XF_COLOR_H
 
 #include <freerdp/freerdp.h>
 
 int
-xf_colour_convert(xfInfo * xfi, rdpSet * settings, int colour);
+xf_color_convert(xfInfo * xfi, rdpSet * settings, int color);
 uint8 *
 xf_image_convert(xfInfo * xfi, rdpSet * settings, int width, int height,
 	uint8 * in_data);
-RD_HCOLOURMAP
-xf_create_colourmap(xfInfo * xfi, rdpSet * settings, RD_COLOURMAP * colours);
+RD_HCOLORMAP
+xf_create_colormap(xfInfo * xfi, rdpSet * settings, RD_COLORMAP * colors);
 int
-xf_set_colourmap(xfInfo * xfi, rdpSet * settings, RD_HCOLOURMAP map);
+xf_set_colormap(xfInfo * xfi, rdpSet * settings, RD_HCOLORMAP map);
 int
 xf_cursor_convert_mono(xfInfo * xfi, uint8 * src_glyph, uint8 * msk_glyph,
 	uint8 * xormask, uint8 * andmask, int width, int height, int bpp);

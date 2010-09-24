@@ -349,7 +349,7 @@ gdi_split_colorref(unsigned int colorref, PIXEL *pixel)
 }
 
 void
-gdi_colour_convert(PIXEL *pixel, int colour, int bpp, HPALETTE palette)
+gdi_color_convert(PIXEL *pixel, int color, int bpp, HPALETTE palette)
 {
 	pixel->red = 0;
 	pixel->green = 0;
@@ -359,22 +359,22 @@ gdi_colour_convert(PIXEL *pixel, int colour, int bpp, HPALETTE palette)
 	switch (bpp)
 	{
 		case 32:
-			SPLIT32BGR(pixel->alpha, pixel->red, pixel->green, pixel->blue, colour);
+			SPLIT32BGR(pixel->alpha, pixel->red, pixel->green, pixel->blue, color);
 			break;
 		case 24:
-			SPLIT24BGR(pixel->red, pixel->green, pixel->blue, colour);
+			SPLIT24BGR(pixel->red, pixel->green, pixel->blue, color);
 			break;
 		case 16:
-			SPLIT16RGB(pixel->red, pixel->green, pixel->blue, colour);
+			SPLIT16RGB(pixel->red, pixel->green, pixel->blue, color);
 			break;
 		case 15:
-			SPLIT15RGB(pixel->red, pixel->green, pixel->blue, colour);
+			SPLIT15RGB(pixel->red, pixel->green, pixel->blue, color);
 			break;
 		case 8:
-			colour &= 0xFF;
-			pixel->red = palette->logicalPalette->entries[colour].red;
-			pixel->green = palette->logicalPalette->entries[colour].green;
-			pixel->blue = palette->logicalPalette->entries[colour].blue;
+			color &= 0xFF;
+			pixel->red = palette->logicalPalette->entries[color].red;
+			pixel->green = palette->logicalPalette->entries[color].green;
+			pixel->blue = palette->logicalPalette->entries[color].blue;
 			break;
 		default:
 			break;

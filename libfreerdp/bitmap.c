@@ -70,9 +70,9 @@ bitmap_decompress1(void * inst, uint8 * output, int width, int height, uint8 * i
 	uint8 *end = input + size;
 	uint8 *prevline = NULL, *line = NULL;
 	int opcode, count, offset, isfillormix, x = width;
-	int lastopcode = -1, insertmix = False, bicolour = False;
+	int lastopcode = -1, insertmix = False, bicolor = False;
 	uint8 code;
-	uint8 colour1 = 0, colour2 = 0;
+	uint8 color1 = 0, color2 = 0;
 	uint8 mixmask, mask = 0;
 	uint8 mix = 0xff;
 	int fom_mask = 0;
@@ -134,10 +134,10 @@ bitmap_decompress1(void * inst, uint8 * output, int width, int height, uint8 * i
 				if ((lastopcode == opcode) && !((x == width) && (prevline == NULL)))
 					insertmix = True;
 				break;
-			case 8:	/* Bicolour */
-				colour1 = CVAL(input);
+			case 8:	/* Bicolor */
+				color1 = CVAL(input);
 			case 3:	/* Colour */
-				colour2 = CVAL(input);
+				color2 = CVAL(input);
 				break;
 			case 6:	/* SetMix/Mix */
 			case 7:	/* SetMix/FillOrMix */
@@ -226,23 +226,23 @@ bitmap_decompress1(void * inst, uint8 * output, int width, int height, uint8 * i
 					}
 					break;
 				case 3:	/* Colour */
-					REPEAT(line[x] = colour2)
+					REPEAT(line[x] = color2)
 					break;
 				case 4:	/* Copy */
 					REPEAT(line[x] = CVAL(input))
 					break;
-				case 8:	/* Bicolour */
+				case 8:	/* Bicolor */
 					REPEAT
 					(
-						if (bicolour)
+						if (bicolor)
 						{
-							line[x] = colour2;
-							bicolour = False;
+							line[x] = color2;
+							bicolor = False;
 						}
 						else
 						{
-							line[x] = colour1;
-							bicolour = True; count++;
+							line[x] = color1;
+							bicolor = True; count++;
 						}
 					)
 					break;
@@ -268,9 +268,9 @@ bitmap_decompress2(void * inst, uint8 * output, int width, int height, uint8 * i
 	uint8 *end = input + size;
 	uint16 *prevline = NULL, *line = NULL;
 	int opcode, count, offset, isfillormix, x = width;
-	int lastopcode = -1, insertmix = False, bicolour = False;
+	int lastopcode = -1, insertmix = False, bicolor = False;
 	uint8 code;
-	uint16 colour1 = 0, colour2 = 0;
+	uint16 color1 = 0, color2 = 0;
 	uint8 mixmask, mask = 0;
 	uint16 mix = 0xffff;
 	int fom_mask = 0;
@@ -332,10 +332,10 @@ bitmap_decompress2(void * inst, uint8 * output, int width, int height, uint8 * i
 				if ((lastopcode == opcode) && !((x == width) && (prevline == NULL)))
 					insertmix = True;
 				break;
-			case 8:	/* Bicolour */
-				CVAL2(input, colour1);
+			case 8:	/* Bicolor */
+				CVAL2(input, color1);
 			case 3:	/* Colour */
-				CVAL2(input, colour2);
+				CVAL2(input, color2);
 				break;
 			case 6:	/* SetMix/Mix */
 			case 7:	/* SetMix/FillOrMix */
@@ -424,23 +424,23 @@ bitmap_decompress2(void * inst, uint8 * output, int width, int height, uint8 * i
 					}
 					break;
 				case 3:	/* Colour */
-					REPEAT(line[x] = colour2)
+					REPEAT(line[x] = color2)
 					break;
 				case 4:	/* Copy */
 					REPEAT(CVAL2(input, line[x]))
 					break;
-				case 8:	/* Bicolour */
+				case 8:	/* Bicolor */
 					REPEAT
 					(
-						if (bicolour)
+						if (bicolor)
 						{
-							line[x] = colour2;
-							bicolour = False;
+							line[x] = color2;
+							bicolor = False;
 						}
 						else
 						{
-							line[x] = colour1;
-							bicolour = True;
+							line[x] = color1;
+							bicolor = True;
 							count++;
 						}
 					)
@@ -467,9 +467,9 @@ bitmap_decompress3(void * inst, uint8 * output, int width, int height, uint8 * i
 	uint8 *end = input + size;
 	uint8 *prevline = NULL, *line = NULL;
 	int opcode, count, offset, isfillormix, x = width;
-	int lastopcode = -1, insertmix = False, bicolour = False;
+	int lastopcode = -1, insertmix = False, bicolor = False;
 	uint8 code;
-	uint8 colour1[3] = {0, 0, 0}, colour2[3] = {0, 0, 0};
+	uint8 color1[3] = {0, 0, 0}, color2[3] = {0, 0, 0};
 	uint8 mixmask, mask = 0;
 	uint8 mix[3] = {0xff, 0xff, 0xff};
 	int fom_mask = 0;
@@ -532,14 +532,14 @@ bitmap_decompress3(void * inst, uint8 * output, int width, int height, uint8 * i
 				if ((lastopcode == opcode) && !((x == width) && (prevline == NULL)))
 					insertmix = True;
 				break;
-			case 8:	/* Bicolour */
-				colour1[0] = CVAL(input);
-				colour1[1] = CVAL(input);
-				colour1[2] = CVAL(input);
+			case 8:	/* Bicolor */
+				color1[0] = CVAL(input);
+				color1[1] = CVAL(input);
+				color1[2] = CVAL(input);
 			case 3:	/* Colour */
-				colour2[0] = CVAL(input);
-				colour2[1] = CVAL(input);
-				colour2[2] = CVAL(input);
+				color2[0] = CVAL(input);
+				color2[1] = CVAL(input);
+				color2[2] = CVAL(input);
 				break;
 			case 6:	/* SetMix/Mix */
 			case 7:	/* SetMix/FillOrMix */
@@ -688,9 +688,9 @@ bitmap_decompress3(void * inst, uint8 * output, int width, int height, uint8 * i
 				case 3:	/* Colour */
 					REPEAT
 					(
-						line[x * 3] = colour2 [0];
-						line[x * 3 + 1] = colour2 [1];
-						line[x * 3 + 2] = colour2 [2];
+						line[x * 3] = color2 [0];
+						line[x * 3 + 1] = color2 [1];
+						line[x * 3 + 2] = color2 [2];
 					)
 					break;
 				case 4:	/* Copy */
@@ -701,22 +701,22 @@ bitmap_decompress3(void * inst, uint8 * output, int width, int height, uint8 * i
 						line[x * 3 + 2] = CVAL(input);
 					)
 					break;
-				case 8:	/* Bicolour */
+				case 8:	/* Bicolor */
 					REPEAT
 					(
-						if (bicolour)
+						if (bicolor)
 						{
-							line[x * 3] = colour2[0];
-							line[x * 3 + 1] = colour2[1];
-							line[x * 3 + 2] = colour2[2];
-							bicolour = False;
+							line[x * 3] = color2[0];
+							line[x * 3 + 1] = color2[1];
+							line[x * 3 + 2] = color2[2];
+							bicolor = False;
 						}
 						else
 						{
-							line[x * 3] = colour1[0];
-							line[x * 3 + 1] = colour1[1];
-							line[x * 3 + 2] = colour1[2];
-							bicolour = True;
+							line[x * 3] = color1[0];
+							line[x * 3 + 1] = color1[1];
+							line[x * 3 + 2] = color1[2];
+							bicolor = True;
 							count++;
 						}
 					)
@@ -746,7 +746,7 @@ bitmap_decompress3(void * inst, uint8 * output, int width, int height, uint8 * i
 	return True;
 }
 
-/* decompress a colour plane */
+/* decompress a color plane */
 static int
 process_plane(uint8 * in, int width, int height, uint8 * out, int size)
 {

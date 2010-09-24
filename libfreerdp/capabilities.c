@@ -148,7 +148,7 @@ rdp_process_bitmap_capset(rdpRdp * rdp, STREAM s)
 	 */
 	if (rdp->settings->server_depth != preferredBitsPerPixel)
 	{
-		ui_warning(rdp->inst, "Remote desktop does not support colour depth %d; falling back to %d\n",
+		ui_warning(rdp->inst, "Remote desktop does not support color depth %d; falling back to %d\n",
 			rdp->settings->server_depth, preferredBitsPerPixel);
 		rdp->settings->server_depth = preferredBitsPerPixel;
 	}

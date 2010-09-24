@@ -100,7 +100,7 @@ rdp5_process(rdpRdp * rdp, STREAM s)
 					ui_move_pointer(rdp->inst, x, y);
 				break;
 			case 9:	/* color pointer */
-				process_colour_pointer_pdu(rdp, ts);
+				process_color_pointer_pdu(rdp, ts);
 				break;
 			case 10:	/* cached pointer */
 				process_cached_pointer_pdu(rdp, ts);

@@ -21,7 +21,7 @@
 */
 
 /*
-  Valid colour conversions
+  Valid color conversions
     8 -> 32   8 -> 24   8 -> 16   8 -> 15
     15 -> 32  15 -> 24  15 -> 16  15 -> 15
     16 -> 32  16 -> 24  16 -> 16
@@ -152,7 +152,7 @@ set_pixel(uint8 * data, int x, int y, int width, int height, int bpp, int pixel)
 }
 
 static int
-xf_colour(xfInfo * xfi, int in_colour, int in_bpp, int out_bpp)
+xf_color(xfInfo * xfi, int in_color, int in_bpp, int out_bpp)
 {
 	int alpha;
 	int red;
@@ -168,23 +168,23 @@ xf_colour(xfInfo * xfi, int in_colour, int in_bpp, int out_bpp)
 	switch (in_bpp)
 	{
 		case 32:
-			SPLIT32BGR(alpha, red, green, blue, in_colour);
+			SPLIT32BGR(alpha, red, green, blue, in_color);
 			break;
 		case 24:
-			SPLIT24BGR(red, green, blue, in_colour);
+			SPLIT24BGR(red, green, blue, in_color);
 			break;
 		case 16:
-			SPLIT16RGB(red, green, blue, in_colour);
+			SPLIT16RGB(red, green, blue, in_color);
 			break;
 		case 15:
-			SPLIT15RGB(red, green, blue, in_colour);
+			SPLIT15RGB(red, green, blue, in_color);
 			break;
 		case 8:
-			in_colour &= 0xff;
-			SPLIT24RGB(red, green, blue, xfi->colourmap[in_colour]);
+			in_color &= 0xff;
+			SPLIT24RGB(red, green, blue, xfi->colormap[in_color]);
 			break;
 		case 1:
-			if (in_colour != 0)
+			if (in_color != 0)
 			{
 				red = 0xff;
 				green = 0xff;
@@ -192,7 +192,7 @@ xf_colour(xfInfo * xfi, int in_colour, int in_bpp, int out_bpp)
 			}
 			break;
 		default:
-			printf("xf_colour: bad in_bpp %d\n", in_bpp);
+			printf("xf_color: bad in_bpp %d\n", in_bpp);
 			break;
 	}
 	switch (out_bpp)
@@ -216,16 +216,16 @@ xf_colour(xfInfo * xfi, int in_colour, int in_bpp, int out_bpp)
 			}
 			break;
 		default:
-			printf("xf_colour: bad out_bpp %d\n", out_bpp);
+			printf("xf_color: bad out_bpp %d\n", out_bpp);
 			break;
 	}
 	return rv;
 }
 
 int
-xf_colour_convert(xfInfo * xfi, rdpSet * settings, int colour)
+xf_color_convert(xfInfo * xfi, rdpSet * settings, int color)
 {
-	return xf_colour(xfi, colour, settings->server_depth, xfi->bpp);
+	return xf_color(xfi, color, settings->server_depth, xfi->bpp);
 }
 
 uint8 *
@@ -304,7 +304,7 @@ xf_image_convert(xfInfo * xfi, rdpSet * settings, int width, int height,
 		{
 			pixel = *src8;
 			src8++;
-			pixel = xfi->colourmap[pixel];
+			pixel = xfi->colormap[pixel];
 			*dst8++ = pixel & 0xff;
 			*dst8++ = (pixel >> 8) & 0xff;
 			*dst8++ = (pixel >> 16) & 0xff;
@@ -337,7 +337,7 @@ xf_image_convert(xfInfo * xfi, rdpSet * settings, int width, int height,
 		{
 			pixel = *src8;
 			src8++;
-			pixel = xfi->colourmap[pixel];
+			pixel = xfi->colormap[pixel];
 			SPLIT24RGB(red, green, blue, pixel);
 			pixel = MAKE16RGB(red, green, blue);
 			*dst8++ = pixel & 0xff;
@@ -354,7 +354,7 @@ xf_image_convert(xfInfo * xfi, rdpSet * settings, int width, int height,
 		{
 			pixel = *src8;
 			src8++;
-			pixel = xfi->colourmap[pixel];
+			pixel = xfi->colormap[pixel];
 			SPLIT24RGB(red, green, blue, pixel);
 			pixel = MAKE15RGB(red, green, blue);
 			*dst8++ = pixel & 0xff;
@@ -365,41 +365,41 @@ xf_image_convert(xfInfo * xfi, rdpSet * settings, int width, int height,
 	return in_data;
 }
 
-RD_HCOLOURMAP
-xf_create_colourmap(xfInfo * xfi, rdpSet * settings, RD_COLOURMAP * colours)
+RD_HCOLORMAP
+xf_create_colormap(xfInfo * xfi, rdpSet * settings, RD_COLORMAP * colors)
 {
-	int * colourmap;
+	int * colormap;
 	int index;
 	int red;
 	int green;
 	int blue;
 	int count;
 
-	colourmap = (int *) malloc(sizeof(int) * 256);
-	memset(colourmap, 0, sizeof(int) * 256);
-	count = colours->ncolours;
+	colormap = (int *) malloc(sizeof(int) * 256);
+	memset(colormap, 0, sizeof(int) * 256);
+	count = colors->ncolors;
 	if (count > 256)
 	{
 		count = 256;
 	}
 	for (index = count - 1; index >= 0; index--)
 	{
-		red = colours->colours[index].red;
-		green = colours->colours[index].green;
-		blue = colours->colours[index].blue;
-		colourmap[index] = MAKE24RGB(red, green, blue);
+		red = colors->colors[index].red;
+		green = colors->colors[index].green;
+		blue = colors->colors[index].blue;
+		colormap[index] = MAKE24RGB(red, green, blue);
 	}
-	return (RD_HCOLOURMAP) colourmap;
+	return (RD_HCOLORMAP) colormap;
 }
 
 int
-xf_set_colourmap(xfInfo * xfi, rdpSet * settings, RD_HCOLOURMAP map)
+xf_set_colormap(xfInfo * xfi, rdpSet * settings, RD_HCOLORMAP map)
 {
-	if (xfi->colourmap != NULL)
+	if (xfi->colormap != NULL)
 	{
-		free(xfi->colourmap);
+		free(xfi->colormap);
 	}
-	xfi->colourmap = (int *) map;
+	xfi->colormap = (int *) map;
 	return 0;
 }
 
@@ -420,7 +420,7 @@ xf_cursor_convert_mono(xfInfo * xfi, uint8 * src_data, uint8 * msk_data,
 		for (i = 0; i < width; i++)
 		{
 			xpixel = get_pixel(xormask, i, jj, width, height, bpp);
-			xpixel = xf_colour(xfi, xpixel, bpp, 24);
+			xpixel = xf_color(xfi, xpixel, bpp, 24);
 			apixel = get_pixel(andmask, i, jj, width, height, 1);
 			if ((xpixel == 0xffffff) && (apixel != 0))
 			{
@@ -457,7 +457,7 @@ xf_cursor_convert_alpha(xfInfo * xfi, uint8 * alpha_data,
 		for (i = 0; i < width; i++)
 		{
 			xpixel = get_pixel(xormask, i, jj, width, height, bpp);
-			xpixel = xf_colour(xfi, xpixel, bpp, 32);
+			xpixel = xf_color(xfi, xpixel, bpp, 32);
 			apixel = get_pixel(andmask, i, jj, width, height, 1);
 			if (apixel != 0)
 			{

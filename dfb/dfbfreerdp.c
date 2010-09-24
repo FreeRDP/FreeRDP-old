@@ -49,7 +49,7 @@ set_default_params(rdpSet * settings)
 	settings->tcp_port_rdp = 3389;
 	settings->encryption = 1;
 	settings->server_depth = 32;
-	settings->bitmap_cache = 1;
+	settings->bitmap_cache = 0;
 	settings->bitmap_compression = 1;
 	settings->desktop_save = 0;
 	settings->performanceflags = PERF_DISABLE_FULLWINDOWDRAG | PERF_DISABLE_MENUANIMATIONS;

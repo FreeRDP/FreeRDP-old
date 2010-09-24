@@ -92,17 +92,17 @@ parse_delta(uint8 * buffer, int *offset)
 	return value;
 }
 
-/* Read a colour entry */
+/* Read a color entry */
 static void
-rdp_in_colour(STREAM s, uint32 * colour)
+rdp_in_color(STREAM s, uint32 * color)
 {
 	uint32 i;
 	in_uint8(s, i);
-	*colour = i;
+	*color = i;
 	in_uint8(s, i);
-	*colour |= i << 8;
+	*color |= i << 8;
 	in_uint8(s, i);
-	*colour |= i << 16;
+	*color |= i << 16;
 }
 
 /* Parse bounds information */
@@ -147,7 +147,7 @@ rdp_parse_pen(STREAM s, RD_PEN * pen, uint32 present)
 		in_uint8(s, pen->width);
 
 	if (present & 4)
-		rdp_in_colour(s, &pen->colour);
+		rdp_in_color(s, &pen->color);
 
 	return s_check(s);
 }
@@ -157,14 +157,14 @@ setup_brush(rdpOrders * orders, RD_BRUSH * out_brush, RD_BRUSH * in_brush)
 {
 	RD_BRUSHDATA *brush_data;
 	uint8 cache_idx;
-	uint8 colour_code;
+	uint8 color_code;
 
 	memcpy(out_brush, in_brush, sizeof(RD_BRUSH));
 	if (out_brush->style & 0x80)
 	{
-		colour_code = out_brush->style & 0x0f;
+		color_code = out_brush->style & 0x0f;
 		cache_idx = out_brush->pattern[0];
-		brush_data = cache_get_brush_data(orders->rdp->cache, colour_code, cache_idx);
+		brush_data = cache_get_brush_data(orders->rdp->cache, color_code, cache_idx);
 		if ((brush_data == NULL) || (brush_data->data == NULL))
 		{
 			ui_error(orders->rdp->inst, "error getting brush data, style %x\n",
@@ -249,20 +249,20 @@ process_patblt(rdpOrders * orders, STREAM s, PATBLT_ORDER * os, uint32 present, 
 		in_uint8(s, os->opcode);
 
 	if (present & 0x0020)
-		rdp_in_colour(s, &os->bgcolour);
+		rdp_in_color(s, &os->bgcolor);
 
 	if (present & 0x0040)
-		rdp_in_colour(s, &os->fgcolour);
+		rdp_in_color(s, &os->fgcolor);
 
 	rdp_parse_brush(s, &os->brush, present >> 7);
 
 	DEBUG("PATBLT(op=0x%x,x=%d,y=%d,cx=%d,cy=%d,bs=%d,bg=0x%x,fg=0x%x)\n", os->opcode, os->x,
-	       os->y, os->cx, os->cy, os->brush.style, os->bgcolour, os->fgcolour);
+	       os->y, os->cx, os->cy, os->brush.style, os->bgcolor, os->fgcolor);
 
 	setup_brush(orders, &brush, &os->brush);
 
 	ui_patblt(orders->rdp->inst, os->opcode, os->x, os->y, os->cx, os->cy,
-		  &brush, os->bgcolour, os->fgcolour);
+		  &brush, os->bgcolor, os->fgcolor);
 }
 
 /* Process a screen blt order */
@@ -317,7 +317,7 @@ process_lineto(rdpOrders * orders, STREAM s, LINETO_ORDER * os, uint32 present, 
 		rdp_in_coord(s, &os->endy, delta);
 
 	if (present & 0x0020)
-		rdp_in_colour(s, &os->bgcolour);
+		rdp_in_color(s, &os->bgcolor);
 
 	if (present & 0x0040)
 		in_uint8(s, os->opcode);
@@ -325,7 +325,7 @@ process_lineto(rdpOrders * orders, STREAM s, LINETO_ORDER * os, uint32 present, 
 	rdp_parse_pen(s, &os->pen, present >> 7);
 
 	DEBUG("LINETO(op=0x%x,sx=%d,sy=%d,dx=%d,dy=%d,fg=0x%x)\n",
-	       os->opcode, os->startx, os->starty, os->endx, os->endy, os->pen.colour);
+	       os->opcode, os->startx, os->starty, os->endx, os->endy, os->pen.color);
 
 	if (os->opcode < 0x01 || os->opcode > 0x10)
 	{
@@ -357,24 +357,24 @@ process_opaquerect(rdpOrders * orders, STREAM s, OPAQUERECT_ORDER * os, uint32 p
 	if (present & 0x10)
 	{
 		in_uint8(s, i);
-		os->colour = (os->colour & 0xffffff00) | i;
+		os->color = (os->color & 0xffffff00) | i;
 	}
 
 	if (present & 0x20)
 	{
 		in_uint8(s, i);
-		os->colour = (os->colour & 0xffff00ff) | (i << 8);
+		os->color = (os->color & 0xffff00ff) | (i << 8);
 	}
 
 	if (present & 0x40)
 	{
 		in_uint8(s, i);
-		os->colour = (os->colour & 0xff00ffff) | (i << 16);
+		os->color = (os->color & 0xff00ffff) | (i << 16);
 	}
 
-	DEBUG("OPAQUERECT(x=%d,y=%d,cx=%d,cy=%d,fg=0x%x)\n", os->x, os->y, os->cx, os->cy, os->colour);
+	DEBUG("OPAQUERECT(x=%d,y=%d,cx=%d,cy=%d,fg=0x%x)\n", os->x, os->y, os->cx, os->cy, os->color);
 
-	ui_rect(orders->rdp->inst, os->x, os->y, os->cx, os->cy, os->colour);
+	ui_rect(orders->rdp->inst, os->x, os->y, os->cx, os->cy, os->color);
 }
 
 /* Process a save bitmap order */
@@ -424,7 +424,7 @@ process_memblt(rdpOrders * orders, STREAM s, MEMBLT_ORDER * os, uint32 present, 
 	if (present & 0x0001)
 	{
 		in_uint8(s, os->cache_id);
-		in_uint8(s, os->colour_table);
+		in_uint8(s, os->color_table);
 	}
 
 	if (present & 0x0002)
@@ -472,7 +472,7 @@ process_mem3blt(rdpOrders * orders, STREAM s, MEM3BLT_ORDER * os, uint32 present
 	if (present & 0x000001)
 	{
 		in_uint8(s, os->cache_id);
-		in_uint8(s, os->colour_table);
+		in_uint8(s, os->color_table);
 	}
 
 	if (present & 0x000002)
@@ -497,10 +497,10 @@ process_mem3blt(rdpOrders * orders, STREAM s, MEM3BLT_ORDER * os, uint32 present
 		rdp_in_coord(s, &os->srcy, delta);
 
 	if (present & 0x000100)
-		rdp_in_colour(s, &os->bgcolour);
+		rdp_in_color(s, &os->bgcolor);
 
 	if (present & 0x000200)
-		rdp_in_colour(s, &os->fgcolour);
+		rdp_in_color(s, &os->fgcolor);
 
 	rdp_parse_brush(s, &os->brush, present >> 10);
 
@@ -512,7 +512,7 @@ process_mem3blt(rdpOrders * orders, STREAM s, MEM3BLT_ORDER * os, uint32 present
 
 	DEBUG("MEM3BLT(op=0x%x,x=%d,y=%d,cx=%d,cy=%d,id=%d,idx=%d,bs=%d,bg=0x%x,fg=0x%x)\n",
 	       os->opcode, os->x, os->y, os->cx, os->cy, os->cache_id, os->cache_idx,
-	       os->brush.style, os->bgcolour, os->fgcolour);
+	       os->brush.style, os->bgcolor, os->fgcolor);
 
 	bitmap = cache_get_bitmap(orders->rdp->cache, os->cache_id, os->cache_idx);
 	if (bitmap == NULL)
@@ -521,7 +521,7 @@ process_mem3blt(rdpOrders * orders, STREAM s, MEM3BLT_ORDER * os, uint32 present
 	setup_brush(orders, &brush, &os->brush);
 
 	ui_triblt(orders->rdp->inst, os->opcode, os->x, os->y, os->cx, os->cy,
-		  bitmap, os->srcx, os->srcy, &brush, os->bgcolour, os->fgcolour);
+		  bitmap, os->srcx, os->srcy, &brush, os->bgcolor, os->fgcolor);
 }
 
 /* Process a polygon order */
@@ -546,7 +546,7 @@ process_polygon_sc(rdpOrders * orders, STREAM s, POLYGON_SC_ORDER* os, uint32 pr
 		in_uint8(s, os->fillmode);
 
 	if (present & 0x10)
-		rdp_in_colour(s, &os->fgcolour);
+		rdp_in_color(s, &os->fgcolor);
 
 	if (present & 0x20)
 		in_uint8(s, os->npoints);
@@ -558,7 +558,7 @@ process_polygon_sc(rdpOrders * orders, STREAM s, POLYGON_SC_ORDER* os, uint32 pr
 	}
 
 	DEBUG("POLYGON_SC(x=%d,y=%d,op=0x%x,fm=%d,fg=0x%x,n=%d,sz=%d)\n",
-	       os->x, os->y, os->opcode, os->fillmode, os->fgcolour, os->npoints, os->datasize);
+	       os->x, os->y, os->opcode, os->fillmode, os->fgcolor, os->npoints, os->datasize);
 
 	DEBUG("Data: ");
 
@@ -605,7 +605,7 @@ process_polygon_sc(rdpOrders * orders, STREAM s, POLYGON_SC_ORDER* os, uint32 pr
 
 	if (next - 1 == os->npoints)
 		ui_polygon(orders->rdp->inst, os->opcode, os->fillmode, points,
-			   os->npoints + 1, NULL, 0, os->fgcolour);
+			   os->npoints + 1, NULL, 0, os->fgcolor);
 	else
 		ui_error(orders->rdp->inst, "polygon_sc parse error\n");
 }
@@ -633,10 +633,10 @@ process_polygon_cb(rdpOrders * orders, STREAM s, POLYGON_CB_ORDER * os, uint32 p
 		in_uint8(s, os->fillmode);
 
 	if (present & 0x0010)
-		rdp_in_colour(s, &os->bgcolour);
+		rdp_in_color(s, &os->bgcolor);
 
 	if (present & 0x0020)
-		rdp_in_colour(s, &os->fgcolour);
+		rdp_in_color(s, &os->fgcolor);
 
 	rdp_parse_brush(s, &os->brush, present >> 6);
 
@@ -650,7 +650,7 @@ process_polygon_cb(rdpOrders * orders, STREAM s, POLYGON_CB_ORDER * os, uint32 p
 	}
 
 	DEBUG("POLYGON_CB(x=%d,y=%d,op=0x%x,fm=%d,bs=%d,bg=0x%x,fg=0x%x,n=%d,sz=%d)\n",
-	       os->x, os->y, os->opcode, os->fillmode, os->brush.style, os->bgcolour, os->fgcolour,
+	       os->x, os->y, os->opcode, os->fillmode, os->brush.style, os->bgcolor, os->fgcolor,
 	       os->npoints, os->datasize);
 
 	DEBUG("Data: ");
@@ -700,7 +700,7 @@ process_polygon_cb(rdpOrders * orders, STREAM s, POLYGON_CB_ORDER * os, uint32 p
 
 	if (next - 1 == os->npoints)
 		ui_polygon(orders->rdp->inst, os->opcode, os->fillmode, points,
-			   os->npoints + 1, &brush, os->bgcolour, os->fgcolour);
+			   os->npoints + 1, &brush, os->bgcolor, os->fgcolor);
 	else
 		ui_error(orders->rdp->inst, "polygon_cb parse error\n");
 }
@@ -725,7 +725,7 @@ process_polyline(rdpOrders * orders, STREAM s, POLYLINE_ORDER * os, uint32 prese
 		in_uint8(s, os->opcode);
 
 	if (present & 0x10)
-		rdp_in_colour(s, &os->fgcolour);
+		rdp_in_color(s, &os->fgcolor);
 
 	if (present & 0x20)
 		in_uint8(s, os->lines);
@@ -737,7 +737,7 @@ process_polyline(rdpOrders * orders, STREAM s, POLYLINE_ORDER * os, uint32 prese
 	}
 
 	DEBUG("POLYLINE(x=%d,y=%d,op=0x%x,fg=0x%x,n=%d,sz=%d)\n",
-	       os->x, os->y, os->opcode, os->fgcolour, os->lines, os->datasize);
+	       os->x, os->y, os->opcode, os->fgcolor, os->lines, os->datasize);
 
 	DEBUG("Data: ");
 
@@ -766,7 +766,7 @@ process_polyline(rdpOrders * orders, STREAM s, POLYLINE_ORDER * os, uint32 prese
 	points[0].x = os->x;
 	points[0].y = os->y;
 	pen.style = pen.width = 0;
-	pen.colour = os->fgcolour;
+	pen.color = os->fgcolor;
 
 	index = 0;
 	data = ((os->lines - 1) / 4) + 1;
@@ -813,13 +813,13 @@ process_ellipse_sc(rdpOrders * orders, STREAM s, ELLIPSE_SC_ORDER * os, uint32 p
 		in_uint8(s, os->fillmode);
 
 	if (present & 0x40)
-		rdp_in_colour(s, &os->fgcolour);
+		rdp_in_color(s, &os->fgcolor);
 
 	DEBUG("ELLIPSE_SC(l=%d,t=%d,r=%d,b=%d,op=0x%x,fm=%d,fg=0x%x)\n", os->left, os->top,
-	       os->right, os->bottom, os->opcode, os->fillmode, os->fgcolour);
+	       os->right, os->bottom, os->opcode, os->fillmode, os->fgcolor);
 
 	ui_ellipse(orders->rdp->inst, os->opcode, os->fillmode, os->left, os->top,
-		   os->right - os->left, os->bottom - os->top, NULL, 0, os->fgcolour);
+		   os->right - os->left, os->bottom - os->top, NULL, 0, os->fgcolor);
 }
 
 /* Process an EllipseCB order */
@@ -847,22 +847,22 @@ process_ellipse_cb(rdpOrders * orders, STREAM s, ELLIPSE_CB_ORDER * os, uint32 p
 		in_uint8(s, os->fillmode);
 
 	if (present & 0x0040)
-		rdp_in_colour(s, &os->bgcolour);
+		rdp_in_color(s, &os->bgcolor);
 
 	if (present & 0x0080)
-		rdp_in_colour(s, &os->fgcolour);
+		rdp_in_color(s, &os->fgcolor);
 
 	rdp_parse_brush(s, &os->brush, present >> 8);
 
 	DEBUG("ELLIPSE_CB(l=%d,t=%d,r=%d,b=%d,op=0x%x,fm=%d,bs=%d,bg=0x%x,fg=0x%x)\n",
 	       os->left, os->top, os->right, os->bottom, os->opcode, os->fillmode, os->brush.style,
-	       os->bgcolour, os->fgcolour);
+	       os->bgcolor, os->fgcolor);
 
 	setup_brush(orders, &brush, &os->brush);
 
 	ui_ellipse(orders->rdp->inst, os->opcode, os->fillmode, os->left, os->top,
-		   os->right - os->left, os->bottom - os->top, &brush, os->bgcolour,
-		   os->fgcolour);
+		   os->right - os->left, os->bottom - os->top, &brush, os->bgcolor,
+		   os->fgcolor);
 }
 
 static void
@@ -909,7 +909,7 @@ static void
 draw_text(rdpOrders * orders, uint8 font, uint8 flags, uint8 opcode, int mixmode,
 	  int x, int y, int clipx, int clipy, int clipcx, int clipcy,
 	  int boxx, int boxy, int boxcx, int boxcy, RD_BRUSH * brush,
-	  int bgcolour, int fgcolour, uint8 * text, uint8 length)
+	  int bgcolor, int fgcolor, uint8 * text, uint8 length)
 {
 	/* TODO: use brush appropriately */
 
@@ -925,13 +925,13 @@ draw_text(rdpOrders * orders, uint8 font, uint8 flags, uint8 opcode, int mixmode
 
 	if (boxcx > 1)
 	{
-		ui_rect(orders->rdp->inst, boxx, boxy, boxcx, boxcy, bgcolour);
+		ui_rect(orders->rdp->inst, boxx, boxy, boxcx, boxcy, bgcolor);
 	}
 	else if (mixmode == MIX_OPAQUE)
 	{
-		ui_rect(orders->rdp->inst, clipx, clipy, clipcx, clipcy, bgcolour);
+		ui_rect(orders->rdp->inst, clipx, clipy, clipcx, clipcy, bgcolor);
 	}
-	ui_start_draw_glyphs(orders->rdp->inst, bgcolour, fgcolour);
+	ui_start_draw_glyphs(orders->rdp->inst, bgcolor, fgcolor);
 	/* Paint text, character by character */
 	for (i = 0; i < length;)
 	{
@@ -1028,10 +1028,10 @@ process_glyph_index(rdpOrders * orders, STREAM s, GLYPH_INDEX_ORDER * os, uint32
 		in_uint8(s, os->mixmode);
 
 	if (present & 0x000010)
-		rdp_in_colour(s, &os->fgcolour);
+		rdp_in_color(s, &os->fgcolor);
 
 	if (present & 0x000020)
-		rdp_in_colour(s, &os->bgcolour);
+		rdp_in_color(s, &os->bgcolor);
 
 	if (present & 0x000040)
 		in_uint16_le(s, os->clipleft);
@@ -1071,7 +1071,7 @@ process_glyph_index(rdpOrders * orders, STREAM s, GLYPH_INDEX_ORDER * os, uint32
 		in_uint8a(s, os->text, os->length);
 	}
 
-	DEBUG("GLYPH_INDEX(x=%d,y=%d,cl=%d,ct=%d,cr=%d,cb=%d,bl=%d,bt=%d,br=%d,bb=%d,bs=%d,bg=0x%x,fg=0x%x,font=%d,fl=0x%x,op=0x%x,mix=%d,n=%d)\n", os->x, os->y, os->clipleft, os->cliptop, os->clipright, os->clipbottom, os->boxleft, os->boxtop, os->boxright, os->boxbottom, os->brush.style, os->bgcolour, os->fgcolour, os->font, os->flags, os->opcode, os->mixmode, os->length);
+	DEBUG("GLYPH_INDEX(x=%d,y=%d,cl=%d,ct=%d,cr=%d,cb=%d,bl=%d,bt=%d,br=%d,bb=%d,bs=%d,bg=0x%x,fg=0x%x,font=%d,fl=0x%x,op=0x%x,mix=%d,n=%d)\n", os->x, os->y, os->clipleft, os->cliptop, os->clipright, os->clipbottom, os->boxleft, os->boxtop, os->boxright, os->boxbottom, os->brush.style, os->bgcolor, os->fgcolor, os->font, os->flags, os->opcode, os->mixmode, os->length);
 
 	DEBUG("Glyph: ");
 
@@ -1086,7 +1086,7 @@ process_glyph_index(rdpOrders * orders, STREAM s, GLYPH_INDEX_ORDER * os, uint32
 		  os->clipleft, os->cliptop, os->clipright - os->clipleft,
 		  os->clipbottom - os->cliptop, os->boxleft, os->boxtop,
 		  os->boxright - os->boxleft, os->boxbottom - os->boxtop,
-		  &brush, os->bgcolour, os->fgcolour, os->text, os->length);
+		  &brush, os->bgcolor, os->fgcolor, os->text, os->length);
 }
 
 /* Process a raw bitmap cache order */
@@ -1281,21 +1281,21 @@ process_cache_bitmap_rev2(rdpOrders * orders, STREAM s, uint16 flags, RD_BOOL co
 	}
 }
 
-/* Process a colourmap cache order */
+/* Process a colormap cache order */
 static void
 process_cache_color_table(rdpOrders * orders, STREAM s)
 {
 	int i;
 	int size;
-	RD_COLOURENTRY *entry;
-	RD_COLOURMAP map;
-	RD_HCOLOURMAP hmap;
+	RD_COLORENTRY *entry;
+	RD_COLORMAP map;
+	RD_HCOLORMAP hmap;
 	uint8 cache_id;
 
 	in_uint8(s, cache_id);
-	in_uint16_le(s, map.ncolours);
+	in_uint16_le(s, map.ncolors);
 
-	size = sizeof(RD_COLOURENTRY) * map.ncolours;
+	size = sizeof(RD_COLORENTRY) * map.ncolors;
 
 	if (size > orders->buffer_size)
 	{
@@ -1303,23 +1303,23 @@ process_cache_color_table(rdpOrders * orders, STREAM s)
 		orders->buffer_size = size;
 	}
 
-	map.colours = (RD_COLOURENTRY *) orders->buffer;
+	map.colors = (RD_COLORENTRY *) orders->buffer;
 
-	for (i = 0; i < map.ncolours; i++)
+	for (i = 0; i < map.ncolors; i++)
 	{
-		entry = &map.colours[i];
+		entry = &map.colors[i];
 		in_uint8(s, entry->blue);
 		in_uint8(s, entry->green);
 		in_uint8(s, entry->red);
 		in_uint8s(s, 1);	/* pad */
 	}
 
-	DEBUG("COLORTABLECACHE(id=%d,n=%d)\n", cache_id, map.ncolours);
+	DEBUG("COLORTABLECACHE(id=%d,n=%d)\n", cache_id, map.ncolors);
 
 	if (cache_id)
 	{
-		hmap = ui_create_colourmap(orders->rdp->inst, &map);
-		ui_set_colourmap(orders->rdp->inst, hmap);
+		hmap = ui_create_colormap(orders->rdp->inst, &map);
+		ui_set_colormap(orders->rdp->inst, hmap);
 	}
 }
 
@@ -1393,26 +1393,26 @@ static void
 process_cache_brush(rdpOrders * orders, STREAM s, uint16 flags)
 {
 	RD_BRUSHDATA brush_data;
-	uint8 cache_idx, colour_code, width, height, size, type;
+	uint8 cache_idx, color_code, width, height, size, type;
 	uint8 *comp_brush;
 	int index;
 	int Bpp;
 
 	in_uint8(s, cache_idx);
-	in_uint8(s, colour_code);
+	in_uint8(s, color_code);
 	in_uint8(s, width);
 	in_uint8(s, height);
 	in_uint8(s, type);	/* type, 0x8x = cached */
 	in_uint8(s, size);
 
-	DEBUG("BRUSHCACHE(idx=%d,dp=%d,wd=%d,ht=%d,sz=%d)\n", cache_idx, colour_code,
+	DEBUG("BRUSHCACHE(idx=%d,dp=%d,wd=%d,ht=%d,sz=%d)\n", cache_idx, color_code,
 	       width, height, size);
 
 	if ((width == 8) && (height == 8))
 	{
-		if (colour_code == 1)
+		if (color_code == 1)
 		{
-			brush_data.colour_code = 1;
+			brush_data.color_code = 1;
 			brush_data.data_size = 8;
 			brush_data.data = (uint8 *) xmalloc(8);
 			if (size == 8)
@@ -1426,15 +1426,15 @@ process_cache_brush(rdpOrders * orders, STREAM s, uint16 flags)
 			else
 			{
 				ui_warning(orders->rdp->inst, "incompatible brush, "
-					   "colour_code %d size %d\n", colour_code,
+					   "color_code %d size %d\n", color_code,
 					   size);
 			}
 			cache_put_brush_data(orders->rdp->cache, 1, cache_idx, &brush_data);
 		}
-		else if ((colour_code >= 3) && (colour_code <= 6))
+		else if ((color_code >= 3) && (color_code <= 6))
 		{
-			Bpp = colour_code - 2;
-			brush_data.colour_code = colour_code;
+			Bpp = color_code - 2;
+			brush_data.color_code = color_code;
 			brush_data.data_size = 8 * 8 * Bpp;
 			brush_data.data = (uint8 *) xmalloc(8 * 8 * Bpp);
 			if (size == 16 + 4 * Bpp)
@@ -1446,12 +1446,12 @@ process_cache_brush(rdpOrders * orders, STREAM s, uint16 flags)
 			{
 				in_uint8a(s, brush_data.data, 8 * 8 * Bpp);
 			}
-			cache_put_brush_data(orders->rdp->cache, colour_code, cache_idx, &brush_data);
+			cache_put_brush_data(orders->rdp->cache, color_code, cache_idx, &brush_data);
 		}
 		else
 		{
-			ui_warning(orders->rdp->inst, "incompatible brush, colour_code %d "
-				   "size %d\n", colour_code, size);
+			ui_warning(orders->rdp->inst, "incompatible brush, color_code %d "
+				   "size %d\n", color_code, size);
 		}
 	}
 	else

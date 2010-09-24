@@ -42,7 +42,7 @@ struct wf_info
 	rdpInst * inst;
 	struct wf_bitmap * backstore;
 	struct wf_bitmap * drw;
-	uint8 * colourmap;
+	uint8 * colormap;
 	RECT update_rect;
 	int update_pending;
 	HCURSOR cursor;

@@ -70,7 +70,7 @@ struct xf_info
 	int red_mask;
 	int green_mask;
 	int blue_mask;
-	int * colourmap;
+	int * colormap;
 	Drawable drw;
 	Pixmap bitmap_mono;
 	GC gc_mono;

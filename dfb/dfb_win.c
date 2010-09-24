@@ -158,7 +158,7 @@ l_ui_line(struct rdp_inst * inst, uint8 opcode, int startx, int starty, int endx
 }
 
 static void
-l_ui_rect(struct rdp_inst * inst, int x, int y, int cx, int cy, int colour)
+l_ui_rect(struct rdp_inst * inst, int x, int y, int cx, int cy, int color)
 {
 	RECT rect;
 	HBRUSH hBrush;
@@ -172,7 +172,7 @@ l_ui_rect(struct rdp_inst * inst, int x, int y, int cx, int cy, int colour)
 	rect.right = x + cx;
 	rect.bottom = y + cy;
 
-	gdi_colour_convert(&(dfbi->gdi->pixel), colour, dfbi->gdi->srcBpp, dfbi->gdi->palette);
+	gdi_color_convert(&(dfbi->gdi->pixel), color, dfbi->gdi->srcBpp, dfbi->gdi->palette);
 	hBrush = CreateSolidBrush((COLORREF) gdi_make_colorref(&(dfbi->gdi->pixel)));
 
 	SelectObject(dfbi->gdi->hdc_drawing, (HGDIOBJ) dfbi->gdi->drawing_surface);
@@ -189,7 +189,7 @@ l_ui_rect(struct rdp_inst * inst, int x, int y, int cx, int cy, int colour)
 }
 
 static void
-l_ui_polygon(struct rdp_inst * inst, uint8 opcode, uint8 fillmode, RD_POINT * point, int npoints, RD_BRUSH * brush, int bgcolour, int fgcolour)
+l_ui_polygon(struct rdp_inst * inst, uint8 opcode, uint8 fillmode, RD_POINT * point, int npoints, RD_BRUSH * brush, int bgcolor, int fgcolor)
 {
 	printf("ui_polygon\n");
 }
@@ -201,17 +201,17 @@ l_ui_polyline(struct rdp_inst * inst, uint8 opcode, RD_POINT * points, int npoin
 }
 
 static void
-l_ui_ellipse(struct rdp_inst * inst, uint8 opcode, uint8 fillmode, int x, int y, int cx, int cy, RD_BRUSH * brush, int bgcolour, int fgcolour)
+l_ui_ellipse(struct rdp_inst * inst, uint8 opcode, uint8 fillmode, int x, int y, int cx, int cy, RD_BRUSH * brush, int bgcolor, int fgcolor)
 {
 	printf("ui_ellipse\n");
 }
 
 static void
-l_ui_start_draw_glyphs(struct rdp_inst * inst, int bgcolour, int fgcolour)
+l_ui_start_draw_glyphs(struct rdp_inst * inst, int bgcolor, int fgcolor)
 {
 	dfbInfo *dfbi = GET_DFBI(inst);
 	
-	gdi_colour_convert(&(dfbi->gdi->pixel), fgcolour, dfbi->gdi->dstBpp, dfbi->gdi->palette);
+	gdi_color_convert(&(dfbi->gdi->pixel), fgcolor, dfbi->gdi->dstBpp, dfbi->gdi->palette);
 	dfbi->gdi->textColor = SetTextColor(dfbi->gdi->hdc_drawing, gdi_make_colorref(&(dfbi->gdi->pixel)));
 }
 
@@ -274,7 +274,7 @@ l_ui_destblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy)
 }
 
 static void
-l_ui_patblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy, RD_BRUSH * brush, int bgcolour, int fgcolour)
+l_ui_patblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy, RD_BRUSH * brush, int bgcolor, int fgcolor)
 {
 	dfbInfo *dfbi = GET_DFBI(inst);
 
@@ -299,7 +299,7 @@ l_ui_patblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy, 
 	}
 	else if (brush->style == BS_SOLID)
 	{
-		gdi_colour_convert(&(dfbi->gdi->pixel), fgcolour, dfbi->gdi->dstBpp, dfbi->gdi->palette);
+		gdi_color_convert(&(dfbi->gdi->pixel), fgcolor, dfbi->gdi->dstBpp, dfbi->gdi->palette);
 		dfbi->gdi->textColor = SetTextColor(dfbi->gdi->hdc_drawing, gdi_make_colorref(&(dfbi->gdi->pixel)));
 		
 		PatBlt(dfbi->gdi->hdc_drawing, x, y, cx, cy, gdi_rop3_code(opcode));
@@ -364,7 +364,7 @@ l_ui_memblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy, 
 
 static void
 l_ui_triblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy,
-	RD_HBITMAP src, int srcx, int srcy, RD_BRUSH * brush, int bgcolour, int fgcolour)
+	RD_HBITMAP src, int srcx, int srcy, RD_BRUSH * brush, int bgcolor, int fgcolor)
 {
 	printf("ui_triblt opcode: 0x%X\n", gdi_rop3_code(opcode));
 }
@@ -437,38 +437,38 @@ l_ui_move_pointer(struct rdp_inst * inst, int x, int y)
 	dfbi->gdi->cursor_y = y;
 }
 
-static RD_HCOLOURMAP
-l_ui_create_colourmap(struct rdp_inst * inst, RD_COLOURMAP * colours)
+static RD_HCOLORMAP
+l_ui_create_colormap(struct rdp_inst * inst, RD_COLORMAP * colors)
 {
 	int i;
 	HPALETTE palette;
 	LOGPALETTE *logicalPalette;
 
-	printf("ui_create_colourmap\n");
+	printf("ui_create_colormap\n");
 	
 	logicalPalette = (LOGPALETTE*) malloc(sizeof(LOGPALETTE));
 
 	logicalPalette->entries = (PALETTEENTRY*) malloc(sizeof(PALETTEENTRY) * 256);
 	memset(logicalPalette->entries, 0, sizeof(PALETTEENTRY) * 256);
-	logicalPalette->count = colours->ncolours;
+	logicalPalette->count = colors->ncolors;
 
 	if (logicalPalette->count > 256)
 		logicalPalette->count = 256;
 
 	for (i = logicalPalette->count - 1; i >= 0; i--)
 	{
-		logicalPalette->entries[i].red = colours->colours[i].red;
-		logicalPalette->entries[i].green = colours->colours[i].green;
-		logicalPalette->entries[i].blue = colours->colours[i].blue;
+		logicalPalette->entries[i].red = colors->colors[i].red;
+		logicalPalette->entries[i].green = colors->colors[i].green;
+		logicalPalette->entries[i].blue = colors->colors[i].blue;
 	}
 
 	palette = CreatePalette(logicalPalette);
 
-	return (RD_HCOLOURMAP) palette;
+	return (RD_HCOLORMAP) palette;
 }
 
 static void
-l_ui_set_colourmap(struct rdp_inst * inst, RD_HCOLOURMAP map)
+l_ui_set_colormap(struct rdp_inst * inst, RD_HCOLORMAP map)
 {
 	dfbInfo *dfbi = GET_DFBI(inst);
 	dfbi->gdi->palette = (HPALETTE) map;
@@ -586,9 +586,9 @@ dfb_assign_callbacks(rdpInst * inst)
 	inst->ui_create_cursor = l_ui_create_cursor;
 	inst->ui_set_null_cursor = l_ui_set_null_cursor;
 	inst->ui_set_default_cursor = l_ui_set_default_cursor;
-	inst->ui_create_colourmap = l_ui_create_colourmap;
+	inst->ui_create_colormap = l_ui_create_colormap;
 	inst->ui_move_pointer = l_ui_move_pointer;
-	inst->ui_set_colourmap = l_ui_set_colourmap;
+	inst->ui_set_colormap = l_ui_set_colormap;
 	inst->ui_create_surface = l_ui_create_surface;
 	inst->ui_set_surface = l_ui_set_surface;
 	inst->ui_destroy_surface = l_ui_destroy_surface;

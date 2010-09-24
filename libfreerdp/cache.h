@@ -70,9 +70,9 @@ cache_get_cursor(rdpCache * cache, uint16 cache_idx);
 void
 cache_put_cursor(rdpCache * cache, uint16 cache_idx, RD_HCURSOR cursor);
 RD_BRUSHDATA *
-cache_get_brush_data(rdpCache * cache, uint8 colour_code, uint8 idx);
+cache_get_brush_data(rdpCache * cache, uint8 color_code, uint8 idx);
 void
-cache_put_brush_data(rdpCache * cache, uint8 colour_code, uint8 idx, RD_BRUSHDATA * brush_data);
+cache_put_brush_data(rdpCache * cache, uint8 color_code, uint8 idx, RD_BRUSHDATA * brush_data);
 rdpCache *
 cache_new(struct rdp_rdp * rdp);
 void

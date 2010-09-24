@@ -4,7 +4,7 @@
 bin_PROGRAMS = xfreerdp
 
 xfreerdp_SOURCES = \
-	xf_colour.c xf_colour.h \
+	xf_color.c xf_color.h \
 	xf_event.c  xf_event.h \
 	xf_keyboard.c xf_keyboard.h \
 	xf_types.h \

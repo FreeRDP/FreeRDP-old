@@ -371,28 +371,28 @@ cache_put_cursor(rdpCache * cache, uint16 cache_idx, RD_HCURSOR cursor)
 
 /* Retrieve brush from cache */
 RD_BRUSHDATA *
-cache_get_brush_data(rdpCache * cache, uint8 colour_code, uint8 idx)
+cache_get_brush_data(rdpCache * cache, uint8 color_code, uint8 idx)
 {
-	colour_code = colour_code == 1 ? 0 : 1;
+	color_code = color_code == 1 ? 0 : 1;
 	if (idx < NUM_ELEMENTS(cache->brushcache[0]))
 	{
-		return &(cache->brushcache[colour_code][idx]);
+		return &(cache->brushcache[color_code][idx]);
 	}
-	ui_error(cache->rdp->inst, "get brush %d %d\n", colour_code, idx);
+	ui_error(cache->rdp->inst, "get brush %d %d\n", color_code, idx);
 	return NULL;
 }
 
 /* Store brush in cache */
 /* this function takes over the data pointer in struct, eg, caller gives it up */
 void
-cache_put_brush_data(rdpCache * cache, uint8 colour_code, uint8 idx, RD_BRUSHDATA * brush_data)
+cache_put_brush_data(rdpCache * cache, uint8 color_code, uint8 idx, RD_BRUSHDATA * brush_data)
 {
 	RD_BRUSHDATA *bd;
 
-	colour_code = colour_code == 1 ? 0 : 1;
+	color_code = color_code == 1 ? 0 : 1;
 	if (idx < NUM_ELEMENTS(cache->brushcache[0]))
 	{
-		bd = &(cache->brushcache[colour_code][idx]);
+		bd = &(cache->brushcache[color_code][idx]);
 		if (bd->data != NULL)
 		{
 			xfree(bd->data);
@@ -401,7 +401,7 @@ cache_put_brush_data(rdpCache * cache, uint8 colour_code, uint8 idx, RD_BRUSHDAT
 	}
 	else
 	{
-		ui_error(cache->rdp->inst, "put brush %d %d\n", colour_code, idx);
+		ui_error(cache->rdp->inst, "put brush %d %d\n", color_code, idx);
 	}
 }
 
@@ -431,14 +431,14 @@ cache_free(rdpCache * cache)
 	if (cache != NULL)
 	{
 		{
-			int colour_code, idx;
+			int color_code, idx;
 			RD_BRUSHDATA * bd;
 
-			for (colour_code = 0; colour_code < NUM_ELEMENTS(cache->brushcache); colour_code++)
+			for (color_code = 0; color_code < NUM_ELEMENTS(cache->brushcache); color_code++)
 			{
-				for(idx = 0; idx < NUM_ELEMENTS(cache->brushcache[colour_code]); idx++)
+				for(idx = 0; idx < NUM_ELEMENTS(cache->brushcache[color_code]); idx++)
 				{
-					bd = &(cache->brushcache[colour_code][idx]);
+					bd = &(cache->brushcache[color_code][idx]);
 					if (bd->data != NULL)
 					{
 						xfree(bd->data);
