@@ -123,10 +123,11 @@ typedef RECT* HRECT;
 
 struct _RGN
 {
-	unsigned int x;
-	unsigned int y;
-	unsigned int w;
-	unsigned int h;
+	unsigned int x; /* left */
+	unsigned int y; /* top */
+	unsigned int w; /* width */
+	unsigned int h; /* height */
+	unsigned int null; /* null region */
 };
 typedef struct _RGN RGN;
 typedef RGN* HRGN;
@@ -198,14 +199,6 @@ struct _DC
 typedef struct _DC DC;
 typedef DC* HDC;
 
-struct _WND
-{
-	HRECT invalid;
-	int dirty;
-};
-typedef struct _WND WND;
-typedef WND* HWND;
-
 struct _GDI
 {
 	int width;
@@ -215,8 +208,8 @@ struct _GDI
 	int cursor_x;
 	int cursor_y;
 	
-	HWND hwnd;
 	HRGN clip;
+	HRGN invalid;
 	HDC hdc_system;
 	HDC hdc_drawing;
 	char* system_buffer;
@@ -233,7 +226,8 @@ typedef struct _GDI GDI;
 
 unsigned int gdi_rop3_code(unsigned char code);
 unsigned int gdi_make_colorref(PIXEL *pixel);
-int gdi_clip_coords(int *x, int *y, int *w, int *h, int *srcx, int *srcy, HRGN clip);
+int gdi_clip_coords(GDI *gdi, int *x, int *y, int *w, int *h, int *srcx, int *srcy);
+void gdi_invalidate_region(GDI *gdi, int x, int y, int w, int h);
 void gdi_colour_convert(PIXEL *pixel, int colour, int bpp, HPALETTE palette);
 char* gdi_image_convert(char* srcData, int width, int height, int srcBpp, int dstBpp, HPALETTE palette);
 
@@ -250,7 +244,6 @@ int CopyRect(HRECT dst, HRECT src);
 int FillRect(HDC hdc, HRECT rect, HBRUSH hbr);
 HRGN CreateRectRgn(int nLeftRect, int nTopRect, int nRightRect, int nBottomRect);
 int SelectClipRgn(HDC hdc, HRGN hrgn);
-int InvalidateRect(HWND hWnd, HRECT lpRect);
 COLORREF GetPixel(HDC hdc, int nXPos, int nYPos);
 COLORREF SetPixel(HDC hdc, int X, int Y, COLORREF crColor);
 COLORREF GetBkColor(HDC hdc);

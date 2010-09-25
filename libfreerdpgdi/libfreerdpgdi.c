@@ -349,18 +349,18 @@ gdi_split_colorref(unsigned int colorref, PIXEL *pixel)
 }
 
 int
-gdi_clip_coords(int *x, int *y, int *w, int *h, int *srcx, int *srcy, HRGN clip)
+gdi_clip_coords(GDI *gdi, int *x, int *y, int *w, int *h, int *srcx, int *srcy)
 {
 	int dx;
 	int dy;
 
-	dx = (clip->x > *x) ? (clip->x - *x) : 0;
-	dy = (clip->y > *y) ? (clip->y - *y) : 0;
+	dx = (gdi->clip->x > *x) ? (gdi->clip->x - *x) : 0;
+	dy = (gdi->clip->y > *y) ? (gdi->clip->y - *y) : 0;
 
-	if (*x + *w > clip->x + clip->w)
-		*w = (*w - ((*x + *w) - (clip->x + clip->w)));
-	if (*y + *h > clip->y + clip->h)
-		*h = (*h - ((*y + *h) - (clip->y + clip->h)));
+	if (*x + *w > gdi->clip->x + gdi->clip->w)
+		*w = (*w - ((*x + *w) - (gdi->clip->x + gdi->clip->w)));
+	if (*y + *h > gdi->clip->y + gdi->clip->h)
+		*h = (*h - ((*y + *h) - (gdi->clip->y + gdi->clip->h)));
 
 	*w = *w - dx;
 	*h = *h - dy;
@@ -379,6 +379,45 @@ gdi_clip_coords(int *x, int *y, int *w, int *h, int *srcx, int *srcy, HRGN clip)
 		*srcy = *srcy + dy;
 
 	return 1;
+}
+
+void
+gdi_invalidate_region(GDI *gdi, int x, int y, int w, int h)
+{
+	if (gdi->drawing_surface != gdi->system_surface)
+		return;
+	
+	if (gdi->invalid->null)
+	{
+		gdi->invalid->x = x;
+		gdi->invalid->y = y;
+		gdi->invalid->w = w;
+		gdi->invalid->h = h;
+		gdi->invalid->null = 0;
+		return;
+	}
+	
+	if (x < gdi->invalid->x)
+	{
+		gdi->invalid->x = x;
+		gdi->invalid->w += (gdi->invalid->x - x);
+	}
+
+	if (y < gdi->invalid->y)
+	{
+		gdi->invalid->y = y;
+		gdi->invalid->h += (gdi->invalid->y - y);
+	}
+
+	if (gdi->invalid->x + gdi->invalid->w < x + w)
+	{
+		gdi->invalid->w += (x + w) - (gdi->invalid->x + gdi->invalid->w);
+	}
+
+	if (gdi->invalid->y + gdi->invalid->h < y + h)
+	{
+		gdi->invalid->h += (y + h) - (gdi->invalid->y + gdi->invalid->h);
+	}
 }
 
 void
@@ -667,25 +706,6 @@ HRGN CreateRectRgn(int nLeftRect, int nTopRect, int nRightRect, int nBottomRect)
 	hRgn->w = nRightRect - nLeftRect;
 	hRgn->h = nBottomRect - nTopRect;
 	return hRgn;
-}
-
-int InvalidateRect(HWND hWnd, HRECT lpRect)
-{	
-	if (lpRect->left < hWnd->invalid->left)
-		hWnd->invalid->left = lpRect->left;
-
-	if (lpRect->top < hWnd->invalid->top)
-		hWnd->invalid->top = lpRect->top;
-
-	if (lpRect->right > hWnd->invalid->right)
-		hWnd->invalid->right = lpRect->right;
-
-	if (lpRect->bottom > hWnd->invalid->bottom)
-		hWnd->invalid->bottom = lpRect->bottom;
-	
-	hWnd->dirty = 1;
-	
-	return 0;
 }
 
 COLORREF GetPixel(HDC hdc, int nXPos, int nYPos)
