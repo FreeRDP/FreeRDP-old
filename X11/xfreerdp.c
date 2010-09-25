@@ -67,6 +67,9 @@ set_default_params(xfInfo * xfi)
 	settings->triblt = 0;
 	settings->new_cursors = 1;
 	settings->rdp_version = 5;
+#ifndef DISABLE_TLS
+	settings->tls = 1;
+#endif
 	xfi->fullscreen = xfi->fs_toggle = 0;
 	return 0;
 }
@@ -97,7 +100,7 @@ out_args(void)
 		"\t-z: enable bulk compression\n"
 		"\t-x: performance flags (m, b or l for modem, broadband or lan)\n"
 #ifndef DISABLE_TLS
-		"\t--tls: enable TLS encryption\n"
+		"\t--no-tls: disable TLS encryption\n"
 #endif
 		"\t--plugin: load a virtual channel plugin\n"
 		"\t--noosb: disable off screen bitmaps, default on\n"
@@ -335,9 +338,9 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 			}
 		}
 #ifndef DISABLE_TLS
-		else if (strcmp("--tls", argv[*pindex]) == 0)
+		else if (strcmp("--no-tls", argv[*pindex]) == 0)
 		{
-			settings->tls = 1;
+			settings->tls = 0;
 		}
 #endif
 		else if (strcmp("--plugin", argv[*pindex]) == 0)

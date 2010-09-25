@@ -58,6 +58,8 @@ struct _SERVICE
 	uint32 (*free) (DEVICE * dev);
 	uint32 (*process_data) (SERVICE * srv, int type, const char * data, int data_len);
 	int    (*get_event) (IRP * irp, uint32 * result);
+	int    (*file_descriptor) (IRP *irp);
+	void   (*get_timeouts) (IRP * irp, uint32 * timeout, uint32 * interval_timeout);
 };
 typedef SERVICE * PSERVICE;
 

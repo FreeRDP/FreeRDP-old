@@ -52,6 +52,10 @@ void
 irp_process_notify_change_directory_request(IRP* irp, char* data, int data_size);
 int
 irp_get_event(IRP * irp, uint32 * result);
+int
+irp_file_descriptor(IRP * irp);
+void
+irp_get_timeouts(IRP * irp, uint32 * timeout, uint32 * interval_timeout);
 
 #endif // __IRP_H
 

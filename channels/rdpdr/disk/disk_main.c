@@ -918,6 +918,13 @@ disk_free(DEVICE * dev)
 	return 0;
 }
 
+static int
+disk_get_fd(IRP * irp)
+{
+	FILE_INFO * finfo = disk_get_file_info(irp->dev, irp->fileID);
+	return finfo->file;
+}
+
 static SERVICE *
 disk_register_service(PDEVMAN pDevman, PDEVMAN_ENTRY_POINTS pEntryPoints)
 {
@@ -939,6 +946,8 @@ disk_register_service(PDEVMAN pDevman, PDEVMAN_ENTRY_POINTS pEntryPoints)
 	srv->free = disk_free;
 	srv->type = RDPDR_DTYP_FILESYSTEM;
 	srv->get_event = NULL;
+	srv->file_descriptor = disk_get_fd;
+	srv->get_timeouts = NULL;
 
 	return srv;
 }

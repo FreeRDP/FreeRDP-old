@@ -141,6 +141,9 @@
 #define SERIAL_CHAR_XON     4
 #define SERIAL_CHAR_XOFF    5
 
+/* http://www.codeproject.com/KB/system/chaiyasit_t.aspx */
+#define SERIAL_TIMEOUT_MAX 4294967295u
+
 #ifndef CRTSCTS
 #define CRTSCTS 0
 #endif
@@ -298,6 +301,22 @@ serial_get_event(IRP * irp, uint32 * result)
 	return ret;
 }
 
+static int
+serial_get_fd(IRP * irp)
+{
+	return 	((SERIAL_DEVICE_INFO *) irp->dev->info)->file;
+}
+
+static void
+serial_get_timeouts(IRP * irp, uint32 * timeout, uint32 * interval_timeout)
+{
+	SERIAL_DEVICE_INFO *info = (SERIAL_DEVICE_INFO *) irp->dev->info;
+
+	*timeout = info->read_total_timeout_multiplier * irp->length +
+				info->read_total_timeout_constant;
+	*interval_timeout = info->read_interval_timeout;
+}
+
 static uint32
 serial_control(IRP * irp)
 {
@@ -391,6 +410,15 @@ serial_control(IRP * irp)
 			info->read_total_timeout_constant = GET_UINT32(inbuf, 8);
 			info->write_total_timeout_multiplier = GET_UINT32(inbuf, 12);
 			info->write_total_timeout_constant = GET_UINT32(inbuf, 16);
+
+			/* http://www.codeproject.com/KB/system/chaiyasit_t.aspx, see 'ReadIntervalTimeout' section
+				http://msdn.microsoft.com/en-us/library/ms885171.aspx */
+			if (info->read_interval_timeout == SERIAL_TIMEOUT_MAX)
+			{
+				info->read_interval_timeout = 0;
+				info->read_total_timeout_multiplier = 0;
+			}
+
 			LLOGLN(10, ("serial_ioctl -> SERIAL_SET_TIMEOUTS read timeout %d %d %d",
 				      info->read_interval_timeout,
 				      info->read_total_timeout_multiplier,
@@ -1110,6 +1138,8 @@ serial_register_service(PDEVMAN pDevman, PDEVMAN_ENTRY_POINTS pEntryPoints)
 	srv->free = serial_free;
 	srv->type = RDPDR_DTYP_SERIAL;
 	srv->get_event = serial_get_event;
+	srv->file_descriptor = serial_get_fd;
+	srv->get_timeouts = serial_get_timeouts;
 
 	return srv;
 }
