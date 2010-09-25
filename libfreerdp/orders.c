@@ -1288,8 +1288,8 @@ process_cache_color_table(rdpOrders * orders, STREAM s)
 	int i;
 	int size;
 	RD_COLORENTRY *entry;
-	RD_COLORMAP map;
-	RD_HCOLORMAP hmap;
+	RD_PALETTE map;
+	RD_HPALETTE hmap;
 	uint8 cache_id;
 
 	in_uint8(s, cache_id);

@@ -1182,8 +1182,8 @@ process_palette(rdpRdp * rdp, STREAM s)
 	int i;
 	int size;
 	RD_COLORENTRY *entry;
-	RD_COLORMAP map;
-	RD_HCOLORMAP hmap;
+	RD_PALETTE map;
+	RD_HPALETTE hmap;
 
 	in_uint8s(s, 2);	/* pad */
 	in_uint16_le(s, map.ncolors);

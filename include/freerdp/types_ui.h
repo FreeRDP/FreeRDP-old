@@ -44,7 +44,7 @@ typedef signed long long sint64;
 typedef int RD_BOOL;
 typedef void *RD_HBITMAP;
 typedef void *RD_HGLYPH;
-typedef void *RD_HCOLORMAP;
+typedef void *RD_HPALETTE;
 typedef void *RD_HCURSOR;
 
 typedef struct _RD_POINT
@@ -61,12 +61,12 @@ typedef struct _RD_COLORENTRY
 }
 RD_COLORENTRY;
 
-typedef struct _RD_COLORMAP
+typedef struct _RD_PALETTE
 {
 	uint16 ncolors;
 	RD_COLORENTRY *colors;
 }
-RD_COLORMAP;
+RD_PALETTE;
 
 typedef struct _RD_PEN
 {

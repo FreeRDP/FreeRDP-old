@@ -1,6 +1,6 @@
 /* -*- c-basic-offset: 8 -*-
    FreeRDP: A Remote Desktop Protocol client.
-   DirectFB UI
+   GDI Window Routines
 
    Copyright (C) Marc-Andre Moreau <marcandre.moreau@gmail.com> 2010
 
@@ -19,32 +19,18 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#ifndef __GDI_WINDOW_H
+#define __GDI_WINDOW_H
 
-#ifndef __DFBFREERDP_H
-#define __DFBFREERDP_H
-
-#include <directfb.h>
 #include <freerdp/freerdp.h>
 #include "libfreerdpgdi.h"
 
-#define SET_DFBI(_inst, _dfbi) (_inst)->param1 = _dfbi
-#define GET_DFBI(_inst) ((dfbInfo *) ((_inst)->param1))
+unsigned int gdi_rop3_code(unsigned char code);
+int gdi_clip_coords(GDI *gdi, int *x, int *y, int *w, int *h, int *srcx, int *srcy);
+void gdi_invalidate_region(GDI *gdi, int x, int y, int w, int h);
+void gdi_copy_mem(char * d, char * s, int n);
+char* gdi_get_bitmap_pointer(HDC hdcBmp, int x, int y);
+int gdi_is_mono_pixel_set(char* data, int x, int y, int width);
+int gdi_init(rdpInst * inst);
 
-struct dfb_info
-{
-	DFBResult err;
-	IDirectFB *dfb;
-	DFBEvent events[16];
-	DFBSurfaceDescription dsc;
-	IDirectFBSurface *primary;
-	IDirectFBEventBuffer *event;
-	IDirectFBSurface *surface;
-	IDirectFBDisplayLayer *layer;
-	DFBRectangle update_rect;
-};
-typedef struct dfb_info dfbInfo;
-
-int
-dfb_process_event(rdpInst * inst, DFBEvent * event);
-
-#endif /* __DFBFREERDP_H */
+#endif /* __GDI_WINDOW_H */

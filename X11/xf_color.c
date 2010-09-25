@@ -365,8 +365,8 @@ xf_image_convert(xfInfo * xfi, rdpSet * settings, int width, int height,
 	return in_data;
 }
 
-RD_HCOLORMAP
-xf_create_colormap(xfInfo * xfi, rdpSet * settings, RD_COLORMAP * colors)
+RD_HPALETTE
+xf_create_colormap(xfInfo * xfi, rdpSet * settings, RD_PALETTE * colors)
 {
 	int * colormap;
 	int index;
@@ -389,11 +389,11 @@ xf_create_colormap(xfInfo * xfi, rdpSet * settings, RD_COLORMAP * colors)
 		blue = colors->colors[index].blue;
 		colormap[index] = MAKE24RGB(red, green, blue);
 	}
-	return (RD_HCOLORMAP) colormap;
+	return (RD_HPALETTE) colormap;
 }
 
 int
-xf_set_colormap(xfInfo * xfi, rdpSet * settings, RD_HCOLORMAP map)
+xf_set_colormap(xfInfo * xfi, rdpSet * settings, RD_HPALETTE map)
 {
 	if (xfi->colormap != NULL)
 	{

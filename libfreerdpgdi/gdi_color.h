@@ -1,6 +1,6 @@
 /* -*- c-basic-offset: 8 -*-
    FreeRDP: A Remote Desktop Protocol client.
-   DirectFB UI
+   GDI Color Conversion Routines
 
    Copyright (C) Marc-Andre Moreau <marcandre.moreau@gmail.com> 2010
 
@@ -19,32 +19,14 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#ifndef __GDI_COLOR_H
+#define __GDI_COLOR_H
 
-#ifndef __DFBFREERDP_H
-#define __DFBFREERDP_H
-
-#include <directfb.h>
-#include <freerdp/freerdp.h>
 #include "libfreerdpgdi.h"
 
-#define SET_DFBI(_inst, _dfbi) (_inst)->param1 = _dfbi
-#define GET_DFBI(_inst) ((dfbInfo *) ((_inst)->param1))
+unsigned int gdi_make_colorref(PIXEL *pixel);
+void gdi_split_colorref(unsigned int colorref, PIXEL *pixel);
+void gdi_color_convert(PIXEL *pixel, int color, int bpp, HPALETTE palette);
+char* gdi_image_convert(char* srcData, int width, int height, int srcBpp, int dstBpp, HPALETTE palette);
 
-struct dfb_info
-{
-	DFBResult err;
-	IDirectFB *dfb;
-	DFBEvent events[16];
-	DFBSurfaceDescription dsc;
-	IDirectFBSurface *primary;
-	IDirectFBEventBuffer *event;
-	IDirectFBSurface *surface;
-	IDirectFBDisplayLayer *layer;
-	DFBRectangle update_rect;
-};
-typedef struct dfb_info dfbInfo;
-
-int
-dfb_process_event(rdpInst * inst, DFBEvent * event);
-
-#endif /* __DFBFREERDP_H */
+#endif /* __GDI_COLOR_H */

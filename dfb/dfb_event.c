@@ -32,12 +32,11 @@ dfb_process_event(rdpInst * inst, DFBEvent * event)
 {
 	int cursor_x;
 	int cursor_y;
-	dfbInfo * dfbi;
+	GDI *gdi = GET_GDI(inst);
 	DFBInputEvent * input_event;
-
-	dfbi = GET_DFBI(inst);
-	cursor_x = dfbi->gdi->cursor_x;
-	cursor_y = dfbi->gdi->cursor_y;
+	
+	cursor_x = gdi->cursor_x;
+	cursor_y = gdi->cursor_y;
 
 	if (event->clazz == DFEC_INPUT)
 	{

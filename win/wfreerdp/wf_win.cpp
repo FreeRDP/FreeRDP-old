@@ -919,8 +919,8 @@ l_ui_set_default_cursor(struct rdp_inst * inst)
 	PostMessage(wfi->hwnd, WM_SETCURSOR, 0, 0);
 }
 
-static RD_HCOLORMAP
-l_ui_create_colormap(struct rdp_inst * inst, RD_COLORMAP * colors)
+static RD_HPALETTE
+l_ui_create_colormap(struct rdp_inst * inst, RD_PALETTE * colors)
 {
 	wfInfo * wfi;
 
@@ -938,7 +938,7 @@ l_ui_move_pointer(struct rdp_inst * inst, int x, int y)
 }
 
 static void
-l_ui_set_colormap(struct rdp_inst * inst, RD_HCOLORMAP map)
+l_ui_set_colormap(struct rdp_inst * inst, RD_HPALETTE map)
 {
 	wfInfo * wfi;
 

@@ -21,6 +21,9 @@
 
 #include <freerdp/freerdp.h>
 
+#include "gdi_color.h"
+#include "gdi_window.h"
+
 #ifndef __LIBFREERDPGDI_H
 #define __LIBFREERDPGDI_H
 
@@ -210,26 +213,18 @@ struct _GDI
 	
 	HRGN clip;
 	HRGN invalid;
-	HDC hdc_system;
+	HDC hdc_primary;
 	HDC hdc_drawing;
-	char* system_buffer;
-	HBITMAP system_surface;
+	char* primary_buffer;
+	HBITMAP primary_surface;
 	HBITMAP drawing_surface;
 	COLORREF textColor;
 	HPALETTE palette;
 	PIXEL pixel;
-	HRECT rect;
 	HBITMAP bmp;
 	HDC hdc_bmp;
 };
 typedef struct _GDI GDI;
-
-unsigned int gdi_rop3_code(unsigned char code);
-unsigned int gdi_make_colorref(PIXEL *pixel);
-int gdi_clip_coords(GDI *gdi, int *x, int *y, int *w, int *h, int *srcx, int *srcy);
-void gdi_invalidate_region(GDI *gdi, int x, int y, int w, int h);
-void gdi_colour_convert(PIXEL *pixel, int colour, int bpp, HPALETTE palette);
-char* gdi_image_convert(char* srcData, int width, int height, int srcBpp, int dstBpp, HPALETTE palette);
 
 HDC GetDC();
 HDC CreateCompatibleDC(HDC hdc);
@@ -255,5 +250,11 @@ int BitBlt(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdc
 HGDIOBJ SelectObject(HDC hdc, HGDIOBJ hgdiobj);
 int DeleteObject(HGDIOBJ hgdiobj);
 int DeleteDC(HDC hdc);
+
+#define SET_GDI(_inst, _gdi) (_inst)->param2 = _gdi
+#define GET_GDI(_inst) ((GDI*) ((_inst)->param2))
+
+#include "gdi_color.h"
+#include "gdi_window.h"
 
 #endif /* __LIBFREERDPGDI_H */

@@ -372,8 +372,8 @@ ui_destroy_bitmap(rdpInst * inst, RD_HBITMAP bmp)
 	inst->ui_destroy_bitmap(inst, bmp);
 }
 
-RD_HCOLORMAP
-ui_create_colormap(rdpInst * inst, RD_COLORMAP * colors)
+RD_HPALETTE
+ui_create_colormap(rdpInst * inst, RD_PALETTE * colors)
 {
 	return inst->ui_create_colormap(inst, colors);
 }
@@ -385,7 +385,7 @@ ui_move_pointer(rdpInst * inst, int x, int y)
 }
 
 void
-ui_set_colormap(rdpInst * inst, RD_HCOLORMAP map)
+ui_set_colormap(rdpInst * inst, RD_HPALETTE map)
 {
 	inst->ui_set_colormap(inst, map);
 }

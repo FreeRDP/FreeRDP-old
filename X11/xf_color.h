@@ -30,10 +30,10 @@ xf_color_convert(xfInfo * xfi, rdpSet * settings, int color);
 uint8 *
 xf_image_convert(xfInfo * xfi, rdpSet * settings, int width, int height,
 	uint8 * in_data);
-RD_HCOLORMAP
-xf_create_colormap(xfInfo * xfi, rdpSet * settings, RD_COLORMAP * colors);
+RD_HPALETTE
+xf_create_colormap(xfInfo * xfi, rdpSet * settings, RD_PALETTE * colors);
 int
-xf_set_colormap(xfInfo * xfi, rdpSet * settings, RD_HCOLORMAP map);
+xf_set_colormap(xfInfo * xfi, rdpSet * settings, RD_HPALETTE map);
 int
 xf_cursor_convert_mono(xfInfo * xfi, uint8 * src_glyph, uint8 * msk_glyph,
 	uint8 * xormask, uint8 * andmask, int width, int height, int bpp);
