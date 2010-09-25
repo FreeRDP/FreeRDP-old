@@ -548,7 +548,7 @@ gdi_ui_start_draw_glyphs(struct rdp_inst * inst, int bgcolor, int fgcolor)
 {
 	GDI *gdi = GET_GDI(inst);
 	
-	gdi_color_convert(&(gdi->pixel), fgcolor, gdi->dstBpp, gdi->palette);
+	gdi_color_convert(&(gdi->pixel), fgcolor, gdi->srcBpp, gdi->palette);
 	gdi->textColor = SetTextColor(gdi->hdc_drawing, gdi_make_colorref(&(gdi->pixel)));
 }
 
