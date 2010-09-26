@@ -40,6 +40,7 @@ HDC CreateCompatibleDC(HDC hdc)
 	HDC hDC = (HDC) malloc(sizeof(DC));
 	hDC->bytesPerPixel = hdc->bytesPerPixel;
 	hDC->bitsPerPixel = hdc->bitsPerPixel;
+	hDC->drawMode = R2_COPYPEN;
 	return hDC;
 }
 
@@ -70,6 +71,9 @@ HPEN CreatePen(int fnPenStyle, int nWidth, int crColor)
 {
 	HPEN hPen = (HPEN) malloc(sizeof(PEN));
 	hPen->objectType = GDIOBJ_PEN;
+	hPen->style = fnPenStyle;
+	hPen->color = crColor;
+	hPen->width = nWidth;
 	return hPen;
 }
 
@@ -121,6 +125,93 @@ COLORREF SetPixel(HDC hdc, int X, int Y, COLORREF crColor)
 	HBITMAP hBmp = (HBITMAP) hdc->selectedObject;
 	*((COLORREF*)&(hBmp->data[X * hBmp->width * hdc->bytesPerPixel + Y * hdc->bytesPerPixel])) = crColor;
 	return 0;
+}
+
+int SetROP2(HDC hdc, int fnDrawMode)
+{
+	int prevDrawMode = hdc->drawMode;
+	hdc->drawMode = fnDrawMode;
+	return prevDrawMode;
+}
+
+/* http://www.cs.toronto.edu/~smalik/418/tutorial2_bresenham.pdf */
+
+static void
+bresenham(HDC hdc, int x1, int y1, int x2, int y2)
+{
+	int slope;
+	int dx, dy;
+	int d, x, y;
+	int incE, incNE;
+
+	/* reverse lines where x1 > x2 */
+	if (x1 > x2)
+	{
+		bresenham(hdc, x2, y2, x1, y1);
+		return;
+	}
+
+	dx = x2 - x1;
+	dy = y2 - y1;
+
+	/* adjust y-increment for negatively sloped lines */
+	if (dy < 0)
+	{
+		slope = -1;
+		dy = -dy;
+	}
+	else
+	{
+		slope = 1;
+	}
+
+	/* bresenham constants */
+	incE = 2 * dy;
+	incNE = 2 * dy - 2 * dx;
+	d = 2 * dy - dx;
+	y = y1;
+
+	/* Blit */
+	for (x = x1; x <= x2; x++)
+	{
+		/* TODO: apply correct binary raster operation */
+		SetPixel(hdc, x, y, hdc->pen->color);
+		
+		if (d <= 0)
+		{
+			d += incE;
+		}
+		else
+		{
+			d += incNE;
+			y += slope;
+		}
+	}
+}
+
+int LineTo(HDC hdc, int nXEnd, int nYEnd)
+{	
+	printf("LineTo: posX:%d posY:%d nXEnd:%d nYEnd:%d\n",
+	       hdc->pen->posX, hdc->pen->posY, nXEnd, nYEnd);
+
+	/*
+	 * According to this MSDN article, LineTo uses a modified version of Bresenham:
+	 * http://msdn.microsoft.com/en-us/library/dd145027(VS.85).aspx
+	 *
+	 * However, since I couldn't find the specifications of this modified algorithm,
+	 * we're going to use the original Bresenham line drawing algorithm for now
+	 */
+
+	//bresenham(hdc, hdc->pen->posX, hdc->pen->posY, nXEnd, nYEnd);
+	
+	return 1;
+}
+
+int MoveTo(HDC hdc, int X, int Y)
+{
+	hdc->pen->posX = X;
+	hdc->pen->posY = Y;
+	return 1;
 }
 
 int SetRect(HRECT rc, int xLeft, int yTop, int xRight, int yBottom)
@@ -339,22 +430,20 @@ HGDIOBJ SelectObject(HDC hdc, HGDIOBJ hgdiobj)
 
 	if (hgdiobj->objectType == GDIOBJ_BITMAP)
 	{
-		//HBITMAP hBitmap = (HBITMAP) hgdiobj;
 		hdc->selectedObject = hgdiobj;
 	}
 	else if (hgdiobj->objectType == GDIOBJ_PEN)
 	{
-		//HPEN hPen = (HPEN) hgdiobj;
-		hdc->selectedObject = hgdiobj;
+		previousSelectedObject = (HGDIOBJ) hdc->pen;
+		hdc->pen = (HPEN) hgdiobj;
 	}
 	else if (hgdiobj->objectType == GDIOBJ_BRUSH)
 	{
-		//HBRUSH hBrush = (HBRUSH) hgdiobj;
-		hdc->selectedObject = hgdiobj;
+		previousSelectedObject = (HGDIOBJ) hdc->brush;
+		hdc->brush = (HBRUSH) hgdiobj;
 	}
 	else if (hgdiobj->objectType == GDIOBJ_RECT)
 	{
-		//HRECT hRect = (HRECT) hgdiobj;
 		hdc->selectedObject = hgdiobj;
 	}
 	else

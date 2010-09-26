@@ -152,6 +152,9 @@ struct _PEN
 	unsigned char objectType;
 	unsigned int style;
 	unsigned int width;
+	unsigned int posX;
+	unsigned int posY;
+	COLORREF color;
 };
 typedef struct _PEN PEN;
 typedef PEN* HPEN;
@@ -197,6 +200,8 @@ struct _DC
 	COLORREF bkColor;
 	COLORREF textColor;
 	HBRUSH brush;
+	HPEN pen;
+	int drawMode;
 	int bkMode;
 };
 typedef struct _DC DC;
@@ -234,6 +239,9 @@ HPEN CreatePen(int fnPenStyle, int nWidth, int crColor);
 HPALETTE CreatePalette(LOGPALETTE *lplgpl);
 HBRUSH CreateSolidBrush(COLORREF crColor);
 HBRUSH CreatePatternBrush(HBITMAP hbmp);
+int SetROP2(HDC hdc, int fnDrawMode);
+int LineTo(HDC hdc, int nXEnd, int nYEnd);
+int MoveTo(HDC hdc, int X, int Y);
 int SetRect(HRECT rc, int xLeft, int yTop, int xRight, int yBottom);
 int CopyRect(HRECT dst, HRECT src);
 int FillRect(HDC hdc, HRECT rect, HBRUSH hbr);

@@ -501,7 +501,34 @@ gdi_ui_destroy_bitmap(struct rdp_inst * inst, RD_HBITMAP bmp)
 static void
 gdi_ui_line(struct rdp_inst * inst, uint8 opcode, int startx, int starty, int endx, int endy, RD_PEN * pen)
 {
-	DEBUG_GDI("ui_line\n");
+	DEBUG_GDI("ui_line opcode:%d startx:%d starty:%d endx:%d endy:%d\n", opcode, startx, starty, endx, endy);
+	
+	int cx;
+	int cy;
+	HPEN hPen;
+	GDI *gdi = GET_GDI(inst);
+
+	/* pre-clipping coordinates could have bad side effects for line drawing since it could change the slope */
+	
+	cx = endx - startx;
+	cy = endy - starty;
+	//gdi_clip_coords(gdi, &startx, &starty, &cx, &cy, 0, 0);
+	endx = startx + cx;
+	endy = starty + cy;
+	
+	gdi_color_convert(&(gdi->pixel), pen->color, gdi->srcBpp, gdi->palette);
+	
+	hPen = CreatePen(pen->style, pen->width, (COLORREF) gdi_make_colorref(&(gdi->pixel)));
+	SelectObject(gdi->hdc_drawing, (HGDIOBJ) hPen);
+	SetROP2(gdi->hdc_drawing, opcode + 1);
+
+	SelectObject(gdi->hdc_drawing, (HGDIOBJ) gdi->drawing_surface);
+	MoveTo(gdi->hdc_drawing, startx, starty);
+	LineTo(gdi->hdc_drawing, endx, endy);
+	
+	DeleteObject((HGDIOBJ) hPen);
+
+	gdi_invalidate_region(gdi, startx, starty, cx, cy);
 }
 
 static void
