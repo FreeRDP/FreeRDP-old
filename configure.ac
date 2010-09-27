@@ -1022,6 +1022,7 @@ doc/Makefile
 include/Makefile
 libfreerdpkbd/Makefile
 keymaps/Makefile
+rcunit/Makefile
 libfreerdpgdi/Makefile
 libfreerdpchanman/Makefile
 X11/Makefile

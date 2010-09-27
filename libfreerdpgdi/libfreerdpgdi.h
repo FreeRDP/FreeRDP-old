@@ -89,6 +89,7 @@
 #define GDIOBJ_PALETTE		0x02
 #define GDIOBJ_BRUSH		0x03
 #define GDIOBJ_RECT		0x04
+#define GDIOBJ_REGION		0x04
 
 /* Background Modes */
 #define OPAQUE			0x00000001
@@ -116,6 +117,7 @@ typedef COLORREF* LPCOLORREF;
 
 struct _RECT
 {
+	unsigned char objectType;
 	unsigned int left;
 	unsigned int top;
 	unsigned int right;
@@ -126,6 +128,7 @@ typedef RECT* HRECT;
 
 struct _RGN
 {
+	unsigned char objectType;
 	unsigned int x; /* left */
 	unsigned int y; /* top */
 	unsigned int w; /* width */
@@ -239,11 +242,13 @@ HPEN CreatePen(int fnPenStyle, int nWidth, int crColor);
 HPALETTE CreatePalette(LOGPALETTE *lplgpl);
 HBRUSH CreateSolidBrush(COLORREF crColor);
 HBRUSH CreatePatternBrush(HBITMAP hbmp);
+HRECT CreateRect(int xLeft, int yTop, int xRight, int yBottom);
 int SetROP2(HDC hdc, int fnDrawMode);
 int LineTo(HDC hdc, int nXEnd, int nYEnd);
 int MoveTo(HDC hdc, int X, int Y);
 int SetRect(HRECT rc, int xLeft, int yTop, int xRight, int yBottom);
 int CopyRect(HRECT dst, HRECT src);
+int PtInRect(HRECT rc, int x, int y);
 int FillRect(HDC hdc, HRECT rect, HBRUSH hbr);
 HRGN CreateRectRgn(int nLeftRect, int nTopRect, int nRightRect, int nBottomRect);
 int SelectClipRgn(HDC hdc, HRGN hrgn);

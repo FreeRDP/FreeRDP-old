@@ -32,6 +32,9 @@
 HDC GetDC()
 {
 	HDC hDC = (HDC) malloc(sizeof(DC));
+	hDC->bytesPerPixel = 4;
+	hDC->bitsPerPixel = 32;
+	hDC->drawMode = R2_COPYPEN;
 	return hDC;
 }
 
@@ -40,7 +43,7 @@ HDC CreateCompatibleDC(HDC hdc)
 	HDC hDC = (HDC) malloc(sizeof(DC));
 	hDC->bytesPerPixel = hdc->bytesPerPixel;
 	hDC->bitsPerPixel = hdc->bitsPerPixel;
-	hDC->drawMode = R2_COPYPEN;
+	hDC->drawMode = hdc->drawMode;
 	return hDC;
 }
 
@@ -106,24 +109,37 @@ HBRUSH CreatePatternBrush(HBITMAP hbmp)
 HRGN CreateRectRgn(int nLeftRect, int nTopRect, int nRightRect, int nBottomRect)
 {
 	HRGN hRgn = (HRGN) malloc(sizeof(RGN));
+	hRgn->objectType = GDIOBJ_REGION;
 	hRgn->x = nLeftRect;
 	hRgn->y = nTopRect;
 	hRgn->w = nRightRect - nLeftRect;
 	hRgn->h = nBottomRect - nTopRect;
+	hRgn->null = 0;
 	return hRgn;
+}
+
+HRECT CreateRect(int xLeft, int yTop, int xRight, int yBottom)
+{
+	HRECT hRect = (HRECT) malloc(sizeof(RECT));
+	hRect->objectType = GDIOBJ_RECT;
+	hRect->left = xLeft;
+	hRect->top = yTop;
+	hRect->right = xRight;
+	hRect->bottom = yBottom;
+	return hRect;
 }
 
 COLORREF GetPixel(HDC hdc, int nXPos, int nYPos)
 {
 	HBITMAP hBmp = (HBITMAP) hdc->selectedObject;
-	COLORREF* colorp = (COLORREF*)&(hBmp->data[nXPos * hBmp->width * hdc->bytesPerPixel + nYPos * hdc->bytesPerPixel]);
+	COLORREF* colorp = (COLORREF*)&(hBmp->data[(nYPos * hBmp->width * hdc->bytesPerPixel) + nXPos * hdc->bytesPerPixel]);
 	return (COLORREF) *colorp;
 }
 
 COLORREF SetPixel(HDC hdc, int X, int Y, COLORREF crColor)
 {
 	HBITMAP hBmp = (HBITMAP) hdc->selectedObject;
-	*((COLORREF*)&(hBmp->data[X * hBmp->width * hdc->bytesPerPixel + Y * hdc->bytesPerPixel])) = crColor;
+	*((COLORREF*)&(hBmp->data[(Y * hBmp->width * hdc->bytesPerPixel) + X * hdc->bytesPerPixel])) = crColor;
 	return 0;
 }
 
@@ -232,19 +248,36 @@ int CopyRect(HRECT dst, HRECT src)
 	return 1;
 }
 
+int PtInRect(HRECT rc, int x, int y)
+{
+	/* 
+	 * points on the left and top sides are considered in,
+	 * while points on the right and bottom sides are considered out
+	 */
+	
+	if (x >= rc->left && x < rc->right)
+	{
+		if (y >= rc->top && y < rc->bottom)
+		{
+			return 1;
+		}
+	}
+	
+	return 0;
+}
+
 int FillRect(HDC hdc, HRECT rect, HBRUSH hbr)
 {
-	int i;
-	int j;
+	int x, y;
 	HBITMAP hBmp;
 
 	hBmp = (HBITMAP) hdc->selectedObject;
-	
-	for (i = rect->top; i < rect->bottom; i++)
+
+	for (y = rect->top; y < rect->bottom; y++)
 	{
-		for (j = rect->left; j < rect->right; j++)
+		for (x = rect->left; x < rect->right; x++)
 		{
-			*((COLORREF*)&(hBmp->data[i * hBmp->width * hdc->bytesPerPixel + j * hdc->bytesPerPixel])) = hbr->color;
+			*((COLORREF*)&(hBmp->data[y * hBmp->width * hdc->bytesPerPixel + x * hdc->bytesPerPixel])) = hbr->color;
 		}
 	}
 	
@@ -442,6 +475,10 @@ HGDIOBJ SelectObject(HDC hdc, HGDIOBJ hgdiobj)
 		previousSelectedObject = (HGDIOBJ) hdc->brush;
 		hdc->brush = (HBRUSH) hgdiobj;
 	}
+	else if (hgdiobj->objectType == GDIOBJ_REGION)
+	{
+		hdc->selectedObject = hgdiobj;
+	}
 	else if (hgdiobj->objectType == GDIOBJ_RECT)
 	{
 		hdc->selectedObject = hgdiobj;
@@ -457,10 +494,16 @@ HGDIOBJ SelectObject(HDC hdc, HGDIOBJ hgdiobj)
 
 int DeleteObject(HGDIOBJ hgdiobj)
 {
+	if (hgdiobj == NULL)
+		return 0;
+	
 	if (hgdiobj->objectType == GDIOBJ_BITMAP)
 	{
 		HBITMAP hBitmap = (HBITMAP) hgdiobj;
-		free(hBitmap->data);
+
+		if (hBitmap->data != NULL)
+			free(hBitmap->data);
+		
 		free(hBitmap);
 	}
 	else if (hgdiobj->objectType == GDIOBJ_PEN)
@@ -473,10 +516,20 @@ int DeleteObject(HGDIOBJ hgdiobj)
 		HBRUSH hBrush = (HBRUSH) hgdiobj;
 		free(hBrush);
 	}
+	else if (hgdiobj->objectType == GDIOBJ_PALETTE)
+	{
+		HPALETTE hPalette = (HPALETTE) hgdiobj;
+		free(hPalette->logicalPalette->entries);
+		free(hPalette->logicalPalette);
+		free(hPalette);
+	}
+	else if (hgdiobj->objectType == GDIOBJ_REGION)
+	{
+		free(hgdiobj);
+	}
 	else if (hgdiobj->objectType == GDIOBJ_RECT)
 	{
-		HRECT hRect = (HRECT) hgdiobj;
-		free(hRect);
+		free(hgdiobj);
 	}
 	else
 	{
