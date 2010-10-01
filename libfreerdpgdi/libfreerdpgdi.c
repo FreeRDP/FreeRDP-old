@@ -542,8 +542,15 @@ int DeleteObject(HGDIOBJ hgdiobj)
 	else if (hgdiobj->objectType == GDIOBJ_PALETTE)
 	{
 		HPALETTE hPalette = (HPALETTE) hgdiobj;
-		free(hPalette->logicalPalette->entries);
-		free(hPalette->logicalPalette);
+
+		if (hPalette->logicalPalette != NULL)
+		{
+			if (hPalette->logicalPalette->entries != NULL)
+				free(hPalette->logicalPalette->entries);
+
+			free(hPalette->logicalPalette);
+		}
+		
 		free(hPalette);
 	}
 	else if (hgdiobj->objectType == GDIOBJ_REGION)

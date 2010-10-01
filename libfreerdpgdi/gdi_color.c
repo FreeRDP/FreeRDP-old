@@ -29,53 +29,11 @@
 #include "gdi_window.h"
 #include "libfreerdpgdi.h"
 
-#define SPLIT32BGR(_alpha, _red, _green, _blue, _pixel) \
-  _red = _pixel & 0xff; \
-  _green = (_pixel & 0xff00) >> 8; \
-  _blue = (_pixel & 0xff0000) >> 16; \
-  _alpha = (_pixel & 0xff000000) >> 24;
-
-#define SPLIT24BGR(_red, _green, _blue, _pixel) \
-  _red = _pixel & 0xff; \
-  _green = (_pixel & 0xff00) >> 8; \
-  _blue = (_pixel & 0xff0000) >> 16;
-
-#define SPLIT24RGB(_red, _green, _blue, _pixel) \
-  _blue  = _pixel & 0xff; \
-  _green = (_pixel & 0xff00) >> 8; \
-  _red   = (_pixel & 0xff0000) >> 16;
-
-#define SPLIT16RGB(_red, _green, _blue, _pixel) \
-  _red = ((_pixel >> 8) & 0xf8) | ((_pixel >> 13) & 0x7); \
-  _green = ((_pixel >> 3) & 0xfc) | ((_pixel >> 9) & 0x3); \
-  _blue = ((_pixel << 3) & 0xf8) | ((_pixel >> 2) & 0x7);
-
-#define SPLIT15RGB(_red, _green, _blue, _pixel) \
-  _red = ((_pixel >> 7) & 0xf8) | ((_pixel >> 12) & 0x7); \
-  _green = ((_pixel >> 2) & 0xf8) | ((_pixel >> 8) & 0x7); \
-  _blue = ((_pixel << 3) & 0xf8) | ((_pixel >> 2) & 0x7);
-
-#define MAKE32RGB(_alpha, _red, _green, _blue) \
-  (_alpha << 24) | (_red << 16) | (_green << 8) | _blue;
-
-#define MAKE24RGB(_red, _green, _blue) \
-  (_red << 16) | (_green << 8) | _blue;
-
-#define MAKE15RGB(_red, _green, _blue) \
-  (((_red & 0xff) >> 3) << 10) | \
-  (((_green & 0xff) >> 3) <<  5) | \
-  (((_blue & 0xff) >> 3) <<  0)
-
-#define MAKE16RGB(_red, _green, _blue) \
-  (((_red & 0xff) >> 3) << 11) | \
-  (((_green & 0xff) >> 2) <<  5) | \
-  (((_blue & 0xff) >> 3) <<  0)
-
 unsigned int
 gdi_make_colorref(PIXEL *pixel)
 {
 	unsigned int colorref = 0;
-	colorref = MAKE24RGB(pixel->red, pixel->green, pixel->blue);
+	colorref = RGB(pixel->red, pixel->green, pixel->blue);
 	return colorref;
 }
 
@@ -83,7 +41,7 @@ void
 gdi_split_colorref(unsigned int colorref, PIXEL *pixel)
 {
 	pixel->alpha = 0;
-	SPLIT24BGR(pixel->red, pixel->green, pixel->blue, colorref);
+	GetRGB(pixel->red, pixel->green, pixel->blue, colorref);
 }
 
 void
@@ -97,16 +55,16 @@ gdi_color_convert(PIXEL *pixel, int color, int bpp, HPALETTE palette)
 	switch (bpp)
 	{
 		case 32:
-			SPLIT32BGR(pixel->alpha, pixel->red, pixel->green, pixel->blue, color);
+			GetABGR32(pixel->alpha, pixel->red, pixel->green, pixel->blue, color);
 			break;
 		case 24:
-			SPLIT24BGR(pixel->red, pixel->green, pixel->blue, color);
+			GetBGR24(pixel->red, pixel->green, pixel->blue, color);
 			break;
 		case 16:
-			SPLIT16RGB(pixel->red, pixel->green, pixel->blue, color);
+			GetBGR16(pixel->red, pixel->green, pixel->blue, color);
 			break;
 		case 15:
-			SPLIT15RGB(pixel->red, pixel->green, pixel->blue, color);
+			GetBGR15(pixel->red, pixel->green, pixel->blue, color);
 			break;
 		case 8:
 			color &= 0xFF;
@@ -149,7 +107,7 @@ gdi_image_convert(char* srcData, int width, int height, int srcBpp, int dstBpp, 
 			blue = *(src8++);
 			green = *(src8++);
 			red = *(src8++);
-			pixel = MAKE24RGB(red, green, blue);
+			pixel = RGB24(red, green, blue);
 			*dst32 = pixel;
 			dst32++;
 		}
@@ -164,8 +122,8 @@ gdi_image_convert(char* srcData, int width, int height, int srcBpp, int dstBpp, 
 		{
 			pixel = *src16;
 			src16++;
-			SPLIT16RGB(red, green, blue, pixel);
-			pixel = MAKE24RGB(red, green, blue);
+			GetBGR16(red, green, blue, pixel);
+			pixel = RGB32(red, green, blue);
 			*dst32 = pixel;
 			dst32++;
 		}
@@ -180,8 +138,8 @@ gdi_image_convert(char* srcData, int width, int height, int srcBpp, int dstBpp, 
 		{
 			pixel = *src16;
 			src16++;
-			SPLIT15RGB(red, green, blue, pixel);
-			pixel = MAKE24RGB(red, green, blue);
+			GetRGB15(red, green, blue, pixel);
+			pixel = BGR24(red, green, blue);
 			*dst32 = pixel;
 			dst32++;
 		}
@@ -196,8 +154,8 @@ gdi_image_convert(char* srcData, int width, int height, int srcBpp, int dstBpp, 
 		{
 			pixel = *src16;
 			src16++;
-			SPLIT15RGB(red, green, blue, pixel);
-			pixel = MAKE16RGB(red, green, blue);
+			GetRGB15(red, green, blue, pixel);
+			pixel = RGB16(red, green, blue);
 			*dst16 = pixel;
 			dst16++;
 		}
@@ -215,7 +173,7 @@ gdi_image_convert(char* srcData, int width, int height, int srcBpp, int dstBpp, 
 			red = palette->logicalPalette->entries[pixel].red;
 			green = palette->logicalPalette->entries[pixel].green;
 			blue = palette->logicalPalette->entries[pixel].blue;
-			pixel = MAKE16RGB(red, green, blue);
+			pixel = RGB16(red, green, blue);
 			*dst16 = pixel;
 			dst16++;
 		}
@@ -233,7 +191,7 @@ gdi_image_convert(char* srcData, int width, int height, int srcBpp, int dstBpp, 
 			red = palette->logicalPalette->entries[pixel].red;
 			green = palette->logicalPalette->entries[pixel].green;
 			blue = palette->logicalPalette->entries[pixel].blue;
-			pixel = MAKE15RGB(red, green, blue);
+			pixel = RGB15(red, green, blue);
 			*dst16 = pixel;
 			dst16++;
 		}
