@@ -301,32 +301,51 @@ gdi_rop3_code(unsigned char code)
 int
 gdi_clip_coords(GDI *gdi, int *x, int *y, int *w, int *h, int *srcx, int *srcy)
 {
-	int dx;
-	int dy;
-
-	dx = (gdi->clip->x > *x) ? (gdi->clip->x - *x) : 0;
-	dy = (gdi->clip->y > *y) ? (gdi->clip->y - *y) : 0;
-
-	if (*x + *w > gdi->clip->x + gdi->clip->w)
-		*w = (*w - ((*x + *w) - (gdi->clip->x + gdi->clip->w)));
-	if (*y + *h > gdi->clip->y + gdi->clip->h)
-		*h = (*h - ((*y + *h) - (gdi->clip->y + gdi->clip->h)));
-
-	*w = *w - dx;
-	*h = *h - dy;
-
-	if (*w <= 0)
+	/* nothing is clipped if the clipping region is null */
+	if (gdi->clip->null)
 		return 0;
-	if (*h <= 0)
+	
+	/* cases where everything is clipped (all coordinates outside of clipping region) */
+	if ((*x + *w <= gdi->clip->x) || (*x >= gdi->clip->x + gdi->clip->w) ||
+	    (*y + *h <= gdi->clip->y) || (*y >= gdi->clip->y + gdi->clip->h))
+	{
+		*x = 0;
+		*y = 0;
+		*w = 0;
+		*h = 0;
+		return 1;
+	}
+	
+	if (*x < gdi->clip->x && *x + *w < gdi->clip->x + gdi->clip->w)
+	{
+		/* left is outside, right is inside */
+		*w -= gdi->clip->x - *x;
+		*x = gdi->clip->x;
+	}
+	else if (*x > gdi->clip->x && *x + *w > gdi->clip->x + gdi->clip->w)
+	{
+		/* left is inside, right is outside */
+		*w -= (*x + *w) - (gdi->clip->x + gdi->clip->w);
+	}
+
+	if (*y < gdi->clip->x && *y + *h < gdi->clip->x + gdi->clip->w)
+	{
+		/* top is outside, bottom is inside */
+		*h -= gdi->clip->x - *y;
+		*y = gdi->clip->x;
+	}
+	else if (*y > gdi->clip->x && *y + *h > gdi->clip->x + gdi->clip->w)
+	{
+		/* top is inside, bottom is outside */
+		*h -= (*y + *h) - (gdi->clip->x + gdi->clip->w);
+	}
+	
+	/* cases where nothing is clipped (all coordinates inside of clipping region) */
+	if ((*x >= gdi->clip->x && *x + *w <= gdi->clip->x + gdi->clip->w) ||
+	    (*y >= gdi->clip->y && *y + *h <= gdi->clip->y + gdi->clip->h))
+	{
 		return 0;
-
-	*x = *x + dx;
-	*y = *y + dy;
-
-	if (srcx != 0)
-		*srcx = *srcx + dx;
-	if (srcy != 0)
-		*srcy = *srcy + dy;
+	}
 
 	return 1;
 }
@@ -346,6 +365,9 @@ gdi_invalidate_region(GDI *gdi, int x, int y, int w, int h)
 		gdi->invalid->null = 0;
 		return;
 	}
+
+	if (w * h == 0)
+		return;
 	
 	if (x < gdi->invalid->x)
 	{

@@ -5,7 +5,8 @@ bin_PROGRAMS = test_freerdp
 
 test_freerdp_SOURCES = \
 	test_freerdp.c \
-	test_libfreerdpgdi.c
+	test_libfreerdpgdi.c \
+	test_gdi_window.c
 
 test_freerdp_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include -I$(top_srcdir)/libfreerdpgdi
 

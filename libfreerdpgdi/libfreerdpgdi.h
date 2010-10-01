@@ -129,11 +129,11 @@ typedef RECT* HRECT;
 struct _RGN
 {
 	unsigned char objectType;
-	unsigned int x; /* left */
-	unsigned int y; /* top */
-	unsigned int w; /* width */
-	unsigned int h; /* height */
-	unsigned int null; /* null region */
+	int x; /* left */
+	int y; /* top */
+	int w; /* width */
+	int h; /* height */
+	int null; /* null region */
 };
 typedef struct _RGN RGN;
 typedef RGN* HRGN;
@@ -247,6 +247,8 @@ int SetROP2(HDC hdc, int fnDrawMode);
 int LineTo(HDC hdc, int nXEnd, int nYEnd);
 int MoveTo(HDC hdc, int X, int Y);
 int SetRect(HRECT rc, int xLeft, int yTop, int xRight, int yBottom);
+int SetRectRgn(HRGN hRgn, int nLeftRect, int nTopRect, int nRightRect, int nBottomRect);
+int EqualRgn(HRGN hSrcRgn1, HRGN hSrcRgn2);
 int CopyRect(HRECT dst, HRECT src);
 int PtInRect(HRECT rc, int x, int y);
 int FillRect(HDC hdc, HRECT rect, HBRUSH hbr);

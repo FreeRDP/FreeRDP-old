@@ -239,6 +239,29 @@ int SetRect(HRECT rc, int xLeft, int yTop, int xRight, int yBottom)
 	return 1;
 }
 
+int SetRectRgn(HRGN hRgn, int nLeftRect, int nTopRect, int nRightRect, int nBottomRect)
+{
+	hRgn->x = nLeftRect;
+	hRgn->y = nTopRect;
+	hRgn->w = nRightRect - nLeftRect;
+	hRgn->h = nBottomRect - nTopRect;
+	hRgn->null = 0;
+	return 0;
+}
+
+int EqualRgn(HRGN hSrcRgn1, HRGN hSrcRgn2)
+{
+	if ((hSrcRgn1->x == hSrcRgn2->x) &&
+	    (hSrcRgn1->y == hSrcRgn2->y) &&
+	    (hSrcRgn1->w == hSrcRgn2->w) &&
+	    (hSrcRgn1->h == hSrcRgn2->h))
+	{
+		return 1;
+	}
+	
+	return 0;
+}
+
 int CopyRect(HRECT dst, HRECT src)
 {
 	dst->left = src->left;
@@ -308,7 +331,7 @@ int SetBkMode(HDC hdc, int iBkMode)
 	if (iBkMode == OPAQUE || iBkMode == TRANSPARENT)
 		hdc->bkMode = iBkMode;
 	else
-		hdc->bkMode = OPAQUE; /* unknown background mode, default to sane value of OPAQUE */
+		hdc->bkMode = OPAQUE;
 	
 	return 0;
 }
