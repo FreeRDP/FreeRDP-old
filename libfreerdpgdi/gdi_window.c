@@ -439,6 +439,25 @@ gdi_get_bitmap_pointer(HDC hdcBmp, int x, int y)
 	}
 }
 
+char*
+gdi_get_brush_pointer(HDC hdcBrush, int x, int y)
+{
+	char * p;
+	HBITMAP hBmpBrush = hdcBrush->brush->pattern;
+	
+	if (x >= 0 && y >= 0)
+	{
+		x = x % hBmpBrush->width;
+		y = y % hBmpBrush->height;
+		p = hBmpBrush->data + (y * hBmpBrush->scanline) + (x * hBmpBrush->bytesPerPixel);
+		return p;
+	}
+	else
+	{
+		return 0;
+	}
+}
+
 int
 gdi_is_mono_pixel_set(char* data, int x, int y, int width)
 {
@@ -622,7 +641,7 @@ gdi_ui_draw_glyph(struct rdp_inst * inst, int x, int y, int cx, int cy, RD_HGLYP
 	
 	SelectObject(gdi->hdc_bmp, (HGDIOBJ) glyph);
 	SelectObject(gdi->hdc_drawing, (HGDIOBJ) gdi->drawing_surface);
-	BitBlt(gdi->hdc_drawing, x, y, cx, cy, gdi->hdc_bmp, 0, 0, 0x00E20746); /* DSPDxax */
+	BitBlt(gdi->hdc_drawing, x, y, cx, cy, gdi->hdc_bmp, 0, 0, DSPDxax);
 
 	gdi_invalidate_region(gdi, x, y, cx, cy);
 }
