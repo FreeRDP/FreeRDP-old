@@ -42,3 +42,5 @@ dfb/dfbfreerdp
 /win/wfreerdp/*.user
 /win/wfreerdp/Debug*
 /win/wfreerdp/Release*
+/cunit/test_freerdp
+

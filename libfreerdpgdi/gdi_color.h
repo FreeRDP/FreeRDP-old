@@ -29,6 +29,9 @@
 #define RGB(_r, _g, _b)  \
 	(_r << 16) | (_g << 8) | _b;
 
+#define PixelRGB(_pixel)  \
+	(_pixel.red << 16) | (_pixel.green << 8) | _pixel.blue
+
 #define GetRGB(_r, _g, _b, _p) \
 	_r = (_p & 0xFF0000) >> 16; \
 	_g = (_p & 0xFF00) >> 8; \
@@ -136,8 +139,6 @@
 	_g = (_p & 0xFF00) >> 8; \
 	_r = (_p & 0xFF);
 
-unsigned int gdi_make_colorref(PIXEL *pixel);
-void gdi_split_colorref(unsigned int colorref, PIXEL *pixel);
 void gdi_color_convert(PIXEL *pixel, int color, int bpp, HPALETTE palette);
 char* gdi_image_convert(char* srcData, int width, int height, int srcBpp, int dstBpp, HPALETTE palette);
 

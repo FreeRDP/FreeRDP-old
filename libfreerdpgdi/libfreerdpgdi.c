@@ -70,6 +70,48 @@ HBITMAP CreateCompatibleBitmap(HDC hdc, int nWidth, int nHeight)
 	return hBitmap;
 }
 
+int CompareBitmaps(HBITMAP hBmp1, HBITMAP hBmp2)
+{
+	int x, y;
+	char *p1, *p2;
+	
+	if (hBmp1->bitsPerPixel == hBmp2->bitsPerPixel)
+	{
+		if (hBmp1->width != hBmp2->width || hBmp1->height != hBmp2->height)
+			return 0;
+
+		p1 = hBmp1->data;
+		p2 = hBmp2->data;
+		
+		for (y = 0; y < hBmp1->height; y++)
+		{
+			for (x = 0; x < hBmp1->width; x++)
+			{
+				if (*p1 != *p2)
+					return 0;
+				p1++;
+				p2++;
+				
+				if (*p1 != *p2)
+					return 0;
+				p1++;
+				p2++;
+
+				if (*p1 != *p2)
+					return 0;
+				p1 += 2;
+				p2 += 2;
+			}
+		}
+	}
+	else
+	{
+		return 0;
+	}
+
+	return 1;
+}
+
 HPEN CreatePen(int fnPenStyle, int nWidth, int crColor)
 {
 	HPEN hPen = (HPEN) malloc(sizeof(PEN));
@@ -338,7 +380,7 @@ int SetBkMode(HDC hdc, int iBkMode)
 
 int BitBlt(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc, int rop)
 {
-	int i;
+	int x, y;
 	char* srcp;
 	char* dstp;
 
@@ -346,17 +388,20 @@ int BitBlt(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdc
 	 	0x00CC0020	SRCCOPY
 		0x000C0324	SPna
 		0x00000042	BLACKNESS
+	 	0x00FF0062	WHITENESS
 		0x00E20746	DSPDxax
+	 	0x008800C6	SRCAND
+	 	0x00EE0086	SRCPAINT	
 	*/
 	
-	if (rop == SRCCOPY)
+	if (rop == SRCCOPY || rop == 0x000C0324) /* D = S */
 	{
 		HBITMAP hSrcBmp = (HBITMAP) hdcSrc->selectedObject;
 		srcp = gdi_get_bitmap_pointer(hdcSrc, nXSrc, nYSrc);
 		
-		for (i = 0; i < nHeight; i++)
+		for (y = 0; y < nHeight; y++)
 		{
-			dstp = gdi_get_bitmap_pointer(hdcDest, nXDest, nYDest + i);
+			dstp = gdi_get_bitmap_pointer(hdcDest, nXDest, nYDest + y);
 
 			if (dstp != 0)
 			{
@@ -365,51 +410,228 @@ int BitBlt(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdc
 			}
 		}				
 	}
-	else if (rop == 0x000C0324)
+	else if (rop == SRCAND) /* D = S & D */
 	{
-		printf("BitBlt: 0x000C0324 SPna\n");
-		/*HBITMAP hSrcBmp = (HBITMAP) hdcSrc->selectedObject;
+		srcp = gdi_get_bitmap_pointer(hdcSrc, nXSrc, nYSrc);
 		
-		srcp = (char *) (((unsigned int *) hSrcBmp->data) + nYSrc * hSrcBmp->width + nXSrc);
-		
-		for (i = 0; i < nHeight; i++)
+		for (y = 0; y < nHeight; y++)
 		{
-			dstp = gdi_get_bitmap_pointer(hdcDest, nXDest, nYDest + i);
+			dstp = gdi_get_bitmap_pointer(hdcDest, nXDest, nYDest + y);
 
 			if (dstp != 0)
 			{
-				gdi_copy_mem(dstp, srcp, nWidth * hdcDest->bytesPerPixel);
-				srcp += hSrcBmp->width * hdcDest->bytesPerPixel;
+				for (x = 0; x < nWidth; x++)
+				{
+					*dstp &= *srcp;
+					srcp++;
+					dstp++;
+					
+					*dstp &= *srcp;
+					srcp++;
+					dstp++;
+
+					*dstp &= *srcp;
+					srcp += 2;
+					dstp += 2;
+				}
 			}
-		}*/				
+		}
 	}
-	else if (rop == BLACKNESS)
+	else if (rop == SRCPAINT) /* D = S | D */
 	{
-		for (i = 0; i < nHeight; i++)
+		srcp = gdi_get_bitmap_pointer(hdcSrc, nXSrc, nYSrc);
+		
+		for (y = 0; y < nHeight; y++)
 		{
-			dstp = gdi_get_bitmap_pointer(hdcDest, nXDest, nYDest + i);
+			dstp = gdi_get_bitmap_pointer(hdcDest, nXDest, nYDest + y);
+
+			if (dstp != 0)
+			{
+				for (x = 0; x < nWidth; x++)
+				{
+					*dstp |= *srcp;
+					srcp++;
+					dstp++;
+					
+					*dstp |= *srcp;
+					srcp++;
+					dstp++;
+
+					*dstp |= *srcp;
+					srcp += 2;
+					dstp += 2;
+				}
+			}
+		}
+	}
+	else if (rop == SRCINVERT) /* D = S ^ D */
+	{
+		srcp = gdi_get_bitmap_pointer(hdcSrc, nXSrc, nYSrc);
+		
+		for (y = 0; y < nHeight; y++)
+		{
+			dstp = gdi_get_bitmap_pointer(hdcDest, nXDest, nYDest + y);
+
+			if (dstp != 0)
+			{
+				for (x = 0; x < nWidth; x++)
+				{
+					*dstp ^= *srcp;
+					srcp++;
+					dstp++;
+					
+					*dstp ^= *srcp;
+					srcp++;
+					dstp++;
+
+					*dstp ^= *srcp;
+					srcp += 2;
+					dstp += 2;
+				}
+			}
+		}
+	}
+	else if (rop == SRCERASE) /* D = S & !D */
+	{
+		srcp = gdi_get_bitmap_pointer(hdcSrc, nXSrc, nYSrc);
+		
+		for (y = 0; y < nHeight; y++)
+		{
+			dstp = gdi_get_bitmap_pointer(hdcDest, nXDest, nYDest + y);
+
+			if (dstp != 0)
+			{
+				for (x = 0; x < nWidth; x++)
+				{
+					*dstp = *srcp & ~(*dstp);
+					srcp++;
+					dstp++;
+					
+					*dstp = *srcp & ~(*dstp);
+					srcp++;
+					dstp++;
+
+					*dstp = *srcp & ~(*dstp);
+					srcp += 2;
+					dstp += 2;
+				}
+			}
+		}
+	}
+	else if (rop == NOTSRCCOPY) /* D = !S */
+	{
+		srcp = gdi_get_bitmap_pointer(hdcSrc, nXSrc, nYSrc);
+		
+		for (y = 0; y < nHeight; y++)
+		{
+			dstp = gdi_get_bitmap_pointer(hdcDest, nXDest, nYDest + y);
+
+			if (dstp != 0)
+			{
+				for (x = 0; x < nWidth; x++)
+				{
+					*dstp = ~(*srcp);
+					srcp++;
+					dstp++;
+					
+					*dstp = ~(*srcp);
+					srcp++;
+					dstp++;
+
+					*dstp = ~(*srcp);
+					srcp += 2;
+					dstp += 2;
+				}
+			}
+		}
+	}
+	else if (rop == NOTSRCERASE) /* D = !S & !D */
+	{
+		srcp = gdi_get_bitmap_pointer(hdcSrc, nXSrc, nYSrc);
+		
+		for (y = 0; y < nHeight; y++)
+		{
+			dstp = gdi_get_bitmap_pointer(hdcDest, nXDest, nYDest + y);
+
+			if (dstp != 0)
+			{
+				for (x = 0; x < nWidth; x++)
+				{
+					*dstp = ~(*srcp) & ~(*dstp);
+					srcp++;
+					dstp++;
+					
+					*dstp = ~(*srcp) & ~(*dstp);
+					srcp++;
+					dstp++;
+
+					*dstp = ~(*srcp) & ~(*dstp);
+					srcp += 2;
+					dstp += 2;
+				}
+			}
+		}
+	}
+	else if (rop == DSTINVERT) /* D = !D */
+	{
+		srcp = gdi_get_bitmap_pointer(hdcSrc, nXSrc, nYSrc);
+		
+		for (y = 0; y < nHeight; y++)
+		{
+			dstp = gdi_get_bitmap_pointer(hdcDest, nXDest, nYDest + y);
+
+			if (dstp != 0)
+			{
+				for (x = 0; x < nWidth; x++)
+				{
+					*dstp = ~(*dstp);
+					srcp++;
+					dstp++;
+					
+					*dstp = ~(*dstp);
+					srcp++;
+					dstp++;
+
+					*dstp = ~(*dstp);
+					srcp += 2;
+					dstp += 2;
+				}
+			}
+		}
+	}
+	else if (rop == BLACKNESS) /* D = BLACK */
+	{
+		for (y = 0; y < nHeight; y++)
+		{
+			dstp = gdi_get_bitmap_pointer(hdcDest, nXDest, nYDest + y);
 
 			if (dstp != 0)
 				memset(dstp, 0, nWidth * hdcDest->bytesPerPixel);
 		}
 	}
+	else if (rop == WHITENESS) /* D = WHITE */
+	{
+		for (y = 0; y < nHeight; y++)
+		{
+			dstp = gdi_get_bitmap_pointer(hdcDest, nXDest, nYDest + y);
+
+			if (dstp != 0)
+				memset(dstp, 0xFF, nWidth * hdcDest->bytesPerPixel);
+		}
+	}
 	else if (rop == 0x00E20746)
 	{
 		/* DSPDxax, used to draw glyphs */
-		
-		int i;
-		int j;
-
 		HBITMAP hSrcBmp = (HBITMAP) hdcSrc->selectedObject;
 		srcp = (char *) (((unsigned int *) hSrcBmp->data) + nYSrc * hSrcBmp->width + nXSrc);
 
-		for (i = 0; i < nWidth; i++)
+		for (y = 0; y < nHeight; y++)
 		{
-			for (j = 0; j < nHeight; j++)
+			for (x = 0; x < nWidth; x++)
 			{
-				if (gdi_is_mono_pixel_set(srcp, i, j, hSrcBmp->width))
+				if (gdi_is_mono_pixel_set(srcp, x, y, hSrcBmp->width))
 				{
-					dstp = gdi_get_bitmap_pointer(hdcDest, nXDest + i, nYDest + j);
+					dstp = gdi_get_bitmap_pointer(hdcDest, nXDest + x, nYDest + y);
 
 					/* this assumes ARGB_8888 in the destination buffer */
 
@@ -430,8 +652,7 @@ int BitBlt(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdc
 
 int PatBlt(HDC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight, int rop)
 {
-	int i;
-	int j;
+	int x, y;
 	char* srcp;
 	char* dstp;
 
@@ -445,9 +666,9 @@ int PatBlt(HDC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight, int rop)
 		
 		srcp = (char *) hPattern->data;
 		
-		for (i = 0; i < nHeight; i++)
+		for (y = 0; y < nHeight; y++)
 		{
-			dstp = gdi_get_bitmap_pointer(hdc, nXLeft, nYLeft + i);
+			dstp = gdi_get_bitmap_pointer(hdc, nXLeft, nYLeft + y);
 
 			if (dstp != 0)
 			{
@@ -457,12 +678,12 @@ int PatBlt(HDC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight, int rop)
 		}
 	}
 	else if (rop == PATINVERT)
-	{		
-		for (i = 0; i < nWidth; i++)
+	{
+		for (y = 0; y < nHeight; y++)
 		{
-			for (j = 0; j < nHeight; j++)
+			for (x = 0; x < nWidth; x++)
 			{
-				dstp = gdi_get_bitmap_pointer(hdc, nXLeft + i, nYLeft + j);
+				dstp = gdi_get_bitmap_pointer(hdc, nXLeft + x, nYLeft + y);
 
 				/* this assumes ARGB_8888 in the destination buffer */
 

@@ -54,7 +54,7 @@
 #define SRCINVERT		0x00660046 /* D = S ^ D   */
 #define SRCERASE		0x00440328 /* D = S & !D  */
 #define NOTSRCCOPY		0x00330008 /* D = !S      */
-#define NOTSRCERASE		0x001100A6 /* D = !S & !D */
+#define NOTSRCERASE		0x001100A6 /* D = !S & !D */		
 #define MERGECOPY		0x00C000CA /* D = S & P   */
 #define MERGEPAINT		0x00BB0226 /* D = !S | D  */
 #define PATCOPY			0x00F00021 /* D = P       */
@@ -63,6 +63,11 @@
 #define DSTINVERT		0x00550009 /* D = !D      */
 #define BLACKNESS		0x00000042 /* D = BLACK   */
 #define WHITENESS		0x00FF0062 /* D = WHITE   */
+
+/* ROP3 Dependency Checks */
+#define ROP3_NO_DST(_rop3) ((_rop3 & 0xAA) >> 1) == _rop3 & 0x55)
+#define ROP3_NO_SRC(_rop3) ((_rop3 & 0xCC) >> 2) == _rop3 & 0x33)
+#define ROP3_NO_PAT(_rop3) ((_rop3 & 0xF0) >> 4) == _rop3 & 0x0F)
 
 /* Brush Styles */
 #define BS_SOLID		0x00
@@ -238,6 +243,7 @@ HDC GetDC();
 HDC CreateCompatibleDC(HDC hdc);
 HBITMAP CreateBitmap(int nWidth, int nHeight, int cBitsPerPixel, char* data);
 HBITMAP CreateCompatibleBitmap(HDC hdc, int nWidth, int nHeight);
+int CompareBitmaps(HBITMAP hBmp1, HBITMAP hBmp2);
 HPEN CreatePen(int fnPenStyle, int nWidth, int crColor);
 HPALETTE CreatePalette(LOGPALETTE *lplgpl);
 HBRUSH CreateSolidBrush(COLORREF crColor);

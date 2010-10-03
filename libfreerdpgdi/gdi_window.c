@@ -319,6 +319,10 @@ gdi_clip_coords(GDI *gdi, int *x, int *y, int *w, int *h, int *srcx, int *srcy)
 	if (*x < gdi->clip->x && *x + *w < gdi->clip->x + gdi->clip->w)
 	{
 		/* left is outside, right is inside */
+
+		if (srcx != NULL)
+			*srcx += gdi->clip->x - *x;
+		
 		*w -= gdi->clip->x - *x;
 		*x = gdi->clip->x;
 	}
@@ -328,16 +332,20 @@ gdi_clip_coords(GDI *gdi, int *x, int *y, int *w, int *h, int *srcx, int *srcy)
 		*w -= (*x + *w) - (gdi->clip->x + gdi->clip->w);
 	}
 
-	if (*y < gdi->clip->x && *y + *h < gdi->clip->x + gdi->clip->w)
+	if (*y < gdi->clip->y && *y + *h < gdi->clip->y + gdi->clip->h)
 	{
 		/* top is outside, bottom is inside */
-		*h -= gdi->clip->x - *y;
-		*y = gdi->clip->x;
+
+		if (srcy != NULL)
+			*srcy += gdi->clip->y - *y;
+		
+		*h -= gdi->clip->y - *y;
+		*y = gdi->clip->y;
 	}
-	else if (*y > gdi->clip->x && *y + *h > gdi->clip->x + gdi->clip->w)
+	else if (*y > gdi->clip->y && *y + *h > gdi->clip->y + gdi->clip->h)
 	{
 		/* top is inside, bottom is outside */
-		*h -= (*y + *h) - (gdi->clip->x + gdi->clip->w);
+		*h -= (*y + *h) - (gdi->clip->y + gdi->clip->h);
 	}
 	
 	/* cases where nothing is clipped (all coordinates inside of clipping region) */
@@ -540,7 +548,7 @@ gdi_ui_line(struct rdp_inst * inst, uint8 opcode, int startx, int starty, int en
 	
 	gdi_color_convert(&(gdi->pixel), pen->color, gdi->srcBpp, gdi->palette);
 	
-	hPen = CreatePen(pen->style, pen->width, (COLORREF) gdi_make_colorref(&(gdi->pixel)));
+	hPen = CreatePen(pen->style, pen->width, (COLORREF) PixelRGB(gdi->pixel));
 	SelectObject(gdi->hdc_drawing, (HGDIOBJ) hPen);
 	SetROP2(gdi->hdc_drawing, opcode + 1);
 
@@ -570,7 +578,7 @@ gdi_ui_rect(struct rdp_inst * inst, int x, int y, int cx, int cy, int color)
 	gdi_clip_coords(gdi, &x, &y, &cx, &cy, 0, 0);
 	
 	gdi_color_convert(&(gdi->pixel), color, gdi->srcBpp, gdi->palette);
-	hBrush = CreateSolidBrush((COLORREF) gdi_make_colorref(&(gdi->pixel)));
+	hBrush = CreateSolidBrush(PixelRGB(gdi->pixel));
 
 	SelectObject(gdi->hdc_drawing, (HGDIOBJ) gdi->drawing_surface);
 	FillRect(gdi->hdc_drawing, &rect, hBrush);
@@ -602,7 +610,7 @@ gdi_ui_start_draw_glyphs(struct rdp_inst * inst, int bgcolor, int fgcolor)
 	GDI *gdi = GET_GDI(inst);
 	
 	gdi_color_convert(&(gdi->pixel), fgcolor, gdi->srcBpp, gdi->palette);
-	gdi->textColor = SetTextColor(gdi->hdc_drawing, gdi_make_colorref(&(gdi->pixel)));
+	gdi->textColor = SetTextColor(gdi->hdc_drawing, PixelRGB(gdi->pixel));
 }
 
 static void
@@ -670,7 +678,7 @@ gdi_ui_patblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy
 	else if (brush->style == BS_SOLID)
 	{
 		gdi_color_convert(&(gdi->pixel), fgcolor, gdi->dstBpp, gdi->palette);
-		gdi->textColor = SetTextColor(gdi->hdc_drawing, gdi_make_colorref(&(gdi->pixel)));
+		gdi->textColor = SetTextColor(gdi->hdc_drawing, PixelRGB(gdi->pixel));
 		
 		PatBlt(gdi->hdc_drawing, x, y, cx, cy, gdi_rop3_code(opcode));
 

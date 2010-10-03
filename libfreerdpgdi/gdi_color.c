@@ -29,21 +29,6 @@
 #include "gdi_window.h"
 #include "libfreerdpgdi.h"
 
-unsigned int
-gdi_make_colorref(PIXEL *pixel)
-{
-	unsigned int colorref = 0;
-	colorref = RGB(pixel->red, pixel->green, pixel->blue);
-	return colorref;
-}
-
-void
-gdi_split_colorref(unsigned int colorref, PIXEL *pixel)
-{
-	pixel->alpha = 0;
-	GetRGB(pixel->red, pixel->green, pixel->blue, colorref);
-}
-
 void
 gdi_color_convert(PIXEL *pixel, int color, int bpp, HPALETTE palette)
 {
