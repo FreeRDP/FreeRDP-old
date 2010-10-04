@@ -688,22 +688,33 @@ static int BitBlt_DSPDxax(HDC hdcDest, int nXDest, int nYDest, int nWidth, int n
 	int x, y;
 	char *srcp;
 	char *dstp;
-	
-	/* DSPDxax, used to draw glyphs */
-	HBITMAP hSrcBmp = (HBITMAP) hdcSrc->selectedObject;
-	srcp = (char *) (((unsigned int *) hSrcBmp->data) + nYSrc * hSrcBmp->width + nXSrc);
+	char bitset;
+	char r, g, b;
+	HBITMAP hSrcBmp;
 
+	/* D = (S & P) | (~S & D)	*/
+	/* DSPDxax, used to draw glyphs */
+
+	GetRGB(r, g, b, hdcDest->textColor);
+	hSrcBmp = (HBITMAP) hdcSrc->selectedObject;
+	srcp = gdi_get_bitmap_pointer(hdcSrc, nXSrc, nYSrc);
+	
 	for (y = 0; y < nHeight; y++)
 	{
+		dstp = gdi_get_bitmap_pointer(hdcDest, nXDest, nYDest + y);
+		
 		for (x = 0; x < nWidth; x++)
 		{
-			if (gdi_is_mono_pixel_set(srcp, x, y, hSrcBmp->width))
-			{
-				dstp = gdi_get_bitmap_pointer(hdcDest, nXDest + x, nYDest + y);
+			bitset = gdi_is_mono_pixel_set(srcp, x, y, hSrcBmp->width) ? 0xFF : 0x00;
 
-				if (dstp != 0)
-					memset(dstp, hdcDest->textColor, hdcDest->bytesPerPixel);
-			}
+			*dstp = (bitset & r) | (~(bitset) & *dstp);
+			dstp++;
+					
+			*dstp = (bitset & g) | (~(bitset) & *dstp);
+			dstp++;
+
+			*dstp = (bitset & b) | (~(bitset) & *dstp);
+			dstp += 2;
 		}
 	}
 
