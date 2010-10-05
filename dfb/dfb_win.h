@@ -37,5 +37,7 @@ dfb_get_fds(rdpInst * inst, void ** read_fds, int * read_count,
 	void ** write_fds, int * write_count);
 int
 dfb_check_fds(rdpInst * inst);
+int
+dfb_err(rdpInst * inst);
 
 #endif /* __DFB_WIN_H */

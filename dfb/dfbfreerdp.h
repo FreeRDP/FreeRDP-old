@@ -34,13 +34,14 @@ struct dfb_info
 {
 	DFBResult err;
 	IDirectFB *dfb;
-	DFBEvent events[16];
+	DFBEvent event;
 	DFBSurfaceDescription dsc;
 	IDirectFBSurface *primary;
-	IDirectFBEventBuffer *event;
 	IDirectFBSurface *surface;
 	IDirectFBDisplayLayer *layer;
 	DFBRectangle update_rect;
+	IDirectFBEventBuffer *event_buffer;
+	int read_fds;
 };
 typedef struct dfb_info dfbInfo;
 

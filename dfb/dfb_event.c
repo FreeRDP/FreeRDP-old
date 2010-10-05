@@ -30,56 +30,56 @@
 int
 dfb_process_event(rdpInst * inst, DFBEvent * event)
 {
-	int cursor_x;
-	int cursor_y;
+	int mouse_x;
+	int mouse_y;
 	GDI *gdi = GET_GDI(inst);
 	DFBInputEvent * input_event;
-	
-	cursor_x = gdi->cursor_x;
-	cursor_y = gdi->cursor_y;
 
+	mouse_x = gdi->cursor_x;
+	mouse_y = gdi->cursor_y;
+	
 	if (event->clazz == DFEC_INPUT)
 	{
 		input_event = (DFBInputEvent *) event;
 
-		if (input_event->type == DIET_AXISMOTION)
+		switch (input_event->type)
 		{
-			if (input_event->flags & DIEF_AXISABS)
-			{
-				if (input_event->axis == DIAI_X)
-					cursor_x = input_event->axisabs;
-				else if (input_event->axis == DIAI_Y)
-					cursor_y = input_event->axisabs;
-			}
-			if (input_event->flags & DIEF_AXISREL)
-			{
-				if (input_event->axis == DIAI_X)
-					cursor_x += input_event->axisrel;
-				else if (input_event->axis == DIAI_Y)
-					cursor_y += input_event->axisrel;
-			}
+			case DIET_AXISMOTION:
 
-			inst->ui_move_pointer(inst, cursor_x, cursor_y);
-		}
-		else if (input_event->type == DIET_BUTTONPRESS)
-		{
-			printf("DIET_BUTTONPRESS\n");
-		}
-		else if (input_event->type == DIET_BUTTONRELEASE)
-		{
-			printf("DIET_BUTTONRELEASE\n");
-		}
-		else if (input_event->type == DIET_KEYPRESS)
-		{
-			printf("DIET_KEYPRESS\n");
-		}
-		else if (input_event->type == DIET_KEYRELEASE)
-		{
-			printf("DIET_KEYRELEASE\n");
+				if (input_event->flags & DIEF_AXISABS)
+				{
+					if (input_event->axis == DIAI_X)
+						mouse_x = input_event->axisabs;
+					else if (input_event->axis == DIAI_Y)
+						mouse_y = input_event->axisabs;
+				}
+				else if (input_event->flags & DIEF_AXISREL)
+				{
+					if (input_event->axis == DIAI_X)
+						mouse_x += input_event->axisrel;
+					else if (input_event->axis == DIAI_Y)
+						mouse_y += input_event->axisrel;
+				}
+
+				inst->ui_move_pointer(inst, mouse_x, mouse_y);
+				break;
+
+			case DIET_BUTTONPRESS:
+				break;
+
+			case DIET_BUTTONRELEASE:
+				break;
+
+			case DIET_KEYPRESS:
+				break;
+
+			case DIET_KEYRELEASE:
+				break;
+
+			case DIET_UNKNOWN:
+				break;
 		}
 	}
 
-	//inst->ui_rect(inst, cursor_x, cursor_y, 16, 16, 0xFFFFFFFF);
-	inst->rdp_send_input(inst, RDP_INPUT_MOUSE, PTRFLAGS_MOVE, cursor_x, cursor_y);
 	return 1;
 }

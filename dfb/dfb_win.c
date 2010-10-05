@@ -61,8 +61,8 @@ l_ui_end_update(struct rdp_inst * inst)
 	if (gdi->invalid->null)
 		return;
 
-	printf("ui_end_update: x:%d y:%d w:%d h:%d\n",
-	       gdi->invalid->x, gdi->invalid->y, gdi->invalid->w, gdi->invalid->h);
+	//printf("ui_end_update: x:%d y:%d w:%d h:%d\n",
+	  //     gdi->invalid->x, gdi->invalid->y, gdi->invalid->w, gdi->invalid->h);
 	
 	dfbi->update_rect.x = gdi->invalid->x;
 	dfbi->update_rect.y = gdi->invalid->y;
@@ -128,6 +128,10 @@ l_ui_move_pointer(struct rdp_inst * inst, int x, int y)
 
 	gdi->cursor_x = x;
 	gdi->cursor_y = y;
+
+	printf("ui_move_pointer: x:%d y:%d\n", x, y);
+	
+	inst->rdp_send_input(inst, RDP_INPUT_MOUSE, PTRFLAGS_MOVE, x, y);
 }
 
 static void
@@ -191,8 +195,9 @@ dfb_post_connect(rdpInst * inst)
 	dfbi->err = dfbi->dfb->CreateSurface(dfbi->dfb, &(dfbi->dsc), &(dfbi->primary));
 	dfbi->err = dfbi->primary->GetSize(dfbi->primary, &(gdi->width), &(gdi->height));
 	dfbi->dfb->SetVideoMode(dfbi->dfb, gdi->width, gdi->height, gdi->dstBpp);
-	dfbi->dfb->CreateInputEventBuffer(dfbi->dfb, DICAPS_ALL, 0, &(dfbi->event));
-
+	dfbi->dfb->CreateInputEventBuffer(dfbi->dfb, DICAPS_ALL, DFB_TRUE, &(dfbi->event_buffer));
+	dfbi->event_buffer->CreateFileDescriptor(dfbi->event_buffer, &(dfbi->read_fds));
+	
 	dfbi->dfb->GetDisplayLayer(dfbi->dfb, 0, &(dfbi->layer));
 	dfbi->layer->EnableCursor(dfbi->layer, 1);
 	
@@ -220,26 +225,27 @@ dfb_uninit(void * dfb_info)
 int
 dfb_get_fds(rdpInst * inst, void ** read_fds, int * read_count, void ** write_fds, int * write_count)
 {
-	dfbInfo * dfbi;
-	dfbi = GET_DFBI(inst);
-	dfbi->event->CreateFileDescriptor(dfbi->event, read_fds[*read_count]);
+	dfbInfo *dfbi = GET_DFBI(inst);
+
+	read_fds[*read_count] = (void *)(long)(dfbi->read_fds);
 	(*read_count)++;
+	
 	return 0;
 }
 
 int
 dfb_check_fds(rdpInst * inst)
 {
-	dfbInfo * dfbi;
-	dfbi = GET_DFBI(inst);
+	dfbInfo *dfbi = GET_DFBI(inst);
 
-	while (dfbi->event->HasEvent(dfbi->event) == DFB_OK)
+	while (dfbi->event_buffer->HasEvent(dfbi->event_buffer) == DFB_OK)
 	{
-		if (dfbi->event->GetEvent(dfbi->event, &(dfbi->events[0])) == 0)
+		if (dfbi->event_buffer->GetEvent(dfbi->event_buffer, &(dfbi->event)) == 0)
 		{
-			dfb_process_event(inst, &(dfbi->events[0]));
+			dfb_process_event(inst, &(dfbi->event));
 		}
 	}
-
+	
 	return 0;
 }
+
