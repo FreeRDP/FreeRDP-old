@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include <directfb.h>
 #include <freerdp/chanman.h>
 #include "libfreerdpgdi.h"
@@ -128,8 +129,6 @@ l_ui_move_pointer(struct rdp_inst * inst, int x, int y)
 
 	gdi->cursor_x = x;
 	gdi->cursor_y = y;
-
-	printf("ui_move_pointer: x:%d y:%d\n", x, y);
 	
 	inst->rdp_send_input(inst, RDP_INPUT_MOUSE, PTRFLAGS_MOVE, x, y);
 }
@@ -234,18 +233,16 @@ dfb_get_fds(rdpInst * inst, void ** read_fds, int * read_count, void ** write_fd
 }
 
 int
-dfb_check_fds(rdpInst * inst)
+dfb_check_fds(rdpInst * inst, fd_set *set)
 {
 	dfbInfo *dfbi = GET_DFBI(inst);
 
-	while (dfbi->event_buffer->HasEvent(dfbi->event_buffer) == DFB_OK)
-	{
-		if (dfbi->event_buffer->GetEvent(dfbi->event_buffer, &(dfbi->event)) == 0)
-		{
-			dfb_process_event(inst, &(dfbi->event));
-		}
-	}
+	if (!FD_ISSET(dfbi->read_fds, set))
+		return 0;
 	
+	if (read(dfbi->read_fds, &(dfbi->event), sizeof(dfbi->event)) > 0)
+		dfb_process_event(inst, &(dfbi->event));
+
 	return 0;
 }
 

@@ -415,7 +415,7 @@ run_dfbfreerdp(rdpSet * settings, rdpChanMan * chan_man)
 			break;
 		}
 		/* check DirectFB fds */
-		if (dfb_check_fds(inst) != 0)
+		if (dfb_check_fds(inst, &rfds) != 0)
 		{
 			printf("run_dfbfreerdp: dfb_check_fds failed\n");
 			break;

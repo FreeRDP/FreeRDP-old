@@ -361,6 +361,8 @@ typedef struct _virtualKey
 
 } virtualKey;
 
+#define KBD_EXT		0x0100
+
 virtualKey virtualKeyboard[256] =
 {
 	{ 0x00, 0, "" },
@@ -396,20 +398,20 @@ virtualKey virtualKeyboard[256] =
 	{ 0x00, 0, "VK_ACCEPT" },
 	{ 0x00, 0, "VK_MODECHANGE" },
 	{ 0x39, 0, "VK_SPACE" },
-	{ 0x49, KBD_FLAG_EXT, "VK_PRIOR" },
-	{ 0x51, KBD_FLAG_EXT, "VK_NEXT" },
-	{ 0x4F, KBD_FLAG_EXT, "VK_END" },
-	{ 0x47, KBD_FLAG_EXT, "VK_HOME" },
-	{ 0x4B, KBD_FLAG_EXT, "VK_LEFT" },
-	{ 0x48, KBD_FLAG_EXT, "VK_UP" },
-	{ 0x4D, KBD_FLAG_EXT, "VK_RIGHT" },
-	{ 0x50, KBD_FLAG_EXT, "VK_DOWN" },
+	{ 0x49, KBD_EXT, "VK_PRIOR" },
+	{ 0x51, KBD_EXT, "VK_NEXT" },
+	{ 0x4F, KBD_EXT, "VK_END" },
+	{ 0x47, KBD_EXT, "VK_HOME" },
+	{ 0x4B, KBD_EXT, "VK_LEFT" },
+	{ 0x48, KBD_EXT, "VK_UP" },
+	{ 0x4D, KBD_EXT, "VK_RIGHT" },
+	{ 0x50, KBD_EXT, "VK_DOWN" },
 	{ 0x00, 0, "VK_SELECT" },
-	{ 0x37, KBD_FLAG_EXT, "VK_PRINT" },
-	{ 0x37, KBD_FLAG_EXT, "VK_EXECUTE" },
-	{ 0x37, KBD_FLAG_EXT, "VK_SNAPSHOT" },
-	{ 0x52, KBD_FLAG_EXT, "VK_INSERT" },
-	{ 0x53, KBD_FLAG_EXT, "VK_DELETE" },
+	{ 0x37, KBD_EXT, "VK_PRINT" },
+	{ 0x37, KBD_EXT, "VK_EXECUTE" },
+	{ 0x37, KBD_EXT, "VK_SNAPSHOT" },
+	{ 0x52, KBD_EXT, "VK_INSERT" },
+	{ 0x53, KBD_EXT, "VK_DELETE" },
 	{ 0x63, 0, "VK_HELP" },
 	{ 0x0B, 0, "VK_KEY_0" },
 	{ 0x02, 0, "VK_KEY_1" },
@@ -454,9 +456,9 @@ virtualKey virtualKeyboard[256] =
 	{ 0x2D, 0, "VK_KEY_X" }, // X
 	{ 0x15, 0, "VK_KEY_Y" }, // Y
 	{ 0x2C, 0, "VK_KEY_Z" }, // Z
-	{ 0x5B, KBD_FLAG_EXT, "VK_LWIN" },
-	{ 0x5C, KBD_FLAG_EXT, "VK_RWIN" },
-	{ 0x5D, KBD_FLAG_EXT, "VK_APPS" },
+	{ 0x5B, KBD_EXT, "VK_LWIN" },
+	{ 0x5C, KBD_EXT, "VK_RWIN" },
+	{ 0x5D, KBD_EXT, "VK_APPS" },
 	{ 0x00, 0, "" },
 	{ 0x5F, 0, "VK_SLEEP" },
 	{ 0x52, 0, "VK_NUMPAD0" },
@@ -474,7 +476,7 @@ virtualKey virtualKeyboard[256] =
 	{ 0x00, 0, "VK_SEPARATOR" },
 	{ 0x4A, 0, "VK_SUBTRACT" },
 	{ 0x53, 0, "VK_DECIMAL" },
-	{ 0x35, KBD_FLAG_EXT, "VK_DIVIDE" },
+	{ 0x35, KBD_EXT, "VK_DIVIDE" },
 	{ 0x3B, 0, "VK_F1" },
 	{ 0x3C, 0, "VK_F2" },
 	{ 0x3D, 0, "VK_F3" },
@@ -526,9 +528,9 @@ virtualKey virtualKeyboard[256] =
 	{ 0x2A, 0, "VK_LSHIFT" },
 	{ 0x36, 0, "VK_RSHIFT" },
 	{ 0x1D, 0, "VK_LCONTROL" },
-	{ 0x1D, KBD_FLAG_EXT, "VK_RCONTROL" },
+	{ 0x1D, KBD_EXT, "VK_RCONTROL" },
 	{ 0x38, 0, "VK_LMENU" },
-	{ 0x38, KBD_FLAG_EXT, "VK_RMENU" },
+	{ 0x38, KBD_EXT, "VK_RMENU" },
 	{ 0x00, 0, "VK_BROWSER_BACK" },
 	{ 0x00, 0, "VK_BROWSER_FORWARD" },
 	{ 0x00, 0, "VK_BROWSER_REFRESH" },

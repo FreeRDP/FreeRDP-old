@@ -30,16 +30,19 @@
 int
 dfb_process_event(rdpInst * inst, DFBEvent * event)
 {
-	int mouse_x;
-	int mouse_y;
+	int keycode;
+	int cursor_x;
+	int cursor_y;
+	int device_flags;
 	GDI *gdi = GET_GDI(inst);
 	DFBInputEvent * input_event;
 
-	mouse_x = gdi->cursor_x;
-	mouse_y = gdi->cursor_y;
+	cursor_x = gdi->cursor_x;
+	cursor_y = gdi->cursor_y;
 	
 	if (event->clazz == DFEC_INPUT)
 	{
+		device_flags = 0;
 		input_event = (DFBInputEvent *) event;
 
 		switch (input_event->type)
@@ -49,31 +52,64 @@ dfb_process_event(rdpInst * inst, DFBEvent * event)
 				if (input_event->flags & DIEF_AXISABS)
 				{
 					if (input_event->axis == DIAI_X)
-						mouse_x = input_event->axisabs;
+						cursor_x = input_event->axisabs;
 					else if (input_event->axis == DIAI_Y)
-						mouse_y = input_event->axisabs;
+						cursor_y = input_event->axisabs;
 				}
 				else if (input_event->flags & DIEF_AXISREL)
 				{
 					if (input_event->axis == DIAI_X)
-						mouse_x += input_event->axisrel;
+						cursor_x += input_event->axisrel;
 					else if (input_event->axis == DIAI_Y)
-						mouse_y += input_event->axisrel;
+						cursor_y += input_event->axisrel;
 				}
 
-				inst->ui_move_pointer(inst, mouse_x, mouse_y);
+				if (cursor_x > (gdi->width - 1))
+					cursor_x = gdi->width - 1;
+
+				if (cursor_y > (gdi->height - 1))
+					cursor_y = gdi->height - 1;
+				
+				inst->ui_move_pointer(inst, cursor_x, cursor_y);
+				
 				break;
 
 			case DIET_BUTTONPRESS:
+
+				if (input_event->button == DIBI_LEFT)
+					device_flags = PTRFLAGS_DOWN | PTRFLAGS_BUTTON1;
+				else if (input_event->button == DIBI_RIGHT)
+					device_flags = PTRFLAGS_DOWN | PTRFLAGS_BUTTON2;
+				else if (input_event->button == DIBI_MIDDLE)
+					device_flags = PTRFLAGS_DOWN | PTRFLAGS_BUTTON3;
+
+				if (device_flags != 0)
+					inst->rdp_send_input(inst, RDP_INPUT_MOUSE, device_flags, cursor_x, cursor_y);
+				
 				break;
 
 			case DIET_BUTTONRELEASE:
-				break;
 
+				if (input_event->button == DIBI_LEFT)
+					device_flags = PTRFLAGS_BUTTON1;
+				else if (input_event->button == DIBI_RIGHT)
+					device_flags = PTRFLAGS_BUTTON2;
+				else if (input_event->button == DIBI_MIDDLE)
+					device_flags = PTRFLAGS_BUTTON3;
+
+				if (device_flags != 0)
+					inst->rdp_send_input(inst, RDP_INPUT_MOUSE, device_flags, cursor_x, cursor_y);
+				
+				break;
+				
 			case DIET_KEYPRESS:
+				keycode = input_event->key_id - DIKI_UNKNOWN;
+				dfb_kb_send_key(inst, RDP_KEYPRESS, keycode);
 				break;
 
 			case DIET_KEYRELEASE:
+				keycode = input_event->key_id - DIKI_UNKNOWN;
+				dfb_kb_send_key(inst, RDP_KEYPRESS, keycode);
 				break;
 
 			case DIET_UNKNOWN:
