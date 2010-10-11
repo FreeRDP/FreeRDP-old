@@ -434,20 +434,52 @@ static int BitBlt_SRCCOPY(HDC hdcDest, int nXDest, int nYDest, int nWidth, int n
 	char *srcp;
 	char *dstp;
 	
-	HBITMAP hSrcBmp = (HBITMAP) hdcSrc->selectedObject;
-	srcp = gdi_get_bitmap_pointer(hdcSrc, nXSrc, nYSrc);
-		
-	for (y = 0; y < nHeight; y++)
+	if (nYSrc < nYDest)
 	{
-		dstp = gdi_get_bitmap_pointer(hdcDest, nXDest, nYDest + y);
-
-		if (dstp != 0)
+		/* copy down (bottom to top) */
+		for (y = nHeight - 1; y >= 0; y--)
 		{
-			gdi_copy_mem(dstp, srcp, nWidth * hdcDest->bytesPerPixel);
-			srcp += hSrcBmp->width * hdcDest->bytesPerPixel;
+			srcp = gdi_get_bitmap_pointer(hdcSrc, nXSrc, nYSrc + y);
+			dstp = gdi_get_bitmap_pointer(hdcDest, nXDest, nYDest + y);
+
+			if (srcp != 0 && dstp != 0)
+			{
+				gdi_copy_mem(dstp, srcp, nWidth * hdcDest->bytesPerPixel);
+				srcp += nWidth * hdcDest->bytesPerPixel;
+			}
 		}
 	}
+	else if (nYSrc > nYDest || nXSrc > nXDest)
+	{
+		/* copy up or left (top top bottom) */
+		for (y = 0; y < nHeight; y++)
+		{
+			srcp = gdi_get_bitmap_pointer(hdcSrc, nXSrc, nYSrc + y);
+			dstp = gdi_get_bitmap_pointer(hdcDest, nXDest, nYDest + y);
 
+			if (srcp != 0 && dstp != 0)
+			{
+				gdi_copy_mem(dstp, srcp, nWidth * hdcDest->bytesPerPixel);
+				srcp += nWidth * hdcDest->bytesPerPixel;
+			}
+		}
+	}
+	else
+	{
+		/* copy straight right */
+		for (y = 0; y < nHeight; y++)
+		{
+			srcp = gdi_get_bitmap_pointer(hdcSrc, nXSrc, nYSrc + y);
+			dstp = gdi_get_bitmap_pointer(hdcDest, nXDest, nYDest + y);
+
+			if (srcp != 0 && dstp != 0)
+			{
+				gdi_copy_memb(dstp, srcp, nWidth * hdcDest->bytesPerPixel);
+				srcp += nWidth * hdcDest->bytesPerPixel;
+			}
+		}
+	}
+	
 	return 0;
 }
 
@@ -458,7 +490,7 @@ static int BitBlt_NOTSRCCOPY(HDC hdcDest, int nXDest, int nYDest, int nWidth, in
 	char *dstp;
 	
 	srcp = gdi_get_bitmap_pointer(hdcSrc, nXSrc, nYSrc);
-		
+	
 	for (y = 0; y < nHeight; y++)
 	{
 		dstp = gdi_get_bitmap_pointer(hdcDest, nXDest, nYDest + y);
@@ -684,7 +716,7 @@ static int BitBlt_SRCPAINT(HDC hdcDest, int nXDest, int nYDest, int nWidth, int 
 }
 
 static int BitBlt_DSPDxax(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc)
-{
+{	
 	int x, y;
 	char *srcp;
 	char *dstp;
@@ -935,7 +967,7 @@ static int BitBlt_PATPAINT(HDC hdcDest, int nXDest, int nYDest, int nWidth, int 
 }
 
 int BitBlt(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc, int rop)
-{
+{	
 	switch (rop)
 	{
 		case BLACKNESS:

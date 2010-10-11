@@ -109,7 +109,7 @@ dfb_process_event(rdpInst * inst, DFBEvent * event)
 
 			case DIET_KEYRELEASE:
 				keycode = input_event->key_id - DIKI_UNKNOWN;
-				dfb_kb_send_key(inst, RDP_KEYPRESS, keycode);
+				dfb_kb_send_key(inst, RDP_KEYRELEASE, keycode);
 				break;
 
 			case DIET_UNKNOWN:

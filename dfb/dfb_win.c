@@ -63,7 +63,7 @@ l_ui_end_update(struct rdp_inst * inst)
 		return;
 
 	//printf("ui_end_update: x:%d y:%d w:%d h:%d\n",
-	  //     gdi->invalid->x, gdi->invalid->y, gdi->invalid->w, gdi->invalid->h);
+	//       gdi->invalid->x, gdi->invalid->y, gdi->invalid->w, gdi->invalid->h);
 	
 	dfbi->update_rect.x = gdi->invalid->x;
 	dfbi->update_rect.y = gdi->invalid->y;

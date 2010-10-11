@@ -28,7 +28,8 @@
 unsigned int gdi_rop3_code(unsigned char code);
 int gdi_clip_coords(GDI *gdi, int *x, int *y, int *w, int *h, int *srcx, int *srcy);
 void gdi_invalidate_region(GDI *gdi, int x, int y, int w, int h);
-void gdi_copy_mem(char * d, char * s, int n);
+void gdi_copy_mem(char *d, char *s, int n);
+void gdi_copy_memb(char *d, char *s, int n);
 char* gdi_get_bitmap_pointer(HDC hdcBmp, int x, int y);
 char* gdi_get_brush_pointer(HDC hdcBrush, int x, int y);
 int gdi_is_mono_pixel_set(char* data, int x, int y, int width);
