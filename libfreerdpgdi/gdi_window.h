@@ -25,6 +25,35 @@
 #include <freerdp/freerdp.h>
 #include "libfreerdpgdi.h"
 
+struct _gdi_bitmap
+{
+	HDC hdc;
+	HBITMAP bitmap;
+	HBITMAP org_bitmap;
+};
+typedef struct _gdi_bitmap gdi_bitmap;
+
+struct _GDI
+{
+	int width;
+	int height;
+	int dstBpp;
+	int srcBpp;
+	int cursor_x;
+	int cursor_y;
+
+	HDC hdc;
+	HRGN clip;
+	HRGN invalid;
+	gdi_bitmap *primary;
+	gdi_bitmap *drawing;
+	char* primary_buffer;
+	COLORREF textColor;
+	HPALETTE palette;
+	PIXEL pixel;
+};
+typedef struct _GDI GDI;
+
 unsigned int gdi_rop3_code(unsigned char code);
 int gdi_clip_coords(GDI *gdi, int *x, int *y, int *w, int *h, int *srcx, int *srcy);
 void gdi_invalidate_region(GDI *gdi, int x, int y, int w, int h);

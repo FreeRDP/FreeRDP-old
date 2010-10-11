@@ -213,30 +213,6 @@ struct _DC
 typedef struct _DC DC;
 typedef DC* HDC;
 
-struct _GDI
-{
-	int width;
-	int height;
-	int dstBpp;
-	int srcBpp;
-	int cursor_x;
-	int cursor_y;
-	
-	HRGN clip;
-	HRGN invalid;
-	HDC hdc_primary;
-	HDC hdc_drawing;
-	char* primary_buffer;
-	HBITMAP primary_surface;
-	HBITMAP drawing_surface;
-	COLORREF textColor;
-	HPALETTE palette;
-	PIXEL pixel;
-	HBITMAP bmp;
-	HDC hdc_bmp;
-};
-typedef struct _GDI GDI;
-
 HDC GetDC();
 HDC CreateCompatibleDC(HDC hdc);
 HBITMAP CreateBitmap(int nWidth, int nHeight, int cBitsPerPixel, char* data);
@@ -272,6 +248,8 @@ int DeleteDC(HDC hdc);
 
 #define SET_GDI(_inst, _gdi) (_inst)->param2 = _gdi
 #define GET_GDI(_inst) ((GDI*) ((_inst)->param2))
+
+#define WITH_DEBUG_GDI
 
 #ifdef WITH_DEBUG_GDI
 #define DEBUG_GDI(fmt, ...) fprintf(stderr, "DBG (RDP5) %s (%d): " fmt, __FUNCTION__, __LINE__, ## __VA_ARGS__)

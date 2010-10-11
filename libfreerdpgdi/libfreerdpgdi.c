@@ -1074,8 +1074,11 @@ int PatBlt(HDC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight, int rop)
 
 HGDIOBJ SelectObject(HDC hdc, HGDIOBJ hgdiobj)
 {
+	if (hgdiobj == NULL)
+		return NULL;
+	
 	HGDIOBJ previousSelectedObject = hdc->selectedObject;
-
+	
 	if (hgdiobj->objectType == GDIOBJ_BITMAP)
 	{
 		hdc->selectedObject = hgdiobj;
