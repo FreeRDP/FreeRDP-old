@@ -720,7 +720,6 @@ static int BitBlt_DSPDxax(HDC hdcDest, int nXDest, int nYDest, int nWidth, int n
 	int x, y;
 	char *srcp;
 	char *dstp;
-	char bitset;
 	char r, g, b;
 	HBITMAP hSrcBmp;
 
@@ -739,22 +738,23 @@ static int BitBlt_DSPDxax(HDC hdcDest, int nXDest, int nYDest, int nWidth, int n
 	
 	for (y = 0; y < nHeight; y++)
 	{
-		srcp = hSrcBmp->data + y * nWidth;
+		srcp = gdi_get_bitmap_pointer(hdcSrc, nXSrc, nYSrc + y);
 		dstp = gdi_get_bitmap_pointer(hdcDest, nXDest, nYDest + y);
-		
-		for (x = 0; x < nWidth; x++)
-		{
-			bitset = *srcp;
-			
-			*dstp = (bitset & r) | (~(bitset) & *dstp);
-			dstp++;
-					
-			*dstp = (bitset & g) | (~(bitset) & *dstp);
-			dstp++;
 
-			*dstp = (bitset & b) | (~(bitset) & *dstp);
-			dstp += 2;
-			srcp++;
+		if (dstp != 0)
+		{
+			for (x = 0; x < nWidth; x++)
+			{
+					*dstp = (*srcp & g) | (~(*srcp) & *dstp);
+					dstp++;
+					
+					*dstp = (*srcp & g) | (~(*srcp) & *dstp);
+					dstp++;
+
+					*dstp = (*srcp & g) | (~(*srcp) & *dstp);
+					dstp += 2;
+					srcp++;
+			}
 		}
 	}
 

@@ -461,6 +461,7 @@ gdi_get_bitmap_pointer(HDC hdcBmp, int x, int y)
 	}
 	else
 	{
+		printf("gdi_get_bitmap_pointer: requesting invalid pointer: (%d,%d) in %dx%d\n", x, y, hBmp->width, hBmp->height);
 		return 0;
 	}
 }
@@ -579,6 +580,8 @@ gdi_ui_create_glyph(struct rdp_inst * inst, int width, int height, uint8 * data)
 	gdi_bmp->hdc->bitsPerPixel = 1;
 	glyph = gdi_glyph_convert(width, height, (char*) data);
 	gdi_bmp->bitmap = CreateBitmap(width, height, 1, glyph);
+	gdi_bmp->bitmap->bytesPerPixel = 1;
+	gdi_bmp->bitmap->bitsPerPixel = 1;
 	SelectObject(gdi_bmp->hdc, (HGDIOBJ) gdi_bmp->bitmap);
 	gdi_bmp->org_bitmap = NULL;
 
@@ -733,14 +736,12 @@ gdi_ui_end_draw_glyphs(struct rdp_inst * inst, int x, int y, int cx, int cy)
 static void
 gdi_ui_destblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy)
 {
-	return;
 	GDI *gdi = GET_GDI(inst);
 
 	DEBUG_GDI("ui_destblt: x: %d y: %d cx: %d cy: %d rop: 0x%X\n", x, y, cx, cy, rop3_code_table[opcode]);
 
 	gdi_clip_coords(gdi, &x, &y, &cx, &cy, 0, 0);
 
-	SelectObject(gdi->drawing->hdc, (HGDIOBJ) gdi->drawing);
 	BitBlt(gdi->drawing->hdc, x, y, cx, cy, NULL, 0, 0, gdi_rop3_code(opcode));
 	
 	gdi_invalidate_region(gdi, x, y, cx, cy);
@@ -749,13 +750,11 @@ gdi_ui_destblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int c
 static void
 gdi_ui_patblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy, RD_BRUSH * brush, int bgcolor, int fgcolor)
 {
-	return;
 	GDI *gdi = GET_GDI(inst);
 	
 	DEBUG_GDI("ui_patblt: x: %d y: %d cx: %d cy: %d rop: 0x%X\n", x, y, cx, cy, gdi_rop3_code(opcode));
 	
 	gdi_clip_coords(gdi, &x, &y, &cx, &cy, 0, 0);
-	SelectObject(gdi->drawing->hdc, (HGDIOBJ) gdi->drawing);
 	
 	if (brush->style == BS_PATTERN)
 	{
@@ -793,7 +792,6 @@ gdi_ui_patblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy
 static void
 gdi_ui_screenblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy, int srcx, int srcy)
 {
-	return;
 	GDI *gdi = GET_GDI(inst);
 	
 	DEBUG_GDI("gdi_ui_screenblt x:%d y:%d cx:%d cy:%d srcx:%d srcy:%d rop:0x%X\n",
@@ -801,7 +799,6 @@ gdi_ui_screenblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int
 
 	gdi_clip_coords(gdi, &x, &y, &cx, &cy, &srcx, &srcy);
 	
-	SelectObject(gdi->drawing->hdc, (HGDIOBJ) gdi->drawing);
 	BitBlt(gdi->drawing->hdc, x, y, cx, cy, gdi->primary->hdc, srcx, srcy, gdi_rop3_code(opcode));
 	
 	gdi_invalidate_region(gdi, x, y, cx, cy);
