@@ -185,3 +185,42 @@ gdi_image_convert(char* srcData, int width, int height, int srcBpp, int dstBpp, 
 
 	return srcData;
 }
+
+char*
+gdi_glyph_convert(int width, int height, char* data)
+{
+	int x, y;
+	char *srcp;
+	char *dstp;
+	char *dstData;
+	int scanline;
+	
+	/* 
+	 * converts a 1-bit-per-pixel glyph to a one-byte-per-pixel glyph:
+	 * this approach uses a little more memory, but provides faster
+	 * means of accessing individual pixels in blitting operations
+	 */
+
+	scanline = (width + 7) / 8;
+	dstData = (char*) malloc(width * height);
+	memset(dstData, 0, width * height);
+	dstp = dstData;
+	
+	for (y = 0; y < height; y++)
+	{
+		srcp = data + (y * scanline);
+		
+		for (x = 0; x < width; x++)
+		{
+			if (x + 1 % 8 == 0)
+				srcp++;
+
+			if ((*srcp & (0x80 >> x % 8)) != 0)
+				*dstp = 0xFF;
+
+			dstp++;
+		}
+	}
+	
+	return dstData;
+}

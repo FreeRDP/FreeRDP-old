@@ -567,9 +567,8 @@ gdi_ui_desktop_restore(struct rdp_inst * inst, int offset, int x, int y, int cx,
 static RD_HGLYPH
 gdi_ui_create_glyph(struct rdp_inst * inst, int width, int height, uint8 * data)
 {
-	return;
+	char* glyph;
 	gdi_bitmap *gdi_bmp;
-	GDI *gdi = GET_GDI(inst);
 
 	DEBUG_GDI("gdi_ui_create_glyph: width:%d height:%d\n", width, height);
 
@@ -578,7 +577,8 @@ gdi_ui_create_glyph(struct rdp_inst * inst, int width, int height, uint8 * data)
 	gdi_bmp->hdc = GetDC();
 	gdi_bmp->hdc->bytesPerPixel = 1;
 	gdi_bmp->hdc->bitsPerPixel = 1;
-	gdi_bmp->bitmap = CreateBitmap(width, height, 1, (char*) data);
+	glyph = gdi_glyph_convert(width, height, (char*) data);
+	gdi_bmp->bitmap = CreateBitmap(width, height, 1, glyph);
 	SelectObject(gdi_bmp->hdc, (HGDIOBJ) gdi_bmp->bitmap);
 	gdi_bmp->org_bitmap = NULL;
 
@@ -588,7 +588,6 @@ gdi_ui_create_glyph(struct rdp_inst * inst, int width, int height, uint8 * data)
 static void
 gdi_ui_destroy_glyph(struct rdp_inst * inst, RD_HGLYPH glyph)
 {
-	return;
 	gdi_bitmap_free((gdi_bitmap*) glyph);
 }
 
@@ -705,7 +704,6 @@ gdi_ui_ellipse(struct rdp_inst * inst, uint8 opcode, uint8 fillmode, int x, int 
 static void
 gdi_ui_start_draw_glyphs(struct rdp_inst * inst, int bgcolor, int fgcolor)
 {
-	return;
 	GDI *gdi = GET_GDI(inst);
 	gdi_color_convert(&(gdi->pixel), fgcolor, gdi->srcBpp, gdi->palette);
 	gdi->textColor = SetTextColor(gdi->drawing->hdc, PixelRGB(gdi->pixel));
@@ -714,7 +712,6 @@ gdi_ui_start_draw_glyphs(struct rdp_inst * inst, int bgcolor, int fgcolor)
 static void
 gdi_ui_draw_glyph(struct rdp_inst * inst, int x, int y, int cx, int cy, RD_HGLYPH glyph)
 {
-	return;
 	gdi_bitmap* gdi_bmp;
 	GDI *gdi = GET_GDI(inst);
 
@@ -729,7 +726,6 @@ gdi_ui_draw_glyph(struct rdp_inst * inst, int x, int y, int cx, int cy, RD_HGLYP
 static void
 gdi_ui_end_draw_glyphs(struct rdp_inst * inst, int x, int y, int cx, int cy)
 {
-	return;
 	GDI *gdi = GET_GDI(inst);
 	SetTextColor(gdi->drawing->hdc, gdi->textColor);
 }
