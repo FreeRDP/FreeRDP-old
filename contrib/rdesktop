@@ -76,6 +76,10 @@ while [ -n "$1" ]; do
 			disk|printer)
 			args="$args --plugin rdpdr --data ${1/=/:}"
 			;;
+			lptport)
+			cmd=${1/lptport/parallel}
+			args="$args --plugin rdpdr --data ${cmd/=/:}"
+			;;
 			clipboard)
 			case "${1/*:/}" in
 				off)
@@ -109,6 +113,7 @@ while [ -n "$1" ]; do
 		run_test "rdesktop -r sound:off" "xfreerdp"
 		run_test "rdesktop -r sound:remote" "xfreerdp --plugin rdpsnd"
 		run_test "rdesktop -r printer:mydeskjet=\"HP LaserJet IIIP\"" "xfreerdp --plugin rdpdr --data printer:mydeskjet:\"HP LaserJet IIIP\""
+		run_test "rdesktop -r lptport:LPT1=/dev/lp0" "xfreerdp --plugin rdpdr --data parallel:LPT1:/dev/lp0"
 		exit 0
 		;;
 		*)
