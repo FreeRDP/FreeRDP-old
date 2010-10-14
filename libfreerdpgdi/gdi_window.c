@@ -298,66 +298,6 @@ gdi_rop3_code(unsigned char code)
 	return rop3_code_table[code];
 }
 
-int
-gdi_clip_coords(GDI *gdi, int *x, int *y, int *w, int *h, int *srcx, int *srcy)
-{
-	/* nothing is clipped if the clipping region is null */
-	if (gdi->clip->null)
-		return 0;
-	
-	/* cases where everything is clipped (all coordinates outside of clipping region) */
-	if ((*x + *w <= gdi->clip->x) || (*x >= gdi->clip->x + gdi->clip->w) ||
-	    (*y + *h <= gdi->clip->y) || (*y >= gdi->clip->y + gdi->clip->h))
-	{
-		*x = 0;
-		*y = 0;
-		*w = 0;
-		*h = 0;
-		return 1;
-	}
-	
-	if (*x < gdi->clip->x && *x + *w < gdi->clip->x + gdi->clip->w)
-	{
-		/* left is outside, right is inside */
-
-		if (srcx != NULL)
-			*srcx += gdi->clip->x - *x;
-		
-		*w -= gdi->clip->x - *x;
-		*x = gdi->clip->x;
-	}
-	else if (*x > gdi->clip->x && *x + *w > gdi->clip->x + gdi->clip->w)
-	{
-		/* left is inside, right is outside */
-		*w -= (*x + *w) - (gdi->clip->x + gdi->clip->w);
-	}
-
-	if (*y < gdi->clip->y && *y + *h < gdi->clip->y + gdi->clip->h)
-	{
-		/* top is outside, bottom is inside */
-
-		if (srcy != NULL)
-			*srcy += gdi->clip->y - *y;
-		
-		*h -= gdi->clip->y - *y;
-		*y = gdi->clip->y;
-	}
-	else if (*y > gdi->clip->y && *y + *h > gdi->clip->y + gdi->clip->h)
-	{
-		/* top is inside, bottom is outside */
-		*h -= (*y + *h) - (gdi->clip->y + gdi->clip->h);
-	}
-	
-	/* cases where nothing is clipped (all coordinates inside of clipping region) */
-	if ((*x >= gdi->clip->x && *x + *w <= gdi->clip->x + gdi->clip->w) ||
-	    (*y >= gdi->clip->y && *y + *h <= gdi->clip->y + gdi->clip->h))
-	{
-		return 0;
-	}
-
-	return 1;
-}
-
 void
 gdi_invalidate_region(GDI *gdi, int x, int y, int w, int h)
 {
@@ -615,8 +555,6 @@ gdi_ui_paint_bitmap(struct rdp_inst * inst, int x, int y, int cx, int cy, int wi
 
 	DEBUG_GDI("ui_paint_bitmap: x:%d y:%d cx:%d cy:%d\n", x, y, cx, cy);
 
-	//gdi_clip_coords(gdi, &x, &y, &cx, &cy, 0, 0);
-
 	gdi_bmp = (gdi_bitmap*) inst->ui_create_bitmap(inst, width, height, data);
 	BitBlt(gdi->primary->hdc, x, y, cx, cy, gdi_bmp->hdc, 0, 0, SRCCOPY);
 	gdi_bitmap_free(gdi_bmp);
@@ -645,7 +583,6 @@ gdi_ui_line(struct rdp_inst * inst, uint8 opcode, int startx, int starty, int en
 	
 	cx = endx - startx;
 	cy = endy - starty;
-	//gdi_clip_coords(gdi, &startx, &starty, &cx, &cy, 0, 0);
 	endx = startx + cx;
 	endy = starty + cy;
 	
@@ -671,8 +608,6 @@ gdi_ui_rect(struct rdp_inst * inst, int x, int y, int cx, int cy, int color)
 	GDI *gdi = GET_GDI(inst);
 
 	DEBUG_GDI("ui_rect: x:%d y:%d cx:%d cy:%d\n", x, y, cx, cy);
-
-	gdi_clip_coords(gdi, &x, &y, &cx, &cy, 0, 0);
 	
 	rect.left = x;
 	rect.top = y;
@@ -718,8 +653,6 @@ gdi_ui_draw_glyph(struct rdp_inst * inst, int x, int y, int cx, int cy, RD_HGLYP
 	gdi_bitmap* gdi_bmp;
 	GDI *gdi = GET_GDI(inst);
 
-	gdi_clip_coords(gdi, &x, &y, &cx, &cy, 0, 0);
-
 	gdi_bmp = (gdi_bitmap*) glyph;
 	BitBlt(gdi->drawing->hdc, x, y, cx, cy, gdi_bmp->hdc, 0, 0, DSPDxax);
 
@@ -740,8 +673,6 @@ gdi_ui_destblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int c
 
 	DEBUG_GDI("ui_destblt: x: %d y: %d cx: %d cy: %d rop: 0x%X\n", x, y, cx, cy, rop3_code_table[opcode]);
 
-	gdi_clip_coords(gdi, &x, &y, &cx, &cy, 0, 0);
-
 	BitBlt(gdi->drawing->hdc, x, y, cx, cy, NULL, 0, 0, gdi_rop3_code(opcode));
 	
 	gdi_invalidate_region(gdi, x, y, cx, cy);
@@ -753,8 +684,6 @@ gdi_ui_patblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy
 	GDI *gdi = GET_GDI(inst);
 	
 	DEBUG_GDI("ui_patblt: x: %d y: %d cx: %d cy: %d rop: 0x%X\n", x, y, cx, cy, gdi_rop3_code(opcode));
-	
-	gdi_clip_coords(gdi, &x, &y, &cx, &cy, 0, 0);
 	
 	if (brush->style == BS_PATTERN)
 	{
@@ -796,10 +725,8 @@ gdi_ui_screenblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int
 	
 	DEBUG_GDI("gdi_ui_screenblt x:%d y:%d cx:%d cy:%d srcx:%d srcy:%d rop:0x%X\n",
 	          x, y, cx, cy, srcx, srcy, rop3_code_table[opcode]);
-
-	gdi_clip_coords(gdi, &x, &y, &cx, &cy, &srcx, &srcy);
 	
-	BitBlt(gdi->drawing->hdc, x, y, cx, cy, gdi->primary->hdc, srcx, srcy, gdi_rop3_code(opcode));
+	BitBlt(gdi->primary->hdc, x, y, cx, cy, gdi->primary->hdc, srcx, srcy, gdi_rop3_code(opcode));
 	
 	gdi_invalidate_region(gdi, x, y, cx, cy);
 }
@@ -809,8 +736,6 @@ gdi_ui_memblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy
 {
 	gdi_bitmap *gdi_bmp;
 	GDI *gdi = GET_GDI(inst);
-
-	gdi_clip_coords(gdi, &x, &y, &cx, &cy, &srcx, &srcy);
 
 	DEBUG_GDI("gdi_ui_memblt: x:%d y:%d cx:%d cy:%d srcx:%d, srcy:%d rop:0x%X\n",
 	          x, y, cx, cy, srcx, srcy, gdi_rop3_code(opcode));
@@ -871,23 +796,14 @@ static void
 gdi_ui_set_clipping_region(struct rdp_inst * inst, int x, int y, int cx, int cy)
 {
 	GDI *gdi = GET_GDI(inst);
-	
-	gdi->clip->x = x;
-	gdi->clip->y = y;
-	gdi->clip->w = cx;
-	gdi->clip->h = cy;
+	SetClipRgn(gdi->drawing->hdc, x, y, x + cx, y + cy);
 }
 
 static void
 gdi_ui_reset_clipping_region(struct rdp_inst * inst)
 {
 	GDI *gdi = GET_GDI(inst);
-
-	gdi->clip->x = 0;
-	gdi->clip->y = 0;
-	gdi->clip->w = gdi->width;
-	gdi->clip->h = gdi->height;
-	gdi->clip->null = 1;
+	SetNullClipRgn(gdi->drawing->hdc);
 }
 
 static RD_HBITMAP
@@ -1004,9 +920,6 @@ gdi_init(rdpInst * inst)
 	gdi->primary = gdi_bitmap_new(gdi, gdi->width, gdi->height, gdi->dstBpp, 0, NULL);
 	gdi->primary_buffer = gdi->primary->bitmap->data;
 	gdi->drawing = gdi->primary;
-	
-	gdi->clip = CreateRectRgn(0, 0, gdi->width, gdi->height);
-	gdi->clip->null = 1;
 	
 	gdi->invalid = CreateRectRgn(0, 0, 0, 0);
 	gdi->invalid->null = 1;

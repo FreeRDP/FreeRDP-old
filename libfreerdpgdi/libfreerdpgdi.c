@@ -35,6 +35,8 @@ HDC GetDC()
 	hDC->bytesPerPixel = 4;
 	hDC->bitsPerPixel = 32;
 	hDC->drawMode = R2_COPYPEN;
+	hDC->clip = CreateRectRgn(0, 0, 0, 0);
+	hDC->clip->null = 1;
 	return hDC;
 }
 
@@ -44,6 +46,8 @@ HDC CreateCompatibleDC(HDC hdc)
 	hDC->bytesPerPixel = hdc->bytesPerPixel;
 	hDC->bitsPerPixel = hdc->bitsPerPixel;
 	hDC->drawMode = hdc->drawMode;
+	hDC->clip = CreateRectRgn(0, 0, 0, 0);
+	hDC->clip->null = 1;
 	return hDC;
 }
 
@@ -296,6 +300,77 @@ int SetRectRgn(HRGN hRgn, int nLeftRect, int nTopRect, int nRightRect, int nBott
 	return 0;
 }
 
+int SetClipRgn(HDC hdc, int nLeftRect, int nTopRect, int nRightRect, int nBottomRect)
+{
+	return SetRectRgn(hdc->clip, nLeftRect, nTopRect, nRightRect, nBottomRect);
+}
+
+HRGN GetClipRgn(HDC hdc)
+{
+	return hdc->clip;
+}
+
+int SetNullClipRgn(HDC hdc)
+{
+	SetClipRgn(hdc, 0, 0, 0, 0);
+	hdc->clip->null = 1;
+	return 0;
+}
+
+int ClipCoords(HDC hdc, int *x, int *y, int *w, int *h)
+{
+	if (hdc == NULL)
+		return 0;
+	
+	/* nothing is clipped if the clipping region is null */
+	if (hdc->clip->null)
+		return 0;
+	
+	/* cases where everything is clipped (all coordinates outside of clipping region) */
+	if ((*x + *w <= hdc->clip->x) || (*x >= hdc->clip->x + hdc->clip->w) ||
+	    (*y + *h <= hdc->clip->y) || (*y >= hdc->clip->y + hdc->clip->h))
+	{
+		*x = 0;
+		*y = 0;
+		*w = 0;
+		*h = 0;
+		return 1;
+	}
+	
+	if (*x < hdc->clip->x && *x + *w < hdc->clip->x + hdc->clip->w)
+	{
+		/* left is outside, right is inside */		
+		*w -= hdc->clip->x - *x;
+		*x = hdc->clip->x;
+	}
+	else if (*x > hdc->clip->x && *x + *w > hdc->clip->x + hdc->clip->w)
+	{
+		/* left is inside, right is outside */
+		*w -= (*x + *w) - (hdc->clip->x + hdc->clip->w);
+	}
+
+	if (*y < hdc->clip->y && *y + *h < hdc->clip->y + hdc->clip->h)
+	{
+		/* top is outside, bottom is inside */
+		*h -= hdc->clip->y - *y;
+		*y = hdc->clip->y;
+	}
+	else if (*y > hdc->clip->y && *y + *h > hdc->clip->y + hdc->clip->h)
+	{
+		/* top is inside, bottom is outside */
+		*h -= (*y + *h) - (hdc->clip->y + hdc->clip->h);
+	}
+	
+	/* cases where nothing is clipped (all coordinates inside of clipping region) */
+	if ((*x >= hdc->clip->x && *x + *w <= hdc->clip->x + hdc->clip->w) ||
+	    (*y >= hdc->clip->y && *y + *h <= hdc->clip->y + hdc->clip->h))
+	{
+		return 0;
+	}
+
+	return 1;
+}
+
 int EqualRgn(HRGN hSrcRgn1, HRGN hSrcRgn2)
 {
 	if ((hSrcRgn1->x == hSrcRgn2->x) &&
@@ -445,7 +520,7 @@ static int BitBlt_SRCCOPY(HDC hdcDest, int nXDest, int nYDest, int nWidth, int n
 			if (srcp != 0 && dstp != 0)
 			{
 				gdi_copy_mem(dstp, srcp, nWidth * hdcDest->bytesPerPixel);
-				srcp += nWidth * hdcDest->bytesPerPixel;
+				//srcp += nWidth * hdcDest->bytesPerPixel;
 			}
 		}
 	}
@@ -460,7 +535,7 @@ static int BitBlt_SRCCOPY(HDC hdcDest, int nXDest, int nYDest, int nWidth, int n
 			if (srcp != 0 && dstp != 0)
 			{
 				gdi_copy_mem(dstp, srcp, nWidth * hdcDest->bytesPerPixel);
-				srcp += nWidth * hdcDest->bytesPerPixel;
+				//srcp += nWidth * hdcDest->bytesPerPixel;
 			}
 		}
 	}
@@ -475,7 +550,7 @@ static int BitBlt_SRCCOPY(HDC hdcDest, int nXDest, int nYDest, int nWidth, int n
 			if (srcp != 0 && dstp != 0)
 			{
 				gdi_copy_memb(dstp, srcp, nWidth * hdcDest->bytesPerPixel);
-				srcp += nWidth * hdcDest->bytesPerPixel;
+				//srcp += nWidth * hdcDest->bytesPerPixel;
 			}
 		}
 	}
@@ -975,7 +1050,10 @@ static int BitBlt_PATPAINT(HDC hdcDest, int nXDest, int nYDest, int nWidth, int 
 }
 
 int BitBlt(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc, int rop)
-{	
+{
+	ClipCoords(hdcDest, &nXDest, &nYDest, &nWidth, &nHeight);
+	ClipCoords(hdcSrc, &nXSrc, &nYSrc, &nWidth, &nHeight);
+	
 	switch (rop)
 	{
 		case BLACKNESS:

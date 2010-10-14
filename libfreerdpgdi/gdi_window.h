@@ -43,7 +43,6 @@ struct _GDI
 	int cursor_y;
 
 	HDC hdc;
-	HRGN clip;
 	HRGN invalid;
 	gdi_bitmap *primary;
 	gdi_bitmap *drawing;
