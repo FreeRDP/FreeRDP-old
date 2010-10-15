@@ -505,6 +505,8 @@ rdpdr_process_irp(rdpdrPlugin * plugin, char* data, int data_size)
 		case IRP_MJ_DEVICE_CONTROL:
 			LLOGLN(10, ("IRP_MJ_DEVICE_CONTROL"));
 			irp_process_device_control_request(&irp, &data[20], data_size - 20);
+			if (irp.ioStatus == RD_STATUS_PENDING)
+				irp_queue_push(queue, &irp);
 			break;
 
 		case IRP_MJ_LOCK_CONTROL:
@@ -518,7 +520,12 @@ rdpdr_process_irp(rdpdrPlugin * plugin, char* data, int data_size)
 			break;
 	}
 
-	if (irp.ioStatus != RD_STATUS_PENDING)
+	if (irp.ioStatus == RD_STATUS_PENDING && irp.rwBlocking)
+	{
+		LLOGLN(10, ("IRP enqueue event"));
+		irp_queue_push(queue, &irp);
+	}
+	else if (irp.ioStatus != RD_STATUS_PENDING)
 	{
 		out = irp_output_device_io_completion(&irp, &out_size);
 		error = plugin->ep.pVirtualChannelWrite(plugin->open_handle, out, out_size, out);
@@ -527,11 +534,6 @@ rdpdr_process_irp(rdpdrPlugin * plugin, char* data, int data_size)
 			LLOGLN(0, ("rdpdr_process_irp: "
 				"VirtualChannelWrite failed %d", error));
 		}
-	}
-	else if (irp.rwBlocking) /* pending and blocking */
-	{
-		LLOGLN(10, ("IRP enqueue event"));
-		irp_queue_push(queue, &irp);
 	}
 
 	if (irp_get_event(&irp, &result) && irp.rwBlocking)
