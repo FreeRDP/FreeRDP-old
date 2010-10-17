@@ -20,11 +20,9 @@ AH_TEMPLATE(DISABLE_TLS, [Disable TLS encryption])
 AH_TEMPLATE(WITH_SCARD, [Define if smartcard is enabled])
 AH_TEMPLATE(WITH_DEBUG, [Turn on debugging messages])
 AH_TEMPLATE(WITH_DEBUG_CHANNEL, [Turn on debugging messages])
-AH_TEMPLATE(WITH_DEBUG_CLIPBOARD, [Turn on debugging messages])
 AH_TEMPLATE(WITH_DEBUG_KBD, [Turn on debugging messages])
 AH_TEMPLATE(WITH_DEBUG_RDP5, [Turn on debugging messages])
 AH_TEMPLATE(WITH_DEBUG_SCARD, [Turn on debugging messages])
-AH_TEMPLATE(WITH_DEBUG_SEAMLESS, [Turn on debugging messages])
 AH_TEMPLATE(WITH_DEBUG_SERIAL, [Turn on debugging messages])
 AH_TEMPLATE(WITH_DEBUG_SOUND, [Turn on debugging messages])
 
@@ -218,17 +216,6 @@ int main(int argc, char **argv)
   AC_DEFINE(NEED_ALIGN)],
  [AC_MSG_RESULT(assuming yes)
   AC_DEFINE(NEED_ALIGN)])
-
-
-#
-# EGD
-#
-AC_ARG_WITH(egd-socket,
-    [  --with-egd-socket=PATH  look for Entropy Gathering Daemon socket at PATH],
-    [EGD_SOCKET="$withval"],
-    [EGD_SOCKET="/var/run/egd-pool"]
-)
-AC_DEFINE_UNQUOTED(EGD_SOCKET, "$EGD_SOCKET")
 
 
 #
@@ -832,17 +819,8 @@ AC_ARG_WITH(debug-rdp5,
 	fi
     ])
 
-AC_ARG_WITH(debug-clipboard,
-    [  --with-debug-clipboard  enable debugging of clipboard code],
-    [
-        if test $withval != "no";
-        then
-            AC_DEFINE(WITH_DEBUG_CLIPBOARD,1)
-	fi
-    ])
-
 AC_ARG_WITH(debug-sound,
-    [  --with-debug-sound  enable debugging of sound code],
+    [  --with-debug-sound      enable debugging of sound code],
     [
         if test $withval != "no";
         then
@@ -851,7 +829,7 @@ AC_ARG_WITH(debug-sound,
     ])
 
 AC_ARG_WITH(debug-channel,
-    [  --with-debug-channel  enable debugging of virtual channel code],
+    [  --with-debug-channel    enable debugging of virtual channel code],
     [
         if test $withval != "no";
         then
@@ -859,17 +837,8 @@ AC_ARG_WITH(debug-channel,
 	fi
     ])
 
-AC_ARG_WITH(debug-seamless,
-    [  --with-debug-seamless  enable debugging of SeamlessRDP code],
-    [
-        if test $withval != "no";
-        then
-            AC_DEFINE(WITH_DEBUG_SEAMLESS,1)
-	fi
-    ])
-
 AC_ARG_WITH(debug-serial,
-    [  --with-debug-serial  enable debugging of Serial code],
+    [  --with-debug-serial     enable debugging of Serial code],
     [
         if test $withval != "no";
         then
@@ -980,7 +949,9 @@ echo "FreeRDP configure result:"
 echo
 echo "Cryptography : $with_crypto"
 if test "x$disable_tls" = "xyes"; then
-	echo "               (TLS disabled)"
+	echo "TLS          : disabled"
+else
+	echo "TLS          : enabled"
 fi
 echo "Sound        : $sound"
 echo "Printer      : $printer"
