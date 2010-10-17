@@ -259,14 +259,10 @@ AC_ARG_WITH(libvncserver,
 
 sound="yes"
 AC_ARG_WITH(sound,
-    [  --with-sound            select sound system ("oss", "sgi", "sun", "alsa" or "libao") ],
+    [  --with-sound=alsa       select sound system ("alsa" is only option) ],
     [
     sound="$withval"
     ])
-
-AC_CHECK_HEADER(sys/soundcard.h, [HAVE_OSS=1], [HAVE_OSS=0])
-AC_CHECK_HEADER(dmedia/audio.h, [HAVE_SGI=1], [HAVE_SGI=0])
-AC_CHECK_HEADER(sys/audioio.h, [HAVE_SUN=1], [HAVE_SUN=0])
 
 AC_ARG_ENABLE(static-libsamplerate,
     [  --enable-static-libsamplerate link libsamplerate statically],
@@ -274,7 +270,6 @@ AC_ARG_ENABLE(static-libsamplerate,
     [static_libsamplerate=no])
 
 if test -n "$PKG_CONFIG"; then
-    PKG_CHECK_MODULES(LIBAO, ao, [HAVE_LIBAO=1], [HAVE_LIBAO=0])
     PKG_CHECK_MODULES(ALSA, alsa, [HAVE_ALSA=1], [HAVE_ALSA=0])
     AC_ARG_WITH(libsamplerate,
         [  --without-libsamplerate disable libsamplerate support])
@@ -292,43 +287,11 @@ if test -n "$PKG_CONFIG"; then
 fi
 
 AM_CONDITIONAL(WITH_RDPSND, [test "$sound" != "no"])
-AM_CONDITIONAL(RDPSND_OSS, false)
-AM_CONDITIONAL(RDPSND_SGI, false)
-AM_CONDITIONAL(RDPSND_SUN, false)
 AM_CONDITIONAL(RDPSND_ALSA, false)
-AM_CONDITIONAL(RDPSND_LIBAO, false)
 
 case $sound in
     yes)
-        AM_CONDITIONAL(RDPSND_OSS, [test x"$HAVE_OSS" = "x1"])
-        AM_CONDITIONAL(RDPSND_SGI, [test x"$HAVE_SGI" = "x1"])
-        AM_CONDITIONAL(RDPSND_SUN, [test x"$HAVE_SUN" = "x1"])
         AM_CONDITIONAL(RDPSND_ALSA, [test x"$HAVE_ALSA" = "x1"])
-        AM_CONDITIONAL(RDPSND_LIBAO, [test x"$HAVE_LIBAO" = "x1"])
-        ;;
-
-    oss)
-        if test x"$HAVE_OSS" = "x1"; then
-            AM_CONDITIONAL(RDPSND_OSS, true)
-        else
-            AC_MSG_ERROR([Selected sound system is not available.])
-        fi
-        ;;
-
-    sgi)
-        if test x"$HAVE_SGI" = "x1"; then
-            AM_CONDITIONAL(RDPSND_SGI, true)
-        else
-            AC_MSG_ERROR([Selected sound system is not available.])
-        fi
-        ;;
-
-    sun)
-        if test x"$HAVE_SUN" = "x1"; then
-            AM_CONDITIONAL(RDPSND_SUN, true)
-        else
-            AC_MSG_ERROR([Selected sound system is not available.])
-        fi
         ;;
 
     alsa)
@@ -339,20 +302,12 @@ case $sound in
         fi
         ;;
 
-    libao)
-        if test x"$HAVE_LIBAO" = "x1"; then
-            AM_CONDITIONAL(RDPSND_LIBAO, true)
-        else
-            AC_MSG_ERROR([Selected sound system is not available.])
-        fi
-        ;;
-
     no)
         ;;
 
     *)
         AC_MSG_WARN([sound support disabled])
-        AC_MSG_WARN([Currently supported systems are Open Sound System (oss), SGI AL (sgi), Sun/BSD (sun), ALSA (alsa) and libao])
+        AC_MSG_WARN([Currently supported systems is ALSA (alsa) only])
         ;;
 esac
 
