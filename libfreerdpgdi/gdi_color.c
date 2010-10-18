@@ -78,8 +78,23 @@ gdi_image_convert(char* srcData, int width, int height, int srcBpp, int dstBpp, 
 
 	if (srcBpp == dstBpp)
 	{
+		int x, y;
+		char *dstp;
+
 		dstData = (char*) malloc(width * height * 4);
 		memcpy(dstData, srcData, width * height * 4);
+
+		dstp = dstData;
+		for (y = 0; y < height; y++)
+		{
+			for (x = 0; x < width * 4; x += 4)
+			{
+				dstp += 3;
+				*dstp = 0xFF;
+				dstp++;
+			}
+		}
+
 		return dstData;
 	}
 	if ((srcBpp == 24) && (dstBpp == 32))
