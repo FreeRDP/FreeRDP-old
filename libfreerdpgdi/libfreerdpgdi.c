@@ -322,9 +322,28 @@ int ClipCoords(HDC hdc, int *x, int *y, int *w, int *h)
 	if (hdc == NULL)
 		return 0;
 	
-	/* nothing is clipped if the clipping region is null */
 	if (hdc->clip->null)
-		return 0;
+	{
+		HBITMAP hBmp = (HBITMAP) hdc->selectedObject;
+		hdc->clip->x = 0;
+		hdc->clip->y = 0;
+		hdc->clip->w = hBmp->width;
+		hdc->clip->h = hBmp->height;
+	}
+	else
+	{
+		HBITMAP hBmp = (HBITMAP) hdc->selectedObject;
+
+		if (hdc->clip->x < 0)
+			hdc->clip->x = 0;
+		if (hdc->clip->y < 0)
+			hdc->clip->y = 0;
+
+		if (hdc->clip->x + hdc->clip->w > hBmp->width)
+			hdc->clip->w = hBmp->width - hdc->clip->x;
+		if (hdc->clip->y + hdc->clip->h > hBmp->height)
+			hdc->clip->h = hBmp->height - hdc->clip->y;
+	}
 	
 	/* cases where everything is clipped (all coordinates outside of clipping region) */
 	if ((*x + *w <= hdc->clip->x) || (*x >= hdc->clip->x + hdc->clip->w) ||
@@ -434,7 +453,10 @@ int FillRect(HDC hdc, HRECT rect, HBRUSH hbr)
 				dstp++;
 
 				*dstp = r;
-				dstp += 2;
+				dstp++;
+
+				*dstp = 0xFF;
+				dstp++;
 			}
 		}
 	}
@@ -473,15 +495,40 @@ int SetBkMode(HDC hdc, int iBkMode)
 
 static int BitBlt_BLACKNESS(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight)
 {
-	int y;
+	int x, y;
 	char *dstp;
-	
+
+#if 0
 	for (y = 0; y < nHeight; y++)
 	{
 		dstp = gdi_get_bitmap_pointer(hdcDest, nXDest, nYDest + y);
 
 		if (dstp != 0)
 			memset(dstp, 0, nWidth * hdcDest->bytesPerPixel);
+	}
+#endif
+
+	for (y = 0; y < nHeight; y++)
+	{
+		dstp = gdi_get_bitmap_pointer(hdcDest, nXDest, nYDest + y);
+
+		if (dstp != 0)
+		{
+			for (x = 0; x < nWidth; x++)
+			{
+				*dstp = 0;
+				dstp++;
+
+				*dstp = 0;
+				dstp++;
+
+				*dstp = 0;
+				dstp++;
+
+				*dstp = 0xFF;
+				dstp++;
+			}
+		}
 	}
 
 	return 0;
@@ -1131,6 +1178,8 @@ int BitBlt(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdc
 
 int PatBlt(HDC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight, int rop)
 {
+	ClipCoords(hdc, &nXLeft, &nYLeft, &nWidth, &nHeight);
+
 	switch (rop)
 	{
 		case PATCOPY:

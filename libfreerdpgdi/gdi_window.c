@@ -314,6 +314,16 @@ gdi_invalidate_region(GDI *gdi, int x, int y, int w, int h)
 		return;
 	}
 
+	if (x < 0)
+		x = 0;
+	if (y < 0)
+		y = 0;
+
+	if (x + w > gdi->primary->bitmap->width)
+		w = gdi->primary->bitmap->width - x;
+	if (y + h > gdi->primary->bitmap->height)
+		h = gdi->primary->bitmap->height - y;
+
 	if (w * h == 0)
 		return;
 	

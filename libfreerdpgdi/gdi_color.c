@@ -212,13 +212,12 @@ gdi_glyph_convert(int width, int height, char* data)
 		
 		for (x = 0; x < width; x++)
 		{
-			if (x + 1 % 8 == 0)
-				srcp++;
-
-			if ((*srcp & (0x80 >> x % 8)) != 0)
+			if ((*srcp & (0x80 >> (x % 8))) != 0)
 				*dstp = 0xFF;
-
 			dstp++;
+
+			if (((x + 1) % 8 == 0) && x != 0)
+				srcp++;
 		}
 	}
 	
