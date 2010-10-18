@@ -435,16 +435,24 @@ int FillRect(HDC hdc, HRECT rect, HBRUSH hbr)
 	int x, y;
 	char *dstp;
 	char r, g, b;
+	int nXDest, nYDest;
+	int nWidth, nHeight;
+	
+	nXDest = rect->left;
+	nYDest = rect->top;
+	nWidth = (rect->right - rect->left);
+	nHeight = (rect->bottom - rect->top);
+	ClipCoords(hdc, &nXDest, &nYDest, &nWidth, &nHeight);
 
 	GetRGB(r, g, b, hbr->color);
 	
-	for (y = 0; y < (rect->bottom - rect->top); y++)
+	for (y = 0; y < nHeight; y++)
 	{
-		dstp = gdi_get_bitmap_pointer(hdc, rect->left, rect->top + y);
+		dstp = gdi_get_bitmap_pointer(hdc, nXDest, nYDest + y);
 
 		if (dstp != 0)
 		{
-			for (x = 0; x < (rect->right - rect->left); x++)
+			for (x = 0; x < nWidth; x++)
 			{
 				*dstp = b;
 				dstp++;

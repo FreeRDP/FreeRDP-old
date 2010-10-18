@@ -567,7 +567,7 @@ gdi_ui_paint_bitmap(struct rdp_inst * inst, int x, int y, int cx, int cy, int wi
 
 	gdi_bmp = (gdi_bitmap*) inst->ui_create_bitmap(inst, width, height, data);
 	BitBlt(gdi->primary->hdc, x, y, cx, cy, gdi_bmp->hdc, 0, 0, SRCCOPY);
-	gdi_bitmap_free(gdi_bmp);
+	inst->ui_destroy_bitmap(inst, (RD_HBITMAP) gdi_bmp);
 	
 	gdi_invalidate_region(gdi, x, y, cx, cy);
 }
