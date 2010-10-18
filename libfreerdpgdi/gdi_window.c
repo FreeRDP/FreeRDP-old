@@ -299,58 +299,6 @@ gdi_rop3_code(unsigned char code)
 }
 
 void
-gdi_invalidate_region(GDI *gdi, int x, int y, int w, int h)
-{
-	if (gdi->drawing != gdi->primary)
-		return;
-	
-	if (gdi->invalid->null)
-	{
-		gdi->invalid->x = x;
-		gdi->invalid->y = y;
-		gdi->invalid->w = w;
-		gdi->invalid->h = h;
-		gdi->invalid->null = 0;
-		return;
-	}
-
-	if (x < 0)
-		x = 0;
-	if (y < 0)
-		y = 0;
-
-	if (x + w > gdi->primary->bitmap->width)
-		w = gdi->primary->bitmap->width - x;
-	if (y + h > gdi->primary->bitmap->height)
-		h = gdi->primary->bitmap->height - y;
-
-	if (w * h == 0)
-		return;
-	
-	if (x < gdi->invalid->x)
-	{
-		gdi->invalid->x = x;
-		gdi->invalid->w += (gdi->invalid->x - x);
-	}
-
-	if (y < gdi->invalid->y)
-	{
-		gdi->invalid->y = y;
-		gdi->invalid->h += (gdi->invalid->y - y);
-	}
-
-	if (gdi->invalid->x + gdi->invalid->w < x + w)
-	{
-		gdi->invalid->w += (x + w) - (gdi->invalid->x + gdi->invalid->w);
-	}
-
-	if (gdi->invalid->y + gdi->invalid->h < y + h)
-	{
-		gdi->invalid->h += (y + h) - (gdi->invalid->y + gdi->invalid->h);
-	}
-}
-
-void
 gdi_copy_mem(char * d, char * s, int n)
 {
 	while (n & (~7))
@@ -568,8 +516,6 @@ gdi_ui_paint_bitmap(struct rdp_inst * inst, int x, int y, int cx, int cy, int wi
 	gdi_bmp = (gdi_bitmap*) inst->ui_create_bitmap(inst, width, height, data);
 	BitBlt(gdi->primary->hdc, x, y, cx, cy, gdi_bmp->hdc, 0, 0, SRCCOPY);
 	inst->ui_destroy_bitmap(inst, (RD_HBITMAP) gdi_bmp);
-	
-	gdi_invalidate_region(gdi, x, y, cx, cy);
 }
 
 static void
@@ -606,8 +552,6 @@ gdi_ui_line(struct rdp_inst * inst, uint8 opcode, int startx, int starty, int en
 	LineTo(gdi->drawing->hdc, endx, endy);
 	
 	DeleteObject((HGDIOBJ) hPen);
-
-	gdi_invalidate_region(gdi, startx, starty, cx, cy);
 }
 
 static void
@@ -627,8 +571,6 @@ gdi_ui_rect(struct rdp_inst * inst, int x, int y, int cx, int cy, int color)
 	gdi_color_convert(&(gdi->pixel), color, gdi->srcBpp, gdi->palette);
 	hBrush = CreateSolidBrush(PixelRGB(gdi->pixel));
 	FillRect(gdi->drawing->hdc, &rect, hBrush);
-
-	gdi_invalidate_region(gdi, x, y, cx, cy);
 }
 
 static void
@@ -665,8 +607,6 @@ gdi_ui_draw_glyph(struct rdp_inst * inst, int x, int y, int cx, int cy, RD_HGLYP
 
 	gdi_bmp = (gdi_bitmap*) glyph;
 	BitBlt(gdi->drawing->hdc, x, y, cx, cy, gdi_bmp->hdc, 0, 0, DSPDxax);
-
-	gdi_invalidate_region(gdi, x, y, cx, cy);
 }
 
 static void
@@ -682,10 +622,7 @@ gdi_ui_destblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int c
 	GDI *gdi = GET_GDI(inst);
 
 	DEBUG_GDI("ui_destblt: x: %d y: %d cx: %d cy: %d rop: 0x%X\n", x, y, cx, cy, rop3_code_table[opcode]);
-
 	BitBlt(gdi->drawing->hdc, x, y, cx, cy, NULL, 0, 0, gdi_rop3_code(opcode));
-	
-	gdi_invalidate_region(gdi, x, y, cx, cy);
 }
 
 static void
@@ -724,8 +661,6 @@ gdi_ui_patblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy
 	{
 		printf("ui_patblt: unknown brush style: %d\n", brush->style);
 	}
-
-	gdi_invalidate_region(gdi, x, y, cx, cy);
 }
 
 static void
@@ -737,8 +672,6 @@ gdi_ui_screenblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int
 	          x, y, cx, cy, srcx, srcy, rop3_code_table[opcode]);
 	
 	BitBlt(gdi->primary->hdc, x, y, cx, cy, gdi->primary->hdc, srcx, srcy, gdi_rop3_code(opcode));
-	
-	gdi_invalidate_region(gdi, x, y, cx, cy);
 }
 
 static void
@@ -752,8 +685,6 @@ gdi_ui_memblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy
 
 	gdi_bmp = (gdi_bitmap*) src;
 	BitBlt(gdi->drawing->hdc, x, y, cx, cy, gdi_bmp->hdc, srcx, srcy, gdi_rop3_code(opcode));
-
-	gdi_invalidate_region(gdi, x, y, cx, cy);
 }
 
 static void
@@ -930,9 +861,10 @@ gdi_init(rdpInst * inst)
 	gdi->primary = gdi_bitmap_new(gdi, gdi->width, gdi->height, gdi->dstBpp, 0, NULL);
 	gdi->primary_buffer = gdi->primary->bitmap->data;
 	gdi->drawing = gdi->primary;
-	
-	gdi->invalid = CreateRectRgn(0, 0, 0, 0);
-	gdi->invalid->null = 1;
+
+	gdi->primary->hdc->hwnd = (HWND) malloc(sizeof(WND));
+	gdi->primary->hdc->hwnd->invalid = CreateRectRgn(0, 0, 0, 0);
+	gdi->primary->hdc->hwnd->invalid->null = 1;
 
 	gdi_register_callbacks(inst);
 

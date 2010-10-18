@@ -59,19 +59,16 @@ l_ui_end_update(struct rdp_inst * inst)
 	dfbInfo *dfbi = GET_DFBI(inst);
 	GDI *gdi = GET_GDI(inst);
 	
-	if (gdi->invalid->null)
+	if (gdi->primary->hdc->hwnd->invalid->null)
 		return;
-
-	//printf("ui_end_update: x:%d y:%d w:%d h:%d\n",
-	//       gdi->invalid->x, gdi->invalid->y, gdi->invalid->w, gdi->invalid->h);
 	
-	dfbi->update_rect.x = gdi->invalid->x;
-	dfbi->update_rect.y = gdi->invalid->y;
-	dfbi->update_rect.w = gdi->invalid->w;
-	dfbi->update_rect.h = gdi->invalid->h;
+	dfbi->update_rect.x = gdi->primary->hdc->hwnd->invalid->x;
+	dfbi->update_rect.y = gdi->primary->hdc->hwnd->invalid->y;
+	dfbi->update_rect.w = gdi->primary->hdc->hwnd->invalid->w;
+	dfbi->update_rect.h = gdi->primary->hdc->hwnd->invalid->h;
 
 	dfbi->primary->Blit(dfbi->primary, dfbi->surface, &(dfbi->update_rect), dfbi->update_rect.x, dfbi->update_rect.y);
-	gdi->invalid->null = 1;
+	gdi->primary->hdc->hwnd->invalid->null = 1;
 }
 
 static uint32

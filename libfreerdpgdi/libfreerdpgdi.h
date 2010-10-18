@@ -198,6 +198,13 @@ struct _BRUSH
 typedef struct _BRUSH BRUSH;
 typedef BRUSH* HBRUSH;
 
+struct _WND
+{
+	HRGN invalid;
+};
+typedef struct _WND WND;
+typedef WND* HWND;
+
 struct _DC
 {
 	HGDIOBJ selectedObject;
@@ -208,6 +215,7 @@ struct _DC
 	HBRUSH brush;
 	HRGN clip;
 	HPEN pen;
+	HWND hwnd;
 	int drawMode;
 	int bkMode;
 };
@@ -234,6 +242,7 @@ int SetClipRgn(HDC hdc, int nLeftRect, int nTopRect, int nRightRect, int nBottom
 HRGN GetClipRgn(HDC hdc);
 int SetNullClipRgn(HDC hdc);
 int ClipCoords(HDC hdc, int *x, int *y, int *w, int *h);
+int InvalidateRegion(HDC hdc, int x, int y, int w, int h);
 int EqualRgn(HRGN hSrcRgn1, HRGN hSrcRgn2);
 int CopyRect(HRECT dst, HRECT src);
 int PtInRect(HRECT rc, int x, int y);

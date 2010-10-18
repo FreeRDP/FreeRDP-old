@@ -37,6 +37,7 @@ HDC GetDC()
 	hDC->drawMode = R2_COPYPEN;
 	hDC->clip = CreateRectRgn(0, 0, 0, 0);
 	hDC->clip->null = 1;
+	hDC->hwnd = NULL;
 	return hDC;
 }
 
@@ -48,6 +49,7 @@ HDC CreateCompatibleDC(HDC hdc)
 	hDC->drawMode = hdc->drawMode;
 	hDC->clip = CreateRectRgn(0, 0, 0, 0);
 	hDC->clip->null = 1;
+	hDC->hwnd = NULL;
 	return hDC;
 }
 
@@ -390,6 +392,68 @@ int ClipCoords(HDC hdc, int *x, int *y, int *w, int *h)
 	return 1;
 }
 
+int InvalidateRegion(HDC hdc, int x, int y, int w, int h)
+{
+	HRGN rgn;
+	HBITMAP bmp;
+
+	if (hdc->hwnd == NULL)
+		return 0;
+
+	if (hdc->hwnd->invalid == NULL)
+		return 0;
+
+	rgn = hdc->hwnd->invalid;
+	bmp = (HBITMAP) hdc->selectedObject;
+
+	if (rgn->null)
+	{
+		rgn->x = x;
+		rgn->y = y;
+		rgn->w = w;
+		rgn->h = h;
+		rgn->null = 0;
+		return 0;
+	}
+
+	if (x < 0)
+		x = 0;
+	if (y < 0)
+		y = 0;
+
+	if (x + w > bmp->width)
+		w = bmp->width - x;
+	if (y + h > bmp->height)
+		h = bmp->height - y;
+
+	if (w * h == 0)
+		return 0;
+
+	if (x < rgn->x)
+	{
+		rgn->x = x;
+		rgn->w += (rgn->x - x);
+	}
+
+	if (y < rgn->y)
+	{
+		rgn->y = y;
+		rgn->h += (rgn->y - y);
+	}
+
+	if (rgn->x + rgn->w < x + w)
+	{
+		rgn->w += (x + w) - (rgn->x + rgn->w);
+	}
+
+	if (rgn->y + rgn->h < y + h)
+	{
+		rgn->h += (y + h) - (rgn->y + rgn->h);
+	}
+
+	return 0;
+}
+
 int EqualRgn(HRGN hSrcRgn1, HRGN hSrcRgn2)
 {
 	if ((hSrcRgn1->x == hSrcRgn2->x) &&
@@ -468,7 +532,8 @@ int FillRect(HDC hdc, HRECT rect, HBRUSH hbr)
 			}
 		}
 	}
-	
+
+	InvalidateRegion(hdc, nXDest, nYDest, nWidth, nHeight);
 	return 0;
 }
 
@@ -1109,6 +1174,8 @@ int BitBlt(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdc
 	ClipCoords(hdcDest, &nXDest, &nYDest, &nWidth, &nHeight);
 	ClipCoords(hdcSrc, &nXSrc, &nYSrc, &nWidth, &nHeight);
 	
+	InvalidateRegion(hdcDest, nXDest, nYDest, nWidth, nHeight);
+	
 	switch (rop)
 	{
 		case BLACKNESS:
@@ -1187,6 +1254,7 @@ int BitBlt(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdc
 int PatBlt(HDC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight, int rop)
 {
 	ClipCoords(hdc, &nXLeft, &nYLeft, &nWidth, &nHeight);
+	InvalidateRegion(hdc, nXLeft, nYLeft, nWidth, nHeight);
 
 	switch (rop)
 	{

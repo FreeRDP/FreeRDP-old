@@ -43,7 +43,6 @@ struct _GDI
 	int cursor_y;
 
 	HDC hdc;
-	HRGN invalid;
 	gdi_bitmap *primary;
 	gdi_bitmap *drawing;
 	char* primary_buffer;
@@ -54,8 +53,6 @@ struct _GDI
 typedef struct _GDI GDI;
 
 unsigned int gdi_rop3_code(unsigned char code);
-int gdi_clip_coords(GDI *gdi, int *x, int *y, int *w, int *h, int *srcx, int *srcy);
-void gdi_invalidate_region(GDI *gdi, int x, int y, int w, int h);
 void gdi_copy_mem(char *d, char *s, int n);
 void gdi_copy_memb(char *d, char *s, int n);
 char* gdi_get_bitmap_pointer(HDC hdcBmp, int x, int y);
