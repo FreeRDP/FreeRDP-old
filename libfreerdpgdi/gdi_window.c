@@ -469,7 +469,7 @@ gdi_ui_create_glyph(struct rdp_inst * inst, int width, int height, uint8 * data)
 	char* glyph;
 	gdi_bitmap *gdi_bmp;
 
-	DEBUG_GDI("gdi_ui_create_glyph: width:%d height:%d\n", width, height);
+	//DEBUG_GDI("gdi_ui_create_glyph: width:%d height:%d\n", width, height);
 
 	gdi_bmp = (gdi_bitmap*) malloc(sizeof(gdi_bitmap));
 	
@@ -498,7 +498,7 @@ gdi_ui_create_bitmap(struct rdp_inst * inst, int width, int height, uint8* data)
 	gdi_bitmap *gdi_bmp;
 	GDI *gdi = GET_GDI(inst);
 
-	DEBUG_GDI("gdi_ui_create_bitmap: width:%d height:%d\n", width, height);
+	//DEBUG_GDI("gdi_ui_create_bitmap: width:%d height:%d\n", width, height);
 
 	gdi_bmp = gdi_bitmap_new(gdi, width, height, gdi->dstBpp, 1, (char*) data);
 	
@@ -511,7 +511,7 @@ gdi_ui_paint_bitmap(struct rdp_inst * inst, int x, int y, int cx, int cy, int wi
 	gdi_bitmap *gdi_bmp;
 	GDI *gdi = GET_GDI(inst);
 
-	DEBUG_GDI("ui_paint_bitmap: x:%d y:%d cx:%d cy:%d\n", x, y, cx, cy);
+	//DEBUG_GDI("ui_paint_bitmap: x:%d y:%d cx:%d cy:%d\n", x, y, cx, cy);
 
 	gdi_bmp = (gdi_bitmap*) inst->ui_create_bitmap(inst, width, height, data);
 	BitBlt(gdi->primary->hdc, x, y, cx, cy, gdi_bmp->hdc, 0, 0, SRCCOPY);
@@ -527,9 +527,8 @@ gdi_ui_destroy_bitmap(struct rdp_inst * inst, RD_HBITMAP bmp)
 static void
 gdi_ui_line(struct rdp_inst * inst, uint8 opcode, int startx, int starty, int endx, int endy, RD_PEN * pen)
 {
-	return;
 	DEBUG_GDI("ui_line opcode:%d startx:%d starty:%d endx:%d endy:%d\n", opcode, startx, starty, endx, endy);
-	
+
 	int cx;
 	int cy;
 	HPEN hPen;
@@ -561,7 +560,7 @@ gdi_ui_rect(struct rdp_inst * inst, int x, int y, int cx, int cy, int color)
 	HBRUSH hBrush;
 	GDI *gdi = GET_GDI(inst);
 
-	DEBUG_GDI("ui_rect: x:%d y:%d cx:%d cy:%d\n", x, y, cx, cy);
+	//DEBUG_GDI("ui_rect: x:%d y:%d cx:%d cy:%d\n", x, y, cx, cy);
 	
 	rect.left = x;
 	rect.top = y;
@@ -671,7 +670,7 @@ gdi_ui_screenblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int
 	DEBUG_GDI("gdi_ui_screenblt x:%d y:%d cx:%d cy:%d srcx:%d srcy:%d rop:0x%X\n",
 	          x, y, cx, cy, srcx, srcy, rop3_code_table[opcode]);
 	
-	BitBlt(gdi->primary->hdc, x, y, cx, cy, gdi->primary->hdc, srcx, srcy, gdi_rop3_code(opcode));
+	BitBlt(gdi->drawing->hdc, x, y, cx, cy, gdi->primary->hdc, srcx, srcy, gdi_rop3_code(opcode));
 }
 
 static void
@@ -680,8 +679,8 @@ gdi_ui_memblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy
 	gdi_bitmap *gdi_bmp;
 	GDI *gdi = GET_GDI(inst);
 
-	DEBUG_GDI("gdi_ui_memblt: x:%d y:%d cx:%d cy:%d srcx:%d, srcy:%d rop:0x%X\n",
-	          x, y, cx, cy, srcx, srcy, gdi_rop3_code(opcode));
+	//DEBUG_GDI("gdi_ui_memblt: x:%d y:%d cx:%d cy:%d srcx:%d, srcy:%d rop:0x%X\n",
+	//          x, y, cx, cy, srcx, srcy, gdi_rop3_code(opcode));
 
 	gdi_bmp = (gdi_bitmap*) src;
 	BitBlt(gdi->drawing->hdc, x, y, cx, cy, gdi_bmp->hdc, srcx, srcy, gdi_rop3_code(opcode));
