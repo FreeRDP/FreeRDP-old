@@ -368,25 +368,25 @@ int ClipCoords(HDC hdc, int *x, int *y, int *w, int *h)
 		return 1;
 	}
 	
-	if (*x < hdc->clip->x && *x + *w <= hdc->clip->x + hdc->clip->w)
+	if (*x < hdc->clip->x && *x + *w < hdc->clip->x + hdc->clip->w)
 	{
 		/* left is outside, right is inside */		
 		*w -= hdc->clip->x - *x;
 		*x = hdc->clip->x;
 	}
-	else if (*x >= hdc->clip->x && *x + *w > hdc->clip->x + hdc->clip->w)
+	else if (*x > hdc->clip->x && *x + *w > hdc->clip->x + hdc->clip->w)
 	{
 		/* left is inside, right is outside */
 		*w -= (*x + *w) - (hdc->clip->x + hdc->clip->w);
 	}
 
-	if (*y < hdc->clip->y && *y + *h <= hdc->clip->y + hdc->clip->h)
+	if (*y < hdc->clip->y && *y + *h < hdc->clip->y + hdc->clip->h)
 	{
 		/* top is outside, bottom is inside */
 		*h -= hdc->clip->y - *y;
 		*y = hdc->clip->y;
 	}
-	else if (*y >= hdc->clip->y && *y + *h > hdc->clip->y + hdc->clip->h)
+	else if (*y > hdc->clip->y && *y + *h > hdc->clip->y + hdc->clip->h)
 	{
 		/* top is inside, bottom is outside */
 		*h -= (*y + *h) - (hdc->clip->y + hdc->clip->h);
