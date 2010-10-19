@@ -1,6 +1,7 @@
 AC_INIT(freerdp, m4_esyscmd([build-aux/git-version-gen .tarball-version]),
         [freerdp-devel@lists.sourceforge.net])
-AM_INIT_AUTOMAKE
+AM_INIT_AUTOMAKE([1.11 dist-xz color-tests parallel-tests])
+AM_SILENT_RULES([yes]) # make --enable-silent-rules the default.
 AM_CONFIG_HEADER([config.h])
 AC_CONFIG_SRCDIR([libfreerdp/freerdp.c])
 
@@ -20,11 +21,9 @@ AH_TEMPLATE(DISABLE_TLS, [Disable TLS encryption])
 AH_TEMPLATE(WITH_SCARD, [Define if smartcard is enabled])
 AH_TEMPLATE(WITH_DEBUG, [Turn on debugging messages])
 AH_TEMPLATE(WITH_DEBUG_CHANNEL, [Turn on debugging messages])
-AH_TEMPLATE(WITH_DEBUG_CLIPBOARD, [Turn on debugging messages])
 AH_TEMPLATE(WITH_DEBUG_KBD, [Turn on debugging messages])
 AH_TEMPLATE(WITH_DEBUG_RDP5, [Turn on debugging messages])
 AH_TEMPLATE(WITH_DEBUG_SCARD, [Turn on debugging messages])
-AH_TEMPLATE(WITH_DEBUG_SEAMLESS, [Turn on debugging messages])
 AH_TEMPLATE(WITH_DEBUG_SERIAL, [Turn on debugging messages])
 AH_TEMPLATE(WITH_DEBUG_SOUND, [Turn on debugging messages])
 
@@ -221,52 +220,15 @@ int main(int argc, char **argv)
 
 
 #
-# EGD
-#
-AC_ARG_WITH(egd-socket,
-    [  --with-egd-socket=PATH  look for Entropy Gathering Daemon socket at PATH],
-    [EGD_SOCKET="$withval"],
-    [EGD_SOCKET="/var/run/egd-pool"]
-)
-AC_DEFINE_UNQUOTED(EGD_SOCKET, "$EGD_SOCKET")
-
-
-#
-# rdp2vnc
-#
-vncserverconfig=libvncserver-config
-AC_ARG_WITH(libvncserver-config,
-    [  --with-libvncserver-config=CMD  use CMD as libvncserver-config],
-    [vncserverconfig="$withval"]
-)
-AC_ARG_WITH(libvncserver,
-    [  --with-libvncserver     make rdp2vnc],
-    [
-    VNCINC=`$vncserverconfig --cflags`
-    AC_SUBST(VNCINC)
-    LDVNC=`$vncserverconfig --libs`
-    AC_SUBST(LDVNC)
-    VNCLINK=`$vncserverconfig --link`
-    AC_SUBST(VNCLINK)
-    RDP2VNCTARGET="rdp2vnc"
-    AC_SUBST(RDP2VNCTARGET)
-    ]
-)
-
-#
 # sound
 #
 
 sound="yes"
 AC_ARG_WITH(sound,
-    [  --with-sound            select sound system ("oss", "sgi", "sun", "alsa" or "libao") ],
+    [  --with-sound=alsa       select sound system ("alsa" is only option) ],
     [
     sound="$withval"
     ])
-
-AC_CHECK_HEADER(sys/soundcard.h, [HAVE_OSS=1], [HAVE_OSS=0])
-AC_CHECK_HEADER(dmedia/audio.h, [HAVE_SGI=1], [HAVE_SGI=0])
-AC_CHECK_HEADER(sys/audioio.h, [HAVE_SUN=1], [HAVE_SUN=0])
 
 AC_ARG_ENABLE(static-libsamplerate,
     [  --enable-static-libsamplerate link libsamplerate statically],
@@ -274,7 +236,6 @@ AC_ARG_ENABLE(static-libsamplerate,
     [static_libsamplerate=no])
 
 if test -n "$PKG_CONFIG"; then
-    PKG_CHECK_MODULES(LIBAO, ao, [HAVE_LIBAO=1], [HAVE_LIBAO=0])
     PKG_CHECK_MODULES(ALSA, alsa, [HAVE_ALSA=1], [HAVE_ALSA=0])
     AC_ARG_WITH(libsamplerate,
         [  --without-libsamplerate disable libsamplerate support])
@@ -292,43 +253,11 @@ if test -n "$PKG_CONFIG"; then
 fi
 
 AM_CONDITIONAL(WITH_RDPSND, [test "$sound" != "no"])
-AM_CONDITIONAL(RDPSND_OSS, false)
-AM_CONDITIONAL(RDPSND_SGI, false)
-AM_CONDITIONAL(RDPSND_SUN, false)
 AM_CONDITIONAL(RDPSND_ALSA, false)
-AM_CONDITIONAL(RDPSND_LIBAO, false)
 
 case $sound in
     yes)
-        AM_CONDITIONAL(RDPSND_OSS, [test x"$HAVE_OSS" = "x1"])
-        AM_CONDITIONAL(RDPSND_SGI, [test x"$HAVE_SGI" = "x1"])
-        AM_CONDITIONAL(RDPSND_SUN, [test x"$HAVE_SUN" = "x1"])
         AM_CONDITIONAL(RDPSND_ALSA, [test x"$HAVE_ALSA" = "x1"])
-        AM_CONDITIONAL(RDPSND_LIBAO, [test x"$HAVE_LIBAO" = "x1"])
-        ;;
-
-    oss)
-        if test x"$HAVE_OSS" = "x1"; then
-            AM_CONDITIONAL(RDPSND_OSS, true)
-        else
-            AC_MSG_ERROR([Selected sound system is not available.])
-        fi
-        ;;
-
-    sgi)
-        if test x"$HAVE_SGI" = "x1"; then
-            AM_CONDITIONAL(RDPSND_SGI, true)
-        else
-            AC_MSG_ERROR([Selected sound system is not available.])
-        fi
-        ;;
-
-    sun)
-        if test x"$HAVE_SUN" = "x1"; then
-            AM_CONDITIONAL(RDPSND_SUN, true)
-        else
-            AC_MSG_ERROR([Selected sound system is not available.])
-        fi
         ;;
 
     alsa)
@@ -339,20 +268,12 @@ case $sound in
         fi
         ;;
 
-    libao)
-        if test x"$HAVE_LIBAO" = "x1"; then
-            AM_CONDITIONAL(RDPSND_LIBAO, true)
-        else
-            AC_MSG_ERROR([Selected sound system is not available.])
-        fi
-        ;;
-
     no)
         ;;
 
     *)
         AC_MSG_WARN([sound support disabled])
-        AC_MSG_WARN([Currently supported systems are Open Sound System (oss), SGI AL (sgi), Sun/BSD (sun), ALSA (alsa) and libao])
+        AC_MSG_WARN([Currently supported systems is ALSA (alsa) only])
         ;;
 esac
 
@@ -899,17 +820,8 @@ AC_ARG_WITH(debug-rdp5,
 	fi
     ])
 
-AC_ARG_WITH(debug-clipboard,
-    [  --with-debug-clipboard  enable debugging of clipboard code],
-    [
-        if test $withval != "no";
-        then
-            AC_DEFINE(WITH_DEBUG_CLIPBOARD,1)
-	fi
-    ])
-
 AC_ARG_WITH(debug-sound,
-    [  --with-debug-sound  enable debugging of sound code],
+    [  --with-debug-sound      enable debugging of sound code],
     [
         if test $withval != "no";
         then
@@ -918,7 +830,7 @@ AC_ARG_WITH(debug-sound,
     ])
 
 AC_ARG_WITH(debug-channel,
-    [  --with-debug-channel  enable debugging of virtual channel code],
+    [  --with-debug-channel    enable debugging of virtual channel code],
     [
         if test $withval != "no";
         then
@@ -926,17 +838,8 @@ AC_ARG_WITH(debug-channel,
 	fi
     ])
 
-AC_ARG_WITH(debug-seamless,
-    [  --with-debug-seamless  enable debugging of SeamlessRDP code],
-    [
-        if test $withval != "no";
-        then
-            AC_DEFINE(WITH_DEBUG_SEAMLESS,1)
-	fi
-    ])
-
 AC_ARG_WITH(debug-serial,
-    [  --with-debug-serial  enable debugging of Serial code],
+    [  --with-debug-serial     enable debugging of Serial code],
     [
         if test $withval != "no";
         then
@@ -1038,6 +941,7 @@ channels/rdpdr/Makefile
 channels/rdpdr/disk/Makefile
 channels/rdpdr/printer/Makefile
 channels/rdpdr/serial/Makefile
+channels/rdpdr/parallel/Makefile
 contrib/Makefile
 ])
 
@@ -1048,10 +952,11 @@ echo "FreeRDP configure result:"
 echo
 echo "Cryptography : $with_crypto"
 if test "x$disable_tls" = "xyes"; then
-	echo "               (TLS disabled)"
+	echo "TLS          : disabled"
+else
+	echo "TLS          : enabled"
 fi
 echo "Sound        : $sound"
 echo "Printer      : $printer"
 echo "X11          : $x11"
 echo "DirectFB     : $dfb"
-

@@ -128,6 +128,12 @@ using the default PostScript driver "MS Publisher Imagesetter".
 serial:<sharename>:<device>
 Redirect serial <device> to the server. It will be referenced by <sharedname>.
 
+.B
+parallel:<sharedname>:<lptdevice>
+Redirects parallel device <lptdevice> on your client to the server, where it
+will be referenced by <sharedname>. Bidirectional/Read support requires
+Windows XP or newer.
+
 .TP
 .BR "--plugin drdynvc --data <subplugin> [<subplugin> ...] --"
 Load the Dynamic Virtual Channel. <subplugin> can be the DVC sub-plugin name,

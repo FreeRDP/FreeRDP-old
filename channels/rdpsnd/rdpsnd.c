@@ -645,26 +645,6 @@ rdpsnd_register_drivers(char *options)
 	assert(*reg);
 	reg = &((*reg)->next);
 #endif
-#if defined(RDPSND_SUN)
-	*reg = sun_register(options);
-	assert(*reg);
-	reg = &((*reg)->next);
-#endif
-#if defined(RDPSND_OSS)
-	*reg = oss_register(options);
-	assert(*reg);
-	reg = &((*reg)->next);
-#endif
-#if defined(RDPSND_SGI)
-	*reg = sgi_register(options);
-	assert(*reg);
-	reg = &((*reg)->next);
-#endif
-#if defined(RDPSND_LIBAO)
-	*reg = libao_register(options);
-	assert(*reg);
-	reg = &((*reg)->next);
-#endif
 	*reg = NULL;
 }
 

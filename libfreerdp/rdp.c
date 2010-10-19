@@ -912,8 +912,12 @@ rdp_process_server_caps(rdpRdp * rdp, STREAM s, uint16 length)
 				rdp_process_multifragmentupdate_capset(rdp, s);
 				break;
 
+			case CAPSET_TYPE_BITMAP_CODECS:
+				/* TODO: utilize advertised support for NSCodec and RemoteFX Bitmap Codecs */
+				break;
+
 			default:
-				ui_unimpl(rdp->inst, "Capability set 0x%02X processing", capabilitySetType);
+				ui_unimpl(rdp->inst, "Unknown Capability Set 0x%02X", capabilitySetType);
 				break;
 		}
 
@@ -1035,7 +1039,7 @@ process_system_pointer_pdu(rdpRdp * rdp, STREAM s)
 			break;
 
 		default:
-			ui_unimpl(rdp->inst, "System pointer message 0x%x\n", system_pointer_type);
+			ui_unimpl(rdp->inst, "Unknown System Pointer message 0x%x\n", system_pointer_type);
 	}
 }
 
@@ -1085,7 +1089,7 @@ process_pointer_pdu(rdpRdp * rdp, STREAM s)
 			break;
 
 		default:
-			ui_unimpl(rdp->inst, "Pointer message 0x%x\n", message_type);
+			ui_unimpl(rdp->inst, "Unknown Pointer message 0x%x\n", message_type);
 	}
 }
 
@@ -1243,7 +1247,7 @@ process_update_pdu(rdpRdp * rdp, STREAM s)
 			break;
 
 		default:
-			ui_unimpl(rdp->inst, "update %d\n", update_type);
+			ui_unimpl(rdp->inst, "Unknown update pdu type 0x%x\n", update_type);
 	}
 	ui_end_update(rdp->inst);
 }
@@ -1324,7 +1328,7 @@ process_data_pdu(rdpRdp * rdp, STREAM s)
 			break;
 
 		default:
-			ui_unimpl(rdp->inst, "data PDU %d\n", data_pdu_type);
+			ui_unimpl(rdp->inst, "Unknown data PDU type 0x%x\n", data_pdu_type);
 	}
 	return False;
 }
@@ -1459,7 +1463,7 @@ rdp_loop(rdpRdp * rdp, RD_BOOL * deactivated)
 			case 0:
 				break;
 			default:
-				ui_unimpl(rdp->inst, "PDU %d", type);
+				ui_unimpl(rdp->inst, "Unknown PDU type 0x%x", type);
 		}
 		if (disc)
 			return False;

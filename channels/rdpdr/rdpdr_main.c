@@ -969,6 +969,7 @@ VirtualChannelEntry(PCHANNEL_ENTRY_POINTS pEntryPoints)
 	devman_load_device_service(plugin->devman, "disk");
 	devman_load_device_service(plugin->devman, "printer");
 	devman_load_device_service(plugin->devman, "serial");
+	devman_load_device_service(plugin->devman, "parallel");
 
 	plugin->ep.pVirtualChannelInit(&plugin->chan_plugin.init_handle, &plugin->channel_def, 1,
 		VIRTUAL_CHANNEL_VERSION_WIN2000, InitEvent);

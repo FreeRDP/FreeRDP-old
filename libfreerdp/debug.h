@@ -19,12 +19,6 @@
 #define DEBUG_RDP5(fmt, ...) do { } while (0)
 #endif
 
-#ifdef WITH_DEBUG_CLIPBOARD
-#define DEBUG_CLIPBOARD(fmt, ...) fprintf(stderr, "DBG (CLIBBOARD) %s (%d): " fmt, __FUNCTION__, __LINE__, ## __VA_ARGS__)
-#else
-#define DEBUG_CLIPBOARD(fmt, ...) do { } while (0)
-#endif
-
 #ifdef WITH_DEBUG_SOUND
 #define DEBUG_SOUND(fmt, ...) fprintf(stderr, "DBG (SOUND) %s (%d): " fmt, __FUNCTION__, __LINE__, ## __VA_ARGS__)
 #else
