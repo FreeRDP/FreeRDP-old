@@ -292,6 +292,16 @@ int SetRect(HRECT rc, int xLeft, int yTop, int xRight, int yBottom)
 	return 1;
 }
 
+int SetRgn(HRGN hRgn, int nXLeft, int nYLeft, int nWidth, int nHeight)
+{
+	hRgn->x = nXLeft;
+	hRgn->y = nYLeft;
+	hRgn->w = nWidth;
+	hRgn->h = nHeight;
+	hRgn->null = 0;
+	return 0;
+}
+
 int SetRectRgn(HRGN hRgn, int nLeftRect, int nTopRect, int nRightRect, int nBottomRect)
 {
 	hRgn->x = nLeftRect;
@@ -302,9 +312,9 @@ int SetRectRgn(HRGN hRgn, int nLeftRect, int nTopRect, int nRightRect, int nBott
 	return 0;
 }
 
-int SetClipRgn(HDC hdc, int nLeftRect, int nTopRect, int nRightRect, int nBottomRect)
+int SetClipRgn(HDC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight)
 {
-	return SetRectRgn(hdc->clip, nLeftRect, nTopRect, nRightRect, nBottomRect);
+	return SetRgn(hdc->clip, nXLeft, nYLeft, nWidth, nHeight);
 }
 
 HRGN GetClipRgn(HDC hdc)
@@ -358,25 +368,25 @@ int ClipCoords(HDC hdc, int *x, int *y, int *w, int *h)
 		return 1;
 	}
 	
-	if (*x < hdc->clip->x && *x + *w < hdc->clip->x + hdc->clip->w)
+	if (*x < hdc->clip->x && *x + *w <= hdc->clip->x + hdc->clip->w)
 	{
 		/* left is outside, right is inside */		
 		*w -= hdc->clip->x - *x;
 		*x = hdc->clip->x;
 	}
-	else if (*x > hdc->clip->x && *x + *w > hdc->clip->x + hdc->clip->w)
+	else if (*x >= hdc->clip->x && *x + *w > hdc->clip->x + hdc->clip->w)
 	{
 		/* left is inside, right is outside */
 		*w -= (*x + *w) - (hdc->clip->x + hdc->clip->w);
 	}
 
-	if (*y < hdc->clip->y && *y + *h < hdc->clip->y + hdc->clip->h)
+	if (*y < hdc->clip->y && *y + *h <= hdc->clip->y + hdc->clip->h)
 	{
 		/* top is outside, bottom is inside */
 		*h -= hdc->clip->y - *y;
 		*y = hdc->clip->y;
 	}
-	else if (*y > hdc->clip->y && *y + *h > hdc->clip->y + hdc->clip->h)
+	else if (*y >= hdc->clip->y && *y + *h > hdc->clip->y + hdc->clip->h)
 	{
 		/* top is inside, bottom is outside */
 		*h -= (*y + *h) - (hdc->clip->y + hdc->clip->h);
@@ -415,7 +425,7 @@ int InvalidateRegion(HDC hdc, int x, int y, int w, int h)
 		rgn->null = 0;
 		return 0;
 	}
-
+	
 	if (x < 0)
 		x = 0;
 	if (y < 0)
@@ -428,27 +438,27 @@ int InvalidateRegion(HDC hdc, int x, int y, int w, int h)
 
 	if (w * h == 0)
 		return 0;
-
+	
 	if (x < rgn->x)
 	{
-		rgn->x = x;
 		rgn->w += (rgn->x - x);
+		rgn->x = x;
 	}
 
 	if (y < rgn->y)
 	{
-		rgn->y = y;
 		rgn->h += (rgn->y - y);
+		rgn->y = y;
 	}
 
-	if (rgn->x + rgn->w < x + w)
+	if (x + w > rgn->x + rgn->w)
 	{
-		rgn->w += (x + w) - (rgn->x + rgn->w);
+		rgn->w = (x + w) - rgn->x;
 	}
-
-	if (rgn->y + rgn->h < y + h)
+	
+	if (y + h > rgn->y + rgn->h)
 	{
-		rgn->h += (y + h) - (rgn->y + rgn->h);
+		rgn->h = (y + h) - rgn->y;
 	}
 
 	return 0;
@@ -972,7 +982,7 @@ static int BitBlt_SPna(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHei
 		{
 			for (x = 0; x < nWidth; x++)
 			{
-				patp = gdi_get_brush_pointer(hdcDest, nXDest + x, nYDest + y);
+				patp = gdi_get_brush_pointer(hdcDest, x, y);
 				
 				*dstp = *srcp & ~(*patp);
 				patp++;
@@ -1010,7 +1020,7 @@ static int BitBlt_MERGECOPY(HDC hdcDest, int nXDest, int nYDest, int nWidth, int
 		{
 			for (x = 0; x < nWidth; x++)
 			{
-				patp = gdi_get_brush_pointer(hdcDest, nXDest + x, nYDest + y);
+				patp = gdi_get_brush_pointer(hdcDest, x, y);
 				
 				*dstp = *srcp & *patp;
 				patp++;
@@ -1079,7 +1089,7 @@ static int BitBlt_PATCOPY(HDC hdcDest, int nXDest, int nYDest, int nWidth, int n
 		{
 			for (x = 0; x < nWidth; x++)
 			{
-				patp = gdi_get_brush_pointer(hdcDest, nXDest + x, nYDest + y);
+				patp = gdi_get_brush_pointer(hdcDest, x, y);
 				
 				*dstp = *patp;
 				patp++;
@@ -1112,7 +1122,7 @@ static int BitBlt_PATINVERT(HDC hdcDest, int nXDest, int nYDest, int nWidth, int
 		{
 			for (x = 0; x < nWidth; x++)
 			{
-				patp = gdi_get_brush_pointer(hdcDest, nXDest + x, nYDest + y);
+				patp = gdi_get_brush_pointer(hdcDest, x, y);
 				
 				*dstp = *patp ^ *dstp;
 				patp++;
@@ -1147,7 +1157,7 @@ static int BitBlt_PATPAINT(HDC hdcDest, int nXDest, int nYDest, int nWidth, int 
 		{
 			for (x = 0; x < nWidth; x++)
 			{
-				patp = gdi_get_brush_pointer(hdcDest, nXDest + x, nYDest + y);
+				patp = gdi_get_brush_pointer(hdcDest, x, y);
 				
 				*dstp = *dstp | (*patp | ~(*srcp));
 				patp++;

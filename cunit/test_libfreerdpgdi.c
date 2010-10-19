@@ -36,6 +36,8 @@ int add_libfreerdpgdi_suite(void)
 	add_test_function(PtInRect);
 	add_test_function(FillRect);
 	add_test_function(BitBlt);
+	add_test_function(ClipCoords);
+	add_test_function(InvalidateRegion);
 
 	return 0;
 }
@@ -688,6 +690,7 @@ void test_FillRect(void)
 	HRECT hRect;
 	HBRUSH hBrush;
 	HBITMAP hBitmap;
+	COLORREF color;
 
 	int x, y;
 	int badPixels;
@@ -710,7 +713,8 @@ void test_FillRect(void)
 	memset(hBitmap->data, 0, width * height * hdc->bytesPerPixel);
 	SelectObject(hdc, (HGDIOBJ) hBitmap);
 
-	hBrush = CreateSolidBrush(0x00AABBCC);
+	color = (COLORREF) RGB(0xAA, 0xBB, 0xCC);
+	hBrush = CreateSolidBrush(color);
 
 	FillRect(hdc, hRect, hBrush);
 
@@ -723,7 +727,7 @@ void test_FillRect(void)
 		{
 			if (PtInRect(hRect, x, y))
 			{
-				if (GetPixel(hdc, x, y) == 0x00AABBCC) {
+				if (GetPixel(hdc, x, y) == color) {
 					goodPixels++;
 				}
 				else {
@@ -732,7 +736,7 @@ void test_FillRect(void)
 			}
 			else
 			{
-				if (GetPixel(hdc, x, y) == 0x00AABBCC) {
+				if (GetPixel(hdc, x, y) == color) {
 					badPixels++;
 				}
 				else {
@@ -1021,3 +1025,275 @@ void test_BitBlt(void)
 	CU_ASSERT(CompareBitmaps(hBmpDst, hBmp_SPna) == 1)
 }
 
+void test_ClipCoords(void)
+{
+	HDC hdc;
+	HRGN rgn1;
+	HRGN rgn2;
+	HBITMAP bmp;
+	
+	hdc = GetDC();
+	hdc->bytesPerPixel = 4;
+	hdc->bitsPerPixel = 32;
+	bmp = CreateBitmap(1024, 768, 4, NULL);
+	SelectObject(hdc, (HGDIOBJ) bmp);
+	SetNullClipRgn(hdc);
+
+	rgn1 = CreateRectRgn(0, 0, 0, 0);
+	rgn2 = CreateRectRgn(0, 0, 0, 0);
+	rgn1->null = 1;
+	rgn2->null = 1;
+
+	/* null clipping region */
+	SetNullClipRgn(hdc);
+	SetRgn(rgn1, 20, 20, 100, 100);
+	SetRgn(rgn2, 20, 20, 100, 100);
+
+	ClipCoords(hdc, &(rgn1->x), &(rgn1->y), &(rgn1->w), &(rgn1->h));
+	CU_ASSERT(EqualRgn(rgn1, rgn2) == 1);
+
+	/* region all inside clipping region */
+	SetClipRgn(hdc, 0, 0, 1024, 768);
+	SetRgn(rgn1, 20, 20, 100, 100);
+	SetRgn(rgn2, 20, 20, 100, 100);
+
+	ClipCoords(hdc, &(rgn1->x), &(rgn1->y), &(rgn1->w), &(rgn1->h));
+	CU_ASSERT(EqualRgn(rgn1, rgn2) == 1);
+
+	/* region all outside clipping region, on the left */
+	SetClipRgn(hdc, 300, 300, 100, 100);
+	SetRgn(rgn1, 20, 20, 100, 100);
+	SetRgn(rgn2, 0, 0, 0, 0);
+
+	ClipCoords(hdc, &(rgn1->x), &(rgn1->y), &(rgn1->w), &(rgn1->h));
+	CU_ASSERT(EqualRgn(rgn1, rgn2) == 1);
+
+	/* region all outside clipping region, on the right */
+	SetClipRgn(hdc, 300, 300, 100, 100);
+	SetRgn(rgn1, 420, 420, 100, 100);
+	SetRgn(rgn2, 0, 0, 0, 0);
+
+	ClipCoords(hdc, &(rgn1->x), &(rgn1->y), &(rgn1->w), &(rgn1->h));
+	CU_ASSERT(EqualRgn(rgn1, rgn2) == 1);
+
+	/* region all outside clipping region, on top */
+	SetClipRgn(hdc, 300, 300, 100, 100);
+	SetRgn(rgn1, 300, 20, 100, 100);
+	SetRgn(rgn2, 0, 0, 0, 0);
+
+	ClipCoords(hdc, &(rgn1->x), &(rgn1->y), &(rgn1->w), &(rgn1->h));
+	CU_ASSERT(EqualRgn(rgn1, rgn2) == 1);
+
+	/* region all outside clipping region, at the bottom */
+	SetClipRgn(hdc, 300, 300, 100, 100);
+	SetRgn(rgn1, 300, 420, 100, 100);
+	SetRgn(rgn2, 0, 0, 0, 0);
+
+	ClipCoords(hdc, &(rgn1->x), &(rgn1->y), &(rgn1->w), &(rgn1->h));
+	CU_ASSERT(EqualRgn(rgn1, rgn2) == 1);
+
+	/* left outside, right = clip, top = clip, bottom = clip */
+	SetClipRgn(hdc, 300, 300, 100, 100);
+	SetRgn(rgn1, 100, 300, 300, 100);
+	SetRgn(rgn2, 300, 300, 100, 100);
+
+	ClipCoords(hdc, &(rgn1->x), &(rgn1->y), &(rgn1->w), &(rgn1->h));
+	CU_ASSERT(EqualRgn(rgn1, rgn2) == 1);
+
+	/* left outside, right inside, top = clip, bottom = clip */
+	SetClipRgn(hdc, 300, 300, 100, 100);
+	SetRgn(rgn1, 100, 300, 250, 100);
+	SetRgn(rgn2, 300, 300, 50, 100);
+
+	ClipCoords(hdc, &(rgn1->x), &(rgn1->y), &(rgn1->w), &(rgn1->h));
+	CU_ASSERT(EqualRgn(rgn1, rgn2) == 1);	
+	
+	/* left = clip, right outside, top = clip, bottom = clip */
+	SetClipRgn(hdc, 300, 300, 100, 100);
+	SetRgn(rgn1, 300, 300, 300, 100);
+	SetRgn(rgn2, 300, 300, 100, 100);
+
+	ClipCoords(hdc, &(rgn1->x), &(rgn1->y), &(rgn1->w), &(rgn1->h));
+	CU_ASSERT(EqualRgn(rgn1, rgn2) == 1);
+
+	/* left inside, right outside, top = clip, bottom = clip */
+	SetClipRgn(hdc, 300, 300, 100, 100);
+	SetRgn(rgn1, 350, 300, 200, 100);
+	SetRgn(rgn2, 350, 300, 50, 100);
+
+	ClipCoords(hdc, &(rgn1->x), &(rgn1->y), &(rgn1->w), &(rgn1->h));
+	CU_ASSERT(EqualRgn(rgn1, rgn2) == 1);
+
+	/* top outside, bottom = clip, left = clip, right = clip */
+	SetClipRgn(hdc, 300, 300, 100, 100);
+	SetRgn(rgn1, 300, 100, 300, 300);
+	SetRgn(rgn2, 300, 300, 100, 100);
+
+	ClipCoords(hdc, &(rgn1->x), &(rgn1->y), &(rgn1->w), &(rgn1->h));
+	CU_ASSERT(EqualRgn(rgn1, rgn2) == 1);
+
+	/* top = clip, bottom outside, left = clip, right = clip */
+	SetClipRgn(hdc, 300, 300, 100, 100);
+	SetRgn(rgn1, 300, 300, 100, 200);
+	SetRgn(rgn2, 300, 300, 100, 100);
+
+	ClipCoords(hdc, &(rgn1->x), &(rgn1->y), &(rgn1->w), &(rgn1->h));
+	CU_ASSERT(EqualRgn(rgn1, rgn2) == 1);
+	
+	/* top = clip, bottom = clip, top = clip, bottom = clip */
+	SetClipRgn(hdc, 300, 300, 100, 100);
+	SetRgn(rgn1, 300, 300, 100, 100);
+	SetRgn(rgn2, 300, 300, 100, 100);
+
+	ClipCoords(hdc, &(rgn1->x), &(rgn1->y), &(rgn1->w), &(rgn1->h));
+	CU_ASSERT(EqualRgn(rgn1, rgn2) == 1);
+	
+	/*printf("\n");
+	printf("clip: x:%d y:%d w:%d h:%d\n", hdc->clip->x, hdc->clip->y, hdc->clip->w, hdc->clip->h);
+	printf("rgn1: x:%d y:%d w:%d h:%d\n", rgn1->x, rgn1->y, rgn1->w, rgn1->h);
+	printf("rgn2: x:%d y:%d w:%d h:%d\n", rgn2->x, rgn2->y, rgn2->w, rgn2->h);*/
+}
+
+void test_InvalidateRegion(void)
+{
+	HDC hdc;
+	HRGN rgn1;
+	HRGN rgn2;
+	HRGN invalid;
+	HBITMAP bmp;
+	
+	hdc = GetDC();
+	hdc->bytesPerPixel = 4;
+	hdc->bitsPerPixel = 32;
+	bmp = CreateBitmap(1024, 768, 4, NULL);
+	SelectObject(hdc, (HGDIOBJ) bmp);
+	SetNullClipRgn(hdc);
+
+	hdc->hwnd = (HWND) malloc(sizeof(WND));
+	hdc->hwnd->invalid = CreateRectRgn(0, 0, 0, 0);
+	hdc->hwnd->invalid->null = 1;
+	invalid = hdc->hwnd->invalid;
+	
+	rgn1 = CreateRectRgn(0, 0, 0, 0);
+	rgn2 = CreateRectRgn(0, 0, 0, 0);
+	rgn1->null = 1;
+	rgn2->null = 1;
+
+	/* no previous invalid region */
+	invalid->null = 1;
+	SetRgn(rgn1, 300, 300, 100, 100);
+	SetRgn(rgn2, 300, 300, 100, 100);
+
+	InvalidateRegion(hdc, rgn1->x, rgn1->y, rgn1->w, rgn1->h);
+	CU_ASSERT(EqualRgn(invalid, rgn2) == 1);
+
+	/* region same as invalid region */
+	SetRgn(invalid, 300, 300, 100, 100);
+	SetRgn(rgn1, 300, 300, 100, 100);
+	SetRgn(rgn2, 300, 300, 100, 100);
+
+	InvalidateRegion(hdc, rgn1->x, rgn1->y, rgn1->w, rgn1->h);
+	CU_ASSERT(EqualRgn(invalid, rgn2) == 1);
+
+	/* left outside */
+	SetRgn(invalid, 300, 300, 100, 100);
+	SetRgn(rgn1, 100, 300, 300, 100);
+	SetRgn(rgn2, 100, 300, 300, 100);
+
+	InvalidateRegion(hdc, rgn1->x, rgn1->y, rgn1->w, rgn1->h);
+	CU_ASSERT(EqualRgn(invalid, rgn2) == 1);
+
+	/* right outside */
+	SetRgn(invalid, 300, 300, 100, 100);
+	SetRgn(rgn1, 300, 300, 300, 100);
+	SetRgn(rgn2, 300, 300, 300, 100);
+
+	InvalidateRegion(hdc, rgn1->x, rgn1->y, rgn1->w, rgn1->h);
+	CU_ASSERT(EqualRgn(invalid, rgn2) == 1);
+
+	/* top outside */
+	SetRgn(invalid, 300, 300, 100, 100);
+	SetRgn(rgn1, 300, 100, 100, 300);
+	SetRgn(rgn2, 300, 100, 100, 300);
+
+	InvalidateRegion(hdc, rgn1->x, rgn1->y, rgn1->w, rgn1->h);
+	CU_ASSERT(EqualRgn(invalid, rgn2) == 1);
+
+	/* bottom outside */
+	SetRgn(invalid, 300, 300, 100, 100);
+	SetRgn(rgn1, 300, 300, 100, 300);
+	SetRgn(rgn2, 300, 300, 100, 300);
+
+	InvalidateRegion(hdc, rgn1->x, rgn1->y, rgn1->w, rgn1->h);
+	CU_ASSERT(EqualRgn(invalid, rgn2) == 1);
+
+	/* left outside, right outside */
+	SetRgn(invalid, 300, 300, 100, 100);
+	SetRgn(rgn1, 100, 300, 600, 300);
+	SetRgn(rgn2, 100, 300, 600, 300);
+
+	InvalidateRegion(hdc, rgn1->x, rgn1->y, rgn1->w, rgn1->h);
+	CU_ASSERT(EqualRgn(invalid, rgn2) == 1);
+
+	/* top outside, bottom outside */
+	SetRgn(invalid, 300, 300, 100, 100);
+	SetRgn(rgn1, 300, 100, 100, 500);
+	SetRgn(rgn2, 300, 100, 100, 500);
+
+	InvalidateRegion(hdc, rgn1->x, rgn1->y, rgn1->w, rgn1->h);
+	CU_ASSERT(EqualRgn(invalid, rgn2) == 1);
+
+	/* all outside, left */
+	SetRgn(invalid, 300, 300, 100, 100);
+	SetRgn(rgn1, 100, 300, 100, 100);
+	SetRgn(rgn2, 100, 300, 300, 100);
+
+	InvalidateRegion(hdc, rgn1->x, rgn1->y, rgn1->w, rgn1->h);
+	CU_ASSERT(EqualRgn(invalid, rgn2) == 1);
+
+	/* all outside, right */
+	SetRgn(invalid, 300, 300, 100, 100);
+	SetRgn(rgn1, 700, 300, 100, 100);
+	SetRgn(rgn2, 300, 300, 500, 100);
+
+	InvalidateRegion(hdc, rgn1->x, rgn1->y, rgn1->w, rgn1->h);
+	CU_ASSERT(EqualRgn(invalid, rgn2) == 1);
+
+	/* all outside, top */
+	SetRgn(invalid, 300, 300, 100, 100);
+	SetRgn(rgn1, 300, 100, 100, 100);
+	SetRgn(rgn2, 300, 100, 100, 300);
+
+	InvalidateRegion(hdc, rgn1->x, rgn1->y, rgn1->w, rgn1->h);
+	CU_ASSERT(EqualRgn(invalid, rgn2) == 1);
+
+	/* all outside, bottom */
+	SetRgn(invalid, 300, 300, 100, 100);
+	SetRgn(rgn1, 300, 500, 100, 100);
+	SetRgn(rgn2, 300, 300, 100, 300);
+
+	InvalidateRegion(hdc, rgn1->x, rgn1->y, rgn1->w, rgn1->h);
+	CU_ASSERT(EqualRgn(invalid, rgn2) == 1);
+
+	/* all outside */
+	SetRgn(invalid, 300, 300, 100, 100);
+	SetRgn(rgn1, 100, 100, 600, 600);
+	SetRgn(rgn2, 100, 100, 600, 600);
+
+	InvalidateRegion(hdc, rgn1->x, rgn1->y, rgn1->w, rgn1->h);
+	CU_ASSERT(EqualRgn(invalid, rgn2) == 1);
+
+	/* everything */
+	SetRgn(invalid, 300, 300, 100, 100);
+	SetRgn(rgn1, 0, 0, 1024, 768);
+	SetRgn(rgn2, 0, 0, 1024, 768);
+
+	InvalidateRegion(hdc, rgn1->x, rgn1->y, rgn1->w, rgn1->h);
+	CU_ASSERT(EqualRgn(invalid, rgn2) == 1);
+	
+	/*
+	printf("\n");
+	printf("invalid: x:%d y:%d w:%d h:%d\n", invalid->x, invalid->y, invalid->w, invalid->h);
+	printf("rgn1: x:%d y:%d w:%d h:%d\n", rgn1->x, rgn1->y, rgn1->w, rgn1->h);
+	printf("rgn2: x:%d y:%d w:%d h:%d\n", rgn2->x, rgn2->y, rgn2->w, rgn2->h);*/
+}

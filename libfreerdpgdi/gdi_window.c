@@ -511,7 +511,7 @@ gdi_ui_paint_bitmap(struct rdp_inst * inst, int x, int y, int cx, int cy, int wi
 	gdi_bitmap *gdi_bmp;
 	GDI *gdi = GET_GDI(inst);
 
-	//DEBUG_GDI("ui_paint_bitmap: x:%d y:%d cx:%d cy:%d\n", x, y, cx, cy);
+	DEBUG_GDI("ui_paint_bitmap: x:%d y:%d cx:%d cy:%d\n", x, y, cx, cy);
 
 	gdi_bmp = (gdi_bitmap*) inst->ui_create_bitmap(inst, width, height, data);
 	BitBlt(gdi->primary->hdc, x, y, cx, cy, gdi_bmp->hdc, 0, 0, SRCCOPY);
@@ -533,8 +533,6 @@ gdi_ui_line(struct rdp_inst * inst, uint8 opcode, int startx, int starty, int en
 	int cy;
 	HPEN hPen;
 	GDI *gdi = GET_GDI(inst);
-
-	/* pre-clipping coordinates could have bad side effects for line drawing since it could change the slope */
 	
 	cx = endx - startx;
 	cy = endy - starty;
@@ -736,7 +734,7 @@ static void
 gdi_ui_set_clipping_region(struct rdp_inst * inst, int x, int y, int cx, int cy)
 {
 	GDI *gdi = GET_GDI(inst);
-	SetClipRgn(gdi->drawing->hdc, x, y, x + cx, y + cy);
+	SetClipRgn(gdi->drawing->hdc, x, y, cx, cy);
 }
 
 static void
@@ -755,18 +753,17 @@ gdi_ui_create_surface(struct rdp_inst * inst, int width, int height, RD_HBITMAP 
 
 	gdi_bmp = gdi_bitmap_new(gdi, width, height, 0, 0, NULL);
 	old_gdi_bmp = (gdi_bitmap*) old_surface;
-
+	
 	if (old_gdi_bmp != 0)
 	{
-		BitBlt(gdi_bmp->hdc, 0, 0, width, height, old_gdi_bmp->hdc, 0, 0, SRCCOPY);
 		gdi_bitmap_free(old_gdi_bmp);
 	}
-	
+
 	if (gdi->drawing == old_gdi_bmp)
 	{
 		gdi->drawing = gdi_bmp;
 	}
-
+	
 	DEBUG_GDI("ui_create_surface\n");
 	
 	return (RD_HBITMAP) gdi_bmp;

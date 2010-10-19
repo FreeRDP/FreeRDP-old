@@ -22,3 +22,5 @@ void test_MoveTo(void);
 void test_PtInRect(void);
 void test_FillRect(void);
 void test_BitBlt(void);
+void test_ClipCoords(void);
+void test_InvalidateRegion(void);
