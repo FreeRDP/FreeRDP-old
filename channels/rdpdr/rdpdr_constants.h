@@ -204,6 +204,11 @@
 #define SCARD_LOCK_RDPDR	3
 #define SCARD_LOCK_LAST		4
 
+/* IO constants */
+#define RDPDR_ABORT_IO_NONE		0
+#define RDPDR_ABORT_IO_WRITE	1
+#define RDPDR_ABORT_IO_READ		2
+
 /* [MS-FSCC] FileAttributes */
 #define FILE_ATTRIBUTE_ARCHIVE              0x00000020
 #define FILE_ATTRIBUTE_COMPRESSED           0x00000800

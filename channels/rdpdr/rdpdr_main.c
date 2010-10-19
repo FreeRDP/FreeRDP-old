@@ -306,6 +306,42 @@ rdpdr_add_async_irp(IRP * irp, char * data, int data_size)
 }
 
 static void
+rdpdr_abort_single_io(rdpdrPlugin * plugin, uint32 fd, uint8 abortCode)
+{
+	IRP * pending = NULL;
+	char * out;
+	int out_size, error;
+	int major = 0;
+
+	if (abortCode == RDPDR_ABORT_IO_READ)
+		major = IRP_MJ_READ;
+	else if (abortCode == RDPDR_ABORT_IO_WRITE)
+		major = IRP_MJ_WRITE;
+
+	pending = irp_queue_first(queue);
+	while (pending)
+	{
+		if (irp_file_descriptor(pending) == fd && pending->majorFunction == major)
+		{
+			pending->outputBuffer = malloc(pending->outputBufferLength);
+			pending->ioStatus = RD_STATUS_CANCELLED;
+			SET_UINT32(pending->outputBuffer, 0, 0);
+			out = irp_output_device_io_completion(pending, &out_size);
+			error = plugin->ep.pVirtualChannelWrite(plugin->open_handle, out, out_size, out);
+			if (error != CHANNEL_RC_OK)
+				LLOGLN(0, ("rdpdr_check_fds: VirtualChannelWrite failed %d", error));
+
+			free(pending->outputBuffer);
+			irp_queue_remove(queue, pending);
+
+			return;
+		}
+
+		pending = irp_queue_next(queue, pending);
+	}
+}
+
+static void
 rdpdr_abort_ios(rdpdrPlugin * plugin)
 {
 	IRP * pending = NULL;
@@ -414,6 +450,7 @@ rdpdr_process_irp(rdpdrPlugin * plugin, char* data, int data_size)
 	memset((void*)&irp, '\0', sizeof(IRP));
 
 	irp.ioStatus = RD_STATUS_SUCCESS;
+	irp.abortIO = RDPDR_ABORT_IO_NONE;
 
 	/* Device I/O Request Header */
 	deviceID = GET_UINT32(data, 0); /* deviceID */
@@ -518,6 +555,14 @@ rdpdr_process_irp(rdpdrPlugin * plugin, char* data, int data_size)
 			LLOGLN(0, ("IRP majorFunction=0x%x minorFunction=0x%x not supported", irp.majorFunction, irp.minorFunction));
 			irp.ioStatus = RD_STATUS_NOT_SUPPORTED;
 			break;
+	}
+
+	if (irp.abortIO)
+	{
+		if (irp.abortIO & RDPDR_ABORT_IO_WRITE)
+			rdpdr_abort_single_io(plugin, irp_file_descriptor(&irp), RDPDR_ABORT_IO_WRITE);
+		if (irp.abortIO & RDPDR_ABORT_IO_READ)
+			rdpdr_abort_single_io(plugin, irp_file_descriptor(&irp), RDPDR_ABORT_IO_READ);
 	}
 
 	if (irp.ioStatus == RD_STATUS_PENDING && irp.rwBlocking)
