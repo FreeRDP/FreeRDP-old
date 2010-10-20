@@ -531,9 +531,11 @@ serial_control(IRP * irp)
 				flush_mask |= TCIFLUSH;
 			if (flush_mask != 0)
 				tcflush(info->file, flush_mask);
-			if (purge_mask & SERIAL_PURGE_TXABORT ||
-				purge_mask & SERIAL_PURGE_RXABORT)
-				ret = RD_STATUS_CANCELLED;
+
+			if (purge_mask & SERIAL_PURGE_TXABORT)
+				irp->abortIO |= RDPDR_ABORT_IO_WRITE;
+			if(purge_mask & SERIAL_PURGE_RXABORT)
+				irp->abortIO |= RDPDR_ABORT_IO_READ;
 			break;
 		case IOCTL_SERIAL_WAIT_ON_MASK:
 			LLOGLN(10, ("serial_ioctl -> SERIAL_WAIT_ON_MASK %X", info->wait_mask));

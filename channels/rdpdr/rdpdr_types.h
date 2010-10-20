@@ -114,6 +114,7 @@ struct _IRP
 	uint64 offset;
 	uint32 operation;
 	uint8 waitOperation;
+	uint8 abortIO;
 };
 
 #endif
