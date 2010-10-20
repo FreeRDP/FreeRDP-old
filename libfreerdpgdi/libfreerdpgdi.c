@@ -203,7 +203,6 @@ int SetROP2(HDC hdc, int fnDrawMode)
 
 /* http://www.cs.toronto.edu/~smalik/418/tutorial2_bresenham.pdf */
 
-#if 0
 static void
 bresenham(HDC hdc, int x1, int y1, int x2, int y2)
 {
@@ -256,7 +255,6 @@ bresenham(HDC hdc, int x1, int y1, int x2, int y2)
 		}
 	}
 }
-#endif
 
 int LineTo(HDC hdc, int nXEnd, int nYEnd)
 {	
@@ -271,7 +269,7 @@ int LineTo(HDC hdc, int nXEnd, int nYEnd)
 	 * we're going to use the original Bresenham line drawing algorithm for now
 	 */
 
-	//bresenham(hdc, hdc->pen->posX, hdc->pen->posY, nXEnd, nYEnd);
+	bresenham(hdc, hdc->pen->posX, hdc->pen->posY, nXEnd, nYEnd);
 	
 	return 1;
 }
