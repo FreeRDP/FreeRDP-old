@@ -1,0 +1,83 @@
+2010-10-25  Version 0.8.0
+   * xfreerdp: 
+    - show less debug info unless in debug mode
+    - more useful keyboard debugging
+    - new command-line-option: --noosb: disable off screen bitmaps
+    - Host-names now appear in window-title
+   * rdpdr plugin:
+    - some fixes
+    - parallel port redirection
+    - serial port redirection
+   * drdynvc (Dynamic Virtual Channel) plugin:
+    - started work
+    - added audin (Redirect audio recording device to the server) subplugin (EXPERIMENTAL)
+   * Added working TLS encryption support:
+    - enable TLS by default and added option --no-tls (TLS is currently only available with OpenSSL as crypto backend)
+   * Crypto restructuring
+    - added partial support for PolarSSL as crypto backend
+    - added support for NSS as crypto backend
+    - added support for GnuTLS as crypto backend
+   * Fixes for Load Balancing and authentication when redirecting
+
+2010-08-18  Version 0.7.4
+   * Maintenance:
+    - Brazilian ABNT keyboard issue
+    - libfreerdpkbd.c zombies
+    - manpage fixes
+    - VirtualBox connectivity
+
+2010-07-23  Version 0.7.3
+   * Maintenance:
+    - Add freerdp_ prefix to get_wstr/set_wstr to avoid function name conflict
+    - Corrected neo keyboard layout id
+
+2010-07-04  Version 0.7.2
+   * xfreerdp: 
+    - --help as alias for -h
+    - report invalid options to the user 
+    - assuming no Host-Name can start with "-"
+    - added German neo layout to list of keyboard layout variants
+   * Maintenance:
+    - Fixes in crypto
+    - Works towards DirectFB
+   
+2010-06-19  Version 0.7.1
+   * xfreerdp: 
+    - added -k option to force particular keyboard layout ID
+    - added --kbd-list option to list all keyboard layout IDs
+    - added -h option for help
+    - changed -plugin and -data argument to --plugin and --data
+   * Maintenance:
+    - Fixes to build system
+
+2010-06-11  Version 0.7.0
+   * Software Architecture:
+    - Full multi-session support
+    - Created a library separate from the UI, making it easier to implement different UI's
+    - New keyboard input system based on the XKB database, providing better support for international keyboards
+    - Implemented Microsoft's virtual channel plugin API and re-implemented features as plugins (libfreerdpchanman)
+    - Created a "device manager" for various devices redirected over the device redirection plugin
+   * Refactoring:
+    - X11 UI completely rewritten from scratch
+    - Disk and printer redirection have been rewritten in a much cleaner way
+    - redirection has been re-implemented as a virtual channel plugin
+    - Sound redirection has also been re-implemented as a virtual channel plugin
+    - A *LOT* of added comments in the code with regards to the protocol documentation
+    - Cleanup and increased compliance with the documentation released by MS after rdesktop was created
+   * Improvements:
+    - Support for cursors on Windows Server 2008 R2
+    - Support for bitmap caching, which provides a good performance boost
+    - Build system has been completely revamped to use newer tools such as libtool
+    - Support for Windows Server 2008 Terminal Services Session Broker Load Balancing
+    - It is now possible to compile FreeRDP without OpenSSL, using built-in code (more lightweight on embedded systems but only partially supported)
+    - Real capability set processing (original implementation discarded capability sets almost entirely and sent blobs)
+   * Work In Progress:
+    - A DirectFB UI has been started
+    - New Win32 port with working native UI, but it's not complete yet
+    - Support for NSS as a replacement for OpenSSL is also being worked on
+    - Network Level Authentication is half-way done (TLS works, but NTLM authentication is partially implemented)
+   * Dropped or Broken Features:
+    - seamlessrdp is *NOT* supported. RemoteApp support is eventually going to replace seamlessrdp
+    - Serial port redirection is currently not supported, as it needs to be re-implemented as a plugin
+    - Smartcard support also needs to be re-implemented as a plugin
+
