@@ -99,8 +99,6 @@ static uint32
 parallel_control(IRP * irp)
 {
 	int size = 0, ret = RD_STATUS_SUCCESS;
-	PARALLEL_DEVICE_INFO *info = (PARALLEL_DEVICE_INFO *) irp->dev->info;
-	char *inbuf = irp->inputBuffer;
 	char *outbuf = NULL;
 
 	LLOGLN(10, ("parallel_control: id=%d io=%X", irp->fileID, irp->ioControlCode));
