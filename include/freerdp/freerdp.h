@@ -27,7 +27,7 @@
 #include <freerdp/types_ui.h>
 #include <freerdp/constants_ui.h>
 
-#define FREERDP_INTERFACE_VERSION 2
+#define FREERDP_INTERFACE_VERSION 3
 
 #if defined _WIN32 || defined __CYGWIN__
   #ifdef FREERDP_EXPORTS
