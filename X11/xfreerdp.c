@@ -104,6 +104,7 @@ out_args(void)
 #endif
 		"\t--plugin: load a virtual channel plugin\n"
 		"\t--noosb: disable off screen bitmaps, default on\n"
+		"\t--version: Print out the version and exit\n"
 		"\t-h: show this help\n";
 	printf("%s\n", help);
 	return 0;
@@ -407,6 +408,11 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 			   followed will be parsed for the next session. */
 			*pindex = *pindex + 1;
 			return 0;
+		}
+      else if (strcmp("--version", argv[*pindex]) == 0)
+		{
+			printf("This is FreeRDP version %s\n", PACKAGE_VERSION);
+			return 1;
 		}
 		else
 		{

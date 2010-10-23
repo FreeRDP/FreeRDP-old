@@ -4,6 +4,7 @@
     - more useful keyboard debugging
     - new command-line-option: --noosb: disable off screen bitmaps
     - Host-names now appear in window-title
+    - new command-line-option: --version
    * rdpdr plugin:
     - some fixes
     - parallel port redirection
