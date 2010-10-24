@@ -1511,14 +1511,19 @@ rdp_connect(rdpRdp * rdp)
 RD_BOOL
 rdp_reconnect(rdpRdp * rdp)
 {
-	char * server = rdp->redirect_server ? rdp->redirect_server : rdp->settings->server;
-	char * username = rdp->redirect_username ? rdp->redirect_username : rdp->settings->username;
+	char *server;
+	char *username;
+	char *domain;
+	char *password;
+	size_t password_len;
+
+	server = rdp->redirect_server ? rdp->redirect_server : rdp->settings->server;
+	username = rdp->redirect_username ? rdp->redirect_username : rdp->settings->username;
 	if (!sec_connect(rdp->sec, server, username, rdp->settings->tcp_port_rdp))
 		return False;
 
-	char * domain = rdp->redirect_domain ? rdp->redirect_domain : rdp->settings->domain;
-	size_t password_len;
-	char * password;
+	domain = rdp->redirect_domain ? rdp->redirect_domain : rdp->settings->domain;
+	
 	if (rdp->redirect_password)
 	{
 		password = rdp->redirect_password;

@@ -143,6 +143,10 @@ process_params(rdpSet * settings, rdpChanMan * chan_man, int argc, LPWSTR * argv
 		{
 			settings->bulk_compression = 1;
 		}
+		else if (wcscmp(L"-0", argv[*pindex]) == 0)
+		{
+			settings->console_session = 1;
+		}
 		else if (wcscmp(L"-x", argv[*pindex]) == 0)
 		{
 			*pindex = *pindex + 1;

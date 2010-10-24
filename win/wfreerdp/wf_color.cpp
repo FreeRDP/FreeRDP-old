@@ -289,8 +289,8 @@ wf_image_convert(wfInfo * wfi, int width, int height, int bpp,
 	return out_data;
 }
 
-RD_HCOLORMAP
-wf_create_colormap(wfInfo * wfi, RD_COLORMAP * colors)
+RD_HPALETTE
+wf_create_colormap(wfInfo * wfi, RD_PALETTE * colors)
 {
 	uint8 * colormap;
 	uint8 * dst;
@@ -311,11 +311,11 @@ wf_create_colormap(wfInfo * wfi, RD_COLORMAP * colors)
 		*dst++ = colors->colors[index].green;
 		*dst++ = colors->colors[index].red;
 	}
-	return (RD_HCOLORMAP) colormap;
+	return (RD_HPALETTE) colormap;
 }
 
 int
-wf_set_colormap(wfInfo * wfi, RD_HCOLORMAP map)
+wf_set_colormap(wfInfo * wfi, RD_HPALETTE map)
 {
 	if (wfi->colormap != NULL)
 	{

@@ -269,16 +269,17 @@ tcp_recv(rdpTcp * tcp, STREAM s, uint32 length)
 RD_BOOL
 tcp_connect(rdpTcp * tcp, char * server, int port)
 {
-	socklen_t option_len;
-	uint32 option_value;
 	int sock;
-	printf("connecting to %s:%d\n", server, port);
+	uint32 option_value;
+	socklen_t option_len;
 
 #ifdef IPv6
 
 	int n;
 	struct addrinfo hints, *res, *ressave;
 	char tcp_port_rdp_s[10];
+
+	printf("connecting to %s:%d\n", server, port);
 
 	snprintf(tcp_port_rdp_s, 10, "%d", port);
 
@@ -318,6 +319,8 @@ tcp_connect(rdpTcp * tcp, char * server, int port)
 
 	struct hostent *nslookup;
 	struct sockaddr_in servaddr;
+
+	printf("connecting to %s:%d\n", server, port);
 
 	if ((nslookup = gethostbyname(server)) != NULL)
 	{

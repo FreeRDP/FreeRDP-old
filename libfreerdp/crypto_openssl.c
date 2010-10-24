@@ -163,6 +163,7 @@ int
 crypto_cert_get_pub_exp_mod(CryptoCert cert, uint32 * key_len,
 		uint8 * exponent, uint32 exp_len, uint8 * modulus, uint32 mod_len)
 {
+	int len;
 	int nid;
 	EVP_PKEY *epk = NULL;
 
@@ -191,7 +192,7 @@ crypto_cert_get_pub_exp_mod(CryptoCert cert, uint32 * key_len,
 
 	*key_len = RSA_size((RSA *) epk->pkey.ptr);
 
-	int len = BN_bn2bin(((RSA *) epk->pkey.ptr)->e, exponent);
+	len = BN_bn2bin(((RSA *) epk->pkey.ptr)->e, exponent);
 	// assert len <= exp_len
 	memmove(exponent + exp_len - len, exponent, len);
 	memset(exponent, 0, exp_len - len);
