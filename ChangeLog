@@ -2,7 +2,7 @@
    * xfreerdp: 
     - show less debug info unless in debug mode
     - more useful keyboard debugging
-    - new command-line-option: --noosb: disable off screen bitmaps
+    - new command-line-option: --no-osb: disable off screen bitmaps
     - Host-names now appear in window-title
     - new command-line-option: --version
    * rdpdr plugin:

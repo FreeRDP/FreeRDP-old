@@ -103,7 +103,7 @@ out_args(void)
 		"\t--no-tls: disable TLS encryption\n"
 #endif
 		"\t--plugin: load a virtual channel plugin\n"
-		"\t--noosb: disable off screen bitmaps, default on\n"
+		"\t--no-osb: disable off screen bitmaps, default on\n"
 		"\t--version: Print out the version and exit\n"
 		"\t-h: show this help\n";
 	printf("%s\n", help);
@@ -302,7 +302,7 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 		{
 			settings->bulk_compression = 1;
 		}
-		else if (strcmp("--noosb", argv[*pindex]) == 0)
+		else if (strcmp("--no-osb", argv[*pindex]) == 0)
 		{
 			settings->off_screen_bitmaps = 0;
 		}
