@@ -1,4 +1,12 @@
-2010-10-25  Version 0.8.0
+2010-10-25  Version 0.8.1
+   * cunit tests:
+    - added --with-cunit compile time option (disabled by default)
+    - cunit tests now included in distribution tarball 
+   * wfreerdp:
+    - removed unused ASN.1 MCS source files that would affect wfreerdp
+    - fixed various problems that would prevent wfreerdp from compiling
+
+2010-10-24  Version 0.8.0
    * xfreerdp: 
     - show less debug info unless in debug mode
     - more useful keyboard debugging
