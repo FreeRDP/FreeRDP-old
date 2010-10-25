@@ -411,9 +411,6 @@ int ClipCoords(HDC hdc, int *x, int *y, int *w, int *h, int *srcx, int *srcy)
 	int dy = 0;
 	int draw = 1;
 	
-	//printf("ClipCoords0: x:%d y:%d w:%d h:%d\n", hdc->clip->x, hdc->clip->y, hdc->clip->w, hdc->clip->h);
-	//printf("ClipCoords1: x:%d y:%d w:%d h:%d\n", *x, *y, *w, *h);
-	
 	if (hdc == NULL)
 		return 0;
 
@@ -586,9 +583,9 @@ int PtInRect(HRECT rc, int x, int y)
 	 * while points on the right and bottom sides are considered out
 	 */
 	
-	if (x >= rc->left && x < rc->right)
+	if (x >= rc->left && x <= rc->right)
 	{
-		if (y >= rc->top && y < rc->bottom)
+		if (y >= rc->top && y <= rc->bottom)
 		{
 			return 1;
 		}
@@ -609,7 +606,7 @@ int FillRect(HDC hdc, HRECT rect, HBRUSH hbr)
 	
 	if (ClipCoords(hdc, &nXDest, &nYDest, &nWidth, &nHeight, NULL, NULL) == 0)
 		return 0;
-	
+
 	GetRGB(r, g, b, hbr->color);
 	
 	for (y = 0; y < nHeight; y++)
@@ -1375,7 +1372,6 @@ int BitBlt(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdc
 
 int PatBlt(HDC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight, int rop)
 {
-	return 0;
 	if (ClipCoords(hdc, &nXLeft, &nYLeft, &nWidth, &nHeight, NULL, NULL) == 0)
 		return 0;
 	

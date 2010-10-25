@@ -666,22 +666,22 @@ void test_MoveTo(void)
 void test_PtInRect(void)
 {
 	HRECT hRect;
-	int x1 = 20;
-	int y1 = 40;
-	int x2 = 60;
-	int y2 = 80;
+	int left = 20;
+	int top = 40;
+	int right = 60;
+	int bottom = 80;
 
-	hRect = CreateRect(x1, y1, x2, y2);
+	hRect = CreateRect(left, top, right, bottom);
 
 	CU_ASSERT(PtInRect(hRect, 0, 0) == 0);
 	CU_ASSERT(PtInRect(hRect, 500, 500) == 0);
 	CU_ASSERT(PtInRect(hRect, 40, 100) == 0);
 	CU_ASSERT(PtInRect(hRect, 10, 40) == 0);
 	CU_ASSERT(PtInRect(hRect, 30, 50) == 1);
-	CU_ASSERT(PtInRect(hRect, x1, y1) == 1);
-	CU_ASSERT(PtInRect(hRect, x2, y2) == 0);
-	CU_ASSERT(PtInRect(hRect, x2, 60) == 0);
-	CU_ASSERT(PtInRect(hRect, 40, y2) == 0);
+	CU_ASSERT(PtInRect(hRect, left, top) == 1);
+	CU_ASSERT(PtInRect(hRect, right, bottom) == 1);
+	CU_ASSERT(PtInRect(hRect, right, 60) == 1);
+	CU_ASSERT(PtInRect(hRect, 40, bottom) == 1);
 }
 
 void test_FillRect(void)
@@ -698,16 +698,16 @@ void test_FillRect(void)
 	int width = 200;
 	int height = 300;
 
-	int x1 = 20;
-	int y1 = 40;
-	int x2 = 60;
-	int y2 = 80;
+	int left = 20;
+	int top = 40;
+	int right = 60;
+	int bottom = 80;
 
 	hdc = GetDC();
 	hdc->bytesPerPixel = 4;
 	hdc->bitsPerPixel = 32;
 
-	hRect = CreateRect(x1, y1, x2, y2);
+	hRect = CreateRect(left, top, right, bottom);
 
 	hBitmap = CreateCompatibleBitmap(hdc, width, height);
 	memset(hBitmap->data, 0, width * height * hdc->bytesPerPixel);
@@ -1031,7 +1031,7 @@ void test_ClipCoords(void)
 	HRGN rgn1;
 	HRGN rgn2;
 	HBITMAP bmp;
-	int nullRgn;
+	int draw;
 	
 	hdc = GetDC();
 	hdc->bytesPerPixel = 4;
@@ -1050,7 +1050,7 @@ void test_ClipCoords(void)
 	SetRgn(rgn1, 20, 20, 100, 100);
 	SetRgn(rgn2, 20, 20, 100, 100);
 
-	ClipCoords(hdc, &(rgn1->x), &(rgn1->y), &(rgn1->w), &(rgn1->h));
+	ClipCoords(hdc, &(rgn1->x), &(rgn1->y), &(rgn1->w), &(rgn1->h), NULL, NULL);
 	CU_ASSERT(EqualRgn(rgn1, rgn2) == 1);
 
 	/* region all inside clipping region */
@@ -1058,7 +1058,7 @@ void test_ClipCoords(void)
 	SetRgn(rgn1, 20, 20, 100, 100);
 	SetRgn(rgn2, 20, 20, 100, 100);
 
-	ClipCoords(hdc, &(rgn1->x), &(rgn1->y), &(rgn1->w), &(rgn1->h));
+	ClipCoords(hdc, &(rgn1->x), &(rgn1->y), &(rgn1->w), &(rgn1->h), NULL, NULL);
 	CU_ASSERT(EqualRgn(rgn1, rgn2) == 1);
 
 	/* region all outside clipping region, on the left */
@@ -1066,39 +1066,39 @@ void test_ClipCoords(void)
 	SetRgn(rgn1, 20, 20, 100, 100);
 	SetRgn(rgn2, 0, 0, 0, 0);
 
-	nullRgn = ClipCoords(hdc, &(rgn1->x), &(rgn1->y), &(rgn1->w), &(rgn1->h));
-	CU_ASSERT(nullRgn == 1);
+	draw = ClipCoords(hdc, &(rgn1->x), &(rgn1->y), &(rgn1->w), &(rgn1->h), NULL, NULL);
+	CU_ASSERT(draw == 0);
 
 	/* region all outside clipping region, on the right */
 	SetClipRgn(hdc, 300, 300, 100, 100);
 	SetRgn(rgn1, 420, 420, 100, 100);
 	SetRgn(rgn2, 0, 0, 0, 0);
 
-	nullRgn = ClipCoords(hdc, &(rgn1->x), &(rgn1->y), &(rgn1->w), &(rgn1->h));
-	CU_ASSERT(nullRgn == 1);
+	draw = ClipCoords(hdc, &(rgn1->x), &(rgn1->y), &(rgn1->w), &(rgn1->h), NULL, NULL);
+	CU_ASSERT(draw == 0);
 
 	/* region all outside clipping region, on top */
 	SetClipRgn(hdc, 300, 300, 100, 100);
 	SetRgn(rgn1, 300, 20, 100, 100);
 	SetRgn(rgn2, 0, 0, 0, 0);
 
-	nullRgn = ClipCoords(hdc, &(rgn1->x), &(rgn1->y), &(rgn1->w), &(rgn1->h));
-	CU_ASSERT(nullRgn == 1);
+	draw = ClipCoords(hdc, &(rgn1->x), &(rgn1->y), &(rgn1->w), &(rgn1->h), NULL, NULL);
+	CU_ASSERT(draw == 0);
 
 	/* region all outside clipping region, at the bottom */
 	SetClipRgn(hdc, 300, 300, 100, 100);
 	SetRgn(rgn1, 300, 420, 100, 100);
 	SetRgn(rgn2, 0, 0, 0, 0);
 
-	nullRgn = ClipCoords(hdc, &(rgn1->x), &(rgn1->y), &(rgn1->w), &(rgn1->h));
-	CU_ASSERT(nullRgn == 1);
+	draw = ClipCoords(hdc, &(rgn1->x), &(rgn1->y), &(rgn1->w), &(rgn1->h), NULL, NULL);
+	CU_ASSERT(draw == 0);
 
 	/* left outside, right = clip, top = clip, bottom = clip */
 	SetClipRgn(hdc, 300, 300, 100, 100);
 	SetRgn(rgn1, 100, 300, 300, 100);
 	SetRgn(rgn2, 300, 300, 100, 100);
 
-	ClipCoords(hdc, &(rgn1->x), &(rgn1->y), &(rgn1->w), &(rgn1->h));
+	ClipCoords(hdc, &(rgn1->x), &(rgn1->y), &(rgn1->w), &(rgn1->h), NULL, NULL);
 	CU_ASSERT(EqualRgn(rgn1, rgn2) == 1);
 
 	/* left outside, right inside, top = clip, bottom = clip */
@@ -1106,7 +1106,7 @@ void test_ClipCoords(void)
 	SetRgn(rgn1, 100, 300, 250, 100);
 	SetRgn(rgn2, 300, 300, 50, 100);
 
-	ClipCoords(hdc, &(rgn1->x), &(rgn1->y), &(rgn1->w), &(rgn1->h));
+	ClipCoords(hdc, &(rgn1->x), &(rgn1->y), &(rgn1->w), &(rgn1->h), NULL, NULL);
 	CU_ASSERT(EqualRgn(rgn1, rgn2) == 1);	
 	
 	/* left = clip, right outside, top = clip, bottom = clip */
@@ -1114,7 +1114,7 @@ void test_ClipCoords(void)
 	SetRgn(rgn1, 300, 300, 300, 100);
 	SetRgn(rgn2, 300, 300, 100, 100);
 
-	ClipCoords(hdc, &(rgn1->x), &(rgn1->y), &(rgn1->w), &(rgn1->h));
+	ClipCoords(hdc, &(rgn1->x), &(rgn1->y), &(rgn1->w), &(rgn1->h), NULL, NULL);
 	CU_ASSERT(EqualRgn(rgn1, rgn2) == 1);
 
 	/* left inside, right outside, top = clip, bottom = clip */
@@ -1122,7 +1122,7 @@ void test_ClipCoords(void)
 	SetRgn(rgn1, 350, 300, 200, 100);
 	SetRgn(rgn2, 350, 300, 50, 100);
 
-	ClipCoords(hdc, &(rgn1->x), &(rgn1->y), &(rgn1->w), &(rgn1->h));
+	ClipCoords(hdc, &(rgn1->x), &(rgn1->y), &(rgn1->w), &(rgn1->h), NULL, NULL);
 	CU_ASSERT(EqualRgn(rgn1, rgn2) == 1);
 
 	/* top outside, bottom = clip, left = clip, right = clip */
@@ -1130,7 +1130,7 @@ void test_ClipCoords(void)
 	SetRgn(rgn1, 300, 100, 300, 300);
 	SetRgn(rgn2, 300, 300, 100, 100);
 
-	ClipCoords(hdc, &(rgn1->x), &(rgn1->y), &(rgn1->w), &(rgn1->h));
+	ClipCoords(hdc, &(rgn1->x), &(rgn1->y), &(rgn1->w), &(rgn1->h), NULL, NULL);
 	CU_ASSERT(EqualRgn(rgn1, rgn2) == 1);
 
 	/* top = clip, bottom outside, left = clip, right = clip */
@@ -1138,7 +1138,7 @@ void test_ClipCoords(void)
 	SetRgn(rgn1, 300, 300, 100, 200);
 	SetRgn(rgn2, 300, 300, 100, 100);
 
-	ClipCoords(hdc, &(rgn1->x), &(rgn1->y), &(rgn1->w), &(rgn1->h));
+	ClipCoords(hdc, &(rgn1->x), &(rgn1->y), &(rgn1->w), &(rgn1->h), NULL, NULL);
 	CU_ASSERT(EqualRgn(rgn1, rgn2) == 1);
 	
 	/* top = clip, bottom = clip, top = clip, bottom = clip */
@@ -1146,7 +1146,7 @@ void test_ClipCoords(void)
 	SetRgn(rgn1, 300, 300, 100, 100);
 	SetRgn(rgn2, 300, 300, 100, 100);
 
-	ClipCoords(hdc, &(rgn1->x), &(rgn1->y), &(rgn1->w), &(rgn1->h));
+	ClipCoords(hdc, &(rgn1->x), &(rgn1->y), &(rgn1->w), &(rgn1->h), NULL, NULL);
 	CU_ASSERT(EqualRgn(rgn1, rgn2) == 1);
 	
 	/*printf("\n");

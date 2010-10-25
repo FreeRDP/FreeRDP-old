@@ -26,8 +26,13 @@
 
 /* COLORREF (RGB 24) */
 
+#ifdef USE_ALPHA
 #define RGB(_r, _g, _b)  \
 	(0xFF << 24) | (_r << 16) | (_g << 8) | _b;
+#else
+#define RGB(_r, _g, _b)  \
+	(_r << 16) | (_g << 8) | _b;
+#endif
 
 #define PixelRGB(_pixel)  \
 	(_pixel.red << 16) | (_pixel.green << 8) | _pixel.blue
@@ -99,8 +104,13 @@
 
 /* RGB 32 (ARGB_8888), alpha ignored */
 
+#ifdef USE_ALPHA
 #define RGB32(_r, _g, _b)  \
 	(0xFF << 24) | (_r << 16) | (_g << 8) | _b;
+#else
+#define RGB32(_r, _g, _b)  \
+	(_r << 16) | (_g << 8) | _b;
+#endif
 
 #define GetRGB32(_r, _g, _b, _p) \
 	_r = (_p & 0xFF0000) >> 16; \

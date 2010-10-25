@@ -68,13 +68,6 @@ l_ui_end_update(struct rdp_inst * inst)
 	dfbi->update_rect.y = gdi->primary->hdc->hwnd->invalid->y;
 	dfbi->update_rect.w = gdi->primary->hdc->hwnd->invalid->w;
 	dfbi->update_rect.h = gdi->primary->hdc->hwnd->invalid->h;
-
-#if 0
-	dfbi->update_rect.x = 0;
-	dfbi->update_rect.y = 0;
-	dfbi->update_rect.w = gdi->width;
-	dfbi->update_rect.h = gdi->height;
-#endif
 	
 	dfbi->primary->Blit(dfbi->primary, dfbi->surface, &(dfbi->update_rect), dfbi->update_rect.x, dfbi->update_rect.y);
 }
