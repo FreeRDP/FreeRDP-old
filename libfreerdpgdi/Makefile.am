@@ -6,9 +6,9 @@ libfreerdpgdidir = $(libdir)
 libfreerdpgdi_LTLIBRARIES = libfreerdpgdi.la
 
 libfreerdpgdi_la_SOURCES = \
-	gdi_color.c \
-	gdi_window.c \
-	libfreerdpgdi.c
+	gdi_color.c gdi_color.h \
+	gdi_window.c gdi_window.h \
+	libfreerdpgdi.c libfreerdpgdi.h
 
 libfreerdpgdi_la_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include
 
