@@ -22,6 +22,7 @@ REQUIRED_SUBDIRS = \
 	channels/rdpdr/parallel
 
 OPTIONAL_SUBDIRS = \
+	cunit \
 	X11 \
 	win \
 	dfb

@@ -885,6 +885,19 @@ esac
 EXTRA_SUBDIRS=""
 
 #
+# CUnit
+#
+cunit="no"
+AC_ARG_WITH([cunit],
+	[AS_HELP_STRING([--with-cunit], [Build CUnit])],
+	[
+		AC_CHECK_HEADER(CUnit/Basic.h, [], [AC_MSG_ERROR(CUnit development header not found)])
+		cunit="yes"
+		EXTRA_SUBDIRS="$EXTRA_SUBDIRS cunit"
+	]
+)
+
+#
 # X11
 #
 AM_CONDITIONAL(WITH_X11, true)
@@ -958,5 +971,7 @@ else
 fi
 echo "Sound        : $sound"
 echo "Printer      : $printer"
+echo "CUnit        : $cunit"
 echo "X11          : $x11"
 echo "DirectFB     : $dfb"
+
