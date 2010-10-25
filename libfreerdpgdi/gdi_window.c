@@ -533,11 +533,9 @@ gdi_ui_line(struct rdp_inst * inst, uint8 opcode, int startx, int starty, int en
 	int cy;
 	HPEN hPen;
 	GDI *gdi = GET_GDI(inst);
-	
-	cx = endx - startx;
-	cy = endy - starty;
-	endx = startx + cx;
-	endy = starty + cy;
+
+	cx = endx - startx + 1;
+	cy = endy - starty + 1;
 	
 	gdi_color_convert(&(gdi->pixel), pen->color, gdi->srcBpp, gdi->palette);
 	
@@ -559,12 +557,8 @@ gdi_ui_rect(struct rdp_inst * inst, int x, int y, int cx, int cy, int color)
 	GDI *gdi = GET_GDI(inst);
 
 	//DEBUG_GDI("ui_rect: x:%d y:%d cx:%d cy:%d\n", x, y, cx, cy);
-	
-	rect.left = x;
-	rect.top = y;
-	rect.right = x + cx;
-	rect.bottom = y + cy;
-	
+
+	CRgnToRect(x, y, cx, cy, &rect);
 	gdi_color_convert(&(gdi->pixel), color, gdi->srcBpp, gdi->palette);
 	hBrush = CreateSolidBrush(PixelRGB(gdi->pixel));
 	FillRect(gdi->drawing->hdc, &rect, hBrush);

@@ -1031,6 +1031,7 @@ void test_ClipCoords(void)
 	HRGN rgn1;
 	HRGN rgn2;
 	HBITMAP bmp;
+	int nullRgn;
 	
 	hdc = GetDC();
 	hdc->bytesPerPixel = 4;
@@ -1065,32 +1066,32 @@ void test_ClipCoords(void)
 	SetRgn(rgn1, 20, 20, 100, 100);
 	SetRgn(rgn2, 0, 0, 0, 0);
 
-	ClipCoords(hdc, &(rgn1->x), &(rgn1->y), &(rgn1->w), &(rgn1->h));
-	CU_ASSERT(EqualRgn(rgn1, rgn2) == 1);
+	nullRgn = ClipCoords(hdc, &(rgn1->x), &(rgn1->y), &(rgn1->w), &(rgn1->h));
+	CU_ASSERT(nullRgn == 1);
 
 	/* region all outside clipping region, on the right */
 	SetClipRgn(hdc, 300, 300, 100, 100);
 	SetRgn(rgn1, 420, 420, 100, 100);
 	SetRgn(rgn2, 0, 0, 0, 0);
 
-	ClipCoords(hdc, &(rgn1->x), &(rgn1->y), &(rgn1->w), &(rgn1->h));
-	CU_ASSERT(EqualRgn(rgn1, rgn2) == 1);
+	nullRgn = ClipCoords(hdc, &(rgn1->x), &(rgn1->y), &(rgn1->w), &(rgn1->h));
+	CU_ASSERT(nullRgn == 1);
 
 	/* region all outside clipping region, on top */
 	SetClipRgn(hdc, 300, 300, 100, 100);
 	SetRgn(rgn1, 300, 20, 100, 100);
 	SetRgn(rgn2, 0, 0, 0, 0);
 
-	ClipCoords(hdc, &(rgn1->x), &(rgn1->y), &(rgn1->w), &(rgn1->h));
-	CU_ASSERT(EqualRgn(rgn1, rgn2) == 1);
+	nullRgn = ClipCoords(hdc, &(rgn1->x), &(rgn1->y), &(rgn1->w), &(rgn1->h));
+	CU_ASSERT(nullRgn == 1);
 
 	/* region all outside clipping region, at the bottom */
 	SetClipRgn(hdc, 300, 300, 100, 100);
 	SetRgn(rgn1, 300, 420, 100, 100);
 	SetRgn(rgn2, 0, 0, 0, 0);
 
-	ClipCoords(hdc, &(rgn1->x), &(rgn1->y), &(rgn1->w), &(rgn1->h));
-	CU_ASSERT(EqualRgn(rgn1, rgn2) == 1);
+	nullRgn = ClipCoords(hdc, &(rgn1->x), &(rgn1->y), &(rgn1->w), &(rgn1->h));
+	CU_ASSERT(nullRgn == 1);
 
 	/* left outside, right = clip, top = clip, bottom = clip */
 	SetClipRgn(hdc, 300, 300, 100, 100);
