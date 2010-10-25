@@ -449,9 +449,6 @@ int ClipCoords(HDC hdc, int *x, int *y, int *w, int *h, int *srcx, int *srcy)
 	}
 
 	CRgnToRect(*x, *y, *w, *h, &coords);
-	//printf("ClipCoords2: left:%d top:%d right:%d bottom:%d\n", coords.left, coords.top, coords.right, coords.bottom);
-	//printf("ClipCoords3: left:%d top:%d right:%d bottom:%d\n", clip.left, clip.top, clip.right, clip.bottom);
-	//printf("ClipCoords4: left:%d top:%d right:%d bottom:%d\n", bmp.left, bmp.top, bmp.right, bmp.bottom);
 
 	if (coords.right > clip.left && coords.left < clip.right &&
 		coords.bottom > clip.top && coords.top < clip.bottom)
@@ -487,15 +484,13 @@ int ClipCoords(HDC hdc, int *x, int *y, int *w, int *h, int *srcx, int *srcy)
 		draw = 0;
 	}
 
-	if (srcx != NULL)
+	if (srcx != NULL && dx > 0)
 		*srcx += dx;
 
-	if (srcy != NULL)
+	if (srcy != NULL && dy > 0)
 		*srcy += dy;
 	
 	RectToCRgn(&coords, x, y, w, h);
-	//printf("ClipCoords5: left:%d top:%d right:%d bottom:%d\n", coords.left, coords.top, coords.right, coords.bottom);
-	//printf("ClipCoords6: x:%d y:%d w:%d h:%d\n", *x, *y, *w, *h);
 	
 	return draw;
 }
@@ -632,10 +627,13 @@ int FillRect(HDC hdc, HRECT rect, HBRUSH hbr)
 				dstp++;
 
 				*dstp = r;
+#ifdef USE_ALPHA
 				dstp++;
-
 				*dstp = 0xFF;
 				dstp++;
+#else
+				dstp += 2;
+#endif
 			}
 		}
 	}
@@ -675,19 +673,11 @@ int SetBkMode(HDC hdc, int iBkMode)
 
 static int BitBlt_BLACKNESS(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight)
 {
-	int x, y;
+	int y;
 	char *dstp;
 
-#if 0
-	for (y = 0; y < nHeight; y++)
-	{
-		dstp = gdi_get_bitmap_pointer(hdcDest, nXDest, nYDest + y);
-
-		if (dstp != 0)
-			memset(dstp, 0, nWidth * hdcDest->bytesPerPixel);
-	}
-#endif
-
+#ifdef USE_ALPHA
+	int x;
 	for (y = 0; y < nHeight; y++)
 	{
 		dstp = gdi_get_bitmap_pointer(hdcDest, nXDest, nYDest + y);
@@ -710,6 +700,15 @@ static int BitBlt_BLACKNESS(HDC hdcDest, int nXDest, int nYDest, int nWidth, int
 			}
 		}
 	}
+#else
+	for (y = 0; y < nHeight; y++)
+	{
+		dstp = gdi_get_bitmap_pointer(hdcDest, nXDest, nYDest + y);
+
+		if (dstp != 0)
+			memset(dstp, 0, nWidth * hdcDest->bytesPerPixel);
+	}
+#endif
 
 	return 0;
 }
@@ -764,7 +763,6 @@ static int BitBlt_SRCCOPY(HDC hdcDest, int nXDest, int nYDest, int nWidth, int n
 			if (srcp != 0 && dstp != 0)
 			{
 				gdi_copy_mem(dstp, srcp, nWidth * hdcDest->bytesPerPixel);
-				//srcp += nWidth * hdcDest->bytesPerPixel;
 			}
 		}
 	}
@@ -779,7 +777,6 @@ static int BitBlt_SRCCOPY(HDC hdcDest, int nXDest, int nYDest, int nWidth, int n
 			if (srcp != 0 && dstp != 0)
 			{
 				gdi_copy_mem(dstp, srcp, nWidth * hdcDest->bytesPerPixel);
-				//srcp += nWidth * hdcDest->bytesPerPixel;
 			}
 		}
 	}
@@ -794,7 +791,6 @@ static int BitBlt_SRCCOPY(HDC hdcDest, int nXDest, int nYDest, int nWidth, int n
 			if (srcp != 0 && dstp != 0)
 			{
 				gdi_copy_memb(dstp, srcp, nWidth * hdcDest->bytesPerPixel);
-				//srcp += nWidth * hdcDest->bytesPerPixel;
 			}
 		}
 	}

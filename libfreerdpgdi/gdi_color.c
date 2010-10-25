@@ -78,12 +78,13 @@ gdi_image_convert(char* srcData, int width, int height, int srcBpp, int dstBpp, 
 
 	if (srcBpp == dstBpp)
 	{
+#ifdef USE_ALPHA
 		int x, y;
 		char *dstp;
 
 		dstData = (char*) malloc(width * height * 4);
 		memcpy(dstData, srcData, width * height * 4);
-
+		
 		dstp = dstData;
 		for (y = 0; y < height; y++)
 		{
@@ -94,7 +95,10 @@ gdi_image_convert(char* srcData, int width, int height, int srcBpp, int dstBpp, 
 				dstp++;
 			}
 		}
-
+#else
+		dstData = (char*) malloc(width * height * 4);
+		memcpy(dstData, srcData, width * height * 4);
+#endif
 		return dstData;
 	}
 	if ((srcBpp == 24) && (dstBpp == 32))
