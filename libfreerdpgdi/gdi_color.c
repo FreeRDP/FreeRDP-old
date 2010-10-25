@@ -46,7 +46,7 @@ gdi_color_convert(PIXEL *pixel, int color, int bpp, HPALETTE palette)
 			GetBGR24(pixel->red, pixel->green, pixel->blue, color);
 			break;
 		case 16:
-			GetBGR16(pixel->red, pixel->green, pixel->blue, color);
+			GetRGB16(pixel->red, pixel->green, pixel->blue, color);
 			break;
 		case 15:
 			GetBGR15(pixel->red, pixel->green, pixel->blue, color);
@@ -126,7 +126,7 @@ gdi_image_convert(char* srcData, int width, int height, int srcBpp, int dstBpp, 
 		{
 			pixel = *src16;
 			src16++;
-			GetBGR16(red, green, blue, pixel);
+			GetRGB16(red, green, blue, pixel);
 			pixel = RGB32(red, green, blue);
 			*dst32 = pixel;
 			dst32++;

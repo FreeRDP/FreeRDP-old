@@ -5,7 +5,8 @@ bin_PROGRAMS = test_freerdp
 
 test_freerdp_SOURCES = \
 	test_freerdp.c \
-	test_libfreerdpgdi.c
+	test_libfreerdpgdi.c \
+	test_gdi_color.c
 
 test_freerdp_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include -I$(top_srcdir)/libfreerdpgdi
 
@@ -15,6 +16,5 @@ test_freerdp_LDADD = \
 	../libfreerdpgdi/libfreerdpgdi.la \
 	../libfreerdpchanman/libfreerdpchanman.la \
 	-lfusion -ldirect -lz -lpthread -lcunit
-
 
 

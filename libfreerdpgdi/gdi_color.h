@@ -24,6 +24,15 @@
 
 #include "libfreerdpgdi.h"
 
+/* GDI Color Space Conversions: http://msdn.microsoft.com/en-us/library/ff566496(VS.85).aspx */
+
+/* Color Space Conversion */
+ 
+#define RGB_565_888(_r, _g, _b) \
+	_r = (_r << 3 & ~0x7) | (_r >> 2); \
+	_g = (_g << 2 & ~0x3) | (_g >> 4); \
+	_b = (_b << 3 & ~0x7) | (_b >> 2);
+ 
 /* COLORREF (RGB 24) */
 
 #ifdef USE_ALPHA
@@ -67,20 +76,28 @@
 #define RGB16(_r, _g, _b)  \
 	(_r << 11) | (_g << 5) | _b;
 
-#define GetRGB16(_r, _g, _b, _p) \
+#define GetRGB_565(_r, _g, _b, _p) \
 	_r = (_p & 0xF800) >> 11; \
 	_g = (_p & 0x7E0) >> 5; \
 	_b = (_p & 0x1F);
+
+#define GetRGB16(_r, _g, _b, _p) \
+	GetRGB_565(_r, _g, _b, _p); \
+	RGB_565_888(_r, _g, _b);
 
 /* BGR 16 (BGR_565) */
 
 #define BGR16(_r, _g, _b)  \
 	(_b << 11) | (_g << 5) | _r;
 
+#define GetBGR_565(_r, _g, _b, _p) \
+	_b = (_p & 0xF800) >> 11; \
+	_g = (_p & 0x7E0) >> 5; \
+	_r = (_p & 0x1F);
+ 
 #define GetBGR16(_r, _g, _b, _p) \
-	_b = ((_p << 3) & 0xF8) | ((_p >> 2) & 0x7); \
-	_g = ((_p >> 3) & 0xFC) | ((_p >> 9) & 0x3); \
-	_r = ((_p >> 8) & 0xF8) | ((_p >> 13) & 0x7);
+	GetBGR_565(_r, _g, _b, _p); \
+	RGB_565_888(_r, _g, _b);
 
 /* RGB 24 (RGB_888) */
 
@@ -148,6 +165,13 @@
 	_b = (_p & 0xFF0000) >> 16; \
 	_g = (_p & 0xFF00) >> 8; \
 	_r = (_p & 0xFF);
+
+/* Color Conversion */
+
+#define BGR16_RGB32(_r, _g, _b, _p) \
+	GetBGR16(_r, _g, _b, _p); \
+ 	RGB_565_888(_r, _g, _b); \
+	_p = RGB32(_r, _g, _b);
 
 void gdi_color_convert(PIXEL *pixel, int color, int bpp, HPALETTE palette);
 char* gdi_image_convert(char* srcData, int width, int height, int srcBpp, int dstBpp, HPALETTE palette);
