@@ -388,8 +388,7 @@ mcs_connect(rdpMcs * mcs)
 		mcs_id = settings->channels[i].chan_id;
 		if (mcs_id >= mcs->mcs_userid + MCS_USERCHANNEL_BASE)
 		{
-			ui_error(mcs->sec->rdp->inst, "channel %d got id %d >= %d\n", i, mcs_id, mcs->mcs_userid + MCS_USERCHANNEL_BASE);
-			goto error;
+			ui_warning(mcs->sec->rdp->inst, "channel %d got id %d >= %d\n", i, mcs_id, mcs->mcs_userid + MCS_USERCHANNEL_BASE);
 		}
 		mcs_send_cjrq(mcs, mcs_id);
 		if (!mcs_recv_cjcf(mcs))
