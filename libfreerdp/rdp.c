@@ -206,7 +206,7 @@ xstrdup_out_unistr(rdpRdp * rdp, char *str, size_t *pout_len)
 	if (iconv(rdp->out_iconv_h, (ICONV_CONST char **) &pin, &ibl, &pout, &obl) == (size_t) - 1)
 	{
 		ui_error(rdp->inst, "xmalloc_out_unistr: iconv failure, errno %d\n", errno);
-		return 0;
+		return NULL;
 	}
 #else
 	while ((ibl > 0) && (obl > 0))
@@ -332,7 +332,9 @@ rdp_out_client_timezone_info(rdpRdp * rdp, STREAM s)
 		}
 
 		strftime(standardName, 32, "%Z, Standard Time", localTime);
+		standardName[31] = 0;
 		strftime(daylightName, 32, "%Z, Summer Time", localTime);
+		daylightName[31] = 0;
 
 		memset((void*)&standardDate, '\0', sizeof(systemTime));
 		memset((void*)&daylightDate, '\0', sizeof(systemTime));
@@ -1523,7 +1525,7 @@ rdp_reconnect(rdpRdp * rdp)
 		return False;
 
 	domain = rdp->redirect_domain ? rdp->redirect_domain : rdp->settings->domain;
-	
+
 	if (rdp->redirect_password)
 	{
 		password = rdp->redirect_password;
