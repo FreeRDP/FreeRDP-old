@@ -353,32 +353,50 @@ mcs_connect(rdpMcs * mcs)
 
 	mcs_send_connect_initial(mcs);
 	if (!mcs_recv_connect_response(mcs))
+	{
+		ui_error(mcs->sec->rdp->inst, "invalid mcs_recv_connect_response\n");
 		goto error;
+	}
 
 	mcs_send_edrq(mcs);
 
 	mcs_send_aurq(mcs);
 	if (!mcs_recv_aucf(mcs, &(mcs->mcs_userid)))
+	{
+		ui_error(mcs->sec->rdp->inst, "invalid mcs_recv_aucf\n");
 		goto error;
+	}
 
 	mcs_send_cjrq(mcs, mcs->mcs_userid + MCS_USERCHANNEL_BASE);
 
 	if (!mcs_recv_cjcf(mcs))
+	{
+		ui_error(mcs->sec->rdp->inst, "invalid mcs_recv_cjcf\n");
 		goto error;
+	}
 
 	mcs_send_cjrq(mcs, MCS_GLOBAL_CHANNEL);
 	if (!mcs_recv_cjcf(mcs))
+	{
+		ui_error(mcs->sec->rdp->inst, "invalid mcs_recv_cjcf\n");
 		goto error;
+	}
 
 	settings = mcs->sec->rdp->settings;
 	for (i = 0; i < settings->num_channels; i++)
 	{
 		mcs_id = settings->channels[i].chan_id;
 		if (mcs_id >= mcs->mcs_userid + MCS_USERCHANNEL_BASE)
+		{
+			ui_error(mcs->sec->rdp->inst, "channel %d got id %d >= %d\n", i, mcs_id, mcs->mcs_userid + MCS_USERCHANNEL_BASE);
 			goto error;
+		}
 		mcs_send_cjrq(mcs, mcs_id);
 		if (!mcs_recv_cjcf(mcs))
+		{
+			ui_error(mcs->sec->rdp->inst, "channel %d id %d invalid mcs_recv_cjcf\n", i, mcs_id);
 			goto error;
+		}
 	}
 	return True;
 
