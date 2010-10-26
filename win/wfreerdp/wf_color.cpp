@@ -67,6 +67,7 @@
   (((_green & 0xff) >> 2) <<  5) | \
   (((_blue & 0xff) >> 3) <<  0)
 
+#if COMPILE_UNUSED
 static int
 get_pixel(uint8 * data, int x, int y, int width, int height, int bpp)
 {
@@ -107,7 +108,9 @@ get_pixel(uint8 * data, int x, int y, int width, int height, int bpp)
 	}
 	return 0;
 }
+#endif
 
+#ifdef COMPILE_UNUSED
 static void
 set_pixel(uint8 * data, int x, int y, int width, int height, int bpp, int pixel)
 {
@@ -139,6 +142,7 @@ set_pixel(uint8 * data, int x, int y, int width, int height, int bpp, int pixel)
 		printf("unknonw in set_pixel\n");
 	}
 }
+#endif
 
 int
 wf_color_convert(wfInfo * wfi, int in_color, int in_bpp)

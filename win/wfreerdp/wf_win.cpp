@@ -319,7 +319,7 @@ wf_create_dib(wfInfo * wfi, int width, int height, int bpp, int reverse, uint8 *
 {
 	HBITMAP bitmap;
 	uint8 * cdata;
-	BITMAPINFO bmi = {0};
+	BITMAPINFO bmi;
 	HDC hdc;
 
 	hdc = GetDC(NULL);
