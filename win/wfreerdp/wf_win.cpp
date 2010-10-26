@@ -440,19 +440,19 @@ wf_bitmap_free(struct wf_bitmap * bm)
 }
 
 static void
-l_ui_error(struct rdp_inst * inst, char * text)
+l_ui_error(struct rdp_inst * inst, const char * text)
 {
 	printf("ui_error: %s", text);
 }
 
 static void
-l_ui_warning(struct rdp_inst * inst, char * text)
+l_ui_warning(struct rdp_inst * inst, const char * text)
 {
 	printf("ui_warning: %s\n", text);
 }
 
 static void
-l_ui_unimpl(struct rdp_inst * inst, char * text)
+l_ui_unimpl(struct rdp_inst * inst, const char * text)
 {
 	printf("ui_unimpl: %s\n", text);
 }

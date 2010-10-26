@@ -82,9 +82,9 @@ struct rdp_inst
 	int (* rdp_channel_data)(rdpInst * inst, int chan_id, char * data, int data_size);
 	void (* rdp_disconnect)(rdpInst * inst);
 	/* calls from library to ui */
-	void (* ui_error)(rdpInst * inst, char * text);
-	void (* ui_warning)(rdpInst * inst, char * text);
-	void (* ui_unimpl)(rdpInst * inst, char * text);
+	void (* ui_error)(rdpInst * inst, const char * text);
+	void (* ui_warning)(rdpInst * inst, const char * text);
+	void (* ui_unimpl)(rdpInst * inst, const char * text);
 	void (* ui_begin_update)(rdpInst * inst);
 	void (* ui_end_update)(rdpInst * inst);
 	void (* ui_desktop_save)(rdpInst * inst, int offset, int x, int y,

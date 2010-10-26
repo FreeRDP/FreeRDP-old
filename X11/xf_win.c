@@ -187,20 +187,21 @@ xf_set_rop3(xfInfo * xfi, int rop3)
 	}
 	return 0;
 }
+
 static void
-l_ui_error(struct rdp_inst * inst, char * text)
+l_ui_error(struct rdp_inst * inst, const char * text)
 {
 	printf("ui_error: %s", text);
 }
 
 static void
-l_ui_warning(struct rdp_inst * inst, char * text)
+l_ui_warning(struct rdp_inst * inst, const char * text)
 {
 	printf("ui_warning: %s\n", text);
 }
 
 static void
-l_ui_unimpl(struct rdp_inst * inst, char * text)
+l_ui_unimpl(struct rdp_inst * inst, const char * text)
 {
 	printf("ui_unimpl: %s\n", text);
 }
