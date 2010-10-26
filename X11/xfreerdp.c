@@ -71,6 +71,7 @@ set_default_params(xfInfo * xfi)
 	settings->tls = 1;
 #endif
 	xfi->fullscreen = xfi->fs_toggle = 0;
+	xfi->decoration = 1;
 	return 0;
 }
 
@@ -97,6 +98,7 @@ out_args(void)
 		"\t-o: console audio\n"
 		"\t-0: console session\n"
 		"\t-f: fullscreen mode\n"
+		"\t-D: hide window decorations\n"
 		"\t-z: enable bulk compression\n"
 		"\t-x: performance flags (m, b or l for modem, broadband or lan)\n"
 #ifndef DISABLE_TLS
@@ -310,6 +312,10 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 		{
 			xfi->fullscreen = xfi->fs_toggle = 1;
 			printf("full screen option\n");
+		}
+		else if (strcmp("-D", argv[*pindex]) == 0)
+		{
+			xfi->decoration = 0;
 		}
 		else if (strcmp("-x", argv[*pindex]) == 0)
 		{
