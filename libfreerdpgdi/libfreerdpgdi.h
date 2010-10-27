@@ -273,8 +273,6 @@ int DeleteDC(HDC hdc);
 #define SET_GDI(_inst, _gdi) (_inst)->param2 = _gdi
 #define GET_GDI(_inst) ((GDI*) ((_inst)->param2))
 
-#define WITH_DEBUG_GDI
-
 #ifdef WITH_DEBUG_GDI
 #define DEBUG_GDI(fmt, ...) fprintf(stderr, "DBG (RDP5) %s (%d): " fmt, __FUNCTION__, __LINE__, ## __VA_ARGS__)
 #else

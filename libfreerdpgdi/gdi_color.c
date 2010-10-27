@@ -40,7 +40,7 @@ gdi_color_convert(PIXEL *pixel, int color, int bpp, HPALETTE palette)
 	switch (bpp)
 	{
 		case 32:
-			GetABGR32(pixel->alpha, pixel->red, pixel->green, pixel->blue, color);
+			GetBGR32(pixel->red, pixel->green, pixel->blue, color);
 			break;
 		case 24:
 			GetBGR24(pixel->red, pixel->green, pixel->blue, color);

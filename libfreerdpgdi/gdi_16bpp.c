@@ -45,7 +45,8 @@ int FillRect_16bpp(HDC hdc, HRECT rect, HBRUSH hbr)
 		return 0;
 
 	GetRGB(r, g, b, hbr->color);
-	color16 = BGR16(r, g, b);
+	RGB_888_565(r, g, b);
+	color16 = RGB16(r, g, b);
 	
 	for (y = 0; y < nHeight; y++)
 	{
@@ -401,6 +402,7 @@ static int BitBlt_DSPDxax_16bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth,
 					
 					*dstp = (*srcp & g) | (~(*srcp) & *dstp);
 					dstp++;
+					srcp++;
 			}
 		}
 	}
