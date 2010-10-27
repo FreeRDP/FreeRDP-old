@@ -8,6 +8,7 @@ libfreerdpgdi_LTLIBRARIES = libfreerdpgdi.la
 libfreerdpgdi_la_SOURCES = \
 	gdi_color.c gdi_color.h \
 	gdi_window.c gdi_window.h \
+	gdi_32bpp.c gdi_32bpp.h \
 	libfreerdpgdi.c libfreerdpgdi.h
 
 libfreerdpgdi_la_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include

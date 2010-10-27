@@ -69,13 +69,13 @@ gdi_image_convert(char* srcData, int width, int height, int srcBpp, int dstBpp, 
 	int green;
 	int blue;
 	int index;
-	int pixel;
 	char *src8;
-	unsigned short *src16;
-	unsigned short *dst16;
-	unsigned int *dst32;
+	uint32 pixel;
+	uint16 *src16;
+	uint16 *dst16;
+	uint32 *dst32;
 	char *dstData;
-
+	
 	if (srcBpp == dstBpp)
 	{
 #ifdef USE_ALPHA
@@ -126,8 +126,8 @@ gdi_image_convert(char* srcData, int width, int height, int srcBpp, int dstBpp, 
 		{
 			pixel = *src16;
 			src16++;
-			GetRGB16(red, green, blue, pixel);
-			pixel = RGB32(red, green, blue);
+			GetBGR16(red, green, blue, pixel);
+			pixel = BGR32(red, green, blue);
 			*dst32 = pixel;
 			dst32++;
 		}
