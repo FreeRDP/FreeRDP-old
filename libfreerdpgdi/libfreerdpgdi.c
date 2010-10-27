@@ -29,6 +29,7 @@
 #include "gdi_color.h"
 #include "gdi_window.h"
 #include "gdi_32bpp.h"
+#include "gdi_16bpp.h"
 
 HDC GetDC()
 {
@@ -92,25 +93,46 @@ int CompareBitmaps(HBITMAP hBmp1, HBITMAP hBmp2)
 
 		p1 = hBmp1->data;
 		p2 = hBmp2->data;
-		
-		for (y = 0; y < hBmp1->height; y++)
-		{
-			for (x = 0; x < hBmp1->width; x++)
-			{
-				if (*p1 != *p2)
-					return 0;
-				p1++;
-				p2++;
-				
-				if (*p1 != *p2)
-					return 0;
-				p1++;
-				p2++;
 
-				if (*p1 != *p2)
-					return 0;
-				p1 += 2;
-				p2 += 2;
+		if (hBmp1->bytesPerPixel == 32)
+		{
+			for (y = 0; y < hBmp1->height; y++)
+			{
+				for (x = 0; x < hBmp1->width; x++)
+				{
+					if (*p1 != *p2)
+						return 0;
+					p1++;
+					p2++;
+				
+					if (*p1 != *p2)
+						return 0;
+					p1++;
+					p2++;
+
+					if (*p1 != *p2)
+						return 0;
+					p1 += 2;
+					p2 += 2;
+				}
+			}
+		}
+		else if (hBmp1->bytesPerPixel == 16)
+		{
+			for (y = 0; y < hBmp1->height; y++)
+			{
+				for (x = 0; x < hBmp1->width; x++)
+				{
+					if (*p1 != *p2)
+						return 0;
+					p1++;
+					p2++;
+				
+					if (*p1 != *p2)
+						return 0;
+					p1++;
+					p2++;
+				}
 			}
 		}
 	}
@@ -255,20 +277,6 @@ int CopyOverlap(int x, int y, int width, int height, int srcx, int srcy)
 
 	return (dst.right > src.left && dst.left < src.right &&
 		dst.bottom > src.top && dst.top < src.bottom) ? 1 : 0;
-}
-
-COLORREF GetPixel(HDC hdc, int nXPos, int nYPos)
-{
-	HBITMAP hBmp = (HBITMAP) hdc->selectedObject;
-	COLORREF* colorp = (COLORREF*)&(hBmp->data[(nYPos * hBmp->width * hdc->bytesPerPixel) + nXPos * hdc->bytesPerPixel]);
-	return (COLORREF) *colorp;
-}
-
-COLORREF SetPixel(HDC hdc, int X, int Y, COLORREF crColor)
-{
-	HBITMAP hBmp = (HBITMAP) hdc->selectedObject;
-	*((COLORREF*)&(hBmp->data[(Y * hBmp->width * hdc->bytesPerPixel) + X * hdc->bytesPerPixel])) = crColor;
-	return 0;
 }
 
 int SetROP2(HDC hdc, int fnDrawMode)
@@ -624,6 +632,20 @@ int SetBkMode(HDC hdc, int iBkMode)
 	return 0;
 }
 
+COLORREF GetPixel(HDC hdc, int nXPos, int nYPos)
+{
+	HBITMAP hBmp = (HBITMAP) hdc->selectedObject;
+	COLORREF* colorp = (COLORREF*)&(hBmp->data[(nYPos * hBmp->width * hdc->bytesPerPixel) + nXPos * hdc->bytesPerPixel]);
+	return (COLORREF) *colorp;
+}
+
+COLORREF SetPixel(HDC hdc, int X, int Y, COLORREF crColor)
+{
+	HBITMAP hBmp = (HBITMAP) hdc->selectedObject;
+	*((COLORREF*)&(hBmp->data[(Y * hBmp->width * hdc->bytesPerPixel) + X * hdc->bytesPerPixel])) = crColor;
+	return 0;
+}
+
 int FillRect(HDC hdc, HRECT rect, HBRUSH hbr)
 {
 	switch (hdc->bitsPerPixel)
@@ -631,6 +653,9 @@ int FillRect(HDC hdc, HRECT rect, HBRUSH hbr)
 		case 32:
 			return FillRect_32bpp(hdc, rect, hbr);
 
+		case 16:
+			return FillRect_16bpp(hdc, rect, hbr);
+			
 		default:
 			return 0;
 	}
@@ -643,6 +668,9 @@ int BitBlt(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdc
 		case 32:
 			return BitBlt_32bpp(hdcDest, nXDest, nYDest, nWidth, nHeight, hdcSrc, nXSrc, nYSrc, rop);
 
+		case 16:
+			return BitBlt_16bpp(hdcDest, nXDest, nYDest, nWidth, nHeight, hdcSrc, nXSrc, nYSrc, rop);
+			
 		default:
 			return 0;
 	}
@@ -654,6 +682,9 @@ int PatBlt(HDC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight, int rop)
 	{
 		case 32:
 			return PatBlt_32bpp(hdc, nXLeft, nYLeft, nWidth, nHeight, rop);
+
+		case 16:
+			return PatBlt_16bpp(hdc, nXLeft, nYLeft, nWidth, nHeight, rop);
 
 		default:
 			return 0;

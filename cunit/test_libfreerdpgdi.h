@@ -21,6 +21,7 @@ void test_SetROP2(void);
 void test_MoveTo(void);
 void test_PtInRect(void);
 void test_FillRect(void);
-void test_BitBlt(void);
+void test_BitBlt_32bpp(void);
+void test_BitBlt_16bpp(void);
 void test_ClipCoords(void);
 void test_InvalidateRegion(void);
