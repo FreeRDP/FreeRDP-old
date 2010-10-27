@@ -41,6 +41,7 @@ struct _GDI
 	int srcBpp;
 	int cursor_x;
 	int cursor_y;
+	int bytesPerPixel;
 
 	HDC hdc;
 	gdi_bitmap *primary;

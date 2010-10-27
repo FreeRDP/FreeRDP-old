@@ -527,6 +527,7 @@ gdi_ui_destroy_bitmap(struct rdp_inst * inst, RD_HBITMAP bmp)
 static void
 gdi_ui_line(struct rdp_inst * inst, uint8 opcode, int startx, int starty, int endx, int endy, RD_PEN * pen)
 {
+	return;
 	DEBUG_GDI("ui_line opcode:%d startx:%d starty:%d endx:%d endy:%d\n", opcode, startx, starty, endx, endy);
 
 	int cx;
@@ -840,13 +841,22 @@ gdi_init(rdpInst * inst)
 
 	gdi->width = inst->settings->width;
 	gdi->height = inst->settings->height;
-
-	gdi->dstBpp = 32;
 	gdi->srcBpp = inst->settings->server_depth;
+
+	if (gdi->srcBpp > 16)
+	{
+		gdi->dstBpp = 32;
+		gdi->bytesPerPixel = 4;
+	}
+	else
+	{
+		gdi->dstBpp = 16;
+		gdi->bytesPerPixel = 2;
+	}
 	
 	gdi->hdc = GetDC();
-	gdi->hdc->bytesPerPixel = 4;
 	gdi->hdc->bitsPerPixel = gdi->dstBpp;
+	gdi->hdc->bytesPerPixel = gdi->bytesPerPixel;
 
 	gdi->primary = gdi_bitmap_new(gdi, gdi->width, gdi->height, gdi->dstBpp, 0, NULL);
 	gdi->primary_buffer = gdi->primary->bitmap->data;

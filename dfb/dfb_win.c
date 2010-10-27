@@ -197,16 +197,16 @@ dfb_post_connect(rdpInst * inst)
 	
 	dfbi->dfb->GetDisplayLayer(dfbi->dfb, 0, &(dfbi->layer));
 	dfbi->layer->EnableCursor(dfbi->layer, 1);
-	
+
 	dfbi->dsc.flags = DSDESC_CAPS | DSDESC_WIDTH | DSDESC_HEIGHT | DSDESC_PREALLOCATED | DSDESC_PIXELFORMAT;
 	dfbi->dsc.caps = DSCAPS_SYSTEMONLY;
 	dfbi->dsc.width = gdi->width;
 	dfbi->dsc.height = gdi->height;
-	dfbi->dsc.pixelformat = DSPF_AiRGB;
+	dfbi->dsc.pixelformat = (gdi->dstBpp == 32) ? DSPF_AiRGB : DSPF_RGB16;
 	dfbi->dsc.preallocated[0].data = gdi->primary_buffer;
-	dfbi->dsc.preallocated[0].pitch = gdi->width * 4;
+	dfbi->dsc.preallocated[0].pitch = gdi->width * gdi->bytesPerPixel;
 	dfbi->dfb->CreateSurface(dfbi->dfb, &(dfbi->dsc), &(dfbi->surface));
-
+	
 	return 0;
 }
 

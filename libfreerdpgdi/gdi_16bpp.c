@@ -45,7 +45,7 @@ int FillRect_16bpp(HDC hdc, HRECT rect, HBRUSH hbr)
 		return 0;
 
 	GetRGB(r, g, b, hbr->color);
-	color16 = RGB16(r, g, b);
+	color16 = BGR16(r, g, b);
 	
 	for (y = 0; y < nHeight; y++)
 	{
