@@ -115,17 +115,27 @@ rdp_recv(rdpRdp * rdp, uint8 * type, uint16 * source)
 	/* Undocumented!(?): 32k packets are keepalive packages of length 8: */
 	if (totalLength == 0x8000)
 	{
+		DEBUG("keepalive\n");
 		rdp->next_packet += 8;
 		return rdp->rdp_s;
 	}
 
 	in_uint16_le(rdp->rdp_s, pduType); /* pduType */
-	pduType &= 0xF; /* type is in 4 lower bits */
-	*type = pduType; /* version in high bits */
+	if ((pduType >> 8 != 0) || (((pduType >> 4) & 0xF) != 1))
+	{
+		ui_error(rdp->inst, "pduType version must be 0 and 1 but is %d and %d\n", pduType >> 8, (pduType >> 4) & 0xF);
+		if (rdp->sec->tls_connected)
+		{
+			ui_error(rdp->inst, "- known bug for TLS mode - skipping rest of PDU\n");
+			rdp->next_packet += totalLength;
+			return rdp->rdp_s;
+		}
+	}
+	*type = pduType & 0xF; /* type is in 4 lower bits, version in high bits */
 	in_uint16_le(rdp->rdp_s, *source);	/* PDUSource */
 
 #if WITH_DEBUG
-	DEBUG("RDP packet #%d, (type %x)\n", ++(rdp->packetno), *type);
+	DEBUG("Share Control Data PDU #%d, (type %x)\n", ++(rdp->packetno), *type);
 	hexdump(rdp->next_packet, totalLength);
 #endif
 
