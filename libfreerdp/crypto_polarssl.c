@@ -22,8 +22,7 @@
 #include "frdp.h"
 #include "crypto.h"
 #include "mem.h"
-
-#include <assert.h>
+#include "debug.h""
 
 #include <polarssl/sha1.h>
 #include <polarssl/md5.h>
@@ -167,14 +166,14 @@ crypto_rsa_encrypt(int len, uint8 * in, uint8 * out, uint32 modulus_size, uint8 
 	mpi_init(&ctx.N, &ctx.E, NULL);
 	mpi_read_binary(&ctx.N, modulus, modulus_size);
 	mpi_read_binary(&ctx.E, exponent, SEC_EXPONENT_SIZE);
-	assert(!rsa_check_pubkey( &ctx ));
+	ASSERT(!rsa_check_pubkey( &ctx ));
 
-	assert(modulus_size <= SEC_MAX_MODULUS_SIZE);
+	ASSERT(modulus_size <= SEC_MAX_MODULUS_SIZE);
 	uint8 in2[SEC_MAX_MODULUS_SIZE];
 	memset(in2, 0, modulus_size - len);
 	memcpy(in2 + modulus_size - len, in, len);
 	int err = rsa_public(&ctx, in2, out);
-	assert(!err);
+	ASSERT(!err);
 	mpi_free(&ctx.N, &ctx.E, NULL);
 	rsa_free(&ctx);
 }

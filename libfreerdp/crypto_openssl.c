@@ -227,7 +227,7 @@ crypto_rsa_encrypt(int len, uint8 * in, uint8 * out, uint32 modulus_size, uint8 
 	BN_bin2bn(in, len, &x);
 	BN_mod_exp(&y, &x, &exp, &mod, ctx);
 	outlen = BN_bn2bin(&y, out);
-	/* assert(outlen == modulus_size); */
+	/* ASSERT(outlen == modulus_size); */
 
 	BN_free(&y);
 	BN_clear_free(&x);

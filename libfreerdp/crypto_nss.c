@@ -22,8 +22,7 @@
 #include "frdp.h"
 #include "crypto.h"
 #include "mem.h"
-
-#include <assert.h>
+#include "debug.h""
 
 /* Define PROTYPES_H to disable obsolete/protypes.h and avoid uint8 collisions */
 #define PROTYPES_H
@@ -56,7 +55,7 @@ void check(SECStatus s, char* msg) {
 	if (s != SECSuccess) {
 		/* http://www.mozilla.org/projects/security/pki/nss/ref/ssl/sslerr.html */
 		fprintf(stderr, "NSS error %d: %s\n", PR_GetError(), msg);
-		assert(s == SECSuccess);
+		ASSERT(s == SECSuccess);
 	}
 }
 
@@ -88,7 +87,7 @@ crypto_sha1_final(CryptoSha1 sha1, uint8 * out_data)
 	unsigned int len;
 	SECStatus s = PK11_DigestFinal(sha1->context, out_data, &len, 20);
 	check(s, "Error finalizing sha1");
-	assert(len == 20);
+	ASSERT(len == 20);
 	PK11_DestroyContext(sha1->context, PR_TRUE);
 	xfree(sha1);
 }
@@ -121,7 +120,7 @@ crypto_md5_final(CryptoMd5 md5, uint8 * out_data)
 	unsigned int len;
 	SECStatus s = PK11_DigestFinal(md5->context, out_data, &len, 16);
 	check(s, "Error finalizing md5");
-	assert(len == 16);
+	ASSERT(len == 16);
 	PK11_DestroyContext(md5->context, PR_TRUE);
 	xfree(md5);
 }
@@ -138,7 +137,7 @@ crypto_rc4_init(uint8 * key, uint32 len)
 	CK_MECHANISM_TYPE cipherMech = CKM_RC4;
 
 	PK11SlotInfo* slot = PK11_GetInternalKeySlot();
-	assert(slot);
+	ASSERT(slot);
 
 	SECItem keyItem;
 	keyItem.type = siBuffer;
@@ -146,13 +145,13 @@ crypto_rc4_init(uint8 * key, uint32 len)
 	keyItem.len = len;
 
 	PK11SymKey* symKey = PK11_ImportSymKey(slot, cipherMech, PK11_OriginUnwrap, CKA_ENCRYPT, &keyItem, NULL);
-	assert(symKey);
+	ASSERT(symKey);
 
 	SECItem* secParam = PK11_ParamFromIV(cipherMech, NULL);
-	assert(secParam);
+	ASSERT(secParam);
 
 	rc4->context = PK11_CreateContextBySymKey(cipherMech, CKA_ENCRYPT, symKey, secParam);
-	assert(rc4->context);
+	ASSERT(rc4->context);
 
 	PK11_FreeSymKey(symKey);
 	SECITEM_FreeItem(secParam, PR_TRUE);
@@ -168,7 +167,7 @@ crypto_rc4(CryptoRc4 rc4, uint32 len, uint8 * in_data, uint8 * out_data)
 	/* valgrind "Invalid read"? See http://groups.google.com/group/mozilla.dev.tech.crypto/browse_thread/thread/361c017b4aa5226f/43badd163bef22f2 */
 	SECStatus s = PK11_CipherOp(rc4->context, out_data, &outlen, len, in_data, len);
 	check(s, "Error in rc4 encryption");
-	assert(outlen == len);
+	ASSERT(outlen == len);
 }
 
 void
@@ -177,7 +176,7 @@ crypto_rc4_free(CryptoRc4 rc4)
 	unsigned int outLen;
 	SECStatus s = PK11_DigestFinal(rc4->context, NULL, &outLen, 0);
 	check(s, "Error finalizing rc4");
-	assert(!outLen);
+	ASSERT(!outLen);
 	PK11_DestroyContext(rc4->context, PR_TRUE);
 	xfree(rc4);
 }
@@ -198,7 +197,7 @@ crypto_cert_read(uint8 * data, uint32 len)
 	derCert.data = data;
 	derCert.len = len;
 	crypto_cert->cert = CERT_NewTempCertificate(handle, &derCert, NULL, PR_FALSE, PR_TRUE);
-	assert(crypto_cert->cert);
+	ASSERT(crypto_cert->cert);
 
 	return crypto_cert;
 }
@@ -249,19 +248,19 @@ crypto_cert_get_pub_exp_mod(CryptoCert cert, uint32 * key_len,
 	{
 		pubkey = SECKEY_ExtractPublicKey(&cert->cert->subjectPublicKeyInfo);
 	}
-	assert(pubkey);
-	assert(pubkey->keyType == rsaKey);
+	ASSERT(pubkey);
+	ASSERT(pubkey->keyType == rsaKey);
 
 	*key_len = SECKEY_PublicKeyStrength(pubkey);
 
 	size_t l = pubkey->u.rsa.publicExponent.len;
-	assert(l <= exp_len);
+	ASSERT(l <= exp_len);
 	memset(exponent, 0, exp_len - l);
 	memcpy(exponent + exp_len - l, pubkey->u.rsa.publicExponent.data, l);
 
 	l = pubkey->u.rsa.modulus.len;
-	assert(l <= mod_len);
-	assert(*key_len <= mod_len);
+	ASSERT(l <= mod_len);
+	ASSERT(*key_len <= mod_len);
 	memset(modulus, 0, *key_len - l);
 	memcpy(modulus + *key_len - l, pubkey->u.rsa.modulus.data, l);
 
@@ -285,7 +284,7 @@ crypto_rsa_encrypt(int len, uint8 * in, uint8 * out, uint32 modulus_size, uint8 
 	pubKey.u.rsa.publicExponent.data = exponent;
 	pubKey.u.rsa.publicExponent.len = SEC_EXPONENT_SIZE;
 
-	assert(modulus_size <= SEC_MAX_MODULUS_SIZE);
+	ASSERT(modulus_size <= SEC_MAX_MODULUS_SIZE);
 	uint8 in_be[SEC_MAX_MODULUS_SIZE];
 	memset(in_be, 0, modulus_size - len); /* must be padded to modulus_size */
 	memcpy(in_be + modulus_size - len, in, len);
@@ -293,6 +292,6 @@ crypto_rsa_encrypt(int len, uint8 * in, uint8 * out, uint32 modulus_size, uint8 
 	SECStatus s = PK11_PubEncryptRaw(&pubKey, out, in_be, modulus_size, NULL);
 	check(s, "Error rsa-encrypting");
 
-	assert(pubKey.pkcs11Slot);
+	ASSERT(pubKey.pkcs11Slot);
 	PK11_FreeSlot(pubKey.pkcs11Slot);
 }

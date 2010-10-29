@@ -796,7 +796,7 @@ typedef int                mp_err;
 #define  ARGCHK(X,Y)  {if(!(X)){return (Y);}}
 #elif MP_ARGCHK == 2
 #include <assert.h>
-#define  ARGCHK(X,Y)  assert(X)
+#define  ARGCHK(X,Y)  ASSERT(X)
 #else
 #define  ARGCHK(X,Y)  /*  */
 #endif

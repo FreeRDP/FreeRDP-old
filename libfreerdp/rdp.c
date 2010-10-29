@@ -19,7 +19,6 @@
 */
 
 #include <time.h>
-#include <assert.h>
 #ifndef _WIN32
 #include <errno.h>
 #include <unistd.h>
@@ -350,7 +349,7 @@ rdp_out_client_timezone_info(rdpRdp * rdp, STREAM s)
 		out_uint32_le(s, bias);			/* bias */
 
 		p = xstrdup_out_unistr(rdp, standardName, &len);
-		assert(len <= 64 - 2);
+		ASSERT(len <= 64 - 2);
 		out_uint8a(s, p, len + 2);
 		out_uint8s(s, 64 - len - 2);		/* standardName (64 bytes) */
 		xfree(p);
@@ -359,7 +358,7 @@ rdp_out_client_timezone_info(rdpRdp * rdp, STREAM s)
 		out_uint32_le(s, standardBias);		/* standardBias */
 
 		p = xstrdup_out_unistr(rdp, daylightName, &len);
-		assert(len <= 64 - 2);
+		ASSERT(len <= 64 - 2);
 		out_uint8a(s, p, len + 2);
 		out_uint8s(s, 64 - len - 2);		/* daylightName (64 bytes) */
 		xfree(p);
