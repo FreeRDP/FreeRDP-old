@@ -298,13 +298,14 @@ mcs_fp_send(rdpMcs * mcs, STREAM s, uint32 flags)
 
 /* Receive an MCS transport data packet */
 STREAM
-mcs_recv(rdpMcs * mcs, uint16 * channel, isoRecvType * ptype)
+mcs_recv(rdpMcs * mcs, isoRecvType * ptype, uint16 * channel)
 {
 	STREAM s;
 	uint8 byte;
 	uint8 pduType;
 	uint16 length;
 
+	*channel = (uint16)-1;	/* default: bogus value */
 	s = iso_recv(mcs->iso, ptype);
 
 	if (s == NULL)

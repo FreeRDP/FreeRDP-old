@@ -43,7 +43,7 @@ mcs_send(rdpMcs * mcs, STREAM s);
 void
 mcs_fp_send(rdpMcs * mcs, STREAM s, uint32 flags);
 STREAM
-mcs_recv(rdpMcs * mcs, uint16 * channel, isoRecvType * ptype);
+mcs_recv(rdpMcs * mcs, isoRecvType * ptype, uint16 * channel);
 RD_BOOL
 mcs_connect(rdpMcs * mcs);
 void

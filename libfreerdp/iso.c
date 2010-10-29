@@ -325,7 +325,8 @@ tpkt_recv(rdpIso * iso, uint8 * pcode, isoRecvType * ptype)
 		if (ptype != NULL)
 			*ptype = ISO_RECV_X224;
 
-		return x224_recv(iso, s, length, pcode);
+		s = x224_recv(iso, s, length, pcode);
+		return s;
 	}
 	else if (ptype != NULL)
 	{
@@ -333,7 +334,9 @@ tpkt_recv(rdpIso * iso, uint8 * pcode, isoRecvType * ptype)
 		uint8 fpInputHeader;
 
 		in_uint8(s, fpInputHeader);
+		ASSERT((fpInputHeader & 3) == 0);	/* assume actionCode FASTPATH_OUTPUT_ACTION_FASTPATH */
 		*ptype = (fpInputHeader & 0x80) ? ISO_RECV_FAST_PATH_ENCRYPTED : ISO_RECV_FAST_PATH;
+		/* TODO: 0x40 FASTPATH_OUTPUT_SECURE_CHECKSUM indicates salted MAC */
 
 		in_uint8(s, length);
 		if (length & 0x80)
