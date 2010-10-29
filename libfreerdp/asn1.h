@@ -22,6 +22,8 @@
 #ifndef __ASN1_H
 #define __ASN1_H
 
+#include "mcs.h"
+
 RD_BOOL
 ber_parse_header(rdpMcs * mcs, STREAM s, int tagval, int *length);
 
@@ -31,7 +33,4 @@ ber_out_header(STREAM s, int tagval, int length);
 void
 ber_out_integer(STREAM s, int value);
 
-
-
 #endif // __ASN1_H
-

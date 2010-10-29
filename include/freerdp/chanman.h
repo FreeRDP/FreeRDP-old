@@ -24,7 +24,7 @@
 #ifndef __FREERDP_CHANMAN_H
 #define __FREERDP_CHANMAN_H
 
-#include <freerdp/freerdp.h>
+#include "freerdp.h"
 
 #if defined _WIN32 || defined __CYGWIN__
   #ifdef FREERDP_CHANMAN_EXPORTS

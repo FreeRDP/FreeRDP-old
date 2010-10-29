@@ -73,5 +73,3 @@
 #define RDP_SOURCE		"MSTSC"
 
 #endif // __CONSTANTS_H
-
-

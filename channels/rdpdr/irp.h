@@ -22,6 +22,8 @@
 #ifndef __IRP_H
 #define __IRP_H
 
+#include "rdpdr_types.h"
+
 char *
 irp_output_device_io_completion(IRP* irp, int * data_size);
 void
@@ -58,4 +60,3 @@ void
 irp_get_timeouts(IRP * irp, uint32 * timeout, uint32 * interval_timeout);
 
 #endif // __IRP_H
-

@@ -23,6 +23,9 @@
 #ifndef __PRINTER_MAIN_H
 #define __PRINTER_MAIN_H
 
+#include "rdpdr_types.h"
+#include "devman.h"
+
 /* SERVER_PRINTER_CACHE_EVENT.cachedata */
 #define RDPDR_ADD_PRINTER_EVENT             0x00000001
 #define RDPDR_UPDATE_PRINTER_EVENT          0x00000002
@@ -57,4 +60,3 @@ void
 printer_hw_free(void * info);
 
 #endif
-

@@ -18,11 +18,11 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#include <freerdp/rdpset.h>
 #include "frdp.h"
 #include "pstcache.h"
 #include "rdp.h"
 #include "cache.h"
-#include "rdpset.h"
 #include "mem.h"
 #include "debug.h"
 

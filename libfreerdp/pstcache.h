@@ -21,6 +21,8 @@
 #ifndef __PSTCACHE_H
 #define __PSTCACHE_H
 
+#include "types.h"
+
 struct rdp_pcache
 {
 	struct rdp_rdp * rdp;

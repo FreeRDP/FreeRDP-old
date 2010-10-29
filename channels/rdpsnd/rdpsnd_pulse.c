@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <pulse/simple.h>
-#include "types_ui.h"
+#include <freerdp/types_ui.h>
 
 #define LOG_LEVEL 11
 #define LLOG(_level, _args) \

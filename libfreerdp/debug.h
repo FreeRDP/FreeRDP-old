@@ -1,6 +1,8 @@
-
 #ifndef __DEBUG_H
 #define __DEBUG_H
+
+#include "config.h"
+
 #ifdef WITH_DEBUG
 #define DEBUG(fmt, ...)	fprintf(stderr, "DBG %s (%d): " fmt, __FUNCTION__, __LINE__, ## __VA_ARGS__)
 #else

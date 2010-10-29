@@ -24,9 +24,8 @@
 #include <errno.h>
 #include <unistd.h>
 #endif
+#include <freerdp/freerdp.h>
 #include "frdp.h"
-#include "freerdp.h"
-#include "types_ui.h"
 #include "iso.h"
 #include "tcp.h"
 #include "mcs.h"
@@ -34,7 +33,6 @@
 #include "rdp.h"
 #include "rail.h"
 #include "capabilities.h"
-#include "rdpset.h"
 #include "orders.h"
 #include "pstcache.h"
 #include "cache.h"

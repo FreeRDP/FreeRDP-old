@@ -22,6 +22,8 @@
 #ifndef __FREERDP_KBD_H
 #define __FREERDP_KBD_H
 
+#include "types_ui.h"
+
 #define RDP_KEYBOARD_LAYOUT_TYPE_STANDARD   1
 #define RDP_KEYBOARD_LAYOUT_TYPE_VARIANT    2
 #define RDP_KEYBOARD_LAYOUT_TYPE_IME        4
@@ -42,4 +44,3 @@ int
 freerdp_kbd_get_scancode_by_virtualkey(int vkcode);
 
 #endif // __FREERDP_KBD_H
-

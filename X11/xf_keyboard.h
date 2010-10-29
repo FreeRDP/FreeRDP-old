@@ -44,4 +44,3 @@ RD_BOOL
 xf_kb_handle_special_keys(xfInfo * xfi, KeySym keysym);
 
 #endif
-

@@ -31,7 +31,6 @@
 #include "config.h"
 #endif
 
-#include "types_ui.h"
 #include "types.h"
 
 #ifdef _WIN32

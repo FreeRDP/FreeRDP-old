@@ -28,4 +28,3 @@
 typedef struct rdpdbg_plugin rdpdbgPlugin;
 
 #endif /* __RDPDBG_MAIN_H */
-

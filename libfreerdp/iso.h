@@ -18,8 +18,8 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#include <freerdp/types_ui.h>
 #include "stream.h"
-#include "types_ui.h"
 
 #ifndef __ISO_H
 #define __ISO_H

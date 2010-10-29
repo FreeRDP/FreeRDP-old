@@ -142,4 +142,3 @@ enum RDP_RAIL_PDU_TYPE
 #define TF_SFT_DESKBAND			0x00000800
 
 #endif /* __CONSTANTS_RAIL_H */
-

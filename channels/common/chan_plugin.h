@@ -24,6 +24,8 @@
 #ifndef __CHAN_PLUGIN_H
 #define __CHAN_PLUGIN_H
 
+#include <freerdp/constants_vchan.h>
+
 typedef struct rdp_chan_plugin rdpChanPlugin;
 struct rdp_chan_plugin
 {
@@ -48,4 +50,3 @@ rdpChanPlugin *
 chan_plugin_find_by_open_handle(int open_handle);
 
 #endif
-

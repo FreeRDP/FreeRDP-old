@@ -54,7 +54,7 @@
 #define SRCINVERT		0x00660046 /* D = S ^ D			*/
 #define SRCERASE		0x00440328 /* D = S & ~D		*/
 #define NOTSRCCOPY		0x00330008 /* D = ~S			*/
-#define NOTSRCERASE		0x001100A6 /* D = ~S & ~D		*/		
+#define NOTSRCERASE		0x001100A6 /* D = ~S & ~D		*/
 #define MERGECOPY		0x00C000CA /* D = S & P			*/
 #define MERGEPAINT		0x00BB0226 /* D = ~S | D		*/
 #define PATCOPY			0x00F00021 /* D = P			*/

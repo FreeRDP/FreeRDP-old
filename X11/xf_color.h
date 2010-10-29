@@ -24,6 +24,7 @@
 #define __XF_COLOR_H
 
 #include <freerdp/freerdp.h>
+#include "xf_types.h"
 
 int
 xf_color_convert(xfInfo * xfi, rdpSet * settings, int color);

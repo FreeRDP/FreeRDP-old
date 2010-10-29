@@ -1,6 +1,10 @@
-
 #ifndef __TYPES_H
 #define __TYPES_H
+
+#include <stdio.h>
+#include <time.h>
+
+#include <freerdp/types_ui.h>
 
 #define MAX_CBSIZE 256
 
@@ -246,4 +250,3 @@ typedef struct _FILE_NETWORK_OPEN_INFORMATION
 FILE_NETWORK_OPEN_INFORMATION;
 
 #endif // __TYPES_H
-

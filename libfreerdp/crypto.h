@@ -22,6 +22,9 @@
 #ifndef __CRYPTO_H
 #define __CRYPTO_H
 
+#include <stdio.h>
+#include <freerdp/types_ui.h>
+
 RD_BOOL
 crypto_global_init(void);	/* returns True on success */
 void

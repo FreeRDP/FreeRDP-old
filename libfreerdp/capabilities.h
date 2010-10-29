@@ -22,6 +22,8 @@
 #ifndef __CAPABILITIES_H
 #define __CAPABILITIES_H
 
+#include "rdp.h"
+
 void
 rdp_out_general_capset(rdpRdp * rdp, STREAM s);
 void
@@ -111,4 +113,3 @@ void
 rdp_process_multifragmentupdate_capset(rdpRdp * rdp, STREAM s);
 
 #endif // __CAPABILITIES_H
-

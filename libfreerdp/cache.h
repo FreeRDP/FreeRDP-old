@@ -21,6 +21,8 @@
 #ifndef __CACHE_H
 #define __CACHE_H
 
+#include "types.h"
+
 struct bmpcache_entry
 {
 	RD_HBITMAP bitmap;

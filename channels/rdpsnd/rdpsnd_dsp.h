@@ -36,5 +36,3 @@ STREAM rdpsnd_dsp_process(unsigned char *data, unsigned int size,
 			  struct audio_driver *current_driver, RD_WAVEFORMATEX * format);
 
 #endif // __RDPSND_DSP_H
-
-

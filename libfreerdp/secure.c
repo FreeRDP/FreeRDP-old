@@ -18,13 +18,13 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#include <freerdp/rdpset.h>
 #include "frdp.h"
 #include "mcs.h"
 #include "chan.h"
 #include "secure.h"
 #include "licence.h"
 #include "rdp.h"
-#include "rdpset.h"
 #include "iso.h"
 #include "mem.h"
 #include "debug.h"

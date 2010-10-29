@@ -3,8 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
+#include <freerdp/freerdp.h>
 #include "frdp.h"
-#include "freerdp.h"
 #include "rdp.h"
 #include "secure.h"
 #include "mcs.h"
