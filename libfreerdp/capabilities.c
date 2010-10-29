@@ -26,27 +26,33 @@
 #include "capabilities.h"
 #include "stream.h"
 
-static uint8 *
-rdp_skip_capset_header(STREAM s, int size)
+typedef uint8 * capsetHeaderRef;
+
+/* Leave room in s for capability set header and return address for back patching */
+static capsetHeaderRef
+rdp_skip_capset_header(STREAM s)
 {
-	uint8 * rv;
+	capsetHeaderRef rv;
 	rv = s->p;
-	s->p += size;
+	s->p += 4;
 	return rv;
 }
 
-/* Output capability set header */
+/* Backpatch capability set header at the reference */
 static void
-rdp_out_capset_header(STREAM s, uint8 * header, uint16 capabilitySetType)
+rdp_out_capset_header(STREAM s, capsetHeaderRef header, uint16 capabilitySetType)
 {
-	int cap_len;
+	struct stream tmp_s;
 
-	s->end = s->p;
-	cap_len = (int) (s->end - header);
-	s->p = header;
-	out_uint16_le(s, capabilitySetType); /* capabilitySetType */
-	out_uint16_le(s, cap_len); /* lengthCapability */
-	s->p = s->end;
+	ASSERT(header >= s->data);
+	ASSERT(header < s->p);
+
+	tmp_s.p = tmp_s.data = header;
+	tmp_s.size = 4;
+	tmp_s.end = tmp_s.data + tmp_s.size;
+	out_uint16_le(&tmp_s, capabilitySetType); /* capabilitySetType */
+	out_uint16_le(&tmp_s, s->p - header); /* lengthCapability */
+	ASSERT(s_check_end(&tmp_s));
 }
 
 /* Output general capability set */
@@ -54,9 +60,9 @@ void
 rdp_out_general_capset(rdpRdp * rdp, STREAM s)
 {
 	int flags;
-	uint8 * header;
+	capsetHeaderRef header;
 
-	header = rdp_skip_capset_header(s, 4);
+	header = rdp_skip_capset_header(s);
 	out_uint16_le(s, OS_MAJOR_TYPE_WINDOWS); // osMajorType, should we lie?
 	out_uint16_le(s, OS_MINOR_TYPE_WINDOWS_NT); // osMinorType
 	out_uint16_le(s, CAPS_PROTOCOL_VERSION); // protocolVersion
@@ -81,9 +87,9 @@ rdp_out_general_capset(rdpRdp * rdp, STREAM s)
 void
 rdp_out_bitmap_capset(rdpRdp * rdp, STREAM s)
 {
-	uint8 * header;
+	capsetHeaderRef header;
 
-	header = rdp_skip_capset_header(s, 4);
+	header = rdp_skip_capset_header(s);
 
 	/*
 	 * preferredBitsPerPixel (2 bytes):
@@ -167,9 +173,9 @@ void
 rdp_out_order_capset(rdpRdp * rdp, STREAM s)
 {
 	uint8 orderSupport[32];
-	uint8 * header;
+	capsetHeaderRef header;
 
-	header = rdp_skip_capset_header(s, 4);
+	header = rdp_skip_capset_header(s);
 
 	memset(orderSupport, 0, 32);
 	orderSupport[NEG_DSTBLT_INDEX] = 1;
@@ -261,9 +267,9 @@ rdp_out_bitmapcache_capset(rdpRdp * rdp, STREAM s)
 {
 	int Bpp;
 	int size;
-	uint8 * header;
+	capsetHeaderRef header;
 
-	header = rdp_skip_capset_header(s, 4);
+	header = rdp_skip_capset_header(s);
 	Bpp = (rdp->settings->server_depth + 7) / 8;	/* bytes per pixel */
 	out_uint8s(s, 24); // pad
 	out_uint16_le(s, 0x258); // Cache1Entries
@@ -282,9 +288,9 @@ rdp_out_bitmapcache_capset(rdpRdp * rdp, STREAM s)
 void
 rdp_out_bitmapcache_rev2_capset(rdpRdp * rdp, STREAM s)
 {
-	uint8 * header;
+	capsetHeaderRef header;
 
-	header = rdp_skip_capset_header(s, 4);
+	header = rdp_skip_capset_header(s);
 	out_uint16_le(s, rdp->settings->bitmap_cache_persist_enable ? 2 : 0); // CacheFlags
 	out_uint8s(s, 1); // pad
 	out_uint8(s, 3); // numCellCaches
@@ -308,9 +314,9 @@ rdp_out_bitmapcache_rev2_capset(rdpRdp * rdp, STREAM s)
 void
 rdp_out_bitmapcache_hostsupport_capset(rdpRdp * rdp, STREAM s)
 {
-	uint8 * header;
+	capsetHeaderRef header;
 
-	header = rdp_skip_capset_header(s, 4);
+	header = rdp_skip_capset_header(s);
 	out_uint8(s, BITMAPCACHE_REV2); // cacheVersion, must be set to BITMAPCACHE_REV2
 	out_uint8(s, 0); // pad
 	out_uint16_le(s, 0); // pad
@@ -332,10 +338,10 @@ rdp_process_bitmapcache_hostsupport_capset(rdpRdp * rdp, STREAM s)
 void
 rdp_out_input_capset(rdpRdp * rdp, STREAM s)
 {
-	uint8 * header;
+	capsetHeaderRef header;
 	uint32 flags;
 
-	header = rdp_skip_capset_header(s, 4);
+	header = rdp_skip_capset_header(s);
 	flags = INPUT_FLAG_SCANCODES | INPUT_FLAG_MOUSEX | INPUT_FLAG_UNICODE;
 	if (rdp->use_input_fast_path)
 	{
@@ -381,9 +387,9 @@ rdp_process_input_capset(rdpRdp * rdp, STREAM s)
 void
 rdp_out_font_capset(STREAM s)
 {
-	uint8 * header;
+	capsetHeaderRef header;
 
-	header = rdp_skip_capset_header(s, 4);
+	header = rdp_skip_capset_header(s);
 	out_uint16_le(s, FONTSUPPORT_FONTLIST); // fontSupportFlags
 	out_uint16_le(s, 0); // pad
 	rdp_out_capset_header(s, header, CAPSET_TYPE_FONT);
@@ -403,9 +409,9 @@ rdp_process_font_capset(rdpRdp * rdp, STREAM s)
 void
 rdp_out_control_capset(STREAM s)
 {
-	uint8 * header;
+	capsetHeaderRef header;
 
-	header = rdp_skip_capset_header(s, 4);
+	header = rdp_skip_capset_header(s);
 	out_uint16_le(s, 0); // controlFlags, should be set to zero
 	out_uint16_le(s, 0); // remoteDetachFlag, should be set to FALSE
 	out_uint16_le(s, CONTROLPRIORITY_NEVER); // controlInterest
@@ -417,9 +423,9 @@ rdp_out_control_capset(STREAM s)
 void
 rdp_out_window_activation_capset(STREAM s)
 {
-	uint8 * header;
+	capsetHeaderRef header;
 
-	header = rdp_skip_capset_header(s, 4);
+	header = rdp_skip_capset_header(s);
 	/* All of the following should be set to FALSE (0x0) */
 	out_uint16_le(s, 0); // helpKeyFlag
 	out_uint16_le(s, 0); // helpKeyIndexFlag
@@ -432,9 +438,9 @@ rdp_out_window_activation_capset(STREAM s)
 void
 rdp_out_pointer_capset(rdpRdp * rdp, STREAM s)
 {
-	uint8 * header;
+	capsetHeaderRef header;
 
-	header = rdp_skip_capset_header(s, 4);
+	header = rdp_skip_capset_header(s);
 	out_uint16_le(s, 1); /* colorPointerFlag (assumed to be always true) */
 	out_uint16_le(s, 20); /* colorPointerCacheSize */
 	if (rdp->settings->new_cursors)
@@ -466,9 +472,9 @@ rdp_process_pointer_capset(rdpRdp * rdp, STREAM s)
 void
 rdp_out_share_capset(STREAM s)
 {
-	uint8 * header;
+	capsetHeaderRef header;
 
-	header = rdp_skip_capset_header(s, 4);
+	header = rdp_skip_capset_header(s);
 	out_uint16_le(s, 0); // nodeID
 	out_uint16_le(s, 0); // pad
 	rdp_out_capset_header(s, header, CAPSET_TYPE_SHARE);
@@ -488,9 +494,9 @@ rdp_process_share_capset(rdpRdp * rdp, STREAM s)
 void
 rdp_out_colorcache_capset(STREAM s)
 {
-	uint8 * header;
+	capsetHeaderRef header;
 
-	header = rdp_skip_capset_header(s, 4);
+	header = rdp_skip_capset_header(s);
 	out_uint16_le(s, 6);	/* cache size */
 	out_uint16_le(s, 0);	/* pad */
 	rdp_out_capset_header(s, header, CAPSET_TYPE_COLORCACHE);
@@ -510,9 +516,9 @@ rdp_process_colorcache_capset(rdpRdp * rdp, STREAM s)
 void
 rdp_out_brush_capset(STREAM s)
 {
-	uint8 * header;
+	capsetHeaderRef header;
 
-	header = rdp_skip_capset_header(s, 4);
+	header = rdp_skip_capset_header(s);
 	out_uint32_le(s, BRUSH_COLOR_FULL); // brushSupportLevel
 	rdp_out_capset_header(s, header, CAPSET_TYPE_BRUSH);
 }
@@ -529,9 +535,9 @@ rdp_out_cache_definition(STREAM s, uint16 cacheEntries, uint16 cacheMaximumCellS
 void
 rdp_out_glyphcache_capset(STREAM s)
 {
-	uint8 * header;
+	capsetHeaderRef header;
 
-	header = rdp_skip_capset_header(s, 4);
+	header = rdp_skip_capset_header(s);
 	/*
 		glyphCache (40 bytes):
 		An array of 10 cache definition structures
@@ -566,9 +572,9 @@ rdp_out_glyphcache_capset(STREAM s)
 void
 rdp_out_sound_capset(STREAM s)
 {
-	uint8 * header;
+	capsetHeaderRef header;
 
-	header = rdp_skip_capset_header(s, 4);
+	header = rdp_skip_capset_header(s);
 	out_uint16_le(s, SOUND_BEEPS_FLAG); // soundFlags
 	out_uint16_le(s, 0); // pad
 	rdp_out_capset_header(s, header, CAPSET_TYPE_SOUND);
@@ -578,9 +584,9 @@ rdp_out_sound_capset(STREAM s)
 void
 rdp_out_offscreenscache_capset(STREAM s)
 {
-	uint8 * header;
+	capsetHeaderRef header;
 
-	header = rdp_skip_capset_header(s, 4);
+	header = rdp_skip_capset_header(s);
 	out_uint32_le(s, 1); // offscreenSupportLevel, either TRUE (0x1) or FALSE (0x0)
 	out_uint16_le(s, 7680); // offscreenCacheSize, maximum is 7680 (in KB)
 	out_uint16_le(s, 100); // offscreenCacheEntries, maximum is 500 entries
@@ -591,9 +597,9 @@ rdp_out_offscreenscache_capset(STREAM s)
 void
 rdp_out_virtualchannel_capset(STREAM s)
 {
-	uint8 * header;
+	capsetHeaderRef header;
 
-	header = rdp_skip_capset_header(s, 4);
+	header = rdp_skip_capset_header(s);
 	out_uint32_le(s, VCCAPS_COMPR_SC); // virtual channel compression flags
 	out_uint32_le(s, 0); // VCChunkSize, ignored when sent from client to server
 	rdp_out_capset_header(s, header, CAPSET_TYPE_VIRTUALCHANNEL);
@@ -613,9 +619,9 @@ rdp_process_virtualchannel_capset(rdpRdp * rdp, STREAM s)
 void
 rdp_out_drawninegridcache_capset(STREAM s)
 {
-	uint8 * header;
+	capsetHeaderRef header;
 
-	header = rdp_skip_capset_header(s, 4);
+	header = rdp_skip_capset_header(s);
 	out_uint32_le(s, DRAW_NINEGRID_NO_SUPPORT); // drawNineGridSupportLevel
 	out_uint16_le(s, 2560); // drawNineGridCacheSize, maximum is 2560 (in KB)
 	out_uint16_le(s, 256); // drawNineGridCacheEntries, maximum is 256
@@ -656,9 +662,9 @@ rdp_out_gdiplus_image_cache_properties(STREAM s)
 void
 rdp_out_draw_gdiplus_capset(STREAM s)
 {
-	uint8 * header;
+	capsetHeaderRef header;
 
-	header = rdp_skip_capset_header(s, 4);
+	header = rdp_skip_capset_header(s);
 	out_uint32_le(s, DRAW_GDIPLUS_DEFAULT); // drawGDIPlusSupportLevel
 	out_uint32_le(s, 0); // gdipVersion, build number for the GDI+ 1.1 subsystem
 	out_uint32_le(s, DRAW_GDIPLUS_CACHE_LEVEL_DEFAULT); // drawGdiplusCacheLevel
@@ -735,9 +741,9 @@ rdp_process_draw_gdiplus_capset(rdpRdp * rdp, STREAM s)
 void
 rdp_out_rail_capset(STREAM s)
 {
-	uint8 * header;
+	capsetHeaderRef header;
 
-	header = rdp_skip_capset_header(s, 4);
+	header = rdp_skip_capset_header(s);
 	out_uint32_le(s, RAIL_LEVEL_SUPPORTED); // RailSupportLevel
 	rdp_out_capset_header(s, header, CAPSET_TYPE_RAIL);
 }
@@ -754,9 +760,9 @@ rdp_process_rail_capset(rdpRdp * rdp, STREAM s)
 void
 rdp_out_window_capset(STREAM s)
 {
-	uint8 * header;
+	capsetHeaderRef header;
 
-	header = rdp_skip_capset_header(s, 4);
+	header = rdp_skip_capset_header(s);
 	out_uint32_le(s, WINDOW_LEVEL_SUPPORTED); // wndSupportLevel
 	out_uint8(s, 3); // numIconCaches
 	out_uint16_le(s, 12); // numIconCacheEntries
@@ -780,9 +786,9 @@ rdp_process_window_capset(rdpRdp * rdp, STREAM s)
 void
 rdp_out_large_pointer_capset(STREAM s)
 {
-	uint8 * header;
+	capsetHeaderRef header;
 
-	header = rdp_skip_capset_header(s, 4);
+	header = rdp_skip_capset_header(s);
 	out_uint16_le(s, LARGE_POINTER_FLAG_96x96); // largePointerSupportFlags
 	rdp_out_capset_header(s, header, CAPSET_TYPE_LARGE_POINTER);
 }
@@ -808,9 +814,9 @@ rdp_process_surface_commands_capset(rdpRdp * rdp, STREAM s)
 void
 rdp_out_compdesk_capset(STREAM s)
 {
-	uint8 * header;
+	capsetHeaderRef header;
 
-	header = rdp_skip_capset_header(s, 4);
+	header = rdp_skip_capset_header(s);
 	out_uint16_le(s, COMPDESK_NOT_SUPPORTED); // CompDeskSupportLevel
 	rdp_out_capset_header(s, header, CAPSET_TYPE_COMPDESK);
 }
@@ -827,9 +833,9 @@ rdp_process_compdesk_capset(rdpRdp * rdp, STREAM s)
 void
 rdp_out_multifragmentupdate_capset(STREAM s)
 {
-	uint8 * header;
+	capsetHeaderRef header;
 
-	header = rdp_skip_capset_header(s, 4);
+	header = rdp_skip_capset_header(s);
 	/*
 	* MaxRequestsize (4 bytes):
 	* The size of the buffer used to reassemble the fragments of a
@@ -852,9 +858,9 @@ rdp_process_multifragmentupdate_capset(rdpRdp * rdp, STREAM s)
 void
 rdp_out_surface_commands_capset(STREAM s)
 {
-	uint8 * header;
+	capsetHeaderRef header;
 
-	header = rdp_skip_capset_header(s, 4);
+	header = rdp_skip_capset_header(s);
 	out_uint32_le(s, SURFCMDS_SETSURFACEBITS); // cmdFlags
 	out_uint32_le(s, 0); // reserved for future use
 	rdp_out_capset_header(s, header, CAPSET_TYPE_SURFACE_COMMANDS);
@@ -886,9 +892,9 @@ rdp_out_bitmap_codec(STREAM s)
 void
 rdp_out_bitmap_codecs_capset(STREAM s)
 {
-	uint8 * header;
+	capsetHeaderRef header;
 
-	header = rdp_skip_capset_header(s, 4);
+	header = rdp_skip_capset_header(s);
 	out_uint8(s, 0); // bitmapCodecCount, the number of bitmap codec entries
 	// bitmapCodecArray
 	// rdp_out_bitmap_codec(s, ...);

@@ -743,8 +743,9 @@ rdp_send_confirm_active(rdpRdp * rdp)
 	caps = (STREAM) xmalloc(sizeof(struct stream));
 	memset(caps, 0, sizeof(struct stream));
 	caps->size = 8192;
-	caps->data = (uint8 *) xmalloc(caps->size);
-	caps->p = caps->data;
+	caps->p = caps->data = (uint8 *) xmalloc(caps->size);
+	caps->end = caps->data + caps->size;
+
 	rdp_out_general_capset(rdp, caps);
 	rdp_out_bitmap_capset(rdp, caps);
 	rdp_out_order_capset(rdp, caps);
@@ -1077,8 +1078,7 @@ process_pointer_pdu(rdpRdp * rdp, STREAM s)
 		case RDP_PTRMSGTYPE_POSITION:
 			in_uint16_le(s, x);
 			in_uint16_le(s, y);
-			if (s_check(s))
-				ui_move_pointer(rdp->inst, x, y);
+			ui_move_pointer(rdp->inst, x, y);
 			break;
 
 		case RDP_PTRMSGTYPE_COLOR:

@@ -68,6 +68,8 @@ mcs_send_connect_initial(rdpMcs * mcs)
 
 	gccCCrq.size = 512;
 	gccCCrq.p = gccCCrq.data = (uint8 *) xmalloc(gccCCrq.size);
+	gccCCrq.end = gccCCrq.data + gccCCrq.size;
+
 	sec_out_gcc_conference_create_request(mcs->sec, &gccCCrq);
 	gccCCrq_length = gccCCrq.end - gccCCrq.data;
 	length = 9 + 3 * 34 + 4 + gccCCrq_length;
