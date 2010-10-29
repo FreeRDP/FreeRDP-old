@@ -63,18 +63,20 @@ rdp_global_finish(void)
 
 static void
 process_redirect_pdu(rdpRdp * rdp, STREAM s);
+static RD_BOOL
+process_data_pdu(rdpRdp * rdp, STREAM s);
 
 /* Receive an RDP packet */
 static STREAM
-rdp_recv(rdpRdp * rdp, uint8 * type, uint16 * source)
+rdp_recv(rdpRdp * rdp, enum RDP_PDU_TYPE * type, uint16 * source)
 {
 	uint16 totalLength;
 	uint16 pduType;
 	secRecvType sec_type;
 
-	*type = 0;
+	*type = RDP_PDU_NULL;
 	*source = 0;
-	if ((rdp->rdp_s == NULL) || (rdp->next_packet >= rdp->rdp_s->end) || (rdp->next_packet == NULL))
+	if ((rdp->rdp_s == NULL) || (rdp->next_packet >= rdp->rdp_s->end))
 	{
 		rdp->rdp_s = sec_recv(rdp->sec, &sec_type);
 
@@ -97,12 +99,13 @@ rdp_recv(rdpRdp * rdp, uint8 * type, uint16 * source)
 			process_redirect_pdu(rdp, rdp->rdp_s);
 			return rdp->rdp_s;
 		}
-		/* else rdptype == SEC_RECV_SHARE_CONTROL */
+		ASSERT(sec_type == SEC_RECV_SHARE_CONTROL);
 
 		rdp->next_packet = rdp->rdp_s->p;
 	}
 	else
 	{
+		ASSERT(rdp->next_packet < rdp->rdp_s->end);
 		rdp->rdp_s->p = rdp->next_packet;
 	}
 
@@ -939,7 +942,7 @@ rdp_process_server_caps(rdpRdp * rdp, STREAM s, uint16 length)
 static void
 process_demand_active(rdpRdp * rdp, STREAM s, uint16 serverChannelId)
 {
-	uint8 type;
+	enum RDP_PDU_TYPE type;
 	uint16 source;
 	uint16 lengthSourceDescriptor;
 	uint16 lengthCombinedCapabilities;
@@ -958,9 +961,15 @@ process_demand_active(rdpRdp * rdp, STREAM s, uint16 serverChannelId)
 	rdp_send_synchronize(rdp);
 	rdp_send_control(rdp, RDP_CTL_COOPERATE);
 	rdp_send_control(rdp, RDP_CTL_REQUEST_CONTROL);
-	rdp_recv(rdp, &type, &source);	/* RDP_PDU_SYNCHRONIZE */
-	rdp_recv(rdp, &type, &source);	/* RDP_CTL_COOPERATE */
-	rdp_recv(rdp, &type, &source);	/* RDP_CTL_GRANTED_CONTROL */
+	s = rdp_recv(rdp, &type, &source);	/* RDP_PDU_SYNCHRONIZE */
+	ASSERT(type == RDP_PDU_DATA);
+	process_data_pdu(rdp, s);
+	s = rdp_recv(rdp, &type, &source);	/* RDP_CTL_COOPERATE */
+	ASSERT(type == RDP_PDU_DATA);
+	process_data_pdu(rdp, s);
+	s = rdp_recv(rdp, &type, &source);	/* RDP_CTL_GRANTED_CONTROL */
+	ASSERT(type == RDP_PDU_DATA);
+	process_data_pdu(rdp, s);
 
 	/* Synchronize toggle keys */
 	rdp_sync_input(rdp, time(NULL), ui_get_toggle_keys_state(rdp->inst));
@@ -976,7 +985,9 @@ process_demand_active(rdpRdp * rdp, STREAM s, uint16 serverChannelId)
 		rdp_send_fonts(rdp, 2);
 	}
 
-	rdp_recv(rdp, &type, &source);	/* ??? */
+	s = rdp_recv(rdp, &type, &source);	/* RDP_DATA_PDU_FONTMAP */
+	ASSERT(type == RDP_PDU_DATA);
+	process_data_pdu(rdp, s);
 	reset_order_state(rdp->orders);
 }
 
@@ -1269,45 +1280,52 @@ process_set_error_info_pdu(STREAM s, struct rdp_inst *inst)
 	printf("Received Set Error Information PDU with reason %x\n", inst->disc_reason);
 }
 
-/* Process data PDU */
+/* Process Data PDU */
 static RD_BOOL
 process_data_pdu(rdpRdp * rdp, STREAM s)
 {
-	uint8 data_pdu_type;
-	uint8 ctype;
-	uint16 clen;
-	uint32 len;
+	uint32 uncompressedLength;
+	uint8 pduType2;
+	uint8 compressedType;
+	uint16 compressedLength;
 	uint32 roff, rlen;
-	struct stream * ns;
+	STREAM data_s;
+	void * s_end = s->p;
 
+	/* rest of Share Data Header */
 	in_uint8s(s, 6);	/* shareid, pad, streamid */
-	in_uint16_le(s, len);
-	in_uint8(s, data_pdu_type);
-	in_uint8(s, ctype);
-	in_uint16_le(s, clen);
+	in_uint16_le(s, uncompressedLength);
+	in_uint8(s, pduType2);
+	in_uint8(s, compressedType);
+	in_uint16_le(s, compressedLength);
+	s_end += compressedLength;
 
-	if (ctype & RDP_MPPC_COMPRESSED)
+	if (compressedType & RDP_MPPC_COMPRESSED)
 	{
-		ns = &(rdp->mppc_dict.ns);
-		clen -= 18;
-		if (len > RDP_MPPC_DICT_SIZE)
+		data_s = &(rdp->mppc_dict.ns);
+		compressedLength -= 18;
+		if (uncompressedLength > RDP_MPPC_DICT_SIZE)
 			ui_error(rdp->inst, "error decompressed packet size exceeds max\n");
-		if (mppc_expand(rdp, s->p, clen, ctype, &roff, &rlen) == -1)
+		if (mppc_expand(rdp, s->p, compressedLength, compressedType, &roff, &rlen) == -1)
 			ui_error(rdp->inst, "error while decompressing packet\n");
 		/* allocate memory and copy the uncompressed data into the temporary stream */
-		ns->data = (uint8 *) xrealloc(ns->data, rlen);
-		memcpy(ns->data, rdp->mppc_dict.hist + roff, rlen);
-		ns->size = rlen;
-		ns->end = (ns->data + ns->size);
-		ns->p = ns->data;
-		ns->rdp_hdr = ns->p;
-		s = ns;
+		data_s->data = (uint8 *) xrealloc(data_s->data, rlen);
+		memcpy(data_s->data, rdp->mppc_dict.hist + roff, rlen);
+		data_s->size = rlen;
+		data_s->end = data_s->data + data_s->size;
+		data_s->p = data_s->data;
+		data_s->rdp_hdr = data_s->p;
+	}
+	else
+	{
+		data_s = s;
 	}
 
-	switch (data_pdu_type)
+	switch (pduType2)
 	{
 		case RDP_DATA_PDU_UPDATE:
-			process_update_pdu(rdp, s);
+			process_update_pdu(rdp, data_s);
+			ASSERT(s_check_end(data_s));
 			break;
 
 		case RDP_DATA_PDU_CONTROL:
@@ -1319,11 +1337,13 @@ process_data_pdu(rdpRdp * rdp, STREAM s)
 			break;
 
 		case RDP_DATA_PDU_POINTER:
-			process_pointer_pdu(rdp, s);
+			process_pointer_pdu(rdp, data_s);
+			ASSERT(s_check_end(data_s));
 			break;
 
 		case RDP_DATA_PDU_PLAY_SOUND:
 			ui_bell(rdp->inst);
+			ASSERT(s_check_end(data_s));
 			break;
 
 		case RDP_DATA_PDU_SAVE_SESSION_INFO:
@@ -1331,14 +1351,20 @@ process_data_pdu(rdpRdp * rdp, STREAM s)
 			/* User logged on */
 			break;
 
+		case RDP_DATA_PDU_FONTMAP:
+			DEBUG("Received Font Map PDU\n");
+			break;
+
 		case RDP_DATA_PDU_SET_ERROR_INFO:
 			/* A FYI message - don't give up yet */
-			process_set_error_info_pdu(s, rdp->inst);
+			process_set_error_info_pdu(data_s, rdp->inst);
+			ASSERT(s_check_end(data_s));
 			break;
 
 		default:
-			ui_unimpl(rdp->inst, "Unknown data PDU type 0x%x\n", data_pdu_type);
+			ui_unimpl(rdp->inst, "Unknown data PDU type 0x%x\n", pduType2);
 	}
+	s->end = s_end;
 	return False;
 }
 
@@ -1443,7 +1469,7 @@ process_redirect_pdu(rdpRdp * rdp, STREAM s)
 RD_BOOL
 rdp_loop(rdpRdp * rdp, RD_BOOL * deactivated)
 {
-	uint8 type;
+	enum RDP_PDU_TYPE type;
 	uint16 source;
 	RD_BOOL disc = False;	/* True when a disconnect PDU was received */
 	RD_BOOL cont = True;
@@ -1465,11 +1491,13 @@ rdp_loop(rdpRdp * rdp, RD_BOOL * deactivated)
 			case RDP_PDU_DEACTIVATE_ALL:
 				DEBUG("RDP_PDU_DEACTIVATE_ALL\n");
 				*deactivated = True;
+				s->p = rdp->next_packet;	/* FIXME: This is cheating */
 				break;
 			case RDP_PDU_DATA:
 				disc = process_data_pdu(rdp, s);
 				break;
-			case 0:
+			case RDP_PDU_NULL:
+				/* DEBUG("PDU already processed\n"); */
 				break;
 			default:
 				ui_unimpl(rdp->inst, "Unknown PDU type 0x%x", type);
