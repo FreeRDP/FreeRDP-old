@@ -25,6 +25,7 @@
 #include "rdp.h"
 #include "rdpset.h"
 #include "mem.h"
+#include "debug.h"
 
 /* Generate a session key and RC4 keys, given client and server randoms */
 static void
@@ -344,7 +345,11 @@ licence_process(rdpLicence * licence, STREAM s)
 			break;
 
 		case LICENCE_TAG_REISSUE:	/* UPGRADE_LICENSE */
+			break;
+
 		case LICENCE_TAG_RESULT:	/* ERROR_ALERT */
+			DEBUG("LICENCE ERROR_ALERT - assuming it is a license grant\n");
+			licence->licence_issued = True;	/* TODO ... */
 			break;
 
 		default:

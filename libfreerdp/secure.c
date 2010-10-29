@@ -916,7 +916,7 @@ sec_recv(rdpSec * sec, secRecvType * type)
 			}
 			return s;
 		}
-		if (sec->rdp->settings->encryption || (!(sec->licence->licence_issued) && !(sec->tls_connected)))
+		if (sec->rdp->settings->encryption || !sec->licence->licence_issued)
 		{
 			/* basicSecurityHeader: */
 			in_uint32_le(s, sec_flags);
