@@ -24,6 +24,7 @@
 #ifndef __DVCMAN_H
 #define __DVCMAN_H
 
+#include <freerdp/dvc.h>
 #include "drdynvc_main.h"
 
 IWTSVirtualChannelManager *
@@ -41,4 +42,3 @@ dvcman_close_channel(IWTSVirtualChannelManager * pChannelMgr, uint32 ChannelId);
 int
 dvcman_receive_channel_data(IWTSVirtualChannelManager * pChannelMgr, uint32 ChannelId, char * data, uint32 data_size);
 #endif
-

@@ -24,6 +24,8 @@
 #ifndef __AUDIN_MAIN_H
 #define __AUDIN_MAIN_H
 
+#include <freerdp/types_ui.h>
+
 typedef int (*wave_in_receive_func) (char * wave_data, int size, void * user_data);
 
 void *
@@ -40,4 +42,3 @@ int
 wave_in_close(void * device_data);
 
 #endif
-

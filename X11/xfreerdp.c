@@ -92,7 +92,7 @@ out_args(void)
 		"\t-s: shell\n"
 		"\t-c: directory\n"
 		"\t-g: geometry, using format WxH, default is 1024x768\n"
-		"\t-t: alternative port number (default is 3389)\n"
+		"\t-t: alternative port number, default is 3389\n"
 		"\t-n: hostname\n"
 		"\t-o: console audio\n"
 		"\t-0: console session\n"
@@ -379,6 +379,11 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 			out_args();
 			return 1;
 		}
+		else if (strcmp("--version", argv[*pindex]) == 0)
+		{
+			printf("This is FreeRDP version %s\n", PACKAGE_VERSION);
+			return 1;
+		}
 		else if (argv[*pindex][0] != '-')
 		{
 			settings->server[sizeof(settings->server) - 1] = 0;
@@ -408,11 +413,6 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 			   followed will be parsed for the next session. */
 			*pindex = *pindex + 1;
 			return 0;
-		}
-      else if (strcmp("--version", argv[*pindex]) == 0)
-		{
-			printf("This is FreeRDP version %s\n", PACKAGE_VERSION);
-			return 1;
 		}
 		else
 		{

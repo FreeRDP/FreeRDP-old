@@ -22,6 +22,9 @@
 #ifndef __RDPDR_MAIN_H
 #define __RDPDR_MAIN_H
 
+#include <pthread.h>
+
+#include "rdpdr_types.h"
 #include "wait_obj.h"
 
 struct data_in_item

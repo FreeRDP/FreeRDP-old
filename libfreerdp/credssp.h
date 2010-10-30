@@ -92,4 +92,3 @@ void
 nla_free(rdpNla * nla);
 
 #endif // __CREDSSP_H
-

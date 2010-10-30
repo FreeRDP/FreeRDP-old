@@ -18,13 +18,13 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#include <freerdp/rdpset.h>
 #include "frdp.h"
 #include "mcs.h"
 #include "chan.h"
 #include "secure.h"
 #include "licence.h"
 #include "rdp.h"
-#include "rdpset.h"
 #include "iso.h"
 #include "mem.h"
 #include "debug.h"
@@ -815,6 +815,9 @@ sec_process_server_network_data(rdpSec * sec, STREAM s)
 	uint16 channelCount;
 
 	in_uint16_le(s, MCSChannelId); /* MCSChannelId */
+	if (MCSChannelId != MCS_GLOBAL_CHANNEL)
+		ui_error(sec->rdp->inst, "expected IO channel 0x%x=%d but got 0x%x=%d\n",
+				MCS_GLOBAL_CHANNEL, MCS_GLOBAL_CHANNEL, MCSChannelId, MCSChannelId);
 	in_uint16_le(s, channelCount); /* channelCount */
 
 	/* TODO: Check that it matches rdp->settings->num_channels */
@@ -894,7 +897,9 @@ sec_process_mcs_data(rdpSec * sec, STREAM s)
 	}
 }
 
-/* Receive secure transport packet */
+/* Receive secure transport packet
+ * Some package types are processed internally.
+ * If s is returned a package of *type must be processed by the caller */
 STREAM
 sec_recv(rdpSec * sec, secRecvType * type)
 {
@@ -903,7 +908,7 @@ sec_recv(rdpSec * sec, secRecvType * type)
 	uint32 sec_flags;
 	isoRecvType iso_type;
 
-	while ((s = mcs_recv(sec->mcs, &channel, &iso_type)) != NULL)
+	while ((s = mcs_recv(sec->mcs, &iso_type, &channel)) != NULL)
 	{
 		if ((iso_type == ISO_RECV_FAST_PATH) ||
 			(iso_type == ISO_RECV_FAST_PATH_ENCRYPTED))
@@ -916,7 +921,12 @@ sec_recv(rdpSec * sec, secRecvType * type)
 			}
 			return s;
 		}
-		if (sec->rdp->settings->encryption || (!(sec->licence->licence_issued) && !(sec->tls_connected)))
+		if (iso_type != ISO_RECV_X224)
+		{
+			ui_error(sec->rdp->inst, "expected ISO_RECV_X224, got %d\n", iso_type);
+			return NULL;
+		}
+		if (sec->rdp->settings->encryption || !sec->licence->licence_issued)
 		{
 			/* basicSecurityHeader: */
 			in_uint32_le(s, sec_flags);

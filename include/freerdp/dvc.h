@@ -40,7 +40,7 @@
    o IWTSPlugin
    o IWTSListenerCallback
    o IWTSVirtualChannelCallback
-  
+
    A basic DVC plugin implementation:
    1. DVCPluginEntry:
       The plugin entry point, which creates and initializes a new IWTSPlugin
@@ -54,6 +54,8 @@
 
 #ifndef __FREERDP_DVC_H
 #define __FREERDP_DVC_H
+
+#include "types_ui.h"
 
 typedef struct _IWTSVirtualChannelManager IWTSVirtualChannelManager;
 typedef struct _IWTSListener IWTSListener;
@@ -94,10 +96,10 @@ struct _IWTSVirtualChannelManager
 
 struct _IWTSPlugin
 {
-	/* Used for the first call that is made from the client to the plug-in. */	
+	/* Used for the first call that is made from the client to the plug-in. */
 	int (*Initialize) (IWTSPlugin * pPlugin,
 		IWTSVirtualChannelManager * pChannelMgr);
-	/* Notifies the plug-in that the Remote Desktop Connection (RDC) client 
+	/* Notifies the plug-in that the Remote Desktop Connection (RDC) client
 	   has successfully connected to the Remote Desktop Session Host (RD
 	   Session Host) server. */
 	int (*Connected) (IWTSPlugin * pPlugin);
@@ -142,4 +144,3 @@ struct _IDRDYNVC_ENTRY_POINTS
 typedef int (*PDVC_PLUGIN_ENTRY) (IDRDYNVC_ENTRY_POINTS *);
 
 #endif
-

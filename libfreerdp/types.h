@@ -21,8 +21,8 @@
 #ifndef __TYPES_H
 #define __TYPES_H
 
+#include <freerdp/types_ui.h>
 #include "constants.h"
-#include "types_ui.h"
 #include "stream.h"
 
 #ifndef True

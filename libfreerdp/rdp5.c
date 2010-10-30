@@ -63,7 +63,7 @@ rdp5_process(rdpRdp * rdp, STREAM s)
 			memcpy((ns->data), (unsigned char *) (rdp->mppc_dict.hist + roff), rlen);
 
 			ns->size = rlen;
-			ns->end = (ns->data + ns->size);
+			ns->end = ns->data + ns->size;
 			ns->p = ns->data;
 			ns->rdp_hdr = ns->p;
 
@@ -96,8 +96,7 @@ rdp5_process(rdpRdp * rdp, STREAM s)
 			case 8:	/* pointer position */
 				in_uint16_le(ts, x);
 				in_uint16_le(ts, y);
-				if (s_check(ts))
-					ui_move_pointer(rdp->inst, x, y);
+				ui_move_pointer(rdp->inst, x, y);
 				break;
 			case 9:	/* color pointer */
 				process_color_pointer_pdu(rdp, ts);

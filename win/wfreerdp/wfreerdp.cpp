@@ -27,6 +27,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <errno.h>
+#include <config.h>
 #include <freerdp/freerdp.h>
 #include <freerdp/chanman.h>
 #include "wf_event.h"
@@ -47,7 +48,7 @@ static int
 set_default_params(rdpSet * settings)
 {
 	memset(settings, 0, sizeof(rdpSet));
-	strcpy(settings->hostname, "test");
+	gethostname(settings->hostname, sizeof(settings->hostname) - 1);
 	settings->width = 800;
 	settings->height = 600;
 	strcpy(settings->server, "127.0.0.1");
@@ -64,6 +65,41 @@ set_default_params(rdpSet * settings)
 	settings->triblt = 0;
 	settings->new_cursors = 1;
 	settings->rdp_version = 5;
+#ifndef DISABLE_TLS
+	settings->tls = 1;
+#endif
+	return 0;
+}
+
+static int
+out_args(void)
+{
+	char help[] =
+		"\n"
+		"FreeRDP - A Free Remote Desktop Protocol Client\n"
+		"See http://freerdp.sourceforge.net for more information\n"
+		"\n"
+		"Usage: xfreerdp [options] server:port\n"
+		"\t-a: color depth (8, 15, 16, 24 or 32)\n"
+		"\t-u: username\n"
+		"\t-p: password\n"
+		"\t-d: domain\n"
+		"\t-s: shell\n"
+		"\t-c: directory\n"
+		"\t-g: geometry, using format WxH, default is 1024x768\n"
+		"\t-t: alternative port number, default is 3389\n"
+		"\t-n: hostname\n"
+		"\t-o: console audio\n"
+		"\t-0: console session\n"
+		"\t-z: enable bulk compression\n"
+		"\t-x: performance flags (m, b or l for modem, broadband or lan)\n"
+#ifndef DISABLE_TLS
+		"\t--no-tls: disable TLS encryption\n"
+#endif
+		"\t--no-osb: disable off screen bitmaps, default on\n"
+		"\t--version: Print out the version and exit\n"
+		"\t-h: show this help\n";
+	printf("%s\n", help);
 	return 0;
 }
 
@@ -77,6 +113,8 @@ process_params(rdpSet * settings, rdpChanMan * chan_man, int argc, LPWSTR * argv
 	printf("process_params\n");
 	if (argc < *pindex + 1)
 	{
+		if (*pindex == 1)
+			printf("no parameters specified\n");
 		return 1;
 	}
 	while (*pindex < argc)
@@ -86,6 +124,7 @@ process_params(rdpSet * settings, rdpChanMan * chan_man, int argc, LPWSTR * argv
 			*pindex = *pindex + 1;
 			if (*pindex == argc)
 			{
+				printf("missing server depth\n");
 				return 1;
 			}
 			settings->server_depth = _wtoi(argv[*pindex]);
@@ -95,27 +134,63 @@ process_params(rdpSet * settings, rdpChanMan * chan_man, int argc, LPWSTR * argv
 			*pindex = *pindex + 1;
 			if (*pindex == argc)
 			{
+				printf("missing username\n");
 				return 1;
 			}
-			WideCharToMultiByte(CP_ACP, 0, argv[*pindex], -1, settings->username, 255, NULL, NULL);
-			settings->username[255] = 0;
+			WideCharToMultiByte(CP_ACP, 0, argv[*pindex], -1, settings->username, sizeof(settings->username) - 1, NULL, NULL);
+			settings->username[sizeof(settings->username) - 1] = 0;
 		}
 		else if (wcscmp(L"-p", argv[*pindex]) == 0)
 		{
 			*pindex = *pindex + 1;
 			if (*pindex == argc)
 			{
+				printf("missing password\n");
 				return 1;
 			}
-			WideCharToMultiByte(CP_ACP, 0, argv[*pindex], -1, settings->password, 63, NULL, NULL);
-			settings->password[63] = 0;
+			WideCharToMultiByte(CP_ACP, 0, argv[*pindex], -1, settings->password, sizeof(settings->password) - 1, NULL, NULL);
+			settings->password[sizeof(settings->password) - 1] = 0;
 			settings->autologin = 1;
+		}
+		else if (wcscmp(L"-d", argv[*pindex]) == 0)
+		{
+			*pindex = *pindex + 1;
+			if (*pindex == argc)
+			{
+				printf("missing domain\n");
+				return 1;
+			}
+			WideCharToMultiByte(CP_ACP, 0, argv[*pindex], -1, settings->domain, sizeof(settings->domain) - 1, NULL, NULL);
+			settings->domain[sizeof(settings->domain) - 1] = 0;
+		}
+		else if (wcscmp(L"-s", argv[*pindex]) == 0)
+		{
+			*pindex = *pindex + 1;
+			if (*pindex == argc)
+			{
+				printf("missing shell\n");
+				return 1;
+			}
+			WideCharToMultiByte(CP_ACP, 0, argv[*pindex], -1, settings->shell, sizeof(settings->shell) - 1, NULL, NULL);
+			settings->shell[sizeof(settings->shell) - 1] = 0;
+		}
+		else if (wcscmp(L"-c", argv[*pindex]) == 0)
+		{
+			*pindex = *pindex + 1;
+			if (*pindex == argc)
+			{
+				printf("missing directory\n");
+				return 1;
+			}
+			WideCharToMultiByte(CP_ACP, 0, argv[*pindex], -1, settings->directory, sizeof(settings->directory) - 1, NULL, NULL);
+			settings->directory[sizeof(settings->directory) - 1] = 0;
 		}
 		else if (wcscmp(L"-g", argv[*pindex]) == 0)
 		{
 			*pindex = *pindex + 1;
 			if (*pindex == argc)
 			{
+				printf("missing width\n");
 				return 1;
 			}
 			settings->width = wcstol(argv[*pindex], &p, 10);
@@ -126,7 +201,7 @@ process_params(rdpSet * settings, rdpChanMan * chan_man, int argc, LPWSTR * argv
 			if ((settings->width < 16) || (settings->height < 16) ||
 				(settings->width > 4096) || (settings->height > 4096))
 			{
-				printf("invalid parameter\n");
+				printf("invalid dimensions\n");
 				return 1;
 			}
 		}
@@ -135,23 +210,44 @@ process_params(rdpSet * settings, rdpChanMan * chan_man, int argc, LPWSTR * argv
 			*pindex = *pindex + 1;
 			if (*pindex == argc)
 			{
+				printf("missing port number\n");
 				return 1;
 			}
 			settings->tcp_port_rdp = _wtoi(argv[*pindex]);
+		}
+		else if (wcscmp(L"-n", argv[*pindex]) == 0)
+		{
+			*pindex = *pindex + 1;
+			if (*pindex == argc)
+			{
+				printf("missing hostname\n");
+				return 1;
+			}
+			WideCharToMultiByte(CP_ACP, 0, argv[*pindex], -1, settings->hostname, sizeof(settings->hostname) - 1, NULL, NULL);
+			settings->hostname[sizeof(settings->hostname) - 1] = 0;
+		}
+		else if (wcscmp(L"-o", argv[*pindex]) == 0)
+		{
+			settings->console_audio = 1;
+		}
+		else if (wcscmp(L"-0", argv[*pindex]) == 0)
+		{
+			settings->console_session = 1;
 		}
 		else if (wcscmp(L"-z", argv[*pindex]) == 0)
 		{
 			settings->bulk_compression = 1;
 		}
-		else if (wcscmp(L"-0", argv[*pindex]) == 0)
+		else if (wcscmp(L"--no-osb", argv[*pindex]) == 0)
 		{
-			settings->console_session = 1;
+			settings->off_screen_bitmaps = 0;
 		}
 		else if (wcscmp(L"-x", argv[*pindex]) == 0)
 		{
 			*pindex = *pindex + 1;
 			if (*pindex == argc)
 			{
+				printf("missing performance flag\n");
 				return 1;
 			}
 			if (wcsncmp(L"m", argv[*pindex], 1) == 0) /* modem */
@@ -173,26 +269,74 @@ process_params(rdpSet * settings, rdpChanMan * chan_man, int argc, LPWSTR * argv
 				settings->performanceflags = wcstol(argv[*pindex], 0, 16);
 			}
 		}
+#ifndef DISABLE_TLS
+		else if (wcscmp(L"--no-tls", argv[*pindex]) == 0)
+		{
+			settings->tls = 0;
+		}
+#endif
 		else if (wcscmp(L"-plugin", argv[*pindex]) == 0)
 		{
 			*pindex = *pindex + 1;
 			if (*pindex == argc)
 			{
+				printf("missing plugin name\n");
 				return 1;
 			}
+			/* TODO: Handle --data ... -- */
 			freerdp_chanman_load_plugin(chan_man, settings, argv[*pindex], NULL);
 		}
-		else
+		else if ((wcscmp(L"-h", argv[*pindex]) == 0) || wcscmp(L"--help", argv[*pindex]) == 0)
 		{
-			WideCharToMultiByte(CP_ACP, 0, argv[*pindex], -1, settings->server, 63, NULL, NULL);
-			settings->server[63] = 0;
+			out_args();
+			return 1;
+		}
+		else if (wcscmp(L"--version", argv[*pindex]) == 0)
+		{
+			printf("This is FreeRDP version %s\n", PACKAGE_VERSION);
+			return 1;
+		}
+		else if (argv[*pindex][0] != L'-')
+		{
+			char *cp;
+			char s[sizeof(settings->server)];
+			WideCharToMultiByte(CP_ACP, 0, argv[*pindex], -1, s, sizeof(s) - 1, NULL, NULL);
+			settings->server[sizeof(settings->server) - 1] = 0;
+			if (s[0] == '[' && (cp = strchr(s, ']'))
+				&& (cp[1] == 0 || (cp[1] == ':' && !strchr(cp + 2, ':'))))
+			{
+				/* Either "[...]" or "[...]:..." with at most one : after the brackets */
+				strncpy(settings->server, s + 1, sizeof(settings->server) - 1);
+				if ((cp = strchr(settings->server, ']')))
+				{
+					*cp = 0;
+					if (cp[1] == ':')
+						settings->tcp_port_rdp = atoi(cp + 2);
+				}
+			}
+			else
+			{
+				/* Port number is cut off and used if exactly one : in the string */
+				strncpy(settings->server, s, sizeof(settings->server) - 1);
+				if ((cp = strchr(settings->server, ':')) && !strchr(cp + 1, ':'))
+				{
+					*cp = 0;
+					settings->tcp_port_rdp = atoi(cp + 1);
+				}
+			}
 			/* server is the last argument for the current session. arguments
 			   followed will be parsed for the next session. */
 			*pindex = *pindex + 1;
 			return 0;
 		}
+		else
+		{
+			wprintf(L"invalid option: %s\n", argv[*pindex]);
+			return 1;
+		}
 		*pindex = *pindex + 1;
 	}
+	printf("missing server name\n");
 	return 1;
 }
 
@@ -375,7 +519,7 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdS
 
 	g_hInstance = hInstance;
 
-	argv = CommandLineToArgvW(GetCommandLine(), &argc); 
+	argv = CommandLineToArgvW(GetCommandLine(), &argc);
 
 	while (1)
 	{
@@ -390,7 +534,7 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdS
 			data->hwnd = CreateWindowEx(0, g_wnd_class_name, L"wfreerdp",
 				WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT,
 				CW_USEDEFAULT, CW_USEDEFAULT, NULL,
-				NULL, g_hInstance, NULL);		
+				NULL, g_hInstance, NULL);
 
 			CreateThread(NULL, 0, run_wfreerdp, data, 0, NULL);
 		}

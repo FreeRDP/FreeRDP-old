@@ -22,6 +22,8 @@
 #ifndef __DEVMAN_H
 #define __DEVMAN_H
 
+#include "rdpdr_types.h"
+
 typedef PSERVICE (*PDEVMAN_REGISTER_SERVICE)(PDEVMAN devman);
 typedef int (*PDEVMAN_UNREGISTER_SERVICE)(PDEVMAN devman, PSERVICE srv);
 typedef PDEVICE (*PDEVMAN_REGISTER_DEVICE)(PDEVMAN devman, PSERVICE srv, char* name);
@@ -29,11 +31,11 @@ typedef int (*PDEVMAN_UNREGISTER_DEVICE)(PDEVMAN devman, PDEVICE dev);
 
 struct _DEVMAN_ENTRY_POINTS
 {
-    PDEVMAN_REGISTER_SERVICE pDevmanRegisterService;
-    PDEVMAN_UNREGISTER_SERVICE pDevmanUnregisterService;
-    PDEVMAN_REGISTER_DEVICE pDevmanRegisterDevice;
-    PDEVMAN_UNREGISTER_DEVICE pDevmanUnregisterDevice;
-    void* pExtendedData; /* extended data field to pass initial parameters */
+	PDEVMAN_REGISTER_SERVICE pDevmanRegisterService;
+	PDEVMAN_UNREGISTER_SERVICE pDevmanUnregisterService;
+	PDEVMAN_REGISTER_DEVICE pDevmanRegisterDevice;
+	PDEVMAN_UNREGISTER_DEVICE pDevmanUnregisterDevice;
+	void* pExtendedData; /* extended data field to pass initial parameters */
 };
 typedef struct _DEVMAN_ENTRY_POINTS DEVMAN_ENTRY_POINTS;
 typedef DEVMAN_ENTRY_POINTS * PDEVMAN_ENTRY_POINTS;
@@ -66,4 +68,3 @@ int
 devman_load_device_service(DEVMAN* devman, char* filename);
 
 #endif // __DEVMAN_H
-

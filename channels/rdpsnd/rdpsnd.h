@@ -63,5 +63,3 @@ struct audio_driver *sgi_register(char *options);
 struct audio_driver *sun_register(char *options);
 
 #endif // __RDPSND_H
-
-

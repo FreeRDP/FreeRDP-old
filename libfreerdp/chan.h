@@ -1,9 +1,6 @@
-
 #ifndef __CHAN_H
 #define __CHAN_H
 
-#include "types_ui.h"
-#include "constants_ui.h"
 #include "mcs.h"
 
 struct rdp_channels

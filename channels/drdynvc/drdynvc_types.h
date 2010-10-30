@@ -37,4 +37,3 @@
   do { if (_level < LOG_LEVEL) { printf _args ; printf("\n"); } } while (0)
 
 #endif
-

@@ -25,6 +25,8 @@
 #ifndef __CLIPRDR_MAIN_H
 #define __CLIPRDR_MAIN_H
 
+#include <freerdp/types_ui.h>
+
 /* CLIPRDR_HEADER.msgType */
 #define CB_MONITOR_READY           1
 #define CB_FORMAT_LIST             2
@@ -134,4 +136,3 @@ void
 clipboard_free(void * device_data);
 
 #endif
-

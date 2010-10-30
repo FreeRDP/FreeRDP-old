@@ -22,9 +22,8 @@
 #define __RDP_H
 
 #include <time.h>
-
+#include <freerdp/types_ui.h>
 #include "types.h"
-#include "types_ui.h"
 
 RD_BOOL
 rdp_global_init(void);

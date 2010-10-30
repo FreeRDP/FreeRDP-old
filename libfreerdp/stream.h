@@ -25,15 +25,17 @@
 #warning no endian defined
 #endif
 
+#include "debug.h"
+
 /* Parser state */
 struct stream
 {
 	unsigned char *p;	/* current position */
-	unsigned char *end;	/* end of stream */
+	unsigned char *end;	/* end of stream, < data+size, no read or write beyond this */
 	unsigned char *data;	/* pointer to stream-related mem.h-managed data */
 	unsigned int size;	/* size of allocated data */
 
-	/* Saved positions for various layeres */
+	/* Saved positions for various layers */
 	unsigned char *iso_hdr;
 	unsigned char *mcs_hdr;
 	unsigned char *sec_hdr;
@@ -52,65 +54,71 @@ typedef struct stream *STREAM;
 /* True if end not reached
  * FIXME: should be used more! */
 #define s_check(s)		((s)->p <= (s)->end)
-/* True if n more in stream
- * FIXME: should be used! */
+/* True if n more in stream */
 #define s_check_rem(s,n)	((s)->p + n <= (s)->end)
 /* True if exactly at end */
 #define s_check_end(s)		((s)->p == (s)->end)
 
+#if WITH_DEBUG || defined(ENABLE_STREAM_CHECK)
+/* Check all stream access to prevent buffer overruns. */
+#define ASSERT_AVAILABLE(s,n) ASSERT(s_check_rem(s,n))
+#else
+#define ASSERT_AVAILABLE(s,n) do { } while (0)
+#endif
+
 #if defined(L_ENDIAN) && !defined(NEED_ALIGN)
 /* Direct LE parsing */
 /* Read uint16 from stream and assign to v */
-#define in_uint16_le(s,v)	do { v = *(uint16 *)((s)->p); (s)->p += 2; } while (0)
+#define in_uint16_le(s,v)	do { ASSERT_AVAILABLE(s,2); v = *(uint16 *)((s)->p); (s)->p += 2; } while (0)
 /* Read uint32 from stream and assign to v */
-#define in_uint32_le(s,v)	do { v = *(uint32 *)((s)->p); (s)->p += 4; } while (0)
+#define in_uint32_le(s,v)	do { ASSERT_AVAILABLE(s,4); v = *(uint32 *)((s)->p); (s)->p += 4; } while (0)
 /* Write uint16 in v to stream */
-#define out_uint16_le(s,v)	do { *(uint16 *)((s)->p) = v; (s)->p += 2; } while (0)
+#define out_uint16_le(s,v)	do { ASSERT_AVAILABLE(s,2); *(uint16 *)((s)->p) = v; (s)->p += 2; } while (0)
 /* Write uint32 in v to stream */
-#define out_uint32_le(s,v)	do { *(uint32 *)((s)->p) = v; (s)->p += 4; } while (0)
+#define out_uint32_le(s,v)	do { ASSERT_AVAILABLE(s,4); *(uint32 *)((s)->p) = v; (s)->p += 4; } while (0)
 
 #else
 /* Byte-oriented LE parsing */
-#define in_uint16_le(s,v)	do { v = *((s)->p++); v += *((s)->p++) << 8; } while (0)
-#define in_uint32_le(s,v)	do { in_uint16_le(s,v); \
+#define in_uint16_le(s,v)	do { ASSERT_AVAILABLE(s,2); v = *((s)->p++); v += *((s)->p++) << 8; } while (0)
+#define in_uint32_le(s,v)	do { ASSERT_AVAILABLE(s,4); in_uint16_le(s,v); \
 				v += *((s)->p++) << 16; v += *((s)->p++) << 24; } while (0)
-#define out_uint16_le(s,v)	do { *((s)->p++) = (v) & 0xff; *((s)->p++) = ((v) >> 8) & 0xff; } while (0)
-#define out_uint32_le(s,v)	do { out_uint16_le(s, (v) & 0xffff); out_uint16_le(s, ((v) >> 16) & 0xffff); } while (0)
+#define out_uint16_le(s,v)	do { ASSERT_AVAILABLE(s,2); *((s)->p++) = (v) & 0xff; *((s)->p++) = ((v) >> 8) & 0xff; } while (0)
+#define out_uint32_le(s,v)	do { ASSERT_AVAILABLE(s,4); out_uint16_le(s, (v) & 0xffff); out_uint16_le(s, ((v) >> 16) & 0xffff); } while (0)
 #endif
 
 #if defined(B_ENDIAN) && !defined(NEED_ALIGN)
 /* Direct BE parsing */
-#define in_uint16_be(s,v)	do { v = *(uint16 *)((s)->p); (s)->p += 2; } while (0)
-#define in_uint32_be(s,v)	do { v = *(uint32 *)((s)->p); (s)->p += 4; } while (0)
-#define out_uint16_be(s,v)	do { *(uint16 *)((s)->p) = v; (s)->p += 2; } while (0)
-#define out_uint32_be(s,v)	do { *(uint32 *)((s)->p) = v; (s)->p += 4; } while (0)
+#define in_uint16_be(s,v)	do { ASSERT_AVAILABLE(s,2); v = *(uint16 *)((s)->p); (s)->p += 2; } while (0)
+#define in_uint32_be(s,v)	do { ASSERT_AVAILABLE(s,4); v = *(uint32 *)((s)->p); (s)->p += 4; } while (0)
+#define out_uint16_be(s,v)	do { ASSERT_AVAILABLE(s,2); *(uint16 *)((s)->p) = v; (s)->p += 2; } while (0)
+#define out_uint32_be(s,v)	do { ASSERT_AVAILABLE(s,4); *(uint32 *)((s)->p) = v; (s)->p += 4; } while (0)
 
 #else
 /* Byte-oriented BE parsing */
-#define in_uint16_be(s,v)	do { v = *((s)->p++); next_be(s,v); } while (0)
-#define in_uint32_be(s,v)	do { in_uint16_be(s,v); next_be(s,v); next_be(s,v); } while (0)
-#define out_uint16_be(s,v)	do { *((s)->p++) = ((v) >> 8) & 0xff; *((s)->p++) = (v) & 0xff; } while (0)
-#define out_uint32_be(s,v)	do { out_uint16_be(s, ((v) >> 16) & 0xffff); out_uint16_be(s, (v) & 0xffff); } while (0)
+#define in_uint16_be(s,v)	do { ASSERT_AVAILABLE(s,2); v = *((s)->p++); next_be(s,v); } while (0)
+#define in_uint32_be(s,v)	do { ASSERT_AVAILABLE(s,4); in_uint16_be(s,v); next_be(s,v); next_be(s,v); } while (0)
+#define out_uint16_be(s,v)	do { ASSERT_AVAILABLE(s,2); *((s)->p++) = ((v) >> 8) & 0xff; *((s)->p++) = (v) & 0xff; } while (0)
+#define out_uint32_be(s,v)	do { ASSERT_AVAILABLE(s,4); out_uint16_be(s, ((v) >> 16) & 0xffff); out_uint16_be(s, (v) & 0xffff); } while (0)
 #endif
 
 /* Read uint8 from stream and assign to v */
-#define in_uint8(s,v)		v = *((s)->p++)
+#define in_uint8(s,v)		do { ASSERT_AVAILABLE(s,1); v = *((s)->p++); } while (0)
 /* Let v point to data at current pos and skip n */
-#define in_uint8p(s,v,n)	do { v = (s)->p; (s)->p += n; } while (0)
+#define in_uint8p(s,v,n)	do { ASSERT_AVAILABLE(s,n); v = (s)->p; (s)->p += n; } while (0)
 /* Copy n bytes from current pos to *v and skip n */
-#define in_uint8a(s,v,n)	do { memcpy(v,(s)->p,n); (s)->p += n; } while (0)
+#define in_uint8a(s,v,n)	do { ASSERT_AVAILABLE(s,n); memcpy(v,(s)->p,n); (s)->p += n; } while (0)
 /* Skip n bytes */
-#define in_uint8s(s,n)		(s)->p += n
+#define in_uint8s(s,n)		do { ASSERT_AVAILABLE(s,n); (s)->p += n; } while (0)
 /* Write uint8 in v to stream */
-#define out_uint8(s,v)		*((s)->p++) = v
+#define out_uint8(s,v)		do { ASSERT_AVAILABLE(s,1); *((s)->p++) = v; } while (0)
 /* Copy n bytes from *v to stream */
-#define out_uint8p(s,v,n)	do { memcpy((s)->p,v,n); (s)->p += n; } while (0)
+#define out_uint8p(s,v,n)	do { ASSERT_AVAILABLE(s,n); memcpy((s)->p,v,n); (s)->p += n; } while (0)
 /* Copy n bytes from *v to stream */
-#define out_uint8a(s,v,n)	out_uint8p(s,v,n)
+#define out_uint8a(s,v,n)	do { ASSERT_AVAILABLE(s,n); out_uint8p(s,v,n); } while (0)
 /* Output n bytes zero to stream */
-#define out_uint8s(s,n)		do { memset((s)->p,0,n); (s)->p += n; } while (0)
+#define out_uint8s(s,n)		do { ASSERT_AVAILABLE(s,n); memset((s)->p,0,n); (s)->p += n; } while (0)
 
 /* Shift old v value and read new LSByte */
-#define next_be(s,v)		v = ((v) << 8) + *((s)->p++)
+#define next_be(s,v)		do { ASSERT_AVAILABLE(s,1); v = ((v) << 8) + *((s)->p++); } while (0)
 
 #endif /* __STREAM_H */

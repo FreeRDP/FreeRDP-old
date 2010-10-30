@@ -1,6 +1,8 @@
-
 #ifndef __WF_COLOR_H
 #define __WF_COLOR_H
+
+#include <windows.h>
+#include "wf_event.h"
 
 int
 wf_color_convert(wfInfo * wfi, int in_color, int in_bpp);

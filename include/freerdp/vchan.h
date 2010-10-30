@@ -27,7 +27,8 @@
 #ifndef __VCHAN_H
 #define __VCHAN_H
 
-#include <freerdp/constants_vchan.h>
+#include "types_ui.h"
+#include "constants_vchan.h"
 
 #ifdef _WIN32
 #define VCHAN_CC WINAPI
@@ -107,12 +108,12 @@ typedef uint32 (VCHAN_CC * PVIRTUALCHANNELWRITE)(uint32  openHandle,
 
 struct _CHANNEL_ENTRY_POINTS
 {
-    uint32 cbSize;
-    uint32 protocolVersion;
-    PVIRTUALCHANNELINIT  pVirtualChannelInit;
-    PVIRTUALCHANNELOPEN  pVirtualChannelOpen;
-    PVIRTUALCHANNELCLOSE pVirtualChannelClose;
-    PVIRTUALCHANNELWRITE pVirtualChannelWrite;
+	uint32 cbSize;
+	uint32 protocolVersion;
+	PVIRTUALCHANNELINIT  pVirtualChannelInit;
+	PVIRTUALCHANNELOPEN  pVirtualChannelOpen;
+	PVIRTUALCHANNELCLOSE pVirtualChannelClose;
+	PVIRTUALCHANNELWRITE pVirtualChannelWrite;
 };
 typedef struct _CHANNEL_ENTRY_POINTS CHANNEL_ENTRY_POINTS;
 typedef CHANNEL_ENTRY_POINTS * PCHANNEL_ENTRY_POINTS;
@@ -121,13 +122,13 @@ typedef int (VCHAN_CC * PVIRTUALCHANNELENTRY)(PCHANNEL_ENTRY_POINTS pEntryPoints
 
 struct _CHANNEL_ENTRY_POINTS_EX
 {
-    uint32 cbSize;
-    uint32 protocolVersion;
-    PVIRTUALCHANNELINIT  pVirtualChannelInit;
-    PVIRTUALCHANNELOPEN  pVirtualChannelOpen;
-    PVIRTUALCHANNELCLOSE pVirtualChannelClose;
-    PVIRTUALCHANNELWRITE pVirtualChannelWrite;
-    void* pExtendedData; /* extended data field to pass initial parameters */
+	uint32 cbSize;
+	uint32 protocolVersion;
+	PVIRTUALCHANNELINIT  pVirtualChannelInit;
+	PVIRTUALCHANNELOPEN  pVirtualChannelOpen;
+	PVIRTUALCHANNELCLOSE pVirtualChannelClose;
+	PVIRTUALCHANNELWRITE pVirtualChannelWrite;
+	void* pExtendedData; /* extended data field to pass initial parameters */
 };
 typedef struct _CHANNEL_ENTRY_POINTS_EX CHANNEL_ENTRY_POINTS_EX;
 typedef CHANNEL_ENTRY_POINTS_EX * PCHANNEL_ENTRY_POINTS_EX;

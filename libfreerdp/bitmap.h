@@ -21,6 +21,8 @@
 #ifndef __BITMAP_H
 #define __BITMAP_H
 
+#include <freerdp/types_ui.h>
+
 RD_BOOL
 bitmap_decompress(void * inst, uint8 * output, int width, int height, uint8 * input, int size, int Bpp);
 

@@ -23,6 +23,8 @@
 #ifndef __XF_EVENT_H
 #define __XF_EVENT_H
 
+#include "xf_types.h"
+
 int
 xf_handle_event(xfInfo * xfi, XEvent * xevent);
 

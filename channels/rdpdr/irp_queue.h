@@ -22,6 +22,8 @@
 #ifndef __IRP_QUEUE_H
 #define __IRP_QUEUE_H
 
+#include "rdpdr_types.h"
+
 struct irp_queue_node
 {
 	IRP *irp;

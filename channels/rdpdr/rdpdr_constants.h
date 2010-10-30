@@ -346,4 +346,3 @@ enum FS_INFORMATION_CLASS
 };
 
 #endif /* __CONSTANTS_RDPDR_H */
-

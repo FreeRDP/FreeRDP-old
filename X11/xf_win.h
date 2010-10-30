@@ -23,6 +23,8 @@
 #ifndef __XF_WIN_H
 #define __XF_WIN_H
 
+#include "xf_types.h"
+
 int
 xf_pre_connect(xfInfo * xfi);
 int

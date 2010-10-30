@@ -22,6 +22,9 @@
 #ifndef _SSL_H
 #define _SSL_H
 
+#include <stdio.h>
+#include <freerdp/types_ui.h>
+
 struct rc4_state
 {
   int x;

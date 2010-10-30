@@ -22,13 +22,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <freerdp/constants_vchan.h>
+#include <freerdp/rdpset.h>
 #include "frdp.h"
 #include "chan.h"
 #include "mcs.h"
 #include "mem.h"
 #include "secure.h"
 #include "rdp.h"
-#include "rdpset.h"
 
 int
 vchan_send(rdpChannels * chan, int mcs_id, char * data, int total_length)

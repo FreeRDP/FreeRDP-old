@@ -27,6 +27,8 @@
 #ifndef __KEYBOARD_H
 #define __KEYBOARD_H
 
+#include <stddef.h>
+
 /* Mouse buttons */
 
 #define VK_LBUTTON	0x01 // Left mouse button
@@ -1873,18 +1875,17 @@ xkbLayout xkbLayouts[] =
 
 typedef struct _SunOSKeyboard
 {
-        // Sun keyboard type
+	// Sun keyboard type
 	int type;
 
 	// Layout
 	int layout;
 
-        // XKB keyboard
-        char* xkbType;
+	// XKB keyboard
+	char* xkbType;
 
-        // XKB keyboard layout
-        unsigned int keyboardLayoutID;
-
+	// XKB keyboard layout
+	unsigned int keyboardLayoutID;
 } SunOSKeyboard;
 
 
@@ -2030,5 +2031,3 @@ SunOSKeyboard SunOSKeyboards[] =
 };
 
 #endif // __KEYBOARD_H
-
-

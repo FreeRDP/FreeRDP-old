@@ -24,10 +24,11 @@
 #ifndef __DRDYNVC_MAIN_H
 #define __DRDYNVC_MAIN_H
 
+#include <freerdp/types_ui.h>
+
 typedef struct drdynvc_plugin drdynvcPlugin;
 
 int
 drdynvc_write_data(drdynvcPlugin * plugin, uint32 ChannelId, char * data, uint32 data_size);
 
 #endif
-

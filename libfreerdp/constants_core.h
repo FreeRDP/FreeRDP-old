@@ -155,4 +155,3 @@
 #define CLIENT_INFO_AF_INET6 0x0017
 
 #endif /* __CONSTANTS_CORE_H */
-

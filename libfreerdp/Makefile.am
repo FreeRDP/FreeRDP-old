@@ -61,7 +61,7 @@ if ENABLE_TLS
 libfreerdp_la_SOURCES += tls.c tls.h credssp.c credssp.h
 endif
 
-libfreerdp_la_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include -I$(top_srcdir)/include/freerdp \
+libfreerdp_la_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include \
 	-I$(top_srcdir)/asn1 @CRYPTO_CFLAGS@ -DFREERDP_EXPORTS
 
 libfreerdp_la_LDFLAGS =

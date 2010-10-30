@@ -39,4 +39,3 @@ wait_obj_select(struct wait_obj ** listobj, int numobj, int * listr, int numr,
 	int timeout);
 
 #endif
-

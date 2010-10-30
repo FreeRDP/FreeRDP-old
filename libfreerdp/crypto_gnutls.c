@@ -22,8 +22,7 @@
 #include "frdp.h"
 #include "crypto.h"
 #include "mem.h"
-
-#include <assert.h>
+#include "debug.h""
 
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
@@ -53,7 +52,7 @@ crypto_sha1_init(void)
 {
 	CryptoSha1 sha1 = xmalloc(sizeof(*sha1));
 	int x = gnutls_hash_init(&sha1->dig, GNUTLS_DIG_SHA1);
-	assert(!x);
+	ASSERT(!x);
 	return sha1;
 }
 
@@ -61,7 +60,7 @@ void
 crypto_sha1_update(CryptoSha1 sha1, uint8 * data, uint32 len)
 {
 	int x = gnutls_hash(sha1->dig, data, len);
-	assert(!x);
+	ASSERT(!x);
 }
 
 void
@@ -81,7 +80,7 @@ crypto_md5_init(void)
 {
 	CryptoMd5 md5 = xmalloc(sizeof(*md5));
 	int x = gnutls_hash_init(&md5->dig, GNUTLS_DIG_MD5);
-	assert(!x);
+	ASSERT(!x);
 	return md5;
 }
 
@@ -89,7 +88,7 @@ void
 crypto_md5_update(CryptoMd5 md5, uint8 * data, uint32 len)
 {
 	int x = gnutls_hash(md5->dig, data, len);
-	assert(!x);
+	ASSERT(!x);
 }
 
 void
@@ -116,7 +115,7 @@ crypto_rc4_init(uint8 * key, uint32 len)
 	iv_datum.size = 0;
 	iv_datum.data = NULL;
 	int x = gnutls_cipher_init(&rc4->handle, GNUTLS_CIPHER_ARCFOUR_40, &key_datum, &iv_datum);
-	assert(!x);
+	ASSERT(!x);
 	return rc4;
 }
 
@@ -126,7 +125,7 @@ crypto_rc4(CryptoRc4 rc4, uint32 len, uint8 * in_data, uint8 * out_data)
 	if (out_data != in_data)
 		memcpy(out_data, in_data, len);
 	int x = gnutls_cipher_encrypt (rc4->handle, out_data, len);
-	assert(!x);
+	ASSERT(!x);
 }
 
 void
@@ -146,12 +145,12 @@ crypto_cert_read(uint8 * data, uint32 len)
 {
 	CryptoCert cert = xmalloc(sizeof(*cert));
 	int x = gnutls_x509_crt_init(&cert->cert);
-	assert(!x);
+	ASSERT(!x);
 	gnutls_datum_t datum;
 	datum.data = data;
 	datum.size = len;
 	x = gnutls_x509_crt_import(cert->cert, &datum, GNUTLS_X509_FMT_DER);
-	assert(!x);
+	ASSERT(!x);
 	crypto_cert_print_fp(stdout, cert);
 	return cert;
 }
@@ -177,7 +176,7 @@ crypto_cert_print_fp(FILE * fp, CryptoCert cert)
 {
 	gnutls_datum_t out;
 	int x = gnutls_x509_crt_print(cert->cert, GNUTLS_CRT_PRINT_FULL, &out);
-	assert(!x);
+	ASSERT(!x);
 	fwrite(out.data, 1, out.size, fp);
 	gnutls_free(out.data);
 	return True;
@@ -191,17 +190,17 @@ crypto_cert_get_pub_exp_mod(CryptoCert cert, uint32 * key_len,
 	gnutls_datum_t e;
 	/* GnuTLS 2.10.1 contains patches for "MD5 with RSA Encryption" and "SHA with RSA Encryption" */
 	int x = gnutls_x509_crt_get_pk_rsa_raw(cert->cert, &m, &e);
-	assert(!x);
+	ASSERT(!x);
 	*key_len = m.size;
 
 	size_t l = e.size;
-	assert(l <= exp_len);
+	ASSERT(l <= exp_len);
 	memset(exponent, 0, exp_len - l);
 	memcpy(exponent + exp_len - l, e.data, l);
 	gnutls_free(e.data);
 
 	l = m.size;
-	assert(l <= *key_len);
+	ASSERT(l <= *key_len);
 	memset(modulus, 0, *key_len - l);
 	memcpy(modulus + *key_len - l, m.data, l);
 	gnutls_free(m.data);
@@ -213,45 +212,45 @@ void
 crypto_rsa_encrypt(int len, uint8 * in, uint8 * out, uint32 modulus_size, uint8 * modulus, uint8 * exponent)
 {
 	/* GnuTLS do not expose raw RSA, so we use the underlying gcrypt lib instead */
-	assert(modulus_size <= SEC_MAX_MODULUS_SIZE);
+	ASSERT(modulus_size <= SEC_MAX_MODULUS_SIZE);
 
 	gcry_mpi_t m;
 	gcry_error_t rc = gcry_mpi_scan(&m, GCRYMPI_FMT_USG, modulus, modulus_size, NULL);
-	assert(!rc);
+	ASSERT(!rc);
 
 	gcry_mpi_t e;
 	rc = gcry_mpi_scan(&e, GCRYMPI_FMT_USG, exponent, SEC_EXPONENT_SIZE, NULL);
 
 	gcry_sexp_t publickey_sexp;
 	rc = gcry_sexp_build(&publickey_sexp, NULL, "(public-key(rsa(n%m)(e%m)))", m, e);
-	assert(!rc);
+	ASSERT(!rc);
 
 	gcry_mpi_release(m);
 	gcry_mpi_release(e);
 
 	gcry_mpi_t in_gcry;
 	rc = gcry_mpi_scan(&in_gcry, GCRYMPI_FMT_USG, in, len, NULL);
-	assert(!rc);
+	ASSERT(!rc);
 
 	gcry_sexp_t in_sexp;
 	rc = gcry_sexp_build(&in_sexp, NULL, "%m", in_gcry);
-	assert(!rc);
+	ASSERT(!rc);
 
 	gcry_sexp_t out_sexp;
 	rc = gcry_pk_encrypt(&out_sexp, in_sexp, publickey_sexp);
-	assert(!rc);
+	ASSERT(!rc);
 
 	gcry_sexp_t out_list_sexp;
 	out_list_sexp = gcry_sexp_find_token(out_sexp, "a", 0);
-	assert(out_list_sexp);
+	ASSERT(out_list_sexp);
 
 	gcry_mpi_t out_gcry = gcry_sexp_nth_mpi(out_list_sexp, 1, GCRYMPI_FMT_NONE);
-	assert(out_gcry);
+	ASSERT(out_gcry);
 
 	size_t s;
 	rc = gcry_mpi_print(GCRYMPI_FMT_USG, out, modulus_size, &s, out_gcry);
-	assert(!rc);
-	assert(s == modulus_size);
+	ASSERT(!rc);
+	ASSERT(s == modulus_size);
 
 	gcry_mpi_release(out_gcry);
 	gcry_sexp_release(out_list_sexp);

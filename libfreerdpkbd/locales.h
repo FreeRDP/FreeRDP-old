@@ -715,6 +715,3 @@ Time zones, taken from Windows Server 2008
 */
 
 #endif // __LOCALES_H
-
-
-

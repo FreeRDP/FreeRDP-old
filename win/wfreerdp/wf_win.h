@@ -24,6 +24,7 @@
 #ifndef __WF_WIN_H
 #define __WF_WIN_H
 
+#include <windows.h>
 #include <freerdp/freerdp.h>
 
 int

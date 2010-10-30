@@ -18,6 +18,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#include <freerdp/rdpset.h>
 #include "frdp.h"
 #include "iso.h"
 #include "mcs.h"
@@ -26,7 +27,6 @@
 #include "rdp.h"
 #include "mem.h"
 #include "asn1.h"
-#include "rdpset.h"
 #include "debug.h"
 #include "tcp.h"
 
@@ -68,6 +68,8 @@ mcs_send_connect_initial(rdpMcs * mcs)
 
 	gccCCrq.size = 512;
 	gccCCrq.p = gccCCrq.data = (uint8 *) xmalloc(gccCCrq.size);
+	gccCCrq.end = gccCCrq.data + gccCCrq.size;
+
 	sec_out_gcc_conference_create_request(mcs->sec, &gccCCrq);
 	gccCCrq_length = gccCCrq.end - gccCCrq.data;
 	length = 9 + 3 * 34 + 4 + gccCCrq_length;
@@ -296,13 +298,14 @@ mcs_fp_send(rdpMcs * mcs, STREAM s, uint32 flags)
 
 /* Receive an MCS transport data packet */
 STREAM
-mcs_recv(rdpMcs * mcs, uint16 * channel, isoRecvType * ptype)
+mcs_recv(rdpMcs * mcs, isoRecvType * ptype, uint16 * channel)
 {
 	STREAM s;
 	uint8 byte;
 	uint8 pduType;
 	uint16 length;
 
+	*channel = (uint16)-1;	/* default: bogus value */
 	s = iso_recv(mcs->iso, ptype);
 
 	if (s == NULL)
@@ -353,32 +356,49 @@ mcs_connect(rdpMcs * mcs)
 
 	mcs_send_connect_initial(mcs);
 	if (!mcs_recv_connect_response(mcs))
+	{
+		ui_error(mcs->sec->rdp->inst, "invalid mcs_recv_connect_response\n");
 		goto error;
+	}
 
 	mcs_send_edrq(mcs);
 
 	mcs_send_aurq(mcs);
 	if (!mcs_recv_aucf(mcs, &(mcs->mcs_userid)))
+	{
+		ui_error(mcs->sec->rdp->inst, "invalid mcs_recv_aucf\n");
 		goto error;
+	}
 
 	mcs_send_cjrq(mcs, mcs->mcs_userid + MCS_USERCHANNEL_BASE);
 
 	if (!mcs_recv_cjcf(mcs))
+	{
+		ui_error(mcs->sec->rdp->inst, "invalid mcs_recv_cjcf\n");
 		goto error;
+	}
 
 	mcs_send_cjrq(mcs, MCS_GLOBAL_CHANNEL);
 	if (!mcs_recv_cjcf(mcs))
+	{
+		ui_error(mcs->sec->rdp->inst, "invalid mcs_recv_cjcf\n");
 		goto error;
+	}
 
 	settings = mcs->sec->rdp->settings;
 	for (i = 0; i < settings->num_channels; i++)
 	{
 		mcs_id = settings->channels[i].chan_id;
 		if (mcs_id >= mcs->mcs_userid + MCS_USERCHANNEL_BASE)
-			goto error;
+		{
+			ui_warning(mcs->sec->rdp->inst, "channel %d got id %d >= %d\n", i, mcs_id, mcs->mcs_userid + MCS_USERCHANNEL_BASE);
+		}
 		mcs_send_cjrq(mcs, mcs_id);
 		if (!mcs_recv_cjcf(mcs))
+		{
+			ui_error(mcs->sec->rdp->inst, "channel %d id %d invalid mcs_recv_cjcf\n", i, mcs_id);
 			goto error;
+		}
 	}
 	return True;
 

@@ -21,6 +21,8 @@
 #ifndef __ORDERSTYPES_H
 #define __ORDERSTYPES_H
 
+#include "types.h"
+
 #define RDP_ORDER_STANDARD   0x01
 #define RDP_ORDER_SECONDARY  0x02
 #define RDP_ORDER_BOUNDS     0x04
@@ -397,5 +399,3 @@ typedef struct _RDP_CACHE_COLOR_TABLE_ORDER
 RDP_CACHE_COLOR_TABLE_ORDER;
 
 #endif // __ORDERSTYPES_H
-
-

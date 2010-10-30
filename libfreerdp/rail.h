@@ -22,11 +22,13 @@
 #ifndef __RAIL_H
 #define	__RAIL_H
 
+#include "rdp.h"
+
 struct rdp_app
 {
-        char application_name[260];
-        char working_directory[260];
-        char arguments[260];
+	char application_name[260];
+	char working_directory[260];
+	char arguments[260];
 };
 typedef struct rdp_app rdpApp;
 
@@ -34,4 +36,3 @@ void
 rdp_send_client_execute_pdu(rdpRdp * rdp);
 
 #endif	// __RAIL_H
-
