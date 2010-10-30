@@ -1264,6 +1264,7 @@ process_update_pdu(rdpRdp * rdp, STREAM s)
 			break;
 
 		case RDP_UPDATE_SYNCHRONIZE:
+			in_uint8s(s, 2);	/* pad */
 			break;
 
 		default:
