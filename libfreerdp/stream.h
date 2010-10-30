@@ -59,7 +59,7 @@ typedef struct stream *STREAM;
 /* True if exactly at end */
 #define s_check_end(s)		((s)->p == (s)->end)
 
-#ifndef DISABLE_STREAM_CHECK
+#if WITH_DEBUG || defined(ENABLE_STREAM_CHECK)
 /* Check all stream access to prevent buffer overruns. */
 #define ASSERT_AVAILABLE(s,n) ASSERT(s_check_rem(s,n))
 #else
