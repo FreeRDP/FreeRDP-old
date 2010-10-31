@@ -27,7 +27,11 @@
 #include <string.h>
 #include <sys/types.h>
 #include <errno.h>
+
+#ifdef HAVE_CONFIG_H
 #include <config.h>
+#endif
+
 #include <freerdp/freerdp.h>
 #include <freerdp/chanman.h>
 #include "wf_event.h"
