@@ -1110,7 +1110,7 @@ void
 process_bitmap_updates(rdpRdp * rdp, STREAM s)
 {
 	int i;
-	int buffer_size;
+	size_t buffer_size;
 	uint16 num_updates;
 	uint16 left, top, right, bottom, width, height;
 	uint16 cx, cy, bpp, Bpp, compress, bufsize, size;
@@ -1196,7 +1196,7 @@ void
 process_palette(rdpRdp * rdp, STREAM s)
 {
 	int i;
-	int size;
+	size_t size;
 	RD_COLORENTRY *entry;
 	RD_PALETTE map;
 	RD_HPALETTE hmap;
