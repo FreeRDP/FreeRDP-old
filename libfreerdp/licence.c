@@ -351,7 +351,7 @@ licence_process(rdpLicence * licence, STREAM s)
 {
 	uint8 tag;
 	uint16 wMsgSize;
-	void * license_start = s->p;
+	uint8* license_start = s->p;
 
 	/* Licensing Preamble */
 	in_uint8(s, tag);	/* bMsgType */

@@ -1,7 +1,9 @@
 #ifndef __DEBUG_H
 #define __DEBUG_H
 
+#ifdef HAVE_CONFIG_H
 #include "config.h"
+#endif
 
 #ifndef DISABLE_ASSERT
 #include <assert.h>

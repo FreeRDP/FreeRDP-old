@@ -1291,7 +1291,7 @@ process_data_pdu(rdpRdp * rdp, STREAM s)
 	uint16 compressedLength;
 	uint32 roff, rlen;
 	STREAM data_s;
-	void * s_end = s->p;
+	uint8 * s_end = s->p;
 
 	/* rest of Share Data Header */
 	in_uint8s(s, 6);	/* shareid, pad, streamid */
