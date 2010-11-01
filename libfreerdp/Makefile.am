@@ -19,6 +19,7 @@ libfreerdp_la_SOURCES = \
 	constants_pdu.h \
 	constants_rail.h \
 	constants_window.h \
+	ext.c ext.h \
 	freerdp.c \
 	iso.c iso.h \
 	licence.c licence.h \
@@ -62,7 +63,8 @@ libfreerdp_la_SOURCES += tls.c tls.h credssp.c credssp.h
 endif
 
 libfreerdp_la_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include \
-	-I$(top_srcdir)/asn1 @CRYPTO_CFLAGS@ -DFREERDP_EXPORTS
+	-I$(top_srcdir)/asn1 @CRYPTO_CFLAGS@ -DFREERDP_EXPORTS \
+	-DPLUGIN_PATH=\"$(PLUGIN_PATH)\"
 
 libfreerdp_la_LDFLAGS =
 

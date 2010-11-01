@@ -121,9 +121,11 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 	int index;
 	int i, j;
 	struct passwd * pw;
+	int num_extensions;
 
 	set_default_params(xfi);
 	settings = xfi->settings;
+	num_extensions = 0;
 	p = getlogin();
 	i = sizeof(settings->username) - 1;
 	if (p != 0)
@@ -373,6 +375,37 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 				}
 			}
 			freerdp_chanman_load_plugin(xfi->chan_man, settings, argv[index], plugin_data);
+		}
+		else if (strcmp("--ext", argv[*pindex]) == 0)
+		{
+			*pindex = *pindex + 1;
+			if (*pindex == argc)
+			{
+				printf("missing extension name\n");
+				return 1;
+			}
+			if (num_extensions >= sizeof(settings->extensions) / sizeof(struct rdp_ext_set))
+			{
+				printf("maximum extensions reached\n");
+				return 1;
+			}
+			index = *pindex;
+			snprintf(settings->extensions[num_extensions].name,
+				sizeof(settings->extensions[num_extensions].name),
+				"%s", argv[index]);
+			settings->extensions[num_extensions].data = NULL;
+			if (*pindex < argc - 1 && strcmp("--data", argv[*pindex + 1]) == 0)
+			{
+				*pindex = *pindex + 2;
+				settings->extensions[num_extensions].data = argv[*pindex];
+				i = 0;
+				while (*pindex < argc && strcmp("--", argv[*pindex]) != 0)
+				{
+					*pindex = *pindex + 1;
+					i++;
+				}
+			}
+			num_extensions++;
 		}
 		else if ((strcmp("-h", argv[*pindex]) == 0) || strcmp("--help", argv[*pindex]) == 0)
 		{

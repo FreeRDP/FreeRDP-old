@@ -12,6 +12,7 @@
 #include "tcp.h"
 #include "mem.h"
 #include "chan.h"
+#include "ext.h"
 
 #define RDP_FROM_INST(_inst) ((rdpRdp *) (_inst->rdp))
 
@@ -427,10 +428,12 @@ l_rdp_connect(rdpInst * inst)
 	{
 		rdp->settings->channels[index].chan_id = MCS_GLOBAL_CHANNEL + 1 + index;
 	}
+	ext_pre_connect(rdp->ext);
 	if (rdp_connect(rdp))
 	{
 		return 0;
 	}
+	ext_post_connect(rdp->ext);
 	return 1;
 }
 

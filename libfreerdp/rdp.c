@@ -38,6 +38,7 @@
 #include "bitmap.h"
 #include "mem.h"
 #include "debug.h"
+#include "ext.h"
 
 #ifdef HAVE_ICONV
 #ifdef HAVE_ICONV_H
@@ -1615,6 +1616,7 @@ rdp_new(struct rdp_set *settings, struct rdp_inst *inst)
 		self->orders = orders_new(self);
 		self->pcache = pcache_new(self);
 		self->cache = cache_new(self);
+		self->ext = ext_new(self);
 	}
 	return self;
 }
@@ -1633,6 +1635,7 @@ rdp_free(rdpRdp * rdp)
 		orders_free(rdp->orders);
 		xfree(rdp->buffer);
 		sec_free(rdp->sec);
+		ext_free(rdp->ext);
 		xfree(rdp->redirect_server);
 		xfree(rdp->redirect_routingtoken);
 		xfree(rdp->redirect_username);
