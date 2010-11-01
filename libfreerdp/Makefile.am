@@ -64,7 +64,8 @@ endif
 
 libfreerdp_la_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include \
 	-I$(top_srcdir)/asn1 @CRYPTO_CFLAGS@ -DFREERDP_EXPORTS \
-	-DPLUGIN_PATH=\"$(PLUGIN_PATH)\"
+	-DPLUGIN_PATH=\"$(PLUGIN_PATH)\" \
+	-DEXT_PATH=\"$(EXT_PATH)\"
 
 libfreerdp_la_LDFLAGS =
 

@@ -109,7 +109,7 @@ ext_load_plugins(rdpExt * ext)
 	{
 		if (strchr(ext->inst->settings->extensions[i].name, PATH_SEPARATOR) == NULL)
 		{
-			snprintf(path, sizeof(path), PLUGIN_PATH "/%s." PLUGIN_EXT, ext->inst->settings->extensions[i].name);
+			snprintf(path, sizeof(path), EXT_PATH "/%s." PLUGIN_EXT, ext->inst->settings->extensions[i].name);
 		}
 		else
 		{
