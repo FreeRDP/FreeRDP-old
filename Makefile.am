@@ -7,6 +7,7 @@ REQUIRED_SUBDIRS = \
 	include \
 	libfreerdpkbd \
 	keymaps \
+	tests \
 	libfreerdpgdi \
 	libfreerdpchanman \
 	channels/common \

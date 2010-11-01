@@ -431,9 +431,9 @@ l_rdp_connect(rdpInst * inst)
 	ext_pre_connect(rdp->ext);
 	if (rdp_connect(rdp))
 	{
+		ext_post_connect(rdp->ext);
 		return 0;
 	}
-	ext_post_connect(rdp->ext);
 	return 1;
 }
 
