@@ -9,9 +9,7 @@
 #ifndef	_ASN_SYSTEM_H_
 #define	_ASN_SYSTEM_H_
 
-#ifdef	HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include <config.h>
 
 #include <stdio.h>	/* For snprintf(3) */
 #include <stdlib.h>	/* For *alloc(3) */
