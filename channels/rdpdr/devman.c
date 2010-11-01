@@ -22,7 +22,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <config.h>
+#include <freerdp/config.h>
 #include "rdpdr_types.h"
 #include "rdpdr_constants.h"
 #include "devman.h"

@@ -23,7 +23,7 @@
    http://msdn.microsoft.com/en-us/library/ff468800%28v=VS.85%29.aspx
 */
 
-#include <config.h>
+#include <freerdp/config.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

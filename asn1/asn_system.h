@@ -9,7 +9,7 @@
 #ifndef	_ASN_SYSTEM_H_
 #define	_ASN_SYSTEM_H_
 
-#include <config.h>
+#include <freerdp/config.h>
 
 #include <stdio.h>	/* For snprintf(3) */
 #include <stdlib.h>	/* For *alloc(3) */

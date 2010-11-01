@@ -24,7 +24,7 @@
 #include <freerdp/chanman.h>
 #include <X11/Xlib.h>
 
-#include <config.h>
+#include <freerdp/config.h>
 
 #define SET_XFI(_inst, _xfi) (_inst)->param1 = _xfi
 #define GET_XFI(_inst) ((xfInfo *) ((_inst)->param1))

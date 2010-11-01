@@ -39,7 +39,7 @@ scriptversion=2010-02-24.17; # UTC
 #
 # .version - present in a checked-out repository and in a distribution
 #   tarball.  Usable in dependencies, particularly for files that don't
-#   want to depend on config.h but do want to track version changes.
+#   want to depend on freerdp/config.h but do want to track version changes.
 #   Delete this file prior to any autoconf run where you want to rebuild
 #   files to pick up a version string change; and leave it stale to
 #   minimize rebuild time after unrelated changes to configure sources.

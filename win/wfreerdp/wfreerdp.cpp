@@ -24,7 +24,7 @@
 #include <sys/types.h>
 #include <errno.h>
 
-#include <config.h>
+#include <freerdp/config.h>
 
 #include <freerdp/freerdp.h>
 #include <freerdp/chanman.h>

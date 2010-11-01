@@ -7,8 +7,8 @@ Makefile.in
 *.la
 config.status
 config.guess
-config.h
-config.h.in
+/include/freerdp/config.h
+/include/freerdp/config.h.in
 config.log
 config.sub
 configure

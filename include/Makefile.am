@@ -2,6 +2,7 @@
 
 includedir = $(prefix)/include/freerdp
 include_HEADERS = \
+	freerdp/config.h \
 	freerdp/constants_ui.h \
 	freerdp/constants_vchan.h \
 	freerdp/freerdp.h \

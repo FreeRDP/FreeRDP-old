@@ -1,7 +1,7 @@
 #ifndef __DEBUG_H
 #define __DEBUG_H
 
-#include <config.h>
+#include <freerdp/config.h>
 
 #ifdef WITH_DEBUG_ASSERT
 #include <assert.h>

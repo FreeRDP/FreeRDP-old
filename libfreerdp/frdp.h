@@ -23,7 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <config.h>
+#include <freerdp/config.h>
 
 #include "types.h"
 

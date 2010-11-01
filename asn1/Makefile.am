@@ -260,7 +260,7 @@ libasn1_la_SOURCES = \
 	$(spnego_sources)
 #	$(mcs_sources)
 
-libasn1_la_CFLAGS = -O2 -w
+libasn1_la_CFLAGS = -O2 -w -I. -I$(top_srcdir)/include
 
 libasn1_la_LDFLAGS = -avoid-version -module
 
