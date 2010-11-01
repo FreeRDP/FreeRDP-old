@@ -30,6 +30,9 @@
 #define RDPEXT_CC
 #endif
 
+/* Extensions ought to check for it to ensure compatibility */
+#define RDPEXT_API 1
+
 #define RDPEXT_EXPORT_FUNC_NAME "FreeRDPExtensionEntry"
 
 typedef struct rdp_ext_plugin rdpExtPlugin;
@@ -60,4 +63,3 @@ typedef FREERDP_EXTENSION_ENTRY_POINTS * PFREERDP_EXTENSION_ENTRY_POINTS;
 typedef int (RDPEXT_CC * PFREERDP_EXTENSION_ENTRY)(PFREERDP_EXTENSION_ENTRY_POINTS pEntryPoints);
 
 #endif
-
