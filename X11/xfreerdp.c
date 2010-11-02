@@ -42,6 +42,7 @@
 #define MAX_PLUGIN_DATA 20
 
 static volatile int g_thread_count = 0;
+char g_sem_name[64];
 static sem_t *g_sem;
 
 static int
@@ -596,8 +597,9 @@ thread_func(void * arg)
 int
 main(int argc, char ** argv)
 {
-	xfInfo * xfi;
 	int rv;
+	pid_t pid;
+	xfInfo * xfi;
 	pthread_t thread;
 	int index = 1;
 
@@ -613,7 +615,11 @@ main(int argc, char ** argv)
 		return 1;
 	}
 	freerdp_chanman_init();
-	g_sem = sem_open("xfreerdp_main", O_CREAT, 0, 0);
+	
+	pid = getpid();
+	sprintf(g_sem_name, "xfreerdp_%d", pid);
+	g_sem = sem_open(g_sem_name, O_CREAT, 0, 0);
+	
 	while (1)
 	{
 		xfi = (xfInfo *) malloc(sizeof(xfInfo));
@@ -643,6 +649,7 @@ main(int argc, char ** argv)
 		printf("main thread, waiting for all threads to exit\n");
 		sem_wait(g_sem);
 		printf("main thread, all threads did exit\n");
+		sem_unlink(g_sem_name);
 	}
 
 	freerdp_chanman_uninit();

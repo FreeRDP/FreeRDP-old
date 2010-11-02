@@ -413,7 +413,7 @@ static void ntlm_input_av_pairs(STREAM s, AV_PAIRS* av_pairs)
 {
 	AV_ID AvId;
 	uint16 AvLen;
-	uint8* value;
+	uint8* value = NULL;
 
 	do
 	{
