@@ -27,6 +27,7 @@ exttest_uninit(rdpExtPlugin * plugin, rdpInst * inst)
 
 	/* free local resoures if necessary */
 	exttest->ext_test_data = 0;
+	free(exttest);
 	return 0;
 }
 
