@@ -29,6 +29,7 @@
 #include <sys/types.h>
 #include <errno.h>
 #include <pwd.h>
+#include <fcntl.h>
 #include <pthread.h>
 #include <semaphore.h>
 #include <freerdp/freerdp.h>
@@ -41,7 +42,7 @@
 #define MAX_PLUGIN_DATA 20
 
 static volatile int g_thread_count = 0;
-static sem_t g_sem;
+static sem_t *g_sem;
 
 static int
 set_default_params(xfInfo * xfi)
@@ -587,7 +588,7 @@ thread_func(void * arg)
 	g_thread_count--;
 	if (g_thread_count < 1)
 	{
-		sem_post(&g_sem);
+		sem_post(g_sem);
 	}
 	return NULL;
 }
@@ -612,7 +613,7 @@ main(int argc, char ** argv)
 		return 1;
 	}
 	freerdp_chanman_init();
-	sem_init(&g_sem, 0, 0);
+	g_sem = sem_open("xfreerdp_main", O_CREAT, 0, 0);
 	while (1)
 	{
 		xfi = (xfInfo *) malloc(sizeof(xfInfo));
@@ -640,7 +641,7 @@ main(int argc, char ** argv)
 	if (g_thread_count > 0)
 	{
 		printf("main thread, waiting for all threads to exit\n");
-		sem_wait(&g_sem);
+		sem_wait(g_sem);
 		printf("main thread, all threads did exit\n");
 	}
 
