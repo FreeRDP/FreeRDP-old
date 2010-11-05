@@ -30,7 +30,6 @@
 #include "ext.h"
 
 #ifdef _WIN32
-#include <windows.h>
 #define DLOPEN(f) LoadLibraryA(f)
 #define DLSYM(f, n) GetProcAddress(f, n)
 #define DLCLOSE(f) FreeLibrary(f)

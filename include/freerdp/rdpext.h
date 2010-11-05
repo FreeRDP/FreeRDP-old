@@ -24,8 +24,10 @@
 #ifndef __RDPEXT_H
 #define __RDPEXT_H
 
+#include <freerdp/types_ui.h>
+
 #ifdef _WIN32
-#define RDPEXT_CC WINAPI
+#define RDPEXT_CC __stdcall
 #else
 #define RDPEXT_CC
 #endif
@@ -36,6 +38,7 @@
 #define RDPEXT_EXPORT_FUNC_NAME "FreeRDPExtensionEntry"
 
 typedef struct rdp_ext_plugin rdpExtPlugin;
+
 struct rdp_ext_plugin
 {
 	void * ext;

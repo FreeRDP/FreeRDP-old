@@ -24,6 +24,9 @@
 #ifndef __EXT_H
 #define __EXT_H
 
+#include <freerdp/rdpext.h>
+#include "rdp.h"
+
 #define RDPEXT_MAX_COUNT 15
 
 struct rdp_ext
