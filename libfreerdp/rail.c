@@ -37,18 +37,18 @@ void
 rdp_send_client_execute_pdu(rdpRdp * rdp)
 {
 	STREAM s;
+	size_t application_name_len, working_directory_len, arguments_len;
+	char * application_name, * working_directory, * arguments;
 
 	/* Still lacking proper packet initialization */
 	s = NULL;
-
 	rdp_out_rail_pdu_header(s, RDP_RAIL_ORDER_EXEC, 12);
 
-	size_t application_name_len, working_directory_len, arguments_len;
-	char * application_name = xstrdup_out_unistr(rdp,
+	application_name = xstrdup_out_unistr(rdp,
 			rdp->app->application_name, &application_name_len);
-	char * working_directory = xstrdup_out_unistr(rdp,
+	working_directory = xstrdup_out_unistr(rdp,
 			rdp->app->working_directory, &working_directory_len);
-	char * arguments = xstrdup_out_unistr(rdp,
+	arguments = xstrdup_out_unistr(rdp,
 			rdp->app->arguments, &arguments_len);
 
 	out_uint16_le(s,

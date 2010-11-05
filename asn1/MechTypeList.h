@@ -9,12 +9,12 @@
 #define	_MechTypeList_H_
 
 
-#include <asn_application.h>
+#include "asn_application.h"
 
 /* Including external dependencies */
 #include "MechType.h"
-#include <asn_SEQUENCE_OF.h>
-#include <constr_SEQUENCE_OF.h>
+#include "asn_SEQUENCE_OF.h"
+#include "constr_SEQUENCE_OF.h"
 
 #ifdef __cplusplus
 extern "C" {

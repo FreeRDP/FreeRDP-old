@@ -29,6 +29,12 @@ struct rdp_chan
 	void * handle; /* just for ui */
 };
 
+struct rdp_ext_set
+{
+	char name[256]; /* plugin name or path */
+	void * data; /* plugin data */
+};
+
 struct rdp_set
 {
 	int tls;
@@ -68,6 +74,7 @@ struct rdp_set
 	int bulk_compression;
 	int num_channels;
 	struct rdp_chan channels[16];
+	struct rdp_ext_set extensions[16];
 };
 
 #endif

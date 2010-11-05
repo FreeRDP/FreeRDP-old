@@ -62,6 +62,10 @@ dnl Define plugin path
 PLUGIN_PATH='${libdir}/freerdp'
 AC_SUBST(PLUGIN_PATH)
 
+dnl Define extensions path
+EXT_PATH='${PLUGIN_PATH}/extensions'
+AC_SUBST(EXT_PATH)
+
 #
 # Check Crypto libraries
 #
@@ -956,6 +960,7 @@ channels/rdpdr/printer/Makefile
 channels/rdpdr/serial/Makefile
 channels/rdpdr/parallel/Makefile
 contrib/Makefile
+tests/Makefile
 ])
 
 AC_OUTPUT

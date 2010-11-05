@@ -31,7 +31,7 @@
 #include "constants_vchan.h"
 
 #ifdef _WIN32
-#define VCHAN_CC WINAPI
+#define VCHAN_CC __stdcall
 #else
 #define VCHAN_CC
 #endif

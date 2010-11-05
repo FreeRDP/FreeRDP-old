@@ -9,10 +9,10 @@
 #define	_MechType_H_
 
 
-#include <asn_application.h>
+#include "asn_application.h"
 
 /* Including external dependencies */
-#include <OBJECT_IDENTIFIER.h>
+#include "OBJECT_IDENTIFIER.h"
 
 #ifdef __cplusplus
 extern "C" {
