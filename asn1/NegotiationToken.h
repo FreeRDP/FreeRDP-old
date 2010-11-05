@@ -9,12 +9,12 @@
 #define	_NegotiationToken_H_
 
 
-#include <asn_application.h>
+#include "asn_application.h"
 
 /* Including external dependencies */
 #include "NegTokenInit.h"
 #include "NegTokenResp.h"
-#include <constr_CHOICE.h>
+#include "constr_CHOICE.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -5,7 +5,7 @@
  * 	`asn1c -fnative-types -fskeletons-copy -fcompound-names`
  */
 
-#include <asn_internal.h>
+#include "asn_internal.h"
 
 #include "NegTokenInit.h"
 

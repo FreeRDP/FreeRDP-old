@@ -9,10 +9,10 @@
 #define	_ContextFlags_H_
 
 
-#include <asn_application.h>
+#include "asn_application.h"
 
 /* Including external dependencies */
-#include <BIT_STRING.h>
+#include "BIT_STRING.h"
 
 #ifdef __cplusplus
 extern "C" {

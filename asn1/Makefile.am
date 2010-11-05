@@ -21,8 +21,6 @@ shared_sources = \
 	ber_tlv_tag.h \
 	BIT_STRING.c \
 	BIT_STRING.h \
-	BOOLEAN.c \
-	BOOLEAN.h \
 	constraints.c \
 	constraints.h \
 	constr_CHOICE.c \
@@ -45,8 +43,6 @@ shared_sources = \
 	NativeEnumerated.h \
 	NativeInteger.c \
 	NativeInteger.h \
-	NULL.c \
-	NULL.h \
 	OBJECT_IDENTIFIER.c \
 	OBJECT_IDENTIFIER.h \
 	OCTET_STRING.c \
@@ -107,6 +103,8 @@ mcs_sources = \
 	AttachUserConfirm.h \
 	AttachUserRequest.c \
 	AttachUserRequest.h \
+	BOOLEAN.c \
+	BOOLEAN.h \
 	CapabilitiesNotificationIndication.c \
 	CapabilitiesNotificationIndication.h \
 	CapabilitiesNotificationRequest.c \
@@ -183,6 +181,8 @@ mcs_sources = \
 	NonStandardParameter.h \
 	NonStandardPDU.c \
 	NonStandardPDU.h \
+	NULL.c \
+	NULL.h \
 	ParticipationIndicator.c \
 	ParticipationIndicator.h \
 	PlumbDomainIndication.c \
@@ -260,7 +260,7 @@ libasn1_la_SOURCES = \
 	$(spnego_sources)
 #	$(mcs_sources)
 
-libasn1_la_CFLAGS = -O2 -w -I.
+libasn1_la_CFLAGS = -O2 -w
 
 libasn1_la_LDFLAGS = -avoid-version -module
 
@@ -272,9 +272,10 @@ ASN1_MODULES = $(ASN1_MODULES_BER) $(ASN1_MODULES_PER)
 
 asn1_modules:
 	rm -f *.c *.h
-# Note: extra redundant parameter given to asn1c because it forgets one
+# Note: extra redundant -fskeletons-copy parameter given to asn1c because it forgets one
 	asn1c -fnative-types -fskeletons-copy -fcompound-names -fskeletons-copy $(ASN1_MODULES_BER)
-	asn1c -fnative-types -fskeletons-copy -fcompound-names -gen-PER -fskeletons-copy $(ASN1_MODULES_PER)
+#	asn1c -fnative-types -fskeletons-copy -fcompound-names -gen-PER -fskeletons-copy $(ASN1_MODULES_PER)
+	for h in *.h; do sed -i "s,#include <$$h>,#include \"$$h\",g" *.[ch]; done
 	rm converter-sample.c Makefile.am.sample
 
 EXTRA_DIST = $(ASN1_MODULES)

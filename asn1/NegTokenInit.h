@@ -9,13 +9,13 @@
 #define	_NegTokenInit_H_
 
 
-#include <asn_application.h>
+#include "asn_application.h"
 
 /* Including external dependencies */
 #include "MechTypeList.h"
 #include "ContextFlags.h"
-#include <OCTET_STRING.h>
-#include <constr_SEQUENCE.h>
+#include "OCTET_STRING.h"
+#include "constr_SEQUENCE.h"
 
 #ifdef __cplusplus
 extern "C" {

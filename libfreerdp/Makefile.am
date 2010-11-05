@@ -63,7 +63,7 @@ libfreerdp_la_SOURCES += tls.c tls.h credssp.c credssp.h
 endif
 
 libfreerdp_la_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include \
-	-I$(top_srcdir)/asn1 @CRYPTO_CFLAGS@ -DFREERDP_EXPORTS \
+	@CRYPTO_CFLAGS@ -DFREERDP_EXPORTS \
 	-DPLUGIN_PATH=\"$(PLUGIN_PATH)\" \
 	-DEXT_PATH=\"$(EXT_PATH)\"
 
