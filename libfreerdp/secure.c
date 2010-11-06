@@ -1020,6 +1020,12 @@ sec_disconnect(rdpSec * sec)
 {
 	mcs_disconnect(sec->mcs);
 
+#ifndef DISABLE_TLS
+	if (sec->ctx)
+		tls_destroy_context(sec->ctx);
+	sec->ctx = NULL;
+#endif
+
 	if (sec->rc4_decrypt_key)
 		crypto_rc4_free(sec->rc4_decrypt_key);
 	sec->rc4_decrypt_key = NULL;
