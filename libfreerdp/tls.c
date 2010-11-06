@@ -213,6 +213,12 @@ tls_create_context()
 	return ctx;
 }
 
+void
+tls_destroy_context(SSL_CTX *ctx)
+{
+	SSL_CTX_free(ctx);
+}
+
 /* Initiate TLS handshake on socket */
 SSL*
 tls_connect(SSL_CTX *ctx, int sockfd, char *server)
@@ -266,7 +272,7 @@ tls_disconnect(SSL *ssl)
 	while (True)
 	{
 		ret = SSL_shutdown(ssl);
-		if (ret > 0)
+		if (ret >= 0)
 			break;
 		if (tls_printf("ssl_disconnect", ssl, ret))
 			break;
