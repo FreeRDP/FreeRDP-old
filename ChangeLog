@@ -1,18 +1,13 @@
 2010-11-??  Version 0.8.2
    * libfreerdp:
     - fix buffer overflow when local timezone doesn't fit in 32 bytes
-    - use Share Control Data version fields to skip invalid packages in TLS mode
-    - Assume that a received License ERROR_ALERT indicates a license grant
+    - Fix data corruption after TLS license package
     - free TLS resources to avoid memory leaks
    * mcs:
-    - don't fail on unexpected channel id
-    - Show what causes problem when connecting to VirtualBox with any channel. 
+    - Fix connecting to VirtualBox with extra channels
    * wfreerdp: 
-    - fix minor gcc compilation issues
     - align command line options with xfreerdp
     - Fixes for compilation with VS2008
-   * xfreerdp:
-    - make error/warning callbacks const 
    * rdpsnd plugin: 
     - ensure the ALSA device is closed when freeing resources
 
