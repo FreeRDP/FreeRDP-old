@@ -39,6 +39,7 @@
 
 struct alsa_device_data
 {
+	char device_name[32];
 	snd_pcm_t * out_handle;
 	uint32 rrate;
 	snd_pcm_format_t format;
@@ -91,7 +92,7 @@ rdpsnd_alsa_open(rdpsndDevicePlugin * devplugin)
 		return 0;
 	}
 	LLOGLN(10, ("rdpsnd_alsa_open:"));
-	error = snd_pcm_open(&alsa_data->out_handle, "default",
+	error = snd_pcm_open(&alsa_data->out_handle, alsa_data->device_name,
 		SND_PCM_STREAM_PLAYBACK, 0);
 	if (error < 0)
 	{
@@ -261,6 +262,8 @@ FreeRDPRdpsndDeviceEntry(PFREERDP_RDPSND_DEVICE_ENTRY_POINTS pEntryPoints)
 {
 	rdpsndDevicePlugin * devplugin;
 	struct alsa_device_data * alsa_data;
+	RD_PLUGIN_DATA * data;
+	int i;
 
 	devplugin = pEntryPoints->pRegisterRdpsndDevice(pEntryPoints->plugin);
 	if (devplugin == NULL)
@@ -280,6 +283,24 @@ FreeRDPRdpsndDeviceEntry(PFREERDP_RDPSND_DEVICE_ENTRY_POINTS pEntryPoints)
 	alsa_data = (struct alsa_device_data *) malloc(sizeof(struct alsa_device_data));
 	memset(alsa_data, 0, sizeof(struct alsa_device_data));
 
+	data = (RD_PLUGIN_DATA *) pEntryPoints->data;
+	if (data && strcmp(data->data[0], "alsa") == 0)
+	{
+		for (i = 1; i < 4 && data->data[i]; i++)
+		{
+			if (i > 1)
+			{
+				strncat(alsa_data->device_name, ":",
+					sizeof(alsa_data->device_name) - strlen(alsa_data->device_name));
+			}
+			strncat(alsa_data->device_name, (char*)data->data[i],
+				sizeof(alsa_data->device_name) - strlen(alsa_data->device_name));
+		}
+	}
+	if (alsa_data->device_name[0] == '\0')
+	{
+		strcpy(alsa_data->device_name, "default");
+	}
 	alsa_data->out_handle = 0;
 	alsa_data->rrate = 22050;
 	alsa_data->format = SND_PCM_FORMAT_S16_LE;
@@ -287,7 +308,7 @@ FreeRDPRdpsndDeviceEntry(PFREERDP_RDPSND_DEVICE_ENTRY_POINTS pEntryPoints)
 	alsa_data->bytes_per_channel = 2;
 	devplugin->device_data = alsa_data;
 
-	LLOGLN(0, ("rdpsnd_alsa: alsa device registered."));
+	LLOGLN(0, ("rdpsnd_alsa: alsa device '%s' registered.", alsa_data->device_name));
 
 	return 0;
 }

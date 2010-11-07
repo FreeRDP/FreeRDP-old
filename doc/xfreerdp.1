@@ -113,8 +113,15 @@ Following plugins are currently supported:
 Synchronize client and server clipboard data. Plain text, Unicode text, HTML
 content and images are supported.
 .TP
-.BR "--plugin rdpsnd"
-Redirects sound generated on the server to the client.
+.BR "--plugin rdpsnd [--data <subplugin> --]"
+Redirects sound generated on the server to the client. <subplugin> can be one
+of the following:
+
+.B
+alsa[:<alsa_device>]
+Redirect sound to ALSA device <alsa_device>. If :<alsa_device> is omitted,
+sound will be redirected to 'default' device.
+
 .TP
 .BR "--plugin rdpdr --data <subplugin> [<subplugin> ...] --"
 Redirects file system devices on your client to the server. <subplugin> can be
