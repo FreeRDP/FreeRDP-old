@@ -22,6 +22,7 @@ REQUIRED_SUBDIRS = \
 	channels/rdpdr/parallel
 
 OPTIONAL_SUBDIRS = \
+	channels/rdpsnd/alsa \
 	tests \
 	cunit \
 	X11 \

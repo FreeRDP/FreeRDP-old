@@ -32,6 +32,22 @@
 #include "chan_stream.h"
 #include "chan_plugin.h"
 #include "wait_obj.h"
+#include "rdpsnd_types.h"
+
+#ifdef _WIN32
+#define DLOPEN(f) LoadLibraryA(f)
+#define DLSYM(f, n) GetProcAddress(f, n)
+#define DLCLOSE(f) FreeLibrary(f)
+#define PATH_SEPARATOR '\\'
+#define PLUGIN_EXT "dll"
+#else
+#include <dlfcn.h>
+#define DLOPEN(f) dlopen(f, RTLD_LOCAL | RTLD_LAZY)
+#define DLSYM(f, n) dlsym(f, n)
+#define DLCLOSE(f) dlclose(f)
+#define PATH_SEPARATOR '/'
+#define PLUGIN_EXT "so"
+#endif
 
 #define SNDC_CLOSE         1
 #define SNDC_WAVE          2
@@ -71,7 +87,6 @@ struct data_out_item
 	uint32 out_time_stamp;
 };
 
-typedef struct rdpsnd_plugin rdpsndPlugin;
 struct rdpsnd_plugin
 {
 	rdpChanPlugin chan_plugin;
@@ -106,27 +121,9 @@ struct rdpsnd_plugin
 	uint32 local_time_stamp; /* client timestamp */
 	int thread_status;
 
-	/* Device specific data */
-	void * device_data;
+	/* Device plugin */
+	rdpsndDevicePlugin * device_plugin;
 };
-
-/* implementations are in the hardware file */
-void *
-wave_out_new(void);
-void
-wave_out_free(void * device_data);
-int
-wave_out_open(void * device_data);
-int
-wave_out_close(void * device_data);
-int
-wave_out_format_supported(void * device_data, char * snd_format, int size);
-int
-wave_out_set_format(void * device_data, char * snd_format, int size);
-int
-wave_out_set_volume(void * device_data, uint32 value);
-int
-wave_out_play(void * device_data, char * data, int size, int * delay_ms);
 
 /* get time in milliseconds */
 static uint32
@@ -306,7 +303,7 @@ thread_process_message_formats(rdpsndPlugin * plugin, char * data, int data_size
 	for (index = 0; index < format_count; index++)
 	{
 		size = 18 + GET_UINT16(ldata, 16);
-		if (wave_out_format_supported(plugin->device_data, ldata, size))
+		if (plugin->device_plugin && plugin->device_plugin->format_supported(plugin->device_plugin, ldata, size))
 		{
 			memcpy(lout_formats, ldata, size);
 			lout_formats += size;
@@ -428,7 +425,8 @@ set_format(rdpsndPlugin * plugin)
 		size = 18 + GET_UINT16(snd_format, 16);
 		index++;
 	}
-	wave_out_set_format(plugin->device_data, snd_format, size);
+	if (plugin->device_plugin)
+		plugin->device_plugin->set_format(plugin->device_plugin, snd_format, size);
 	return 0;
 }
 
@@ -438,7 +436,10 @@ thread_process_message_wave_info(rdpsndPlugin * plugin, char * data, int data_si
 	int wFormatNo;
 	int error;
 
-	error = wave_out_open(plugin->device_data);
+	if (plugin->device_plugin)
+		error = plugin->device_plugin->open(plugin->device_plugin);
+	else
+		error = 1;
 
 	plugin->wTimeStamp = GET_UINT16(data, 0); /* time in ms */
 	plugin->local_time_stamp = get_mstime(); /* time in ms */
@@ -472,7 +473,8 @@ thread_process_message_wave(rdpsndPlugin * plugin, char * data, int data_size)
 		LLOGLN(0, ("thread_process_message_wave: "
 			"size error"));
 	}
-	wave_out_play(plugin->device_data, data, data_size, &plugin->delay_ms);
+	if (plugin->device_plugin)
+		plugin->device_plugin->play(plugin->device_plugin, data, data_size, &plugin->delay_ms);
 	size = 8;
 	out_data = (char *) malloc(size);
 	SET_UINT8(out_data, 0, SNDC_WAVECONFIRM);
@@ -496,7 +498,8 @@ thread_process_message_close(rdpsndPlugin * plugin, char * data, int data_size)
 {
 	LLOGLN(10, ("thread_process_message_close: "
 		"data_size %d", data_size));
-	wave_out_close(plugin->device_data);
+	if (plugin->device_plugin)
+		plugin->device_plugin->close(plugin->device_plugin);
 	return 0;
 }
 
@@ -507,7 +510,8 @@ thread_process_message_setvolume(rdpsndPlugin * plugin, char * data, int data_si
 
 	LLOGLN(10, ("thread_process_message_setvolume:"));
 	dwVolume = GET_UINT32(data, 0);
-	wave_out_set_volume(plugin->device_data, dwVolume);
+	if (plugin->device_plugin)
+		plugin->device_plugin->set_volume(plugin->device_plugin, dwVolume);
 	return 0;
 }
 
@@ -764,7 +768,12 @@ InitEventProcessTerminated(void * pInitHandle)
 		free(out_item);
 	}
 
-	wave_out_free(plugin->device_data);
+	if (plugin->device_plugin)
+	{
+		plugin->device_plugin->free(plugin->device_plugin);
+		free(plugin->device_plugin);
+		plugin->device_plugin = NULL;
+	}
 	chan_plugin_uninit((rdpChanPlugin *) plugin);
 	free(plugin);
 }
@@ -786,11 +795,87 @@ InitEvent(void * pInitHandle, uint32 event, void * pData, uint32 dataLength)
 	}
 }
 
+static rdpsndDevicePlugin *
+rdpsnd_register_device_plugin(rdpsndPlugin * plugin)
+{
+	rdpsndDevicePlugin * devplugin;
+
+	if (plugin->device_plugin)
+	{
+		LLOGLN(0, ("rdpsnd_process_plugin_data: existing device, abort."));
+		return NULL;
+	}
+
+	devplugin = (rdpsndDevicePlugin *) malloc(sizeof(rdpsndDevicePlugin));
+	memset(devplugin, 0, sizeof(rdpsndDevicePlugin));
+	plugin->device_plugin = devplugin;
+	return devplugin;
+}
+
+static int
+rdpsnd_load_device_plugin(rdpsndPlugin * plugin, const char * name, RD_PLUGIN_DATA * data)
+{
+	FREERDP_RDPSND_DEVICE_ENTRY_POINTS entryPoints;
+	char path[256];
+	void * han;
+	PFREERDP_RDPSND_DEVICE_ENTRY entry;
+
+	if (strchr(name, PATH_SEPARATOR) == NULL)
+	{
+		snprintf(path, sizeof(path), PLUGIN_PATH "/rdpsnd_%s." PLUGIN_EXT, name);
+	}
+	else
+	{
+		snprintf(path, sizeof(path), "%s", name);
+	}
+	han = DLOPEN(path);
+	LLOGLN(0, ("rdpsnd_load_device_plugin: %s", path));
+	if (han == NULL)
+	{
+		LLOGLN(0, ("rdpsnd_load_device_plugin: failed to load %s", path));
+		return 1;
+	}
+	entry = (PFREERDP_RDPSND_DEVICE_ENTRY) DLSYM(han, RDPSND_DEVICE_EXPORT_FUNC_NAME);
+	if (entry == NULL)
+	{
+		DLCLOSE(han);
+		LLOGLN(0, ("rdpsnd_load_device_plugin: failed to find export function in %s", path));
+		return 1;
+	}
+
+	entryPoints.plugin = plugin;
+	entryPoints.pRegisterRdpsndDevice = rdpsnd_register_device_plugin;
+	entryPoints.data = data;
+	if (entry(&entryPoints) != 0)
+	{
+		DLCLOSE(han);
+		LLOGLN(0, ("rdpsnd_load_device_plugin: %s entry returns error.", path));
+		return 1;
+	}
+	return 0;
+}
+
+static int
+rdpsnd_process_plugin_data(rdpsndPlugin * plugin, RD_PLUGIN_DATA * data)
+{
+	if (strcmp((char*)data->data[0], "buffer") == 0)
+	{
+		/* TODO: Set the sound buffer size */
+		return 0;
+	}
+	else
+	{
+		return rdpsnd_load_device_plugin(plugin, (char*)data->data[0], data);
+	}
+}
+
 /* this registers two channels but only rdpsnd is used */
 int
 VirtualChannelEntry(PCHANNEL_ENTRY_POINTS pEntryPoints)
 {
 	rdpsndPlugin * plugin;
+	RD_PLUGIN_DATA * data;
+	RD_PLUGIN_DATA default_data[2] = { { 0 }, { 0 } };
 
 	LLOGLN(10, ("VirtualChannelEntry:"));
 
@@ -819,6 +904,31 @@ VirtualChannelEntry(PCHANNEL_ENTRY_POINTS pEntryPoints)
 	plugin->thread_status = 0;
 	plugin->ep.pVirtualChannelInit(&plugin->chan_plugin.init_handle, &plugin->channel_def, 1,
 		VIRTUAL_CHANNEL_VERSION_WIN2000, InitEvent);
-	plugin->device_data = wave_out_new();
+
+	if (pEntryPoints->cbSize >= sizeof(CHANNEL_ENTRY_POINTS_EX))
+	{
+		data = (RD_PLUGIN_DATA *) (((PCHANNEL_ENTRY_POINTS_EX)pEntryPoints)->pExtendedData);
+	}
+	else
+	{
+		data = NULL;
+	}
+	while (data && data->size > 0)
+	{
+		rdpsnd_process_plugin_data(plugin, data);
+		data = (RD_PLUGIN_DATA *) (((void *) data) + data->size);
+	}
+	if (plugin->device_plugin == NULL)
+	{
+		default_data[0].size = sizeof(RD_PLUGIN_DATA);
+		default_data[0].data[0] = "alsa";
+		default_data[0].data[1] = "default";
+		rdpsnd_load_device_plugin(plugin, "alsa", default_data);
+	}
+	if (plugin->device_plugin == NULL)
+	{
+		LLOGLN(0, ("rdpsnd: no sound device."));
+	}
+
 	return 1;
 }

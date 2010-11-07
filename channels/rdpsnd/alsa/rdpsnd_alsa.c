@@ -29,6 +29,7 @@
 #include <alsa/asoundlib.h>
 #include <freerdp/types_ui.h>
 #include "chan_stream.h"
+#include "rdpsnd_types.h"
 
 #define LOG_LEVEL 1
 #define LLOG(_level, _args) \
@@ -71,62 +72,45 @@ set_params(struct alsa_device_data * alsa_data)
 	return 0;
 }
 
-void *
-wave_out_new(void)
+static void
+rdpsnd_alsa_free(rdpsndDevicePlugin * devplugin)
 {
-	struct alsa_device_data * alsa_data;
-
-	alsa_data = (struct alsa_device_data *) malloc(sizeof(struct alsa_device_data));
-	memset(alsa_data, 0, sizeof(struct alsa_device_data));
-
-	alsa_data->out_handle = 0;
-	alsa_data->rrate = 22050;
-	alsa_data->format = SND_PCM_FORMAT_S16_LE;
-	alsa_data->num_channels = 2;
-	alsa_data->bytes_per_channel = 2;
-
-	return (void *) alsa_data;
+	free(devplugin->device_data);
 }
 
-void
-wave_out_free(void * device_data)
-{
-	free(device_data);
-}
-
-int
-wave_out_open(void * device_data)
+static int
+rdpsnd_alsa_open(rdpsndDevicePlugin * devplugin)
 {
 	struct alsa_device_data * alsa_data;
 	int error;
 
-	alsa_data = (struct alsa_device_data *) device_data;
+	alsa_data = (struct alsa_device_data *) devplugin->device_data;
 
 	if (alsa_data->out_handle != 0)
 	{
 		return 0;
 	}
-	LLOGLN(10, ("wave_out_open:"));
+	LLOGLN(10, ("rdpsnd_alsa_open:"));
 	error = snd_pcm_open(&alsa_data->out_handle, "default",
 		SND_PCM_STREAM_PLAYBACK, 0);
 	if (error < 0)
 	{
-		LLOGLN(0, ("wave_out_open: snd_pcm_open failed"));
+		LLOGLN(0, ("rdpsnd_alsa_open: snd_pcm_open failed"));
 		return 1;
 	}
 	set_params(alsa_data);
 	return 0;
 }
 
-int
-wave_out_close(void * device_data)
+static int
+rdpsnd_alsa_close(rdpsndDevicePlugin * devplugin)
 {
 	struct alsa_device_data * alsa_data;
 
-	alsa_data = (struct alsa_device_data *) device_data;
+	alsa_data = (struct alsa_device_data *) devplugin->device_data;
 	if (alsa_data->out_handle != 0)
 	{
-		LLOGLN(10, ("wave_out_close:"));
+		LLOGLN(10, ("rdpsnd_alsa_close:"));
 		snd_pcm_close(alsa_data->out_handle);
 		alsa_data->out_handle = 0;
 	}
@@ -145,8 +129,8 @@ wave_out_close(void * device_data)
 */
 
 /* returns boolean */
-int
-wave_out_format_supported(void * device_data, char * snd_format, int size)
+static int
+rdpsnd_alsa_format_supported(rdpsndDevicePlugin * devplugin, char * snd_format, int size)
 {
 	struct alsa_device_data * alsa_data;
 	int nChannels;
@@ -155,9 +139,9 @@ wave_out_format_supported(void * device_data, char * snd_format, int size)
 	int cbSize;
 	int wFormatTag;
 
-	alsa_data = (struct alsa_device_data *) device_data;
+	alsa_data = (struct alsa_device_data *) devplugin->device_data;
 
-	LLOGLN(10, ("wave_out_format_supported: size %d", size));
+	LLOGLN(10, ("rdpsnd_alsa_format_supported: size %d", size));
 	wFormatTag = GET_UINT16(snd_format, 0);
 	nChannels = GET_UINT16(snd_format, 2);
 	nSamplesPerSec = GET_UINT32(snd_format, 4);
@@ -169,26 +153,26 @@ wave_out_format_supported(void * device_data, char * snd_format, int size)
 		(nChannels == 1 || nChannels == 2) &&
 		wFormatTag == 1) /* WAVE_FORMAT_PCM */
 	{
-		LLOGLN(0, ("wave_out_format_supported: ok"));
+		LLOGLN(0, ("rdpsnd_alsa_format_supported: ok"));
 		return 1;
 	}
 	return 0;
 }
 
-int
-wave_out_set_format(void * device_data, char * snd_format, int size)
+static int
+rdpsnd_alsa_set_format(rdpsndDevicePlugin * devplugin, char * snd_format, int size)
 {
 	struct alsa_device_data * alsa_data;
 	int nChannels;
 	int wBitsPerSample;
 	int nSamplesPerSec;
 
-	alsa_data = (struct alsa_device_data *) device_data;
+	alsa_data = (struct alsa_device_data *) devplugin->device_data;
 
 	nChannels = GET_UINT16(snd_format, 2);
 	nSamplesPerSec = GET_UINT32(snd_format, 4);
 	wBitsPerSample = GET_UINT16(snd_format, 14);
-	LLOGLN(0, ("wave_out_set_format: nChannels %d "
+	LLOGLN(0, ("rdpsnd_alsa_set_format: nChannels %d "
 		"nSamplesPerSec %d wBitsPerSample %d",
 		nChannels, nSamplesPerSec, wBitsPerSample));
 	alsa_data->rrate = nSamplesPerSec;
@@ -208,15 +192,15 @@ wave_out_set_format(void * device_data, char * snd_format, int size)
 	return 0;
 }
 
-int
-wave_out_set_volume(void * device_data, uint32 value)
+static int
+rdpsnd_alsa_set_volume(rdpsndDevicePlugin * devplugin, uint32 value)
 {
-	LLOGLN(0, ("wave_out_set_volume: %8.8x", value));
+	LLOGLN(0, ("rdpsnd_alsa_set_volume: %8.8x", value));
 	return 0;
 }
 
-int
-wave_out_play(void * device_data, char * data, int size, int * delay_ms)
+static int
+rdpsnd_alsa_play(rdpsndDevicePlugin * devplugin, char * data, int size, int * delay_ms)
 {
 	struct alsa_device_data * alsa_data;
 	int len;
@@ -227,14 +211,14 @@ wave_out_play(void * device_data, char * data, int size, int * delay_ms)
 	char * end;
 	snd_pcm_sframes_t delay_frames = 0;
 
-	alsa_data = (struct alsa_device_data *) device_data;
+	alsa_data = (struct alsa_device_data *) devplugin->device_data;
 
-	LLOGLN(10, ("wave_out_play: size %d", size));
+	LLOGLN(10, ("rdpsnd_alsa_play: size %d", size));
 
 	bytes_per_frame = alsa_data->num_channels * alsa_data->bytes_per_channel;
 	if ((size % bytes_per_frame) != 0)
 	{
-		LLOGLN(0, ("wave_out_play: error len mod"));
+		LLOGLN(0, ("rdpsnd_alsa_play: error len mod"));
 		return 1;
 	}
 
@@ -247,13 +231,13 @@ wave_out_play(void * device_data, char * data, int size, int * delay_ms)
 		error = snd_pcm_writei(alsa_data->out_handle, pindex, frames);
 		if (error == -EPIPE)
 		{
-			LLOGLN(0, ("wave_out_play: underrun occurred"));
+			LLOGLN(0, ("rdpsnd_alsa_play: underrun occurred"));
 			snd_pcm_recover(alsa_data->out_handle, error, 0);
 			error = 0;
 		}
 		else if (error < 0)
 		{
-			LLOGLN(0, ("wave_out_play: error len %d", error));
+			LLOGLN(0, ("rdpsnd_alsa_play: error len %d", error));
 			break;
 		}
 		pindex += error * bytes_per_frame;
@@ -271,3 +255,40 @@ wave_out_play(void * device_data, char * data, int size, int * delay_ms)
 
 	return 0;
 }
+
+int
+FreeRDPRdpsndDeviceEntry(PFREERDP_RDPSND_DEVICE_ENTRY_POINTS pEntryPoints)
+{
+	rdpsndDevicePlugin * devplugin;
+	struct alsa_device_data * alsa_data;
+
+	devplugin = pEntryPoints->pRegisterRdpsndDevice(pEntryPoints->plugin);
+	if (devplugin == NULL)
+	{
+		LLOGLN(0, ("rdpsnd_alsa: unable to register device."));
+		return 1;
+	}
+
+	devplugin->open = rdpsnd_alsa_open;
+	devplugin->format_supported = rdpsnd_alsa_format_supported;
+	devplugin->set_format = rdpsnd_alsa_set_format;
+	devplugin->set_volume = rdpsnd_alsa_set_volume;
+	devplugin->play = rdpsnd_alsa_play;
+	devplugin->close = rdpsnd_alsa_close;
+	devplugin->free = rdpsnd_alsa_free;
+
+	alsa_data = (struct alsa_device_data *) malloc(sizeof(struct alsa_device_data));
+	memset(alsa_data, 0, sizeof(struct alsa_device_data));
+
+	alsa_data->out_handle = 0;
+	alsa_data->rrate = 22050;
+	alsa_data->format = SND_PCM_FORMAT_S16_LE;
+	alsa_data->num_channels = 2;
+	alsa_data->bytes_per_channel = 2;
+	devplugin->device_data = alsa_data;
+
+	LLOGLN(0, ("rdpsnd_alsa: alsa device registered."));
+
+	return 0;
+}
+
