@@ -7,7 +7,6 @@ REQUIRED_SUBDIRS = \
 	include \
 	libfreerdpkbd \
 	keymaps \
-	tests \
 	libfreerdpgdi \
 	libfreerdpchanman \
 	channels/common \
@@ -23,6 +22,7 @@ REQUIRED_SUBDIRS = \
 	channels/rdpdr/parallel
 
 OPTIONAL_SUBDIRS = \
+	tests \
 	cunit \
 	X11 \
 	win \

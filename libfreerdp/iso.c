@@ -520,6 +520,11 @@ void
 iso_disconnect(rdpIso * iso)
 {
 	x224_send_dst_src_class(iso, X224_TPDU_DISCONNECT_REQUEST);
+#ifndef DISABLE_TLS
+	if (iso->mcs->sec->ssl)
+		tls_disconnect(iso->mcs->sec->ssl);
+	iso->mcs->sec->ssl = NULL;
+#endif
 	tcp_disconnect(iso->tcp);
 }
 
