@@ -33,6 +33,7 @@
 #include "chan_plugin.h"
 #include "wait_obj.h"
 #include "rdpsnd_types.h"
+#include "rdpsnd_dsp.h"
 
 #ifdef _WIN32
 #define DLOPEN(f) LoadLibraryA(f)
@@ -845,6 +846,7 @@ rdpsnd_load_device_plugin(rdpsndPlugin * plugin, const char * name, RD_PLUGIN_DA
 
 	entryPoints.plugin = plugin;
 	entryPoints.pRegisterRdpsndDevice = rdpsnd_register_device_plugin;
+	entryPoints.pResample = rdpsnd_dsp_resample;
 	entryPoints.data = data;
 	if (entry(&entryPoints) != 0)
 	{

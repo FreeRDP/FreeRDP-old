@@ -44,10 +44,15 @@ struct rdpsnd_device_plugin
 
 typedef rdpsndDevicePlugin * (* PREGISTERRDPSNDDEVICE)(rdpsndPlugin * plugin);
 
+typedef uint8 * (* PRDPSNDDSPRESAMPLE)(uint8 * src, int bytes_per_frame, \
+	uint32 srate, int sframes, \
+	uint32 rrate, int * prframes);
+
 struct _FREERDP_RDPSND_DEVICE_ENTRY_POINTS
 {
 	rdpsndPlugin * plugin;
 	PREGISTERRDPSNDDEVICE pRegisterRdpsndDevice;
+	PRDPSNDDSPRESAMPLE pResample;
 	void * data;
 };
 typedef struct _FREERDP_RDPSND_DEVICE_ENTRY_POINTS FREERDP_RDPSND_DEVICE_ENTRY_POINTS;

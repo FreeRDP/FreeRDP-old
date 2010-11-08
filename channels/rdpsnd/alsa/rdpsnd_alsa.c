@@ -41,16 +41,20 @@ struct alsa_device_data
 {
 	char device_name[32];
 	snd_pcm_t * out_handle;
-	uint32 rrate;
+	uint32 source_rate;
+	uint32 actual_rate;
 	snd_pcm_format_t format;
 	int num_channels;
 	int bytes_per_channel;
+
+	PRDPSNDDSPRESAMPLE pResample;
 };
 
 static int
 set_params(struct alsa_device_data * alsa_data)
 {
 	snd_pcm_hw_params_t * hw_params;
+	snd_pcm_sw_params_t * sw_params;
 	int error;
 
 	error = snd_pcm_hw_params_malloc(&hw_params);
@@ -65,11 +69,35 @@ set_params(struct alsa_device_data * alsa_data)
 	snd_pcm_hw_params_set_format(alsa_data->out_handle, hw_params,
 		alsa_data->format);
 	snd_pcm_hw_params_set_rate_near(alsa_data->out_handle, hw_params,
-		&alsa_data->rrate, NULL);
-	snd_pcm_hw_params_set_channels(alsa_data->out_handle, hw_params, alsa_data->num_channels);
+		&alsa_data->actual_rate, NULL);
+	snd_pcm_hw_params_set_channels(alsa_data->out_handle, hw_params,
+		alsa_data->num_channels);
+	snd_pcm_hw_params_set_buffer_size(alsa_data->out_handle, hw_params,
+		alsa_data->actual_rate * 5);
 	snd_pcm_hw_params(alsa_data->out_handle, hw_params);
 	snd_pcm_hw_params_free(hw_params);
+
+	error = snd_pcm_sw_params_malloc(&sw_params);
+	if (error < 0)
+	{
+		LLOGLN(0, ("set_params: snd_pcm_sw_params_malloc"));
+		return 1;
+	}
+	snd_pcm_sw_params_current(alsa_data->out_handle, sw_params);
+	snd_pcm_sw_params_set_avail_min(alsa_data->out_handle, sw_params,
+		4096);
+	snd_pcm_sw_params_set_start_threshold(alsa_data->out_handle, sw_params,
+		alsa_data->actual_rate * 2);
+	snd_pcm_sw_params(alsa_data->out_handle, sw_params);
+	snd_pcm_sw_params_free(sw_params);
+
 	snd_pcm_prepare(alsa_data->out_handle);
+
+	if (alsa_data->actual_rate != alsa_data->source_rate)
+	{
+		LLOGLN(0, ("set_params: actual rate %d is different from source rate %d, resampling required.",
+			alsa_data->actual_rate, alsa_data->source_rate));
+	}
 	return 0;
 }
 
@@ -112,6 +140,7 @@ rdpsnd_alsa_close(rdpsndDevicePlugin * devplugin)
 	if (alsa_data->out_handle != 0)
 	{
 		LLOGLN(10, ("rdpsnd_alsa_close:"));
+		snd_pcm_drain(alsa_data->out_handle);
 		snd_pcm_close(alsa_data->out_handle);
 		alsa_data->out_handle = 0;
 	}
@@ -176,7 +205,8 @@ rdpsnd_alsa_set_format(rdpsndDevicePlugin * devplugin, char * snd_format, int si
 	LLOGLN(0, ("rdpsnd_alsa_set_format: nChannels %d "
 		"nSamplesPerSec %d wBitsPerSample %d",
 		nChannels, nSamplesPerSec, wBitsPerSample));
-	alsa_data->rrate = nSamplesPerSec;
+	alsa_data->source_rate = nSamplesPerSec;
+	alsa_data->actual_rate = nSamplesPerSec;
 	alsa_data->num_channels = nChannels;
 	switch (wBitsPerSample)
 	{
@@ -204,13 +234,13 @@ static int
 rdpsnd_alsa_play(rdpsndDevicePlugin * devplugin, char * data, int size, int * delay_ms)
 {
 	struct alsa_device_data * alsa_data;
+	char * resampled_data;
 	int len;
 	int error;
 	int frames;
 	int bytes_per_frame;
 	char * pindex;
 	char * end;
-	snd_pcm_sframes_t delay_frames = 0;
 
 	alsa_data = (struct alsa_device_data *) devplugin->device_data;
 
@@ -223,7 +253,21 @@ rdpsnd_alsa_play(rdpsndDevicePlugin * devplugin, char * data, int size, int * de
 		return 1;
 	}
 
-	pindex = data;
+	if (alsa_data->source_rate == alsa_data->actual_rate)
+	{
+		resampled_data = data;
+	}
+	else
+	{
+		resampled_data = (char*)alsa_data->pResample((uint8*)data, bytes_per_frame,
+			alsa_data->source_rate, size / bytes_per_frame,
+			alsa_data->actual_rate, &frames);
+		LLOGLN(10, ("rdpsnd_alsa_play: resampled %d frames at %d to %d frames at %d",
+			size / bytes_per_frame, alsa_data->source_rate, frames, alsa_data->actual_rate));
+		size = frames * bytes_per_frame;
+	}
+
+	pindex = resampled_data;
 	end = pindex + size;
 	while (pindex < end)
 	{
@@ -244,15 +288,10 @@ rdpsnd_alsa_play(rdpsndDevicePlugin * devplugin, char * data, int size, int * de
 		pindex += error * bytes_per_frame;
 	}
 
-	if (snd_pcm_delay(alsa_data->out_handle, &delay_frames) < 0)
-	{
-		delay_frames = size / bytes_per_frame;
-	}
-	if (delay_frames < 0)
-	{
-		delay_frames = 0;
-	}
-	*delay_ms = delay_frames * (1000000 / alsa_data->rrate) / 1000;
+	if (resampled_data != data)
+		free(resampled_data);
+
+	*delay_ms = (size / bytes_per_frame) * (1000000 / alsa_data->actual_rate) / 1000;
 
 	return 0;
 }
@@ -302,10 +341,12 @@ FreeRDPRdpsndDeviceEntry(PFREERDP_RDPSND_DEVICE_ENTRY_POINTS pEntryPoints)
 		strcpy(alsa_data->device_name, "default");
 	}
 	alsa_data->out_handle = 0;
-	alsa_data->rrate = 22050;
+	alsa_data->source_rate = 22050;
+	alsa_data->actual_rate = 22050;
 	alsa_data->format = SND_PCM_FORMAT_S16_LE;
 	alsa_data->num_channels = 2;
 	alsa_data->bytes_per_channel = 2;
+	alsa_data->pResample = pEntryPoints->pResample;
 	devplugin->device_data = alsa_data;
 
 	LLOGLN(0, ("rdpsnd_alsa: alsa device '%s' registered.", alsa_data->device_name));
