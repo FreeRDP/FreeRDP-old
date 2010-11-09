@@ -56,6 +56,7 @@ set_params(struct alsa_device_data * alsa_data)
 	snd_pcm_hw_params_t * hw_params;
 	snd_pcm_sw_params_t * sw_params;
 	int error;
+	snd_pcm_uframes_t frames;
 
 	error = snd_pcm_hw_params_malloc(&hw_params);
 	if (error < 0)
@@ -72,8 +73,9 @@ set_params(struct alsa_device_data * alsa_data)
 		&alsa_data->actual_rate, NULL);
 	snd_pcm_hw_params_set_channels(alsa_data->out_handle, hw_params,
 		alsa_data->num_channels);
-	snd_pcm_hw_params_set_buffer_size(alsa_data->out_handle, hw_params,
-		alsa_data->actual_rate * 5);
+	frames = alsa_data->actual_rate * 4;
+	snd_pcm_hw_params_set_buffer_size_near(alsa_data->out_handle, hw_params,
+		&frames);
 	snd_pcm_hw_params(alsa_data->out_handle, hw_params);
 	snd_pcm_hw_params_free(hw_params);
 
@@ -87,7 +89,7 @@ set_params(struct alsa_device_data * alsa_data)
 	snd_pcm_sw_params_set_avail_min(alsa_data->out_handle, sw_params,
 		4096);
 	snd_pcm_sw_params_set_start_threshold(alsa_data->out_handle, sw_params,
-		alsa_data->actual_rate * 2);
+		frames / 2);
 	snd_pcm_sw_params(alsa_data->out_handle, sw_params);
 	snd_pcm_sw_params_free(sw_params);
 
