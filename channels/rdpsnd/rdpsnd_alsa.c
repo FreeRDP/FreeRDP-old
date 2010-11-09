@@ -88,12 +88,6 @@ wave_out_new(void)
 	return (void *) alsa_data;
 }
 
-void
-wave_out_free(void * device_data)
-{
-	free(device_data);
-}
-
 int
 wave_out_open(void * device_data)
 {
@@ -131,6 +125,13 @@ wave_out_close(void * device_data)
 		alsa_data->out_handle = 0;
 	}
 	return 0;
+}
+
+void
+wave_out_free(void * device_data)
+{
+	wave_out_close(device_data);
+	free(device_data);
 }
 
 /*
