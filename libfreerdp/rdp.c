@@ -1114,6 +1114,19 @@ process_pointer_pdu(rdpRdp * rdp, STREAM s)
 	}
 }
 
+static void /* see [MS-RDPBCGR] 2.2.9.1.1.5.1 */
+process_play_sound_pdu(rdpRdp * rdp, STREAM s)
+{
+	uint16 duration, frequency;
+
+	in_uint16_le(s, duration);
+	in_uint8s(s, 2); /* pad */
+	in_uint16_le(s, frequency);
+	in_uint8s(s, 2);
+
+	DEBUG("(beep not implemented) duration %d frequency %d\n", duration, frequency);
+}
+
 /* Process bitmap updates */
 void
 process_bitmap_updates(rdpRdp * rdp, STREAM s)
@@ -1344,7 +1357,7 @@ process_data_pdu(rdpRdp * rdp, STREAM s)
 			break;
 
 		case RDP_DATA_PDU_PLAY_SOUND:
-			ui_bell(rdp->inst);
+			process_play_sound_pdu(rdp, data_s);
 			ASSERT(s_check_end(data_s));
 			break;
 
