@@ -1,4 +1,4 @@
-2010-11-??  Version 0.8.2
+2010-11-13  Version 0.8.2
    * libfreerdp:
     - fix buffer overflow when local timezone doesn't fit in 32 bytes
     - Fix data corruption after TLS license package
@@ -10,6 +10,8 @@
     - Fixes for compilation with VS2008
    * rdpsnd plugin: 
     - ensure the ALSA device is closed when freeing resources
+   * rdpdr plugin:
+    - fix various memory leaks
 
 2010-10-25  Version 0.8.1
    * cunit tests:
