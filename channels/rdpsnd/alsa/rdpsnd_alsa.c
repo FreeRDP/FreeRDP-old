@@ -95,6 +95,8 @@ set_params(struct alsa_device_data * alsa_data)
 
 	snd_pcm_prepare(alsa_data->out_handle);
 
+	LLOGLN(10, ("set_params: hardware buffer %d frames, playback buffer %.2g seconds",
+		(int)frames, (double)frames / 2.0 / (double)alsa_data->actual_rate));
 	if (alsa_data->actual_rate != alsa_data->source_rate)
 	{
 		LLOGLN(0, ("set_params: actual rate %d is different from source rate %d, resampling required.",
