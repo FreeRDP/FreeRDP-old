@@ -103,12 +103,6 @@ set_params(struct alsa_device_data * alsa_data)
 	return 0;
 }
 
-static void
-rdpsnd_alsa_free(rdpsndDevicePlugin * devplugin)
-{
-	free(devplugin->device_data);
-}
-
 static int
 rdpsnd_alsa_open(rdpsndDevicePlugin * devplugin)
 {
@@ -147,6 +141,13 @@ rdpsnd_alsa_close(rdpsndDevicePlugin * devplugin)
 		alsa_data->out_handle = 0;
 	}
 	return 0;
+}
+
+static void
+rdpsnd_alsa_free(rdpsndDevicePlugin * devplugin)
+{
+	rdpsnd_alsa_close(devplugin);
+	free(devplugin->device_data);
 }
 
 /*

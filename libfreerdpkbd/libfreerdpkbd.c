@@ -604,11 +604,9 @@ unsigned int
 detect_and_load_keyboard()
 {
 	int i;
-
+	char* kbd;
 	char xkbfile[256];
 	char* xkbfileEnd;
-	char* kbd;
-	int kbdlen;
 	unsigned int keyboard_layout = 0;
 	unsigned int keyboardLayoutID = 0;
 
@@ -663,10 +661,14 @@ detect_and_load_keyboard()
 	kbd = xkbfile;
 	xkbfileEnd = xkbfile + strlen(xkbfile);
 
+#ifdef __APPLE__
+	/* Apple X11 breaks XKB detection */
+	keymapLoaded += load_keyboard("macintosh(old)");
+#else
 	do
 	{
 		// Multiple maps are separated by '+'
-		kbdlen = strcspn(kbd + 1, "+") + 1;
+		int kbdlen = strcspn(kbd + 1, "+") + 1;
 		kbd[kbdlen] = '\0';
 
 		// Load keyboard map
@@ -675,6 +677,7 @@ detect_and_load_keyboard()
 		kbd += kbdlen + 1;
 	}
 	while(kbd < xkbfileEnd);
+#endif
 
 	if(keymapLoaded <= 0)
 	{

@@ -167,18 +167,20 @@ xf_kb_focus_in(xfInfo * xfi)
 
 void
 xf_kb_set_keypress(uint8 keycode, KeySym keysym)
-{
-	if (keycode < 8 || keycode > 255)
+{	
+	if (keycode >= 8)
+		pressed_keys[keycode] = keysym;
+	else
 		return;
-	pressed_keys[keycode] = keysym;
 }
 
 void
 xf_kb_unset_keypress(uint8 keycode)
-{
-	if (keycode < 8 || keycode > 255)
+{	
+	if (keycode >= 8)
+		pressed_keys[keycode] = NoSymbol;
+	else
 		return;
-	pressed_keys[keycode] = NoSymbol;
 }
 
 static RD_BOOL

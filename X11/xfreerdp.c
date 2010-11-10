@@ -29,6 +29,7 @@
 #include <sys/types.h>
 #include <errno.h>
 #include <pwd.h>
+#include <fcntl.h>
 #include <pthread.h>
 #include <semaphore.h>
 #include <freerdp/freerdp.h>
@@ -41,7 +42,8 @@
 #define MAX_PLUGIN_DATA 20
 
 static volatile int g_thread_count = 0;
-static sem_t g_sem;
+char g_sem_name[64];
+static sem_t *g_sem;
 
 static int
 set_default_params(xfInfo * xfi)
@@ -71,6 +73,7 @@ set_default_params(xfInfo * xfi)
 	settings->tls = 1;
 #endif
 	xfi->fullscreen = xfi->fs_toggle = 0;
+	xfi->decoration = 1;
 	return 0;
 }
 
@@ -97,6 +100,7 @@ out_args(void)
 		"\t-o: console audio\n"
 		"\t-0: console session\n"
 		"\t-f: fullscreen mode\n"
+		"\t-D: hide window decorations\n"
 		"\t-z: enable bulk compression\n"
 		"\t-x: performance flags (m, b or l for modem, broadband or lan)\n"
 #ifndef DISABLE_TLS
@@ -312,6 +316,10 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 		{
 			xfi->fullscreen = xfi->fs_toggle = 1;
 			printf("full screen option\n");
+		}
+		else if (strcmp("-D", argv[*pindex]) == 0)
+		{
+			xfi->decoration = 0;
 		}
 		else if (strcmp("-x", argv[*pindex]) == 0)
 		{
@@ -620,7 +628,7 @@ thread_func(void * arg)
 	g_thread_count--;
 	if (g_thread_count < 1)
 	{
-		sem_post(&g_sem);
+		sem_post(g_sem);
 	}
 	return NULL;
 }
@@ -628,8 +636,9 @@ thread_func(void * arg)
 int
 main(int argc, char ** argv)
 {
-	xfInfo * xfi;
 	int rv;
+	pid_t pid;
+	xfInfo * xfi;
 	pthread_t thread;
 	int index = 1;
 
@@ -645,7 +654,11 @@ main(int argc, char ** argv)
 		return 1;
 	}
 	freerdp_chanman_init();
-	sem_init(&g_sem, 0, 0);
+	
+	pid = getpid();
+	sprintf(g_sem_name, "xfreerdp_%d", pid);
+	g_sem = sem_open(g_sem_name, O_CREAT, 0, 0);
+	
 	while (1)
 	{
 		xfi = (xfInfo *) malloc(sizeof(xfInfo));
@@ -673,8 +686,9 @@ main(int argc, char ** argv)
 	if (g_thread_count > 0)
 	{
 		printf("main thread, waiting for all threads to exit\n");
-		sem_wait(&g_sem);
+		sem_wait(g_sem);
 		printf("main thread, all threads did exit\n");
+		sem_unlink(g_sem_name);
 	}
 
 	freerdp_chanman_uninit();

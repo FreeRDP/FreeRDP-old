@@ -1070,6 +1070,10 @@ xf_post_connect(xfInfo * xfi)
 		mwm_hide_decorations(xfi);
 		XSetInputFocus(xfi->display, xfi->wnd, RevertToParent, CurrentTime);
 	}
+	else if (xfi->decoration == 0)
+	{
+		mwm_hide_decorations(xfi);
+	}
 
 	/* wait for VisibilityNotify */
 	do
