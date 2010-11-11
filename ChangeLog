@@ -1,3 +1,19 @@
+2010-11-13  Version 0.8.2
+   * libfreerdp:
+    - fix buffer overflow when local timezone doesn't fit in 32 bytes
+    - Fix data corruption after TLS license package
+    - free TLS resources to avoid memory leaks
+   * mcs:
+    - Fix connecting to VirtualBox with extra channels
+   * wfreerdp: 
+    - align command line options with xfreerdp
+    - Fixes for compilation with VS2008
+   * rdpsnd plugin: 
+    - ensure the ALSA device is closed when freeing resources
+   * rdpdr plugin:
+    - fix various memory leaks
+    - fix a segfault in multi-session environment
+
 2010-10-25  Version 0.8.1
    * cunit tests:
     - added --with-cunit compile time option (disabled by default)

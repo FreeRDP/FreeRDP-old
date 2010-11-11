@@ -34,7 +34,6 @@ struct irp_queue
 {
 	struct irp_queue_node *head;
 };
-typedef struct irp_queue IRPQueue;
 
 IRPQueue *
 irp_queue_new();
