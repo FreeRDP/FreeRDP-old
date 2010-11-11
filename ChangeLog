@@ -12,6 +12,7 @@
     - ensure the ALSA device is closed when freeing resources
    * rdpdr plugin:
     - fix various memory leaks
+    - fix a segfault in multi-session environment
 
 2010-10-25  Version 0.8.1
    * cunit tests:
