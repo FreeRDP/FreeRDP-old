@@ -658,6 +658,11 @@ main(int argc, char ** argv)
 	pid = getpid();
 	sprintf(g_sem_name, "xfreerdp_%d", pid);
 	g_sem = sem_open(g_sem_name, O_CREAT, 0, 0);
+	if (g_sem == SEM_FAILED)
+	{
+		printf("Error calling 'sem_open: %s'\n", strerror(errno));
+		return 1;
+	}
 	
 	while (1)
 	{
