@@ -39,11 +39,44 @@
 #include "xf_win.h"
 #include "xf_keyboard.h"
 
+#ifdef __APPLE__
+#include <mach/mach.h>
+#include <mach/semaphore.h>
+#include <mach/task.h>
+#endif
+
 #define MAX_PLUGIN_DATA 20
 
+static sem_t g_sem;
 static volatile int g_thread_count = 0;
-char g_sem_name[64];
-static sem_t *g_sem;
+
+void freerdp_sem_create(void * sem_struct, int iv)
+{
+#ifdef __APPLE__
+	semaphore_create(mach_task_self(), (semaphore_t *)sem_struct, SYNC_POLICY_FIFO, iv);
+#else
+	int pshared = 0;
+	sem_init((sem_t *)sem_struct, pshared, iv);
+#endif
+}
+
+void freerdp_sem_signal(void * sem_struct)
+{
+#ifdef __APPLE__
+	semaphore_signal(*((semaphore_t *)sem_struct));
+#else
+	sem_post((sem_t *)sem_struct);
+#endif
+}
+
+void freerdp_sem_wait(void * sem_struct)
+{
+#ifdef __APPLE__
+	semaphore_wait(*((semaphore_t *)sem_struct));
+#else
+	sem_wait((sem_t *)sem_struct);
+#endif
+}
 
 static int
 set_default_params(xfInfo * xfi)
@@ -628,7 +661,7 @@ thread_func(void * arg)
 	g_thread_count--;
 	if (g_thread_count < 1)
 	{
-		sem_post(g_sem);
+		freerdp_sem_signal(&g_sem);
 	}
 	return NULL;
 }
@@ -637,7 +670,6 @@ int
 main(int argc, char ** argv)
 {
 	int rv;
-	pid_t pid;
 	xfInfo * xfi;
 	pthread_t thread;
 	int index = 1;
@@ -654,15 +686,8 @@ main(int argc, char ** argv)
 		return 1;
 	}
 	freerdp_chanman_init();
-	
-	pid = getpid();
-	sprintf(g_sem_name, "xfreerdp_%d", pid);
-	g_sem = sem_open(g_sem_name, O_CREAT, 0, 0);
-	if (g_sem == SEM_FAILED)
-	{
-		printf("Error calling 'sem_open: %s'\n", strerror(errno));
-		return 1;
-	}
+
+	freerdp_sem_create(&g_sem, 0);
 	
 	while (1)
 	{
@@ -691,9 +716,8 @@ main(int argc, char ** argv)
 	if (g_thread_count > 0)
 	{
 		printf("main thread, waiting for all threads to exit\n");
-		sem_wait(g_sem);
+		freerdp_sem_wait(&g_sem);
 		printf("main thread, all threads did exit\n");
-		sem_unlink(g_sem_name);
 	}
 
 	freerdp_chanman_uninit();
