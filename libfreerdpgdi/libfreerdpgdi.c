@@ -186,8 +186,8 @@ HRGN CreateRectRgn(int nLeftRect, int nTopRect, int nRightRect, int nBottomRect)
 	hRgn->objectType = GDIOBJ_REGION;
 	hRgn->x = nLeftRect;
 	hRgn->y = nTopRect;
-	hRgn->w = nRightRect - nLeftRect;
-	hRgn->h = nBottomRect - nTopRect;
+	hRgn->w = nRightRect - nLeftRect + 1;
+	hRgn->h = nBottomRect - nTopRect + 1;
 	hRgn->null = 0;
 	return hRgn;
 }
@@ -463,7 +463,7 @@ int ClipCoords(HDC hdc, int *x, int *y, int *w, int *h, int *srcx, int *srcy)
 
 		if (coords.left < clip.left)
 		{
-			dx = clip.left - coords.left;
+			dx = (clip.left - coords.left) + 1;
 			coords.left = clip.left;
 		}
 
@@ -472,7 +472,7 @@ int ClipCoords(HDC hdc, int *x, int *y, int *w, int *h, int *srcx, int *srcy)
 
 		if (coords.top < clip.top)
 		{
-			dy = clip.top - coords.top;
+			dy = (clip.top - coords.top) + 1;
 			coords.top = clip.top;
 		}
 
@@ -490,12 +490,22 @@ int ClipCoords(HDC hdc, int *x, int *y, int *w, int *h, int *srcx, int *srcy)
 		draw = 0;
 	}
 
-	if (srcx != NULL && dx > 0)
-		*srcx += dx;
+	if (srcx != NULL)
+	{
+		if (dx > 0)
+		{
+			*srcx += dx - 1;
+		}
+	}
 
-	if (srcy != NULL && dy > 0)
-		*srcy += dy;
-	
+	if (srcy != NULL)
+	{
+		if (dy > 0)
+		{
+			*srcy += dy - 1;
+		}
+	}
+
 	RectToCRgn(&coords, x, y, w, h);
 	
 	return draw;
@@ -503,7 +513,9 @@ int ClipCoords(HDC hdc, int *x, int *y, int *w, int *h, int *srcx, int *srcy)
 
 int InvalidateRegion(HDC hdc, int x, int y, int w, int h)
 {
-	HRGN rgn;
+	RECT inv;
+	RECT rgn;
+	HRGN invalid;
 	HBITMAP bmp;
 
 	if (hdc->hwnd == NULL)
@@ -512,54 +524,42 @@ int InvalidateRegion(HDC hdc, int x, int y, int w, int h)
 	if (hdc->hwnd->invalid == NULL)
 		return 0;
 
-	rgn = hdc->hwnd->invalid;
+	invalid = hdc->hwnd->invalid;
 	bmp = (HBITMAP) hdc->selectedObject;
 
-	if (rgn->null)
+	if (invalid->null)
 	{
-		rgn->x = x;
-		rgn->y = y;
-		rgn->w = w;
-		rgn->h = h;
-		rgn->null = 0;
+		invalid->x = x;
+		invalid->y = y;
+		invalid->w = w;
+		invalid->h = h;
+		invalid->null = 0;
 		return 0;
 	}
+
+	CRgnToRect(x, y, w, h, &rgn);
+	RgnToRect(invalid, &inv);
+
+	if (rgn.left < 0)
+		rgn.left = 0;
+
+	if (rgn.top < 0)
+		rgn.top = 0;
+
+	if (rgn.left < inv.left)
+		inv.left = rgn.left;
+
+	if (rgn.top < inv.top)
+		inv.top = rgn.top;
+
+	if (rgn.right > inv.right)
+		inv.right = rgn.right;
+
+	if (rgn.bottom > inv.bottom)
+		inv.bottom = rgn.bottom;
+
+	RectToRgn(&inv, invalid);
 	
-	if (x < 0)
-		x = 0;
-	if (y < 0)
-		y = 0;
-
-	if (x + w > bmp->width)
-		w = bmp->width - x;
-	if (y + h > bmp->height)
-		h = bmp->height - y;
-
-	if (w * h == 0)
-		return 0;
-	
-	if (x < rgn->x)
-	{
-		rgn->w += (rgn->x - x);
-		rgn->x = x;
-	}
-
-	if (y < rgn->y)
-	{
-		rgn->h += (rgn->y - y);
-		rgn->y = y;
-	}
-
-	if (x + w > rgn->x + rgn->w)
-	{
-		rgn->w = (x + w) - rgn->x;
-	}
-	
-	if (y + h > rgn->y + rgn->h)
-	{
-		rgn->h = (y + h) - rgn->y;
-	}
-
 	return 0;
 }
 

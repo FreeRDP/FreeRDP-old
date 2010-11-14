@@ -571,8 +571,8 @@ void test_CreateRectRgn(void)
 	CU_ASSERT(hRegion->objectType == GDIOBJ_REGION);
 	CU_ASSERT(hRegion->x == x1);
 	CU_ASSERT(hRegion->y == y1);
-	CU_ASSERT(hRegion->w == x2 - x1);
-	CU_ASSERT(hRegion->h == y2 - y1);
+	CU_ASSERT(hRegion->w == x2 - x1 + 1);
+	CU_ASSERT(hRegion->h == y2 - y1 + 1);
 	CU_ASSERT(hRegion->null == 0);
 
 	DeleteObject((HGDIOBJ) hRegion);
