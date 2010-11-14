@@ -456,8 +456,8 @@ int ClipCoords(HDC hdc, int *x, int *y, int *w, int *h, int *srcx, int *srcy)
 
 	CRgnToRect(*x, *y, *w, *h, &coords);
 
-	if (coords.right > clip.left && coords.left < clip.right &&
-		coords.bottom > clip.top && coords.top < clip.bottom)
+	if (coords.right >= clip.left && coords.left <= clip.right &&
+		coords.bottom >= clip.top && coords.top <= clip.bottom)
 	{
 		/* coordinates overlap with clipping region */
 
