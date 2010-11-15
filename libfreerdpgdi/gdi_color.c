@@ -78,27 +78,51 @@ gdi_image_convert(char* srcData, int width, int height, int srcBpp, int dstBpp, 
 	
 	if (srcBpp == dstBpp)
 	{
-#ifdef USE_ALPHA
-		int x, y;
-		char *dstp;
-
-		dstData = (char*) malloc(width * height * 4);
-		memcpy(dstData, srcData, width * height * 4);
-		
-		dstp = dstData;
-		for (y = 0; y < height; y++)
+		if (dstBpp == 32)
 		{
-			for (x = 0; x < width * 4; x += 4)
+#ifdef USE_ALPHA
+			int x, y;
+			char *dstp;
+
+			dstData = (char*) malloc(width * height * 4);
+			memcpy(dstData, srcData, width * height * 4);
+
+			dstp = dstData;
+			for (y = 0; y < height; y++)
 			{
-				dstp += 3;
-				*dstp = 0xFF;
-				dstp++;
+				for (x = 0; x < width * 4; x += 4)
+				{
+					dstp += 3;
+					*dstp = 0xFF;
+					dstp++;
+				}
 			}
-		}
 #else
-		dstData = (char*) malloc(width * height * 4);
-		memcpy(dstData, srcData, width * height * 4);
+			dstData = (char*) malloc(width * height * 4);
+			memcpy(dstData, srcData, width * height * 4);
 #endif
+		}
+		else if (dstBpp == 16)
+		{
+			dstData = (char*) malloc(width * height * 2);
+#ifdef GDI_SWAP_16BPP
+			src16 = (uint16*) srcData;
+			dst16 = (uint16*) dstData;
+			for (index = width * height; index > 0; index--)
+			{
+				*dst16 = (*src16 >> 8) | (*src16 << 8);
+				src16++;
+				dst16++;
+			}
+#else
+			memcpy(dstData, srcData, width * height * 2);
+#endif
+		}
+		else
+		{
+			dstData = (char*) malloc(width * height * 4);
+			memcpy(dstData, srcData, width * height * 4);
+		}
 		return dstData;
 	}
 	if ((srcBpp == 24) && (dstBpp == 32))
