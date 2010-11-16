@@ -626,28 +626,42 @@ gdi_ui_patblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy
 	
 	if (brush->style == BS_PATTERN)
 	{
+		char* data;
 		HBITMAP hBmp;
 		HBRUSH originalBrush;
-		
-		hBmp = CreateBitmap(8, 8, gdi->drawing->hdc->bitsPerPixel,
-			(char*) gdi_image_convert((char*) brush->bd->data, 8, 8, gdi->srcBpp, gdi->dstBpp, gdi->palette));
 
-		originalBrush = gdi->drawing->hdc->brush;
-		gdi->drawing->hdc->brush = CreatePatternBrush(hBmp);
+		if (brush->bd == 0) /* RDP4 Brush */
+		{
 
-		PatBlt(gdi->drawing->hdc, x, y, cx, cy, gdi_rop3_code(opcode));
+		}
+		else if (brush->bd->color_code > 1) /*  > 1 bpp */
+		{
+			data = (char*) gdi_image_convert((char*) brush->bd->data, 8, 8, gdi->srcBpp, gdi->dstBpp, gdi->palette);
+			hBmp = CreateBitmap(8, 8, gdi->drawing->hdc->bitsPerPixel, data);
 
-		DeleteObject((HGDIOBJ) gdi->drawing->hdc->brush);
-		gdi->drawing->hdc->brush = originalBrush;
+			originalBrush = gdi->drawing->hdc->brush;
+			gdi->drawing->hdc->brush = CreatePatternBrush(hBmp);
+
+			PatBlt(gdi->drawing->hdc, x, y, cx, cy, gdi_rop3_code(opcode));
+
+			DeleteObject((HGDIOBJ) gdi->drawing->hdc->brush);
+			gdi->drawing->hdc->brush = originalBrush;
+		}
+		else
+		{
+
+		}
 	}
 	else if (brush->style == BS_SOLID)
 	{
+#if 0
 		gdi_color_convert(&(gdi->pixel), fgcolor, gdi->dstBpp, gdi->palette);
 		gdi->textColor = SetTextColor(gdi->drawing->hdc, PixelRGB(gdi->pixel));
 		
 		PatBlt(gdi->drawing->hdc, x, y, cx, cy, gdi_rop3_code(opcode));
 
 		SetTextColor(gdi->drawing->hdc, gdi->textColor);
+#endif
 	}
 	else
 	{
