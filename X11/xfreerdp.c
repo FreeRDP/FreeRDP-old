@@ -103,6 +103,7 @@ out_args(void)
 		"\t-D: hide window decorations\n"
 		"\t-z: enable bulk compression\n"
 		"\t-x: performance flags (m, b or l for modem, broadband or lan)\n"
+		"\t-X: embed into another window with a given XID.\n"
 #ifndef DISABLE_TLS
 		"\t--no-tls: disable TLS encryption\n"
 #endif
@@ -346,6 +347,19 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 			else
 			{
 				settings->performanceflags = strtol(argv[*pindex], 0, 16);
+			}
+		} else if (strcmp("-X", argv[*pindex]) == 0) {
+			*pindex = *pindex + 1;
+
+			if (*pindex == argc) {
+				printf("missing XID\n");
+				return 1;
+			}
+
+			xfi->embed = strtoul(argv[*pindex], NULL, 16);
+			if (!xfi->embed) {
+				printf("bad XID\n");
+				return 1;
 			}
 		}
 #ifndef DISABLE_TLS

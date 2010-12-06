@@ -1058,6 +1058,9 @@ xf_post_connect(xfInfo * xfi)
 		snprintf(win_title, sizeof(win_title), "%s:%d - freerdp", xfi->settings->server, xfi->settings->tcp_port_rdp);
 	XStoreName(xfi->display, xfi->wnd, win_title);
 
+	if (xfi->embed)
+		XReparentWindow(xfi->display, xfi->wnd, xfi->embed, 0, 0);
+
 	input_mask =
 		KeyPressMask | KeyReleaseMask | ButtonPressMask | ButtonReleaseMask |
 		VisibilityChangeMask | FocusChangeMask | StructureNotifyMask |

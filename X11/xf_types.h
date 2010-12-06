@@ -54,6 +54,7 @@ struct xf_info
 	int decoration;
 
 	/* X11 stuff */
+	Window embed;
 	Window wnd;
 	GC gc;
 	Display * display;
