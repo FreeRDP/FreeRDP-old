@@ -809,8 +809,7 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 
 	out_uint32_be(s, negotiateFlags); /* NegotiateFlags (4 bytes) */
 
-	/* MIC (16 bytes) */
-
+	/* MIC (16 bytes) - not used */
 
 	/* Payload (variable) */
 
@@ -826,7 +825,91 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 
 	out_uint8s(s, 24); /* LmChallengeResponse is left blank */
 
+	/* TODO: EncryptedRandomSessionKey */
 
+	/*
+	  Annotated AUTHENTICATE_MESSAGE Packet Sample:
+	
+	  4e 54 4c 4d 53 53 50 00 "NTLMSSP"
+	  03 00 00 00 MessageType
+	  18 00 LmChallengeResponseLen (24)
+	  18 00 LmChallengeResponseMaxLen (24)
+	  70 00 00 00 LmChallengeResponseBufferOffset (112)
+	  4a 01 NtChallengeResponseLen (330)
+	  4a 01 NtChallengeResponseMaxLen (330)
+	  88 00 00 00 NtChallengeResponseBufferOffset (136)
+	  08 00 DomainNameLen (8)
+	  08 00 DomainNameMaxLen (8)
+	  58 00 00 00 DomainNameBufferOffset (88)
+	  08 00 UserNameLen (8)
+	  08 00 UserNameMaxLen (8)
+	  60 00 00 00 UserNameBufferOffset (96)
+	  08 00 WorkstationLen (8)
+	  08 00 WorkstationMaxLen (8)
+	  68 00 00 00 WorkstationBufferOffset (104)
+	  10 00 EncryptedRandomSessionKeyLen (16)
+	  10 00 EncryptedRandomSessionKeyMaxLen (16)
+	  d2 01 00 00 EncryptedRandomSessionKeyBufferOffset (466)
+	  35 82 88 e2 NegotiateFlags
+	  06 01 b0 1d 00 00 00 0f Version (6.1, Build 7600)
+	  
+	  Payload (Offset 88)
+	
+	  e3 eb a3 eb 64 b2 29 f2 DomainName (Length 8, Offset 88)
+	  a6 a7 72 40 ec ba 3c 44 UserName (Length 8, Offset 96)
+	  57 00 69 00 6e 00 37 00 Workstation (Length 8, Offset 104)
+	  
+	  LmChallengeResponse (Length 24, Offset 112):
+	  75 00 73 00 65 00 72 00 57 00 49 00 4e 00 37 00 00 00 00 00 00 00 00 00
+	  
+	  NtChallengeResponse (Length 330, Offset 136):
+	  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	  38 1b b0 74 c5 5a 25 8a 7f 65 ba 23 c4 4a 8a 7a
+	  01 01 00 00 00 00 00 00 ec e8 26 e4 6b cc ca 01
+	  f3 4b f1 fb 28 99 4d 8d 00 00 00 00 02 00 1e 00
+	  57 00 49 00 4e 00 2d 00 30 00 38 00 51 00 39 00
+	  4b 00 51 00 46 00 50 00 50 00 4f 00 36 00 01 00
+	  1e 00 57 00 49 00 4e 00 2d 00 30 00 38 00 51 00
+	  39 00 4b 00 51 00 46 00 50 00 50 00 4f 00 36 00
+	  04 00 1e 00 57 00 49 00 4e 00 2d 00 30 00 38 00
+	  51 00 39 00 4b 00 51 00 46 00 50 00 50 00 4f 00
+	  36 00 03 00 1e 00 57 00 49 00 4e 00 2d 00 30 00
+	  38 00 51 00 39 00 4b 00 51 00 46 00 50 00 50 00
+	  4f 00 36 00 07 00 08 00 ec e8 26 e4 6b cc ca 01
+	  06 00 04 00 02 00 00 00 08 00 30 00 30 00 00 00
+	  00 00 00 00 01 00 00 00 00 20 00 00 ca 32 de 66
+	  8c 9d df a3 77 79 bc 93 61 78 9a c0 14 73 52 86
+	  26 da 9f 93 42 0c 3c a1 93 82 3a 01 0a 00 10 00
+	  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	  09 00 2a 00 54 00 45 00 52 00 4d 00 53 00 52 00
+	  56 00 2f 00 31 00 39 00 32 00 2e 00 31 00 36 00
+	  38 00 2e 00 31 00 2e 00 31 00 30 00 31 00 00 00
+	  00 00 00 00 00 00 00 00 00 00
+	  
+	  EncryptedRandomSessionKey (Length 16, Offset 466):
+	  2b eb c2 83 0b 82 85 6a 37 a3 7b aa 0c 39 e2 83
+	  
+	  Padding (Length 294, Offset 482):
+	  a3 82 01 22 04 82 01 1e 01 00 00 00 2f 2e e5 d3
+	  b3 11 34 1c 00 00 00 00 9e 94 9b 76 d8 42 31 65
+	  0a 0d ab b8 37 b0 32 9e 0d e1 7c 48 a6 20 8b f2
+	  49 6b 20 b6 00 ef 94 0c 78 46 4a 5a 3e c4 a3 15
+	  94 e7 49 b8 b2 f8 fb bf 83 b0 07 8b b3 1c 0b e8
+	  23 5c 25 d4 1b 2a 97 94 fa 6c cf 96 e9 08 a8 14
+	  0d bd 71 56 c9 d6 22 61 ab 6f b8 c7 e6 3f 0a 81
+	  fc 16 cb 9d 1e 87 64 b5 82 75 40 76 ac d0 99 dc
+	  fd ce 2c 9f f8 6f 6c 46 6c d7 f9 91 c6 51 9d 1b
+	  27 9b 83 29 c2 77 d4 6f cb e7 96 a2 76 6b eb ce
+	  ad ec 9a b9 2e 43 c5 5f 17 7f 2c f3 8b 27 ce 2e
+	  c3 9e 7c 5d 2a 6c dd 1b 88 aa df d7 14 c8 34 8a
+	  29 9b 7e 39 2a 4b d3 a0 13 cc 85 95 e1 12 5e 6a
+	  0e 87 31 91 85 86 0e 1b f6 44 06 5c 79 53 a5 7f
+	  38 88 4c f8 9f b1 2d f9 a8 3d cd c7 87 f9 62 71
+	  37 52 f6 c2 ee b3 ac ae 7b 33 6d 7b cb b4 02 0c
+	  cb 7e da 3a fe b5 91 20 c7 3e 4c 79 64 8a 25 4b
+	  1e 77 c3 d4 18 a4 2c 73 ba c0 b8 3e 61 3b d7 34
+	  eb 55 3c 97 eb 7b
+	*/
 }
 
 void ntlm_recv(rdpSec * sec, STREAM s)
