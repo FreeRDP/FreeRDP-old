@@ -386,15 +386,15 @@ void compute_lm_v2_response_random(char* password, char* username, char* server,
 
 void compute_ntlm_v2_response(char* password, char* username, char* server, uint8* challenge, char* info, int info_size, uint8* response)
 {
-	time_t t;
+	uint64 time64;
 	char timestamp[8];
 	char clientRandom[8];
 
-	/* Timestamp (8 bytes), represented as the number of 100 nanosecond ticks since midnight of January 1, 1601 */
-	/* This is tricky, as we need to do 64-bit arithmetic */
-	t = time(NULL);
-
-	/* TODO: implement 64-bit timestamp, which is the last step required to complete NTLMv2 Response */
+	/* Timestamp (8 bytes), represented as the number of tenths of microseconds since midnight of January 1, 1601 */
+	time64 = time(NULL) + 11644473600; /* Seconds since January 1, 1601 */
+	time64 *= 10000000; /* Convert timestamp to tenths of a microsecond */
+	
+	memcpy(timestamp, &timestamp, 8); /* Copy into timestamp in little-endian */
 
 	/* Generate an 8-byte client random */
 	RAND_bytes((void*)clientRandom, 8);
