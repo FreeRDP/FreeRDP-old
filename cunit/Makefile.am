@@ -5,9 +5,10 @@ bin_PROGRAMS = test_freerdp
 
 test_freerdp_SOURCES = \
 	test_freerdp.c \
+	test_credssp.c \
 	test_libfreerdpgdi.c
 
-test_freerdp_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include -I$(top_srcdir)/libfreerdpgdi
+test_freerdp_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include -I$(top_srcdir)/libfreerdp -I$(top_srcdir)/libfreerdpgdi
 
 test_freerdp_LDADD = \
 	../libfreerdp/libfreerdp.la \

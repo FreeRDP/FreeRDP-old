@@ -176,7 +176,6 @@ void credssp_recv(rdpSec * sec)
 	}
 }
 
-#ifdef COMPILE_UNUSED_CODE
 static int get_bit(char* buffer, int bit)
 {
 	return (buffer[(bit - (bit % 8)) / 8] >> (7 - bit % 8) & 1);
@@ -253,7 +252,7 @@ static void compute_lm_hash(char* password, char* hash)
 	DES_ecb_encrypt((const_DES_cblock*)lm_magic, (DES_cblock*)&hash[8], &ks, DES_ENCRYPT);
 }
 
-static void compute_lm_response(char* password, char* challenge, char* response)
+void compute_lm_response(char* password, char* challenge, char* response)
 {
 	char hash[21];
 	char des_key1[8];
@@ -281,7 +280,7 @@ static void compute_lm_response(char* password, char* challenge, char* response)
 	DES_ecb_encrypt((const_DES_cblock*)challenge, (DES_cblock*)&response[16], &ks, DES_ENCRYPT);
 }
 
-static void compute_ntlm_hash(char* password, char* hash)
+void compute_ntlm_hash(char* password, char* hash)
 {
 	/* NTLM("password") = 8846F7EAEE8FB117AD06BDD830B7586C */
 
@@ -310,7 +309,7 @@ static void compute_ntlm_hash(char* password, char* hash)
 	free(wstr_password);
 }
 
-static void compute_ntlm_v2_hash(char* password, char* username, char* server, char* hash)
+void compute_ntlm_v2_hash(char* password, char* username, char* server, char* hash)
 {
 	int i;
 	int user_length;
@@ -356,60 +355,95 @@ static void compute_ntlm_v2_hash(char* password, char* username, char* server, c
 	free(value);
 }
 
-static void compute_lm_v2_response(char* password, char* username, char* server, uint8* challenge, uint8* response)
+void compute_lm_v2_response(char* password, char* username, char* server, uint8* challenge, uint8* response)
+{
+	char clientRandom[8];
+
+	/* Generate an 8-byte client random */
+	RAND_bytes((void*)clientRandom, 8);
+
+	compute_lm_v2_response_random(password, username, server, challenge, response, clientRandom);
+}
+
+void compute_lm_v2_response_random(char* password, char* username, char* server, uint8* challenge, uint8* response, char* random)
 {
 	char ntlm_v2_hash[16];
-	char clientRandom[8];
 	char value[16];
 
 	/* Compute the NTLMv2 hash */
 	compute_ntlm_v2_hash(password, username, server, ntlm_v2_hash);
 
-	/* Generate an 8-byte client random */
-	RAND_bytes((void*)clientRandom, 8);
-
 	/* Concatenate the server and client challenges */
 	memcpy(value, challenge, 8);
-	memcpy(&value[8], clientRandom, 8);
+	memcpy(&value[8], random, 8);
 
 	/* Compute the HMAC-MD5 hash of the resulting value using the NTLMv2 hash as the key */
 	HMAC(EVP_md5(), (void*)ntlm_v2_hash, 16, (void*)value, 16, (void*)response, NULL);
 
 	/* Concatenate the resulting HMAC-MD5 hash and the client random, giving us the LMv2 response (24 bytes) */
-	memcpy(&response[16], clientRandom, 8);
+	memcpy(&response[16], random, 8);
 }
 
-static void compute_ntlm_v2_response(char* password, char* username, char* server, uint8* challenge, uint8* response)
+void compute_ntlm_v2_response(char* password, char* username, char* server, uint8* challenge, char* info, int info_size, uint8* response)
 {
 	time_t t;
+	char timestamp[8];
 	char clientRandom[8];
-	char ntlm_v2_hash[16];
-	char ntlm_v2_client_challenge[28];
-
-	/* Compute the NTLMv2 hash */
-	compute_ntlm_v2_hash(password, username, server, ntlm_v2_hash);
-
-	/* Generate an 8-byte client random */
-	RAND_bytes((void*)clientRandom, 8);
 
 	/* Timestamp (8 bytes), represented as the number of 100 nanosecond ticks since midnight of January 1, 1601 */
 	/* This is tricky, as we need to do 64-bit arithmetic */
 	t = time(NULL);
 
-	/* NTLMv2_CLIENT_CHALLENGE */
-	memset(ntlm_v2_client_challenge, '\0', sizeof(ntlm_v2_client_challenge));
+	/* TODO: implement 64-bit timestamp, which is the last step required to complete NTLMv2 Response */
 
-	ntlm_v2_client_challenge[0] = 1; /* RespType (1 byte) */
-	ntlm_v2_client_challenge[1] = 1; /* HighRespType (1 byte) */
+	/* Generate an 8-byte client random */
+	RAND_bytes((void*)clientRandom, 8);
+
+	compute_ntlm_v2_response_random(password, username, server, challenge, info, info_size, response, clientRandom, timestamp);
+}
+
+void compute_ntlm_v2_response_random(char* password, char* username, char* server, uint8* challenge, char* info, int info_size, uint8* response, char* random, char* timestamp)
+{
+	int blob_size;
+	char* ntlm_v2_blob;
+	char ntlm_v2_hash[16];
+	char* ntlm_v2_challenge_blob;
+
+	blob_size = 32 + info_size;
+	ntlm_v2_blob = malloc(blob_size);
+
+	/* Compute the NTLMv2 hash */
+	compute_ntlm_v2_hash(password, username, server, ntlm_v2_hash);
+
+	/* NTLMv2_CLIENT_CHALLENGE */
+	memset(ntlm_v2_blob, '\0', blob_size);
+
+	ntlm_v2_blob[0] = 1; /* RespType (1 byte) */
+	ntlm_v2_blob[1] = 1; /* HighRespType (1 byte) */
 	/* Reserved1 (2 bytes) */
 	/* Reserved2 (4 bytes) */
-	/* Timestamp (8 bytes) */
-	memcpy(&ntlm_v2_client_challenge[16], clientRandom, 8); /* ChallengeFromClient (8 bytes) */
+	memcpy(&ntlm_v2_blob[8], timestamp, 8); /* Timestamp (8 bytes) */
+	memcpy(&ntlm_v2_blob[16], random, 8); /* ChallengeFromClient (8 bytes) */
 	/* Reserved3 (4 bytes) */
-}
-#endif
+	memcpy(&ntlm_v2_blob[28], info, info_size);
+	/* Reserved4 (4 bytes) */
 
-static void ntlm_input_av_pairs(STREAM s, AV_PAIRS* av_pairs)
+	/* Concatenate challenge with blob */
+	ntlm_v2_challenge_blob = malloc(blob_size + 8);
+	memcpy(ntlm_v2_challenge_blob, challenge, 8);
+	memcpy(&ntlm_v2_challenge_blob[8], ntlm_v2_blob, blob_size);
+
+	/* Compute the HMAC-MD5 hash of the resulting value using the NTLMv2 hash as the key */
+	HMAC(EVP_md5(), (void*) ntlm_v2_hash, 16, (void*) ntlm_v2_challenge_blob, blob_size + 8, (void*) response, NULL);
+
+	/* Concatenate resulting HMAC-MD5 with blob to obtain NTLMv2 response */
+	memcpy(&response[16], ntlm_v2_blob, blob_size);
+
+	free(ntlm_v2_challenge_blob);
+	free(ntlm_v2_blob);
+}
+
+void ntlm_input_av_pairs(STREAM s, AV_PAIRS* av_pairs)
 {
 	AV_ID AvId;
 	uint16 AvLen;
@@ -488,7 +522,6 @@ static void ntlm_input_av_pairs(STREAM s, AV_PAIRS* av_pairs)
 	while(AvId != MsvAvEOL);
 }
 
-#ifdef COMPILE_UNUSED_CODE
 static void ntlm_output_av_pairs(STREAM s, AV_PAIRS* av_pairs)
 {
 	if (av_pairs->NbComputerName.length > 0)
@@ -563,7 +596,6 @@ static void ntlm_output_av_pairs(STREAM s, AV_PAIRS* av_pairs)
 	out_uint16_le(s, MsvAvEOL); /* AvId */
 	out_uint16_le(s, 0); /* AvLen */
 }
-#endif
 
 static void ntlm_free_av_pairs(AV_PAIRS* av_pairs)
 {
