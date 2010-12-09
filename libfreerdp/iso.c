@@ -134,10 +134,15 @@ x224_send_connection_request(rdpIso * iso, char *username)
 
 	if (iso->mcs->sec->requested_protocol > PROTOCOL_RDP)
 	{
+		uint32 requestedProtocols = PROTOCOL_TLS;
+
+		if (iso->mcs->sec->requested_protocol == PROTOCOL_NLA)
+			requestedProtocols |= PROTOCOL_NLA;
+
 		out_uint8(s, TYPE_RDP_NEG_REQ); /* When using TLS, NLA, or both, RDP_NEG_DATA should be present */
 		out_uint8(s, 0x00);	/* flags, must be set to zero */
 		out_uint16_le(s, 8);	/* RDP_NEG_DATA length (8) */
-		out_uint32_le(s, iso->mcs->sec->requested_protocol); /* requestedProtocols */
+		out_uint32_le(s, requestedProtocols); /* requestedProtocols */
 	}
 
 	s_mark_end(s);

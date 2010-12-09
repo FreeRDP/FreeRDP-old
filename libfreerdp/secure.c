@@ -971,7 +971,7 @@ sec_connect(rdpSec * sec, char *server, char *username, int port)
 	/* Don't forget to set this *before* iso_connect(), otherwise you'll bang your head on the wall */
 
 	if (sec->rdp->settings->tls)
-		sec->requested_protocol = PROTOCOL_TLS;
+		sec->requested_protocol = PROTOCOL_NLA;
 	else
 		sec->requested_protocol = PROTOCOL_RDP;
 
@@ -982,13 +982,15 @@ sec_connect(rdpSec * sec, char *server, char *username, int port)
 	if(sec->negotiated_protocol == PROTOCOL_NLA)
 	{
 		/* TLS with NLA was successfully negotiated */
+		RD_BOOL success;
 		printf("TLS encryption with NLA negotiated\n");
 		sec->ctx = tls_create_context();
 		sec->ssl = tls_connect(sec->ctx, sec->mcs->iso->tcp->sock, server);
 		sec->tls_connected = 1;
-		ntlm_send_negotiate_message(sec);
-		credssp_recv(sec);
-		exit(0); /* not implemented from this point */
+		sec->rdp->settings->encryption = 0;
+		credssp_authenticate(sec);
+		///success = mcs_connect(sec->mcs);
+		return 1;
 	}
 	else if(sec->negotiated_protocol == PROTOCOL_TLS)
 	{

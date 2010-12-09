@@ -88,6 +88,14 @@ asn1_write(const void *buffer, size_t size, void *fd)
 	return 0;
 }
 
+int credssp_authenticate(rdpSec * sec)
+{
+	ntlm_send_negotiate_message(sec);
+	credssp_recv(sec);
+	ntlm_send_authenticate_message(sec);
+	return 1;
+}
+
 void credssp_send(rdpSec * sec, STREAM s)
 {
 	TSRequest_t *ts_request;
@@ -976,7 +984,7 @@ nla_new(struct rdp_sec * sec)
 		memset(self, 0, sizeof(rdpNla));
 		self->sec = sec;
 		self->target_info_av_pairs = (AV_PAIRS*)xmalloc(sizeof(AV_PAIRS));
-		memset(self->target_info, 0, sizeof(AV_PAIRS));
+		memset(self->target_info_av_pairs, 0, sizeof(AV_PAIRS));
 	}
 	return self;
 }
