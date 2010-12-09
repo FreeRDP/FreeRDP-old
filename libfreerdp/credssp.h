@@ -86,13 +86,13 @@ ntlm_send_authenticate_message(rdpSec * sec);
 void
 ntlm_recv(rdpSec * sec, STREAM s);
 
-void compute_ntlm_hash(char* password, char* hash);
-void compute_ntlm_v2_hash(char* password, char* username, char* server, char* hash);
-void compute_lm_response(char* password, char* challenge, char* response);
-void compute_lm_v2_response(char* password, char* username, char* server, uint8* challenge, uint8* response);
-void compute_lm_v2_response_random(char* password, char* username, char* server, uint8* challenge, uint8* response, char* random);
-void compute_ntlm_v2_response(char* password, char* username, char* server, uint8* challenge, char* info, int info_size, uint8* response);
-void compute_ntlm_v2_response_random(char* password, char* username, char* server, uint8* challenge, char* info, int info_size, uint8* response, char* random, char* timestamp);
+void credssp_ntlm_hash(char* password, char* hash);
+void credssp_ntlm_v2_hash(char* password, char* username, char* server, char* hash);
+void credssp_lm_response(char* password, char* challenge, char* response);
+void credssp_lm_v2_response(char* password, char* username, char* server, uint8* challenge, uint8* response);
+void credssp_lm_v2_response_random(char* password, char* username, char* server, uint8* challenge, uint8* response, char* random);
+void credssp_ntlm_v2_response(char* password, char* username, char* server, uint8* challenge, char* info, int info_size, uint8* response, uint8* session_key);
+void credssp_ntlm_v2_response_random(char* password, char* username, char* server, uint8* challenge, char* info, int info_size, uint8* response, uint8* session_key, char* random, char* timestamp);
 
 rdpNla *
 nla_new(rdpSec * sec);

@@ -186,7 +186,7 @@ static void set_bit(char* buffer, int bit, int value)
 	buffer[(bit - (bit % 8)) / 8] |= value << (7 - bit % 8);
 }
 
-static void compute_des_key(char* text, char* des_key)
+static void credssp_des_key(char* text, char* des_key)
 {
 	int i, j;
 	int bit;
@@ -216,7 +216,7 @@ static void compute_des_key(char* text, char* des_key)
 	}
 }
 
-static void compute_lm_hash(char* password, char* hash)
+static void credssp_lm_hash(char* password, char* hash)
 {
 	int i;
 	int maxlen;
@@ -242,8 +242,8 @@ static void compute_lm_hash(char* password, char* hash)
 	for (i = maxlen; i < 14; i++)
 		text[i] = '\0';
 
-	compute_des_key(text, des_key1);
-	compute_des_key(&text[7], des_key2);
+	credssp_des_key(text, des_key1);
+	credssp_des_key(&text[7], des_key2);
 
 	DES_set_key((const_DES_cblock*)des_key1, &ks);
 	DES_ecb_encrypt((const_DES_cblock*)lm_magic, (DES_cblock*)hash, &ks, DES_ENCRYPT);
@@ -252,7 +252,7 @@ static void compute_lm_hash(char* password, char* hash)
 	DES_ecb_encrypt((const_DES_cblock*)lm_magic, (DES_cblock*)&hash[8], &ks, DES_ENCRYPT);
 }
 
-void compute_lm_response(char* password, char* challenge, char* response)
+void credssp_lm_response(char* password, char* challenge, char* response)
 {
 	char hash[21];
 	char des_key1[8];
@@ -262,12 +262,12 @@ void compute_lm_response(char* password, char* challenge, char* response)
 
 	/* A LM hash is 16-bytes long, but the LM response uses a LM hash null-padded to 21 bytes */
 	memset(hash, '\0', 21);
-	compute_lm_hash(password, hash);
+	credssp_lm_hash(password, hash);
 
 	/* Each 7-byte third of the 21-byte null-padded LM hash is used to create a DES key */
-	compute_des_key(hash, des_key1);
-	compute_des_key(&hash[7], des_key2);
-	compute_des_key(&hash[14], des_key3);
+	credssp_des_key(hash, des_key1);
+	credssp_des_key(&hash[7], des_key2);
+	credssp_des_key(&hash[14], des_key3);
 
 	/* Encrypt the LM challenge with each key, and concatenate the result. This is the LM response (24 bytes) */
 	DES_set_key((const_DES_cblock*)des_key1, &ks);
@@ -280,7 +280,7 @@ void compute_lm_response(char* password, char* challenge, char* response)
 	DES_ecb_encrypt((const_DES_cblock*)challenge, (DES_cblock*)&response[16], &ks, DES_ENCRYPT);
 }
 
-void compute_ntlm_hash(char* password, char* hash)
+void credssp_ntlm_hash(char* password, char* hash)
 {
 	/* NTLM("password") = 8846F7EAEE8FB117AD06BDD830B7586C */
 
@@ -309,7 +309,7 @@ void compute_ntlm_hash(char* password, char* hash)
 	free(wstr_password);
 }
 
-void compute_ntlm_v2_hash(char* password, char* username, char* server, char* hash)
+void credssp_ntlm_v2_hash(char* password, char* username, char* server, char* hash)
 {
 	int i;
 	int user_length;
@@ -326,7 +326,7 @@ void compute_ntlm_v2_hash(char* password, char* username, char* server, char* ha
 	value = malloc(value_length * 2);
 
 	/* First, compute the NTLMv1 hash of the password */
-	compute_ntlm_hash(password, ntlm_hash);
+	credssp_ntlm_hash(password, ntlm_hash);
 
 	/* Concatenate the username and server name in uppercase unicode */
 	for (i = 0; i < user_length; i++)
@@ -355,23 +355,23 @@ void compute_ntlm_v2_hash(char* password, char* username, char* server, char* ha
 	free(value);
 }
 
-void compute_lm_v2_response(char* password, char* username, char* server, uint8* challenge, uint8* response)
+void credssp_lm_v2_response(char* password, char* username, char* server, uint8* challenge, uint8* response)
 {
 	char clientRandom[8];
 
 	/* Generate an 8-byte client random */
 	RAND_bytes((void*)clientRandom, 8);
 
-	compute_lm_v2_response_random(password, username, server, challenge, response, clientRandom);
+	credssp_lm_v2_response_random(password, username, server, challenge, response, clientRandom);
 }
 
-void compute_lm_v2_response_random(char* password, char* username, char* server, uint8* challenge, uint8* response, char* random)
+void credssp_lm_v2_response_random(char* password, char* username, char* server, uint8* challenge, uint8* response, char* random)
 {
 	char ntlm_v2_hash[16];
 	char value[16];
 
 	/* Compute the NTLMv2 hash */
-	compute_ntlm_v2_hash(password, username, server, ntlm_v2_hash);
+	credssp_ntlm_v2_hash(password, username, server, ntlm_v2_hash);
 
 	/* Concatenate the server and client challenges */
 	memcpy(value, challenge, 8);
@@ -384,7 +384,7 @@ void compute_lm_v2_response_random(char* password, char* username, char* server,
 	memcpy(&response[16], random, 8);
 }
 
-void compute_ntlm_v2_response(char* password, char* username, char* server, uint8* challenge, char* info, int info_size, uint8* response)
+void credssp_ntlm_v2_response(char* password, char* username, char* server, uint8* challenge, char* info, int info_size, uint8* response, uint8* session_key)
 {
 	uint64 time64;
 	char timestamp[8];
@@ -399,10 +399,10 @@ void compute_ntlm_v2_response(char* password, char* username, char* server, uint
 	/* Generate an 8-byte client random */
 	RAND_bytes((void*)clientRandom, 8);
 
-	compute_ntlm_v2_response_random(password, username, server, challenge, info, info_size, response, clientRandom, timestamp);
+	credssp_ntlm_v2_response_random(password, username, server, challenge, info, info_size, response, session_key, clientRandom, timestamp);
 }
 
-void compute_ntlm_v2_response_random(char* password, char* username, char* server, uint8* challenge, char* info, int info_size, uint8* response, char* random, char* timestamp)
+void credssp_ntlm_v2_response_random(char* password, char* username, char* server, uint8* challenge, char* info, int info_size, uint8* response, uint8* session_key, char* random, char* timestamp)
 {
 	int blob_size;
 	char* ntlm_v2_blob;
@@ -413,7 +413,7 @@ void compute_ntlm_v2_response_random(char* password, char* username, char* serve
 	ntlm_v2_blob = malloc(blob_size);
 
 	/* Compute the NTLMv2 hash */
-	compute_ntlm_v2_hash(password, username, server, ntlm_v2_hash);
+	credssp_ntlm_v2_hash(password, username, server, ntlm_v2_hash);
 
 	/* NTLMv2_CLIENT_CHALLENGE */
 	memset(ntlm_v2_blob, '\0', blob_size);
@@ -435,6 +435,13 @@ void compute_ntlm_v2_response_random(char* password, char* username, char* serve
 
 	/* Compute the HMAC-MD5 hash of the resulting value using the NTLMv2 hash as the key */
 	HMAC(EVP_md5(), (void*) ntlm_v2_hash, 16, (void*) ntlm_v2_challenge_blob, blob_size + 8, (void*) response, NULL);
+
+	/* Compute NTLMv2 User Session Key */
+	if (session_key != NULL)
+	{
+		/* Compute the HMAC-MD5 hash of the resulting value a second time using the NTLMv2 hash as the key */
+		HMAC(EVP_md5(), (void*) ntlm_v2_hash, 16, (void*) response, 16, (void*) session_key, NULL);
+	}
 
 	/* Concatenate resulting HMAC-MD5 with blob to obtain NTLMv2 response */
 	memcpy(&response[16], ntlm_v2_blob, blob_size);
