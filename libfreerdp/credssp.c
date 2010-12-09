@@ -384,7 +384,7 @@ void credssp_lm_v2_response_random(char* password, char* username, char* server,
 	memcpy(&response[16], random, 8);
 }
 
-void credssp_ntlm_v2_response(char* password, char* username, char* server, uint8* challenge, char* info, int info_size, uint8* response, uint8* session_key)
+void credssp_ntlm_v2_response(char* password, char* username, char* server, uint8* challenge, uint8* info, int info_size, uint8* response, uint8* session_key)
 {
 	uint64 time64;
 	char timestamp[8];
@@ -402,7 +402,7 @@ void credssp_ntlm_v2_response(char* password, char* username, char* server, uint
 	credssp_ntlm_v2_response_random(password, username, server, challenge, info, info_size, response, session_key, clientRandom, timestamp);
 }
 
-void credssp_ntlm_v2_response_random(char* password, char* username, char* server, uint8* challenge, char* info, int info_size, uint8* response, uint8* session_key, char* random, char* timestamp)
+void credssp_ntlm_v2_response_random(char* password, char* username, char* server, uint8* challenge, uint8* info, int info_size, uint8* response, uint8* session_key, char* random, char* timestamp)
 {
 	int blob_size;
 	char* ntlm_v2_blob;
@@ -529,6 +529,8 @@ void ntlm_input_av_pairs(STREAM s, AV_PAIRS* av_pairs)
 	while(AvId != MsvAvEOL);
 }
 
+#ifdef COMPILE_UNUSED_CODE
+
 static void ntlm_output_av_pairs(STREAM s, AV_PAIRS* av_pairs)
 {
 	if (av_pairs->NbComputerName.length > 0)
@@ -603,6 +605,8 @@ static void ntlm_output_av_pairs(STREAM s, AV_PAIRS* av_pairs)
 	out_uint16_le(s, MsvAvEOL); /* AvId */
 	out_uint16_le(s, 0); /* AvLen */
 }
+
+#endif
 
 static void ntlm_free_av_pairs(AV_PAIRS* av_pairs)
 {
@@ -726,7 +730,10 @@ void ntlm_recv_challenge_message(rdpSec * sec, STREAM s)
 	if (targetInfoLen > 0)
 	{
 		s->p = &(s->data[targetInfoBufferOffset]);
-		ntlm_input_av_pairs(s, sec->nla->target_info);
+		sec->nla->target_info = malloc(targetInfoLen);
+		sec->nla->target_info_length = targetInfoLen;
+		memcpy(sec->nla->target_info, s->p, targetInfoLen);
+		ntlm_input_av_pairs(s, sec->nla->target_info_av_pairs);
 	}
 }
 
@@ -749,6 +756,9 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 	uint32 NtChallengeResponseBufferOffset;
 	uint32 EncryptedRandomSessionKeyBufferOffset;
 
+	uint8* NtChallengeResponseBuffer;
+	uint8* EncryptedRandomSessionKeyBuffer;
+
 	rdpSet *settings;
 	void * p;
 	size_t len;
@@ -759,8 +769,8 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 	DomainNameLen = strlen(settings->domain) * 2;
 	UserNameLen = strlen(settings->username) * 2;
 	WorkstationLen = strlen(settings->domain) * 2;
-	LmChallengeResponseLen = 24;
-	NtChallengeResponseLen = 0;
+	LmChallengeResponseLen = 0;
+	NtChallengeResponseLen = sec->nla->target_info_length + 48;
 	EncryptedRandomSessionKeyLen = 16;
 
 	DomainNameBufferOffset = 88; /* starting buffer offset */
@@ -769,6 +779,9 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 	LmChallengeResponseBufferOffset = WorkstationBufferOffset + WorkstationLen;
 	NtChallengeResponseBufferOffset = LmChallengeResponseBufferOffset + LmChallengeResponseLen;
 	EncryptedRandomSessionKeyBufferOffset = NtChallengeResponseBufferOffset + NtChallengeResponseLen;
+
+	NtChallengeResponseBuffer = (uint8*) malloc(NtChallengeResponseLen);
+	EncryptedRandomSessionKeyBuffer = (uint8*) malloc(EncryptedRandomSessionKeyLen);
 
 	out_uint8a(s, ntlm_signature, 8); /* Signature (8 bytes) */
 	out_uint32_le(s, 1); /* MessageType */
@@ -830,9 +843,12 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 	out_uint8a(s, p, len + 2);
 	xfree(p);
 
-	out_uint8s(s, 24); /* LmChallengeResponse is left blank */
+	credssp_ntlm_v2_response(settings->password, settings->username, settings->domain,
+		sec->nla->server_challenge, sec->nla->target_info, sec->nla->target_info_length,
+		NtChallengeResponseBuffer, EncryptedRandomSessionKeyBuffer);
 
-	/* TODO: EncryptedRandomSessionKey */
+	out_uint8p(s, NtChallengeResponseBuffer, NtChallengeResponseLen);
+	out_uint8p(s, EncryptedRandomSessionKeyBuffer, EncryptedRandomSessionKeyLen);
 
 	/*
 	  Annotated AUTHENTICATE_MESSAGE Packet Sample:
@@ -959,7 +975,7 @@ nla_new(struct rdp_sec * sec)
 	{
 		memset(self, 0, sizeof(rdpNla));
 		self->sec = sec;
-		self->target_info = (AV_PAIRS*)xmalloc(sizeof(AV_PAIRS));
+		self->target_info_av_pairs = (AV_PAIRS*)xmalloc(sizeof(AV_PAIRS));
 		memset(self->target_info, 0, sizeof(AV_PAIRS));
 	}
 	return self;
@@ -970,7 +986,10 @@ nla_free(rdpNla * nla)
 {
 	if (nla != NULL)
 	{
-		ntlm_free_av_pairs(nla->target_info);
+		if (nla->target_info)
+			free(nla->target_info);
+
+		ntlm_free_av_pairs(nla->target_info_av_pairs);
 		xfree(nla);
 	}
 }
