@@ -102,7 +102,7 @@ void test_credssp_lm_v2_response(void)
 	char random[] = "\xFF\xFF\xFF\x00\x11\x22\x33\x44";
 	char expected_lm_v2_response[24] = "\xD6\xE6\x15\x2E\xA2\x5D\x03\xB7\xC6\xBA\x66\x29\xC2\xD6\xAA\xF0\xFF\xFF\xFF\x00\x11\x22\x33\x44";
 
-	credssp_lm_v2_response_random(password, username, server, (uint8*) challenge, (uint8*) lm_v2_response, random);
+	credssp_lm_v2_response_static(password, username, server, (uint8*) challenge, (uint8*) lm_v2_response, random);
 
 	lm_v2_response_good = 1;
 	for (i = 0; i < 24; i++) {
@@ -157,7 +157,7 @@ void test_credssp_ntlm_v2_response(void)
 	char expected_ntlm_v2_session_key[16] =
 		"\xB9\x4A\x23\x9B\xB4\xC6\xD1\xEC\x08\x30\x6A\x07\x1D\x2B\x90\xF0";
 
-	credssp_ntlm_v2_response_random(password, username, server, (uint8*) challenge, (uint8*) target_info, 98, (uint8*) ntlm_v2_response, (uint8*) ntlm_v2_session_key, random, timestamp);
+	credssp_ntlm_v2_response_static(password, username, server, (uint8*) challenge, (uint8*) target_info, 98, (uint8*) ntlm_v2_response, (uint8*) ntlm_v2_session_key, random, timestamp);
 
 	ntlm_v2_response_good = 1;
 	for (i = 0; i < 146; i++) {

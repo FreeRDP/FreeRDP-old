@@ -982,15 +982,16 @@ sec_connect(rdpSec * sec, char *server, char *username, int port)
 	if(sec->negotiated_protocol == PROTOCOL_NLA)
 	{
 		/* TLS with NLA was successfully negotiated */
-		RD_BOOL success;
+		RD_BOOL success = 1;
 		printf("TLS encryption with NLA negotiated\n");
 		sec->ctx = tls_create_context();
 		sec->ssl = tls_connect(sec->ctx, sec->mcs->iso->tcp->sock, server);
 		sec->tls_connected = 1;
 		sec->rdp->settings->encryption = 0;
+		tls_get_public_key(sec->ssl, &(sec->nla->public_key), &(sec->nla->public_key_length));
 		credssp_authenticate(sec);
 		///success = mcs_connect(sec->mcs);
-		return 1;
+		return success;
 	}
 	else if(sec->negotiated_protocol == PROTOCOL_TLS)
 	{

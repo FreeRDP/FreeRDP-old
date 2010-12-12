@@ -150,6 +150,25 @@ exit:
 	return verified;
 }
 
+int
+tls_get_public_key(SSL *connection, char** public_key, int *public_key_length)
+{
+	X509 *cert = NULL;
+
+	cert = SSL_get_peer_certificate(connection);
+	if (!cert)
+	{
+		printf("tls_get_public_key: failed to get the server SSL certificate\n");
+		return 0;
+	}
+
+	*public_key_length = cert->cert_info->key->public_key->length;
+	*public_key = (char*) xmalloc(cert->cert_info->key->public_key->length);
+	memcpy(public_key, cert->cert_info->key->public_key->data, *public_key_length);
+
+	return 1;
+}
+
 /* Handle an SSL error and returns True if the caller should abort (error was fatal) */
 /* TODO: Use openssl error description functions */
 static RD_BOOL

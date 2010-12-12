@@ -65,36 +65,36 @@ typedef enum _AV_ID AV_ID;
 struct rdp_nla
 {
 	struct rdp_sec * sec;
+	char* public_key;
+	int public_key_length;
 	uint8* target_name;
 	uint8* target_info;
 	int target_info_length;
+	AV_PAIRS* av_pairs;
 	uint32 negotiate_flags;
 	uint8 server_challenge[8];
-	AV_PAIRS* target_info_av_pairs;
 };
 typedef struct rdp_nla rdpNla;
 
-void
-credssp_send(rdpSec * sec, STREAM s);
-void
-credssp_recv(rdpSec * sec);
+void credssp_send(rdpSec * sec, STREAM negoToken, STREAM pubKeyAuth);
+void credssp_recv(rdpSec * sec);
 
-void
-ntlm_send_negotiate_message(rdpSec * sec);
-void
-ntlm_recv_challenge_message(rdpSec * sec, STREAM s);
-void
-ntlm_send_authenticate_message(rdpSec * sec);
-void
-ntlm_recv(rdpSec * sec, STREAM s);
+int credssp_authenticate(rdpSec * sec);
+
+void ntlm_send_negotiate_message(rdpSec * sec);
+void ntlm_recv_challenge_message(rdpSec * sec, STREAM s);
+void ntlm_send_authenticate_message(rdpSec * sec);
+void ntlm_recv(rdpSec * sec, STREAM s);
 
 void credssp_ntlm_hash(char* password, char* hash);
 void credssp_ntlm_v2_hash(char* password, char* username, char* server, char* hash);
+
 void credssp_lm_response(char* password, char* challenge, char* response);
 void credssp_lm_v2_response(char* password, char* username, char* server, uint8* challenge, uint8* response);
-void credssp_lm_v2_response_random(char* password, char* username, char* server, uint8* challenge, uint8* response, char* random);
+void credssp_lm_v2_response_static(char* password, char* username, char* server, uint8* challenge, uint8* response, char* random);
+
 void credssp_ntlm_v2_response(char* password, char* username, char* server, uint8* challenge, uint8* info, int info_size, uint8* response, uint8* session_key);
-void credssp_ntlm_v2_response_random(char* password, char* username, char* server, uint8* challenge, uint8* info, int info_size, uint8* response, uint8* session_key, char* random, char* timestamp);
+void credssp_ntlm_v2_response_static(char* password, char* username, char* server, uint8* challenge, uint8* info, int info_size, uint8* response, uint8* session_key, char* random, char* timestamp);
 
 rdpNla *
 nla_new(rdpSec * sec);

@@ -43,5 +43,7 @@ int
 tls_write(SSL *ssl, char* b, int length);
 int
 tls_read(SSL *ssl, char* b, int length);
+int
+tls_get_public_key(SSL *connection, char** public_key, int *public_key_length);
 
 #endif	// __TLS_H

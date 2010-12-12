@@ -96,7 +96,7 @@ int credssp_authenticate(rdpSec * sec)
 	return 1;
 }
 
-void credssp_send(rdpSec * sec, STREAM s)
+void credssp_send(rdpSec * sec, STREAM negoToken, STREAM pubKeyAuth)
 {
 	TSRequest_t *ts_request;
 	OCTET_STRING_t *nego_token;
@@ -113,8 +113,8 @@ void credssp_send(rdpSec * sec, STREAM s)
 
 	ts_request->version = 2;
 
-	nego_token->buf = s->data;
-	nego_token->size = s->end - s->data;
+	nego_token->buf = negoToken->data;
+	nego_token->size = negoToken->end - negoToken->data;
 
 	ASN_SEQUENCE_ADD(ts_request->negoTokens, nego_token);
 
@@ -161,20 +161,20 @@ void credssp_recv(rdpSec * sec)
 
 		for(i = 0; i < ts_request->negoTokens->list.count; i++)
 		{
-			STREAM s = xmalloc(sizeof(struct stream));
+			STREAM negoToken = xmalloc(sizeof(struct stream));
 
 			dec_rval = ber_decode(0, &asn_DEF_NegotiationToken, (void **)&negotiation_token,
 				ts_request->negoTokens->list.array[i]->negoToken.buf,
 				ts_request->negoTokens->list.array[i]->negoToken.size);
 
-			s->data = (unsigned char*)(ts_request->negoTokens->list.array[i]->negoToken.buf);
-			s->size = ts_request->negoTokens->list.array[i]->negoToken.size;
-			s->p = s->data;
-			s->end = s->p + s->size;
+			negoToken->data = (unsigned char*)(ts_request->negoTokens->list.array[i]->negoToken.buf);
+			negoToken->size = ts_request->negoTokens->list.array[i]->negoToken.size;
+			negoToken->p = negoToken->data;
+			negoToken->end = negoToken->p + negoToken->size;
 
-			ntlm_recv(sec, s);
+			ntlm_recv(sec, negoToken);
 
-			xfree(s);
+			xfree(negoToken);
 		}
 	}
 	else
@@ -370,10 +370,10 @@ void credssp_lm_v2_response(char* password, char* username, char* server, uint8*
 	/* Generate an 8-byte client random */
 	RAND_bytes((void*)clientRandom, 8);
 
-	credssp_lm_v2_response_random(password, username, server, challenge, response, clientRandom);
+	credssp_lm_v2_response_static(password, username, server, challenge, response, clientRandom);
 }
 
-void credssp_lm_v2_response_random(char* password, char* username, char* server, uint8* challenge, uint8* response, char* random)
+void credssp_lm_v2_response_static(char* password, char* username, char* server, uint8* challenge, uint8* response, char* random)
 {
 	char ntlm_v2_hash[16];
 	char value[16];
@@ -407,10 +407,10 @@ void credssp_ntlm_v2_response(char* password, char* username, char* server, uint
 	/* Generate an 8-byte client random */
 	RAND_bytes((void*)clientRandom, 8);
 
-	credssp_ntlm_v2_response_random(password, username, server, challenge, info, info_size, response, session_key, clientRandom, timestamp);
+	credssp_ntlm_v2_response_static(password, username, server, challenge, info, info_size, response, session_key, clientRandom, timestamp);
 }
 
-void credssp_ntlm_v2_response_random(char* password, char* username, char* server, uint8* challenge, uint8* info, int info_size, uint8* response, uint8* session_key, char* random, char* timestamp)
+void credssp_ntlm_v2_response_static(char* password, char* username, char* server, uint8* challenge, uint8* info, int info_size, uint8* response, uint8* session_key, char* random, char* timestamp)
 {
 	int blob_size;
 	char* ntlm_v2_blob;
@@ -694,7 +694,7 @@ void ntlm_send_negotiate_message(rdpSec * sec)
 
 	s_mark_end(s);
 
-	credssp_send(sec, s);
+	credssp_send(sec, s, 0);
 }
 
 void ntlm_recv_challenge_message(rdpSec * sec, STREAM s)
@@ -741,7 +741,7 @@ void ntlm_recv_challenge_message(rdpSec * sec, STREAM s)
 		sec->nla->target_info = malloc(targetInfoLen);
 		sec->nla->target_info_length = targetInfoLen;
 		memcpy(sec->nla->target_info, s->p, targetInfoLen);
-		ntlm_input_av_pairs(s, sec->nla->target_info_av_pairs);
+		ntlm_input_av_pairs(s, sec->nla->av_pairs);
 	}
 }
 
@@ -857,6 +857,8 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 
 	out_uint8p(s, NtChallengeResponseBuffer, NtChallengeResponseLen);
 	out_uint8p(s, EncryptedRandomSessionKeyBuffer, EncryptedRandomSessionKeyLen);
+
+	credssp_send(sec, s, NULL);
 
 	/*
 	  Annotated AUTHENTICATE_MESSAGE Packet Sample:
@@ -983,8 +985,8 @@ nla_new(struct rdp_sec * sec)
 	{
 		memset(self, 0, sizeof(rdpNla));
 		self->sec = sec;
-		self->target_info_av_pairs = (AV_PAIRS*)xmalloc(sizeof(AV_PAIRS));
-		memset(self->target_info_av_pairs, 0, sizeof(AV_PAIRS));
+		self->av_pairs = (AV_PAIRS*)xmalloc(sizeof(AV_PAIRS));
+		memset(self->av_pairs, 0, sizeof(AV_PAIRS));
 	}
 	return self;
 }
@@ -997,7 +999,7 @@ nla_free(rdpNla * nla)
 		if (nla->target_info)
 			free(nla->target_info);
 
-		ntlm_free_av_pairs(nla->target_info_av_pairs);
+		ntlm_free_av_pairs(nla->av_pairs);
 		xfree(nla);
 	}
 }
