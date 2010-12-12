@@ -989,6 +989,9 @@ sec_connect(rdpSec * sec, char *server, char *username, int port)
 		sec->tls_connected = 1;
 		sec->rdp->settings->encryption = 0;
 		tls_get_public_key(sec->ssl, &(sec->nla->public_key), &(sec->nla->public_key_length));
+
+		printf("public_key_length: %d\n", sec->nla->public_key_length);
+
 		credssp_authenticate(sec);
 		///success = mcs_connect(sec->mcs);
 		return success;

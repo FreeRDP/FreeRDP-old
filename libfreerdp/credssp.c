@@ -654,6 +654,58 @@ static void ntlm_output_version(STREAM s)
 	out_uint8(s, NTLMSSP_REVISION_W2K3); /* NTLMRevisionCurrent (1 byte) */
 }
 
+static void ntlm_print_negotiate_flags(uint32 flags)
+{
+	printf("negotiateFlags {\n");
+	if (flags & NTLMSSP_NEGOTIATE_56)
+		printf("\tNTLMSSP_NEGOTIATE_56\n");
+	if (flags & NTLMSSP_NEGOTIATE_KEY_EXCH)
+		printf("\tNTLMSSP_NEGOTIATE_KEY_EXCH\n");
+	if (flags & NTLMSSP_NEGOTIATE_128)
+		printf("\tNTLMSSP_NEGOTIATE_128\n");
+	if (flags & NTLMSSP_NEGOTIATE_VERSION)
+		printf("\tNTLMSSP_NEGOTIATE_VERSION\n");
+	if (flags & NTLMSSP_NEGOTIATE_TARGET_INFO)
+		printf("\tNTLMSSP_NEGOTIATE_TARGET_INFO\n");
+	if (flags & NTLMSSP_REQUEST_NON_NT_SESSION_KEY)
+		printf("\tNTLMSSP_NEGOTIATE_NON_NT_SESSION_KEY\n");
+	if (flags & NTLMSSP_NEGOTIATE_IDENTIFY)
+		printf("\tNTLMSSP_NEGOTIATE_IDENTIFY\n");
+	if (flags & NTLMSSP_NEGOTIATE_EXTENDED_SESSIONSECURITY)
+		printf("\tNTLMSSP_NEGOTIATE_EXTENDED_SESSION_SECURITY\n");
+	if (flags & NTLMSSP_TARGET_TYPE_SHARE)
+		printf("\tNTLMSSP_TARGET_TYPE_SHARE\n");
+	if (flags & NTLMSSP_TARGET_TYPE_SERVER)
+		printf("\tNTLMSSP_TARGET_TYPE_SERVER\n");
+	if (flags & NTLMSSP_TARGET_TYPE_DOMAIN)
+		printf("\tNTLMSSP_TARGET_TYPE_DOMAIN\n");
+	if (flags & NTLMSSP_NEGOTIATE_ALWAYS_SIGN)
+		printf("\tNTLMSSP_NEGOTIATE_ALWAYS_SIGN\n");
+	if (flags & NTLMSSP_NEGOTIATE_OEM_WORKSTATION_SUPPLIED)
+		printf("\tNTLMSSP_NEGOTIATE_OEM_WORKSTATION_SUPPLIED\n");
+	if (flags & NTLMSSP_NEGOTIATE_OEM_DOMAIN_SUPPLIED)
+		printf("\tNTLMSSP_NEGOTIATE_OEM_DOMAIN_SUPPLIED\n");
+	if (flags & NTLMSSP_NEGOTIATE_NT_ONLY)
+		printf("\tNTLMSSP_NEGOTIATE_NT_ONLY\n");
+	if (flags & NTLMSSP_NEGOTIATE_NTLM)
+		printf("\tNTLMSSP_NEGOTIATE_NTLM\n");
+	if (flags & NTLMSSP_NEGOTIATE_LM_KEY)
+		printf("\tNTLMSSP_NEGOTIATE_LM_KEY\n");
+	if (flags & NTLMSSP_NEGOTIATE_DATAGRAM)
+		printf("\tNTLMSSP_NEGOTIATE_DATAGRAM\n");
+	if (flags & NTLMSSP_NEGOTIATE_SEAL)
+		printf("\tNTLMSSP_NEGOTIATE_SEAL\n");
+	if (flags & NTLMSSP_NEGOTIATE_SIGN)
+		printf("\tNTLMSSP_NEGOTIATE_SIGN\n");
+	if (flags & NTLMSSP_REQUEST_TARGET)
+		printf("\tNTLMSSP_REQUEST_TARGET\n");
+	if (flags & NTLMSSP_NEGOTIATE_OEM)
+		printf("\tNTLMSSP_NEGOTIATE_OEM\n");
+	if (flags & NTLMSSP_NEGOTIATE_UNICODE)
+		printf("\tNTLMSSP_NEGOTIATE_UNICODE\n");
+	printf("}\n");
+}
+
 void ntlm_send_negotiate_message(rdpSec * sec)
 {
 	STREAM s;
@@ -719,6 +771,8 @@ void ntlm_recv_challenge_message(rdpSec * sec, STREAM s)
 	in_uint16_le(s, targetInfoLen); /* TargetInfoLen (2 bytes) */
 	in_uint16_le(s, targetInfoMaxLen); /* TargetInfoMaxLen (2 bytes) */
 	in_uint32_le(s, targetInfoBufferOffset); /* TargetInfoBufferOffset (4 bytes) */
+
+	ntlm_print_negotiate_flags(sec->nla->negotiate_flags);
 
 	/* only present if NTLMSSP_NEGOTIATE_VERSION is set */
 

@@ -151,22 +151,45 @@ exit:
 }
 
 int
-tls_get_public_key(SSL *connection, char** public_key, int *public_key_length)
+tls_get_public_key(SSL *connection, uint8** public_key, int *public_key_length)
 {
+	int success = 1;
 	X509 *cert = NULL;
+	EVP_PKEY *pkey = NULL;
 
 	cert = SSL_get_peer_certificate(connection);
+
 	if (!cert)
 	{
-		printf("tls_get_public_key: failed to get the server SSL certificate\n");
-		return 0;
+		printf("tls_get_public_key: SSL_get_peer_certificate() failed\n");
+		success = 0;
+		goto exit;
 	}
 
-	*public_key_length = cert->cert_info->key->public_key->length;
-	*public_key = (char*) xmalloc(cert->cert_info->key->public_key->length);
-	memcpy(public_key, cert->cert_info->key->public_key->data, *public_key_length);
+	//*public_key_length = cert->cert_info->key->public_key->length;
+	//*public_key = (char*) xmalloc(cert->cert_info->key->public_key->length);
+	//memcpy(public_key, cert->cert_info->key->public_key->data, *public_key_length);
 
-	return 1;
+	pkey = X509_get_pubkey(cert);
+
+	if (!cert)
+	{
+		printf("tls_get_public_key: X509_get_pubkey() failed\n");
+		success = 0;
+		goto exit;
+	}
+
+	*public_key_length = i2d_PublicKey(pkey, NULL);
+	*public_key = (uint8*) xmalloc(*public_key_length);
+	i2d_PublicKey(pkey, public_key);
+
+	exit:
+		if (cert)
+			X509_free(cert);
+		if (pkey)
+			EVP_PKEY_free(pkey);
+
+	return success;
 }
 
 /* Handle an SSL error and returns True if the caller should abort (error was fatal) */

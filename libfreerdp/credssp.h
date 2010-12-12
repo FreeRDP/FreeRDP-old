@@ -65,7 +65,7 @@ typedef enum _AV_ID AV_ID;
 struct rdp_nla
 {
 	struct rdp_sec * sec;
-	char* public_key;
+	uint8* public_key;
 	int public_key_length;
 	uint8* target_name;
 	uint8* target_info;
