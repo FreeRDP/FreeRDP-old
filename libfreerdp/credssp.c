@@ -440,7 +440,7 @@ void credssp_ntlm_signing_key(uint8* random_session_key, uint8* sign_magic, int 
 
 	/* Concatenate RandomSessionKey with sign magic */
 	memcpy(value, random_session_key, 16);
-	memcpy(&value[16], client_sign_magic, sizeof(sign_magic));
+	memcpy(&value[16], sign_magic, sizeof(sign_magic));
 
 	md5 = crypto_md5_init();
 	crypto_md5_update(md5, value, length);
@@ -457,6 +457,36 @@ void credssp_ntlm_client_signing_key(uint8* random_session_key, uint8* signing_k
 void credssp_ntlm_server_signing_key(uint8* random_session_key, uint8* signing_key)
 {
 	credssp_ntlm_signing_key(random_session_key, (uint8*) server_sign_magic, sizeof(server_sign_magic), signing_key);
+}
+
+void credssp_ntlm_sealing_key(uint8* random_session_key, uint8* seal_magic, int seal_magic_length, uint8* sealing_key)
+{
+	int length;
+	uint8* value;
+	CryptoMd5 md5;
+
+	length = 16 + seal_magic_length;
+	value = (uint8*) xmalloc(length);
+
+	/* Concatenate RandomSessionKey with seal magic */
+	memcpy(value, random_session_key, 16);
+	memcpy(&value[16], seal_magic, sizeof(seal_magic));
+
+	md5 = crypto_md5_init();
+	crypto_md5_update(md5, value, length);
+	crypto_md5_final(md5, sealing_key);
+
+	xfree(value);
+}
+
+void credssp_ntlm_client_sealing_key(uint8* random_session_key, uint8* sealing_key)
+{
+	credssp_ntlm_sealing_key(random_session_key, (uint8*) client_seal_magic, sizeof(client_seal_magic), sealing_key);
+}
+
+void credssp_ntlm_server_sealing_key(uint8* random_session_key, uint8* sealing_key)
+{
+	credssp_ntlm_sealing_key(random_session_key, (uint8*) server_seal_magic, sizeof(server_seal_magic), sealing_key);
 }
 
 void credssp_ntlm_v2_response(char* password, char* username, char* server, uint8* challenge, uint8* info, int info_size, uint8* response, uint8* session_key)
@@ -878,8 +908,13 @@ void ntlm_recv_challenge_message(rdpSec * sec, STREAM s)
 	/* Generate ExportedSessionKey */
 	credssp_ntlm_nonce(sec->nla->exported_session_key, 16);
 
+	/* Generate Client and Server Signing Keys */
 	credssp_ntlm_client_signing_key(sec->nla->exported_session_key, (uint8*) sec->nla->client_signing_key);
 	credssp_ntlm_server_signing_key(sec->nla->exported_session_key, (uint8*) sec->nla->server_signing_key);
+
+	/* Generate Client and Server Sealing Keys */
+	credssp_ntlm_client_sealing_key(sec->nla->exported_session_key, (uint8*) sec->nla->client_sealing_key);
+	credssp_ntlm_server_sealing_key(sec->nla->exported_session_key, (uint8*) sec->nla->server_sealing_key);
 
 	sec->nla->sequence_number++;
 	sec->nla->state = NTLM_STATE_AUTHENTICATE;
