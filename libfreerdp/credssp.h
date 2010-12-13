@@ -62,8 +62,19 @@ enum _AV_ID
 };
 typedef enum _AV_ID AV_ID;
 
+enum _NTLM_STATE
+{
+	NTLM_STATE_INITIAL,
+	NTLM_STATE_NEGOTIATE,
+	NTLM_STATE_CHALLENGE,
+	NTLM_STATE_AUTHENTICATE,
+	NTLM_STATE_FINAL
+};
+typedef enum _NTLM_STATE NTLM_STATE;
+
 struct rdp_nla
 {
+	NTLM_STATE state;
 	struct rdp_sec * sec;
 	uint8* public_key;
 	int public_key_length;
@@ -72,7 +83,13 @@ struct rdp_nla
 	int target_info_length;
 	AV_PAIRS* av_pairs;
 	uint32 negotiate_flags;
+	int sequence_number;
 	uint8 server_challenge[8];
+	uint8 exported_session_key[16];
+	uint8 client_signing_key[16];
+	uint8 server_signing_key[16];
+	uint8 client_sealing_key[16];
+	uint8 server_sealing_key[16];
 };
 typedef struct rdp_nla rdpNla;
 

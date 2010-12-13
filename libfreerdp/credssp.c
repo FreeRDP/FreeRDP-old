@@ -79,6 +79,11 @@
 const char ntlm_signature[] = "NTLMSSP";
 const char lm_magic[] = "KGS!@#$%";
 
+const char client_sign_magic[] = "session key to client-to-server signing key magic constant";
+const char server_sign_magic[] = "session key to server-to-client signing key magic constant";
+const char client_seal_magic[] = "session key to client-to-server sealing key magic constant";
+const char server_seal_magic[] = "session key to server-to-client sealing key magic constant";
+
 /* http://davenport.sourceforge.net/ntlm.html is a really nice source of information with great samples */
 
 static int
@@ -90,9 +95,24 @@ asn1_write(const void *buffer, size_t size, void *fd)
 
 int credssp_authenticate(rdpSec * sec)
 {
+	if (sec->nla->state != NTLM_STATE_INITIAL)
+		return 0;
+
 	ntlm_send_negotiate_message(sec);
+
+	if (sec->nla->state != NTLM_STATE_CHALLENGE)
+		return 0;
+
 	credssp_recv(sec);
+
+	if (sec->nla->state != NTLM_STATE_AUTHENTICATE)
+		return 0;
+
 	ntlm_send_authenticate_message(sec);
+
+	if (sec->nla->state != NTLM_STATE_FINAL)
+		return 0;
+
 	return 1;
 }
 
@@ -392,20 +412,63 @@ void credssp_lm_v2_response_static(char* password, char* username, char* server,
 	memcpy(&response[16], random, 8);
 }
 
-void credssp_ntlm_v2_response(char* password, char* username, char* server, uint8* challenge, uint8* info, int info_size, uint8* response, uint8* session_key)
+void credssp_ntlm_current_time(char* timestamp)
 {
 	uint64 time64;
-	char timestamp[8];
-	char clientRandom[8];
-
+	
 	/* Timestamp (8 bytes), represented as the number of tenths of microseconds since midnight of January 1, 1601 */
 	time64 = time(NULL) + 11644473600; /* Seconds since January 1, 1601 */
 	time64 *= 10000000; /* Convert timestamp to tenths of a microsecond */
-	
-	memcpy(timestamp, &timestamp, 8); /* Copy into timestamp in little-endian */
+
+	memcpy(timestamp, &time64, 8); /* Copy into timestamp in little-endian */
+}
+
+void credssp_ntlm_nonce(uint8* nonce, int size)
+{
+	/* Generate random bytes (nonce) */
+	RAND_bytes((void*)nonce, size);
+}
+
+void credssp_ntlm_signing_key(uint8* random_session_key, uint8* sign_magic, int sign_magic_length, uint8* signing_key)
+{
+	int length;
+	uint8* value;
+	CryptoMd5 md5;
+
+	length = 16 + sign_magic_length;
+	value = (uint8*) xmalloc(length);
+
+	/* Concatenate RandomSessionKey with sign magic */
+	memcpy(value, random_session_key, 16);
+	memcpy(&value[16], client_sign_magic, sizeof(sign_magic));
+
+	md5 = crypto_md5_init();
+	crypto_md5_update(md5, value, length);
+	crypto_md5_final(md5, signing_key);
+
+	xfree(value);
+}
+
+void credssp_ntlm_client_signing_key(uint8* random_session_key, uint8* signing_key)
+{
+	credssp_ntlm_signing_key(random_session_key, (uint8*) client_sign_magic, sizeof(client_sign_magic), signing_key);
+}
+
+void credssp_ntlm_server_signing_key(uint8* random_session_key, uint8* signing_key)
+{
+	credssp_ntlm_signing_key(random_session_key, (uint8*) server_sign_magic, sizeof(server_sign_magic), signing_key);
+}
+
+void credssp_ntlm_v2_response(char* password, char* username, char* server, uint8* challenge, uint8* info, int info_size, uint8* response, uint8* session_key)
+{
+	char timestamp[8];
+	char clientRandom[8];
+
+	/* Timestamp */
+	credssp_ntlm_current_time(timestamp);
 
 	/* Generate an 8-byte client random */
-	RAND_bytes((void*)clientRandom, 8);
+	credssp_ntlm_nonce((uint8*) clientRandom, 8);
 
 	credssp_ntlm_v2_response_static(password, username, server, challenge, info, info_size, response, session_key, clientRandom, timestamp);
 }
@@ -444,7 +507,7 @@ void credssp_ntlm_v2_response_static(char* password, char* username, char* serve
 	/* Compute the HMAC-MD5 hash of the resulting value using the NTLMv2 hash as the key */
 	HMAC(EVP_md5(), (void*) ntlm_v2_hash, 16, (void*) ntlm_v2_challenge_blob, blob_size + 8, (void*) response, NULL);
 
-	/* Compute NTLMv2 User Session Key */
+	/* Compute NTLMv2 User Session Key (SessionBaseKey, also KeyExchangeKey) */
 	if (session_key != NULL)
 	{
 		/* Compute the HMAC-MD5 hash of the resulting value a second time using the NTLMv2 hash as the key */
@@ -485,46 +548,55 @@ void ntlm_input_av_pairs(STREAM s, AV_PAIRS* av_pairs)
 		switch (AvId)
 		{
 			case MsvAvNbComputerName:
+				printf("AvId: MsvAvNbComputerName, AvLen: %d\n", AvLen);
 				av_pairs->NbComputerName.length = AvLen;
 				av_pairs->NbComputerName.value = value;
 				break;
 
 			case MsvAvNbDomainName:
+				printf("AvId: MsvAvNbDomainName, AvLen: %d\n", AvLen);
 				av_pairs->NbDomainName.length = AvLen;
 				av_pairs->NbDomainName.value = value;
 				break;
 
 			case MsvAvDnsComputerName:
+				printf("AvId: MsvAvDnsComputerName, AvLen: %d\n", AvLen);
 				av_pairs->DnsComputerName.length = AvLen;
 				av_pairs->DnsComputerName.value = value;
 				break;
 
 			case MsvAvDnsDomainName:
+				printf("AvId: MsvAvDnsDomainName, AvLen: %d\n", AvLen);
 				av_pairs->DnsDomainName.length = AvLen;
 				av_pairs->DnsDomainName.value = value;
 				break;
 
 			case MsvAvDnsTreeName:
+				printf("AvId: MsvAvDnsTreeName, AvLen: %d\n", AvLen);
 				av_pairs->DnsTreeName.length = AvLen;
 				av_pairs->DnsTreeName.value = value;
 				break;
 
 			case MsvAvTimestamp:
+				printf("AvId: MsvAvTimestamp, AvLen: %d\n", AvLen);
 				av_pairs->Timestamp.length = AvLen;
 				av_pairs->Timestamp.value = value;
 				break;
 
 			case MsvAvRestrictions:
+				printf("AvId: MsvAvRestrictions, AvLen: %d\n", AvLen);
 				av_pairs->Restrictions.length = AvLen;
 				av_pairs->Restrictions.value = value;
 				break;
 
 			case MsvAvTargetName:
+				printf("AvId: MsvAvTargetName, AvLen: %d\n", AvLen);
 				av_pairs->TargetName.length = AvLen;
 				av_pairs->TargetName.value = value;
 				break;
 
 			case MsvChannelBindings:
+				printf("AvId: MsvAvChannelBindings, AvLen: %d\n", AvLen);
 				av_pairs->ChannelBindings.length = AvLen;
 				av_pairs->ChannelBindings.value = value;
 				break;
@@ -748,7 +820,10 @@ void ntlm_send_negotiate_message(rdpSec * sec)
 
 	s_mark_end(s);
 
-	credssp_send(sec, s, 0);
+	credssp_send(sec, s, NULL);
+	
+	sec->nla->sequence_number++;
+	sec->nla->state = NTLM_STATE_CHALLENGE;
 }
 
 void ntlm_recv_challenge_message(rdpSec * sec, STREAM s)
@@ -799,11 +874,23 @@ void ntlm_recv_challenge_message(rdpSec * sec, STREAM s)
 		memcpy(sec->nla->target_info, s->p, targetInfoLen);
 		ntlm_input_av_pairs(s, sec->nla->av_pairs);
 	}
+
+	/* Generate ExportedSessionKey */
+	credssp_ntlm_nonce(sec->nla->exported_session_key, 16);
+
+	credssp_ntlm_client_signing_key(sec->nla->exported_session_key, (uint8*) sec->nla->client_signing_key);
+	credssp_ntlm_server_signing_key(sec->nla->exported_session_key, (uint8*) sec->nla->server_signing_key);
+
+	sec->nla->sequence_number++;
+	sec->nla->state = NTLM_STATE_AUTHENTICATE;
 }
 
 void ntlm_send_authenticate_message(rdpSec * sec)
 {
+	void * p;
+	size_t len;
 	STREAM s;
+	rdpSet *settings;
 	uint32 negotiateFlags;
 
 	uint16 DomainNameLen;
@@ -822,10 +909,6 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 
 	uint8* NtChallengeResponseBuffer;
 	uint8* EncryptedRandomSessionKeyBuffer;
-
-	rdpSet *settings;
-	void * p;
-	size_t len;
 
 	s = tcp_init(sec->mcs->iso->tcp, 256);
 	settings = sec->rdp->settings;
@@ -884,12 +967,18 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 	out_uint16_le(s, EncryptedRandomSessionKeyLen); /* EncryptedRandomSessionKeyMaxLen */
 	out_uint32_le(s, EncryptedRandomSessionKeyBufferOffset); /* EncryptedRandomSessionKeyBufferOffset */
 
+	/* Negotiation Flags for NTLMv2 */
+	
 	negotiateFlags = 0;
-	negotiateFlags |= NTLMSSP_NEGOTIATE_ALWAYS_SIGN;
+	negotiateFlags |= NTLMSSP_NEGOTIATE_128;
+	negotiateFlags |= NTLMSSP_NEGOTIATE_SIGN;
 	negotiateFlags |= NTLMSSP_NEGOTIATE_SEAL;
+	negotiateFlags |= NTLMSSP_NEGOTIATE_NTLM;
 	negotiateFlags |= NTLMSSP_REQUEST_TARGET;
-	negotiateFlags |= NTLMSSP_NEGOTIATE_OEM;
 	negotiateFlags |= NTLMSSP_NEGOTIATE_UNICODE;
+	negotiateFlags |= NTLMSSP_NEGOTIATE_KEY_EXCH;
+	negotiateFlags |= NTLMSSP_NEGOTIATE_ALWAYS_SIGN;
+	negotiateFlags |= NTLMSSP_NEGOTIATE_EXTENDED_SESSION_SECURITY;
 
 	out_uint32_le(s, negotiateFlags); /* NegotiateFlags (4 bytes) */
 
@@ -915,7 +1004,10 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 	out_uint8p(s, EncryptedRandomSessionKeyBuffer, EncryptedRandomSessionKeyLen);
 
 	credssp_send(sec, s, NULL);
-	
+
+	sec->nla->sequence_number++;
+	sec->nla->state = NTLM_STATE_FINAL;
+
 	/*
 	  Annotated AUTHENTICATE_MESSAGE Packet Sample:
 	
@@ -1043,6 +1135,8 @@ nla_new(struct rdp_sec * sec)
 		self->sec = sec;
 		self->av_pairs = (AV_PAIRS*)xmalloc(sizeof(AV_PAIRS));
 		memset(self->av_pairs, 0, sizeof(AV_PAIRS));
+		self->state = NTLM_STATE_INITIAL;
+		self->sequence_number = 0;
 	}
 	return self;
 }
