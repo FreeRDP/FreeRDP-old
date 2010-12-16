@@ -24,6 +24,10 @@ int add_credssp_suite(void)
 	add_test_function(credssp_lm_response);
 	add_test_function(credssp_lm_v2_response);
 	add_test_function(credssp_ntlm_v2_response);
+	add_test_function(credssp_ntlm_client_signing_key);
+	add_test_function(credssp_ntlm_client_sealing_key);
+	add_test_function(credssp_ntlm_make_signature);
+	add_test_function(credssp_ntlm_encrypt_message);
 
 	return 0;
 }
@@ -174,4 +178,92 @@ void test_credssp_ntlm_v2_response(void)
 	}
 
 	CU_ASSERT(ntlm_v2_session_key_good == 1);
+}
+
+void test_credssp_ntlm_client_signing_key(void)
+{
+	int i;
+	int client_signing_key_good;
+	uint8 client_signing_key[16];
+	uint8 random_session_key[16] = "\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0A\x0B\x0C\x0D\x0E\x0F\x00";
+	uint8 expected_client_signing_key[16] = "\xF7\xF9\x7A\x82\xEC\x39\x0F\x9C\x90\x3D\xAC\x4F\x6A\xCE\xB1\x32";
+
+	credssp_ntlm_client_signing_key(random_session_key, client_signing_key);
+
+	client_signing_key_good = 1;
+	for (i = 0; i < 16; i++) {
+		if (client_signing_key[i] != expected_client_signing_key[i])
+			client_signing_key_good = 0;
+	}
+
+	CU_ASSERT(client_signing_key_good == 1);
+}
+
+void test_credssp_ntlm_client_sealing_key(void)
+{
+	int i;
+	int client_sealing_key_good;
+	uint8 client_sealing_key[16];
+	uint8 random_session_key[16] = "\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0A\x0B\x0C\x0D\x0E\x0F\x00";
+	uint8 expected_client_sealing_key[16] =  "\x27\x85\xF5\x95\x29\x3F\x3E\x28\x13\x43\x9D\x73\xA2\x23\x81\x0D";
+
+	credssp_ntlm_client_sealing_key(random_session_key, client_sealing_key);
+
+	client_sealing_key_good = 1;
+	for (i = 0; i < 16; i++) {
+		if (client_sealing_key[i] != expected_client_sealing_key[i])
+			client_sealing_key_good = 0;
+	}
+
+	CU_ASSERT(client_sealing_key_good == 1);
+}
+
+void test_credssp_ntlm_make_signature(void)
+{
+	int i;
+	CryptoRc4 rc4;
+	int signature_good;
+	uint8 signature[16];
+	uint8 message[5] = "\x6A\x43\x49\x46\x53";
+	uint8 expected_signature[16] = "\x01\x00\x00\x00\xE3\x7F\x97\xF2\x54\x4F\x4D\x7E\x00\x00\x00\x00";
+	uint8 client_signing_key[16] = "\xF7\xF9\x7A\x82\xEC\x39\x0F\x9C\x90\x3D\xAC\x4F\x6A\xCE\xB1\x32";
+	uint8 client_sealing_key[16] = "\x27\x85\xF5\x95\x29\x3F\x3E\x28\x13\x43\x9D\x73\xA2\x23\x81\x0D";
+
+	rc4 = credssp_ntlm_init_client_rc4_stream(client_sealing_key);
+	credssp_ntlm_make_signature(message, 5, client_signing_key, client_sealing_key, 0, rc4, signature);
+
+	signature_good = 1;
+	for (i = 0; i < 16; i++) {
+		if (signature[i] != expected_signature[i])
+			signature_good = 0;
+	}
+
+	CU_ASSERT(signature_good == 1);
+
+	credssp_ntlm_free_client_rc4_stream(rc4);
+}
+
+void test_credssp_ntlm_encrypt_message(void)
+{
+	int i;
+	CryptoRc4 rc4;
+	int encrypted_message_good;
+	uint8 encrypted_message[21];
+	uint8 message[5] = "\x6A\x43\x49\x46\x53";
+	uint8 expected_encrypted_message[21] = "\xCF\x0E\xB0\xA9\x39\x01\x00\x00\x00\x88\x4B\x14\x80\x9E\x53\xBF\xE7\x00\x00\x00\x00";
+	uint8 client_signing_key[16] = "\xF7\xF9\x7A\x82\xEC\x39\x0F\x9C\x90\x3D\xAC\x4F\x6A\xCE\xB1\x32";
+	uint8 client_sealing_key[16] = "\x6F\x0D\x99\x53\x50\x33\x95\x1C\xBE\x49\x9C\xD1\x91\x4F\xE9\xEE";
+
+	rc4 = credssp_ntlm_init_client_rc4_stream(client_sealing_key);
+	credssp_ntlm_encrypt_message(message, 5, client_signing_key, client_sealing_key, 0, rc4, encrypted_message);
+
+	encrypted_message_good = 1;
+	for (i = 0; i < 21; i++) {
+		if (encrypted_message[i] != expected_encrypted_message[i])
+			encrypted_message_good = 0;
+	}
+
+	CU_ASSERT(encrypted_message_good == 1);
+
+	credssp_ntlm_free_client_rc4_stream(rc4);
 }

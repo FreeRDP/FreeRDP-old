@@ -103,6 +103,13 @@ void ntlm_recv_challenge_message(rdpSec * sec, STREAM s);
 void ntlm_send_authenticate_message(rdpSec * sec);
 void ntlm_recv(rdpSec * sec, STREAM s);
 
+CryptoRc4 credssp_ntlm_init_client_rc4_stream(uint8* sealing_key);
+void credssp_ntlm_free_client_rc4_stream(CryptoRc4 rc4);
+void credssp_ntlm_client_signing_key(uint8* random_session_key, uint8* signing_key);
+void credssp_ntlm_client_sealing_key(uint8* random_session_key, uint8* sealing_key);
+void credssp_ntlm_make_signature(uint8* msg, int msg_len, uint8* signing_key, uint8* sealing_key, uint32 seq_num, CryptoRc4 rc4, uint8* signature);
+void credssp_ntlm_encrypt_message(uint8* msg, int msg_len, uint8* signing_key, uint8* sealing_key, uint32 seq_num, CryptoRc4 rc4, uint8* encrypted_message);
+
 void credssp_ntlm_hash(char* password, char* hash);
 void credssp_ntlm_v2_hash(char* password, char* username, char* server, char* hash);
 
