@@ -90,6 +90,7 @@ struct rdp_nla
 	uint8 server_signing_key[16];
 	uint8 client_sealing_key[16];
 	uint8 server_sealing_key[16];
+	CryptoRc4 rc4_stream;
 };
 typedef struct rdp_nla rdpNla;
 

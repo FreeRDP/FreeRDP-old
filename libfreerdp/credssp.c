@@ -23,6 +23,7 @@
 #include "frdp.h"
 #include "rdp.h"
 #include "tls.h"
+#include "asn1.h"
 #include "secure.h"
 #include "stream.h"
 #include "mem.h"
@@ -113,6 +114,8 @@ int credssp_authenticate(rdpSec * sec)
 	if (sec->nla->state != NTLM_STATE_FINAL)
 		return 0;
 
+	credssp_recv(sec);
+
 	return 1;
 }
 
@@ -137,6 +140,14 @@ void credssp_send(rdpSec * sec, STREAM negoToken, STREAM pubKeyAuth)
 	nego_token->size = negoToken->end - negoToken->data;
 
 	ASN_SEQUENCE_ADD(ts_request->negoTokens, nego_token);
+
+	if (pubKeyAuth != NULL)
+	{
+		ts_request->pubKeyAuth = calloc(1, sizeof(OCTET_STRING_t));
+
+		ts_request->pubKeyAuth->buf = pubKeyAuth->data;
+		ts_request->pubKeyAuth->size = pubKeyAuth->end - pubKeyAuth->data;
+	}
 
 	/* get size of the encoded ASN.1 payload */
 	enc_rval = der_encode(&asn_DEF_TSRequest, ts_request, asn1_write, 0);
@@ -536,6 +547,15 @@ void credssp_ntlm_encrypt_message(uint8* msg, int msg_len, uint8* signing_key, u
 
 	/* Concatenate encrypted message with signature */
 	memcpy(&encrypted_message[msg_len], (void*) signature, 16);
+}
+
+void credssp_ntlm_encrypt_message_with_signature(uint8* msg, int msg_len, uint8* signing_key, uint8* sealing_key, uint32 seq_num, CryptoRc4 rc4, uint8* encrypted_message, uint8* signature)
+{
+	/* Encrypt message using RC4 with sealing key */
+	crypto_rc4(rc4, msg_len, msg, encrypted_message);
+
+	/* Make signature, but don't concatenate */
+	credssp_ntlm_make_signature(msg, msg_len, signing_key, sealing_key, seq_num, rc4, signature);
 }
 
 void credssp_ntlm_v2_response(char* password, char* username, char* server, uint8* challenge, uint8* info, int info_size, uint8* response, uint8* session_key)
@@ -977,6 +997,10 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 	rdpSet *settings;
 	uint32 negotiateFlags;
 
+	uint8 signature[16];
+	STREAM pubKeyAuth;
+	uint8* encrypted_public_key;
+
 	uint16 DomainNameLen;
 	uint16 UserNameLen;
 	uint16 WorkstationLen;
@@ -994,7 +1018,11 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 	uint8* NtChallengeResponseBuffer;
 	uint8* EncryptedRandomSessionKeyBuffer;
 
-	s = tcp_init(sec->mcs->iso->tcp, 256);
+	s = xmalloc(sizeof(struct stream));
+	s->data = xmalloc(512);
+	s->p = s->data;
+	s->end = s->p;
+
 	settings = sec->rdp->settings;
 
 	DomainNameLen = strlen(settings->domain) * 2;
@@ -1066,8 +1094,6 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 
 	out_uint32_le(s, negotiateFlags); /* NegotiateFlags (4 bytes) */
 
-	/* MIC (16 bytes) - not used */
-
 	/* Payload (variable) */
 
 	p = xstrdup_out_unistr(sec->rdp, settings->domain, &len);
@@ -1086,8 +1112,25 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 
 	out_uint8p(s, NtChallengeResponseBuffer, NtChallengeResponseLen);
 	out_uint8p(s, EncryptedRandomSessionKeyBuffer, EncryptedRandomSessionKeyLen);
+	s_mark_end(s);
 
-	credssp_send(sec, s, NULL);
+	pubKeyAuth = xmalloc(sizeof(struct stream));
+	pubKeyAuth->data = xmalloc(sec->nla->public_key_length + 16);
+	pubKeyAuth->p = pubKeyAuth->data;
+	pubKeyAuth->end = pubKeyAuth->p;
+
+	encrypted_public_key = xmalloc(sec->nla->public_key_length);
+	sec->nla->rc4_stream = credssp_ntlm_init_client_rc4_stream(sec->nla->client_sealing_key);
+
+	credssp_ntlm_encrypt_message_with_signature(sec->nla->public_key, sec->nla->public_key_length, sec->nla->client_signing_key,
+		sec->nla->client_sealing_key, sec->nla->sequence_number, sec->nla->rc4_stream, encrypted_public_key, signature);
+
+	out_uint8p(pubKeyAuth, signature, 16); /* Message Signature */
+	out_uint8p(pubKeyAuth, encrypted_public_key, sec->nla->public_key_length); /* Encrypted Public Key */
+
+	s_mark_end(pubKeyAuth);
+
+	credssp_send(sec, s, pubKeyAuth);
 
 	sec->nla->sequence_number++;
 	sec->nla->state = NTLM_STATE_FINAL;
@@ -1155,6 +1198,12 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 	  2b eb c2 83 0b 82 85 6a 37 a3 7b aa 0c 39 e2 83
 	  
 	  Padding (Length 294, Offset 482):
+
+	 SubjectPublicKeyInfo, Length 294?
+	 
+	 signature size: 16
+	 public key length: 270
+
 	  a3 82 01 22 04 82 01 1e 01 00 00 00 2f 2e e5 d3
 	  b3 11 34 1c 00 00 00 00 9e 94 9b 76 d8 42 31 65
 	  0a 0d ab b8 37 b0 32 9e 0d e1 7c 48 a6 20 8b f2
