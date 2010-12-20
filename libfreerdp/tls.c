@@ -166,10 +166,6 @@ tls_get_public_key(SSL *connection, uint8** public_key, int *public_key_length)
 		goto exit;
 	}
 
-	//*public_key_length = cert->cert_info->key->public_key->length;
-	//*public_key = (char*) xmalloc(cert->cert_info->key->public_key->length);
-	//memcpy(public_key, cert->cert_info->key->public_key->data, *public_key_length);
-
 	pkey = X509_get_pubkey(cert);
 
 	if (!cert)

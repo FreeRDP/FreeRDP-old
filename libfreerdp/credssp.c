@@ -814,6 +814,8 @@ static void ntlm_free_av_pairs(AV_PAIRS* av_pairs)
 	}
 }
 
+#ifdef COMPILE_UNUSED_CODE
+
 static void ntlm_output_version(STREAM s)
 {
 	/* The following version information was observed with Windows 7 */
@@ -824,6 +826,7 @@ static void ntlm_output_version(STREAM s)
 	out_uint8s(s, 3); /* Reserved (3 bytes) */
 	out_uint8(s, NTLMSSP_REVISION_W2K3); /* NTLMRevisionCurrent (1 byte) */
 }
+#endif
 
 static void ntlm_print_negotiate_flags(uint32 flags)
 {
@@ -915,7 +918,7 @@ void ntlm_send_negotiate_message(rdpSec * sec)
 	out_uint32_le(s, 0); /* WorkstationBufferOffset */
 
 	/* Version is present because NTLMSSP_NEGOTIATE_VERSION is set */
-	ntlm_output_version(s); /* Version (8 bytes) */
+	//ntlm_output_version(s); /* Version (8 bytes) */
 
 	s_mark_end(s);
 
@@ -991,7 +994,6 @@ void ntlm_recv_challenge_message(rdpSec * sec, STREAM s)
 
 void ntlm_send_authenticate_message(rdpSec * sec)
 {
-	void * p;
 	size_t len;
 	STREAM s;
 	rdpSet *settings;
@@ -1015,24 +1017,33 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 	uint32 NtChallengeResponseBufferOffset;
 	uint32 EncryptedRandomSessionKeyBufferOffset;
 
+	uint8* DomainNameBuffer;
+	uint8* UserNameBuffer;
+	uint8* WorkstationBuffer;
 	uint8* NtChallengeResponseBuffer;
 	uint8* EncryptedRandomSessionKeyBuffer;
 
 	s = xmalloc(sizeof(struct stream));
-	s->data = xmalloc(512);
+	s->data = xmalloc(1024);
 	s->p = s->data;
 	s->end = s->p;
 
 	settings = sec->rdp->settings;
 
-	DomainNameLen = strlen(settings->domain) * 2;
-	UserNameLen = strlen(settings->username) * 2;
-	WorkstationLen = strlen(settings->domain) * 2;
+	DomainNameBuffer = (uint8*) xstrdup_out_unistr(sec->rdp, settings->domain, &len);
+	DomainNameLen = len + 2;
+
+	UserNameBuffer = (uint8*) xstrdup_out_unistr(sec->rdp, settings->username, &len);
+	UserNameLen = len + 2;
+
+	WorkstationBuffer = (uint8*) xstrdup_out_unistr(sec->rdp, settings->server, &len);
+	WorkstationLen = len + 2;
+
 	LmChallengeResponseLen = 0;
 	NtChallengeResponseLen = sec->nla->target_info_length + 48;
 	EncryptedRandomSessionKeyLen = 16;
 
-	DomainNameBufferOffset = 88; /* starting buffer offset */
+	DomainNameBufferOffset = 64 + 16; /* starting buffer offset */
 	UserNameBufferOffset = DomainNameBufferOffset + DomainNameLen;
 	WorkstationBufferOffset = UserNameBufferOffset + UserNameLen;
 	LmChallengeResponseBufferOffset = WorkstationBufferOffset + WorkstationLen;
@@ -1043,7 +1054,7 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 	EncryptedRandomSessionKeyBuffer = (uint8*) malloc(EncryptedRandomSessionKeyLen);
 
 	out_uint8a(s, ntlm_signature, 8); /* Signature (8 bytes) */
-	out_uint32_le(s, 1); /* MessageType */
+	out_uint32_le(s, 3); /* MessageType */
 
 	/* LmChallengeResponseFields (8 bytes) */
 	out_uint16_le(s, LmChallengeResponseLen); /* LmChallengeResponseLen */
@@ -1092,19 +1103,27 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 	negotiateFlags |= NTLMSSP_NEGOTIATE_ALWAYS_SIGN;
 	negotiateFlags |= NTLMSSP_NEGOTIATE_EXTENDED_SESSION_SECURITY;
 
+	//negotiateFlags |= NTLMSSP_NEGOTIATE_VERSION;
+	negotiateFlags |= NTLMSSP_NEGOTIATE_OEM_DOMAIN_SUPPLIED;
+	negotiateFlags |= NTLMSSP_NEGOTIATE_OEM_WORKSTATION_SUPPLIED;
+
 	out_uint32_le(s, negotiateFlags); /* NegotiateFlags (4 bytes) */
+	//ntlm_output_version(s); /* Version (8 bytes) */
 
 	/* Payload (variable) */
 
-	p = xstrdup_out_unistr(sec->rdp, settings->domain, &len);
-	out_uint8a(s, p, len + 2);
-	xfree(p);
-	p = xstrdup_out_unistr(sec->rdp, settings->username, &len);
-	out_uint8a(s, p, len + 2);
-	xfree(p);
-	p = xstrdup_out_unistr(sec->rdp, settings->domain, &len);
-	out_uint8a(s, p, len + 2);
-	xfree(p);
+	/* DomainName */
+	out_uint8p(s, DomainNameBuffer,  DomainNameLen);
+
+	/* UserName */
+	out_uint8p(s, UserNameBuffer,  UserNameLen);
+
+	/* Workstation */
+	out_uint8p(s, WorkstationBuffer,  WorkstationLen);
+
+	/*credssp_ntlm_v2_response(settings->password, settings->username, settings->domain,
+		sec->nla->server_challenge, sec->nla->target_info, sec->nla->target_info_length,
+		NtChallengeResponseBuffer, EncryptedRandomSessionKeyBuffer);*/
 
 	credssp_ntlm_v2_response(settings->password, settings->username, settings->domain,
 		sec->nla->server_challenge, sec->nla->target_info, sec->nla->target_info_length,
@@ -1134,6 +1153,10 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 
 	sec->nla->sequence_number++;
 	sec->nla->state = NTLM_STATE_FINAL;
+
+	xfree(DomainNameBuffer);
+	xfree(UserNameBuffer);
+	xfree(WorkstationBuffer);
 
 	/*
 	  Annotated AUTHENTICATE_MESSAGE Packet Sample:
