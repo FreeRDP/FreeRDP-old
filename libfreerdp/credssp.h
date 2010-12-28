@@ -91,6 +91,13 @@ struct rdp_nla
 	uint8 client_sealing_key[16];
 	uint8 server_sealing_key[16];
 	CryptoRc4 rc4_stream;
+	uint8* negotiate_message;
+	int negotiate_message_length;
+	uint8* challenge_message;
+	int challenge_message_length;
+	uint8* authenticate_message;
+	int authenticate_message_length;
+	uint8 message_integrity_check[16];
 };
 typedef struct rdp_nla rdpNla;
 

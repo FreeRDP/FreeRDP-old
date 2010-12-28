@@ -558,6 +558,22 @@ void credssp_ntlm_encrypt_message_with_signature(uint8* msg, int msg_len, uint8*
 	credssp_ntlm_make_signature(msg, msg_len, signing_key, sealing_key, seq_num, rc4, signature);
 }
 
+void credssp_ntlm_message_integrity_check(uint8* negotiate_msg, int negotiate_msg_length,
+	uint8* challenge_msg, int challenge_msg_length, uint8* authenticate_msg, int authenticate_msg_length, uint8* session_key, uint8* mic)
+{
+	uint8* messages;
+	int messages_length = negotiate_msg_length + challenge_msg_length + authenticate_msg_length;
+
+	messages = (uint8*) xmalloc(messages_length);
+
+	memcpy(messages, negotiate_msg, negotiate_msg_length);
+	memcpy(&messages[negotiate_msg_length], challenge_msg, challenge_msg_length);
+	memcpy(&messages[negotiate_msg_length + challenge_msg_length], authenticate_msg, authenticate_msg_length);
+
+	/* Compute the HMAC-MD5 hash of the concatenated messages using the exported session key */
+	HMAC(EVP_md5(), (void*) session_key, 16, (void*) messages, messages_length, (void*) mic, NULL);
+}
+
 void credssp_ntlm_v2_response(char* password, char* username, char* server, uint8* challenge, uint8* info, int info_size, uint8* response, uint8* session_key)
 {
 	char timestamp[8];
@@ -919,6 +935,10 @@ void ntlm_send_negotiate_message(rdpSec * sec)
 
 	s_mark_end(s);
 
+	sec->nla->negotiate_message_length = s->end - s->data;
+	sec->nla->negotiate_message = (uint8*) xmalloc(sec->nla->negotiate_message_length);
+	memcpy(sec->nla->negotiate_message, s->data, sec->nla->negotiate_message_length);
+
 	credssp_send(sec, s, NULL);
 	
 	sec->nla->sequence_number++;
@@ -927,12 +947,16 @@ void ntlm_send_negotiate_message(rdpSec * sec)
 
 void ntlm_recv_challenge_message(rdpSec * sec, STREAM s)
 {
+	uint8* start_offset;
+	uint8* end_offset;
 	uint16 targetNameLen;
 	uint16 targetNameMaxLen;
 	uint32 targetNameBufferOffset;
 	uint16 targetInfoLen;
 	uint16 targetInfoMaxLen;
 	uint32 targetInfoBufferOffset;
+
+	start_offset = s->p;
 
 	/* TargetNameFields (8 bytes) */
 	in_uint16_le(s, targetNameLen); /* TargetNameLen (2 bytes) */
@@ -974,6 +998,12 @@ void ntlm_recv_challenge_message(rdpSec * sec, STREAM s)
 		ntlm_input_av_pairs(s, sec->nla->av_pairs);
 	}
 
+	end_offset = s->p;
+
+	sec->nla->challenge_message_length = end_offset - start_offset;
+	sec->nla->challenge_message = (uint8*) xmalloc(sec->nla->challenge_message_length);
+	memcpy(sec->nla->challenge_message, start_offset, sec->nla->challenge_message_length);
+
 	/* Generate ExportedSessionKey */
 	credssp_ntlm_nonce(sec->nla->exported_session_key, 16);
 
@@ -996,6 +1026,7 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 	rdpSet *settings;
 	uint32 negotiateFlags;
 
+	uint8* mic_offset;
 	uint8 signature[16];
 	STREAM pubKeyAuth;
 	uint8* encrypted_public_key;
@@ -1108,6 +1139,7 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 	ntlm_output_version(s); /* Version (8 bytes) */
 
 	/* MIC (16 bytes) */
+	mic_offset = s->p; /* save pointer for later */
 	out_uint8s(s, 16); /* this is set to zero first, then the MIC is calculated and set */
 
 	/* Payload (offset 88) */
@@ -1131,6 +1163,20 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 	out_uint8p(s, NtChallengeResponseBuffer, NtChallengeResponseLen);
 	out_uint8p(s, EncryptedRandomSessionKeyBuffer, EncryptedRandomSessionKeyLen);
 	s_mark_end(s);
+
+	sec->nla->authenticate_message_length = s->end - s->data;
+	sec->nla->authenticate_message = (uint8*) xmalloc(sec->nla->authenticate_message_length);
+	memcpy(sec->nla->authenticate_message, s->data, sec->nla->authenticate_message_length);
+
+	credssp_ntlm_message_integrity_check(
+		sec->nla->negotiate_message, sec->nla->negotiate_message_length,
+		sec->nla->challenge_message, sec->nla->challenge_message_length,
+		sec->nla->authenticate_message, sec->nla->authenticate_message_length,
+		sec->nla->exported_session_key, sec->nla->message_integrity_check);
+
+	s->p = mic_offset;
+	out_uint8p(s, sec->nla->message_integrity_check, 16); /* output real MIC which was previously set to zero */
+	s->p = s->end;
 
 	pubKeyAuth = xmalloc(sizeof(struct stream));
 	pubKeyAuth->data = xmalloc(sec->nla->public_key_length + 16);
