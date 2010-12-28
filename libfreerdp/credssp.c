@@ -574,13 +574,17 @@ void credssp_ntlm_message_integrity_check(uint8* negotiate_msg, int negotiate_ms
 	HMAC(EVP_md5(), (void*) session_key, 16, (void*) messages, messages_length, (void*) mic, NULL);
 }
 
-void credssp_ntlm_v2_response(char* password, char* username, char* server, uint8* challenge, uint8* info, int info_size, uint8* response, uint8* session_key)
+void credssp_ntlm_v2_response(char* password, char* username, char* server, uint8* challenge, uint8* info, int info_size, uint8* response, uint8* session_key, char* timestamp)
 {
-	char timestamp[8];
 	char clientRandom[8];
+	char generated_timestamp[8];
 
 	/* Timestamp */
-	credssp_ntlm_current_time(timestamp);
+	if (timestamp == NULL)
+	{
+		credssp_ntlm_current_time(generated_timestamp);
+		timestamp = generated_timestamp;
+	}
 
 	/* Generate an 8-byte client random */
 	credssp_ntlm_nonce((uint8*) clientRandom, 8);
@@ -1026,8 +1030,10 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 	rdpSet *settings;
 	uint32 negotiateFlags;
 
+	char* timestamp;
 	uint8* mic_offset;
 	uint8 signature[16];
+	AV_PAIRS* av_pairs;
 	STREAM pubKeyAuth;
 	uint8* encrypted_public_key;
 
@@ -1156,9 +1162,18 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 	/* LmChallengeResponse */
 	out_uint8s(s, LmChallengeResponseLen); /* this is simply set to zero */
 
+	/* If a timestamp was given in the challenge message, it must be used */
+	
+	av_pairs = sec->nla->av_pairs;
+
+	if (av_pairs->Timestamp.value != NULL)
+		timestamp = (char*) av_pairs->Timestamp.value;
+	else
+		timestamp = NULL;
+
 	credssp_ntlm_v2_response(settings->password, settings->username, settings->domain,
 		sec->nla->server_challenge, sec->nla->target_info, sec->nla->target_info_length,
-		NtChallengeResponseBuffer, EncryptedRandomSessionKeyBuffer);
+		NtChallengeResponseBuffer, EncryptedRandomSessionKeyBuffer, timestamp);
 
 	out_uint8p(s, NtChallengeResponseBuffer, NtChallengeResponseLen);
 	out_uint8p(s, EncryptedRandomSessionKeyBuffer, EncryptedRandomSessionKeyLen);
