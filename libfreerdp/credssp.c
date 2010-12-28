@@ -1036,11 +1036,11 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 	WorkstationBuffer = (uint8*) xstrdup_out_unistr(sec->rdp, settings->server, &len);
 	WorkstationLen = len + 2;
 
-	LmChallengeResponseLen = 0;
+	LmChallengeResponseLen = 24;
 	NtChallengeResponseLen = sec->nla->target_info_length + 48;
 	EncryptedRandomSessionKeyLen = 16;
 
-	DomainNameBufferOffset = 72 + 16; /* starting buffer offset */
+	DomainNameBufferOffset = 88; /* starting buffer offset */
 	UserNameBufferOffset = DomainNameBufferOffset + DomainNameLen;
 	WorkstationBufferOffset = UserNameBufferOffset + UserNameLen;
 	LmChallengeResponseBufferOffset = WorkstationBufferOffset + WorkstationLen;
@@ -1107,7 +1107,10 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 	out_uint32_le(s, negotiateFlags); /* NegotiateFlags (4 bytes) */
 	ntlm_output_version(s); /* Version (8 bytes) */
 
-	/* Payload (variable) */
+	/* MIC (16 bytes) */
+	out_uint8s(s, 16); /* this is set to zero first, then the MIC is calculated and set */
+
+	/* Payload (offset 88) */
 
 	/* DomainName */
 	out_uint8p(s, DomainNameBuffer,  DomainNameLen);
@@ -1118,9 +1121,8 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 	/* Workstation */
 	out_uint8p(s, WorkstationBuffer,  WorkstationLen);
 
-	/*credssp_ntlm_v2_response(settings->password, settings->username, settings->domain,
-		sec->nla->server_challenge, sec->nla->target_info, sec->nla->target_info_length,
-		NtChallengeResponseBuffer, EncryptedRandomSessionKeyBuffer);*/
+	/* LmChallengeResponse */
+	out_uint8s(s, LmChallengeResponseLen); /* this is simply set to zero */
 
 	credssp_ntlm_v2_response(settings->password, settings->username, settings->domain,
 		sec->nla->server_challenge, sec->nla->target_info, sec->nla->target_info_length,
