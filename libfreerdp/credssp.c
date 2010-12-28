@@ -814,8 +814,6 @@ static void ntlm_free_av_pairs(AV_PAIRS* av_pairs)
 	}
 }
 
-#ifdef COMPILE_UNUSED_CODE
-
 static void ntlm_output_version(STREAM s)
 {
 	/* The following version information was observed with Windows 7 */
@@ -826,7 +824,6 @@ static void ntlm_output_version(STREAM s)
 	out_uint8s(s, 3); /* Reserved (3 bytes) */
 	out_uint8(s, NTLMSSP_REVISION_W2K3); /* NTLMRevisionCurrent (1 byte) */
 }
-#endif
 
 static void ntlm_print_negotiate_flags(uint32 flags)
 {
@@ -1043,7 +1040,7 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 	NtChallengeResponseLen = sec->nla->target_info_length + 48;
 	EncryptedRandomSessionKeyLen = 16;
 
-	DomainNameBufferOffset = 64 + 16; /* starting buffer offset */
+	DomainNameBufferOffset = 72 + 16; /* starting buffer offset */
 	UserNameBufferOffset = DomainNameBufferOffset + DomainNameLen;
 	WorkstationBufferOffset = UserNameBufferOffset + UserNameLen;
 	LmChallengeResponseBufferOffset = WorkstationBufferOffset + WorkstationLen;
@@ -1097,18 +1094,18 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 	negotiateFlags |= NTLMSSP_NEGOTIATE_SIGN;
 	negotiateFlags |= NTLMSSP_NEGOTIATE_SEAL;
 	negotiateFlags |= NTLMSSP_NEGOTIATE_NTLM;
-	negotiateFlags |= NTLMSSP_REQUEST_TARGET;
+	//negotiateFlags |= NTLMSSP_REQUEST_TARGET;
 	negotiateFlags |= NTLMSSP_NEGOTIATE_UNICODE;
 	negotiateFlags |= NTLMSSP_NEGOTIATE_KEY_EXCH;
 	negotiateFlags |= NTLMSSP_NEGOTIATE_ALWAYS_SIGN;
 	negotiateFlags |= NTLMSSP_NEGOTIATE_EXTENDED_SESSION_SECURITY;
 
-	//negotiateFlags |= NTLMSSP_NEGOTIATE_VERSION;
+	negotiateFlags |= NTLMSSP_NEGOTIATE_VERSION;
 	negotiateFlags |= NTLMSSP_NEGOTIATE_OEM_DOMAIN_SUPPLIED;
 	negotiateFlags |= NTLMSSP_NEGOTIATE_OEM_WORKSTATION_SUPPLIED;
 
 	out_uint32_le(s, negotiateFlags); /* NegotiateFlags (4 bytes) */
-	//ntlm_output_version(s); /* Version (8 bytes) */
+	ntlm_output_version(s); /* Version (8 bytes) */
 
 	/* Payload (variable) */
 
@@ -1161,91 +1158,88 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 	/*
 	  Annotated AUTHENTICATE_MESSAGE Packet Sample:
 	
-	  4e 54 4c 4d 53 53 50 00 "NTLMSSP"
-	  03 00 00 00 MessageType
-	  18 00 LmChallengeResponseLen (24)
-	  18 00 LmChallengeResponseMaxLen (24)
-	  70 00 00 00 LmChallengeResponseBufferOffset (112)
-	  4a 01 NtChallengeResponseLen (330)
-	  4a 01 NtChallengeResponseMaxLen (330)
-	  88 00 00 00 NtChallengeResponseBufferOffset (136)
-	  08 00 DomainNameLen (8)
-	  08 00 DomainNameMaxLen (8)
-	  58 00 00 00 DomainNameBufferOffset (88)
-	  08 00 UserNameLen (8)
-	  08 00 UserNameMaxLen (8)
-	  60 00 00 00 UserNameBufferOffset (96)
-	  08 00 WorkstationLen (8)
-	  08 00 WorkstationMaxLen (8)
-	  68 00 00 00 WorkstationBufferOffset (104)
-	  10 00 EncryptedRandomSessionKeyLen (16)
-	  10 00 EncryptedRandomSessionKeyMaxLen (16)
-	  d2 01 00 00 EncryptedRandomSessionKeyBufferOffset (466)
-	  35 82 88 e2 NegotiateFlags
-	  06 01 b0 1d 00 00 00 0f Version (6.1, Build 7600)
-	  
-	  Payload (Offset 88)
-	
-	  e3 eb a3 eb 64 b2 29 f2 DomainName (Length 8, Offset 88)
-	  a6 a7 72 40 ec ba 3c 44 UserName (Length 8, Offset 96)
-	  57 00 69 00 6e 00 37 00 Workstation (Length 8, Offset 104)
-	  
-	  LmChallengeResponse (Length 24, Offset 112):
-	  75 00 73 00 65 00 72 00 57 00 49 00 4e 00 37 00 00 00 00 00 00 00 00 00
-	  
-	  NtChallengeResponse (Length 330, Offset 136):
-	  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	  38 1b b0 74 c5 5a 25 8a 7f 65 ba 23 c4 4a 8a 7a
-	  01 01 00 00 00 00 00 00 ec e8 26 e4 6b cc ca 01
-	  f3 4b f1 fb 28 99 4d 8d 00 00 00 00 02 00 1e 00
-	  57 00 49 00 4e 00 2d 00 30 00 38 00 51 00 39 00
-	  4b 00 51 00 46 00 50 00 50 00 4f 00 36 00 01 00
-	  1e 00 57 00 49 00 4e 00 2d 00 30 00 38 00 51 00
-	  39 00 4b 00 51 00 46 00 50 00 50 00 4f 00 36 00
-	  04 00 1e 00 57 00 49 00 4e 00 2d 00 30 00 38 00
-	  51 00 39 00 4b 00 51 00 46 00 50 00 50 00 4f 00
-	  36 00 03 00 1e 00 57 00 49 00 4e 00 2d 00 30 00
-	  38 00 51 00 39 00 4b 00 51 00 46 00 50 00 50 00
-	  4f 00 36 00 07 00 08 00 ec e8 26 e4 6b cc ca 01
-	  06 00 04 00 02 00 00 00 08 00 30 00 30 00 00 00
-	  00 00 00 00 01 00 00 00 00 20 00 00 ca 32 de 66
-	  8c 9d df a3 77 79 bc 93 61 78 9a c0 14 73 52 86
-	  26 da 9f 93 42 0c 3c a1 93 82 3a 01 0a 00 10 00
-	  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	  09 00 2a 00 54 00 45 00 52 00 4d 00 53 00 52 00
-	  56 00 2f 00 31 00 39 00 32 00 2e 00 31 00 36 00
-	  38 00 2e 00 31 00 2e 00 31 00 30 00 31 00 00 00
-	  00 00 00 00 00 00 00 00 00 00
-	  
-	  EncryptedRandomSessionKey (Length 16, Offset 466):
-	  2b eb c2 83 0b 82 85 6a 37 a3 7b aa 0c 39 e2 83
-	  
-	  Padding (Length 294, Offset 482):
+	4e 54 4c 4d 53 53 50 00 Signature "NTLMSSP"
+	03 00 00 00 MessageType (AUTHENTICATE)
+	18 00 LmChallengeResponseLen (24)
+	18 00 LmChallengeResponseMaxLen (24)
+	8e 00 00 00 LmChallengeResponseBufferOffset (142)
+	76 01 NtChallengeResponseLen (374)
+	76 01 NtChallengeResponseMaxLen (374)
+	a6 00 00 00 NtChallengeResponseBufferOffset (166)
+	16 00 DomainNameLen (22)
+	16 00 DomainNameMaxLen (22)
+	58 00 00 00 DomainNameBufferOffset (88)
+	16 00 UserNameLen (22)
+	16 00 UserNameMaxLen (22)
+	6e 00 00 00 UserNameBufferOffset (110)
+	0a 00 WorkstationLen (10)
+	0a 00 WorkstationMaxLen (10)
+	84 00 00 00 WorkstationBufferOffset (132)
+	10 00 EncryptedRandomSessionKeyLen (16)
+	10 00 EncryptedRandomSessionKeyMaxLen (16)
+	1c 02 00 00 EncryptedRandomSessionKeyBufferOffset (540)
+	35 82 88 e2 NegotiateFlags (0110101 10000010 10001000 11100010)
+	06 01 b0 1d 00 00 00 0f Version (6.1, Build 7600)
+	7c b2 31 88 4c ba a1 94 bb 02 6d fb fd fc 95 19 MIC, length 16
 
-	 SubjectPublicKeyInfo, Length 294?
-	 
-	 signature size: 16
-	 public key length: 270
+	Payload, offset 88
 
-	  a3 82 01 22 04 82 01 1e 01 00 00 00 2f 2e e5 d3
-	  b3 11 34 1c 00 00 00 00 9e 94 9b 76 d8 42 31 65
-	  0a 0d ab b8 37 b0 32 9e 0d e1 7c 48 a6 20 8b f2
-	  49 6b 20 b6 00 ef 94 0c 78 46 4a 5a 3e c4 a3 15
-	  94 e7 49 b8 b2 f8 fb bf 83 b0 07 8b b3 1c 0b e8
-	  23 5c 25 d4 1b 2a 97 94 fa 6c cf 96 e9 08 a8 14
-	  0d bd 71 56 c9 d6 22 61 ab 6f b8 c7 e6 3f 0a 81
-	  fc 16 cb 9d 1e 87 64 b5 82 75 40 76 ac d0 99 dc
-	  fd ce 2c 9f f8 6f 6c 46 6c d7 f9 91 c6 51 9d 1b
-	  27 9b 83 29 c2 77 d4 6f cb e7 96 a2 76 6b eb ce
-	  ad ec 9a b9 2e 43 c5 5f 17 7f 2c f3 8b 27 ce 2e
-	  c3 9e 7c 5d 2a 6c dd 1b 88 aa df d7 14 c8 34 8a
-	  29 9b 7e 39 2a 4b d3 a0 13 cc 85 95 e1 12 5e 6a
-	  0e 87 31 91 85 86 0e 1b f6 44 06 5c 79 53 a5 7f
-	  38 88 4c f8 9f b1 2d f9 a8 3d cd c7 87 f9 62 71
-	  37 52 f6 c2 ee b3 ac ae 7b 33 6d 7b cb b4 02 0c
-	  cb 7e da 3a fe b5 91 20 c7 3e 4c 79 64 8a 25 4b
-	  1e 77 c3 d4 18 a4 2c 73 ba c0 b8 3e 61 3b d7 34
-	  eb 55 3c 97 eb 7b
+	41 00 57 00 41 00 4b 00 45 00 43 00 4f 00 44 00 49 00 4e 00 47 00 DomainName "AWAKECODING" (offset 88, length 22)
+	61 00 77 00 61 00 6b 00 65 00 63 00 6f 00 64 00 69 00 6e 00 67 00 UserName "awakecoding" (offset 110, length 22)
+	41 00 57 00 41 00 4b 00 45 00 "AWAKE" Workstation (offset 132, length 10)
+	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 LmChallengeResponse (offset 142, length 24)
+
+	NtChallengeResponse (offset 166, length 374)
+
+	cd ea 0b 85 66 8b 8f 2e d4 64 c3 5f 67 0a d9 cf
+	01 01 00 00 00 00 00 00 95 04 0e b3 31 a6 cb 01
+	5a 62 97 bb 4b f3 b7 f4 00 00 00 00 02 00 16 00
+	41 00 57 00 41 00 4b 00 45 00 43 00 4f 00 44 00
+	49 00 4e 00 47 00 01 00 0e 00 56 00 42 00 4f 00
+	58 00 44 00 45 00 56 00 04 00 24 00 61 00 77 00
+	61 00 6b 00 65 00 63 00 6f 00 64 00 69 00 6e 00
+	67 00 2e 00 61 00 74 00 68 00 2e 00 63 00 78 00
+	03 00 34 00 76 00 62 00 6f 00 78 00 64 00 65 00
+	76 00 2e 00 61 00 77 00 61 00 6b 00 65 00 63 00
+	6f 00 64 00 69 00 6e 00 67 00 2e 00 61 00 74 00
+	68 00 2e 00 63 00 78 00 05 00 24 00 61 00 77 00
+	61 00 6b 00 65 00 63 00 6f 00 64 00 69 00 6e 00
+	67 00 2e 00 61 00 74 00 68 00 2e 00 63 00 78 00
+	07 00 08 00 95 04 0e b3 31 a6 cb 01 06 00 04 00
+	02 00 00 00 08 00 30 00 30 00 00 00 00 00 00 00
+	01 00 00 00 00 20 00 00 3a 15 8e a6 75 82 d8 f7
+	3e 06 fa 7a b4 df fd 43 84 6c 02 3a fd 5a 94 fe
+	cf 97 0f 3d 19 2c 38 20 0a 00 10 00 00 00 00 00
+	00 00 00 00 00 00 00 00 00 00 00 00 09 00 2a 00
+	54 00 45 00 52 00 4d 00 53 00 52 00 56 00 2f 00
+	31 00 39 00 32 00 2e 00 31 00 36 00 38 00 2e 00
+	31 00 2e 00 31 00 35 00 30 00 00 00 00 00 00 00
+	00 00 00 00 00 00
+
+	d1 e8 22 84 32 c1 76 0c 9b fd 4b 03 de 8b ab 49 EncryptedRandomSessionKey (offset 540, length 16)
+
+	PubKeyAuth (offset 556, length 294)
+
+	a3 82 01 22 04 82 01 1e 01 00 00 00 e7 80 15 43
+	01 a3 41 12 00 00 00 00 ae 2e 8b 3e 08 c7 2f 0c
+	9d b2 d6 0b 55 d9 b3 39 16 4a 08 6d 1e 4c d3 57
+	96 3e 32 26 dd df 7d 3c 26 58 e6 06 88 a8 99 ac
+	cf e7 26 b4 ec a0 f8 a4 14 62 12 8d 65 b9 51 22
+	3e 78 31 79 08 93 c7 bd f5 a4 06 a2 82 cd 7d 07
+	99 d8 46 a3 f7 57 31 f2 46 c0 d5 24 79 ac 30 3b
+	39 b4 74 45 b6 0d ed f8 fd cf ec b8 fa 21 a7 b8
+	69 06 13 79 e4 17 fc 2a a5 68 72 50 65 cf 55 38
+	13 20 ba 3d ae e3 62 a5 f0 a6 64 47 cc 50 05 06
+	8b 66 1c 58 32 b7 87 70 52 2f a0 f6 66 2c 92 07
+	f9 e7 71 06 dc c2 73 79 1a 3b 21 84 df 53 6e 11
+	f5 e4 ea 3d f9 a1 ee 29 fc c3 02 c2 2d 77 ef 6f
+	8d 48 17 85 a9 19 89 e3 7f 5d 16 46 dc 4f a5 c0
+	d6 95 bb 89 bc 07 dd d3 31 59 6b 46 aa e2 4b 59
+	c2 19 2d a5 d1 b5 da 31 7f ba aa a8 f4 4b 56 82
+	e7 fc 16 a2 17 9c 48 14 88 f6 46 65 b1 1e 9f 1e
+	0a 8d af 28 fc be 2c 31 b1 7d b8 41 2c 95 4c a2
+	1c 7b bd f4 cc 5c
+
 	*/
 }
 
