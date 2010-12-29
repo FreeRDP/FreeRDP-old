@@ -1236,20 +1236,20 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 	ntlm_output_av_pairs(target_info, av_pairs);
 	s_mark_end(target_info);
 
-	//sec->nla->target_info = target_info->data;
-	//sec->nla->target_info_length = target_info->end - target_info->data;
+	sec->nla->target_info = target_info->data;
+	sec->nla->target_info_length = target_info->end - target_info->data;
 
 	DomainNameBuffer = (uint8*) xstrdup_out_unistr(sec->rdp, settings->domain, &len);
-	DomainNameLen = len + 2;
+	DomainNameLen = len;
 
 	UserNameBuffer = (uint8*) xstrdup_out_unistr(sec->rdp, settings->username, &len);
-	UserNameLen = len + 2;
+	UserNameLen = len;
 
 	WorkstationBuffer = (uint8*) xstrdup_out_unistr(sec->rdp, settings->server, &len);
-	WorkstationLen = len + 2;
+	WorkstationLen = len;
 
 	LmChallengeResponseLen = 24;
-	NtChallengeResponseLen = sec->nla->target_info_length + 48;
+	NtChallengeResponseLen = sec->nla->target_info_length + 52;
 	EncryptedRandomSessionKeyLen = 16;
 
 	DomainNameBufferOffset = 88; /* starting buffer offset */
