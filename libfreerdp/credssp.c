@@ -641,6 +641,85 @@ void credssp_ntlm_v2_response_static(char* password, char* username, char* serve
 	free(ntlm_v2_blob);
 }
 
+void credssp_ntlm_output_restriction_encoding(rdpSec * sec, AV_PAIR* restrictions)
+{
+	STREAM s = xmalloc(sizeof(struct stream));
+
+	uint8 machineID[32] =
+		"\x3A\x15\x8E\xA6\x75\x82\xD8\xF7\x3E\x06\xFA\x7A\xB4\xDF\xFD\x43"
+		"\x84\x6C\x02\x3A\xFD\x5A\x94\xFE\xCF\x97\x0F\x3D\x19\x2C\x38\x20";
+
+	s->data = restrictions->value;
+	s->size = restrictions->length;
+	s->end = s->data + s->size;
+	s->p = s->data;
+
+	out_uint32_le(s, 48); /* Size */
+	out_uint8s(s, 4); /* Z4 (set to zero) */
+	
+	/* IntegrityLevel (bit 31 set to 1) */
+	out_uint8(s, 1);
+	out_uint8s(s, 3);
+
+	out_uint32_le(s, 0x20000000); /* SubjectIntegrityLevel */
+	out_uint8p(s, machineID, 32); /* MachineID */
+
+	xfree(s);
+}
+
+void credssp_ntlm_output_target_name(rdpSec * sec, AV_PAIR* target_name)
+{
+	size_t len;
+	STREAM s;
+	char* spn;
+	int spn_length;
+	char* target;
+	int target_length;
+	char service[] = "TERMSRV/";
+	int service_length = 8;
+
+	s = xmalloc(sizeof(struct stream));
+
+	s->data = target_name->value;
+	s->size = target_name->length;
+	s->end = s->data + s->size;
+	s->p = s->data;
+
+	target = sec->rdp->settings->server;
+	target_length = strlen(sec->rdp->settings->server);
+
+	spn_length = target_length + service_length;
+	spn = (char*) xmalloc(spn_length);
+
+	memcpy(spn, service, service_length);
+	memcpy(&spn[service_length], target, target_length);
+
+	target_name->length = spn_length * 2;
+	target_name->value = (uint8*) xstrdup_out_unistr(sec->rdp, spn, &len);
+
+	xfree(spn);
+	xfree(s);
+}
+
+void credssp_ntlm_populate_av_pairs(rdpSec * sec, AV_PAIRS* av_pairs)
+{
+	/* MsvAvFlags */
+	av_pairs->Flags = 0x00000002; /* Indicates the present of a Message Integrity Check (MIC) */
+
+	/* MsvAvRestrictions */
+	av_pairs->Restrictions.length = 48;
+	av_pairs->Restrictions.value = (uint8*) xmalloc(48);
+	credssp_ntlm_output_restriction_encoding(sec, &(av_pairs->Restrictions));;
+
+	/* MsvChannelBindings */
+	av_pairs->ChannelBindings.length = 16;
+	av_pairs->ChannelBindings.value = (uint8*) xmalloc(16);
+	memset(av_pairs->ChannelBindings.value, '\0', 16);
+
+	/* MsvAvTargetName */
+	credssp_ntlm_output_target_name(sec, &(av_pairs->TargetName));
+}
+
 void ntlm_input_av_pairs(STREAM s, AV_PAIRS* av_pairs)
 {
 	AV_ID AvId;
@@ -1110,6 +1189,7 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 	uint8* mic_offset;
 	uint8 signature[16];
 	AV_PAIRS* av_pairs;
+	STREAM target_info;
 	STREAM pubKeyAuth;
 	uint8* encrypted_public_key;
 
@@ -1139,6 +1219,25 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 	s->end = s->p;
 
 	settings = sec->rdp->settings;
+
+	av_pairs = sec->nla->av_pairs;
+
+	if (av_pairs->Timestamp.value != NULL)
+		timestamp = (char*) av_pairs->Timestamp.value;
+	else
+		timestamp = NULL;
+
+	target_info = xmalloc(sizeof(struct stream));
+	target_info->data = xmalloc(512);
+	target_info->p = target_info->data;
+	target_info->end = target_info->p;
+
+	credssp_ntlm_populate_av_pairs(sec, av_pairs);
+	ntlm_output_av_pairs(target_info, av_pairs);
+	s_mark_end(target_info);
+
+	//sec->nla->target_info = target_info->data;
+	//sec->nla->target_info_length = target_info->end - target_info->data;
 
 	DomainNameBuffer = (uint8*) xstrdup_out_unistr(sec->rdp, settings->domain, &len);
 	DomainNameLen = len + 2;
@@ -1236,15 +1335,6 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 
 	/* LmChallengeResponse */
 	out_uint8s(s, LmChallengeResponseLen); /* this is simply set to zero */
-
-	/* If a timestamp was given in the challenge message, it must be used */
-	
-	av_pairs = sec->nla->av_pairs;
-
-	if (av_pairs->Timestamp.value != NULL)
-		timestamp = (char*) av_pairs->Timestamp.value;
-	else
-		timestamp = NULL;
 
 	credssp_ntlm_v2_response(settings->password, settings->username, settings->domain,
 		sec->nla->server_challenge, sec->nla->target_info, sec->nla->target_info_length,
