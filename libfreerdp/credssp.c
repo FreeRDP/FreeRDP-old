@@ -599,7 +599,7 @@ void credssp_ntlm_v2_response_static(char* password, char* username, char* serve
 	char ntlm_v2_hash[16];
 	char* ntlm_v2_challenge_blob;
 
-	blob_size = 32 + info_size;
+	blob_size = info_size + 36;
 	ntlm_v2_blob = malloc(blob_size);
 
 	/* Compute the NTLMv2 hash */
@@ -617,6 +617,7 @@ void credssp_ntlm_v2_response_static(char* password, char* username, char* serve
 	/* Reserved3 (4 bytes) */
 	memcpy(&ntlm_v2_blob[28], info, info_size);
 	/* Reserved4 (4 bytes) */
+	/* Padding (4 bytes) */
 
 	/* Concatenate challenge with blob */
 	ntlm_v2_challenge_blob = malloc(blob_size + 8);
@@ -728,17 +729,8 @@ void ntlm_input_av_pairs(STREAM s, AV_PAIRS* av_pairs)
 	while(AvId != MsvAvEOL);
 }
 
-#ifdef COMPILE_UNUSED_CODE
-
-static void ntlm_output_av_pairs(STREAM s, AV_PAIRS* av_pairs)
+void ntlm_output_av_pairs(STREAM s, AV_PAIRS* av_pairs)
 {
-	if (av_pairs->NbComputerName.length > 0)
-	{
-		out_uint16_le(s, MsvAvNbComputerName); /* AvId */
-		out_uint16_le(s, av_pairs->NbComputerName.length); /* AvLen */
-		out_uint8a(s, av_pairs->NbComputerName.value, av_pairs->NbComputerName.length); /* Value */
-	}
-
 	if (av_pairs->NbDomainName.length > 0)
 	{
 		out_uint16_le(s, MsvAvNbDomainName); /* AvId */
@@ -746,11 +738,11 @@ static void ntlm_output_av_pairs(STREAM s, AV_PAIRS* av_pairs)
 		out_uint8a(s, av_pairs->NbDomainName.value, av_pairs->NbDomainName.length); /* Value */
 	}
 
-	if (av_pairs->DnsComputerName.length > 0)
+	if (av_pairs->NbComputerName.length > 0)
 	{
-		out_uint16_le(s, MsvAvDnsComputerName); /* AvId */
-		out_uint16_le(s, av_pairs->DnsComputerName.length); /* AvLen */
-		out_uint8a(s, av_pairs->DnsComputerName.value, av_pairs->DnsComputerName.length); /* Value */
+		out_uint16_le(s, MsvAvNbComputerName); /* AvId */
+		out_uint16_le(s, av_pairs->NbComputerName.length); /* AvLen */
+		out_uint8a(s, av_pairs->NbComputerName.value, av_pairs->NbComputerName.length); /* Value */
 	}
 
 	if (av_pairs->DnsDomainName.length > 0)
@@ -760,17 +752,19 @@ static void ntlm_output_av_pairs(STREAM s, AV_PAIRS* av_pairs)
 		out_uint8a(s, av_pairs->DnsDomainName.value, av_pairs->DnsDomainName.length); /* Value */
 	}
 
+	if (av_pairs->DnsComputerName.length > 0)
+	{
+		out_uint16_le(s, MsvAvDnsComputerName); /* AvId */
+		out_uint16_le(s, av_pairs->DnsComputerName.length); /* AvLen */
+		out_uint8a(s, av_pairs->DnsComputerName.value, av_pairs->DnsComputerName.length); /* Value */
+	}
+
 	if (av_pairs->DnsTreeName.length > 0)
 	{
 		out_uint16_le(s, MsvAvDnsTreeName); /* AvId */
 		out_uint16_le(s, av_pairs->DnsTreeName.length); /* AvLen */
 		out_uint8a(s, av_pairs->DnsTreeName.value, av_pairs->DnsTreeName.length); /* Value */
 	}
-
-	/* MsvAvFlags */
-	out_uint16_le(s, MsvAvFlags); /* AvId */
-	out_uint16_le(s, 4); /* AvLen */
-	out_uint32_le(s, av_pairs->Flags); /* Value */
 
 	if (av_pairs->Timestamp.length > 0)
 	{
@@ -779,18 +773,16 @@ static void ntlm_output_av_pairs(STREAM s, AV_PAIRS* av_pairs)
 		out_uint8a(s, av_pairs->Timestamp.value, av_pairs->Timestamp.length); /* Value */
 	}
 
+	/* MsvAvFlags */
+	out_uint16_le(s, MsvAvFlags); /* AvId */
+	out_uint16_le(s, 4); /* AvLen */
+	out_uint32_le(s, av_pairs->Flags); /* Value */
+
 	if (av_pairs->Restrictions.length > 0)
 	{
 		out_uint16_le(s, MsvAvRestrictions); /* AvId */
 		out_uint16_le(s, av_pairs->Restrictions.length); /* AvLen */
 		out_uint8a(s, av_pairs->Restrictions.value, av_pairs->Restrictions.length); /* Value */
-	}
-
-	if (av_pairs->TargetName.length > 0)
-	{
-		out_uint16_le(s, MsvAvTargetName); /* AvId */
-		out_uint16_le(s, av_pairs->TargetName.length); /* AvLen */
-		out_uint8a(s, av_pairs->TargetName.value, av_pairs->TargetName.length); /* Value */
 	}
 
 	if (av_pairs->ChannelBindings.length > 0)
@@ -800,12 +792,17 @@ static void ntlm_output_av_pairs(STREAM s, AV_PAIRS* av_pairs)
 		out_uint8a(s, av_pairs->ChannelBindings.value, av_pairs->ChannelBindings.length); /* Value */
 	}
 
+	if (av_pairs->TargetName.length > 0)
+	{
+		out_uint16_le(s, MsvAvTargetName); /* AvId */
+		out_uint16_le(s, av_pairs->TargetName.length); /* AvLen */
+		out_uint8a(s, av_pairs->TargetName.value, av_pairs->TargetName.length); /* Value */
+	}
+
 	/* This endicates the end of the AV_PAIR array */
 	out_uint16_le(s, MsvAvEOL); /* AvId */
 	out_uint16_le(s, 0); /* AvLen */
 }
-
-#endif
 
 static void ntlm_free_av_pairs(AV_PAIRS* av_pairs)
 {
@@ -913,6 +910,7 @@ void ntlm_send_negotiate_message(rdpSec * sec)
 	negotiateFlags |= NTLMSSP_NEGOTIATE_SEAL;
 	negotiateFlags |= NTLMSSP_NEGOTIATE_NTLM;
 	negotiateFlags |= NTLMSSP_REQUEST_TARGET;
+	negotiateFlags |= NTLMSSP_NEGOTIATE_VERSION;
 	negotiateFlags |= NTLMSSP_NEGOTIATE_UNICODE;
 	negotiateFlags |= NTLMSSP_NEGOTIATE_KEY_EXCH;
 	negotiateFlags |= NTLMSSP_NEGOTIATE_ALWAYS_SIGN;
@@ -935,7 +933,7 @@ void ntlm_send_negotiate_message(rdpSec * sec)
 	out_uint32_le(s, 0); /* WorkstationBufferOffset */
 
 	/* Version is present because NTLMSSP_NEGOTIATE_VERSION is set */
-	//ntlm_output_version(s); /* Version (8 bytes) */
+	ntlm_output_version(s); /* Version (8 bytes) */
 
 	s_mark_end(s);
 
@@ -947,6 +945,21 @@ void ntlm_send_negotiate_message(rdpSec * sec)
 	
 	sec->nla->sequence_number++;
 	sec->nla->state = NTLM_STATE_CHALLENGE;
+
+	/*
+		NEGOTIATE_MESSAGE
+
+		4e 54 4c 4d 53 53 50 00 Signature "NTLMSSP"
+		01 00 00 00 MessageType (NEGOTIATE)
+		b7 82 08 e2 NegotiateFlags
+		00 00 DomainNameLen (0)
+		00 00 DomainNameMaxLen (0)
+		00 00 00 00 DomainNameBufferOffset (0)
+		00 00 WorkstationLen (0)
+		00 00 WorkstationMaxLen (0)
+		00 00 00 00 WorkstationBufferOffset (0)
+		06 01 b0 1d 00 00 00 0f Version (6.1, Build 7600)
+	 */
 }
 
 void ntlm_recv_challenge_message(rdpSec * sec, STREAM s)
@@ -960,7 +973,7 @@ void ntlm_recv_challenge_message(rdpSec * sec, STREAM s)
 	uint16 targetInfoMaxLen;
 	uint32 targetInfoBufferOffset;
 
-	start_offset = s->p;
+	start_offset = s->p - 12;
 
 	/* TargetNameFields (8 bytes) */
 	in_uint16_le(s, targetNameLen); /* TargetNameLen (2 bytes) */
@@ -989,13 +1002,14 @@ void ntlm_recv_challenge_message(rdpSec * sec, STREAM s)
 
 	if (targetNameLen > 0)
 	{
+		s->p = start_offset + targetNameBufferOffset;
 		sec->nla->target_name = xmalloc(targetNameLen);
-		memcpy(sec->nla->target_name, &(s->data[targetNameBufferOffset]), (size_t)targetNameLen);
+		in_uint8a(s, sec->nla->target_name, targetNameLen);
 	}
 
 	if (targetInfoLen > 0)
 	{
-		s->p = &(s->data[targetInfoBufferOffset]);
+		s->p = start_offset + targetInfoBufferOffset;
 		sec->nla->target_info = malloc(targetInfoLen);
 		sec->nla->target_info_length = targetInfoLen;
 		memcpy(sec->nla->target_info, s->p, targetInfoLen);
@@ -1019,8 +1033,70 @@ void ntlm_recv_challenge_message(rdpSec * sec, STREAM s)
 	credssp_ntlm_client_sealing_key(sec->nla->exported_session_key, (uint8*) sec->nla->client_sealing_key);
 	credssp_ntlm_server_sealing_key(sec->nla->exported_session_key, (uint8*) sec->nla->server_sealing_key);
 
-	//sec->nla->sequence_number++;
 	sec->nla->state = NTLM_STATE_AUTHENTICATE;
+
+	/*
+		CHALLENGE_MESSAGE
+
+		4e 54 4c 4d 53 53 50 00 Signature "NTLMSSP"
+		02 00 00 00 MessageType (CHALLENGE)
+		16 00 TargetNameLen (22)
+		16 00 TargetNameMaxLen (22)
+		38 00 00 00 TargetNameBufferOffset (56)
+		35 82 89 e2 NegotiateFlags
+		28 d8 ce b7 71 7d 27 db ServerChallenge
+		00 00 00 00 00 00 00 00 Reserved
+		c4 00 TargetInfoLen (196)
+		c4 00 TargetInfoMaxLen (196)
+		4e 00 00 00 TargetInfoBufferOffset (78)
+		06 01 b0 1d 00 00 00 0f Version (6.1, Build 7600)
+
+		Payload (offset 56)
+
+		TargetName "AWAKECODING" (offset 56, length 22)
+		41 00 57 00 41 00 4b 00 45 00 43 00 4f 00 44 00 49 00 4e 00 47 00
+
+		TargetInfo (offset 78, length 196)
+
+		  02 00 AvId (MsvAvNbDomainName)
+		  16 00 AvLen (22)
+		  Value "AWAKECODING"
+		  41 00 57 00 41 00 4b 00 45 00 43 00 4f 00 44 00 49 00 4e 00 47 00
+
+		  01 00 AvId (MsvAvNbComputerName)
+		  0e 00 AvLen (14)
+		  Value "VBOXDEV"
+		  56 00 42 00 4f 00 58 00 44 00 45 00 56 00
+
+		  04 00 AvId (MsvAvDnsDomainName)
+		  24 00 AvLen (36)
+		  Value "awakecoding.ath.cx"
+		  61 00 77 00 61 00 6b 00 65 00 63 00 6f 00 64 00
+		  69 00 6e 00 67 00 2e 00 61 00 74 00 68 00 2e 00
+		  63 00 78 00
+
+		  03 00 AvId (MsvAvDnsComputerName)
+		  34 00 AvLen (52)
+		  Value "vboxdev.awakecoding.ath.cx"
+		  76 00 62 00 6f 00 78 00 64 00 65 00 76 00 2e 00
+		  61 00 77 00 61 00 6b 00 65 00 63 00 6f 00 64 00
+		  69 00 6e 00 67 00 2e 00 61 00 74 00 68 00 2e 00
+		  63 00 78 00
+
+		  05 00 AvId (MsvAvDnsTreeName)
+		  24 00 AvLen (36)
+		  Value "awakecoding.ath.cx"
+		  61 00 77 00 61 00 6b 00 65 00 63 00 6f 00 64 00
+		  69 00 6e 00 67 00 2e 00 61 00 74 00 68 00 2e 00
+		  63 00 78 00
+
+		  07 00 AvId (MsvAvTimestamp)
+		  08 00 AvLen (8)
+		  95 04 0e b3 31 a6 cb 01
+
+		  00 00 AvId (MsvAvEOL)
+		  00 00 AvLen (0)
+	 */
 }
 
 void ntlm_send_authenticate_message(rdpSec * sec)
@@ -1131,7 +1207,6 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 	negotiateFlags |= NTLMSSP_NEGOTIATE_SIGN;
 	negotiateFlags |= NTLMSSP_NEGOTIATE_SEAL;
 	negotiateFlags |= NTLMSSP_NEGOTIATE_NTLM;
-	//negotiateFlags |= NTLMSSP_REQUEST_TARGET;
 	negotiateFlags |= NTLMSSP_NEGOTIATE_UNICODE;
 	negotiateFlags |= NTLMSSP_NEGOTIATE_KEY_EXCH;
 	negotiateFlags |= NTLMSSP_NEGOTIATE_ALWAYS_SIGN;
@@ -1219,90 +1294,151 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 	xfree(WorkstationBuffer);
 
 	/*
-	  Annotated AUTHENTICATE_MESSAGE Packet Sample:
-	
-	4e 54 4c 4d 53 53 50 00 Signature "NTLMSSP"
-	03 00 00 00 MessageType (AUTHENTICATE)
-	18 00 LmChallengeResponseLen (24)
-	18 00 LmChallengeResponseMaxLen (24)
-	8e 00 00 00 LmChallengeResponseBufferOffset (142)
-	76 01 NtChallengeResponseLen (374)
-	76 01 NtChallengeResponseMaxLen (374)
-	a6 00 00 00 NtChallengeResponseBufferOffset (166)
-	16 00 DomainNameLen (22)
-	16 00 DomainNameMaxLen (22)
-	58 00 00 00 DomainNameBufferOffset (88)
-	16 00 UserNameLen (22)
-	16 00 UserNameMaxLen (22)
-	6e 00 00 00 UserNameBufferOffset (110)
-	0a 00 WorkstationLen (10)
-	0a 00 WorkstationMaxLen (10)
-	84 00 00 00 WorkstationBufferOffset (132)
-	10 00 EncryptedRandomSessionKeyLen (16)
-	10 00 EncryptedRandomSessionKeyMaxLen (16)
-	1c 02 00 00 EncryptedRandomSessionKeyBufferOffset (540)
-	35 82 88 e2 NegotiateFlags (0110101 10000010 10001000 11100010)
-	06 01 b0 1d 00 00 00 0f Version (6.1, Build 7600)
-	7c b2 31 88 4c ba a1 94 bb 02 6d fb fd fc 95 19 MIC, length 16
+		AUTHENTICATE_MESSAGE
 
-	Payload, offset 88
+		4e 54 4c 4d 53 53 50 00 Signature "NTLMSSP"
+		03 00 00 00 MessageType (AUTHENTICATE)
+		18 00 LmChallengeResponseLen (24)
+		18 00 LmChallengeResponseMaxLen (24)
+		8e 00 00 00 LmChallengeResponseBufferOffset (142)
+		76 01 NtChallengeResponseLen (374)
+		76 01 NtChallengeResponseMaxLen (374)
+		a6 00 00 00 NtChallengeResponseBufferOffset (166)
+		16 00 DomainNameLen (22)
+		16 00 DomainNameMaxLen (22)
+		58 00 00 00 DomainNameBufferOffset (88)
+		16 00 UserNameLen (22)
+		16 00 UserNameMaxLen (22)
+		6e 00 00 00 UserNameBufferOffset (110)
+		0a 00 WorkstationLen (10)
+		0a 00 WorkstationMaxLen (10)
+		84 00 00 00 WorkstationBufferOffset (132)
+		10 00 EncryptedRandomSessionKeyLen (16)
+		10 00 EncryptedRandomSessionKeyMaxLen (16)
+		1c 02 00 00 EncryptedRandomSessionKeyBufferOffset (540)
+		35 82 88 e2 NegotiateFlags (0110101 10000010 10001000 11100010)
+		06 01 b0 1d 00 00 00 0f Version (6.1, Build 7600)
+		7c b2 31 88 4c ba a1 94 bb 02 6d fb fd fc 95 19 MIC, length 16
 
-	41 00 57 00 41 00 4b 00 45 00 43 00 4f 00 44 00 49 00 4e 00 47 00 DomainName "AWAKECODING" (offset 88, length 22)
-	61 00 77 00 61 00 6b 00 65 00 63 00 6f 00 64 00 69 00 6e 00 67 00 UserName "awakecoding" (offset 110, length 22)
-	41 00 57 00 41 00 4b 00 45 00 "AWAKE" Workstation (offset 132, length 10)
-	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 LmChallengeResponse (offset 142, length 24)
+		Payload, offset 88
 
-	NtChallengeResponse (offset 166, length 374)
+		41 00 57 00 41 00 4b 00 45 00 43 00 4f 00 44 00 49 00 4e 00 47 00 DomainName "AWAKECODING" (offset 88, length 22)
+		61 00 77 00 61 00 6b 00 65 00 63 00 6f 00 64 00 69 00 6e 00 67 00 UserName "awakecoding" (offset 110, length 22)
+		41 00 57 00 41 00 4b 00 45 00 "AWAKE" Workstation (offset 132, length 10)
+		00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 LmChallengeResponse (offset 142, length 24)
 
-	cd ea 0b 85 66 8b 8f 2e d4 64 c3 5f 67 0a d9 cf
-	01 01 00 00 00 00 00 00 95 04 0e b3 31 a6 cb 01
-	5a 62 97 bb 4b f3 b7 f4 00 00 00 00 02 00 16 00
-	41 00 57 00 41 00 4b 00 45 00 43 00 4f 00 44 00
-	49 00 4e 00 47 00 01 00 0e 00 56 00 42 00 4f 00
-	58 00 44 00 45 00 56 00 04 00 24 00 61 00 77 00
-	61 00 6b 00 65 00 63 00 6f 00 64 00 69 00 6e 00
-	67 00 2e 00 61 00 74 00 68 00 2e 00 63 00 78 00
-	03 00 34 00 76 00 62 00 6f 00 78 00 64 00 65 00
-	76 00 2e 00 61 00 77 00 61 00 6b 00 65 00 63 00
-	6f 00 64 00 69 00 6e 00 67 00 2e 00 61 00 74 00
-	68 00 2e 00 63 00 78 00 05 00 24 00 61 00 77 00
-	61 00 6b 00 65 00 63 00 6f 00 64 00 69 00 6e 00
-	67 00 2e 00 61 00 74 00 68 00 2e 00 63 00 78 00
-	07 00 08 00 95 04 0e b3 31 a6 cb 01 06 00 04 00
-	02 00 00 00 08 00 30 00 30 00 00 00 00 00 00 00
-	01 00 00 00 00 20 00 00 3a 15 8e a6 75 82 d8 f7
-	3e 06 fa 7a b4 df fd 43 84 6c 02 3a fd 5a 94 fe
-	cf 97 0f 3d 19 2c 38 20 0a 00 10 00 00 00 00 00
-	00 00 00 00 00 00 00 00 00 00 00 00 09 00 2a 00
-	54 00 45 00 52 00 4d 00 53 00 52 00 56 00 2f 00
-	31 00 39 00 32 00 2e 00 31 00 36 00 38 00 2e 00
-	31 00 2e 00 31 00 35 00 30 00 00 00 00 00 00 00
-	00 00 00 00 00 00
+		NtChallengeResponse (offset 166, length 374)
 
-	d1 e8 22 84 32 c1 76 0c 9b fd 4b 03 de 8b ab 49 EncryptedRandomSessionKey (offset 540, length 16)
+		  Response, NTProofStr (length 16)
+		  cd ea 0b 85 66 8b 8f 2e d4 64 c3 5f 67 0a d9 cf
 
-	PubKeyAuth (offset 556, length 294)
+		  NTLMv2_CLIENT_CHALLENGE
 
-	a3 82 01 22 04 82 01 1e 01 00 00 00 e7 80 15 43
-	01 a3 41 12 00 00 00 00 ae 2e 8b 3e 08 c7 2f 0c
-	9d b2 d6 0b 55 d9 b3 39 16 4a 08 6d 1e 4c d3 57
-	96 3e 32 26 dd df 7d 3c 26 58 e6 06 88 a8 99 ac
-	cf e7 26 b4 ec a0 f8 a4 14 62 12 8d 65 b9 51 22
-	3e 78 31 79 08 93 c7 bd f5 a4 06 a2 82 cd 7d 07
-	99 d8 46 a3 f7 57 31 f2 46 c0 d5 24 79 ac 30 3b
-	39 b4 74 45 b6 0d ed f8 fd cf ec b8 fa 21 a7 b8
-	69 06 13 79 e4 17 fc 2a a5 68 72 50 65 cf 55 38
-	13 20 ba 3d ae e3 62 a5 f0 a6 64 47 cc 50 05 06
-	8b 66 1c 58 32 b7 87 70 52 2f a0 f6 66 2c 92 07
-	f9 e7 71 06 dc c2 73 79 1a 3b 21 84 df 53 6e 11
-	f5 e4 ea 3d f9 a1 ee 29 fc c3 02 c2 2d 77 ef 6f
-	8d 48 17 85 a9 19 89 e3 7f 5d 16 46 dc 4f a5 c0
-	d6 95 bb 89 bc 07 dd d3 31 59 6b 46 aa e2 4b 59
-	c2 19 2d a5 d1 b5 da 31 7f ba aa a8 f4 4b 56 82
-	e7 fc 16 a2 17 9c 48 14 88 f6 46 65 b1 1e 9f 1e
-	0a 8d af 28 fc be 2c 31 b1 7d b8 41 2c 95 4c a2
-	1c 7b bd f4 cc 5c
+		  01 RespType (1)
+		  01 HighRespType (1)
+		  00 00 Reserved1
+		  00 00 00 00 Reserved2
+		  95 04 0e b3 31 a6 cb 01 Timestamp
+		  5a 62 97 bb 4b f3 b7 f4 ChallengeFromClient
+		  00 00 00 00 Reserved3
 
+		    TargetInfo (AV_PAIRs)
+
+		      02 00 AvId (MsvAvNbDomainName)
+		      16 00 AvLen (22)
+		      Value "AWAKECODING"
+		      41 00 57 00 41 00 4b 00 45 00 43 00 4f 00 44 00 49 00 4e 00 47 00
+
+		      01 00 AvId (MsvAvNbComputerName)
+		      0e 00 AvLen (14)
+		      Value "VBOXDEV"
+		      56 00 42 00 4f 00 58 00 44 00 45 00 56 00
+
+		      04 00 AvId (MsvAvDnsDomainName)
+		      24 00 AvLen (36)
+		      Value "awakecoding.ath.cx"
+		      61 00 77 00 61 00 6b 00 65 00 63 00 6f 00 64 00
+		      69 00 6e 00 67 00 2e 00 61 00 74 00 68 00 2e 00
+		      63 00 78 00
+
+		      03 00 AvId (MsvAvDnsComputerName)
+		      34 00 AvLen (52)
+		      Value "vboxdev.awakecoding.ath.cx"
+		      76 00 62 00 6f 00 78 00 64 00 65 00 76 00 2e 00
+		      61 00 77 00 61 00 6b 00 65 00 63 00 6f 00 64 00
+		      69 00 6e 00 67 00 2e 00 61 00 74 00 68 00 2e 00
+		      63 00 78 00
+
+		      05 00 AvId (MsvAvDnsTreeName)
+		      24 00 AvLen (36)
+		      Value "awakecoding.ath.cx"
+		      61 00 77 00 61 00 6b 00 65 00 63 00 6f 00 64 00
+		      69 00 6e 00 67 00 2e 00 61 00 74 00 68 00 2e 00
+		      63 00 78 00
+
+		      07 00 AvId (MsvAvTimestamp)
+		      08 00 AvLen (8)
+		      95 04 0e b3 31 a6 cb 01
+
+		      06 00 AvId (MsvAvFlags)
+		      04 00 AvLen (4)
+		      02 00 00 00
+
+		      08 00 AvId (MsvAvRestrictions)
+		      30 00 AvLen (48)
+
+		      Value (Restriction_Encoding)
+
+			30 00 00 00 Size (48)
+			00 00 00 00 Z4 (0)
+			01 00 00 00 IntegrityLevel (1)
+			00 20 00 00 SubjectIntegrityLevel (0x20000000)
+
+			MachineID
+			3a 15 8e a6 75 82 d8 f7 3e 06 fa 7a b4 df fd 43
+			84 6c 02 3a fd 5a 94 fe cf 97 0f 3d 19 2c 38 20
+
+		      0a 00 AvId (MsvChannelBindings)
+		      10 00 AvLen (16)
+		      00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+
+		      09 00 AvId (MsvAvTargetName)
+		      2a 00 AvLen (42)
+		      Value "TERMSRV/192.168.1.150"
+		      54 00 45 00 52 00 4d 00 53 00 52 00 56 00 2f 00
+		      31 00 39 00 32 00 2e 00 31 00 36 00 38 00 2e 00
+		      31 00 2e 00 31 00 35 00 30 00
+
+		      00 00 AvId (MsvAvEOL)
+		      00 00 AvLen (0)
+
+		    00 00 00 00 Reserved4
+		    00 00 00 00 Unknown (4 bytes)
+
+		EncryptedRandomSessionKey (offset 540, length 16)
+		d1 e8 22 84 32 c1 76 0c 9b fd 4b 03 de 8b ab 49
+
+		PubKeyAuth (offset 556, length 294)
+
+		a3 82 01 22 04 82 01 1e 01 00 00 00 e7 80 15 43
+		01 a3 41 12 00 00 00 00 ae 2e 8b 3e 08 c7 2f 0c
+		9d b2 d6 0b 55 d9 b3 39 16 4a 08 6d 1e 4c d3 57
+		96 3e 32 26 dd df 7d 3c 26 58 e6 06 88 a8 99 ac
+		cf e7 26 b4 ec a0 f8 a4 14 62 12 8d 65 b9 51 22
+		3e 78 31 79 08 93 c7 bd f5 a4 06 a2 82 cd 7d 07
+		99 d8 46 a3 f7 57 31 f2 46 c0 d5 24 79 ac 30 3b
+		39 b4 74 45 b6 0d ed f8 fd cf ec b8 fa 21 a7 b8
+		69 06 13 79 e4 17 fc 2a a5 68 72 50 65 cf 55 38
+		13 20 ba 3d ae e3 62 a5 f0 a6 64 47 cc 50 05 06
+		8b 66 1c 58 32 b7 87 70 52 2f a0 f6 66 2c 92 07
+		f9 e7 71 06 dc c2 73 79 1a 3b 21 84 df 53 6e 11
+		f5 e4 ea 3d f9 a1 ee 29 fc c3 02 c2 2d 77 ef 6f
+		8d 48 17 85 a9 19 89 e3 7f 5d 16 46 dc 4f a5 c0
+		d6 95 bb 89 bc 07 dd d3 31 59 6b 46 aa e2 4b 59
+		c2 19 2d a5 d1 b5 da 31 7f ba aa a8 f4 4b 56 82
+		e7 fc 16 a2 17 9c 48 14 88 f6 46 65 b1 1e 9f 1e
+		0a 8d af 28 fc be 2c 31 b1 7d b8 41 2c 95 4c a2
+		1c 7b bd f4 cc 5c
 	*/
 }
 
