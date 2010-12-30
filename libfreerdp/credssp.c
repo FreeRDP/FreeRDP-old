@@ -724,10 +724,11 @@ void ntlm_input_av_pairs(STREAM s, AV_PAIRS* av_pairs)
 {
 	AV_ID AvId;
 	uint16 AvLen;
-	uint8* value = NULL;
+	uint8* value;
 
 	do
 	{
+		value = NULL;
 		in_uint16_le(s, AvId);
 		in_uint16_le(s, AvLen);
 
@@ -801,7 +802,8 @@ void ntlm_input_av_pairs(STREAM s, AV_PAIRS* av_pairs)
 				break;
 
 			default:
-				xfree(value);
+				if (value != NULL)
+					xfree(value);
 				break;
 		}
 	}
@@ -852,10 +854,12 @@ void ntlm_output_av_pairs(STREAM s, AV_PAIRS* av_pairs)
 		out_uint8a(s, av_pairs->Timestamp.value, av_pairs->Timestamp.length); /* Value */
 	}
 
-	/* MsvAvFlags */
-	out_uint16_le(s, MsvAvFlags); /* AvId */
-	out_uint16_le(s, 4); /* AvLen */
-	out_uint32_le(s, av_pairs->Flags); /* Value */
+	if (av_pairs->Flags > 0)
+	{
+		out_uint16_le(s, MsvAvFlags); /* AvId */
+		out_uint16_le(s, 4); /* AvLen */
+		out_uint32_le(s, av_pairs->Flags); /* Value */
+	}
 
 	if (av_pairs->Restrictions.length > 0)
 	{
@@ -1219,7 +1223,6 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 	s->end = s->p;
 
 	settings = sec->rdp->settings;
-
 	av_pairs = sec->nla->av_pairs;
 
 	if (av_pairs->Timestamp.value != NULL)
@@ -1235,6 +1238,8 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 	credssp_ntlm_populate_av_pairs(sec, av_pairs);
 	ntlm_output_av_pairs(target_info, av_pairs);
 	s_mark_end(target_info);
+
+	hexdump(sec->nla->target_info, sec->nla->target_info_length);
 
 	sec->nla->target_info = target_info->data;
 	sec->nla->target_info_length = target_info->end - target_info->data;
