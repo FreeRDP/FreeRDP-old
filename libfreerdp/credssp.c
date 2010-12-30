@@ -46,29 +46,27 @@
 
 #include "credssp.h"
 
-#define NTLMSSP_NEGOTIATE_UNICODE			0x00000001
-#define NTLMSSP_NEGOTIATE_OEM					0x00000002
-#define NTLMSSP_REQUEST_TARGET				0x00000004
-#define NTLMSSP_NEGOTIATE_SIGN				0x00000010
-#define NTLMSSP_NEGOTIATE_SEAL				0x00000020
-#define NTLMSSP_NEGOTIATE_DATAGRAM			0x00000040
-#define NTLMSSP_NEGOTIATE_LM_KEY			0x00000080
-#define NTLMSSP_NEGOTIATE_NTLM				0x00000200
-#define NTLMSSP_NEGOTIATE_NT_ONLY			0x00000400
-#define NTLMSSP_NEGOTIATE_OEM_DOMAIN_SUPPLIED		0x00001000
-#define NTLMSSP_NEGOTIATE_OEM_WORKSTATION_SUPPLIED	0x00002000
-#define NTLMSSP_NEGOTIATE_ALWAYS_SIGN			0x00008000
-#define NTLMSSP_TARGET_TYPE_DOMAIN			0x00010000
-#define NTLMSSP_TARGET_TYPE_SERVER			0x0002000
-#define NTLMSSP_TARGET_TYPE_SHARE			0x0004000
-#define NTLMSSP_NEGOTIATE_EXTENDED_SESSION_SECURITY	0x00080000
-#define NTLMSSP_NEGOTIATE_IDENTIFY			0x00100000
-#define NTLMSSP_REQUEST_NON_NT_SESSION_KEY		0x00400000
-#define NTLMSSP_NEGOTIATE_TARGET_INFO			0x00800000
-#define NTLMSSP_NEGOTIATE_VERSION			0x02000000
-#define NTLMSSP_NEGOTIATE_128				0x20000000
-#define NTLMSSP_NEGOTIATE_KEY_EXCH			0x40000000
-#define NTLMSSP_NEGOTIATE_56				0x80000000
+#define NTLMSSP_NEGOTIATE_56				0x00000001 /* 0 */
+#define NTLMSSP_NEGOTIATE_KEY_EXCH		0x00000002 /* 1 */
+#define NTLMSSP_NEGOTIATE_128				0x00000004 /* 2 */
+#define NTLMSSP_NEGOTIATE_VERSION			0x00000040 /* 6 */
+#define NTLMSSP_NEGOTIATE_TARGET_INFO			0x00000100 /* 8 */
+#define NTLMSSP_REQUEST_NON_NT_SESSION_KEY		0x00000200 /* 9 */
+#define NTLMSSP_NEGOTIATE_IDENTIFY			0x00000800 /* 11 */
+#define NTLMSSP_NEGOTIATE_EXTENDED_SESSION_SECURITY	0x00001000 /* 12 */
+#define NTLMSSP_TARGET_TYPE_SERVER			0x00004000 /* 14 */
+#define NTLMSSP_TARGET_TYPE_DOMAIN			0x00008000 /* 15 */
+#define NTLMSSP_NEGOTIATE_ALWAYS_SIGN			0x00010000 /* 16 */
+#define NTLMSSP_NEGOTIATE_OEM_WORKSTATION_SUPPLIED	0x00040000 /* 18 */
+#define NTLMSSP_NEGOTIATE_OEM_DOMAIN_SUPPLIED		0x00080000 /* 19 */
+#define NTLMSSP_NEGOTIATE_NTLM				0x00400000 /* 22 */
+#define NTLMSSP_NEGOTIATE_LM_KEY			0x01000000 /* 24 */
+#define NTLMSSP_NEGOTIATE_DATAGRAM			0x02000000 /* 25 */
+#define NTLMSSP_NEGOTIATE_SEAL				0x04000000 /* 26 */
+#define NTLMSSP_NEGOTIATE_SIGN				0x08000000 /* 27 */
+#define NTLMSSP_REQUEST_TARGET				0x20000000 /* 29 */
+#define NTLMSSP_NEGOTIATE_OEM					0x40000000 /* 30 */
+#define NTLMSSP_NEGOTIATE_UNICODE			0x80000000 /* 31 */
 
 #define WINDOWS_MAJOR_VERSION_5		0x05
 #define WINDOWS_MAJOR_VERSION_6		0x06
@@ -925,6 +923,7 @@ static void ntlm_output_version(STREAM s)
 	out_uint8(s, NTLMSSP_REVISION_W2K3); /* NTLMRevisionCurrent (1 byte) */
 }
 
+#if 0
 static void ntlm_print_negotiate_flags(uint32 flags)
 {
 	printf("negotiateFlags {\n");
@@ -944,8 +943,6 @@ static void ntlm_print_negotiate_flags(uint32 flags)
 		printf("\tNTLMSSP_NEGOTIATE_IDENTIFY\n");
 	if (flags & NTLMSSP_NEGOTIATE_EXTENDED_SESSION_SECURITY)
 		printf("\tNTLMSSP_NEGOTIATE_EXTENDED_SESSION_SECURITY\n");
-	if (flags & NTLMSSP_TARGET_TYPE_SHARE)
-		printf("\tNTLMSSP_TARGET_TYPE_SHARE\n");
 	if (flags & NTLMSSP_TARGET_TYPE_SERVER)
 		printf("\tNTLMSSP_TARGET_TYPE_SERVER\n");
 	if (flags & NTLMSSP_TARGET_TYPE_DOMAIN)
@@ -956,8 +953,6 @@ static void ntlm_print_negotiate_flags(uint32 flags)
 		printf("\tNTLMSSP_NEGOTIATE_OEM_WORKSTATION_SUPPLIED\n");
 	if (flags & NTLMSSP_NEGOTIATE_OEM_DOMAIN_SUPPLIED)
 		printf("\tNTLMSSP_NEGOTIATE_OEM_DOMAIN_SUPPLIED\n");
-	if (flags & NTLMSSP_NEGOTIATE_NT_ONLY)
-		printf("\tNTLMSSP_NEGOTIATE_NT_ONLY\n");
 	if (flags & NTLMSSP_NEGOTIATE_NTLM)
 		printf("\tNTLMSSP_NEGOTIATE_NTLM\n");
 	if (flags & NTLMSSP_NEGOTIATE_LM_KEY)
@@ -976,6 +971,51 @@ static void ntlm_print_negotiate_flags(uint32 flags)
 		printf("\tNTLMSSP_NEGOTIATE_UNICODE\n");
 	printf("}\n");
 }
+#endif
+
+void ntlm_output_negotiate_flags(STREAM s, uint32 flags)
+{
+	uint8* p;
+	uint8 tmp;
+
+	/*
+	 * NegotiateFlags is a 4-byte bit map
+	 * Output in Big Endian and then reverse order
+	 */
+
+	p = s->p;
+	out_uint32_be(s, flags);
+
+	tmp = p[0];
+	p[0] = p[3];
+	p[3] = tmp;
+
+	tmp = p[1];
+	p[1] = p[2];
+	p[2] = tmp;
+}
+
+void ntlm_input_negotiate_flags(STREAM s, uint32 *flags)
+{
+	uint8* p;
+	uint8 tmp;
+
+	/* 
+	 * NegotiateFlags is a 4-byte bit map
+	 * Reverse order and then input in Big Endian
+	 */
+
+	p = s->p;
+	tmp = p[0];
+	p[0] = p[3];
+	p[3] = tmp;
+
+	tmp = p[1];
+	p[1] = p[2];
+	p[2] = tmp;
+
+	in_uint32_be(s, *flags);
+}
 
 void ntlm_send_negotiate_message(rdpSec * sec)
 {
@@ -987,19 +1027,19 @@ void ntlm_send_negotiate_message(rdpSec * sec)
 	out_uint8a(s, ntlm_signature, 8); /* Signature (8 bytes) */
 	out_uint32_le(s, 1); /* MessageType */
 
-	/* Negotiation Flags for NTLMv2 */
+	negotiateFlags |= NTLMSSP_NEGOTIATE_56;
 	negotiateFlags |= NTLMSSP_NEGOTIATE_128;
-	negotiateFlags |= NTLMSSP_NEGOTIATE_SIGN;
-	negotiateFlags |= NTLMSSP_NEGOTIATE_SEAL;
-	negotiateFlags |= NTLMSSP_NEGOTIATE_NTLM;
-	negotiateFlags |= NTLMSSP_REQUEST_TARGET;
-	negotiateFlags |= NTLMSSP_NEGOTIATE_VERSION;
-	negotiateFlags |= NTLMSSP_NEGOTIATE_UNICODE;
 	negotiateFlags |= NTLMSSP_NEGOTIATE_KEY_EXCH;
-	negotiateFlags |= NTLMSSP_NEGOTIATE_ALWAYS_SIGN;
-	negotiateFlags |= NTLMSSP_NEGOTIATE_EXTENDED_SESSION_SECURITY;
+	negotiateFlags |= NTLMSSP_REQUEST_NON_NT_SESSION_KEY;
+	negotiateFlags |= NTLMSSP_TARGET_TYPE_DOMAIN;
+	negotiateFlags |= NTLMSSP_NEGOTIATE_OEM_DOMAIN_SUPPLIED;
+	negotiateFlags |= NTLMSSP_NEGOTIATE_DATAGRAM;
+	negotiateFlags |= NTLMSSP_REQUEST_TARGET;
+	negotiateFlags |= NTLMSSP_NEGOTIATE_OEM;
+	negotiateFlags |= NTLMSSP_NEGOTIATE_UNICODE;
+	negotiateFlags |= 0x000000B0;
 
-	out_uint32_le(s, negotiateFlags); /* NegotiateFlags (4 bytes) */
+	ntlm_output_negotiate_flags(s, negotiateFlags); /* NegotiateFlags (4 bytes) */
 
 	/* only set if NTLMSSP_NEGOTIATE_OEM_DOMAIN_SUPPLIED is set */
 
@@ -1063,7 +1103,8 @@ void ntlm_recv_challenge_message(rdpSec * sec, STREAM s)
 	in_uint16_le(s, targetNameMaxLen); /* TargetNameMaxLen (2 bytes) */
 	in_uint32_le(s, targetNameBufferOffset); /* TargetNameBufferOffset (4 bytes) */
 
-	in_uint32_le(s, sec->nla->negotiate_flags); /* NegotiateFlags (4 bytes) */
+	ntlm_input_negotiate_flags(s, &(sec->nla->negotiate_flags)); /* NegotiateFlags (4 bytes) */
+
 	in_uint8a(s, sec->nla->server_challenge, 8); /* ServerChallenge (8 bytes) */
 	in_uint8s(s, 8); /* Reserved (8 bytes), should be ignored */
 
@@ -1071,8 +1112,6 @@ void ntlm_recv_challenge_message(rdpSec * sec, STREAM s)
 	in_uint16_le(s, targetInfoLen); /* TargetInfoLen (2 bytes) */
 	in_uint16_le(s, targetInfoMaxLen); /* TargetInfoMaxLen (2 bytes) */
 	in_uint32_le(s, targetInfoBufferOffset); /* TargetInfoBufferOffset (4 bytes) */
-
-	ntlm_print_negotiate_flags(sec->nla->negotiate_flags);
 	
 	/* only present if NTLMSSP_NEGOTIATE_VERSION is set */
 
@@ -1304,23 +1343,19 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 	out_uint16_le(s, EncryptedRandomSessionKeyLen); /* EncryptedRandomSessionKeyMaxLen */
 	out_uint32_le(s, EncryptedRandomSessionKeyBufferOffset); /* EncryptedRandomSessionKeyBufferOffset */
 
-	/* Negotiation Flags for NTLMv2 */
-	
 	negotiateFlags = 0;
+	negotiateFlags |= NTLMSSP_NEGOTIATE_56;
 	negotiateFlags |= NTLMSSP_NEGOTIATE_128;
-	negotiateFlags |= NTLMSSP_NEGOTIATE_SIGN;
-	negotiateFlags |= NTLMSSP_NEGOTIATE_SEAL;
-	negotiateFlags |= NTLMSSP_NEGOTIATE_NTLM;
-	negotiateFlags |= NTLMSSP_NEGOTIATE_UNICODE;
-	negotiateFlags |= NTLMSSP_NEGOTIATE_KEY_EXCH;
-	negotiateFlags |= NTLMSSP_NEGOTIATE_ALWAYS_SIGN;
-	negotiateFlags |= NTLMSSP_NEGOTIATE_EXTENDED_SESSION_SECURITY;
-
-	negotiateFlags |= NTLMSSP_NEGOTIATE_VERSION;
+	negotiateFlags |= NTLMSSP_REQUEST_NON_NT_SESSION_KEY;
+	negotiateFlags |= NTLMSSP_TARGET_TYPE_DOMAIN;
 	negotiateFlags |= NTLMSSP_NEGOTIATE_OEM_DOMAIN_SUPPLIED;
-	negotiateFlags |= NTLMSSP_NEGOTIATE_OEM_WORKSTATION_SUPPLIED;
+	negotiateFlags |= NTLMSSP_NEGOTIATE_DATAGRAM;
+	negotiateFlags |= NTLMSSP_REQUEST_TARGET;
+	negotiateFlags |= NTLMSSP_NEGOTIATE_OEM;
+	negotiateFlags |= NTLMSSP_NEGOTIATE_UNICODE;
+	negotiateFlags |= 0x00800030;
 
-	out_uint32_le(s, negotiateFlags); /* NegotiateFlags (4 bytes) */
+	ntlm_output_negotiate_flags(s, negotiateFlags); /* NegotiateFlags (4 bytes) */
 	ntlm_output_version(s); /* Version (8 bytes) */
 
 	/* MIC (16 bytes) */
@@ -1411,7 +1446,7 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 		10 00 EncryptedRandomSessionKeyLen (16)
 		10 00 EncryptedRandomSessionKeyMaxLen (16)
 		1c 02 00 00 EncryptedRandomSessionKeyBufferOffset (540)
-		35 82 88 e2 NegotiateFlags (0110101 10000010 10001000 11100010)
+		35 82 88 e2 NegotiateFlags
 		06 01 b0 1d 00 00 00 0f Version (6.1, Build 7600)
 		7c b2 31 88 4c ba a1 94 bb 02 6d fb fd fc 95 19 MIC, length 16
 
