@@ -1020,6 +1020,7 @@ xf_post_connect(xfInfo * xfi)
 	int fullscreen;
 	XSetWindowAttributes attribs;
 	XSizeHints *sizehints;
+	XClassHint *classhints;
 
 	if (xf_get_pixmap_info(xfi) != 0)
 	{
@@ -1040,6 +1041,14 @@ xf_post_connect(xfInfo * xfi)
 		0, 0, width, height, 0, xfi->depth, InputOutput, xfi->visual,
 		CWBackPixel | CWBackingStore | CWOverrideRedirect | CWColormap |
 		CWBorderPixel, &attribs);
+
+	classhints = XAllocClassHint();
+	if (classhints != NULL) {
+		classhints->res_name = "xfreerdp";
+		classhints->res_class = "freerdp";
+		XSetClassHint(xfi->display, xfi->wnd, classhints);
+		XFree(classhints);
+	}
 
 	sizehints = XAllocSizeHints();
 	if (sizehints)
