@@ -1013,9 +1013,9 @@ process_color_pointer_common(rdpRdp * rdp, STREAM s, int bpp)
 	in_uint8p(s, mask, masklen);
 	if ((width != 32) || (height != 32))
 	{
-		ui_error(rdp->inst, "process_color_pointer_common: error "
-			"width %d height %d\n", width, height);
-		return;
+		/* TODO remove this warning if non 32x32 cursors prove reliable */
+		ui_warning(rdp->inst, "process_color_pointer_common: "
+			"width %d height %d bpp %d\n", width, height, bpp);
 	}
 	x = MAX(x, 0);
 	x = MIN(x, width - 1);

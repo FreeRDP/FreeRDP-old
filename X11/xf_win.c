@@ -669,6 +669,38 @@ l_ui_destroy_cursor(struct rdp_inst * inst, RD_HCURSOR cursor)
 	XFreeCursor(xfi->display, (Cursor) cursor);
 }
 
+static int
+convert_a(int owidth, int oheight, void * odata, int iwidth, int iheight, void * idata)
+{
+	int * d32;
+	int * s32;
+	int i1;
+	int j1;
+	int imax;
+	int jmax;
+	int pixel;
+	int a1, r1, g1, b1;
+
+	imax = oheight > iheight ? iheight : oheight;
+	jmax = owidth > iwidth ? iwidth : owidth;
+	s32 = (int *) idata;
+	d32 = (int *) odata;
+	for (i1 = 0; i1 < imax; i1++)
+	{
+		for (j1 = 0; j1 < jmax; j1++)
+		{
+			pixel = s32[i1 * iwidth + j1];
+			a1 = (pixel >> 24) & 0xff;
+			r1 = (pixel >> 16) & 0xff;
+			g1 = (pixel >> 8) & 0xff;
+			b1 = (pixel >> 0) & 0xff;
+			pixel = (a1 << 24) | (b1 << 16) | (g1 << 8) | r1;
+			d32[i1 * owidth + j1] = pixel;
+		}
+	}
+	return 0;
+}
+
 #ifdef USE_XCURSOR
 
 static RD_HCURSOR
@@ -695,6 +727,10 @@ l_ui_create_cursor(struct rdp_inst * inst, uint32 x, uint32 y,
 	{
 		xf_cursor_convert_alpha(xfi, (uint8 *) (ci.pixels), xormask, andmask,
 			width, height, bpp);
+	}
+	if (bpp > 24)
+	{
+		convert_a(width, height, ci.pixels, width, height, ci.pixels);
 	}
 	cur = XcursorImageLoadCursor(xfi->display, &ci);
 	free(ci.pixels);
