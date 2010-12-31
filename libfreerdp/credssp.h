@@ -85,6 +85,7 @@ struct rdp_nla
 	uint32 negotiate_flags;
 	int sequence_number;
 	uint8 server_challenge[8];
+	uint8 session_base_key[16];
 	uint8 exported_session_key[16];
 	uint8 client_signing_key[16];
 	uint8 server_signing_key[16];

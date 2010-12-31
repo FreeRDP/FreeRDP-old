@@ -639,6 +639,20 @@ void credssp_ntlm_v2_response_static(char* password, char* username, char* serve
 	free(ntlm_v2_blob);
 }
 
+void credssp_ntlm_v2_encrypt_session_key(uint8* session_key, uint8* key_exchange_key, uint8* encrypted_session_key)
+{
+	CryptoRc4 rc4;
+
+	/* Initialize RC4 cipher with KeyExchangeKey */
+	rc4 = crypto_rc4_init((void*) key_exchange_key, 16);
+
+	/* Encrypt Session Key */
+	crypto_rc4(rc4, 16, (void*) session_key, (void*) encrypted_session_key);
+
+	/* Free RC4 Cipher */
+	crypto_rc4_free(rc4);
+}
+
 void credssp_ntlm_output_restriction_encoding(rdpSec * sec, AV_PAIR* restrictions)
 {
 	STREAM s = xmalloc(sizeof(struct stream));
@@ -1378,7 +1392,10 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 
 	credssp_ntlm_v2_response(settings->password, settings->username, settings->domain,
 		sec->nla->server_challenge, sec->nla->target_info, sec->nla->target_info_length,
-		NtChallengeResponseBuffer, EncryptedRandomSessionKeyBuffer, timestamp);
+		NtChallengeResponseBuffer, sec->nla->session_base_key, timestamp);
+
+	credssp_ntlm_v2_encrypt_session_key(sec->nla->exported_session_key,
+		sec->nla->session_base_key, EncryptedRandomSessionKeyBuffer);
 
 	out_uint8p(s, NtChallengeResponseBuffer, NtChallengeResponseLen);
 	out_uint8p(s, EncryptedRandomSessionKeyBuffer, EncryptedRandomSessionKeyLen);
