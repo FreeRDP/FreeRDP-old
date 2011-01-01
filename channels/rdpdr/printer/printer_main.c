@@ -100,6 +100,7 @@ printer_get_data(const char * name, int * len)
 		buf = (char *) malloc(*len);
 		memset(buf, 0, *len);
 		i = fread(buf, 1, *len, fp);
+		fclose(fp);
 	}
 	free(filename);
 	return buf;
