@@ -393,6 +393,7 @@ detect_keyboard_type_and_layout_sunos(char* xkbfile, int length)
 			layout = atoi(beg);
 		}
         }
+	pclose(kbd);
 
 	for(i = 0; i < sizeof(SunOSKeyboards) / sizeof(SunOSKeyboard); i++)
 	{
