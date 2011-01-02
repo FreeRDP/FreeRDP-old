@@ -136,7 +136,7 @@ crypto_cert_read(uint8 * data, uint32 len)
 void
 crypto_cert_free(CryptoCert cert)
 {
-    xfree(cert);
+	xfree(cert);
 }
 
 RD_BOOL

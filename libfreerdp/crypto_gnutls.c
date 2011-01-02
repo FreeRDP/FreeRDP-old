@@ -160,7 +160,7 @@ void
 crypto_cert_free(CryptoCert cert)
 {
 	gnutls_x509_crt_deinit(cert->cert);
-    xfree(cert);
+	xfree(cert);
 }
 
 RD_BOOL

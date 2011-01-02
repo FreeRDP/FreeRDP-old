@@ -184,7 +184,7 @@ crypto_rc4_free(CryptoRc4 rc4)
 
 struct crypto_cert_struct
 {
-    CERTCertificate * cert;
+	CERTCertificate * cert;
 };
 
 CryptoCert
@@ -207,7 +207,7 @@ void
 crypto_cert_free(CryptoCert cert)
 {
 	CERT_DestroyCertificate(cert->cert);
-    xfree(cert);
+	xfree(cert);
 }
 
 RD_BOOL

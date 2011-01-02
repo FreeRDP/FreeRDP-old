@@ -131,7 +131,7 @@ void
 crypto_cert_free(CryptoCert cert)
 {
 	ssl_cert_free(cert->data);
-    xfree(cert);
+	xfree(cert);
 }
 
 RD_BOOL
@@ -149,7 +149,7 @@ crypto_cert_print_fp(FILE * fp, CryptoCert cert)
 
 int
 crypto_cert_get_pub_exp_mod(CryptoCert cert, uint32 * key_len,
-               uint8 * exponent, uint32 exp_len, uint8 * modulus, uint32 mod_len)
+                            uint8 * exponent, uint32 exp_len, uint8 * modulus, uint32 mod_len)
 {
 	return False;
 }
