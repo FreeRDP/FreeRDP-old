@@ -799,15 +799,15 @@ rdp_send_confirm_active(rdpRdp * rdp)
 	out_uint16_le(s, (rdp->sec->mcs->mcs_userid + 1001));
 
 	out_uint32_le(s, rdp->rdp_shareid); /* sharedId */
-        /* originatorId must be set to the server channel ID
-            This value is always 0x3EA for Microsoft RDP server implementations */
+	/* originatorId must be set to the server channel ID
+	   This value is always 0x3EA for Microsoft RDP server implementations */
 	out_uint16_le(s, rdp->rdp_serverid); /* originatorId */
 	out_uint16_le(s, sizeof(RDP_SOURCE)); /* lengthSourceDescriptor */
-        /* lengthCombinedCapabilities is the combined size of
-            numberCapabilities, pad2Octets and capabilitySets */
+	/* lengthCombinedCapabilities is the combined size of
+	   numberCapabilities, pad2Octets and capabilitySets */
 	out_uint16_le(s, caplen + 4); /* lengthCombinedCapabilities */
 
-        /* sourceDescriptor is "MSTSC" for Microsoft RDP clients */
+	/* sourceDescriptor is "MSTSC" for Microsoft RDP clients */
 	out_uint8p(s, RDP_SOURCE, sizeof(RDP_SOURCE)); /* sourceDescriptor */
 	out_uint16_le(s, numberCapabilities); /* numberCapabilities */
 	out_uint8s(s, 2); /* pad2Octets */
@@ -843,8 +843,8 @@ rdp_process_server_caps(rdpRdp * rdp, STREAM s, uint16 length)
 
 	start = s->p;
 
-        in_uint16_le(s, numberCapabilities); /* numberCapabilities */
-        in_uint8s(s, 2); /* pad */
+	in_uint16_le(s, numberCapabilities); /* numberCapabilities */
+	in_uint8s(s, 2); /* pad */
 
 	for (n = 0; n < numberCapabilities; n++)
 	{
