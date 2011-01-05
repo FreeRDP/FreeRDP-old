@@ -1029,6 +1029,15 @@ void ntlm_input_negotiate_flags(STREAM s, uint32 *flags)
 	p[2] = tmp;
 
 	in_uint32_be(s, *flags);
+	
+	p = s->p;
+	tmp = p[0];
+	p[0] = p[3];
+	p[3] = tmp;
+	
+	tmp = p[1];
+	p[1] = p[2];
+	p[2] = tmp;
 }
 
 void ntlm_send_negotiate_message(rdpSec * sec)
