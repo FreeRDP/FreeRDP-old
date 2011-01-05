@@ -597,7 +597,7 @@ void credssp_ntlm_v2_response_static(char* password, char* username, char* serve
 	char ntlm_v2_hash[16];
 	char* ntlm_v2_challenge_blob;
 
-	blob_size = info_size + 36;
+	blob_size = info_size + 32;
 	ntlm_v2_blob = malloc(blob_size);
 
 	/* Compute the NTLMv2 hash */
@@ -615,7 +615,6 @@ void credssp_ntlm_v2_response_static(char* password, char* username, char* serve
 	/* Reserved3 (4 bytes) */
 	memcpy(&ntlm_v2_blob[28], info, info_size);
 	/* Reserved4 (4 bytes) */
-	/* Padding (4 bytes) */
 
 	/* Concatenate challenge with blob */
 	ntlm_v2_challenge_blob = malloc(blob_size + 8);
@@ -1406,7 +1405,9 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 	credssp_ntlm_v2_encrypt_session_key(sec->nla->exported_session_key,
 		sec->nla->session_base_key, EncryptedRandomSessionKeyBuffer);
 
-	out_uint8p(s, NtChallengeResponseBuffer, NtChallengeResponseLen);
+	out_uint8p(s, NtChallengeResponseBuffer, NtChallengeResponseLen - 4);
+	out_uint8s(s, 4); /* unknown padding */
+
 	out_uint8p(s, EncryptedRandomSessionKeyBuffer, EncryptedRandomSessionKeyLen);
 	s_mark_end(s);
 
