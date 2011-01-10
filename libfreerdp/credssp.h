@@ -23,6 +23,7 @@
 #define __CREDSSP_H
 
 #include "secure.h"
+#include "data_blob.h"
 
 struct _AV_PAIR
 {
@@ -92,12 +93,9 @@ struct rdp_nla
 	uint8 client_sealing_key[16];
 	uint8 server_sealing_key[16];
 	CryptoRc4 rc4_stream;
-	uint8* negotiate_message;
-	int negotiate_message_length;
-	uint8* challenge_message;
-	int challenge_message_length;
-	uint8* authenticate_message;
-	int authenticate_message_length;
+	DATA_BLOB negotiate_msg;
+	DATA_BLOB challenge_msg;
+	DATA_BLOB authenticate_msg;
 	uint8 message_integrity_check[16];
 };
 typedef struct rdp_nla rdpNla;
@@ -121,7 +119,7 @@ void credssp_ntlm_encrypt_message(uint8* msg, int msg_len, uint8* signing_key, u
 
 void credssp_lm_hash(char* password, char* hash);
 void credssp_ntlm_hash(char* password, char* hash);
-void credssp_ntlm_v2_hash(char* password, char* username, char* server, char* hash);
+void credssp_ntlm_v2_hash(char* password, char* username, char* domain, char* hash);
 
 void credssp_lm_response(char* password, char* challenge, char* response);
 void credssp_lm_v2_response(char* password, char* username, char* server, uint8* challenge, uint8* response);

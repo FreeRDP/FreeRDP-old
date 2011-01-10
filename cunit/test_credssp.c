@@ -97,8 +97,6 @@ void test_credssp_ntlm_v2_hash(void)
 			ntlm_v2_hash_good = 0;
 	}
 
-	hexdump(ntlm_v2_hash, 16);
-
 	CU_ASSERT(ntlm_v2_hash_good == 1);
 
 	credssp_ntlm_v2_hash(password1, username1, domain1, ntlm_v2_hash);

@@ -10,6 +10,7 @@ libfreerdp_la_SOURCES = \
 	bitmap.c bitmap.h \
 	cache.c cache.h \
 	capabilities.c capabilities.h \
+	data_blob.c data_blob.h \
 	chan.c chan.h \
 	constants.h \
 	constants_capabilities.h \

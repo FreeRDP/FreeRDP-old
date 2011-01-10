@@ -26,6 +26,7 @@
 #include "asn1.h"
 #include "secure.h"
 #include "stream.h"
+#include "data_blob.h"
 #include "mem.h"
 #include "tcp.h"
 #include "mcs.h"
@@ -47,7 +48,7 @@
 #include "credssp.h"
 
 #define NTLMSSP_NEGOTIATE_56				0x00000001 /* 0 */
-#define NTLMSSP_NEGOTIATE_KEY_EXCH		0x00000002 /* 1 */
+#define NTLMSSP_NEGOTIATE_KEY_EXCH			0x00000002 /* 1 */
 #define NTLMSSP_NEGOTIATE_128				0x00000004 /* 2 */
 #define NTLMSSP_NEGOTIATE_VERSION			0x00000040 /* 6 */
 #define NTLMSSP_NEGOTIATE_TARGET_INFO			0x00000100 /* 8 */
@@ -65,7 +66,7 @@
 #define NTLMSSP_NEGOTIATE_SEAL				0x04000000 /* 26 */
 #define NTLMSSP_NEGOTIATE_SIGN				0x08000000 /* 27 */
 #define NTLMSSP_REQUEST_TARGET				0x20000000 /* 29 */
-#define NTLMSSP_NEGOTIATE_OEM					0x40000000 /* 30 */
+#define NTLMSSP_NEGOTIATE_OEM				0x40000000 /* 30 */
 #define NTLMSSP_NEGOTIATE_UNICODE			0x80000000 /* 31 */
 
 #define WINDOWS_MAJOR_VERSION_5		0x05
@@ -346,19 +347,19 @@ void credssp_ntlm_hash(char* password, char* hash)
 	free(wstr_password);
 }
 
-void credssp_ntlm_v2_hash(char* password, char* username, char* server, char* hash)
+void credssp_ntlm_v2_hash(char* password, char* username, char* domain, char* hash)
 {
 	int i;
 	int user_length;
-	int server_length;
+	int domain_length;
 	int value_length;
 
 	char* value;
 	char ntlm_hash[16];
 
 	user_length = strlen(username);
-	server_length = strlen(server);
-	value_length = user_length + server_length;
+	domain_length = strlen(domain);
+	value_length = user_length + domain_length;
 
 	value = malloc(value_length * 2);
 
@@ -377,9 +378,9 @@ void credssp_ntlm_v2_hash(char* password, char* username, char* server, char* ha
 	}
 
 	/* Concatenate the domain name in unicode */
-	for (i = 0; i < server_length; i++)
+	for (i = 0; i < domain_length; i++)
 	{
-		value[(user_length + i) * 2] = server[i];
+		value[(user_length + i) * 2] = domain[i];
 		value[(user_length + i) * 2 + 1] = '\0';
 	}
 
@@ -553,20 +554,24 @@ void credssp_ntlm_encrypt_message_with_signature(uint8* msg, int msg_len, uint8*
 	credssp_ntlm_make_signature(msg, msg_len, signing_key, sealing_key, seq_num, rc4, signature);
 }
 
-void credssp_ntlm_message_integrity_check(uint8* negotiate_msg, int negotiate_msg_length,
-	uint8* challenge_msg, int challenge_msg_length, uint8* authenticate_msg, int authenticate_msg_length, uint8* session_key, uint8* mic)
+void credssp_ntlm_message_integrity_check(DATA_BLOB* negotiate_msg, DATA_BLOB* challenge_msg, DATA_BLOB* authenticate_msg, uint8* session_key, uint8* mic)
 {
-	uint8* messages;
-	int messages_length = negotiate_msg_length + challenge_msg_length + authenticate_msg_length;
+	void* p;
+	DATA_BLOB messages;
 
-	messages = (uint8*) xmalloc(messages_length);
+	data_blob_alloc(&messages, negotiate_msg->length + challenge_msg->length + authenticate_msg->length);
 
-	memcpy(messages, negotiate_msg, negotiate_msg_length);
-	memcpy(&messages[negotiate_msg_length], challenge_msg, challenge_msg_length);
-	memcpy(&messages[negotiate_msg_length + challenge_msg_length], authenticate_msg, authenticate_msg_length);
+	p = messages.data;
+	memcpy(p, negotiate_msg->data, negotiate_msg->length);
+
+	p += negotiate_msg->length;
+	memcpy(p, challenge_msg->data, challenge_msg->length);
+
+	p += challenge_msg->length;
+	memcpy(p, authenticate_msg->data, authenticate_msg->length);
 
 	/* Compute the HMAC-MD5 hash of the concatenated messages using the exported session key */
-	HMAC(EVP_md5(), (void*) session_key, 16, (void*) messages, messages_length, (void*) mic, NULL);
+	HMAC(EVP_md5(), (void*) session_key, 16, (void*) messages.data, messages.length, (void*) mic, NULL);
 }
 
 void credssp_ntlm_v2_response(char* password, char* username, char* server, uint8* challenge, uint8* info, int info_size, uint8* response, uint8* session_key, char* timestamp)
@@ -1079,13 +1084,11 @@ void ntlm_send_negotiate_message(rdpSec * sec)
 
 	s_mark_end(s);
 
-	sec->nla->negotiate_message_length = s->end - s->data;
-	sec->nla->negotiate_message = (uint8*) xmalloc(sec->nla->negotiate_message_length);
-	memcpy(sec->nla->negotiate_message, s->data, sec->nla->negotiate_message_length);
+	data_blob_alloc(&sec->nla->negotiate_msg, s->end - s->data);
+	memcpy(sec->nla->negotiate_msg.data, s->data, sec->nla->negotiate_msg.length);
 
 	credssp_send(sec, s, NULL);
 	
-	//sec->nla->sequence_number++;
 	sec->nla->state = NTLM_STATE_CHALLENGE;
 
 	/*
@@ -1159,9 +1162,8 @@ void ntlm_recv_challenge_message(rdpSec * sec, STREAM s)
 
 	end_offset = s->p;
 
-	sec->nla->challenge_message_length = end_offset - start_offset;
-	sec->nla->challenge_message = (uint8*) xmalloc(sec->nla->challenge_message_length);
-	memcpy(sec->nla->challenge_message, start_offset, sec->nla->challenge_message_length);
+	data_blob_alloc(&sec->nla->challenge_msg, end_offset - start_offset);
+	memcpy(sec->nla->challenge_msg.data, start_offset, sec->nla->challenge_msg.length);
 
 	/* Generate ExportedSessionKey */
 	credssp_ntlm_nonce(sec->nla->exported_session_key, 16);
@@ -1408,15 +1410,11 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 	out_uint8p(s, EncryptedRandomSessionKeyBuffer, EncryptedRandomSessionKeyLen);
 	s_mark_end(s);
 
-	sec->nla->authenticate_message_length = s->end - s->data;
-	sec->nla->authenticate_message = (uint8*) xmalloc(sec->nla->authenticate_message_length);
-	memcpy(sec->nla->authenticate_message, s->data, sec->nla->authenticate_message_length);
+	data_blob_alloc(&sec->nla->authenticate_msg, s->end - s->data);
+	memcpy(sec->nla->authenticate_msg.data, s->data, sec->nla->authenticate_msg.length);
 
-	credssp_ntlm_message_integrity_check(
-		sec->nla->negotiate_message, sec->nla->negotiate_message_length,
-		sec->nla->challenge_message, sec->nla->challenge_message_length,
-		sec->nla->authenticate_message, sec->nla->authenticate_message_length,
-		sec->nla->exported_session_key, sec->nla->message_integrity_check);
+	credssp_ntlm_message_integrity_check(&sec->nla->negotiate_msg, &sec->nla->challenge_msg,
+		&sec->nla->authenticate_msg, sec->nla->exported_session_key, sec->nla->message_integrity_check);
 
 	s->p = mic_offset;
 	out_uint8p(s, sec->nla->message_integrity_check, 16); /* output real MIC which was previously set to zero */
