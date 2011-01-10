@@ -253,7 +253,7 @@ static void credssp_des_key(char* text, char* des_key)
 	}
 }
 
-static void credssp_lm_hash(char* password, char* hash)
+void credssp_lm_hash(char* password, char* hash)
 {
 	int i;
 	int maxlen;
@@ -365,7 +365,7 @@ void credssp_ntlm_v2_hash(char* password, char* username, char* server, char* ha
 	/* First, compute the NTLMv1 hash of the password */
 	credssp_ntlm_hash(password, ntlm_hash);
 
-	/* Concatenate the username and server name in uppercase unicode */
+	/* Concatenate the username in uppercase unicode */
 	for (i = 0; i < user_length; i++)
 	{
 		if (username[i] > 'a' && username[i] < 'z')
@@ -376,13 +376,10 @@ void credssp_ntlm_v2_hash(char* password, char* username, char* server, char* ha
 		value[2 * i + 1] = '\0';
 	}
 
+	/* Concatenate the domain name in unicode */
 	for (i = 0; i < server_length; i++)
 	{
-		if (server[i] > 'a' && server[i] < 'z')
-			value[(user_length + i) * 2] = server[i] - 32;
-		else
-			value[(user_length + i) * 2] = server[i];
-
+		value[(user_length + i) * 2] = server[i];
 		value[(user_length + i) * 2 + 1] = '\0';
 	}
 

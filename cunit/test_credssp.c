@@ -19,6 +19,7 @@ int add_credssp_suite(void)
 {
 	add_test_suite(credssp);
 
+	add_test_function(credssp_lm_hash);
 	add_test_function(credssp_ntlm_hash);
 	add_test_function(credssp_ntlm_v2_hash);
 	add_test_function(credssp_lm_response);
@@ -34,13 +35,32 @@ int add_credssp_suite(void)
 
 /* sample data taken from http://davenport.sourceforge.net/ntlm.html */
 
+void test_credssp_lm_hash(void)
+{
+	int i;
+	int lm_hash_good;
+	char lm_hash[16];
+	char password[] = "Password";
+	char expected_lm_hash[16] = "\xe5\x2c\xac\x67\x41\x9a\x9a\x22\x4a\x3b\x10\x8f\x3f\xa6\xcb\x6d";
+
+	credssp_lm_hash(password, lm_hash);
+
+	lm_hash_good = 1;
+	for (i = 0; i < 16; i++) {
+		if (lm_hash[i] != expected_lm_hash[i])
+			lm_hash_good = 0;
+	}
+
+	CU_ASSERT(lm_hash_good == 1);
+}
+
 void test_credssp_ntlm_hash(void)
 {
 	int i;
 	int ntlm_hash_good;
 	char ntlm_hash[16];
-	char password[] = "password";
-	char expected_ntlm_hash[16] = "\x88\x46\xF7\xEA\xEE\x8F\xB1\x17\xAD\x06\xBD\xD8\x30\xB7\x58\x6C";
+	char password[] = "Password";
+	char expected_ntlm_hash[16] = "\xa4\xf4\x9c\x40\x65\x10\xbd\xca\xb6\x82\x4e\xe7\xc3\x0f\xd8\x52";
 
 	credssp_ntlm_hash(password, ntlm_hash);
 
@@ -58,16 +78,34 @@ void test_credssp_ntlm_v2_hash(void)
 	int i;
 	int ntlm_v2_hash_good;
 	char ntlm_v2_hash[16];
-	char username[] = "user";
-	char server[] = "DOMAIN";
-	char password[] = "SecREt01";
-	char expected_ntlm_v2_hash[16] = "\x04\xB8\xE0\xBA\x74\x28\x9C\xC5\x40\x82\x6B\xAB\x1D\xEE\x63\xAE";
 
-	credssp_ntlm_v2_hash(password, username, server, ntlm_v2_hash);
+	char username1[] = "user";
+	char domain1[] = "DOMAIN";
+	char password1[] = "SecREt01";
+	char expected_ntlm_v2_hash1[16] = "\x04\xB8\xE0\xBA\x74\x28\x9C\xC5\x40\x82\x6B\xAB\x1D\xEE\x63\xAE";
+
+	char username2[] = "User";
+	char domain2[] = "Domain";
+	char password2[] = "Password";
+	char expected_ntlm_v2_hash2[16] = "\x0c\x86\x8a\x40\x3b\xfd\x7a\x93\xa3\x00\x1e\xf2\x2e\xf0\x2e\x3f";
+
+	credssp_ntlm_v2_hash(password2, username2, domain2, ntlm_v2_hash);
 
 	ntlm_v2_hash_good = 1;
 	for (i = 0; i < 16; i++) {
-		if (ntlm_v2_hash[i] != expected_ntlm_v2_hash[i])
+		if (ntlm_v2_hash[i] != expected_ntlm_v2_hash2[i])
+			ntlm_v2_hash_good = 0;
+	}
+
+	hexdump(ntlm_v2_hash, 16);
+
+	CU_ASSERT(ntlm_v2_hash_good == 1);
+
+	credssp_ntlm_v2_hash(password1, username1, domain1, ntlm_v2_hash);
+
+	ntlm_v2_hash_good = 1;
+	for (i = 0; i < 16; i++) {
+		if (ntlm_v2_hash[i] != expected_ntlm_v2_hash1[i])
 			ntlm_v2_hash_good = 0;
 	}
 
