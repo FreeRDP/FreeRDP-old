@@ -1088,7 +1088,7 @@ void ntlm_send_negotiate_message(rdpSec * sec)
 
 	credssp_send(sec, s, NULL);
 	
-	sec->nla->sequence_number++;
+	//sec->nla->sequence_number++;
 	sec->nla->state = NTLM_STATE_CHALLENGE;
 
 	/*
@@ -1575,27 +1575,31 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 		EncryptedRandomSessionKey (offset 540, length 16)
 		d1 e8 22 84 32 c1 76 0c 9b fd 4b 03 de 8b ab 49
 
-		PubKeyAuth (offset 556, length 294)
+		PubKeyAuth (length 286)
+                    
+                    NTLM_MESSAGE_SIGNATURE (length 16)
+                    01 00 00 00 Version
+                    e7 80 15 43 01 a3 41 12 Checksum
+                    00 00 00 00 SeqNum
 
-		a3 82 01 22 04 82 01 1e 01 00 00 00 e7 80 15 43
-		01 a3 41 12 00 00 00 00 ae 2e 8b 3e 08 c7 2f 0c
-		9d b2 d6 0b 55 d9 b3 39 16 4a 08 6d 1e 4c d3 57
-		96 3e 32 26 dd df 7d 3c 26 58 e6 06 88 a8 99 ac
-		cf e7 26 b4 ec a0 f8 a4 14 62 12 8d 65 b9 51 22
-		3e 78 31 79 08 93 c7 bd f5 a4 06 a2 82 cd 7d 07
-		99 d8 46 a3 f7 57 31 f2 46 c0 d5 24 79 ac 30 3b
-		39 b4 74 45 b6 0d ed f8 fd cf ec b8 fa 21 a7 b8
-		69 06 13 79 e4 17 fc 2a a5 68 72 50 65 cf 55 38
-		13 20 ba 3d ae e3 62 a5 f0 a6 64 47 cc 50 05 06
-		8b 66 1c 58 32 b7 87 70 52 2f a0 f6 66 2c 92 07
-		f9 e7 71 06 dc c2 73 79 1a 3b 21 84 df 53 6e 11
-		f5 e4 ea 3d f9 a1 ee 29 fc c3 02 c2 2d 77 ef 6f
-		8d 48 17 85 a9 19 89 e3 7f 5d 16 46 dc 4f a5 c0
-		d6 95 bb 89 bc 07 dd d3 31 59 6b 46 aa e2 4b 59
-		c2 19 2d a5 d1 b5 da 31 7f ba aa a8 f4 4b 56 82
-		e7 fc 16 a2 17 9c 48 14 88 f6 46 65 b1 1e 9f 1e
-		0a 8d af 28 fc be 2c 31 b1 7d b8 41 2c 95 4c a2
-		1c 7b bd f4 cc 5c
+                    Encrypted SubjectPublicKey (length 270)
+                    ae 2e 8b 3e 08 c7 2f 0c 9d b2 d6 0b 55 d9 b3 39
+                    16 4a 08 6d 1e 4c d3 57 96 3e 32 26 dd df 7d 3c
+                    26 58 e6 06 88 a8 99 ac cf e7 26 b4 ec a0 f8 a4
+                    14 62 12 8d 65 b9 51 22 3e 78 31 79 08 93 c7 bd
+                    f5 a4 06 a2 82 cd 7d 07 99 d8 46 a3 f7 57 31 f2
+                    46 c0 d5 24 79 ac 30 3b 39 b4 74 45 b6 0d ed f8
+                    fd cf ec b8 fa 21 a7 b8 69 06 13 79 e4 17 fc 2a
+                    a5 68 72 50 65 cf 55 38 13 20 ba 3d ae e3 62 a5
+                    f0 a6 64 47 cc 50 05 06 8b 66 1c 58 32 b7 87 70
+                    52 2f a0 f6 66 2c 92 07 f9 e7 71 06 dc c2 73 79
+                    1a 3b 21 84 df 53 6e 11 f5 e4 ea 3d f9 a1 ee 29
+                    fc c3 02 c2 2d 77 ef 6f 8d 48 17 85 a9 19 89 e3
+                    7f 5d 16 46 dc 4f a5 c0 d6 95 bb 89 bc 07 dd d3
+                    31 59 6b 46 aa e2 4b 59 c2 19 2d a5 d1 b5 da 31
+                    7f ba aa a8 f4 4b 56 82 e7 fc 16 a2 17 9c 48 14
+                    88 f6 46 65 b1 1e 9f 1e 0a 8d af 28 fc be 2c 31
+                    b1 7d b8 41 2c 95 4c a2 1c 7b bd f4 cc 5c
 	*/
 }
 
