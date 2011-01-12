@@ -7,14 +7,18 @@ test_freerdp_SOURCES = \
 	test_freerdp.c \
 	test_libfreerdpgdi.c
 
-test_freerdp_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include -I$(top_srcdir)/libfreerdpgdi
+test_freerdp_CFLAGS = \
+	-I$(top_srcdir) \
+	-I$(top_srcdir)/include \
+	-I$(top_srcdir)/libfreerdpgdi \
+	-pthread
 
 test_freerdp_LDADD = \
 	../libfreerdp/libfreerdp.la \
 	../libfreerdpkbd/libfreerdpkbd.la \
 	../libfreerdpgdi/libfreerdpgdi.la \
 	../libfreerdpchanman/libfreerdpchanman.la \
-	-lfusion -ldirect -lz -lpthread -lcunit
+	-lfusion -ldirect -lz -lcunit
 
 
 

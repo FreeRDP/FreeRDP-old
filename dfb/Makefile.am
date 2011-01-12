@@ -9,13 +9,18 @@ dfbfreerdp_SOURCES = \
 	dfb_win.h dfb_win.c \
 	dfbfreerdp.c
 
-dfbfreerdp_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include -I$(top_srcdir)/libfreerdpgdi @DFB_CFLAGS@
+dfbfreerdp_CFLAGS = \
+	-I$(top_srcdir) \
+	-I$(top_srcdir)/include \
+	-I$(top_srcdir)/libfreerdpgdi \
+	-pthread \
+	@DFB_CFLAGS@
 
 dfbfreerdp_LDADD = \
 	../libfreerdp/libfreerdp.la \
 	../libfreerdpkbd/libfreerdpkbd.la \
 	../libfreerdpgdi/libfreerdpgdi.la \
 	../libfreerdpchanman/libfreerdpchanman.la \
-	@DFB_LIBS@ -lfusion -ldirect -lz -lpthread
+	@DFB_LIBS@ -lfusion -ldirect -lz
 
 
