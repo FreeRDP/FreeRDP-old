@@ -1305,7 +1305,8 @@ process_data_pdu(rdpRdp * rdp, STREAM s)
 	uint16 compressedLength;
 	uint32 roff, rlen;
 	STREAM data_s;
-	uint8 * s_end = s->p;
+	uint8 * s_p_after = s->p;
+	uint8 * data_s_end;
 
 	/* rest of Share Data Header */
 	in_uint8s(s, 6);	/* shareid, pad, streamid */
@@ -1313,7 +1314,7 @@ process_data_pdu(rdpRdp * rdp, STREAM s)
 	in_uint8(s, pduType2);
 	in_uint8(s, compressedType);
 	in_uint16_le(s, compressedLength);
-	s_end += compressedLength;
+	s_p_after += compressedLength;
 
 	if (compressedType & RDP_MPPC_COMPRESSED)
 	{
@@ -1335,12 +1336,13 @@ process_data_pdu(rdpRdp * rdp, STREAM s)
 	{
 		data_s = s;
 	}
+	data_s_end = data_s->p + uncompressedLength;
 
 	switch (pduType2)
 	{
 		case RDP_DATA_PDU_UPDATE:
 			process_update_pdu(rdp, data_s);
-			ASSERT(s_check_end(data_s));
+			ASSERT(data_s->p == data_s_end);
 			break;
 
 		case RDP_DATA_PDU_CONTROL:
@@ -1353,12 +1355,12 @@ process_data_pdu(rdpRdp * rdp, STREAM s)
 
 		case RDP_DATA_PDU_POINTER:
 			process_pointer_pdu(rdp, data_s);
-			ASSERT(s_check_end(data_s));
+			ASSERT(data_s->p == data_s_end);
 			break;
 
 		case RDP_DATA_PDU_PLAY_SOUND:
 			process_play_sound_pdu(rdp, data_s);
-			ASSERT(s_check_end(data_s));
+			ASSERT(data_s->p == data_s_end);
 			break;
 
 		case RDP_DATA_PDU_SAVE_SESSION_INFO:
@@ -1373,13 +1375,13 @@ process_data_pdu(rdpRdp * rdp, STREAM s)
 		case RDP_DATA_PDU_SET_ERROR_INFO:
 			/* A FYI message - don't give up yet */
 			process_set_error_info_pdu(data_s, rdp->inst);
-			ASSERT(s_check_end(data_s));
+			ASSERT(data_s->p == data_s_end);
 			break;
 
 		default:
 			ui_unimpl(rdp->inst, "Unknown data PDU type 0x%x\n", pduType2);
 	}
-	s->end = s_end;
+	s->p = s_p_after;
 	return False;
 }
 
