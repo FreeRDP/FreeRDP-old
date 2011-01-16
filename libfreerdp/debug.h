@@ -5,7 +5,7 @@
 #include "config.h"
 #endif
 
-#ifndef DISABLE_ASSERT
+#ifdef WITH_DEBUG_ASSERT
 #include <assert.h>
 #define ASSERT(a)	assert(a)
 #else

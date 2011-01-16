@@ -1501,13 +1501,13 @@ process_create_offscr_bitmap(rdpOrders * orders, STREAM s)
 }
 
 /* Process a non-standard order */
-static void
+static int
 process_alternate_secondary_order(rdpOrders * orders, STREAM s, uint8 order_flags)
 {
 	if (!(order_flags & 0x2))
 	{
 		perror("order parsing failed\n");
-		exit(1);
+		return 1;
 	}
 	order_flags >>= 2;
 	switch (order_flags)
@@ -1520,8 +1520,9 @@ process_alternate_secondary_order(rdpOrders * orders, STREAM s, uint8 order_flag
 			break;
 		default:
 			ui_unimpl(orders->rdp->inst, "alternate secondary order %d:\n", order_flags);
-			exit(1);
+			return 1;
 	}
+	return 0;
 }
 
 /* Process a secondary order */

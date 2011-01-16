@@ -26,6 +26,8 @@ AH_TEMPLATE(WITH_DEBUG_RDP5, [Turn on debugging messages])
 AH_TEMPLATE(WITH_DEBUG_SCARD, [Turn on debugging messages])
 AH_TEMPLATE(WITH_DEBUG_SERIAL, [Turn on debugging messages])
 AH_TEMPLATE(WITH_DEBUG_SOUND, [Turn on debugging messages])
+AH_TEMPLATE(WITH_DEBUG_ASSERT, [Turn on debugging messages])
+AH_TEMPLATE(WITH_DEBUG_STREAM_ASSERT, [Turn on debugging messages])
 
 AC_PROG_INSTALL
 AC_PROG_LIBTOOL
@@ -759,7 +761,8 @@ AC_ARG_WITH(debug,
         if test $withval != "no";
         then
             AC_DEFINE(WITH_DEBUG,1)
-	fi
+            debug_support=yes
+        fi
     ])
 
 AC_ARG_WITH(debug-kbd,
@@ -768,7 +771,8 @@ AC_ARG_WITH(debug-kbd,
         if test $withval != "no";
         then
             AC_DEFINE(WITH_DEBUG_KBD,1)
-	fi
+            debug_support=yes
+        fi
     ])
 
 AC_ARG_WITH(debug-rdp5,
@@ -777,7 +781,8 @@ AC_ARG_WITH(debug-rdp5,
         if test $withval != "no";
         then
             AC_DEFINE(WITH_DEBUG_RDP5,1)
-	fi
+            debug_support=yes
+        fi
     ])
 
 AC_ARG_WITH(debug-sound,
@@ -786,7 +791,8 @@ AC_ARG_WITH(debug-sound,
         if test $withval != "no";
         then
             AC_DEFINE(WITH_DEBUG_SOUND,1)
-	fi
+            debug_support=yes
+        fi
     ])
 
 AC_ARG_WITH(debug-channel,
@@ -795,7 +801,8 @@ AC_ARG_WITH(debug-channel,
         if test $withval != "no";
         then
             AC_DEFINE(WITH_DEBUG_CHANNEL,1)
-	fi
+            debug_support=yes
+        fi
     ])
 
 AC_ARG_WITH(debug-serial,
@@ -804,7 +811,8 @@ AC_ARG_WITH(debug-serial,
         if test $withval != "no";
         then
             AC_DEFINE(WITH_DEBUG_SERIAL,1)
-	fi
+            debug_support=yes
+        fi
     ])
 
 AC_ARG_WITH(debug-smartcard,
@@ -812,11 +820,36 @@ AC_ARG_WITH(debug-smartcard,
     [
         if test $withval != "no";
         then
-		if test x"$WITH_SCARD" = "x1"; then
-			AC_DEFINE(WITH_DEBUG_SCARD,1)
-		fi
-	fi
+          if test x"$WITH_SCARD" = "x1"; then
+            AC_DEFINE(WITH_DEBUG_SCARD,1)
+            debug_support=yes
+          fi
+        fi
     ])
+
+AC_ARG_WITH(debug-assert,
+    [  --with-debug-assert     enable assert debugging],
+    [
+        if test $withval != "no";
+        then
+            AC_DEFINE(WITH_DEBUG_ASSERT,1)
+            debug_support=yes
+        fi
+    ])
+
+AC_ARG_WITH(debug-stream-assert,
+    [  --with-debug-stream-assert     enable stream assert debugging],
+    [
+        if test $withval != "no";
+        then
+            AC_DEFINE(WITH_DEBUG_STREAM_ASSERT,1)
+            debug_support=yes
+        fi
+    ])
+
+if test "$debug_support" != "yes"; then
+    CFLAGS="$CFLAGS -DNDEBUG"
+fi
 
 #
 # target-specific stuff
@@ -943,4 +976,3 @@ echo "Printer      : $printer"
 echo "CUnit        : $cunit"
 echo "X11          : $x11"
 echo "DirectFB     : $dfb"
-
