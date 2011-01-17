@@ -84,6 +84,7 @@ struct rdp_nla
 	AV_PAIRS* av_pairs;
 	uint32 negotiate_flags;
 	int sequence_number;
+	uint8 client_challenge[8];
 	uint8 server_challenge[8];
 	uint8 session_base_key[16];
 	uint8 exported_session_key[16];
@@ -95,6 +96,8 @@ struct rdp_nla
 	DATA_BLOB negotiate_msg;
 	DATA_BLOB challenge_msg;
 	DATA_BLOB authenticate_msg;
+	DATA_BLOB nt_challenge_response;
+	DATA_BLOB lm_challenge_response;
 	uint8 message_integrity_check[16];
 };
 typedef struct rdp_nla rdpNla;
@@ -124,8 +127,8 @@ void credssp_lm_response(char* password, char* challenge, char* response);
 void credssp_lm_v2_response(char* password, char* username, char* server, uint8* challenge, uint8* response);
 void credssp_lm_v2_response_static(char* password, char* username, char* server, uint8* challenge, uint8* response, char* random);
 
-void credssp_ntlm_v2_response(char* password, char* username, char* server, uint8* challenge, DATA_BLOB *target_info, uint8* response, uint8* session_key, char* timestamp);
-void credssp_ntlm_v2_response_static(char* password, char* username, char* server, uint8* challenge, DATA_BLOB *target_info, uint8* response, uint8* session_key, char* random, char* timestamp);
+void credssp_ntlm_v2_response(char* password, char* username, char* server, uint8* client_challenge, uint8* server_challenge, DATA_BLOB *target_info, uint8* session_base_key, char* timestamp, DATA_BLOB *nt_challenge_response, DATA_BLOB *lm_challenge_response);
+void credssp_ntlm_v2_response_static(char* password, char* username, char* server, uint8* client_challenge, uint8* server_challenge, DATA_BLOB *target_info, uint8* session_base_key, char* timestamp, DATA_BLOB *nt_challenge_response, DATA_BLOB *lm_challenge_response);
 
 rdpNla *
 nla_new(rdpSec * sec);

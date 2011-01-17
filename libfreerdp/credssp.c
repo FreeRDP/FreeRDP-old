@@ -574,9 +574,8 @@ void credssp_ntlm_message_integrity_check(DATA_BLOB* negotiate_msg, DATA_BLOB* c
 	HMAC(EVP_md5(), (void*) session_key, 16, (void*) messages.data, messages.length, (void*) mic, NULL);
 }
 
-void credssp_ntlm_v2_response(char* password, char* username, char* server, uint8* challenge, DATA_BLOB *target_info, uint8* response, uint8* session_key, char* timestamp)
+void credssp_ntlm_v2_response(char* password, char* username, char* server, uint8* client_challenge, uint8* server_challenge, DATA_BLOB *target_info, uint8* session_base_key, char* timestamp, DATA_BLOB *nt_challenge_response, DATA_BLOB *lm_challenge_response)
 {
-	char clientRandom[8];
 	char generated_timestamp[8];
 
 	/* Timestamp */
@@ -586,58 +585,72 @@ void credssp_ntlm_v2_response(char* password, char* username, char* server, uint
 		timestamp = generated_timestamp;
 	}
 
-	/* Generate an 8-byte client random */
-	credssp_ntlm_nonce((uint8*) clientRandom, 8);
-
-	credssp_ntlm_v2_response_static(password, username, server, challenge, target_info, response, session_key, clientRandom, timestamp);
+	credssp_ntlm_v2_response_static(password, username, server, client_challenge, server_challenge, target_info, session_base_key, timestamp, nt_challenge_response, lm_challenge_response);
 }
 
-void credssp_ntlm_v2_response_static(char* password, char* username, char* server, uint8* challenge, DATA_BLOB *target_info, uint8* response, uint8* session_key, char* random, char* timestamp)
+void credssp_ntlm_v2_response_static(char* password, char* username, char* server, uint8* client_challenge, uint8* server_challenge, DATA_BLOB *target_info, uint8* session_base_key, char* timestamp, DATA_BLOB *nt_challenge_response, DATA_BLOB *lm_challenge_response)
 {
-	int blob_size;
-	char* ntlm_v2_blob;
+	char* blob;
 	char ntlm_v2_hash[16];
-	char* ntlm_v2_challenge_blob;
+	uint8* nt_proof_str[16];
+	uint8* hmac_md5_both_chal[16];
+	DATA_BLOB ntlm_v2_temp;
+	DATA_BLOB ntlm_v2_temp_chal;
+	DATA_BLOB ntlm_v2_both_chal;
 
-	blob_size = target_info->length + 32;
-	ntlm_v2_blob = malloc(blob_size);
+	data_blob_alloc(&ntlm_v2_temp, target_info->length + 32);
+	memset(ntlm_v2_temp.data, '\0', ntlm_v2_temp.length);
+	blob = (char*) ntlm_v2_temp.data;
 
 	/* Compute the NTLMv2 hash */
 	credssp_ntlm_v2_hash(password, username, server, ntlm_v2_hash);
 
-	/* NTLMv2_CLIENT_CHALLENGE */
-	memset(ntlm_v2_blob, '\0', blob_size);
-
-	ntlm_v2_blob[0] = 1; /* RespType (1 byte) */
-	ntlm_v2_blob[1] = 1; /* HighRespType (1 byte) */
+	/* Construct temp */
+	blob[0] = 1; /* RespType (1 byte) */
+	blob[1] = 1; /* HighRespType (1 byte) */
 	/* Reserved1 (2 bytes) */
 	/* Reserved2 (4 bytes) */
-	memcpy(&ntlm_v2_blob[8], timestamp, 8); /* Timestamp (8 bytes) */
-	memcpy(&ntlm_v2_blob[16], random, 8); /* ChallengeFromClient (8 bytes) */
+	memcpy(&blob[8], timestamp, 8); /* Timestamp (8 bytes) */
+	memcpy(&blob[16], client_challenge, 8); /* ChallengeFromClient (8 bytes) */
 	/* Reserved3 (4 bytes) */
-	memcpy(&ntlm_v2_blob[28], target_info->data, target_info->length);
+	memcpy(&blob[28], target_info->data, target_info->length);
 	/* Reserved4 (4 bytes) */
 
-	/* Concatenate challenge with blob */
-	ntlm_v2_challenge_blob = malloc(blob_size + 8);
-	memcpy(ntlm_v2_challenge_blob, challenge, 8);
-	memcpy(&ntlm_v2_challenge_blob[8], ntlm_v2_blob, blob_size);
+	/* Concatenate server challenge with temp */
+	data_blob_alloc(&ntlm_v2_temp_chal, ntlm_v2_temp.length + 8);
+	blob = (char*) ntlm_v2_temp_chal.data;
+	memcpy(blob, server_challenge, 8);
+	memcpy(&blob[8], ntlm_v2_temp.data, ntlm_v2_temp.length);
 
-	/* Compute the HMAC-MD5 hash of the resulting value using the NTLMv2 hash as the key */
-	HMAC(EVP_md5(), (void*) ntlm_v2_hash, 16, (void*) ntlm_v2_challenge_blob, blob_size + 8, (void*) response, NULL);
+	/* Compute NTProofStr, the HMAC-MD5 hash of the resulting value using the NTLMv2 hash as the key */
+	HMAC(EVP_md5(), (void*) ntlm_v2_hash, 16, (void*) ntlm_v2_temp_chal.data, ntlm_v2_temp_chal.length, (void*) nt_proof_str, NULL);
 
-	/* Compute NTLMv2 User Session Key (SessionBaseKey, also KeyExchangeKey) */
-	if (session_key != NULL)
+	/* NtChallengeResponse, Concatenate NTProofStr with temp */
+	data_blob_alloc(nt_challenge_response, ntlm_v2_temp.length + 16);
+	blob = (char*) nt_challenge_response->data;
+	memcpy(blob, nt_proof_str, 16);
+	memcpy(&blob[16], ntlm_v2_temp.data, ntlm_v2_temp.length);
+
+	/* Concatenate the server and client challenges */
+	data_blob_alloc(&ntlm_v2_both_chal, 16);
+	blob = (char*) ntlm_v2_both_chal.data;
+	memcpy(blob, server_challenge, 8);
+	memcpy(&blob[8], client_challenge, 8);
+
+	/* Compute the HMAC-MD5 of the concatenated server and client challenges */
+	HMAC(EVP_md5(), (void*) ntlm_v2_hash, 16, ntlm_v2_both_chal.data, 16, (void*) hmac_md5_both_chal, NULL);
+
+	/* LmChallengeResponse, Concatenate the HMAC-MD5 of the concatenated challenges with the client challenge */
+	data_blob_alloc(lm_challenge_response, 24);
+	blob = (char*) lm_challenge_response->data;
+	memcpy(blob, ntlm_v2_both_chal.data, 16);
+	memcpy(&blob[16], client_challenge, 8);
+
+	if (session_base_key != NULL)
 	{
-		/* Compute the HMAC-MD5 hash of the resulting value a second time using the NTLMv2 hash as the key */
-		HMAC(EVP_md5(), (void*) ntlm_v2_hash, 16, (void*) response, 16, (void*) session_key, NULL);
+		/* Compute SessionBaseKey, the HMAC-MD5 hash of NTProofStr using the NTLMv2 hash as the key */
+		HMAC(EVP_md5(), (void*) ntlm_v2_hash, 16, (void*) nt_proof_str, 16, (void*) session_base_key, NULL);
 	}
-
-	/* Concatenate resulting HMAC-MD5 with blob to obtain NTLMv2 response */
-	memcpy(&response[16], ntlm_v2_blob, blob_size);
-
-	free(ntlm_v2_challenge_blob);
-	free(ntlm_v2_blob);
 }
 
 void credssp_ntlm_v2_encrypt_session_key(uint8* session_key, uint8* key_exchange_key, uint8* encrypted_session_key)
@@ -931,9 +944,14 @@ static void ntlm_output_version(STREAM s)
 {
 	/* The following version information was observed with Windows 7 */
 
+#if 0
 	out_uint8(s, WINDOWS_MAJOR_VERSION_6); /* ProductMajorVersion (1 byte) */
 	out_uint8(s, WINDOWS_MINOR_VERSION_1); /* ProductMinorVersion (1 byte) */
 	out_uint16_le(s, 7600); /* ProductBuild (2 bytes) */
+#endif
+	out_uint8(s, WINDOWS_MAJOR_VERSION_5); /* ProductMajorVersion (1 byte) */
+	out_uint8(s, WINDOWS_MINOR_VERSION_1); /* ProductMinorVersion (1 byte) */
+	out_uint16_le(s, 2600); /* ProductBuild (2 bytes) */
 	out_uint8s(s, 3); /* Reserved (3 bytes) */
 	out_uint8(s, NTLMSSP_REVISION_W2K3); /* NTLMRevisionCurrent (1 byte) */
 }
@@ -1167,6 +1185,9 @@ void ntlm_recv_challenge_message(rdpSec * sec, STREAM s)
 	/* Generate ExportedSessionKey */
 	credssp_ntlm_nonce(sec->nla->exported_session_key, 16);
 
+	/* Generate Client Challenge */
+	credssp_ntlm_nonce((uint8*) sec->nla->client_challenge, 8);
+
 	/* Generate Client and Server Signing Keys */
 	credssp_ntlm_client_signing_key(sec->nla->exported_session_key, (uint8*) sec->nla->client_signing_key);
 	credssp_ntlm_server_signing_key(sec->nla->exported_session_key, (uint8*) sec->nla->server_signing_key);
@@ -1248,10 +1269,8 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 	rdpSet *settings;
 	uint32 negotiateFlags;
 
-	char* timestamp;
-	uint8 signature[16];
-	AV_PAIRS* av_pairs;
 	STREAM pubKeyAuth;
+	uint8 signature[16];
 	uint8* encrypted_public_key;
 
 	uint16 DomainNameLen;
@@ -1271,8 +1290,6 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 	uint8* DomainNameBuffer;
 	uint8* UserNameBuffer;
 	uint8* WorkstationBuffer;
-	uint8* LmChallengeResponseBuffer;
-	uint8* NtChallengeResponseBuffer;
 	uint8* EncryptedRandomSessionKeyBuffer;
 
 	s = xmalloc(sizeof(struct stream));
@@ -1281,12 +1298,6 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 	s->end = s->p;
 
 	settings = sec->rdp->settings;
-	av_pairs = sec->nla->av_pairs;
-
-	if (av_pairs->Timestamp.value != NULL)
-		timestamp = (char*) av_pairs->Timestamp.value;
-	else
-		timestamp = NULL;
 
 	DomainNameBuffer = (uint8*) xstrdup_out_unistr(sec->rdp, settings->domain, &len);
 	DomainNameLen = len;
@@ -1297,8 +1308,13 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 	WorkstationBuffer = (uint8*) xstrdup_out_unistr(sec->rdp, "WORKSTATION", &len);
 	WorkstationLen = len;
 
-	LmChallengeResponseLen = 24;
-	NtChallengeResponseLen = sec->nla->target_info.length + 48;
+	credssp_ntlm_v2_response(settings->password, settings->username,
+		settings->domain, sec->nla->client_challenge, sec->nla->server_challenge,
+		&sec->nla->target_info, sec->nla->session_base_key, NULL,
+		&sec->nla->nt_challenge_response, &sec->nla->lm_challenge_response);
+
+	LmChallengeResponseLen = sec->nla->lm_challenge_response.length;
+	NtChallengeResponseLen = sec->nla->nt_challenge_response.length;
 	EncryptedRandomSessionKeyLen = 16;
 
 	DomainNameBufferOffset = 72; /* starting buffer offset */
@@ -1308,8 +1324,6 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 	NtChallengeResponseBufferOffset = LmChallengeResponseBufferOffset + LmChallengeResponseLen;
 	EncryptedRandomSessionKeyBufferOffset = NtChallengeResponseBufferOffset + NtChallengeResponseLen;
 
-	LmChallengeResponseBuffer = (uint8*) malloc(LmChallengeResponseLen);
-	NtChallengeResponseBuffer = (uint8*) malloc(NtChallengeResponseLen);
 	EncryptedRandomSessionKeyBuffer = (uint8*) malloc(EncryptedRandomSessionKeyLen);
 
 	out_uint8a(s, ntlm_signature, 8); /* Signature (8 bytes) */
@@ -1375,21 +1389,14 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 	/* Workstation */
 	out_uint8p(s, WorkstationBuffer,  WorkstationLen);
 
-	credssp_lm_v2_response(settings->password, settings->username, settings->domain,
-		sec->nla->server_challenge, LmChallengeResponseBuffer);
-
 	/* LmChallengeResponse */
-	out_uint8p(s, LmChallengeResponseBuffer, LmChallengeResponseLen);
+	out_uint8p(s, sec->nla->lm_challenge_response.data, LmChallengeResponseLen);
 
-	credssp_ntlm_v2_response(settings->password, settings->username, settings->domain,
-		sec->nla->server_challenge, &sec->nla->target_info,
-		NtChallengeResponseBuffer, sec->nla->session_base_key, timestamp);
+	/* NtChallengeResponse */
+	out_uint8p(s, sec->nla->nt_challenge_response.data, NtChallengeResponseLen);
 
 	credssp_ntlm_v2_encrypt_session_key(sec->nla->exported_session_key,
 		sec->nla->session_base_key, EncryptedRandomSessionKeyBuffer);
-
-	/* NtChallengeResponse */
-	out_uint8p(s, NtChallengeResponseBuffer, NtChallengeResponseLen);
 
 	/* EncryptedRandomSessionKey */
 	out_uint8p(s, EncryptedRandomSessionKeyBuffer, EncryptedRandomSessionKeyLen);

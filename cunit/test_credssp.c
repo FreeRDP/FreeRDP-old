@@ -158,16 +158,18 @@ void test_credssp_ntlm_v2_response(void)
 	int i;
 	int ntlm_v2_response_good;
 	int ntlm_v2_session_key_good;
-	char ntlm_v2_response[146];
+	char* ntlm_v2_response;
 	char ntlm_v2_session_key[16];
 	char password[] = "SecREt01";
 	char username[] = "user";
 	char server[] = "DOMAIN";
-	char challenge[] = "\x01\x23\x45\x67\x89\xAB\xCD\xEF";
-	char random[] = "\xFF\xFF\xFF\x00\x11\x22\x33\x44";
+	char client_challenge[] = "\xFF\xFF\xFF\x00\x11\x22\x33\x44";
+	char server_challenge[] = "\x01\x23\x45\x67\x89\xAB\xCD\xEF";
 	char timestamp[] = "\x00\x90\xD3\x36\xB7\x34\xC3\x01";
 
 	DATA_BLOB target_info;
+	DATA_BLOB nt_challenge_response;
+	DATA_BLOB lm_challenge_response;
 
 	char target_info_data[98] =
 		"\x02\x00\x0C\x00\x44\x00\x4F\x00"
@@ -202,7 +204,9 @@ void test_credssp_ntlm_v2_response(void)
 	target_info.data = (void*) target_info_data;
 	target_info.length = sizeof(target_info_data);
 
-	credssp_ntlm_v2_response_static(password, username, server, (uint8*) challenge, &target_info, (uint8*) ntlm_v2_response, (uint8*) ntlm_v2_session_key, random, timestamp);
+	credssp_ntlm_v2_response_static(password, username, server, (uint8*) client_challenge, (uint8*) server_challenge, &target_info, (uint8*) ntlm_v2_session_key, timestamp, &nt_challenge_response, &lm_challenge_response);
+
+	ntlm_v2_response = (char*) nt_challenge_response.data;
 
 	ntlm_v2_response_good = 1;
 	for (i = 0; i < 146; i++) {
