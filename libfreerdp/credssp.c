@@ -574,7 +574,7 @@ void credssp_ntlm_message_integrity_check(DATA_BLOB* negotiate_msg, DATA_BLOB* c
 	HMAC(EVP_md5(), (void*) session_key, 16, (void*) messages.data, messages.length, (void*) mic, NULL);
 }
 
-void credssp_ntlm_v2_response(char* password, char* username, char* server, uint8* challenge, uint8* info, int info_size, uint8* response, uint8* session_key, char* timestamp)
+void credssp_ntlm_v2_response(char* password, char* username, char* server, uint8* challenge, DATA_BLOB *target_info, uint8* response, uint8* session_key, char* timestamp)
 {
 	char clientRandom[8];
 	char generated_timestamp[8];
@@ -589,17 +589,17 @@ void credssp_ntlm_v2_response(char* password, char* username, char* server, uint
 	/* Generate an 8-byte client random */
 	credssp_ntlm_nonce((uint8*) clientRandom, 8);
 
-	credssp_ntlm_v2_response_static(password, username, server, challenge, info, info_size, response, session_key, clientRandom, timestamp);
+	credssp_ntlm_v2_response_static(password, username, server, challenge, target_info, response, session_key, clientRandom, timestamp);
 }
 
-void credssp_ntlm_v2_response_static(char* password, char* username, char* server, uint8* challenge, uint8* info, int info_size, uint8* response, uint8* session_key, char* random, char* timestamp)
+void credssp_ntlm_v2_response_static(char* password, char* username, char* server, uint8* challenge, DATA_BLOB *target_info, uint8* response, uint8* session_key, char* random, char* timestamp)
 {
 	int blob_size;
 	char* ntlm_v2_blob;
 	char ntlm_v2_hash[16];
 	char* ntlm_v2_challenge_blob;
 
-	blob_size = info_size + 32;
+	blob_size = target_info->length + 32;
 	ntlm_v2_blob = malloc(blob_size);
 
 	/* Compute the NTLMv2 hash */
@@ -615,7 +615,7 @@ void credssp_ntlm_v2_response_static(char* password, char* username, char* serve
 	memcpy(&ntlm_v2_blob[8], timestamp, 8); /* Timestamp (8 bytes) */
 	memcpy(&ntlm_v2_blob[16], random, 8); /* ChallengeFromClient (8 bytes) */
 	/* Reserved3 (4 bytes) */
-	memcpy(&ntlm_v2_blob[28], info, info_size);
+	memcpy(&ntlm_v2_blob[28], target_info->data, target_info->length);
 	/* Reserved4 (4 bytes) */
 
 	/* Concatenate challenge with blob */
@@ -1154,9 +1154,8 @@ void ntlm_recv_challenge_message(rdpSec * sec, STREAM s)
 	if (targetInfoLen > 0)
 	{
 		s->p = start_offset + targetInfoBufferOffset;
-		sec->nla->target_info = malloc(targetInfoLen);
-		sec->nla->target_info_length = targetInfoLen;
-		memcpy(sec->nla->target_info, s->p, targetInfoLen);
+		data_blob_alloc(&sec->nla->target_info, targetInfoLen);
+		memcpy(sec->nla->target_info.data, s->p, targetInfoLen);
 		ntlm_input_av_pairs(s, sec->nla->av_pairs);
 	}
 
@@ -1244,16 +1243,14 @@ void ntlm_recv_challenge_message(rdpSec * sec, STREAM s)
 
 void ntlm_send_authenticate_message(rdpSec * sec)
 {
-	size_t len;
 	STREAM s;
+	size_t len;
 	rdpSet *settings;
 	uint32 negotiateFlags;
 
 	char* timestamp;
-	uint8* mic_offset;
 	uint8 signature[16];
 	AV_PAIRS* av_pairs;
-	STREAM target_info;
 	STREAM pubKeyAuth;
 	uint8* encrypted_public_key;
 
@@ -1274,6 +1271,7 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 	uint8* DomainNameBuffer;
 	uint8* UserNameBuffer;
 	uint8* WorkstationBuffer;
+	uint8* LmChallengeResponseBuffer;
 	uint8* NtChallengeResponseBuffer;
 	uint8* EncryptedRandomSessionKeyBuffer;
 
@@ -1290,40 +1288,27 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 	else
 		timestamp = NULL;
 
-	target_info = xmalloc(sizeof(struct stream));
-	target_info->data = xmalloc(512);
-	target_info->p = target_info->data;
-	target_info->end = target_info->p;
-
-	credssp_ntlm_populate_av_pairs(sec, av_pairs);
-	ntlm_output_av_pairs(target_info, av_pairs);
-	s_mark_end(target_info);
-
-	hexdump(sec->nla->target_info, sec->nla->target_info_length);
-
-	sec->nla->target_info = target_info->data;
-	sec->nla->target_info_length = target_info->end - target_info->data;
-
 	DomainNameBuffer = (uint8*) xstrdup_out_unistr(sec->rdp, settings->domain, &len);
 	DomainNameLen = len;
 
 	UserNameBuffer = (uint8*) xstrdup_out_unistr(sec->rdp, settings->username, &len);
 	UserNameLen = len;
 
-	WorkstationBuffer = (uint8*) xstrdup_out_unistr(sec->rdp, settings->server, &len);
+	WorkstationBuffer = (uint8*) xstrdup_out_unistr(sec->rdp, "WORKSTATION", &len);
 	WorkstationLen = len;
 
 	LmChallengeResponseLen = 24;
-	NtChallengeResponseLen = sec->nla->target_info_length + 52;
+	NtChallengeResponseLen = sec->nla->target_info.length + 48;
 	EncryptedRandomSessionKeyLen = 16;
 
-	DomainNameBufferOffset = 88; /* starting buffer offset */
+	DomainNameBufferOffset = 72; /* starting buffer offset */
 	UserNameBufferOffset = DomainNameBufferOffset + DomainNameLen;
 	WorkstationBufferOffset = UserNameBufferOffset + UserNameLen;
 	LmChallengeResponseBufferOffset = WorkstationBufferOffset + WorkstationLen;
 	NtChallengeResponseBufferOffset = LmChallengeResponseBufferOffset + LmChallengeResponseLen;
 	EncryptedRandomSessionKeyBufferOffset = NtChallengeResponseBufferOffset + NtChallengeResponseLen;
 
+	LmChallengeResponseBuffer = (uint8*) malloc(LmChallengeResponseLen);
 	NtChallengeResponseBuffer = (uint8*) malloc(NtChallengeResponseLen);
 	EncryptedRandomSessionKeyBuffer = (uint8*) malloc(EncryptedRandomSessionKeyLen);
 
@@ -1379,10 +1364,6 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 	ntlm_output_negotiate_flags(s, negotiateFlags); /* NegotiateFlags (4 bytes) */
 	ntlm_output_version(s); /* Version (8 bytes) */
 
-	/* MIC (16 bytes) */
-	mic_offset = s->p; /* save pointer for later */
-	out_uint8s(s, 16); /* this is set to zero first, then the MIC is calculated and set */
-
 	/* Payload (offset 88) */
 
 	/* DomainName */
@@ -1394,31 +1375,25 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 	/* Workstation */
 	out_uint8p(s, WorkstationBuffer,  WorkstationLen);
 
+	credssp_lm_v2_response(settings->password, settings->username, settings->domain,
+		sec->nla->server_challenge, LmChallengeResponseBuffer);
+
 	/* LmChallengeResponse */
-	out_uint8s(s, LmChallengeResponseLen); /* this is simply set to zero */
+	out_uint8p(s, LmChallengeResponseBuffer, LmChallengeResponseLen);
 
 	credssp_ntlm_v2_response(settings->password, settings->username, settings->domain,
-		sec->nla->server_challenge, sec->nla->target_info, sec->nla->target_info_length,
+		sec->nla->server_challenge, &sec->nla->target_info,
 		NtChallengeResponseBuffer, sec->nla->session_base_key, timestamp);
 
 	credssp_ntlm_v2_encrypt_session_key(sec->nla->exported_session_key,
 		sec->nla->session_base_key, EncryptedRandomSessionKeyBuffer);
 
-	out_uint8p(s, NtChallengeResponseBuffer, NtChallengeResponseLen - 4);
-	out_uint8s(s, 4); /* unknown padding */
+	/* NtChallengeResponse */
+	out_uint8p(s, NtChallengeResponseBuffer, NtChallengeResponseLen);
 
+	/* EncryptedRandomSessionKey */
 	out_uint8p(s, EncryptedRandomSessionKeyBuffer, EncryptedRandomSessionKeyLen);
 	s_mark_end(s);
-
-	data_blob_alloc(&sec->nla->authenticate_msg, s->end - s->data);
-	memcpy(sec->nla->authenticate_msg.data, s->data, sec->nla->authenticate_msg.length);
-
-	credssp_ntlm_message_integrity_check(&sec->nla->negotiate_msg, &sec->nla->challenge_msg,
-		&sec->nla->authenticate_msg, sec->nla->exported_session_key, sec->nla->message_integrity_check);
-
-	s->p = mic_offset;
-	out_uint8p(s, sec->nla->message_integrity_check, 16); /* output real MIC which was previously set to zero */
-	s->p = s->end;
 
 	pubKeyAuth = xmalloc(sizeof(struct stream));
 	pubKeyAuth->data = xmalloc(sec->nla->public_key_length + 16);
@@ -1651,9 +1626,7 @@ nla_free(rdpNla * nla)
 {
 	if (nla != NULL)
 	{
-		if (nla->target_info)
-			free(nla->target_info);
-
+		data_blob_free(&nla->target_info);
 		ntlm_free_av_pairs(nla->av_pairs);
 		xfree(nla);
 	}

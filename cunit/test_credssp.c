@@ -167,7 +167,9 @@ void test_credssp_ntlm_v2_response(void)
 	char random[] = "\xFF\xFF\xFF\x00\x11\x22\x33\x44";
 	char timestamp[] = "\x00\x90\xD3\x36\xB7\x34\xC3\x01";
 
-	char target_info[98] =
+	DATA_BLOB target_info;
+
+	char target_info_data[98] =
 		"\x02\x00\x0C\x00\x44\x00\x4F\x00"
 		"\x4D\x00\x41\x00\x49\x00\x4E\x00"
 		"\x01\x00\x0C\x00\x53\x00\x45\x00"
@@ -197,7 +199,10 @@ void test_credssp_ntlm_v2_response(void)
 	char expected_ntlm_v2_session_key[16] =
 		"\xB9\x4A\x23\x9B\xB4\xC6\xD1\xEC\x08\x30\x6A\x07\x1D\x2B\x90\xF0";
 
-	credssp_ntlm_v2_response_static(password, username, server, (uint8*) challenge, (uint8*) target_info, 98, (uint8*) ntlm_v2_response, (uint8*) ntlm_v2_session_key, random, timestamp);
+	target_info.data = (void*) target_info_data;
+	target_info.length = sizeof(target_info_data);
+
+	credssp_ntlm_v2_response_static(password, username, server, (uint8*) challenge, &target_info, (uint8*) ntlm_v2_response, (uint8*) ntlm_v2_session_key, random, timestamp);
 
 	ntlm_v2_response_good = 1;
 	for (i = 0; i < 146; i++) {

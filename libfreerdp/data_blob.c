@@ -19,6 +19,8 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#include "mem.h"
+
 #include "data_blob.h"
 
 void data_blob_alloc(DATA_BLOB *data_blob, int length)
@@ -29,6 +31,8 @@ void data_blob_alloc(DATA_BLOB *data_blob, int length)
 
 void data_blob_free(DATA_BLOB *data_blob)
 {
-	xfree(data_blob);
+	if (data_blob->data)
+		xfree(data_blob->data);
+	
 	data_blob->length = 0;
 }

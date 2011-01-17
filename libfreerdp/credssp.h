@@ -80,8 +80,7 @@ struct rdp_nla
 	uint8* public_key;
 	int public_key_length;
 	uint8* target_name;
-	uint8* target_info;
-	int target_info_length;
+	DATA_BLOB target_info;
 	AV_PAIRS* av_pairs;
 	uint32 negotiate_flags;
 	int sequence_number;
@@ -125,8 +124,8 @@ void credssp_lm_response(char* password, char* challenge, char* response);
 void credssp_lm_v2_response(char* password, char* username, char* server, uint8* challenge, uint8* response);
 void credssp_lm_v2_response_static(char* password, char* username, char* server, uint8* challenge, uint8* response, char* random);
 
-void credssp_ntlm_v2_response(char* password, char* username, char* server, uint8* challenge, uint8* info, int info_size, uint8* response, uint8* session_key, char* timestamp);
-void credssp_ntlm_v2_response_static(char* password, char* username, char* server, uint8* challenge, uint8* info, int info_size, uint8* response, uint8* session_key, char* random, char* timestamp);
+void credssp_ntlm_v2_response(char* password, char* username, char* server, uint8* challenge, DATA_BLOB *target_info, uint8* response, uint8* session_key, char* timestamp);
+void credssp_ntlm_v2_response_static(char* password, char* username, char* server, uint8* challenge, DATA_BLOB *target_info, uint8* response, uint8* session_key, char* random, char* timestamp);
 
 rdpNla *
 nla_new(rdpSec * sec);
