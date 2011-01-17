@@ -87,6 +87,8 @@ struct rdp_nla
 	uint8 client_challenge[8];
 	uint8 server_challenge[8];
 	uint8 session_base_key[16];
+	uint8 key_exchange_key[16];
+	uint8 random_session_key[16];
 	uint8 exported_session_key[16];
 	uint8 client_signing_key[16];
 	uint8 server_signing_key[16];
