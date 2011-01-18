@@ -84,6 +84,8 @@ struct rdp_nla
 	AV_PAIRS* av_pairs;
 	uint32 negotiate_flags;
 	int sequence_number;
+	DATA_BLOB nb_domain_name;
+	DATA_BLOB nb_computer_name;
 	uint8 client_challenge[8];
 	uint8 server_challenge[8];
 	uint8 session_base_key[16];
@@ -123,14 +125,14 @@ void credssp_ntlm_encrypt_message(uint8* msg, int msg_len, uint8* signing_key, u
 
 void credssp_lm_hash(char* password, char* hash);
 void credssp_ntlm_hash(char* password, char* hash);
-void credssp_ntlm_v2_hash(char* password, char* username, char* domain, char* hash);
+void credssp_ntlm_v2_hash(char* password, char* username, DATA_BLOB *domain, char* hash);
 
 void credssp_lm_response(char* password, char* challenge, char* response);
-void credssp_lm_v2_response(char* password, char* username, char* server, uint8* challenge, uint8* response);
-void credssp_lm_v2_response_static(char* password, char* username, char* server, uint8* challenge, uint8* response, char* random);
+void credssp_lm_v2_response(char* password, char* username, DATA_BLOB *domain, uint8* challenge, uint8* response);
+void credssp_lm_v2_response_static(char* password, char* username, DATA_BLOB *domain, uint8* challenge, uint8* response, char* random);
 
-void credssp_ntlm_v2_response(char* password, char* username, char* server, uint8* client_challenge, uint8* server_challenge, DATA_BLOB *target_info, uint8* session_base_key, char* timestamp, DATA_BLOB *nt_challenge_response, DATA_BLOB *lm_challenge_response);
-void credssp_ntlm_v2_response_static(char* password, char* username, char* server, uint8* client_challenge, uint8* server_challenge, DATA_BLOB *target_info, uint8* session_base_key, char* timestamp, DATA_BLOB *nt_challenge_response, DATA_BLOB *lm_challenge_response);
+void credssp_ntlm_v2_response(char* password, char* username, DATA_BLOB *domain, uint8* client_challenge, uint8* server_challenge, DATA_BLOB *target_info, uint8* session_base_key, char* timestamp, DATA_BLOB *nt_challenge_response, DATA_BLOB *lm_challenge_response);
+void credssp_ntlm_v2_response_static(char* password, char* username, DATA_BLOB *domain, uint8* client_challenge, uint8* server_challenge, DATA_BLOB *target_info, uint8* session_base_key, char* timestamp, DATA_BLOB *nt_challenge_response, DATA_BLOB *lm_challenge_response);
 
 rdpNla *
 nla_new(rdpSec * sec);

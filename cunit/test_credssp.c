@@ -79,17 +79,24 @@ void test_credssp_ntlm_v2_hash(void)
 	int ntlm_v2_hash_good;
 	char ntlm_v2_hash[16];
 
+	DATA_BLOB domain1;
+	DATA_BLOB domain2;
+
 	char username1[] = "user";
-	char domain1[] = "DOMAIN";
+	char domain1_wstr[] = "\x44\x00\x4F\x00\x4D\x00\x41\x00\x49\x00\x4E\x00";
 	char password1[] = "SecREt01";
 	char expected_ntlm_v2_hash1[16] = "\x04\xB8\xE0\xBA\x74\x28\x9C\xC5\x40\x82\x6B\xAB\x1D\xEE\x63\xAE";
+	domain1.data = (void* )&domain1_wstr;
+	domain1.length = sizeof(domain1_wstr);
 
 	char username2[] = "User";
-	char domain2[] = "Domain";
 	char password2[] = "Password";
+	char domain2_wstr[] = "\x44\x00\x6f\x00\x6d\x00\x61\x00\x69\x00\x6e\x00";
 	char expected_ntlm_v2_hash2[16] = "\x0c\x86\x8a\x40\x3b\xfd\x7a\x93\xa3\x00\x1e\xf2\x2e\xf0\x2e\x3f";
+	domain2.data = (void* )&domain2_wstr;
+	domain2.length = sizeof(domain2_wstr);
 
-	credssp_ntlm_v2_hash(password2, username2, domain2, ntlm_v2_hash);
+	credssp_ntlm_v2_hash(password2, username2, &domain2, ntlm_v2_hash);
 
 	ntlm_v2_hash_good = 1;
 	for (i = 0; i < 16; i++) {
@@ -99,7 +106,7 @@ void test_credssp_ntlm_v2_hash(void)
 
 	CU_ASSERT(ntlm_v2_hash_good == 1);
 
-	credssp_ntlm_v2_hash(password1, username1, domain1, ntlm_v2_hash);
+	credssp_ntlm_v2_hash(password1, username1, &domain1, ntlm_v2_hash);
 
 	ntlm_v2_hash_good = 1;
 	for (i = 0; i < 16; i++) {
@@ -133,16 +140,20 @@ void test_credssp_lm_response(void)
 void test_credssp_lm_v2_response(void)
 {
 	int i;
+	DATA_BLOB domain;
 	int lm_v2_response_good;
 	char lm_v2_response[24];
 	char password[] = "SecREt01";
 	char username[] = "user";
-	char server[] = "DOMAIN";
 	char challenge[] = "\x01\x23\x45\x67\x89\xAB\xCD\xEF";
 	char random[] = "\xFF\xFF\xFF\x00\x11\x22\x33\x44";
+	char domain_wstr[] = "\x44\x00\x4F\x00\x4D\x00\x41\x00\x49\x00\x4E\x00";
 	char expected_lm_v2_response[24] = "\xD6\xE6\x15\x2E\xA2\x5D\x03\xB7\xC6\xBA\x66\x29\xC2\xD6\xAA\xF0\xFF\xFF\xFF\x00\x11\x22\x33\x44";
 
-	credssp_lm_v2_response_static(password, username, server, (uint8*) challenge, (uint8*) lm_v2_response, random);
+	domain.data = (void* )&domain_wstr;
+	domain.length = sizeof(domain_wstr);
+
+	credssp_lm_v2_response_static(password, username, &domain, (uint8*) challenge, (uint8*) lm_v2_response, random);
 
 	lm_v2_response_good = 1;
 	for (i = 0; i < 24; i++) {
@@ -156,74 +167,81 @@ void test_credssp_lm_v2_response(void)
 void test_credssp_ntlm_v2_response(void)
 {
 	int i;
-	int ntlm_v2_response_good;
-	int ntlm_v2_session_key_good;
-	char* ntlm_v2_response;
-	char ntlm_v2_session_key[16];
-	char password[] = "SecREt01";
-	char username[] = "user";
-	char server[] = "DOMAIN";
-	char client_challenge[] = "\xFF\xFF\xFF\x00\x11\x22\x33\x44";
-	char server_challenge[] = "\x01\x23\x45\x67\x89\xAB\xCD\xEF";
-	char timestamp[] = "\x00\x90\xD3\x36\xB7\x34\xC3\x01";
+	char* p;
+	int session_base_key_good;
+	int lm_challenge_response_good;
+	int nt_challenge_response_good;
+	char session_base_key[16];
+	char password[] = "Password";
+	char username[] = "User";
+	char client_challenge[8] = "\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa";
+	char server_challenge[8] = "\x01\x23\x45\x67\x89\xab\xcd\xef";
+	char timestamp[8] = "\x00\x00\x00\x00\x00\x00\x00\x00";
+	char domain_wstr[12] = "\x44\x00\x6f\x00\x6d\x00\x61\x00\x69\x00\x6e\x00";
 
+	DATA_BLOB domain;
 	DATA_BLOB target_info;
 	DATA_BLOB nt_challenge_response;
 	DATA_BLOB lm_challenge_response;
 
-	char target_info_data[98] =
-		"\x02\x00\x0C\x00\x44\x00\x4F\x00"
-		"\x4D\x00\x41\x00\x49\x00\x4E\x00"
-		"\x01\x00\x0C\x00\x53\x00\x45\x00"
-		"\x52\x00\x56\x00\x45\x00\x52\x00"
-		"\x04\x00\x14\x00\x64\x00\x6F\x00"
-		"\x6D\x00\x61\x00\x69\x00\x6E\x00"
-		"\x2E\x00\x63\x00\x6F\x00\x6D\x00"
-		"\x03\x00\x22\x00\x73\x00\x65\x00"
-		"\x72\x00\x76\x00\x65\x00\x72\x00"
-		"\x2E\x00\x64\x00\x6F\x00\x6D\x00"
-		"\x61\x00\x69\x00\x6E\x00\x2E\x00"
-		"\x63\x00\x6F\x00\x6D\x00\x00\x00"
-		"\x00\x00";
+	char target_info_data[36] =
+		"\x02\x00\x0c\x00\x44\x00\x6f\x00\x6d\x00\x61\x00\x69\x00\x6e\x00"
+		"\x01\x00\x0c\x00\x53\x00\x65\x00\x72\x00\x76\x00\x65\x00\x72\x00"
+		"\x00\x00\x00\x00";
 
-	char expected_ntlm_v2_response[146] =
-		"\xCB\xAB\xBC\xA7\x13\xEB\x79\x5D\x04\xC9\x7A\xBC\x01\xEE\x49\x83"
-		"\x01\x01\x00\x00\x00\x00\x00\x00\x00\x90\xD3\x36\xB7\x34\xC3\x01"
-		"\xFF\xFF\xFF\x00\x11\x22\x33\x44\x00\x00\x00\x00\x02\x00\x0C\x00"
-		"\x44\x00\x4F\x00\x4D\x00\x41\x00\x49\x00\x4E\x00\x01\x00\x0C\x00"
-		"\x53\x00\x45\x00\x52\x00\x56\x00\x45\x00\x52\x00\x04\x00\x14\x00"
-		"\x64\x00\x6F\x00\x6D\x00\x61\x00\x69\x00\x6E\x00\x2E\x00\x63\x00"
-		"\x6F\x00\x6D\x00\x03\x00\x22\x00\x73\x00\x65\x00\x72\x00\x76\x00"
-		"\x65\x00\x72\x00\x2E\x00\x64\x00\x6F\x00\x6D\x00\x61\x00\x69\x00"
-		"\x6E\x00\x2E\x00\x63\x00\x6F\x00\x6D\x00\x00\x00\x00\x00\x00\x00"
-		"\x00\x00";
+	char expected_lm_challenge_response[24] =
+		"\x86\xc3\x50\x97\xac\x9c\xec\x10\x25\x54\x76\x4a\x57\xcc\xcc\x19"
+		"\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa";
 
-	char expected_ntlm_v2_session_key[16] =
-		"\xB9\x4A\x23\x9B\xB4\xC6\xD1\xEC\x08\x30\x6A\x07\x1D\x2B\x90\xF0";
+	char expected_nt_challenge_response[84] =
+		"\x68\xcd\x0a\xb8\x51\xe5\x1c\x96\xaa\xbc\x92\x7b\xeb\xef\x6a\x1c"
+		"\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+		"\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\x00\x00\x00\x00\x02\x00\x0c\x00"
+		"\x44\x00\x6f\x00\x6d\x00\x61\x00\x69\x00\x6e\x00\x01\x00\x0c\x00"
+		"\x53\x00\x65\x00\x72\x00\x76\x00\x65\x00\x72\x00\x00\x00\x00\x00"
+		"\x00\x00\x00\x00";
+
+	char expected_session_base_key[16] =
+		"\x8d\xe4\x0c\xca\xdb\xc1\x4a\x82\xf1\x5c\xb0\xad\x0d\xe9\x5c\xa3";
 
 	target_info.data = (void*) target_info_data;
 	target_info.length = sizeof(target_info_data);
 
-	credssp_ntlm_v2_response_static(password, username, server, (uint8*) client_challenge, (uint8*) server_challenge, &target_info, (uint8*) ntlm_v2_session_key, timestamp, &nt_challenge_response, &lm_challenge_response);
+	domain.data = (void*) &domain_wstr;
+	domain.length = sizeof(domain_wstr);
 
-	ntlm_v2_response = (char*) nt_challenge_response.data;
+	credssp_ntlm_v2_response_static(password, username, &domain, (uint8*) client_challenge, (uint8*) server_challenge,
+		&target_info, (uint8*) session_base_key, timestamp, &nt_challenge_response, &lm_challenge_response);
 
-	ntlm_v2_response_good = 1;
-	for (i = 0; i < 146; i++) {
-		if (ntlm_v2_response[i] != expected_ntlm_v2_response[i])
-			ntlm_v2_response_good = 0;
-	}
+	session_base_key_good = 1;
+	p = (char*) session_base_key;
 
-	CU_ASSERT(ntlm_v2_response_good == 1);
-
-	ntlm_v2_session_key_good = 1;
 	for (i = 0; i < 16; i++) {
-		if (ntlm_v2_session_key[i] != expected_ntlm_v2_session_key[i])
-			ntlm_v2_session_key_good = 0;
+		if (p[i] != expected_session_base_key[i])
+			session_base_key_good = 0;
 	}
 
-	CU_ASSERT(ntlm_v2_session_key_good == 1);
+	CU_ASSERT(session_base_key_good == 1);
+
+	lm_challenge_response_good = 1;
+	p = (char*) lm_challenge_response.data;
+	for (i = 0; i < 24; i++) {
+		if (p[i] != expected_lm_challenge_response[i])
+			lm_challenge_response_good = 0;
+	}
+	
+	CU_ASSERT(lm_challenge_response_good == 1);
+
+	nt_challenge_response_good = 1;
+	p = (char*) nt_challenge_response.data;
+	for (i = 0; i < 84; i++) {
+		if (p[i] != expected_nt_challenge_response[i])
+			nt_challenge_response_good = 0;
+	}
+
+	CU_ASSERT(nt_challenge_response_good == 1);
 }
+
 
 void test_credssp_ntlm_client_signing_key(void)
 {
