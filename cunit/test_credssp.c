@@ -242,7 +242,6 @@ void test_credssp_ntlm_v2_response(void)
 	CU_ASSERT(nt_challenge_response_good == 1);
 }
 
-
 void test_credssp_ntlm_client_signing_key(void)
 {
 	int i;

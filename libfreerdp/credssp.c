@@ -357,7 +357,7 @@ void credssp_ntlm_hash(char* password, char* hash)
 	MD4_Init(&md4_ctx);
 	MD4_Update(&md4_ctx, wstr_password, length * 2);
 	MD4_Final((void*)hash, &md4_ctx);
-
+	
 	free(wstr_password);
 }
 
@@ -374,7 +374,6 @@ void credssp_ntlm_v2_hash(char* password, char* username, DATA_BLOB *domain, cha
 	user_length = strlen(username);
 	domain_length = domain->length / 2;
 	value_length = user_length + domain_length;
-
 	value = malloc(value_length * 2);
 
 	/* First, compute the NTLMv1 hash of the password */
@@ -383,7 +382,7 @@ void credssp_ntlm_v2_hash(char* password, char* username, DATA_BLOB *domain, cha
 	/* Concatenate the username in uppercase unicode */
 	for (i = 0; i < user_length; i++)
 	{
-		if (username[i] > 'a' && username[i] < 'z')
+		if (username[i] >= 'a' && username[i] <= 'z')
 			value[2 * i] = username[i] - 32;
 		else
 			value[2 * i] = username[i];
@@ -395,7 +394,7 @@ void credssp_ntlm_v2_hash(char* password, char* username, DATA_BLOB *domain, cha
 	memcpy(&value[user_length * 2], domain->data, domain->length);
 
 	/* Compute the HMAC-MD5 hash of the above value using the NTLMv1 hash as the key, the result is the NTLMv2 hash */
-	HMAC(EVP_md5(), (void*) ntlm_hash, 16, (void*) value, (value_length) * 2, (void*) hash, NULL);
+	HMAC(EVP_md5(), (void*) ntlm_hash, 16, (void*) value, value_length * 2, (void*) hash, NULL);
 }
 
 void credssp_lm_v2_response(char* password, char* username, DATA_BLOB *domain, uint8* challenge, uint8* response)
@@ -1320,6 +1319,9 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 
 	UserNameBuffer = (uint8*) xstrdup_out_unistr(sec->rdp, settings->username, &len);
 	UserNameLen = len;
+
+	/* disable domain unless explicitely specified */
+	sec->nla->nb_domain_name.length = 0;
 
 	credssp_ntlm_v2_response(settings->password, settings->username,
 		&sec->nla->nb_domain_name, sec->nla->client_challenge, sec->nla->server_challenge,
