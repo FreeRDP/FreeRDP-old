@@ -43,6 +43,7 @@
 #include <openssl/md4.h>
 #include <openssl/hmac.h>
 #include <openssl/rand.h>
+#include <openssl/engine.h>
 #include <time.h>
 
 #include "credssp.h"
@@ -268,6 +269,12 @@ void credssp_ntlm_rc4k(uint8* key, int length, uint8* plaintext, uint8* cipherte
 	crypto_rc4_free(rc4);
 }
 
+void credssp_ntlm_nonce(uint8* nonce, int size)
+{
+	/* Generate random bytes (nonce) */
+	RAND_bytes((void*)nonce, size);
+}
+
 void credssp_lm_hash(char* password, char* hash)
 {
 	int i;
@@ -397,36 +404,44 @@ void credssp_ntlm_v2_hash(char* password, char* username, DATA_BLOB *domain, cha
 	HMAC(EVP_md5(), (void*) ntlm_hash, 16, (void*) value, value_length * 2, (void*) hash, NULL);
 }
 
-void credssp_lm_v2_response(char* password, char* username, DATA_BLOB *domain, uint8* challenge, uint8* response)
+void credssp_lm_v2_response(char* password, char* username, DATA_BLOB *domain, uint8* client_challenge, uint8* server_challenge, DATA_BLOB *lm_challenge_response)
 {
-	char clientRandom[8];
+	uint8 generated_client_random[8];
 
-	/* Generate an 8-byte client random */
-	RAND_bytes((void*)clientRandom, 8);
+	if (client_challenge == NULL)
+	{
+		/* Generate an 8-byte client random */
+		credssp_ntlm_nonce(generated_client_random, 8);
+		client_challenge = (uint8*) generated_client_random;
+	}
 
-	credssp_lm_v2_response_static(password, username, domain, challenge, response, clientRandom);
+	credssp_lm_v2_response_static(password, username, domain, client_challenge, server_challenge, lm_challenge_response);
 }
 
-void credssp_lm_v2_response_static(char* password, char* username, DATA_BLOB *domain, uint8* challenge, uint8* response, char* random)
+void credssp_lm_v2_response_static(char* password, char* username, DATA_BLOB *domain, uint8* client_challenge, uint8* server_challenge, DATA_BLOB *lm_challenge_response)
 {
-	char ntlm_v2_hash[16];
+	char *response;
 	char value[16];
+	char ntlm_v2_hash[16];
 
 	/* Compute the NTLMv2 hash */
 	credssp_ntlm_v2_hash(password, username, domain, ntlm_v2_hash);
 
 	/* Concatenate the server and client challenges */
-	memcpy(value, challenge, 8);
-	memcpy(&value[8], random, 8);
+	memcpy(value, server_challenge, 8);
+	memcpy(&value[8], client_challenge, 8);
+
+	data_blob_alloc(lm_challenge_response, 24);
+	response = lm_challenge_response->data;
 
 	/* Compute the HMAC-MD5 hash of the resulting value using the NTLMv2 hash as the key */
-	HMAC(EVP_md5(), (void*)ntlm_v2_hash, 16, (void*)value, 16, (void*)response, NULL);
+	HMAC(EVP_md5(), (void*) ntlm_v2_hash, 16, (void*) value, 16, (void*) response, NULL);
 
-	/* Concatenate the resulting HMAC-MD5 hash and the client random, giving us the LMv2 response (24 bytes) */
-	memcpy(&response[16], random, 8);
+	/* Concatenate the resulting HMAC-MD5 hash and the client challenge, giving us the LMv2 response (24 bytes) */
+	memcpy(&response[16], client_challenge, 8);
 }
 
-void credssp_ntlm_current_time(char* timestamp)
+void credssp_ntlm_current_time(uint8* timestamp)
 {
 	uint64 time64;
 	
@@ -435,12 +450,6 @@ void credssp_ntlm_current_time(char* timestamp)
 	time64 *= 10000000; /* Convert timestamp to tenths of a microsecond */
 
 	memcpy(timestamp, &time64, 8); /* Copy into timestamp in little-endian */
-}
-
-void credssp_ntlm_nonce(uint8* nonce, int size)
-{
-	/* Generate random bytes (nonce) */
-	RAND_bytes((void*)nonce, size);
 }
 
 void credssp_ntlm_client_challenge(uint8* client_challenge)
@@ -608,36 +617,42 @@ void credssp_ntlm_message_integrity_check(DATA_BLOB* negotiate_msg, DATA_BLOB* c
 	HMAC(EVP_md5(), (void*) session_key, 16, (void*) messages.data, messages.length, (void*) mic, NULL);
 }
 
-void credssp_ntlm_v2_response(char* password, char* username, DATA_BLOB *domain, uint8* client_challenge, uint8* server_challenge, DATA_BLOB *target_info, uint8* session_base_key, char* timestamp, DATA_BLOB *nt_challenge_response, DATA_BLOB *lm_challenge_response)
+void credssp_ntlm_v2_response(char* password, char* username, DATA_BLOB *domain, uint8* client_challenge, uint8* server_challenge, uint8* client_random, DATA_BLOB *target_info, uint8* session_base_key, uint8* timestamp, DATA_BLOB *nt_challenge_response, DATA_BLOB *lm_challenge_response)
 {
-	char generated_timestamp[8];
+	uint8 generated_timestamp[8];
+	uint8 generated_client_random[8];
 
 	/* Timestamp */
 	if (timestamp == NULL)
 	{
 		credssp_ntlm_current_time(generated_timestamp);
-		timestamp = generated_timestamp;
+		timestamp = (uint8*) generated_timestamp;
 	}
 
-	credssp_ntlm_v2_response_static(password, username, domain, client_challenge, server_challenge, target_info, session_base_key, timestamp, nt_challenge_response, lm_challenge_response);
+	/* ClientRandom */
+	if (random == NULL)
+	{
+		credssp_ntlm_nonce(generated_client_random, 8);
+		client_random = (uint8*) generated_client_random;
+	}
+
+	credssp_ntlm_v2_response_static(password, username, domain, client_challenge, server_challenge, client_random, target_info, session_base_key, timestamp, nt_challenge_response, lm_challenge_response);
 }
 
-void credssp_ntlm_v2_response_static(char* password, char* username, DATA_BLOB *domain, uint8* client_challenge, uint8* server_challenge, DATA_BLOB *target_info, uint8* session_base_key, char* timestamp, DATA_BLOB *nt_challenge_response, DATA_BLOB *lm_challenge_response)
+void credssp_ntlm_v2_response_static(char* password, char* username, DATA_BLOB *domain, uint8* client_challenge, uint8* server_challenge, uint8* client_random, DATA_BLOB *target_info, uint8* session_base_key, uint8* timestamp, DATA_BLOB *nt_challenge_response, DATA_BLOB *lm_challenge_response)
 {
 	char* blob;
-	char ntlm_v2_hash[16];
-	uint8* nt_proof_str[16];
-	uint8* hmac_md5_both_chal[16];
+	uint8 ntlm_v2_hash[16];
+	uint8 nt_proof_str[16];
 	DATA_BLOB ntlm_v2_temp;
 	DATA_BLOB ntlm_v2_temp_chal;
-	DATA_BLOB ntlm_v2_both_chal;
 
 	data_blob_alloc(&ntlm_v2_temp, target_info->length + 28);
 	memset(ntlm_v2_temp.data, '\0', ntlm_v2_temp.length);
 	blob = (char*) ntlm_v2_temp.data;
 
 	/* Compute the NTLMv2 hash */
-	credssp_ntlm_v2_hash(password, username, domain, ntlm_v2_hash);
+	credssp_ntlm_v2_hash(password, username, domain, (char*) ntlm_v2_hash);
 
 	/* Construct temp */
 	blob[0] = 1; /* RespType (1 byte) */
@@ -645,19 +660,18 @@ void credssp_ntlm_v2_response_static(char* password, char* username, DATA_BLOB *
 	/* Reserved1 (2 bytes) */
 	/* Reserved2 (4 bytes) */
 	memcpy(&blob[8], timestamp, 8); /* Timestamp (8 bytes) */
-	memcpy(&blob[16], client_challenge, 8); /* ChallengeFromClient (8 bytes) */
+	memcpy(&blob[16], client_challenge, 8); /* ClientChallenge (8 bytes) */
 	/* Reserved3 (4 bytes) */
 	memcpy(&blob[28], target_info->data, target_info->length);
-	/* Reserved4 (4 bytes) */
 
 	/* Concatenate server challenge with temp */
 	data_blob_alloc(&ntlm_v2_temp_chal, ntlm_v2_temp.length + 8);
 	blob = (char*) ntlm_v2_temp_chal.data;
 	memcpy(blob, server_challenge, 8);
 	memcpy(&blob[8], ntlm_v2_temp.data, ntlm_v2_temp.length);
-
-	/* Compute NTProofStr, the HMAC-MD5 hash of the resulting value using the NTLMv2 hash as the key */
-	HMAC(EVP_md5(), (void*) ntlm_v2_hash, 16, (void*) ntlm_v2_temp_chal.data, ntlm_v2_temp_chal.length, (void*) nt_proof_str, NULL);
+	
+	HMAC(EVP_md5(), (void*) ntlm_v2_hash, 16, (void*) ntlm_v2_temp_chal.data,
+		ntlm_v2_temp_chal.length, (void*) nt_proof_str, NULL);
 
 	/* NtChallengeResponse, Concatenate NTProofStr with temp */
 	data_blob_alloc(nt_challenge_response, ntlm_v2_temp.length + 16);
@@ -665,20 +679,9 @@ void credssp_ntlm_v2_response_static(char* password, char* username, DATA_BLOB *
 	memcpy(blob, nt_proof_str, 16);
 	memcpy(&blob[16], ntlm_v2_temp.data, ntlm_v2_temp.length);
 
-	/* Concatenate the server and client challenges */
-	data_blob_alloc(&ntlm_v2_both_chal, 16);
-	blob = (char*) ntlm_v2_both_chal.data;
-	memcpy(blob, server_challenge, 8);
-	memcpy(&blob[8], client_challenge, 8);
-
-	/* Compute the HMAC-MD5 of the concatenated server and client challenges */
-	HMAC(EVP_md5(), (void*) ntlm_v2_hash, 16, ntlm_v2_both_chal.data, 16, (void*) hmac_md5_both_chal, NULL);
-
-	/* LmChallengeResponse, Concatenate the HMAC-MD5 of the concatenated challenges with the client challenge */
-	data_blob_alloc(lm_challenge_response, 24);
-	blob = (char*) lm_challenge_response->data;
-	memcpy(blob, hmac_md5_both_chal, 16);
-	memcpy(&blob[16], client_challenge, 8);
+	/* LmChallengeResponse */
+	credssp_lm_v2_response(password, username, domain,
+		client_random, server_challenge, lm_challenge_response);
 
 	/* Compute SessionBaseKey, the HMAC-MD5 hash of NTProofStr using the NTLMv2 hash as the key */
 	HMAC(EVP_md5(), (void*) ntlm_v2_hash, 16, (void*) nt_proof_str, 16, (void*) session_base_key, NULL);
@@ -1325,7 +1328,7 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 
 	credssp_ntlm_v2_response(settings->password, settings->username,
 		&sec->nla->nb_domain_name, sec->nla->client_challenge, sec->nla->server_challenge,
-		&sec->nla->target_info, sec->nla->session_base_key, NULL,
+		NULL, &sec->nla->target_info, sec->nla->session_base_key, NULL,
 		&sec->nla->nt_challenge_response, &sec->nla->lm_challenge_response);
 
 	LmChallengeResponseLen = sec->nla->lm_challenge_response.length;
