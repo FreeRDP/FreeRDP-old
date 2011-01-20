@@ -118,10 +118,12 @@ void ntlm_recv(rdpSec * sec, STREAM s);
 
 CryptoRc4 credssp_ntlm_init_client_rc4_stream(uint8* sealing_key);
 void credssp_ntlm_free_client_rc4_stream(CryptoRc4 rc4);
-void credssp_ntlm_client_signing_key(uint8* random_session_key, uint8* signing_key);
-void credssp_ntlm_client_sealing_key(uint8* random_session_key, uint8* sealing_key);
-void credssp_ntlm_make_signature(uint8* msg, int msg_len, uint8* signing_key, uint8* sealing_key, uint32 seq_num, CryptoRc4 rc4, uint8* signature);
-void credssp_ntlm_encrypt_message(uint8* msg, int msg_len, uint8* signing_key, uint8* sealing_key, uint32 seq_num, CryptoRc4 rc4, uint8* encrypted_message);
+void credssp_ntlm_client_signing_key(uint8* exported_session_key, uint8* signing_key);
+void credssp_ntlm_client_sealing_key(uint8* exported_session_key, uint8* sealing_key);
+void credssp_ntlm_make_signature(uint8* msg, int msg_len, uint8* signing_key, uint8* sealing_key, uint32 seq_num, CryptoRc4 *rc4, uint8* signature);
+void credssp_ntlm_encrypt_message(uint8* msg, int msg_len, uint8* signing_key, uint8* sealing_key, uint32 seq_num, CryptoRc4 *rc4, uint8* encrypted_message);
+void credssp_ntlm_encrypt_message_with_signature(uint8* msg, int msg_len, uint8* signing_key, uint8* sealing_key, uint32 seq_num, CryptoRc4 *rc4, uint8* encrypted_message, uint8* signature);
+void credssp_ntlm_encrypt_random_session_key(uint8* random_session_key, uint8* key_exchange_key, uint8* encrypted_random_session_key);
 
 void credssp_lm_hash(char* password, char* hash);
 void credssp_ntlm_hash(char* password, char* hash);

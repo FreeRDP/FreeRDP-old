@@ -454,6 +454,13 @@ void credssp_ntlm_current_time(uint8* timestamp)
 
 void credssp_ntlm_client_challenge(uint8* client_challenge)
 {
+	/* ClientChallenge used in NTLMv2 response */
+	credssp_ntlm_nonce(client_challenge, 8);
+}
+
+void credssp_ntlm_client_random(uint8* client_challenge)
+{
+	/* ClientChallenge used in LMv2 response */
 	credssp_ntlm_nonce(client_challenge, 8);
 }
 
@@ -473,7 +480,7 @@ void credssp_ntlm_random_session_key(uint8* random_session_key)
 	credssp_ntlm_nonce(random_session_key, 16);
 }
 
-void credssp_ntlm_encrypted_random_session_key(uint8* random_session_key, uint8* key_exchange_key, uint8* encrypted_random_session_key)
+void credssp_ntlm_encrypt_random_session_key(uint8* random_session_key, uint8* key_exchange_key, uint8* encrypted_random_session_key)
 {
 	/* In NTLMv2, EncrypteRandomSessionKey is the ExportedSessionKey RC4-encrypted with the KeyExchangeKey */
 	credssp_ntlm_rc4k(key_exchange_key, 16, random_session_key, encrypted_random_session_key);
@@ -499,17 +506,17 @@ void credssp_ntlm_signing_key(uint8* random_session_key, uint8* sign_magic, int 
 	xfree(value);
 }
 
-void credssp_ntlm_client_signing_key(uint8* random_session_key, uint8* signing_key)
+void credssp_ntlm_client_signing_key(uint8* exported_session_key, uint8* signing_key)
 {
-	credssp_ntlm_signing_key(random_session_key, (uint8*) client_sign_magic, sizeof(client_sign_magic), signing_key);
+	credssp_ntlm_signing_key(exported_session_key, (uint8*) client_sign_magic, sizeof(client_sign_magic), signing_key);
 }
 
-void credssp_ntlm_server_signing_key(uint8* random_session_key, uint8* signing_key)
+void credssp_ntlm_server_signing_key(uint8* exported_session_key, uint8* signing_key)
 {
-	credssp_ntlm_signing_key(random_session_key, (uint8*) server_sign_magic, sizeof(server_sign_magic), signing_key);
+	credssp_ntlm_signing_key(exported_session_key, (uint8*) server_sign_magic, sizeof(server_sign_magic), signing_key);
 }
 
-void credssp_ntlm_sealing_key(uint8* random_session_key, uint8* seal_magic, int seal_magic_length, uint8* sealing_key)
+void credssp_ntlm_sealing_key(uint8* exported_session_key, uint8* seal_magic, int seal_magic_length, uint8* sealing_key)
 {
 	int length;
 	uint8* value;
@@ -518,8 +525,8 @@ void credssp_ntlm_sealing_key(uint8* random_session_key, uint8* seal_magic, int 
 	length = 16 + seal_magic_length;
 	value = (uint8*) xmalloc(length);
 
-	/* Concatenate RandomSessionKey with seal magic */
-	memcpy(value, random_session_key, 16);
+	/* Concatenate ExportedSessionKey with seal magic */
+	memcpy(value, exported_session_key, 16);
 	memcpy(&value[16], seal_magic, seal_magic_length);
 
 	md5 = crypto_md5_init();
@@ -529,14 +536,14 @@ void credssp_ntlm_sealing_key(uint8* random_session_key, uint8* seal_magic, int 
 	xfree(value);
 }
 
-void credssp_ntlm_client_sealing_key(uint8* random_session_key, uint8* sealing_key)
+void credssp_ntlm_client_sealing_key(uint8* exported_session_key, uint8* sealing_key)
 {
-	credssp_ntlm_sealing_key(random_session_key, (uint8*) client_seal_magic, sizeof(client_seal_magic), sealing_key);
+	credssp_ntlm_sealing_key(exported_session_key, (uint8*) client_seal_magic, sizeof(client_seal_magic), sealing_key);
 }
 
-void credssp_ntlm_server_sealing_key(uint8* random_session_key, uint8* sealing_key)
+void credssp_ntlm_server_sealing_key(uint8* exported_session_key, uint8* sealing_key)
 {
-	credssp_ntlm_sealing_key(random_session_key, (uint8*) server_seal_magic, sizeof(server_seal_magic), sealing_key);
+	credssp_ntlm_sealing_key(exported_session_key, (uint8*) server_seal_magic, sizeof(server_seal_magic), sealing_key);
 }
 
 CryptoRc4 credssp_ntlm_init_client_rc4_stream(uint8* sealing_key)
@@ -550,12 +557,12 @@ void credssp_ntlm_free_client_rc4_stream(CryptoRc4 rc4)
 	crypto_rc4_free(rc4);
 }
 
-void credssp_ntlm_make_signature(uint8* msg, int msg_len, uint8* signing_key, uint8* sealing_key, uint32 seq_num, CryptoRc4 rc4, uint8* signature)
+void credssp_ntlm_make_signature(uint8* msg, int msg_len, uint8* signing_key, uint8* sealing_key, uint32 seq_num, CryptoRc4 *rc4, uint8* signature)
 {
 	char* blob;
+	uint8 digest[16];
 	uint8 checksum[8];
 	uint32 version = 1;
-	uint8 hmac_md5[16];
 	DATA_BLOB seq_num_msg;
 
 	data_blob_alloc(&seq_num_msg, msg_len + 4);
@@ -564,10 +571,10 @@ void credssp_ntlm_make_signature(uint8* msg, int msg_len, uint8* signing_key, ui
 	memcpy(&blob[4], msg, msg_len);
 
 	/* Compute the HMAC-MD5 hash of the resulting value using the client signing key */
-	HMAC(EVP_md5(), (void*) signing_key, 16, seq_num_msg.data, seq_num_msg.length, (void*) hmac_md5, NULL);
-	
-	/* Encrypt first 8 bytes of previous HMAC-MD5 using sealing key */
-	crypto_rc4(rc4, 8, hmac_md5, checksum);
+	HMAC(EVP_md5(), (void*) signing_key, 16, seq_num_msg.data, seq_num_msg.length, (void*) digest, NULL);
+
+	/* First 8 bytes of digest make the first checksum */
+	memcpy(checksum, digest, 8);
 
 	/* Concatenate version, ciphertext and sequence number to build signature */
 	memcpy(signature, (void*) &version, 4);
@@ -575,12 +582,12 @@ void credssp_ntlm_make_signature(uint8* msg, int msg_len, uint8* signing_key, ui
 	memcpy(&signature[12], (void*) &seq_num, 4);
 }
 
-void credssp_ntlm_encrypt_message(uint8* msg, int msg_len, uint8* signing_key, uint8* sealing_key, uint32 seq_num, CryptoRc4 rc4, uint8* encrypted_message)
+void credssp_ntlm_encrypt_message(uint8* msg, int msg_len, uint8* signing_key, uint8* sealing_key, uint32 seq_num, CryptoRc4 *rc4, uint8* encrypted_message)
 {
 	uint8 signature[16];
 
 	/* Encrypt message using RC4 with sealing key */
-	crypto_rc4(rc4, msg_len, msg, encrypted_message);
+	crypto_rc4(*rc4, msg_len, msg, encrypted_message);
 
 	credssp_ntlm_make_signature(msg, msg_len, signing_key, sealing_key, seq_num, rc4, signature);
 
@@ -588,13 +595,19 @@ void credssp_ntlm_encrypt_message(uint8* msg, int msg_len, uint8* signing_key, u
 	memcpy(&encrypted_message[msg_len], (void*) signature, 16);
 }
 
-void credssp_ntlm_encrypt_message_with_signature(uint8* msg, int msg_len, uint8* signing_key, uint8* sealing_key, uint32 seq_num, CryptoRc4 rc4, uint8* encrypted_message, uint8* signature)
+void credssp_ntlm_encrypt_message_with_signature(uint8* msg, int msg_len, uint8* signing_key, uint8* sealing_key, uint32 seq_num, CryptoRc4 *rc4, uint8* encrypted_message, uint8* signature)
 {
-	/* Encrypt message using RC4 with sealing key */
-	crypto_rc4(rc4, msg_len, msg, encrypted_message);
+	uint8 checksum[8];
 
-	/* Make signature, but don't concatenate */
+	/* Make signature */
 	credssp_ntlm_make_signature(msg, msg_len, signing_key, sealing_key, seq_num, rc4, signature);
+
+	/* Encrypt message using with RC4 */
+	crypto_rc4(*rc4, msg_len, msg, encrypted_message);
+
+	/* Encrypt 8-byte checksum with RC4 */
+	crypto_rc4(*rc4, 8, &signature[4], checksum);
+	memcpy(&signature[4], checksum, 8);
 }
 
 void credssp_ntlm_message_integrity_check(DATA_BLOB* negotiate_msg, DATA_BLOB* challenge_msg, DATA_BLOB* authenticate_msg, uint8* session_key, uint8* mic)
@@ -1199,22 +1212,20 @@ void ntlm_recv_challenge_message(rdpSec * sec, STREAM s)
 	data_blob_alloc(&sec->nla->challenge_msg, end_offset - start_offset);
 	memcpy(sec->nla->challenge_msg.data, start_offset, sec->nla->challenge_msg.length);
 
+	/* Generate RandomSessionKey */
+	credssp_ntlm_random_session_key(sec->nla->random_session_key);
+
 	/* Generate ExportedSessionKey */
 	credssp_ntlm_exported_session_key(sec->nla->exported_session_key);
 
 	/* Generate Client Challenge */
 	credssp_ntlm_client_challenge((uint8*) sec->nla->client_challenge);
 
-	/* Generate ExportedSessionKey */
-	credssp_ntlm_random_session_key(sec->nla->random_session_key);
-
 	/* Generate Client and Server Signing Keys */
 	credssp_ntlm_client_signing_key(sec->nla->random_session_key, (uint8*) sec->nla->client_signing_key);
-	//credssp_ntlm_server_signing_key(sec->nla->random_session_key, (uint8*) sec->nla->server_signing_key);
 
 	/* Generate Client and Server Sealing Keys */
 	credssp_ntlm_client_sealing_key(sec->nla->random_session_key, (uint8*) sec->nla->client_sealing_key);
-	//credssp_ntlm_server_sealing_key(sec->nla->random_session_key, (uint8*) sec->nla->server_sealing_key);
 
 	sec->nla->state = NTLM_STATE_AUTHENTICATE;
 
@@ -1340,7 +1351,7 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 	EncryptedRandomSessionKeyLen = 16;
 	EncryptedRandomSessionKeyBuffer = (uint8*) xmalloc(EncryptedRandomSessionKeyLen);
 
-	credssp_ntlm_encrypted_random_session_key(sec->nla->random_session_key,
+	credssp_ntlm_encrypt_random_session_key(sec->nla->random_session_key,
 		sec->nla->key_exchange_key, EncryptedRandomSessionKeyBuffer);
 
 	LmChallengeResponseBufferOffset = 64; /* starting buffer offset */
@@ -1423,7 +1434,7 @@ void ntlm_send_authenticate_message(rdpSec * sec)
 	sec->nla->rc4_stream = credssp_ntlm_init_client_rc4_stream(sec->nla->client_sealing_key);
 
 	credssp_ntlm_encrypt_message_with_signature(sec->nla->public_key, sec->nla->public_key_length, sec->nla->client_signing_key,
-		sec->nla->client_sealing_key, sec->nla->sequence_number, sec->nla->rc4_stream, encrypted_public_key, signature);
+		sec->nla->client_sealing_key, sec->nla->sequence_number, &sec->nla->rc4_stream, encrypted_public_key, signature);
 
 	out_uint8p(pubKeyAuth, signature, 16); /* Message Signature */
 	out_uint8p(pubKeyAuth, encrypted_public_key, sec->nla->public_key_length); /* Encrypted Public Key */
