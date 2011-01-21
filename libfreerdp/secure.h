@@ -59,7 +59,7 @@ struct rdp_sec
 #ifndef DISABLE_TLS
 	SSL *ssl;
 	SSL_CTX *ctx;
-	struct rdp_nla * nla;
+	struct rdp_credssp * credssp;
 #endif
 };
 typedef struct rdp_sec rdpSec;

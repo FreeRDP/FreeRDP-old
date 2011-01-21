@@ -29,6 +29,7 @@
 #include "mem.h"
 #include "debug.h"
 #include "tcp.h"
+#include "data_blob.h"
 
 #ifndef DISABLE_TLS
 #include "tls.h"
@@ -988,12 +989,10 @@ sec_connect(rdpSec * sec, char *server, char *username, int port)
 		sec->ssl = tls_connect(sec->ctx, sec->mcs->iso->tcp->sock, server);
 		sec->tls_connected = 1;
 		sec->rdp->settings->encryption = 0;
-		tls_get_public_key(sec->ssl, &(sec->nla->public_key), &(sec->nla->public_key_length));
-
-		printf("public_key_length: %d\n", sec->nla->public_key_length);
-
-		credssp_authenticate(sec);
-		///success = mcs_connect(sec->mcs);
+		tls_get_public_key(sec->ssl, (uint8**) &(sec->credssp->public_key.data),
+			&(sec->credssp->public_key.length));
+		credssp_authenticate(sec->credssp);
+		// success = mcs_connect(sec->mcs);
 		return success;
 	}
 	else if(sec->negotiated_protocol == PROTOCOL_TLS)
@@ -1064,7 +1063,7 @@ sec_new(struct rdp_rdp * rdp)
 		self->licence = licence_new(self);
 
 #ifndef DISABLE_TLS
-		self->nla = nla_new(self);
+		self->credssp = credssp_new(self);
 #endif
 
 		self->rc4_decrypt_key = NULL;
@@ -1082,7 +1081,7 @@ sec_free(rdpSec * sec)
 		mcs_free(sec->mcs);
 
 #ifndef DISABLE_TLS
-		nla_free(sec->nla);
+		credssp_free(sec->credssp);
 #endif
 
 		xfree(sec);

@@ -60,7 +60,7 @@ libfreerdp_la_SOURCES += crypto_simple.c ssl.c ssl.h
 endif
 
 if ENABLE_TLS
-libfreerdp_la_SOURCES += tls.c tls.h credssp.c credssp.h
+libfreerdp_la_SOURCES += tls.c tls.h credssp.c credssp.h ntlmssp.c ntlmssp.h
 endif
 
 libfreerdp_la_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include \
