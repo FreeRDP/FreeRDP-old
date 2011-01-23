@@ -123,6 +123,7 @@ void test_ntlmssp_compute_lm_response(void)
 	CU_ASSERT(lm_response_good == 1);
 }
 
+#if 0
 void test_ntlmssp_compute_lm_v2_response(void)
 {
 	int i;
@@ -155,7 +156,43 @@ void test_ntlmssp_compute_lm_v2_response(void)
 
 	CU_ASSERT(lm_v2_response_good == 1);
 }
+#endif
 
+void test_ntlmssp_compute_lm_v2_response(void)
+{
+	int i;
+	char *p;
+	NTLMSSP *ntlmssp;
+	int lm_v2_response_good;
+	char password[] = "password";
+	char username[] = "username";
+	char domain[] = "win7";
+	char server_challenge[8] = "\x26\x6e\xcd\x75\xaa\x41\xe7\x6f";
+	char lm_client_challenge[8] = "\x47\xa2\xe5\xcf\x27\xf7\x3c\x43";
+	char expected_lm_v2_response[24] = "\xa0\x98\x01\x10\x19\xbb\x5d\x00\xf6\xbe\x00\x33\x90\x20\x34\xb3\x47\xa2\xe5\xcf\x27\xf7\x3c\x43";
+
+	ntlmssp = ntlmssp_new();
+	ntlmssp_set_password(ntlmssp, password);
+	ntlmssp_set_username(ntlmssp, username);
+	ntlmssp_set_domain(ntlmssp, domain);
+
+	memcpy(ntlmssp->server_challenge, server_challenge, 8);
+	memcpy(ntlmssp->lm_client_challenge, lm_client_challenge, 8);
+
+	ntlmssp_compute_lm_v2_response(ntlmssp);
+
+	p = (char*) ntlmssp->lm_challenge_response.data;
+
+	lm_v2_response_good = 1;
+	for (i = 0; i < 24; i++) {
+		if (p[i] != expected_lm_v2_response[i])
+			lm_v2_response_good = 0;
+	}
+
+	CU_ASSERT(lm_v2_response_good == 1);
+}
+
+#if 0
 void test_ntlmssp_compute_ntlm_v2_response(void)
 {
 	int i;
@@ -235,14 +272,98 @@ void test_ntlmssp_compute_ntlm_v2_response(void)
 
 	CU_ASSERT(nt_challenge_response_good == 1);
 }
+#endif
+
+void test_ntlmssp_compute_ntlm_v2_response(void)
+{
+	int i;
+	char* p;
+	NTLMSSP *ntlmssp;
+	int session_base_key_good;
+	int lm_challenge_response_good;
+	int nt_challenge_response_good;
+	char password[] = "password";
+	char username[] = "username";
+	char domain[] = "win7";
+	char timestamp[8] = "\xc3\x83\xa2\x1c\x6c\xb0\xcb\x01";
+	char lm_client_challenge[8] = "\x47\xa2\xe5\xcf\x27\xf7\x3c\x43";
+	char nt_client_challenge[8] = "\x47\xa2\xe5\xcf\x27\xf7\x3c\x43";
+	char server_challenge[8] = "\x26\x6e\xcd\x75\xaa\x41\xe7\x6f";
+
+	char target_info_data[68] =
+		"\x02\x00\x08\x00\x57\x00\x49\x00\x4e\x00\x37\x00"
+		"\x01\x00\x08\x00\x57\x00\x49\x00\x4e\x00\x37\x00"
+		"\x04\x00\x08\x00\x77\x00\x69\x00\x6e\x00\x37\x00"
+		"\x03\x00\x08\x00\x77\x00\x69\x00\x6e\x00\x37\x00"
+		"\x07\x00\x08\x00\xa9\x8d\x9b\x1a\x6c\xb0\xcb\x01"
+		"\x00\x00\x00\x00\x00\x00\x00\x00";
+
+	char expected_nt_challenge_response[112] =
+		"\x01\x4a\xd0\x8c\x24\xb4\x90\x74\x39\x68\xe8\xbd\x0d\x2b\x70\x10"
+		"\x01\x01\x00\x00\x00\x00\x00\x00\xc3\x83\xa2\x1c\x6c\xb0\xcb\x01"
+		"\x47\xa2\xe5\xcf\x27\xf7\x3c\x43\x00\x00\x00\x00\x02\x00\x08\x00"
+		"\x57\x00\x49\x00\x4e\x00\x37\x00\x01\x00\x08\x00\x57\x00\x49\x00"
+		"\x4e\x00\x37\x00\x04\x00\x08\x00\x77\x00\x69\x00\x6e\x00\x37\x00"
+		"\x03\x00\x08\x00\x77\x00\x69\x00\x6e\x00\x37\x00\x07\x00\x08\x00"
+		"\xa9\x8d\x9b\x1a\x6c\xb0\xcb\x01\x00\x00\x00\x00\x00\x00\x00\x00";
+
+	char expected_lm_challenge_response[24] =
+		"\xa0\x98\x01\x10\x19\xbb\x5d\x00\xf6\xbe\x00\x33\x90\x20\x34\xb3"
+		"\x47\xa2\xe5\xcf\x27\xf7\x3c\x43";
+
+	char expected_session_base_key[16] =
+		"\x6e\xf1\x6b\x79\x88\xf2\x3d\x7e\x54\x2a\x1a\x38\x4e\xa0\x6b\x52";
+
+	ntlmssp = ntlmssp_new();
+	ntlmssp_set_password(ntlmssp, password);
+	ntlmssp_set_username(ntlmssp, username);
+	ntlmssp_set_domain(ntlmssp, domain);
+
+	memcpy(ntlmssp->timestamp, timestamp, 8);
+	memcpy(ntlmssp->server_challenge, server_challenge, 8);
+	memcpy(ntlmssp->lm_client_challenge, lm_client_challenge, 8);
+	memcpy(ntlmssp->nt_client_challenge, nt_client_challenge, 8);
+
+	ntlmssp->target_info.data = target_info_data;
+	ntlmssp->target_info.length = sizeof(target_info_data);
+
+	ntlmssp_compute_ntlm_v2_response(ntlmssp);
+
+	session_base_key_good = 1;
+	p = (char*) ntlmssp->session_base_key;
+	for (i = 0; i < 16; i++) {
+		if (p[i] != expected_session_base_key[i])
+			session_base_key_good = 0;
+	}
+
+	CU_ASSERT(session_base_key_good == 1);
+
+	lm_challenge_response_good = 1;
+	p = (char*) ntlmssp->lm_challenge_response.data;
+	for (i = 0; i < 24; i++) {
+		if (p[i] != expected_lm_challenge_response[i])
+			lm_challenge_response_good = 0;
+	}
+
+	CU_ASSERT(lm_challenge_response_good == 1);
+
+	nt_challenge_response_good = 1;
+	p = (char*) ntlmssp->nt_challenge_response.data;
+	for (i = 0; i < 84; i++) {
+		if (p[i] != expected_nt_challenge_response[i])
+			nt_challenge_response_good = 0;
+	}
+
+	CU_ASSERT(nt_challenge_response_good == 1);
+}
 
 void test_ntlmssp_generate_client_signing_key(void)
 {
 	int i;
 	NTLMSSP *ntlmssp;
 	int client_signing_key_good;
-	uint8 exported_session_key[16] = "\x29\xdd\x4a\x88\xf8\x3a\xda\xd9\x01\x46\x56\xec\xc1\x8b\x6e\xd0";
-	uint8 expected_client_signing_key[16] = "\xde\x51\x70\x09\xce\x84\x5a\xa0\x05\x0a\x4c\x76\x80\x34\xaf\x88";
+	uint8 exported_session_key[16] = "\x89\x90\x0d\x5d\x2c\x53\x2b\x36\x31\xcc\x1a\x46\xce\xa9\x34\xf1";
+	uint8 expected_client_signing_key[16] = "\xbf\x5e\x42\x76\x55\x68\x38\x97\x45\xd3\xb4\x9f\x5e\x2f\xbc\x89";
 
 	ntlmssp = ntlmssp_new();
 	memcpy(ntlmssp->exported_session_key, exported_session_key, sizeof(exported_session_key));
@@ -263,8 +384,8 @@ void test_ntlmssp_generate_client_sealing_key(void)
 	int i;
 	NTLMSSP *ntlmssp;
 	int client_sealing_key_good;
-	uint8 exported_session_key[16] = "\x29\xdd\x4a\x88\xf8\x3a\xda\xd9\x01\x46\x56\xec\xc1\x8b\x6e\xd0";
-	uint8 expected_client_sealing_key[16] = "\xe6\x35\xff\x73\x9e\xd3\x2c\x19\xd6\xf2\x09\x00\xfd\x4b\x45\x31";
+	uint8 exported_session_key[16] = "\x89\x90\x0d\x5d\x2c\x53\x2b\x36\x31\xcc\x1a\x46\xce\xa9\x34\xf1";
+	uint8 expected_client_sealing_key[16] = "\xca\x41\xcd\x08\x48\x07\x22\x6e\x0d\x84\xc3\x88\xa5\x07\xa9\x73";
 
 	ntlmssp = ntlmssp_new();
 	memcpy(ntlmssp->exported_session_key, exported_session_key, sizeof(exported_session_key));
@@ -278,6 +399,30 @@ void test_ntlmssp_generate_client_sealing_key(void)
 	}
 
 	CU_ASSERT(client_sealing_key_good == 1);
+}
+
+void test_ntlmssp_encrypt_random_session_key(void)
+{
+	int i;
+	NTLMSSP *ntlmssp;
+	int encrypted_random_session_key_good;
+	uint8 key_exchange_key[16] = "\x6e\xf1\x6b\x79\x88\xf2\x3d\x7e\x54\x2a\x1a\x38\x4e\xa0\x6b\x52";
+	uint8 exported_session_key[16] = "\x89\x90\x0d\x5d\x2c\x53\x2b\x36\x31\xcc\x1a\x46\xce\xa9\x34\xf1";
+	uint8 expected_encrypted_random_session_key[16] = "\xb1\xd2\x45\x42\x0f\x37\x9a\x0e\xe0\xce\x77\x40\x10\x8a\xda\xba";
+
+	ntlmssp = ntlmssp_new();
+	memcpy(ntlmssp->key_exchange_key, key_exchange_key, 16);
+	memcpy(ntlmssp->exported_session_key, exported_session_key, 16);
+
+	ntlmssp_encrypt_random_session_key(ntlmssp);
+
+	encrypted_random_session_key_good = 1;
+	for (i = 0; i < 16; i++) {
+		if (ntlmssp->encrypted_random_session_key[i] != expected_encrypted_random_session_key[i])
+			encrypted_random_session_key_good = 0;
+	}
+
+	CU_ASSERT(encrypted_random_session_key_good == 1);
 }
 
 void test_ntlmssp_encrypt_message(void)
@@ -361,30 +506,4 @@ void test_ntlmssp_encrypt_message(void)
 	}
 
 	CU_ASSERT(signature_good == 1);
-}
-
-void test_ntlmssp_encrypt_random_session_key(void)
-{
-	int i;
-	char* p;
-	NTLMSSP *ntlmssp;
-	int encrypted_random_session_key_good;
-	uint8 key_exchange_key[16] = "\x8d\xe4\x0c\xca\xdb\xc1\x4a\x82\xf1\x5c\xb0\xad\x0d\xe9\x5c\xa3";
-	uint8 random_session_key[16] = "\x55\x55\x55\x55\x55\x55\x55\x55\x55\x55\x55\x55\x55\x55\x55\x55";
-	uint8 expected_encrypted_random_session_key[16] = "\xc5\xda\xd2\x54\x4f\xc9\x79\x90\x94\xce\x1c\xe9\x0b\xc9\xd0\x3e";
-
-	ntlmssp = ntlmssp_new();
-	memcpy(ntlmssp->key_exchange_key, key_exchange_key, 16);
-	memcpy(ntlmssp->random_session_key, random_session_key, 16);
-
-	ntlmssp_encrypt_random_session_key(ntlmssp);
-
-	encrypted_random_session_key_good = 1;
-	p = (char*) ntlmssp->encrypted_random_session_key;
-	for (i = 0; i < 16; i++) {
-		if (p[i] != expected_encrypted_random_session_key[i])
-			encrypted_random_session_key_good = 0;
-	}
-
-	CU_ASSERT(encrypted_random_session_key_good == 1);
 }

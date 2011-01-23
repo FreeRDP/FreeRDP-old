@@ -127,7 +127,7 @@ void ntlmssp_generate_exported_session_key(NTLMSSP *ntlmssp)
 void ntlmssp_encrypt_random_session_key(NTLMSSP *ntlmssp)
 {
 	/* In NTLMv2, EncryptedRandomSessionKey is the ExportedSessionKey RC4-encrypted with the KeyExchangeKey */
-	credssp_rc4k(ntlmssp->key_exchange_key, 16, ntlmssp->random_session_key, ntlmssp->encrypted_random_session_key);
+	credssp_rc4k(ntlmssp->key_exchange_key, 16, ntlmssp->exported_session_key, ntlmssp->encrypted_random_session_key);
 }
 
 void ntlmssp_generate_signing_key(uint8* exported_session_key, DATA_BLOB *sign_magic, uint8* signing_key)
