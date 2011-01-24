@@ -208,6 +208,7 @@ void test_ntlmssp_compute_ntlm_v2_response(void)
 	ntlmssp->target_info.data = target_info_data;
 	ntlmssp->target_info.length = sizeof(target_info_data);
 
+	ntlmssp_compute_lm_v2_response(ntlmssp);
 	ntlmssp_compute_ntlm_v2_response(ntlmssp);
 
 	session_base_key_good = 1;

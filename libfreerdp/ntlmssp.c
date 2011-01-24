@@ -121,7 +121,7 @@ void ntlmssp_generate_exported_session_key(NTLMSSP *ntlmssp)
 void ntlmssp_encrypt_random_session_key(NTLMSSP *ntlmssp)
 {
 	/* In NTLMv2, EncryptedRandomSessionKey is the ExportedSessionKey RC4-encrypted with the KeyExchangeKey */
-	credssp_rc4k(ntlmssp->key_exchange_key, 16, ntlmssp->exported_session_key, ntlmssp->encrypted_random_session_key);
+	credssp_rc4k(ntlmssp->key_exchange_key, 16, ntlmssp->random_session_key, ntlmssp->encrypted_random_session_key);
 }
 
 void ntlmssp_generate_signing_key(uint8* exported_session_key, DATA_BLOB *sign_magic, uint8* signing_key)
@@ -395,9 +395,6 @@ void ntlmssp_compute_ntlm_v2_response(NTLMSSP *ntlmssp)
 	memcpy(blob, nt_proof_str, 16);
 	memcpy(&blob[16], ntlm_v2_temp.data, ntlm_v2_temp.length);
 
-	/* LmChallengeResponse */
-	ntlmssp_compute_lm_v2_response(ntlmssp);
-
 	/* Compute SessionBaseKey, the HMAC-MD5 hash of NTProofStr using the NTLMv2 hash as the key */
 	HMAC(EVP_md5(), (void*) ntlm_v2_hash, 16,
 		(void*) nt_proof_str, 16, (void*) ntlmssp->session_base_key, NULL);
@@ -408,13 +405,16 @@ void ntlmssp_input_negotiate_flags(STREAM s, uint32 *flags)
 {
 	uint8* p;
 	uint8 tmp;
+	uint32 negotiateFlags;
 
 	/*
 	 * NegotiateFlags is a 4-byte bit map
 	 * Reverse order and then input in Big Endian
 	 */
 
-	p = s->p;
+	in_uint32_be(s, negotiateFlags);
+
+	p = (uint8*) &negotiateFlags;
 	tmp = p[0];
 	p[0] = p[3];
 	p[3] = tmp;
@@ -423,16 +423,7 @@ void ntlmssp_input_negotiate_flags(STREAM s, uint32 *flags)
 	p[1] = p[2];
 	p[2] = tmp;
 
-	in_uint32_be(s, *flags);
-
-	p = s->p;
-	tmp = p[0];
-	p[0] = p[3];
-	p[3] = tmp;
-
-	tmp = p[1];
-	p[1] = p[2];
-	p[2] = tmp;
+	*flags = negotiateFlags;
 }
 
 void ntlmssp_output_negotiate_flags(STREAM s, uint32 flags)
@@ -456,42 +447,6 @@ void ntlmssp_output_negotiate_flags(STREAM s, uint32 flags)
 	p[1] = p[2];
 	p[2] = tmp;
 }
-
-#if 0
-void ntlmssp_encrypt_message(NTLMSSP *ntlmssp, DATA_BLOB *msg, DATA_BLOB *encrypted_msg, uint8* signature)
-{
-	CryptoRc4 rc4;
-	char* blob;
-	uint8 digest[16];
-	uint8 checksum[8];
-	uint32 version = 1;
-	DATA_BLOB seq_num_msg;
-
-	data_blob_alloc(&seq_num_msg, msg->length + 4);
-	blob = (char*) seq_num_msg.data;
-	memcpy(blob, &ntlmssp->send_seq_num, 4);
-	memcpy(&blob[4], msg, msg->length);
-
-	/* Compute the HMAC-MD5 hash of the resulting value using the client signing key */
-	HMAC(EVP_md5(), (void*) ntlmssp->client_signing_key, 16, seq_num_msg.data, seq_num_msg.length, (void*) digest, NULL);
-
-	/* Allocate space for encrypted message */
-	data_blob_alloc(encrypted_msg, msg->length);
-
-	rc4 = crypto_rc4_init(ntlmssp->client_sealing_key, 16);
-
-	/* Encrypt message using with RC4 */
-	crypto_rc4(ntlmssp->rc4_seal, msg->length, msg->data, encrypted_msg->data);
-
-	/* RC4-encrypt first 8 bytes of digest */
-	crypto_rc4(ntlmssp->rc4_seal, 8, digest, checksum);
-
-	/* Concatenate version, ciphertext and sequence number to build signature */
-	memcpy(signature, (void*) &version, 4);
-	memcpy(&signature[4], (void*) checksum, 8);
-	memcpy(&signature[12], (void*) &ntlmssp->send_seq_num, 4);
-}
-#endif
 
 void ntlmssp_encrypt_message(NTLMSSP *ntlmssp, DATA_BLOB *msg, DATA_BLOB *encrypted_msg, uint8* signature)
 {
