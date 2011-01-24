@@ -63,11 +63,27 @@ void credssp_ntlmssp_init(rdpCredssp * credssp)
 
 	ntlmssp_set_password(ntlmssp, settings->password);
 	ntlmssp_set_username(ntlmssp, settings->username);
-	ntlmssp_set_domain(ntlmssp, NULL);
+
+	if (settings->domain != NULL)
+	{
+		if (strlen(settings->domain) > 0)
+		{
+			ntlmssp_set_domain(ntlmssp, settings->domain);
+		}
+	}
+	else
+	{
+		ntlmssp_set_domain(ntlmssp, NULL);
+	}
 
 	ntlmssp_generate_client_challenge(ntlmssp);
 	ntlmssp_generate_random_session_key(ntlmssp);
 	ntlmssp_generate_exported_session_key(ntlmssp);
+}
+
+void credssp_get_public_key(rdpCredssp * credssp)
+{	
+	tls_get_public_key(credssp->sec->ssl, &credssp->public_key);
 }
 
 int credssp_authenticate(rdpCredssp * credssp)
@@ -78,6 +94,7 @@ int credssp_authenticate(rdpCredssp * credssp)
 	uint8* negoTokenBuffer = (uint8*) xmalloc(2048);
 
 	credssp_ntlmssp_init(credssp);
+	credssp_get_public_key(credssp);
 
 	/* NTLMSSP NEGOTIATE MESSAGE */
 	negoToken->p = negoToken->data = negoTokenBuffer;
@@ -109,13 +126,23 @@ void credssp_encrypt_public_key(rdpCredssp *credssp, STREAM s)
 	DATA_BLOB encrypted_public_key;
 	NTLMSSP *ntlmssp = credssp->ntlmssp;
 
-	data_blob_alloc(&encrypted_public_key, credssp->public_key.length);
-
 	ntlmssp_encrypt_message(ntlmssp, &credssp->public_key, &encrypted_public_key, signature);
 
 	s->data = xmalloc(credssp->public_key.length + 16);
 	s->p = s->data;
 	s->end = s->p;
+
+	printf("Public Key (length = %d)\n", credssp->public_key.length);
+	hexdump(credssp->public_key.data, credssp->public_key.length);
+	printf("\n");
+
+	printf("Encrypted Public Key (length = %d)\n", encrypted_public_key.length);
+	hexdump(encrypted_public_key.data, encrypted_public_key.length);
+	printf("\n");
+
+	printf("Signature\n");
+	hexdump(signature, 16);
+	printf("\n");
 
 	out_uint8p(s, signature, 16); /* Message Signature */
 	out_uint8p(s, encrypted_public_key.data, encrypted_public_key.length); /* Encrypted Public Key */
@@ -192,7 +219,7 @@ void credssp_recv(rdpCredssp *credssp, STREAM negoToken, STREAM pubKeyAuth)
 	if(dec_rval.code == RC_OK)
 	{
 		int i;
-		asn_fprint(stdout, &asn_DEF_TSRequest, ts_request);
+		//asn_fprint(stdout, &asn_DEF_TSRequest, ts_request);
 
 		for(i = 0; i < ts_request->negoTokens->list.count; i++)
 		{

@@ -72,6 +72,7 @@ void ntlmssp_generate_random_session_key(NTLMSSP *ntlmssp);
 void ntlmssp_generate_exported_session_key(NTLMSSP *ntlmssp);
 void ntlmssp_encrypt_random_session_key(NTLMSSP *ntlmssp);
 
+void ntlmssp_generate_timestamp(NTLMSSP *ntlmssp);
 void ntlmssp_generate_client_signing_key(NTLMSSP *ntlmssp);
 void ntlmssp_generate_client_sealing_key(NTLMSSP *ntlmssp);
 void ntlmssp_init_rc4_seal_state(NTLMSSP *ntlmssp);

@@ -151,11 +151,13 @@ exit:
 }
 
 int
-tls_get_public_key(SSL *connection, uint8** public_key, int *public_key_length)
+tls_get_public_key(SSL *connection, DATA_BLOB *public_key)
 {
+	int length;
 	int success = 1;
 	X509 *cert = NULL;
 	EVP_PKEY *pkey = NULL;
+	unsigned char *p;
 
 	cert = SSL_get_peer_certificate(connection);
 
@@ -175,9 +177,18 @@ tls_get_public_key(SSL *connection, uint8** public_key, int *public_key_length)
 		goto exit;
 	}
 
-	*public_key_length = i2d_PublicKey(pkey, NULL);
-	*public_key = (uint8*) xmalloc(*public_key_length);
-	i2d_PublicKey(pkey, public_key);
+	length = i2d_PublicKey(pkey, NULL);
+
+	if (length < 1)
+	{
+		printf("tls_get_public_key: i2d_PublicKey() failed\n");
+		success = 0;
+		goto exit;
+	}
+
+	data_blob_alloc(public_key, length);
+	p = (unsigned char*) public_key->data;
+	i2d_PublicKey(pkey, &p);
 
 	exit:
 		if (cert)
