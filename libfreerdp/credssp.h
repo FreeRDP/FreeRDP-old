@@ -30,6 +30,7 @@ struct rdp_credssp
 {
 	int send_seq_num;
 	DATA_BLOB public_key;
+	DATA_BLOB ts_credentials;
 	CryptoRc4 rc4_seal_state;
 	struct _NTLMSSP *ntlmssp;
 	struct rdp_sec * sec;
@@ -38,10 +39,11 @@ typedef struct rdp_credssp rdpCredssp;
 
 int credssp_authenticate(rdpCredssp *credssp);
 
-void credssp_send(rdpCredssp *credssp, STREAM negoToken, STREAM pubKeyAuth);
-void credssp_recv(rdpCredssp *credssp, STREAM negoToken, STREAM pubKeyAuth);
+void credssp_send(rdpCredssp *credssp, STREAM negoToken, STREAM pubKeyAuth, STREAM authInfo);
+void credssp_recv(rdpCredssp *credssp, STREAM negoToken, STREAM pubKeyAuth, STREAM authInfo);
 
 void credssp_encrypt_public_key(rdpCredssp *credssp, STREAM s);
+void credssp_encode_ts_credentials(rdpCredssp *credssp);
 
 void credssp_nonce(uint8* nonce, int size);
 void credssp_current_time(uint8* timestamp);

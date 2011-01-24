@@ -38,6 +38,8 @@
 #include "asn1/TSRequest.h"
 #include "asn1/NegoData.h"
 #include "asn1/NegotiationToken.h"
+#include "asn1/TSCredentials.h"
+#include "asn1/TSPasswordCreds.h"
 
 #include <time.h>
 #include <openssl/des.h>
@@ -100,10 +102,10 @@ int credssp_authenticate(rdpCredssp * credssp)
 	negoToken->p = negoToken->data = negoTokenBuffer;
 	negoToken->end = negoToken->p;
 	ntlmssp_send(ntlmssp, negoToken);
-	credssp_send(credssp, negoToken, NULL);
+	credssp_send(credssp, negoToken, NULL, NULL);
 
 	/* NTLMSSP CHALLENGE MESSAGE */
-	credssp_recv(credssp, negoToken, NULL);
+	credssp_recv(credssp, negoToken, NULL, NULL);
 	ntlmssp_recv(ntlmssp, negoToken);
 
 	/* NTLMSSP AUTHENTICATE MESSAGE */
@@ -113,9 +115,16 @@ int credssp_authenticate(rdpCredssp * credssp)
 
 	/* The last NTLMSSP message is sent with the encrypted public key */
 	credssp_encrypt_public_key(credssp, pubKeyAuth);
-	credssp_send(credssp, negoToken, pubKeyAuth);
+	credssp_send(credssp, negoToken, pubKeyAuth, NULL);
 
-	credssp_recv(credssp, negoToken, pubKeyAuth);
+	/* Encrypted Public Key +1 */
+	credssp_recv(credssp, negoToken, pubKeyAuth, NULL);
+
+	/* Send encrypted credentials */
+	credssp_encode_ts_credentials(credssp);
+	printf("TSCredentials\n");
+	hexdump(credssp->ts_credentials.data, credssp->ts_credentials.length);
+	printf("\n");
 
 	return 1;
 }
@@ -150,7 +159,61 @@ void credssp_encrypt_public_key(rdpCredssp *credssp, STREAM s)
 	s_mark_end(s);
 }
 
-void credssp_send(rdpCredssp *credssp, STREAM negoToken, STREAM pubKeyAuth)
+void credssp_encode_ts_credentials(rdpCredssp *credssp)
+{
+	asn_enc_rval_t enc_rval;
+	TSCredentials_t *ts_credentials;
+	TSPasswordCreds_t *ts_password_creds;
+	DATA_BLOB ts_password_creds_buffer;
+
+	ts_credentials = calloc(1, sizeof(TSCredentials_t));
+	ts_credentials->credType = 1; /* TSPasswordCreds */
+
+	ts_password_creds = calloc(1, sizeof(TSPasswordCreds_t));
+
+	/* Domain */
+	ts_password_creds->domainName.buf = credssp->ntlmssp->domain.data;
+	ts_password_creds->domainName.size = credssp->ntlmssp->domain.length;
+
+	/* Username */
+	ts_password_creds->userName.buf = credssp->ntlmssp->username.data;
+	ts_password_creds->userName.size = credssp->ntlmssp->username.length;
+
+	/* Password */
+	ts_password_creds->password.buf = credssp->ntlmssp->password.data;
+	ts_password_creds->password.size = credssp->ntlmssp->password.length;
+
+	/* get size ASN.1 encoded TSPasswordCreds */
+	enc_rval = der_encode(&asn_DEF_TSRequest, ts_password_creds, asn1_write, 0);
+
+	if (enc_rval.encoded != -1)
+	{
+		data_blob_alloc(&ts_password_creds_buffer, enc_rval.encoded);
+
+		enc_rval = der_encode_to_buffer(&asn_DEF_TSPasswordCreds, ts_password_creds,
+			ts_password_creds_buffer.data, ts_password_creds_buffer.length);
+
+		printf("TSPasswordCreds\n");
+		hexdump(ts_password_creds_buffer.data, ts_password_creds_buffer.length);
+		printf("\n");
+	}
+
+	ts_credentials->credentials.buf = ts_password_creds_buffer.data;
+	ts_credentials->credentials.size = ts_password_creds_buffer.length;
+
+	/* get size ASN.1 encoded TSCredentials */
+	enc_rval = der_encode(&asn_DEF_TSCredentials, ts_credentials, asn1_write, 0);
+
+	if (enc_rval.encoded != -1)
+	{
+		data_blob_alloc(&credssp->ts_credentials, enc_rval.encoded);
+
+		enc_rval = der_encode_to_buffer(&asn_DEF_TSCredentials, ts_credentials,
+			credssp->ts_credentials.data, credssp->ts_credentials.length);
+	}
+}
+
+void credssp_send(rdpCredssp *credssp, STREAM negoToken, STREAM pubKeyAuth, STREAM authInfo)
 {
 	TSRequest_t *ts_request;
 	OCTET_STRING_t *nego_token;
@@ -200,7 +263,7 @@ void credssp_send(rdpCredssp *credssp, STREAM negoToken, STREAM pubKeyAuth)
 	}
 }
 
-void credssp_recv(rdpCredssp *credssp, STREAM negoToken, STREAM pubKeyAuth)
+void credssp_recv(rdpCredssp *credssp, STREAM negoToken, STREAM pubKeyAuth, STREAM authInfo)
 {
 	TSRequest_t *ts_request = 0;
 	NegotiationToken_t *negotiation_token = 0;
@@ -218,19 +281,20 @@ void credssp_recv(rdpCredssp *credssp, STREAM negoToken, STREAM pubKeyAuth)
 
 	if(dec_rval.code == RC_OK)
 	{
-		int i;
-		//asn_fprint(stdout, &asn_DEF_TSRequest, ts_request);
-
-		for(i = 0; i < ts_request->negoTokens->list.count; i++)
+		if (ts_request->negoTokens != NULL)
 		{
-			dec_rval = ber_decode(0, &asn_DEF_NegotiationToken, (void **)&negotiation_token,
-				ts_request->negoTokens->list.array[i]->negoToken.buf,
-				ts_request->negoTokens->list.array[i]->negoToken.size);
+			int i;
+			for(i = 0; i < ts_request->negoTokens->list.count; i++)
+			{
+				dec_rval = ber_decode(0, &asn_DEF_NegotiationToken, (void **)&negotiation_token,
+					ts_request->negoTokens->list.array[i]->negoToken.buf,
+					ts_request->negoTokens->list.array[i]->negoToken.size);
 
-			negoToken->data = (unsigned char*)(ts_request->negoTokens->list.array[i]->negoToken.buf);
-			negoToken->size = ts_request->negoTokens->list.array[i]->negoToken.size;
-			negoToken->p = negoToken->data;
-			negoToken->end = negoToken->p + negoToken->size;
+				negoToken->data = (unsigned char*)(ts_request->negoTokens->list.array[i]->negoToken.buf);
+				negoToken->size = ts_request->negoTokens->list.array[i]->negoToken.size;
+				negoToken->p = negoToken->data;
+				negoToken->end = negoToken->p + negoToken->size;
+			}
 		}
 	}
 	else
