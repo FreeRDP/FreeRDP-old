@@ -93,6 +93,7 @@ int credssp_authenticate(rdpCredssp * credssp)
 	NTLMSSP *ntlmssp = credssp->ntlmssp;
 	STREAM negoToken = xmalloc(sizeof(struct stream));
 	STREAM pubKeyAuth = xmalloc(sizeof(struct stream));
+	STREAM authInfo = xmalloc(sizeof(struct stream));
 	uint8* negoTokenBuffer = (uint8*) xmalloc(2048);
 
 	credssp_ntlmssp_init(credssp);
@@ -122,9 +123,8 @@ int credssp_authenticate(rdpCredssp * credssp)
 
 	/* Send encrypted credentials */
 	credssp_encode_ts_credentials(credssp);
-	printf("TSCredentials\n");
-	hexdump(credssp->ts_credentials.data, credssp->ts_credentials.length);
-	printf("\n");
+	credssp_encrypt_ts_credentials(credssp, authInfo);
+	credssp_send(credssp, NULL, NULL, authInfo);
 
 	return 1;
 }
@@ -159,6 +159,36 @@ void credssp_encrypt_public_key(rdpCredssp *credssp, STREAM s)
 	s_mark_end(s);
 }
 
+void credssp_encrypt_ts_credentials(rdpCredssp *credssp, STREAM s)
+{
+	uint8 signature[16];
+	DATA_BLOB encrypted_ts_credentials;
+	NTLMSSP *ntlmssp = credssp->ntlmssp;
+
+	ntlmssp_encrypt_message(ntlmssp, &credssp->ts_credentials, &encrypted_ts_credentials, signature);
+
+	s->data = xmalloc(credssp->ts_credentials.length + 16);
+	s->p = s->data;
+	s->end = s->p;
+
+	printf("TSCredentials (length = %d)\n", credssp->ts_credentials.length);
+	hexdump(credssp->ts_credentials.data, credssp->ts_credentials.length);
+	printf("\n");
+
+	printf("Encrypted TSCredentials (length = %d)\n", encrypted_ts_credentials.length);
+	hexdump(encrypted_ts_credentials.data, encrypted_ts_credentials.length);
+	printf("\n");
+
+	printf("Signature\n");
+	hexdump(signature, 16);
+	printf("\n");
+
+	out_uint8p(s, signature, 16); /* Message Signature */
+	out_uint8p(s, encrypted_ts_credentials.data, encrypted_ts_credentials.length); /* Encrypted TSCredentials */
+
+	s_mark_end(s);
+}
+
 void credssp_encode_ts_credentials(rdpCredssp *credssp)
 {
 	asn_enc_rval_t enc_rval;
@@ -184,7 +214,7 @@ void credssp_encode_ts_credentials(rdpCredssp *credssp)
 	ts_password_creds->password.size = credssp->ntlmssp->password.length;
 
 	/* get size ASN.1 encoded TSPasswordCreds */
-	enc_rval = der_encode(&asn_DEF_TSRequest, ts_password_creds, asn1_write, 0);
+	enc_rval = der_encode(&asn_DEF_TSPasswordCreds, ts_password_creds, asn1_write, 0);
 
 	if (enc_rval.encoded != -1)
 	{
@@ -192,10 +222,6 @@ void credssp_encode_ts_credentials(rdpCredssp *credssp)
 
 		enc_rval = der_encode_to_buffer(&asn_DEF_TSPasswordCreds, ts_password_creds,
 			ts_password_creds_buffer.data, ts_password_creds_buffer.length);
-
-		printf("TSPasswordCreds\n");
-		hexdump(ts_password_creds_buffer.data, ts_password_creds_buffer.length);
-		printf("\n");
 	}
 
 	ts_credentials->credentials.buf = ts_password_creds_buffer.data;
@@ -230,17 +256,25 @@ void credssp_send(rdpCredssp *credssp, STREAM negoToken, STREAM pubKeyAuth, STRE
 
 	ts_request->version = 2;
 
-	nego_token->buf = negoToken->data;
-	nego_token->size = negoToken->end - negoToken->data;
-
-	ASN_SEQUENCE_ADD(ts_request->negoTokens, nego_token);
+	if (negoToken != NULL)
+	{
+		nego_token->buf = negoToken->data;
+		nego_token->size = negoToken->end - negoToken->data;
+		ASN_SEQUENCE_ADD(ts_request->negoTokens, nego_token);
+	}
 
 	if (pubKeyAuth != NULL)
 	{
 		ts_request->pubKeyAuth = calloc(1, sizeof(OCTET_STRING_t));
-
 		ts_request->pubKeyAuth->buf = pubKeyAuth->data;
 		ts_request->pubKeyAuth->size = pubKeyAuth->end - pubKeyAuth->data;
+	}
+
+	if (authInfo != NULL)
+	{
+		ts_request->authInfo = calloc(1, sizeof(OCTET_STRING_t));
+		ts_request->authInfo->buf = authInfo->data;
+		ts_request->authInfo->size = authInfo->end - authInfo->data;
 	}
 
 	/* get size of the encoded ASN.1 payload */
