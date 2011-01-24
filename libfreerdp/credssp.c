@@ -65,8 +65,7 @@ void credssp_ntlmssp_init(rdpCredssp * credssp)
 	ntlmssp_set_username(ntlmssp, settings->username);
 	ntlmssp_set_domain(ntlmssp, NULL);
 
-	ntlmssp_generate_lm_client_challenge(ntlmssp);
-	ntlmssp_generate_nt_client_challenge(ntlmssp);
+	ntlmssp_generate_client_challenge(ntlmssp);
 	ntlmssp_generate_random_session_key(ntlmssp);
 	ntlmssp_generate_exported_session_key(ntlmssp);
 }
@@ -110,7 +109,6 @@ void credssp_encrypt_public_key(rdpCredssp *credssp, STREAM s)
 	DATA_BLOB encrypted_public_key;
 	NTLMSSP *ntlmssp = credssp->ntlmssp;
 
-	ntlmssp->rc4_seal = crypto_rc4_init(ntlmssp->client_sealing_key, 16);
 	data_blob_alloc(&encrypted_public_key, credssp->public_key.length);
 
 	ntlmssp_encrypt_message(ntlmssp, &credssp->public_key, &encrypted_public_key, signature);

@@ -96,16 +96,10 @@ void ntlmssp_set_password(NTLMSSP *ntlmssp, char* password)
 	}
 }
 
-void ntlmssp_generate_lm_client_challenge(NTLMSSP *ntlmssp)
+void ntlmssp_generate_client_challenge(NTLMSSP *ntlmssp)
 {
-	/* ClientChallenge used in LMv2 response */
-	credssp_nonce(ntlmssp->lm_client_challenge, 8);
-}
-
-void ntlmssp_generate_nt_client_challenge(NTLMSSP *ntlmssp)
-{
-	/* ClientChallenge used in LMv2 response */
-	credssp_nonce(ntlmssp->nt_client_challenge, 8);
+	/* ClientChallenge in computation of LMv2 and NTLMv2 responses */
+	credssp_nonce(ntlmssp->client_challenge, 8);
 }
 
 void ntlmssp_generate_key_exchange_key(NTLMSSP *ntlmssp)
@@ -160,22 +154,22 @@ void ntlmssp_generate_client_signing_key(NTLMSSP *ntlmssp)
 
 void ntlmssp_generate_sealing_key(uint8* exported_session_key, DATA_BLOB *seal_magic, uint8* sealing_key)
 {
-	int length;
-	uint8* value;
+	uint8* p;
 	CryptoMd5 md5;
+	DATA_BLOB blob;
 
-	length = 16 + seal_magic->length;
-	value = (uint8*) xmalloc(length);
+	data_blob_alloc(&blob, 16 + seal_magic->length);
+	p = (uint8*) blob.data;
 
 	/* Concatenate ExportedSessionKey with seal magic */
-	memcpy(value, exported_session_key, 16);
-	memcpy(&value[16], seal_magic->data, seal_magic->length);
+	memcpy(p, exported_session_key, 16);
+	memcpy(&p[16], seal_magic->data, seal_magic->length);
 
 	md5 = crypto_md5_init();
-	crypto_md5_update(md5, value, length);
+	crypto_md5_update(md5, blob.data, blob.length);
 	crypto_md5_final(md5, sealing_key);
 
-	xfree(value);
+	data_blob_free(&blob);
 }
 
 void ntlmssp_generate_client_sealing_key(NTLMSSP *ntlmssp)
@@ -184,6 +178,11 @@ void ntlmssp_generate_client_sealing_key(NTLMSSP *ntlmssp)
 	seal_magic.data = (void*) client_seal_magic;
 	seal_magic.length = sizeof(client_seal_magic);
 	ntlmssp_generate_signing_key(ntlmssp->exported_session_key, &seal_magic, ntlmssp->client_sealing_key);
+}
+
+void ntlmssp_init_rc4_seal_state(NTLMSSP *ntlmssp)
+{
+	ntlmssp->rc4_seal = crypto_rc4_init(ntlmssp->client_sealing_key, 16);
 }
 
 static int get_bit(char* buffer, int bit)
@@ -343,7 +342,7 @@ void ntlmssp_compute_lm_v2_response(NTLMSSP *ntlmssp)
 
 	/* Concatenate the server and client challenges */
 	memcpy(value, ntlmssp->server_challenge, 8);
-	memcpy(&value[8], ntlmssp->lm_client_challenge, 8);
+	memcpy(&value[8], ntlmssp->client_challenge, 8);
 
 	data_blob_alloc(&ntlmssp->lm_challenge_response, 24);
 	response = (char*) ntlmssp->lm_challenge_response.data;
@@ -352,7 +351,7 @@ void ntlmssp_compute_lm_v2_response(NTLMSSP *ntlmssp)
 	HMAC(EVP_md5(), (void*) ntlm_v2_hash, 16, (void*) value, 16, (void*) response, NULL);
 
 	/* Concatenate the resulting HMAC-MD5 hash and the client challenge, giving us the LMv2 response (24 bytes) */
-	memcpy(&response[16], ntlmssp->lm_client_challenge, 8);
+	memcpy(&response[16], ntlmssp->client_challenge, 8);
 }
 
 void ntlmssp_compute_ntlm_v2_response(NTLMSSP *ntlmssp)
@@ -377,7 +376,7 @@ void ntlmssp_compute_ntlm_v2_response(NTLMSSP *ntlmssp)
 	/* Reserved1 (2 bytes) */
 	/* Reserved2 (4 bytes) */
 	memcpy(&blob[8], ntlmssp->timestamp, 8); /* Timestamp (8 bytes) */
-	memcpy(&blob[16], ntlmssp->nt_client_challenge, 8); /* ClientChallenge (8 bytes) */
+	memcpy(&blob[16], ntlmssp->client_challenge, 8); /* ClientChallenge (8 bytes) */
 	/* Reserved3 (4 bytes) */
 	memcpy(&blob[28], ntlmssp->target_info.data, ntlmssp->target_info.length);
 
@@ -458,8 +457,10 @@ void ntlmssp_output_negotiate_flags(STREAM s, uint32 flags)
 	p[2] = tmp;
 }
 
+#if 0
 void ntlmssp_encrypt_message(NTLMSSP *ntlmssp, DATA_BLOB *msg, DATA_BLOB *encrypted_msg, uint8* signature)
 {
+	CryptoRc4 rc4;
 	char* blob;
 	uint8 digest[16];
 	uint8 checksum[8];
@@ -474,13 +475,37 @@ void ntlmssp_encrypt_message(NTLMSSP *ntlmssp, DATA_BLOB *msg, DATA_BLOB *encryp
 	/* Compute the HMAC-MD5 hash of the resulting value using the client signing key */
 	HMAC(EVP_md5(), (void*) ntlmssp->client_signing_key, 16, seq_num_msg.data, seq_num_msg.length, (void*) digest, NULL);
 
-	/* First 8 bytes of digest make the first checksum */
-	memcpy(checksum, digest, 8);
+	/* Allocate space for encrypted message */
+	data_blob_alloc(encrypted_msg, msg->length);
+
+	rc4 = crypto_rc4_init(ntlmssp->client_sealing_key, 16);
+
+	/* Encrypt message using with RC4 */
+	crypto_rc4(ntlmssp->rc4_seal, msg->length, msg->data, encrypted_msg->data);
+
+	/* RC4-encrypt first 8 bytes of digest */
+	crypto_rc4(ntlmssp->rc4_seal, 8, digest, checksum);
 
 	/* Concatenate version, ciphertext and sequence number to build signature */
 	memcpy(signature, (void*) &version, 4);
 	memcpy(&signature[4], (void*) checksum, 8);
 	memcpy(&signature[12], (void*) &ntlmssp->send_seq_num, 4);
+}
+#endif
+
+void ntlmssp_encrypt_message(NTLMSSP *ntlmssp, DATA_BLOB *msg, DATA_BLOB *encrypted_msg, uint8* signature)
+{
+	HMAC_CTX hmac_ctx;
+	uint8 digest[16];
+	uint8 checksum[8];
+	uint32 version = 1;
+
+	/* Compute the HMAC-MD5 hash of ConcatenationOf(seq_num,msg) using the client signing key */
+	HMAC_CTX_init(&hmac_ctx);
+	HMAC_Init_ex(&hmac_ctx, ntlmssp->client_signing_key, 16, EVP_md5(), NULL);
+	HMAC_Update(&hmac_ctx, (void*) &ntlmssp->send_seq_num, 4);
+	HMAC_Update(&hmac_ctx, msg->data, msg->length);
+	HMAC_Final(&hmac_ctx, digest, NULL);
 
 	/* Allocate space for encrypted message */
 	data_blob_alloc(encrypted_msg, msg->length);
@@ -488,9 +513,15 @@ void ntlmssp_encrypt_message(NTLMSSP *ntlmssp, DATA_BLOB *msg, DATA_BLOB *encryp
 	/* Encrypt message using with RC4 */
 	crypto_rc4(ntlmssp->rc4_seal, msg->length, msg->data, encrypted_msg->data);
 
-	/* Encrypt 8-byte checksum with RC4 */
-	crypto_rc4(ntlmssp->rc4_seal, 8, &signature[4], checksum);
-	memcpy(&signature[4], checksum, 8);
+	/* RC4-encrypt first 8 bytes of digest */
+	crypto_rc4(ntlmssp->rc4_seal, 8, digest, checksum);
+
+	/* Concatenate version, ciphertext and sequence number to build signature */
+	memcpy(signature, (void*) &version, 4);
+	memcpy(&signature[4], (void*) checksum, 8);
+	memcpy(&signature[12], (void*) &(ntlmssp->send_seq_num), 4);
+
+	ntlmssp->send_seq_num++;
 }
 
 void ntlmssp_send_negotiate_message(NTLMSSP *ntlmssp, STREAM s)
@@ -597,6 +628,9 @@ void ntlmssp_recv_challenge_message(NTLMSSP *ntlmssp, STREAM s)
 
 	/* Generate client sealing key */
 	ntlmssp_generate_client_sealing_key(ntlmssp);
+
+	/* Initialize RC4 seal state using client sealing key */
+	ntlmssp_init_rc4_seal_state(ntlmssp);
 
 	ntlmssp->state = NTLMSSP_STATE_AUTHENTICATE;
 }

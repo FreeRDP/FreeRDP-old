@@ -47,8 +47,7 @@ struct _NTLMSSP
 	uint32 negotiate_flags;
 	uint8 timestamp[8];
 	uint8 server_challenge[8];
-	uint8 lm_client_challenge[8];
-	uint8 nt_client_challenge[8];
+	uint8 client_challenge[8];
 	uint8 session_base_key[16];
 	uint8 key_exchange_key[16];
 	uint8 random_session_key[16];
@@ -67,8 +66,7 @@ void ntlmssp_set_username(NTLMSSP *ntlmssp, char* username);
 void ntlmssp_set_domain(NTLMSSP *ntlmssp, char* domain);
 void ntlmssp_set_password(NTLMSSP *ntlmssp, char* password);
 
-void ntlmssp_generate_lm_client_challenge(NTLMSSP *ntlmssp);
-void ntlmssp_generate_nt_client_challenge(NTLMSSP *ntlmssp);
+void ntlmssp_generate_client_challenge(NTLMSSP *ntlmssp);
 void ntlmssp_generate_key_exchange_key(NTLMSSP *ntlmssp);
 void ntlmssp_generate_random_session_key(NTLMSSP *ntlmssp);
 void ntlmssp_generate_exported_session_key(NTLMSSP *ntlmssp);
@@ -76,6 +74,7 @@ void ntlmssp_encrypt_random_session_key(NTLMSSP *ntlmssp);
 
 void ntlmssp_generate_client_signing_key(NTLMSSP *ntlmssp);
 void ntlmssp_generate_client_sealing_key(NTLMSSP *ntlmssp);
+void ntlmssp_init_rc4_seal_state(NTLMSSP *ntlmssp);
 
 void ntlmssp_compute_lm_hash(char* password, char* hash);
 void ntlmssp_compute_ntlm_hash(DATA_BLOB* password, char* hash);
