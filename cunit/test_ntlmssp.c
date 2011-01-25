@@ -295,6 +295,7 @@ void test_ntlmssp_encrypt_random_session_key(void)
 	ntlmssp = ntlmssp_new();
 	memcpy(ntlmssp->key_exchange_key, key_exchange_key, 16);
 	memcpy(ntlmssp->exported_session_key, exported_session_key, 16);
+	memcpy(ntlmssp->random_session_key, exported_session_key, 16);
 
 	ntlmssp_encrypt_random_session_key(ntlmssp);
 
@@ -312,15 +313,20 @@ void test_ntlmssp_encrypt_message(void)
 	int i;
 	uint8* p;
 	NTLMSSP *ntlmssp;
-	DATA_BLOB message;
-	int signature_good;
-	uint8 signature[16];
-	int encrypted_message_good;
-	DATA_BLOB encrypted_message;
+	DATA_BLOB public_key;
+	DATA_BLOB ts_credentials;
+	DATA_BLOB encrypted_public_key;
+	DATA_BLOB encrypted_ts_credentials;
+	uint8 public_key_signature[16];
+	uint8 ts_credentials_signature[16];
+	int encrypted_public_key_good;
+	int public_key_signature_good;
+	int encrypted_ts_credentials_good;
+	int ts_credentials_signature_good;
 	uint8 client_signing_key[16] = "\xbf\x5e\x42\x76\x55\x68\x38\x97\x45\xd3\xb4\x9f\x5e\x2f\xbc\x89";
 	uint8 client_sealing_key[16] = "\xca\x41\xcd\x08\x48\x07\x22\x6e\x0d\x84\xc3\x88\xa5\x07\xa9\x73";
 
-	uint8 message_data[270] =
+	uint8 public_key_data[270] =
 		"\x30\x82\x01\x0a\x02\x82\x01\x01\x00\xc2\x1c\x54\xaf\x07\xf1\x16"
 		"\x97\xc3\x0f\x6b\xa6\x33\x2e\xdd\x1e\xe4\xb2\x9c\xe4\x12\x7f\xda"
 		"\x58\x21\xc0\x68\xe6\xd3\xf5\x20\x1c\xba\x06\x64\x7d\x7f\x44\xb5"
@@ -339,7 +345,7 @@ void test_ntlmssp_encrypt_message(void)
 		"\x1b\xbc\x0b\x47\x66\x16\x3a\x7b\x6d\x8e\xcf\x55\xe8\x8c\x8a\xfe"
 		"\x24\xce\x19\x99\xc3\x5a\xe5\xc2\xf3\x02\x03\x01\x00\x01";
 
-	uint8 expected_encrypted_message[270] =
+	uint8 expected_encrypted_public_key[270] =
 		"\x27\x29\x73\xa9\xfa\x46\x17\x3c\x74\x14\x45\x2a\xd1\xe2\x92\xa1"
 		"\xc6\x0a\x30\xd4\xcc\xe0\x92\xf6\xb3\x20\xb3\xa0\xf1\x38\xb1\xf4"
 		"\xe5\x96\xdf\xa1\x65\x5b\xd6\x0c\x2a\x86\x99\xcc\x72\x80\xbd\xe9"
@@ -358,33 +364,72 @@ void test_ntlmssp_encrypt_message(void)
 		"\xfb\xc9\xfc\x89\xaa\x5d\x25\x49\xc8\x6e\x86\xee\xc2\xce\xc4\x8e"
 		"\x85\x9f\xe8\x30\xb3\x86\x11\xd5\xb8\x34\x4a\xe0\x03\xe5";
 
-	uint8 expected_signature[16] =
+	uint8 expected_public_key_signature[16] =
 		"\x01\x00\x00\x00\x91\x5e\xb0\x6e\x72\x82\x53\xae\x00\x00\x00\x00";
 
-	message.data = message_data;
-	message.length = sizeof(message_data);
+	uint8 ts_credentials_data[65] =
+		"\x30\x3f\xa0\x03\x02\x01\x01\xa1\x38\x04\x36\x30\x34\xa0\x0a\x04"
+		"\x08\x77\x00\x69\x00\x6e\x00\x37\x00\xa1\x12\x04\x10\x75\x00\x73"
+		"\x00\x65\x00\x72\x00\x6e\x00\x61\x00\x6d\x00\x65\x00\xa2\x12\x04"
+		"\x10\x70\x00\x61\x00\x73\x00\x73\x00\x77\x00\x6f\x00\x72\x00\x64"
+		"\x00";
+
+	uint8 expected_encrypted_ts_credentials[65] =
+		"\xa8\x85\x7d\x11\xef\x92\xa0\xd6\xff\xee\xa1\xae\x6d\xc5\x2e\x4e"
+		"\x65\x50\x28\x93\x75\x30\xe1\xc3\x37\xeb\xac\x1f\xdd\xf3\xe0\x92"
+		"\xf6\x21\xbc\x8f\xa8\xd4\xe0\x5a\xa6\xff\xda\x09\x50\x24\x0d\x8f"
+		"\x8f\xf4\x92\xfe\x49\x2a\x13\x52\xa6\x52\x75\x50\x8d\x3e\xe9\x6b"
+		"\x57";
+
+	uint8 expected_ts_credentials_signature[16] =
+		"\x01\x00\x00\x00\xb3\x2c\x3b\xa1\x36\xf6\x55\x71\x01\x00\x00\x00";
+
+	public_key.data = public_key_data;
+	public_key.length = sizeof(public_key_data);
 
 	ntlmssp = ntlmssp_new();
 	memcpy(ntlmssp->client_signing_key, client_signing_key, 16);
 	memcpy(ntlmssp->client_sealing_key, client_sealing_key, 16);
 	ntlmssp_init_rc4_seal_state(ntlmssp);
 
-	ntlmssp_encrypt_message(ntlmssp, &message, &encrypted_message, signature);
+	ntlmssp_encrypt_message(ntlmssp, &public_key, &encrypted_public_key, public_key_signature);
 
-	p = (uint8*) encrypted_message.data;
-	encrypted_message_good = 1;
-	for (i = 0; i < encrypted_message.length; i++) {
-		if (p[i] != expected_encrypted_message[i])
-			encrypted_message_good = 0;
+	p = (uint8*) encrypted_public_key.data;
+	encrypted_public_key_good = 1;
+	for (i = 0; i < encrypted_public_key.length; i++) {
+		if (p[i] != expected_encrypted_public_key[i])
+			encrypted_public_key_good = 0;
 	}
 
-	CU_ASSERT(encrypted_message_good == 1);
+	CU_ASSERT(encrypted_public_key_good == 1);
 
-	signature_good = 1;
+	public_key_signature_good = 1;
 	for (i = 0; i < 16; i++) {
-		if (signature[i] != expected_signature[i])
-			signature_good = 0;
+		if (public_key_signature[i] != expected_public_key_signature[i])
+			public_key_signature_good = 0;
 	}
 
-	CU_ASSERT(signature_good == 1);
+	CU_ASSERT(public_key_signature_good == 1);
+
+	ts_credentials.data = ts_credentials_data;
+	ts_credentials.length = sizeof(ts_credentials_data);
+
+	ntlmssp_encrypt_message(ntlmssp, &ts_credentials, &encrypted_ts_credentials, ts_credentials_signature);
+
+	p = (uint8*) encrypted_ts_credentials.data;
+	encrypted_ts_credentials_good = 1;
+	for (i = 0; i < encrypted_ts_credentials.length; i++) {
+		if (p[i] != expected_encrypted_ts_credentials[i])
+			encrypted_ts_credentials_good = 0;
+	}
+
+	CU_ASSERT(encrypted_ts_credentials_good == 1);
+
+	ts_credentials_signature_good = 1;
+	for (i = 0; i < 16; i++) {
+		if (ts_credentials_signature[i] != expected_ts_credentials_signature[i])
+			ts_credentials_signature_good = 0;
+	}
+
+	CU_ASSERT(ts_credentials_signature_good == 1);
 }

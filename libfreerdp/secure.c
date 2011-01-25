@@ -990,7 +990,7 @@ sec_connect(rdpSec * sec, char *server, char *username, int port)
 		sec->tls_connected = 1;
 		sec->rdp->settings->encryption = 0;
 		credssp_authenticate(sec->credssp);
-		// success = mcs_connect(sec->mcs);
+		success = mcs_connect(sec->mcs);
 		return success;
 	}
 	else if(sec->negotiated_protocol == PROTOCOL_TLS)
