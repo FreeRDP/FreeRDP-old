@@ -943,8 +943,8 @@ draw_text(rdpOrders * orders, uint8 font, uint8 flags, uint8 opcode, int mixmode
 				{
 					ui_warning(orders->rdp->inst, "Skipping short 0xff command:");
 					for (j = 0; j < length; j++)
-						fprintf(stderr, "%02x ", text[j]);
-					fprintf(stderr, "\n");
+						printf("%02x ", text[j]);
+					printf("\n");
 					i = length = 0;
 					break;
 				}
@@ -962,8 +962,8 @@ draw_text(rdpOrders * orders, uint8 font, uint8 flags, uint8 opcode, int mixmode
 				{
 					ui_warning(orders->rdp->inst, "Skipping short 0xfe command:");
 					for (j = 0; j < length; j++)
-						fprintf(stderr, "%02x ", text[j]);
-					fprintf(stderr, "\n");
+						printf("%02x ", text[j]);
+					printf("\n");
 					i = length = 0;
 					break;
 				}
