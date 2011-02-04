@@ -292,6 +292,105 @@ process_patblt(rdpOrders * orders, STREAM s, PATBLT_ORDER * os, uint32 present, 
 		  &brush, os->bgcolor, os->fgcolor);
 }
 
+/* Process a multi pattern blt order */
+static void
+process_multipatblt(rdpOrders * orders, STREAM s, MULTIPATBLT_ORDER * os, uint32 present, RD_BOOL delta)
+{
+	RD_BRUSH brush;
+	int size;
+	int index, data, next;
+	int x, y, w = 0, h = 0;
+	uint8 flags = 0;
+	RECTANGLE *rects;
+
+	if (present & 0x0001)
+		rdp_in_coord(s, &os->x, delta);
+
+	if (present & 0x0002)
+		rdp_in_coord(s, &os->y, delta);
+
+	if (present & 0x0004)
+		rdp_in_coord(s, &os->cx, delta);
+
+	if (present & 0x0008)
+		rdp_in_coord(s, &os->cy, delta);
+
+	if (present & 0x0010)
+		in_uint8(s, os->opcode);
+
+	if (present & 0x0020)
+		rdp_in_color(s, &os->bgcolor);
+
+	if (present & 0x0040)
+		rdp_in_color(s, &os->fgcolor);
+
+	rdp_parse_brush(s, &os->brush, present >> 7);
+
+	if (present & 0x1000)
+		in_uint8(s, os->nentries);
+
+	if (present & 0x2000)
+	{
+		in_uint16_le(s, os->datasize);
+		in_uint8a(s, os->data, os->datasize);
+	}
+
+	DEBUG("MULTIPATBLT(op=0x%x,x=%d,y=%d,cx=%d,cy=%d,n=%d)\n",
+	      os->opcode, os->x, os->y, os->cx, os->cy, os->nentries);
+
+	setup_brush(orders, &brush, &os->brush);
+
+	size = (os->nentries + 1) * sizeof(RECTANGLE);
+	if (size > orders->buffer_size)
+	{
+		orders->buffer = xrealloc(orders->buffer, size);
+		orders->buffer_size = size;
+	}
+
+	rects = (RECTANGLE *) orders->buffer;
+	memset(rects, 0, size);
+
+	rects[0].l = os->x;
+	rects[0].t = os->y;
+
+	index = 0;
+	data = ((os->nentries - 1) / 8) + 1;
+	for (next = 1; (next <= os->nentries) && (next <= 45) && (data < os->datasize); next++)
+	{
+		if ((next - 1) % 8 == 0)
+			flags = os->data[index++];
+
+		if (~flags & 0x80)
+			rects[next].l = parse_delta(os->data, &data);
+		else
+			rects[next].l = rects[next - 1].l;
+
+		if (~flags & 0x40)
+			rects[next].t = parse_delta(os->data, &data);
+		else
+			rects[next].t = rects[next - 1].t;
+
+		if (~flags & 0x20)
+			rects[next].r = parse_delta(os->data, &data);
+		else
+			rects[next].r = rects[next - 1].r;
+
+		if (~flags & 0x10)
+			rects[next].b = parse_delta(os->data, &data);
+		else
+			rects[next].b = rects[next - 1].b;
+
+		x = rects[next].l - rects[next - 1].l;
+		y = rects[next].t - rects[next - 1].t;
+
+		DEBUG("rectXY (%d, %d)\n", x, y);
+
+		flags <<= 4;
+
+		ui_patblt(orders->rdp->inst, os->opcode, x, y, w, h, &brush, os->bgcolor, os->fgcolor);
+	}
+}
+
 /* Process a screen blt order */
 static void
 process_scrblt(rdpOrders * orders, STREAM s, SCRBLT_ORDER * os, uint32 present, RD_BOOL delta)
@@ -1913,6 +2012,7 @@ process_orders(rdpOrders * orders, STREAM s, uint16 num_orders)
 					break;
 
 				case RDP_ORDER_PATBLT:
+				case RDP_ORDER_MULTIPATBLT:
 				case RDP_ORDER_MEMBLT:
 				case RDP_ORDER_LINETO:
 				case RDP_ORDER_POLYGON_CB:
@@ -1950,6 +2050,10 @@ process_orders(rdpOrders * orders, STREAM s, uint16 num_orders)
 
 				case RDP_ORDER_PATBLT:
 					process_patblt(orders, s, &os->patblt, present, delta);
+					break;
+
+				case RDP_ORDER_MULTIPATBLT:
+					process_multipatblt(orders, s, &os->multipatblt, present, delta);
 					break;
 
 				case RDP_ORDER_SCRBLT:

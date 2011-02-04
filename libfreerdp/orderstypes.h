@@ -32,6 +32,8 @@
 #define RDP_ORDER_SMALL      0x40
 #define RDP_ORDER_TINY       0x80
 
+#define MAX_DATA 256
+
 /* Primary Drawing Orders */
 enum RDP_ORDER_TYPE
 {
@@ -114,6 +116,22 @@ typedef struct _PATBLT_ORDER
 
 }
 PATBLT_ORDER;
+
+typedef struct _MULTIPATBLT_ORDER
+{
+	sint16 x;
+	sint16 y;
+	sint16 cx;
+	sint16 cy;
+	uint8 opcode;
+	uint32 bgcolor;
+	uint32 fgcolor;
+	RD_BRUSH brush;
+	uint8 nentries;
+	uint16 datasize;
+	uint8 data[MAX_DATA];
+}
+MULTIPATBLT_ORDER;
 
 typedef struct _SCRBLT_ORDER
 {
@@ -200,8 +218,6 @@ typedef struct _MEMBLT_ORDER
 
 }
 MEMBLT_ORDER;
-
-#define MAX_DATA 256
 
 typedef struct _POLYGON_SC_ORDER
 {
@@ -353,6 +369,7 @@ typedef struct _RDP_ORDER_STATE
 
 	DSTBLT_ORDER dstblt;
 	PATBLT_ORDER patblt;
+	MULTIPATBLT_ORDER multipatblt;
 	SCRBLT_ORDER scrblt;
 	LINETO_ORDER lineto;
 	OPAQUERECT_ORDER opaquerect;
