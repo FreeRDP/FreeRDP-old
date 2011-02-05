@@ -438,7 +438,7 @@ sec_out_client_core_data(rdpSec * sec, rdpSet * settings, STREAM s)
 	out_uint8s(s, 64); /* clientDigProductId (64 bytes) */
 	out_uint8(s, 0); /* connectionType, only valid when RNS_UD_CS_VALID_CONNECTION_TYPE is set in earlyCapabilityFlags */
 	out_uint8(s, 0); /* pad1octet */
-	out_uint32_le(s, sec->negotiated_protocol); /* serverSelectedProtocol */
+	out_uint32_le(s, sec->mcs->iso->nego->selected_protocol); /* serverSelectedProtocol */
 }
 
 static void
@@ -969,18 +969,18 @@ sec_recv(rdpSec * sec, secRecvType * type)
 RD_BOOL
 sec_connect(rdpSec * sec, char *server, char *username, int port)
 {
-	/* Don't forget to set this *before* iso_connect(), otherwise you'll bang your head on the wall */
+	NEGO *nego = sec->mcs->iso->nego;
 
 	if (sec->rdp->settings->tls)
-		sec->requested_protocol = PROTOCOL_NLA;
+		nego->state = NEGO_STATE_NLA;
 	else
-		sec->requested_protocol = PROTOCOL_RDP;
+		nego->state = NEGO_STATE_RDP;
 
 	if (!iso_connect(sec->mcs->iso, server, username, port))
 		return False;
 
 #ifndef DISABLE_TLS
-	if(sec->negotiated_protocol == PROTOCOL_NLA)
+	if(nego->selected_protocol & PROTOCOL_NLA)
 	{
 		/* TLS with NLA was successfully negotiated */
 		RD_BOOL success = 1;
@@ -993,11 +993,11 @@ sec_connect(rdpSec * sec, char *server, char *username, int port)
 		success = mcs_connect(sec->mcs);
 		return success;
 	}
-	else if(sec->negotiated_protocol == PROTOCOL_TLS)
+	else if(nego->selected_protocol & PROTOCOL_TLS)
 	{
 		/* TLS without NLA was successfully negotiated */
 		RD_BOOL success;
-		printf("TLS Encryption negotiated\n");
+		printf("TLS encryption negotiated\n");
 		sec->ctx = tls_create_context();
 		sec->ssl = tls_connect(sec->ctx, sec->mcs->iso->tcp->sock, server);
 		sec->tls_connected = 1;
@@ -1010,11 +1010,7 @@ sec_connect(rdpSec * sec, char *server, char *username, int port)
 	{
 		RD_BOOL success;
 
-		if (sec->requested_protocol > PROTOCOL_RDP)
-		{
-			/* only tell about the legacy RDP negotiation success when it wasn't the requested encryption */
-			printf("Legacy RDP encryption negotiated\n");
-		}
+		printf("Standard RDP encryption negotiated\n");
 
 		success = mcs_connect(sec->mcs);
 
