@@ -44,6 +44,7 @@ void credssp_recv(rdpCredssp *credssp, STREAM negoToken, STREAM pubKeyAuth, STRE
 
 void credssp_encrypt_public_key(rdpCredssp *credssp, STREAM s);
 void credssp_encrypt_ts_credentials(rdpCredssp *credssp, STREAM s);
+int credssp_verify_public_key(rdpCredssp *credssp, STREAM s);
 void credssp_encode_ts_credentials(rdpCredssp *credssp);
 
 void credssp_nonce(uint8* nonce, int size);

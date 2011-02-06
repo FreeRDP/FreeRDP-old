@@ -55,10 +55,14 @@ struct _NTLMSSP
 	uint8 encrypted_random_session_key[16];
 	uint8 client_signing_key[16];
 	uint8 client_sealing_key[16];
+	uint8 server_signing_key[16];
+	uint8 server_sealing_key[16];
 	DATA_BLOB nt_challenge_response;
 	DATA_BLOB lm_challenge_response;
-	CryptoRc4 rc4_seal;
+	CryptoRc4 send_rc4_seal;
+	CryptoRc4 recv_rc4_seal;
 	int send_seq_num;
+	int recv_seq_num;
 };
 typedef struct _NTLMSSP NTLMSSP;
 
@@ -74,8 +78,10 @@ void ntlmssp_encrypt_random_session_key(NTLMSSP *ntlmssp);
 
 void ntlmssp_generate_timestamp(NTLMSSP *ntlmssp);
 void ntlmssp_generate_client_signing_key(NTLMSSP *ntlmssp);
+void ntlmssp_generate_server_signing_key(NTLMSSP *ntlmssp);
 void ntlmssp_generate_client_sealing_key(NTLMSSP *ntlmssp);
-void ntlmssp_init_rc4_seal_state(NTLMSSP *ntlmssp);
+void ntlmssp_generate_server_sealing_key(NTLMSSP *ntlmssp);
+void ntlmssp_init_rc4_seal_states(NTLMSSP *ntlmssp);
 
 void ntlmssp_compute_lm_hash(char* password, char* hash);
 void ntlmssp_compute_ntlm_hash(DATA_BLOB* password, char* hash);
@@ -86,6 +92,7 @@ void ntlmssp_compute_lm_v2_response(NTLMSSP *ntlmssp);
 void ntlmssp_compute_ntlm_v2_response(NTLMSSP *ntlmssp);
 
 void ntlmssp_encrypt_message(NTLMSSP *ntlmssp, DATA_BLOB *msg, DATA_BLOB *encrypted_msg, uint8* signature);
+int ntlmssp_decrypt_message(NTLMSSP *ntlmssp, DATA_BLOB *encrypted_msg, DATA_BLOB *msg, uint8* signature);
 
 int ntlmssp_recv(NTLMSSP *ntlmssp, STREAM s);
 int ntlmssp_send(NTLMSSP *ntlmssp, STREAM s);

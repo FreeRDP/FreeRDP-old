@@ -121,6 +121,12 @@ int credssp_authenticate(rdpCredssp * credssp)
 	/* Encrypted Public Key +1 */
 	credssp_recv(credssp, negoToken, pubKeyAuth, NULL);
 
+	if (credssp_verify_public_key(credssp, pubKeyAuth) == 0)
+	{
+		/* Failed to verify server public key echo */
+		return 0; /* DO NOT SEND CREDENTIALS! */
+	}
+
 	/* Send encrypted credentials */
 	credssp_encode_ts_credentials(credssp);
 	credssp_encrypt_ts_credentials(credssp, authInfo);
@@ -159,6 +165,34 @@ void credssp_encrypt_public_key(rdpCredssp *credssp, STREAM s)
 	out_uint8p(s, encrypted_public_key.data, encrypted_public_key.length); /* Encrypted Public Key */
 
 	s_mark_end(s);
+}
+
+int credssp_verify_public_key(rdpCredssp *credssp, STREAM s)
+{
+	uint8 *p1, *p2;
+	uint8 *signature;
+	DATA_BLOB public_key;
+	DATA_BLOB encrypted_public_key;
+
+	signature = s->data;
+	encrypted_public_key.data = (void*) signature + 16;
+	encrypted_public_key.length = s->size - 16;
+
+	ntlmssp_decrypt_message(credssp->ntlmssp, &encrypted_public_key, &public_key, signature);
+
+	p1 = (uint8*) credssp->public_key.data;
+	p2 = (uint8*) public_key.data;
+
+	p2[0]--;
+
+	if (memcmp(p1, p2, public_key.length) != 0)
+	{
+		printf("Could not verify server's public key echo\n");
+		return 0;
+	}
+
+	p2[0]++;
+	return 1;
 }
 
 void credssp_encrypt_ts_credentials(rdpCredssp *credssp, STREAM s)
@@ -332,6 +366,13 @@ void credssp_recv(rdpCredssp *credssp, STREAM negoToken, STREAM pubKeyAuth, STRE
 				negoToken->p = negoToken->data;
 				negoToken->end = negoToken->p + negoToken->size;
 			}
+		}
+
+		if (ts_request->pubKeyAuth != NULL)
+		{
+			pubKeyAuth->data = ts_request->pubKeyAuth->buf;
+			pubKeyAuth->size = ts_request->pubKeyAuth->size;
+			pubKeyAuth->p = pubKeyAuth->data;
 		}
 	}
 	else

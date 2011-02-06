@@ -159,6 +159,14 @@ void ntlmssp_generate_client_signing_key(NTLMSSP *ntlmssp)
 	ntlmssp_generate_signing_key(ntlmssp->exported_session_key, &sign_magic, ntlmssp->client_signing_key);
 }
 
+void ntlmssp_generate_server_signing_key(NTLMSSP *ntlmssp)
+{
+	DATA_BLOB sign_magic;
+	sign_magic.data = (void*) server_sign_magic;
+	sign_magic.length = sizeof(server_sign_magic);
+	ntlmssp_generate_signing_key(ntlmssp->exported_session_key, &sign_magic, ntlmssp->server_signing_key);
+}
+
 void ntlmssp_generate_sealing_key(uint8* exported_session_key, DATA_BLOB *seal_magic, uint8* sealing_key)
 {
 	uint8* p;
@@ -187,9 +195,18 @@ void ntlmssp_generate_client_sealing_key(NTLMSSP *ntlmssp)
 	ntlmssp_generate_signing_key(ntlmssp->exported_session_key, &seal_magic, ntlmssp->client_sealing_key);
 }
 
-void ntlmssp_init_rc4_seal_state(NTLMSSP *ntlmssp)
+void ntlmssp_generate_server_sealing_key(NTLMSSP *ntlmssp)
 {
-	ntlmssp->rc4_seal = crypto_rc4_init(ntlmssp->client_sealing_key, 16);
+	DATA_BLOB seal_magic;
+	seal_magic.data = (void*) server_seal_magic;
+	seal_magic.length = sizeof(server_seal_magic);
+	ntlmssp_generate_signing_key(ntlmssp->exported_session_key, &seal_magic, ntlmssp->server_sealing_key);
+}
+
+void ntlmssp_init_rc4_seal_states(NTLMSSP *ntlmssp)
+{
+	ntlmssp->send_rc4_seal = crypto_rc4_init(ntlmssp->client_sealing_key, 16);
+	ntlmssp->recv_rc4_seal = crypto_rc4_init(ntlmssp->server_sealing_key, 16);
 }
 
 static int get_bit(char* buffer, int bit)
@@ -497,10 +514,10 @@ void ntlmssp_encrypt_message(NTLMSSP *ntlmssp, DATA_BLOB *msg, DATA_BLOB *encryp
 	data_blob_alloc(encrypted_msg, msg->length);
 
 	/* Encrypt message using with RC4 */
-	crypto_rc4(ntlmssp->rc4_seal, msg->length, msg->data, encrypted_msg->data);
+	crypto_rc4(ntlmssp->send_rc4_seal, msg->length, msg->data, encrypted_msg->data);
 
 	/* RC4-encrypt first 8 bytes of digest */
-	crypto_rc4(ntlmssp->rc4_seal, 8, digest, checksum);
+	crypto_rc4(ntlmssp->send_rc4_seal, 8, digest, checksum);
 
 	/* Concatenate version, ciphertext and sequence number to build signature */
 	memcpy(signature, (void*) &version, 4);
@@ -508,6 +525,46 @@ void ntlmssp_encrypt_message(NTLMSSP *ntlmssp, DATA_BLOB *msg, DATA_BLOB *encryp
 	memcpy(&signature[12], (void*) &(ntlmssp->send_seq_num), 4);
 
 	ntlmssp->send_seq_num++;
+}
+
+int ntlmssp_decrypt_message(NTLMSSP *ntlmssp, DATA_BLOB *encrypted_msg, DATA_BLOB *msg, uint8* signature)
+{
+	HMAC_CTX hmac_ctx;
+	uint8 digest[16];
+	uint8 checksum[8];
+	uint32 version = 1;
+	uint8 expected_signature[16];
+
+	/* Allocate space for encrypted message */
+	data_blob_alloc(msg, encrypted_msg->length);
+
+	/* Encrypt message using with RC4 */
+	crypto_rc4(ntlmssp->recv_rc4_seal, encrypted_msg->length, encrypted_msg->data, msg->data);
+
+	/* Compute the HMAC-MD5 hash of ConcatenationOf(seq_num,msg) using the client signing key */
+	HMAC_CTX_init(&hmac_ctx);
+	HMAC_Init_ex(&hmac_ctx, ntlmssp->server_signing_key, 16, EVP_md5(), NULL);
+	HMAC_Update(&hmac_ctx, (void*) &ntlmssp->recv_seq_num, 4);
+	HMAC_Update(&hmac_ctx, msg->data, msg->length);
+	HMAC_Final(&hmac_ctx, digest, NULL);
+
+	/* RC4-encrypt first 8 bytes of digest */
+	crypto_rc4(ntlmssp->recv_rc4_seal, 8, digest, checksum);
+
+	/* Concatenate version, ciphertext and sequence number to build signature */
+	memcpy(expected_signature, (void*) &version, 4);
+	memcpy(&expected_signature[4], (void*) checksum, 8);
+	memcpy(&expected_signature[12], (void*) &(ntlmssp->recv_seq_num), 4);
+
+	if (memcmp(signature, expected_signature, 16) != 0)
+	{
+		/* signature verification failed! */
+		printf("signature verification failed, something nasty is going on!\n");
+		return 0;
+	}
+
+	ntlmssp->recv_seq_num++;
+	return 1;
 }
 
 void ntlmssp_send_negotiate_message(NTLMSSP *ntlmssp, STREAM s)
@@ -644,14 +701,16 @@ void ntlmssp_recv_challenge_message(NTLMSSP *ntlmssp, STREAM s)
 	/* EncryptedRandomSessionKey */
 	ntlmssp_encrypt_random_session_key(ntlmssp);
 
-	/* Generate client signing key */
+	/* Generate signing keys */
 	ntlmssp_generate_client_signing_key(ntlmssp);
+	ntlmssp_generate_server_signing_key(ntlmssp);
 
-	/* Generate client sealing key */
+	/* Generate sealing keys */
 	ntlmssp_generate_client_sealing_key(ntlmssp);
+	ntlmssp_generate_server_sealing_key(ntlmssp);
 
 	/* Initialize RC4 seal state using client sealing key */
-	ntlmssp_init_rc4_seal_state(ntlmssp);
+	ntlmssp_init_rc4_seal_states(ntlmssp);
 
 #ifdef WITH_DEBUG_NLA
 	printf("ClientChallenge\n");
