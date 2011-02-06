@@ -377,6 +377,7 @@ void ntlmssp_compute_ntlm_v2_response(NTLMSSP *ntlmssp)
 	ntlmssp_compute_ntlm_v2_hash(&ntlmssp->password,
 		&ntlmssp->username, &ntlmssp->domain, (char*) ntlm_v2_hash);
 
+#ifdef WITH_DEBUG_NLA
 	printf("Password (length = %d)\n", ntlmssp->password.length);
 	hexdump(ntlmssp->password.data, ntlmssp->password.length);
 	printf("\n");
@@ -392,6 +393,7 @@ void ntlmssp_compute_ntlm_v2_response(NTLMSSP *ntlmssp)
 	printf("NTOWFv2, NTLMv2 Hash\n");
 	hexdump(ntlm_v2_hash, 16);
 	printf("\n");
+#endif
 
 	/* Construct temp */
 	blob[0] = 1; /* RespType (1 byte) */
@@ -403,9 +405,11 @@ void ntlmssp_compute_ntlm_v2_response(NTLMSSP *ntlmssp)
 	/* Reserved3 (4 bytes) */
 	memcpy(&blob[28], ntlmssp->target_info.data, ntlmssp->target_info.length);
 
+#ifdef WITH_DEBUG_NLA
 	printf("NTLMv2 Response Temp Blob\n");
 	hexdump(ntlm_v2_temp.data, ntlm_v2_temp.length);
 	printf("\n");
+#endif
 
 	/* Concatenate server challenge with temp */
 	data_blob_alloc(&ntlm_v2_temp_chal, ntlm_v2_temp.length + 8);
@@ -542,9 +546,12 @@ void ntlmssp_send_negotiate_message(NTLMSSP *ntlmssp, STREAM s)
 	s_mark_end(s);
 
 	length = s->end - s->data;
+
+#ifdef WITH_DEBUG_NLA
 	printf("NEGOTIATE_MESSAGE (length = %d)\n", length);
 	hexdump(s->data, length);
 	printf("\n");
+#endif
 
 	ntlmssp->state = NTLMSSP_STATE_CHALLENGE;
 }
@@ -592,9 +599,12 @@ void ntlmssp_recv_challenge_message(NTLMSSP *ntlmssp, STREAM s)
 		p = start_offset + targetNameBufferOffset;
 		data_blob_alloc(&ntlmssp->target_name, targetNameLen);
 		memcpy(ntlmssp->target_name.data, p, targetNameLen);
+
+#ifdef WITH_DEBUG_NLA
 		printf("targetName (length = %d, offset = %d)\n", targetNameLen, targetNameBufferOffset);
 		hexdump(ntlmssp->target_name.data, ntlmssp->target_name.length);
 		printf("\n");
+#endif
 	}
 
 	if (targetInfoLen > 0)
@@ -602,16 +612,22 @@ void ntlmssp_recv_challenge_message(NTLMSSP *ntlmssp, STREAM s)
 		p = start_offset + targetInfoBufferOffset;
 		data_blob_alloc(&ntlmssp->target_info, targetInfoLen);
 		memcpy(ntlmssp->target_info.data, p, targetInfoLen);
+
+#ifdef WITH_DEBUG_NLA
 		printf("targetInfo (length = %d, offset = %d)\n", targetInfoLen, targetInfoBufferOffset);
 		hexdump(ntlmssp->target_info.data, ntlmssp->target_info.length);
 		printf("\n");
+#endif
 	}
 
 	p = s->p + targetNameLen + targetInfoLen;
 	length = p - start_offset;
+
+#ifdef WITH_DEBUG_NLA
 	printf("CHALLENGE_MESSAGE (length = %d)\n", length);
 	hexdump(start_offset, length);
 	printf("\n");
+#endif
 
 	/* Timestamp */
 	ntlmssp_generate_timestamp(ntlmssp);
@@ -637,6 +653,7 @@ void ntlmssp_recv_challenge_message(NTLMSSP *ntlmssp, STREAM s)
 	/* Initialize RC4 seal state using client sealing key */
 	ntlmssp_init_rc4_seal_state(ntlmssp);
 
+#ifdef WITH_DEBUG_NLA
 	printf("ClientChallenge\n");
 	hexdump(ntlmssp->client_challenge, 8);
 	printf("\n");
@@ -672,6 +689,7 @@ void ntlmssp_recv_challenge_message(NTLMSSP *ntlmssp, STREAM s)
 	printf("Timestamp\n");
 	hexdump(ntlmssp->timestamp, 8);
 	printf("\n");
+#endif
 
 	ntlmssp->state = NTLMSSP_STATE_AUTHENTICATE;
 }
@@ -774,44 +792,57 @@ void ntlmssp_send_authenticate_message(NTLMSSP *ntlmssp, STREAM s)
 	/* LmChallengeResponse */
 	out_uint8p(s, ntlmssp->lm_challenge_response.data, LmChallengeResponseLen);
 
+#ifdef WITH_DEBUG_NLA
 	printf("LmChallengeResponse (length = %d, offset = %d)\n", LmChallengeResponseLen, LmChallengeResponseBufferOffset);
 	hexdump(ntlmssp->lm_challenge_response.data, LmChallengeResponseLen);
 	printf("\n");
+#endif
 
 	/* NtChallengeResponse */
 	out_uint8p(s, ntlmssp->nt_challenge_response.data, NtChallengeResponseLen);
 
+#ifdef WITH_DEBUG_NLA
 	printf("NtChallengeResponse (length = %d, offset = %d)\n", NtChallengeResponseLen, NtChallengeResponseBufferOffset);
 	hexdump(ntlmssp->nt_challenge_response.data, NtChallengeResponseLen);
 	printf("\n");
+#endif
 
 	/* DomainName */
 	if (DomainNameLen > 0)
 	{
+#ifdef WITH_DEBUG_NLA
 		printf("DomainName (length = %d, offset = %d)\n", DomainNameLen, DomainNameBufferOffset);
 		hexdump(DomainNameBuffer, DomainNameLen);
 		printf("\n");
+#endif
 	}
 
 	/* UserName */
 	out_uint8p(s, UserNameBuffer, UserNameLen);
 
+#ifdef WITH_DEBUG_NLA
 	printf("UserName (length = %d, offset = %d)\n", UserNameLen, UserNameBufferOffset);
 	hexdump(UserNameBuffer, UserNameLen);
 	printf("\n");
+#endif
 
 	/* EncryptedRandomSessionKey */
 	out_uint8p(s, EncryptedRandomSessionKeyBuffer, EncryptedRandomSessionKeyLen);
 	s_mark_end(s);
 
+#ifdef WITH_DEBUG_NLA
 	printf("EncryptedRandomSessionKey (length = %d, offset = %d)\n", EncryptedRandomSessionKeyLen, EncryptedRandomSessionKeyBufferOffset);
 	hexdump(EncryptedRandomSessionKeyBuffer, EncryptedRandomSessionKeyLen);
 	printf("\n");
+#endif
 
 	length = s->end - s->data;
+
+#ifdef WITH_DEBUG_NLA
 	printf("AUTHENTICATE_MESSAGE (length = %d)\n", length);
 	hexdump(s->data, length);
 	printf("\n");
+#endif
 
 	ntlmssp->state = NTLMSSP_STATE_FINAL;
 }

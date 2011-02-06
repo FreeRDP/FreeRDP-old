@@ -141,6 +141,7 @@ void credssp_encrypt_public_key(rdpCredssp *credssp, STREAM s)
 	s->p = s->data;
 	s->end = s->p;
 
+#ifdef WITH_DEBUG_NLA
 	printf("Public Key (length = %d)\n", credssp->public_key.length);
 	hexdump(credssp->public_key.data, credssp->public_key.length);
 	printf("\n");
@@ -152,6 +153,7 @@ void credssp_encrypt_public_key(rdpCredssp *credssp, STREAM s)
 	printf("Signature\n");
 	hexdump(signature, 16);
 	printf("\n");
+#endif
 
 	out_uint8p(s, signature, 16); /* Message Signature */
 	out_uint8p(s, encrypted_public_key.data, encrypted_public_key.length); /* Encrypted Public Key */
@@ -171,6 +173,7 @@ void credssp_encrypt_ts_credentials(rdpCredssp *credssp, STREAM s)
 	s->p = s->data;
 	s->end = s->p;
 
+#ifdef WITH_DEBUG_NLA
 	printf("TSCredentials (length = %d)\n", credssp->ts_credentials.length);
 	hexdump(credssp->ts_credentials.data, credssp->ts_credentials.length);
 	printf("\n");
@@ -182,6 +185,7 @@ void credssp_encrypt_ts_credentials(rdpCredssp *credssp, STREAM s)
 	printf("Signature\n");
 	hexdump(signature, 16);
 	printf("\n");
+#endif
 
 	out_uint8p(s, signature, 16); /* Message Signature */
 	out_uint8p(s, encrypted_ts_credentials.data, encrypted_ts_credentials.length); /* Encrypted TSCredentials */

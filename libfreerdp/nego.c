@@ -119,8 +119,6 @@ void nego_process_negotiation_response(NEGO *nego, STREAM s)
 	in_uint16_le(s, length);
 	in_uint32_le(s, selectedProtocol);
 
-	printf("selectedProtocol: %04X\n", selectedProtocol);
-
 	if (selectedProtocol == PROTOCOL_NLA)
 		nego->selected_protocol = PROTOCOL_NLA;
 	else if (selectedProtocol == PROTOCOL_TLS)
