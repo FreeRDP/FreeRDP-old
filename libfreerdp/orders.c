@@ -92,6 +92,33 @@ parse_delta(uint8 * buffer, int *offset)
 	return value;
 }
 
+static int
+parse_s2byte(uint8 * buffer, int *offset)
+{
+	int value = buffer[(*offset)++];
+	int two_byte = value & 0x80;
+	int sign = value & 0x40;
+
+	value &= 0x3f;
+	if (two_byte)
+		value = (value << 8) | buffer[(*offset)++];
+	if (sign)
+		value = value * -1;
+	return value;
+}
+
+static int
+parse_u2byte(uint8 * buffer, int *offset)
+{
+	int value = buffer[(*offset)++];
+	int two_byte = value & 0x80;
+
+	value &= 0x7f;
+	if (two_byte)
+		value = (value << 8) | buffer[(*offset)++];
+	return value;
+}
+
 /* Read a color entry */
 static void
 rdp_in_color(STREAM s, uint32 * color)
@@ -1206,6 +1233,157 @@ process_fast_index(rdpOrders * orders, STREAM s, FAST_INDEX_ORDER * os, uint32 p
 		  &os->brush, os->bgcolor, os->fgcolor, os->text, os->length);
 }
 
+/* Process a fast glyph order */
+static void
+process_fast_glyph(rdpOrders * orders, STREAM s, FAST_GLYPH_ORDER * os, uint32 present, RD_BOOL delta)
+{
+	int x;
+	int y;
+	int clipx1;
+	int clipy1;
+	int clipx2;
+	int clipy2;
+	int clipcx;
+	int clipcy;
+	int boxx1;
+	int boxy1;
+	int boxx2;
+	int boxy2;
+	int boxcx;
+	int boxcy;
+	int character;
+	int offset;
+	int baseline;
+	int width;
+	int height;
+	RD_HGLYPH gl;
+	FONTGLYPH * ft;
+	int gx;
+	int gy;
+	int index;
+
+	if (present & 0x000001)
+		in_uint8(s, os->font);
+	if (present & 0x000002)
+	{
+		in_uint8(s, os->opcode);
+		in_uint8(s, os->flags);
+	}
+	if (present & 0x000004)
+		rdp_in_color(s, &os->fgcolor);
+	if (present & 0x000008)
+		rdp_in_color(s, &os->bgcolor);
+	if (present & 0x000010)
+		rdp_in_coord(s, &os->clipleft, delta);
+	if (present & 0x000020)
+		rdp_in_coord(s, &os->cliptop, delta);
+	if (present & 0x000040)
+		rdp_in_coord(s, &os->clipright, delta);
+	if (present & 0x000080)
+		rdp_in_coord(s, &os->clipbottom, delta);
+	if (present & 0x000100)
+		rdp_in_coord(s, &os->boxleft, delta);
+	if (present & 0x000200)
+		rdp_in_coord(s, &os->boxtop, delta);
+	if (present & 0x000400)
+		rdp_in_coord(s, &os->boxright, delta);
+	if (present & 0x000800)
+		rdp_in_coord(s, &os->boxbottom, delta);
+	if (present & 0x001000)
+		rdp_in_coord(s, &os->x, delta);
+	if (present & 0x002000)
+		rdp_in_coord(s, &os->y, delta);
+	if (present & 0x004000)
+	{
+		in_uint8(s, os->length);
+		in_uint8a(s, os->data, os->length);
+	}
+	DEBUG("FAST_GLYPH(x=%d,y=%d,cl=%d,ct=%d,cr=%d,cb=%d,bl=%d,bt=%d,br=%d,bb=%d,bg=0x%x,fg=0x%x,font=%d,fl=0x%x,op=0x%x,n=%d)\n", os->x, os->y, os->clipleft, os->cliptop, os->clipright, os->clipbottom, os->boxleft, os->boxtop, os->boxright, os->boxbottom, os->bgcolor, os->fgcolor, os->font, os->flags, os->opcode, os->length);
+	x = os->x == -32768 ? os->clipleft : os->x;
+	y = os->y == -32768 ? os->cliptop : os->y;
+	clipx1 = os->clipleft;
+	clipy1 = os->cliptop;
+	clipx2 = os->clipright;
+	clipy2 = os->clipbottom;
+	boxx1 = os->boxleft;
+	boxy1 = os->boxtop;
+	boxx2 = os->boxright;
+	boxy2 = os->boxbottom;
+	if (os->boxleft == 0)
+	{
+		boxx1 = os->clipleft;
+	}
+	if (os->boxright == 0)
+	{
+		boxx2 = os->clipright;
+	}
+	if (os->boxbottom == -32768)
+	{
+		if (os->boxtop & 0x01)
+		{
+			boxy2 = os->clipbottom;
+		}
+		if (os->boxtop & 0x02)
+		{
+			boxx2 = os->clipright;
+		}
+		if (os->boxtop & 0x04)
+		{
+			boxy1 = os->cliptop;
+		}
+		if (os->boxtop & 0x08)
+		{
+			boxx1 = os->clipleft;
+		}
+	}
+	if (!((boxx2 > boxx1) && (boxy2 > boxy1)))
+	{
+		boxx1 = 0;
+		boxy1 = 0;
+		boxx2 = 0;
+		boxy2 = 0;
+	}
+	clipcx = clipx2 - clipx1;
+	clipcy = clipy2 - clipy1;
+	boxcx = boxx2 - boxx1;
+	boxcy = boxy2 - boxy1;
+	if (os->length < 2)
+	{
+		character = os->data[0];
+	}
+	else
+	{
+		character = os->data[0];
+		index = 1;
+		offset = parse_s2byte(os->data, &index);
+		baseline = parse_s2byte(os->data, &index);
+		width = parse_u2byte(os->data, &index);
+		height = parse_u2byte(os->data, &index);
+		gl = ui_create_glyph(orders->rdp->inst, width, height, os->data + index);
+		cache_put_font(orders->rdp->cache, os->font, character, offset, baseline, width, height, gl);
+	}
+	ft = cache_get_font(orders->rdp->cache, os->font, character);
+	if (ft != NULL)
+	{
+		gx = x + ft->offset;
+		gy = y + ft->baseline;
+		if (boxcx > 1)
+		{
+			ui_rect(orders->rdp->inst, boxx1, boxy1, boxcx, boxcy, os->bgcolor);
+		}
+		ui_start_draw_glyphs(orders->rdp->inst, os->bgcolor, os->fgcolor);
+		ui_draw_glyph(orders->rdp->inst, gx, gy, ft->width, ft->height, ft->pixmap);
+		if (boxcx > 1)
+		{
+		  ui_end_draw_glyphs(orders->rdp->inst, boxx1, boxy1, boxcx, boxcy);
+		}
+	  else
+	  {
+		  ui_end_draw_glyphs(orders->rdp->inst, clipx1, clipy1, clipcx, clipcy);
+	  }
+	}
+}
+
 /* Process a raw bitmap cache order */
 static void
 process_cache_bitmap_uncompressed(rdpOrders * orders, STREAM s)
@@ -1740,6 +1918,7 @@ process_orders(rdpOrders * orders, STREAM s, uint16 num_orders)
 				case RDP_ORDER_POLYGON_CB:
 				case RDP_ORDER_FAST_INDEX:
 				case RDP_ORDER_ELLIPSE_CB:
+				case RDP_ORDER_FAST_GLYPH:
 					size = 2;
 					break;
 
@@ -1823,6 +2002,10 @@ process_orders(rdpOrders * orders, STREAM s, uint16 num_orders)
 
 				case RDP_ORDER_FAST_INDEX:
 					process_fast_index(orders, s, &os->fast_index, present, delta);
+					break;
+
+				case RDP_ORDER_FAST_GLYPH:
+					process_fast_glyph(orders, s, &os->fast_glyph, present, delta);
 					break;
 
 				default:
