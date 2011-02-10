@@ -171,6 +171,19 @@ typedef struct _OPAQUERECT_ORDER
 }
 OPAQUERECT_ORDER;
 
+typedef struct _MULTIOPAQUERECT_ORDER
+{
+	sint16 x;
+	sint16 y;
+	sint16 cx;
+	sint16 cy;
+	uint32 color;
+	uint8 nentries;
+	uint16 datasize;
+	uint8 data[MAX_DATA];
+}
+MULTIOPAQUERECT_ORDER;
+
 typedef struct _SAVEBITMAP_ORDER
 {
 	uint32 offset;
@@ -373,6 +386,7 @@ typedef struct _RDP_ORDER_STATE
 	SCRBLT_ORDER scrblt;
 	LINETO_ORDER lineto;
 	OPAQUERECT_ORDER opaquerect;
+	MULTIOPAQUERECT_ORDER multiopaquerect;
 	SAVEBITMAP_ORDER savebitmap;
 	MEMBLT_ORDER memblt;
 	MEM3BLT_ORDER mem3blt;

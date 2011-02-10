@@ -188,7 +188,7 @@ rdp_out_order_capset(rdpRdp * rdp, STREAM s)
 	// orderSupport[NEG_MULTIDSTBLT_INDEX] = 1;
 	orderSupport[NEG_MULTIPATBLT_INDEX] = 1;
 	// orderSupport[NEG_MULTISCRBLT_INDEX] = 1;
-	// orderSupport[NEG_MULTIOPAQUERECT_INDEX] = 1;
+	orderSupport[NEG_MULTIOPAQUERECT_INDEX] = 1;
 	orderSupport[NEG_FAST_INDEX_INDEX] = 1;
 	orderSupport[NEG_POLYGON_SC_INDEX] = (rdp->settings->polygon_ellipse_orders ? 1 : 0);
 	orderSupport[NEG_POLYGON_CB_INDEX] = (rdp->settings->polygon_ellipse_orders ? 1 : 0);

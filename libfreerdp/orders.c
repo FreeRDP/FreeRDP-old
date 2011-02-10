@@ -498,6 +498,104 @@ process_opaquerect(rdpOrders * orders, STREAM s, OPAQUERECT_ORDER * os, uint32 p
 	ui_rect(orders->rdp->inst, os->x, os->y, os->cx, os->cy, os->color);
 }
 
+/* Process a multi opaque rectangle order */
+static void
+process_multiopaquerect(rdpOrders * orders, STREAM s, MULTIOPAQUERECT_ORDER * os, uint32 present, RD_BOOL delta)
+{
+	uint32 i;
+	int size;
+	int index, data, next;
+	uint8 flags = 0;
+	RECTANGLE *rects;
+
+	if (present & 0x001)
+		rdp_in_coord(s, &os->x, delta);
+
+	if (present & 0x002)
+		rdp_in_coord(s, &os->y, delta);
+
+	if (present & 0x004)
+		rdp_in_coord(s, &os->cx, delta);
+
+	if (present & 0x008)
+		rdp_in_coord(s, &os->cy, delta);
+
+	if (present & 0x010)
+	{
+		in_uint8(s, i);
+		os->color = (os->color & 0xffffff00) | i;
+	}
+
+	if (present & 0x020)
+	{
+		in_uint8(s, i);
+		os->color = (os->color & 0xffff00ff) | (i << 8);
+	}
+
+	if (present & 0x040)
+	{
+		in_uint8(s, i);
+		os->color = (os->color & 0xff00ffff) | (i << 16);
+	}
+
+	if (present & 0x080)
+		in_uint8(s, os->nentries);
+
+	if (present & 0x100)
+	{
+		in_uint16_le(s, os->datasize);
+		in_uint8a(s, os->data, os->datasize);
+	}
+
+	DEBUG("MULTIOPAQUERECT(x=%d,y=%d,cx=%d,cy=%d,fg=0x%x,ne=%d,n=%d)\n", os->x, os->y, os->cx, os->cy,
+		os->color, os->nentries, os->datasize);
+
+	size = (os->nentries + 1) * sizeof(RECTANGLE);
+	if (size > orders->buffer_size)
+	{
+		orders->buffer = xrealloc(orders->buffer, size);
+		orders->buffer_size = size;
+	}
+
+	rects = (RECTANGLE *) orders->buffer;
+	memset(rects, 0, size);
+
+	index = 0;
+	data = ceil(((double)os->nentries) / 2.0);
+	for (next = 1; (next <= os->nentries) && (next <= 45) && (data < os->datasize); next++)
+	{
+		if ((next - 1) % 2 == 0)
+			flags = os->data[index++];
+
+		if (~flags & 0x80)
+			rects[next].l = parse_delta(os->data, &data);
+
+		if (~flags & 0x40)
+			rects[next].t = parse_delta(os->data, &data);
+
+		if (~flags & 0x20)
+			rects[next].w = parse_delta(os->data, &data);
+		else
+			rects[next].w = rects[next - 1].w;
+
+		if (~flags & 0x10)
+			rects[next].h = parse_delta(os->data, &data);
+		else
+			rects[next].h = rects[next - 1].h;
+
+		rects[next].l = rects[next].l + rects[next - 1].l;
+		rects[next].t = rects[next].t + rects[next - 1].t;
+
+		DEBUG("rect (%d, %d, %d, %d)\n",
+			rects[next].l, rects[next].t, rects[next].w, rects[next].h);
+
+		flags <<= 4;
+
+		ui_rect(orders->rdp->inst, rects[next].l, rects[next].t,
+			rects[next].w, rects[next].h, os->color);
+	}
+}
+
 /* Process a save bitmap order */
 static void
 process_savebitmap(rdpOrders * orders, STREAM s, SAVEBITMAP_ORDER * os, uint32 present, RD_BOOL delta)
@@ -2014,6 +2112,7 @@ process_orders(rdpOrders * orders, STREAM s, uint16 num_orders)
 				case RDP_ORDER_FAST_INDEX:
 				case RDP_ORDER_ELLIPSE_CB:
 				case RDP_ORDER_FAST_GLYPH:
+				case RDP_ORDER_MULTIOPAQUERECT:
 					size = 2;
 					break;
 
@@ -2061,6 +2160,10 @@ process_orders(rdpOrders * orders, STREAM s, uint16 num_orders)
 
 				case RDP_ORDER_OPAQUERECT:
 					process_opaquerect(orders, s, &os->opaquerect, present, delta);
+					break;
+
+				case RDP_ORDER_MULTIOPAQUERECT:
+					process_multiopaquerect(orders, s, &os->multiopaquerect, present, delta);
 					break;
 
 				case RDP_ORDER_SAVEBITMAP:
