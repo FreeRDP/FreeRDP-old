@@ -1474,12 +1474,12 @@ process_fast_glyph(rdpOrders * orders, STREAM s, FAST_GLYPH_ORDER * os, uint32 p
 		ui_draw_glyph(orders->rdp->inst, gx, gy, ft->width, ft->height, ft->pixmap);
 		if (boxcx > 1)
 		{
-		  ui_end_draw_glyphs(orders->rdp->inst, boxx1, boxy1, boxcx, boxcy);
+			ui_end_draw_glyphs(orders->rdp->inst, boxx1, boxy1, boxcx, boxcy);
 		}
-	  else
-	  {
-		  ui_end_draw_glyphs(orders->rdp->inst, clipx1, clipy1, clipcx, clipcy);
-	  }
+		else
+		{
+			ui_end_draw_glyphs(orders->rdp->inst, clipx1, clipy1, clipcx, clipcy);
+		}
 	}
 }
 
