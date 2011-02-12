@@ -38,39 +38,198 @@
 struct pulse_device_data
 {
 	char device_name[32];
+	pa_mainloop *mainloop;
+	pa_context *context;
+	pa_sample_spec sample_spec;
+	pa_stream *stream;
 };
+
+static void
+rdpsnd_pulse_context_state_callback(pa_context * context, void * userdata)
+{
+	rdpsndDevicePlugin * devplugin;
+	struct pulse_device_data * pulse_data;
+	pa_context_state_t state;
+
+	devplugin = (rdpsndDevicePlugin *) userdata;
+	pulse_data = (struct pulse_device_data *) devplugin->device_data;
+	state = pa_context_get_state(context);
+	switch (state)
+	{
+		case PA_CONTEXT_READY:
+			LLOGLN(10, ("rdpsnd_pulse_context_state_callback: PA_CONTEXT_READY"));
+			pa_mainloop_wakeup (pulse_data->mainloop);
+			break;
+
+		default:
+			LLOGLN(10, ("rdpsnd_pulse_context_state_callback: state %d", (int)state));
+			break;
+	}
+}
+
+static int
+rdpsnd_pulse_connect(rdpsndDevicePlugin * devplugin)
+{
+	struct pulse_device_data * pulse_data;
+	pa_context_state_t state;
+
+	pulse_data = (struct pulse_device_data *) devplugin->device_data;
+	if (!pulse_data->context)
+		return 1;
+
+	if (pa_context_connect(pulse_data->context, NULL, 0, NULL))
+	{
+		LLOGLN(0, ("rdpsnd_pulse_connect: pa_context_connect failed (%d)",
+			pa_context_errno(pulse_data->context)));
+		return 1;
+	}
+	for (;;)
+	{
+		state = pa_context_get_state(pulse_data->context);
+		if (state == PA_CONTEXT_READY)
+			break;
+        if (!PA_CONTEXT_IS_GOOD(state))
+		{
+			LLOGLN(0, ("rdpsnd_pulse_connect: bad context state (%d)",
+				pa_context_errno(pulse_data->context)));
+			break;
+		}
+		if (pa_mainloop_iterate(pulse_data->mainloop, 1, NULL) < 0)
+		{
+			LLOGLN(0, ("rdpsnd_pulse_connect: pa_mainloop_iterate failed"));
+			break;
+		}
+	}
+	if (state == PA_CONTEXT_READY)
+	{
+		LLOGLN(0, ("rdpsnd_pulse_connect: connected"));
+		return 0;
+	}
+	else
+	{
+		pa_context_disconnect(pulse_data->context);
+		return 1;
+	}
+}
 
 static int
 rdpsnd_pulse_open(rdpsndDevicePlugin * devplugin)
 {
+	struct pulse_device_data * pulse_data;
+
+	pulse_data = (struct pulse_device_data *) devplugin->device_data;
+	if (!pulse_data->context)
+		return 1;
+	/* Since RDP server sends set_format request after open request, but we
+	   need the format spec to open the stream, we will defer the open request
+	   if initial set_format request is not yet received */
+	if (!pulse_data->sample_spec.rate || pulse_data->stream)
+		return 0;
 	LLOGLN(10, ("rdpsnd_pulse_open:"));
+
 	return 0;
 }
 
 static int
 rdpsnd_pulse_close(rdpsndDevicePlugin * devplugin)
 {
+	struct pulse_device_data * pulse_data;
+
+	pulse_data = (struct pulse_device_data *) devplugin->device_data;
+	if (!pulse_data->context || !pulse_data->stream)
+		return 1;
 	LLOGLN(10, ("rdpsnd_pulse_close:"));
+
 	return 0;
 }
 
 static void
 rdpsnd_pulse_free(rdpsndDevicePlugin * devplugin)
 {
+	struct pulse_device_data * pulse_data;
+
+	pulse_data = (struct pulse_device_data *) devplugin->device_data;
 	LLOGLN(10, ("rdpsnd_pulse_free:"));
+	rdpsnd_pulse_close(devplugin);
+	if (pulse_data->context)
+	{
+		pa_context_disconnect(pulse_data->context);
+		pa_context_unref(pulse_data->context);
+	}
+	if (pulse_data->mainloop)
+		pa_mainloop_free(pulse_data->mainloop);
+	free(pulse_data);
 }
 
 static int
 rdpsnd_pulse_format_supported(rdpsndDevicePlugin * devplugin, char * snd_format, int size)
 {
-	LLOGLN(10, ("rdpsnd_pulse_format_supported:"));
+	struct pulse_device_data * pulse_data;
+	int nChannels;
+	int wBitsPerSample;
+	int nSamplesPerSec;
+	int cbSize;
+	int wFormatTag;
+
+	pulse_data = (struct pulse_device_data *) devplugin->device_data;
+	if (!pulse_data->context)
+		return 0;
+	LLOGLN(10, ("rdpsnd_pulse_format_supported: size %d", size));
+	wFormatTag = GET_UINT16(snd_format, 0);
+	nChannels = GET_UINT16(snd_format, 2);
+	nSamplesPerSec = GET_UINT32(snd_format, 4);
+	wBitsPerSample = GET_UINT16(snd_format, 14);
+	cbSize = GET_UINT16(snd_format, 16);
+	if (cbSize == 0 &&
+		(nSamplesPerSec == 22050 || nSamplesPerSec == 44100) &&
+		(wBitsPerSample == 8 || wBitsPerSample == 16) &&
+		(nChannels == 1 || nChannels == 2) &&
+		wFormatTag == 1) /* WAVE_FORMAT_PCM */
+	{
+		LLOGLN(0, ("rdpsnd_pulse_format_supported: ok"));
+		return 1;
+	}
+
 	return 0;
 }
 
 static int
 rdpsnd_pulse_set_format(rdpsndDevicePlugin * devplugin, char * snd_format, int size)
 {
-	LLOGLN(10, ("rdpsnd_pulse_set_format:"));
+	struct pulse_device_data * pulse_data;
+	pa_sample_spec sample_spec = { 0 };
+	int nChannels;
+	int wBitsPerSample;
+	int nSamplesPerSec;
+
+	pulse_data = (struct pulse_device_data *) devplugin->device_data;
+	if (!pulse_data->context)
+		return 1;
+	nChannels = GET_UINT16(snd_format, 2);
+	nSamplesPerSec = GET_UINT32(snd_format, 4);
+	wBitsPerSample = GET_UINT16(snd_format, 14);
+
+	sample_spec.rate = nSamplesPerSec;
+	sample_spec.channels = nChannels;
+	switch (wBitsPerSample)
+	{
+		case 8:
+			sample_spec.format = PA_SAMPLE_U8;
+			break;
+		case 16:
+			sample_spec.format = PA_SAMPLE_S16LE;
+			break;
+	}
+	LLOGLN(0, ("rdpsnd_pulse_set_format: nChannels %d "
+		"nSamplesPerSec %d wBitsPerSample %d",
+		nChannels, nSamplesPerSec, wBitsPerSample));
+	if (memcmp(&sample_spec, &pulse_data->sample_spec, sizeof(pa_sample_spec)) != 0)
+	{
+		pulse_data->sample_spec = sample_spec;
+		rdpsnd_pulse_close(devplugin);
+		rdpsnd_pulse_open(devplugin);
+	}
+
 	return 0;
 }
 
@@ -84,7 +243,13 @@ rdpsnd_pulse_set_volume(rdpsndDevicePlugin * devplugin, uint32 value)
 static int
 rdpsnd_pulse_play(rdpsndDevicePlugin * devplugin, char * data, int size, int * delay_ms)
 {
+	struct pulse_device_data * pulse_data;
+
+	pulse_data = (struct pulse_device_data *) devplugin->device_data;
+	if (!pulse_data->stream)
+		return 1;
 	LLOGLN(10, ("rdpsnd_pulse_play: size %d", size));
+
 	return 0;
 }
 
@@ -129,6 +294,25 @@ FreeRDPRdpsndDeviceEntry(PFREERDP_RDPSND_DEVICE_ENTRY_POINTS pEntryPoints)
 		}
 	}
 	devplugin->device_data = pulse_data;
+
+	pulse_data->mainloop = pa_mainloop_new();
+	if (!pulse_data->mainloop)
+	{
+		LLOGLN(0, ("rdpsnd_pulse: pa_mainloop_new failed"));
+		return 1;
+	}
+	pulse_data->context = pa_context_new(pa_mainloop_get_api(pulse_data->mainloop), "freerdp");
+	if (!pulse_data->context)
+	{
+		LLOGLN(0, ("rdpsnd_pulse: pa_context_new failed"));
+		return 1;
+	}
+	pa_context_set_state_callback(pulse_data->context, rdpsnd_pulse_context_state_callback, devplugin);
+	if (rdpsnd_pulse_connect(devplugin))
+	{
+		LLOGLN(0, ("rdpsnd_pulse: rdpsnd_pulse_connect failed"));
+		return 1;
+	}
 
 	LLOGLN(0, ("rdpsnd_pulse: pulse device '%s' registered.", pulse_data->device_name));
 
