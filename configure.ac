@@ -239,6 +239,14 @@ PKG_CHECK_MODULES(ALSA, alsa, [
 	alsa="no"
 ])
 
+PKG_CHECK_MODULES(PULSE, libpulse, [
+	HAVE_PULSE=1
+	pulse="yes"
+], [
+	HAVE_PULSE=0
+	pulse="no"
+])
+
 #
 # printer
 #
@@ -885,6 +893,13 @@ if test x"$HAVE_ALSA" = "x1"; then
 fi
 
 #
+# rdpsnd_pulse
+#
+if test x"$HAVE_PULSE" = "x1"; then
+	EXTRA_SUBDIRS="$EXTRA_SUBDIRS channels/rdpsnd/pulse"
+fi
+
+#
 # CUnit
 #
 cunit="no"
@@ -947,6 +962,7 @@ win/Makefile
 channels/common/Makefile
 channels/rdpsnd/Makefile
 channels/rdpsnd/alsa/Makefile
+channels/rdpsnd/pulse/Makefile
 channels/drdynvc/Makefile
 channels/drdynvc/pnpdr/Makefile
 channels/drdynvc/audin/Makefile
@@ -972,6 +988,7 @@ else
 	echo "TLS          : enabled"
 fi
 echo "ALSA         : $alsa"
+echo "PulseAudio   : $pulse"
 echo "Printer      : $printer"
 echo "CUnit        : $cunit"
 echo "X11          : $x11"

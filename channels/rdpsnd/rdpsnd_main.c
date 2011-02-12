@@ -878,6 +878,7 @@ VirtualChannelEntry(PCHANNEL_ENTRY_POINTS pEntryPoints)
 	rdpsndPlugin * plugin;
 	RD_PLUGIN_DATA * data;
 	RD_PLUGIN_DATA default_data[2] = { { 0 }, { 0 } };
+	int ret;
 
 	LLOGLN(10, ("VirtualChannelEntry:"));
 
@@ -923,9 +924,16 @@ VirtualChannelEntry(PCHANNEL_ENTRY_POINTS pEntryPoints)
 	if (plugin->device_plugin == NULL)
 	{
 		default_data[0].size = sizeof(RD_PLUGIN_DATA);
-		default_data[0].data[0] = "alsa";
-		default_data[0].data[1] = "default";
-		rdpsnd_load_device_plugin(plugin, "alsa", default_data);
+		default_data[0].data[0] = "pulse";
+		default_data[0].data[1] = "";
+		ret = rdpsnd_load_device_plugin(plugin, "pulse", default_data);
+		if (ret)
+		{
+			default_data[0].size = sizeof(RD_PLUGIN_DATA);
+			default_data[0].data[0] = "alsa";
+			default_data[0].data[1] = "default";
+			ret = rdpsnd_load_device_plugin(plugin, "alsa", default_data);
+		}
 	}
 	if (plugin->device_plugin == NULL)
 	{
