@@ -26,6 +26,44 @@
 #include "credssp.h"
 #include "data_blob.h"
 
+struct _AV_PAIR
+{
+	uint16 length;
+	uint8* value;
+};
+typedef struct _AV_PAIR AV_PAIR;
+
+struct _AV_PAIRS
+{
+	AV_PAIR NbComputerName;
+	AV_PAIR NbDomainName;
+	AV_PAIR DnsComputerName;
+	AV_PAIR DnsDomainName;
+	AV_PAIR DnsTreeName;
+	AV_PAIR Timestamp;
+	AV_PAIR Restrictions;
+	AV_PAIR TargetName;
+	AV_PAIR ChannelBindings;
+	uint32 Flags;
+};
+typedef struct _AV_PAIRS AV_PAIRS;
+
+enum _AV_ID
+{
+	MsvAvEOL,
+	MsvAvNbComputerName,
+	MsvAvNbDomainName,
+	MsvAvDnsComputerName,
+	MsvAvDnsDomainName,
+	MsvAvDnsTreeName,
+	MsvAvFlags,
+	MsvAvTimestamp,
+	MsvAvRestrictions,
+	MsvAvTargetName,
+	MsvChannelBindings
+};
+typedef enum _AV_ID AV_ID;
+
 enum _NTLMSSP_STATE
 {
 	NTLMSSP_STATE_INITIAL,
@@ -42,8 +80,9 @@ struct _NTLMSSP
 	DATA_BLOB password;
 	DATA_BLOB username;
 	DATA_BLOB domain;
-	DATA_BLOB target_name;
 	DATA_BLOB target_info;
+	DATA_BLOB target_name;
+	DATA_BLOB spn;
 	uint32 negotiate_flags;
 	uint8 timestamp[8];
 	uint8 server_challenge[8];
@@ -65,14 +104,17 @@ struct _NTLMSSP
 	DATA_BLOB authenticate_message;
 	CryptoRc4 send_rc4_seal;
 	CryptoRc4 recv_rc4_seal;
+	AV_PAIRS *av_pairs;
 	int send_seq_num;
 	int recv_seq_num;
+	int ntlm_v2;
 };
 typedef struct _NTLMSSP NTLMSSP;
 
 void ntlmssp_set_username(NTLMSSP *ntlmssp, char* username);
 void ntlmssp_set_domain(NTLMSSP *ntlmssp, char* domain);
 void ntlmssp_set_password(NTLMSSP *ntlmssp, char* password);
+void ntlmssp_set_target_name(NTLMSSP *ntlmssp, char* target_name);
 
 void ntlmssp_generate_client_challenge(NTLMSSP *ntlmssp);
 void ntlmssp_generate_key_exchange_key(NTLMSSP *ntlmssp);
@@ -94,6 +136,11 @@ void ntlmssp_compute_ntlm_v2_hash(DATA_BLOB *password, DATA_BLOB *username, DATA
 void ntlmssp_compute_lm_response(char* password, char* challenge, char* response);
 void ntlmssp_compute_lm_v2_response(NTLMSSP *ntlmssp);
 void ntlmssp_compute_ntlm_v2_response(NTLMSSP *ntlmssp);
+
+void ntlmssp_populate_av_pairs(NTLMSSP *ntlmssp);
+void ntlmssp_input_av_pairs(NTLMSSP *ntlmssp, STREAM s);
+void ntlmssp_output_av_pairs(NTLMSSP *ntlmssp, STREAM s);
+void ntlmssp_free_av_pairs(NTLMSSP *ntlmssp);
 
 void ntlmssp_compute_message_integrity_check(NTLMSSP *ntlmssp);
 

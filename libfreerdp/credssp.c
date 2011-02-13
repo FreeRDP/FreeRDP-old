@@ -78,9 +78,13 @@ void credssp_ntlmssp_init(rdpCredssp * credssp)
 		ntlmssp_set_domain(ntlmssp, NULL);
 	}
 
+	ntlmssp_set_target_name(ntlmssp, settings->server);
+
 	ntlmssp_generate_client_challenge(ntlmssp);
 	ntlmssp_generate_random_session_key(ntlmssp);
 	ntlmssp_generate_exported_session_key(ntlmssp);
+
+	ntlmssp->ntlm_v2 = 0;
 }
 
 void credssp_get_public_key(rdpCredssp * credssp)

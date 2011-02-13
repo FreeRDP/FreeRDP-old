@@ -96,6 +96,27 @@ void ntlmssp_set_password(NTLMSSP *ntlmssp, char* password)
 	}
 }
 
+void ntlmssp_set_target_name(NTLMSSP *ntlmssp, char* target_name)
+{
+	char service_name[8] = "TERMSRV/";
+	data_blob_free(&ntlmssp->target_name);
+
+	if (target_name != NULL)
+	{
+		uint8 *p;
+		int length;
+
+		length = strlen((char*) target_name);
+		data_blob_alloc(&ntlmssp->spn, length * 2 + (8 * 2));
+		p = (void*) ntlmssp->spn.data;
+
+		credssp_str_to_wstr(service_name, ntlmssp->spn.data, 8);
+
+		p = &p[16];
+		credssp_str_to_wstr(target_name, p, length);
+	}
+}
+
 void ntlmssp_generate_client_challenge(NTLMSSP *ntlmssp)
 {
 	/* ClientChallenge in computation of LMv2 and NTLMv2 responses */
@@ -127,7 +148,15 @@ void ntlmssp_encrypt_random_session_key(NTLMSSP *ntlmssp)
 
 void ntlmssp_generate_timestamp(NTLMSSP *ntlmssp)
 {
-	/* Get the current timestamp */
+	if (ntlmssp->ntlm_v2)
+	{
+		if (ntlmssp->av_pairs->Timestamp.length == 8)
+		{
+			memcpy(ntlmssp->timestamp, ntlmssp->av_pairs->Timestamp.value, 8);
+			return;
+		}
+	}
+
 	credssp_current_time(ntlmssp->timestamp);
 }
 
@@ -496,6 +525,239 @@ void ntlmssp_output_negotiate_flags(STREAM s, uint32 flags)
 	p[2] = tmp;
 }
 
+void ntlmssp_populate_av_pairs(NTLMSSP *ntlmssp)
+{
+	STREAM s;
+	DATA_BLOB target_info;
+	AV_PAIRS *av_pairs = ntlmssp->av_pairs;
+
+	/* MsvAvFlags */
+	av_pairs->Flags = 0x00000002; /* Indicates the present of a Message Integrity Check (MIC) */
+
+	/* MsvChannelBindings */
+	av_pairs->ChannelBindings.length = 16;
+	av_pairs->ChannelBindings.value = (uint8*) xmalloc(16);
+	memset(av_pairs->ChannelBindings.value, '\0', 16);
+
+	/* MsvAvTargetName */
+	av_pairs->TargetName.length = ntlmssp->spn.length;
+	av_pairs->TargetName.value = (uint8*) ntlmssp->spn.data;
+
+	s = xmalloc(sizeof(struct stream));
+	s->data = xmalloc(ntlmssp->target_info.length + 1024);
+	s->p = s->data;
+
+	ntlmssp_output_av_pairs(ntlmssp, s);
+	data_blob_alloc(&target_info, s->end - s->data);
+	memcpy(target_info.data, s->data, target_info.length);
+
+	ntlmssp->target_info.data = target_info.data;
+	ntlmssp->target_info.length = target_info.length;
+}
+
+void ntlmssp_input_av_pairs(NTLMSSP *ntlmssp, STREAM s)
+{
+	AV_ID AvId;
+	uint16 AvLen;
+	uint8* value;
+	AV_PAIRS* av_pairs = ntlmssp->av_pairs;
+
+	do
+	{
+		value = NULL;
+		in_uint16_le(s, AvId);
+		in_uint16_le(s, AvLen);
+
+		if (AvLen > 0)
+		{
+			if (AvId != MsvAvFlags)
+			{
+				value = xmalloc(AvLen);
+				in_uint8a(s, value, AvLen);
+			}
+			else
+			{
+				in_uint32_le(s, av_pairs->Flags);
+			}
+		}
+
+		switch (AvId)
+		{
+			case MsvAvNbComputerName:
+				//printf("AvId: MsvAvNbComputerName, AvLen: %d\n", AvLen);
+				av_pairs->NbComputerName.length = AvLen;
+				av_pairs->NbComputerName.value = value;
+				break;
+
+			case MsvAvNbDomainName:
+				//printf("AvId: MsvAvNbDomainName, AvLen: %d\n", AvLen);
+				av_pairs->NbDomainName.length = AvLen;
+				av_pairs->NbDomainName.value = value;
+				break;
+
+			case MsvAvDnsComputerName:
+				//printf("AvId: MsvAvDnsComputerName, AvLen: %d\n", AvLen);
+				av_pairs->DnsComputerName.length = AvLen;
+				av_pairs->DnsComputerName.value = value;
+				break;
+
+			case MsvAvDnsDomainName:
+				//printf("AvId: MsvAvDnsDomainName, AvLen: %d\n", AvLen);
+				av_pairs->DnsDomainName.length = AvLen;
+				av_pairs->DnsDomainName.value = value;
+				break;
+
+			case MsvAvDnsTreeName:
+				//printf("AvId: MsvAvDnsTreeName, AvLen: %d\n", AvLen);
+				av_pairs->DnsTreeName.length = AvLen;
+				av_pairs->DnsTreeName.value = value;
+				break;
+
+			case MsvAvTimestamp:
+				//printf("AvId: MsvAvTimestamp, AvLen: %d\n", AvLen);
+				av_pairs->Timestamp.length = AvLen;
+				av_pairs->Timestamp.value = value;
+				break;
+
+			case MsvAvRestrictions:
+				//printf("AvId: MsvAvRestrictions, AvLen: %d\n", AvLen);
+				av_pairs->Restrictions.length = AvLen;
+				av_pairs->Restrictions.value = value;
+				break;
+
+			case MsvAvTargetName:
+				//printf("AvId: MsvAvTargetName, AvLen: %d\n", AvLen);
+				av_pairs->TargetName.length = AvLen;
+				av_pairs->TargetName.value = value;
+				break;
+
+			case MsvChannelBindings:
+				//printf("AvId: MsvAvChannelBindings, AvLen: %d\n", AvLen);
+				av_pairs->ChannelBindings.length = AvLen;
+				av_pairs->ChannelBindings.value = value;
+				break;
+
+			default:
+				if (value != NULL)
+					xfree(value);
+				break;
+		}
+	}
+	while(AvId != MsvAvEOL);
+}
+
+void ntlmssp_output_av_pairs(NTLMSSP *ntlmssp, STREAM s)
+{
+	AV_PAIRS *av_pairs = ntlmssp->av_pairs;
+	
+	if (av_pairs->NbDomainName.length > 0)
+	{
+		out_uint16_le(s, MsvAvNbDomainName); /* AvId */
+		out_uint16_le(s, av_pairs->NbDomainName.length); /* AvLen */
+		out_uint8a(s, av_pairs->NbDomainName.value, av_pairs->NbDomainName.length); /* Value */
+	}
+
+	if (av_pairs->NbComputerName.length > 0)
+	{
+		out_uint16_le(s, MsvAvNbComputerName); /* AvId */
+		out_uint16_le(s, av_pairs->NbComputerName.length); /* AvLen */
+		out_uint8a(s, av_pairs->NbComputerName.value, av_pairs->NbComputerName.length); /* Value */
+	}
+
+	if (av_pairs->DnsDomainName.length > 0)
+	{
+		out_uint16_le(s, MsvAvDnsDomainName); /* AvId */
+		out_uint16_le(s, av_pairs->DnsDomainName.length); /* AvLen */
+		out_uint8a(s, av_pairs->DnsDomainName.value, av_pairs->DnsDomainName.length); /* Value */
+	}
+
+	if (av_pairs->DnsComputerName.length > 0)
+	{
+		out_uint16_le(s, MsvAvDnsComputerName); /* AvId */
+		out_uint16_le(s, av_pairs->DnsComputerName.length); /* AvLen */
+		out_uint8a(s, av_pairs->DnsComputerName.value, av_pairs->DnsComputerName.length); /* Value */
+	}
+
+	if (av_pairs->DnsTreeName.length > 0)
+	{
+		out_uint16_le(s, MsvAvDnsTreeName); /* AvId */
+		out_uint16_le(s, av_pairs->DnsTreeName.length); /* AvLen */
+		out_uint8a(s, av_pairs->DnsTreeName.value, av_pairs->DnsTreeName.length); /* Value */
+	}
+
+	if (av_pairs->Timestamp.length > 0)
+	{
+		out_uint16_le(s, MsvAvTimestamp); /* AvId */
+		out_uint16_le(s, av_pairs->Timestamp.length); /* AvLen */
+		out_uint8a(s, av_pairs->Timestamp.value, av_pairs->Timestamp.length); /* Value */
+	}
+
+	if (av_pairs->Flags > 0)
+	{
+		out_uint16_le(s, MsvAvFlags); /* AvId */
+		out_uint16_le(s, 4); /* AvLen */
+		out_uint32_le(s, av_pairs->Flags); /* Value */
+	}
+
+	if (av_pairs->Restrictions.length > 0)
+	{
+		out_uint16_le(s, MsvAvRestrictions); /* AvId */
+		out_uint16_le(s, av_pairs->Restrictions.length); /* AvLen */
+		out_uint8a(s, av_pairs->Restrictions.value, av_pairs->Restrictions.length); /* Value */
+	}
+
+	if (av_pairs->ChannelBindings.length > 0)
+	{
+		out_uint16_le(s, MsvChannelBindings); /* AvId */
+		out_uint16_le(s, av_pairs->ChannelBindings.length); /* AvLen */
+		out_uint8a(s, av_pairs->ChannelBindings.value, av_pairs->ChannelBindings.length); /* Value */
+	}
+
+	if (av_pairs->TargetName.length > 0)
+	{
+		out_uint16_le(s, MsvAvTargetName); /* AvId */
+		out_uint16_le(s, av_pairs->TargetName.length); /* AvLen */
+		out_uint8a(s, av_pairs->TargetName.value, av_pairs->TargetName.length); /* Value */
+	}
+
+	/* This endicates the end of the AV_PAIR array */
+	out_uint16_le(s, MsvAvEOL); /* AvId */
+	out_uint16_le(s, 0); /* AvLen */
+
+	s_mark_end(s);
+}
+
+void ntlmssp_free_av_pairs(NTLMSSP *ntlmssp)
+{
+	AV_PAIRS *av_pairs = ntlmssp->av_pairs;
+	
+	if (av_pairs != NULL)
+	{
+		if (av_pairs->NbComputerName.value != NULL)
+			xfree(av_pairs->NbComputerName.value);
+		if (av_pairs->NbDomainName.value != NULL)
+			xfree(av_pairs->NbDomainName.value);
+		if (av_pairs->DnsComputerName.value != NULL)
+			xfree(av_pairs->DnsComputerName.value);
+		if (av_pairs->DnsDomainName.value != NULL)
+			xfree(av_pairs->DnsDomainName.value);
+		if (av_pairs->DnsTreeName.value != NULL)
+			xfree(av_pairs->DnsTreeName.value);
+		if (av_pairs->Timestamp.value != NULL)
+			xfree(av_pairs->Timestamp.value);
+		if (av_pairs->Restrictions.value != NULL)
+			xfree(av_pairs->Restrictions.value);
+		if (av_pairs->TargetName.value != NULL)
+			xfree(av_pairs->TargetName.value);
+		if (av_pairs->ChannelBindings.value != NULL)
+			xfree(av_pairs->ChannelBindings.value);
+
+		xfree(av_pairs);
+	}
+
+	ntlmssp->av_pairs = NULL;
+}
+
 void ntlmssp_compute_message_integrity_check(NTLMSSP *ntlmssp)
 {
 	HMAC_CTX hmac_ctx;
@@ -694,6 +956,19 @@ void ntlmssp_recv_challenge_message(NTLMSSP *ntlmssp, STREAM s)
 		hexdump(ntlmssp->target_info.data, ntlmssp->target_info.length);
 		printf("\n");
 #endif
+
+		if (ntlmssp->ntlm_v2)
+		{
+			s->p = p;
+			ntlmssp_input_av_pairs(ntlmssp, s);
+			ntlmssp_populate_av_pairs(ntlmssp);
+
+#ifdef WITH_DEBUG_NLA
+			printf("targetInfo (populated) (length = %d)\n", ntlmssp->target_info.length);
+			hexdump(ntlmssp->target_info.data, ntlmssp->target_info.length);
+			printf("\n");
+#endif
+		}
 	}
 
 	p = s->p + targetNameLen + targetInfoLen;
@@ -713,6 +988,9 @@ void ntlmssp_recv_challenge_message(NTLMSSP *ntlmssp, STREAM s)
 
 	/* LmChallengeResponse */
 	ntlmssp_compute_lm_v2_response(ntlmssp);
+
+	if (ntlmssp->ntlm_v2)
+		memset(ntlmssp->lm_challenge_response.data, '\0', 24);
 
 	/* NtChallengeResponse */
 	ntlmssp_compute_ntlm_v2_response(ntlmssp);
@@ -779,6 +1057,7 @@ void ntlmssp_send_authenticate_message(NTLMSSP *ntlmssp, STREAM s)
 {
 	int length;
 	uint32 negotiateFlags;
+	uint8* mic_offset = NULL;
 
 	uint16 DomainNameLen;
 	uint16 UserNameLen;
@@ -812,7 +1091,11 @@ void ntlmssp_send_authenticate_message(NTLMSSP *ntlmssp, STREAM s)
 	EncryptedRandomSessionKeyLen = 16;
 	EncryptedRandomSessionKeyBuffer = ntlmssp->encrypted_random_session_key;
 
-	LmChallengeResponseBufferOffset = 64; /* starting buffer offset */
+	if (ntlmssp->ntlm_v2)
+		LmChallengeResponseBufferOffset = 80; /* starting buffer offset */
+	else
+		LmChallengeResponseBufferOffset = 64; /* starting buffer offset */
+
 	NtChallengeResponseBufferOffset = LmChallengeResponseBufferOffset + LmChallengeResponseLen;
 	DomainNameBufferOffset = NtChallengeResponseBufferOffset + NtChallengeResponseLen;
 	UserNameBufferOffset = DomainNameBufferOffset + DomainNameLen;
@@ -868,7 +1151,12 @@ void ntlmssp_send_authenticate_message(NTLMSSP *ntlmssp, STREAM s)
 
 	ntlmssp_output_negotiate_flags(s, negotiateFlags); /* NegotiateFlags (4 bytes) */
 
-	/* Payload (offset 64) */
+	if (ntlmssp->ntlm_v2)
+	{
+		/* Message Integrity Check */
+		mic_offset = s->p;
+		out_uint8s(s, 16);
+	}
 
 	/* LmChallengeResponse */
 	out_uint8p(s, ntlmssp->lm_challenge_response.data, LmChallengeResponseLen);
@@ -921,6 +1209,15 @@ void ntlmssp_send_authenticate_message(NTLMSSP *ntlmssp, STREAM s)
 	data_blob_alloc(&ntlmssp->authenticate_message, length);
 	memcpy(ntlmssp->authenticate_message.data, s->data, length);
 
+	if (ntlmssp->ntlm_v2)
+	{
+		/* Message Integrity Check */
+		ntlmssp_compute_message_integrity_check(ntlmssp);
+		
+		s->p = mic_offset;
+		out_uint8p(s, ntlmssp->message_integrity_check, 16);
+	}
+
 #ifdef WITH_DEBUG_NLA
 	printf("AUTHENTICATE_MESSAGE (length = %d)\n", length);
 	hexdump(s->data, length);
@@ -966,6 +1263,8 @@ NTLMSSP* ntlmssp_new()
 	if (ntlmssp != NULL)
 	{
 		memset(ntlmssp, '\0', sizeof(NTLMSSP));
+		ntlmssp->av_pairs = (AV_PAIRS*)xmalloc(sizeof(AV_PAIRS));
+		memset(ntlmssp->av_pairs, 0, sizeof(AV_PAIRS));
 		ntlmssp_init(ntlmssp);
 	}
 
@@ -980,6 +1279,9 @@ void ntlmssp_init(NTLMSSP *ntlmssp)
 
 void ntlmssp_free(NTLMSSP *ntlmssp)
 {
+	/* Free AV_PAIRS */
+	ntlmssp_free_av_pairs(ntlmssp);
+
 	/* Free NTLMSSP state machine */
 	xfree(ntlmssp);
 }
