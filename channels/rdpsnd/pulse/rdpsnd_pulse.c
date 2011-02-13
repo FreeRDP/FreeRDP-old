@@ -61,6 +61,12 @@ rdpsnd_pulse_context_state_callback(pa_context * context, void * userdata)
 			pa_mainloop_wakeup (pulse_data->mainloop);
 			break;
 
+		case PA_CONTEXT_FAILED:
+		case PA_CONTEXT_TERMINATED:
+			LLOGLN(10, ("rdpsnd_pulse_context_state_callback: state %d", (int)state));
+			pa_mainloop_wakeup (pulse_data->mainloop);
+			break;
+
 		default:
 			LLOGLN(10, ("rdpsnd_pulse_context_state_callback: state %d", (int)state));
 			break;
@@ -112,22 +118,33 @@ rdpsnd_pulse_connect(rdpsndDevicePlugin * devplugin)
 	}
 }
 
-static int
-rdpsnd_pulse_open(rdpsndDevicePlugin * devplugin)
+static void
+rdpsnd_pulse_stream_state_callback(pa_stream * stream, void * userdata)
 {
+	rdpsndDevicePlugin * devplugin;
 	struct pulse_device_data * pulse_data;
+	pa_stream_state_t state;
 
+	devplugin = (rdpsndDevicePlugin *) userdata;
 	pulse_data = (struct pulse_device_data *) devplugin->device_data;
-	if (!pulse_data->context)
-		return 1;
-	/* Since RDP server sends set_format request after open request, but we
-	   need the format spec to open the stream, we will defer the open request
-	   if initial set_format request is not yet received */
-	if (!pulse_data->sample_spec.rate || pulse_data->stream)
-		return 0;
-	LLOGLN(10, ("rdpsnd_pulse_open:"));
+	state = pa_stream_get_state(stream);
+	switch (state)
+	{
+		case PA_STREAM_READY:
+			LLOGLN(10, ("rdpsnd_pulse_stream_state_callback: PA_STREAM_READY"));
+			pa_mainloop_wakeup (pulse_data->mainloop);
+			break;
 
-	return 0;
+		case PA_STREAM_FAILED:
+		case PA_STREAM_TERMINATED:
+			LLOGLN(10, ("rdpsnd_pulse_stream_state_callback: state %d", (int)state));
+			pa_mainloop_wakeup (pulse_data->mainloop);
+			break;
+
+		default:
+			LLOGLN(10, ("rdpsnd_pulse_stream_state_callback: state %d", (int)state));
+			break;
+	}
 }
 
 static int
@@ -139,8 +156,73 @@ rdpsnd_pulse_close(rdpsndDevicePlugin * devplugin)
 	if (!pulse_data->context || !pulse_data->stream)
 		return 1;
 	LLOGLN(10, ("rdpsnd_pulse_close:"));
-
+	pa_stream_disconnect(pulse_data->stream);
+	pa_stream_unref(pulse_data->stream);
+	pulse_data->stream = NULL;
 	return 0;
+}
+
+static int
+rdpsnd_pulse_open(rdpsndDevicePlugin * devplugin)
+{
+	struct pulse_device_data * pulse_data;
+	pa_stream_state_t state;
+
+	pulse_data = (struct pulse_device_data *) devplugin->device_data;
+	if (!pulse_data->context)
+		return 1;
+	/* Since RDP server sends set_format request after open request, but we
+	   need the format spec to open the stream, we will defer the open request
+	   if initial set_format request is not yet received */
+	if (!pulse_data->sample_spec.rate || pulse_data->stream)
+		return 0;
+	LLOGLN(10, ("rdpsnd_pulse_open:"));
+	pulse_data->stream = pa_stream_new(pulse_data->context, "freerdp",
+		&pulse_data->sample_spec, NULL);
+	if (!pulse_data->stream)
+	{
+		LLOGLN(0, ("rdpsnd_pulse_open: pa_stream_new failed (%d)",
+			pa_context_errno(pulse_data->context)));
+		return 1;
+	}
+	pa_stream_set_state_callback(pulse_data->stream,
+		rdpsnd_pulse_stream_state_callback, devplugin);
+	if (pa_stream_connect_playback(pulse_data->stream,
+		pulse_data->device_name[0] ? pulse_data->device_name : NULL,
+		NULL, 0, NULL, NULL) < 0)
+	{
+		LLOGLN(0, ("rdpsnd_pulse_open: pa_stream_connect_playback failed (%d)",
+			pa_context_errno(pulse_data->context)));
+		return 1;
+	}
+
+	for (;;)
+	{
+		state = pa_stream_get_state(pulse_data->stream);
+		if (state == PA_STREAM_READY)
+			break;
+        if (!PA_STREAM_IS_GOOD(state))
+		{
+			LLOGLN(0, ("rdpsnd_pulse_open: bad stream state (%d)",
+				pa_context_errno(pulse_data->context)));
+			break;
+		}
+		if (pa_mainloop_iterate(pulse_data->mainloop, 1, NULL) < 0)
+		{
+			LLOGLN(0, ("rdpsnd_pulse_open: pa_mainloop_iterate failed"));
+			break;
+		}
+	}
+	if (state == PA_STREAM_READY)
+	{
+		LLOGLN(10, ("rdpsnd_pulse_open: connected"));
+		return 0;
+	}
+	else
+	{
+		rdpsnd_pulse_close(devplugin);
+		return 1;
+	}
 }
 
 static void
