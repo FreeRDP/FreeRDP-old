@@ -57,8 +57,12 @@ struct _NTLMSSP
 	uint8 client_sealing_key[16];
 	uint8 server_signing_key[16];
 	uint8 server_sealing_key[16];
+	uint8 message_integrity_check[16];
 	DATA_BLOB nt_challenge_response;
 	DATA_BLOB lm_challenge_response;
+	DATA_BLOB negotiate_message;
+	DATA_BLOB challenge_message;
+	DATA_BLOB authenticate_message;
 	CryptoRc4 send_rc4_seal;
 	CryptoRc4 recv_rc4_seal;
 	int send_seq_num;
@@ -90,6 +94,8 @@ void ntlmssp_compute_ntlm_v2_hash(DATA_BLOB *password, DATA_BLOB *username, DATA
 void ntlmssp_compute_lm_response(char* password, char* challenge, char* response);
 void ntlmssp_compute_lm_v2_response(NTLMSSP *ntlmssp);
 void ntlmssp_compute_ntlm_v2_response(NTLMSSP *ntlmssp);
+
+void ntlmssp_compute_message_integrity_check(NTLMSSP *ntlmssp);
 
 void ntlmssp_encrypt_message(NTLMSSP *ntlmssp, DATA_BLOB *msg, DATA_BLOB *encrypted_msg, uint8* signature);
 int ntlmssp_decrypt_message(NTLMSSP *ntlmssp, DATA_BLOB *encrypted_msg, DATA_BLOB *msg, uint8* signature);

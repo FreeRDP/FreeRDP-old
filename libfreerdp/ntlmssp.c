@@ -496,6 +496,23 @@ void ntlmssp_output_negotiate_flags(STREAM s, uint32 flags)
 	p[2] = tmp;
 }
 
+void ntlmssp_compute_message_integrity_check(NTLMSSP *ntlmssp)
+{
+	HMAC_CTX hmac_ctx;
+
+	/* 
+	 * Compute the HMAC-MD5 hash of ConcatenationOf(NEGOTIATE_MESSAGE,
+	 * CHALLENGE_MESSAGE, AUTHENTICATE_MESSAGE) using the ExportedSessionKey
+	 */
+
+	HMAC_CTX_init(&hmac_ctx);
+	HMAC_Init_ex(&hmac_ctx, ntlmssp->exported_session_key, 16, EVP_md5(), NULL);
+	HMAC_Update(&hmac_ctx, ntlmssp->negotiate_message.data, ntlmssp->negotiate_message.length);
+	HMAC_Update(&hmac_ctx, ntlmssp->challenge_message.data, ntlmssp->challenge_message.length);
+        HMAC_Update(&hmac_ctx, ntlmssp->authenticate_message.data, ntlmssp->authenticate_message.length);
+	HMAC_Final(&hmac_ctx, ntlmssp->message_integrity_check, NULL);
+}
+
 void ntlmssp_encrypt_message(NTLMSSP *ntlmssp, DATA_BLOB *msg, DATA_BLOB *encrypted_msg, uint8* signature)
 {
 	HMAC_CTX hmac_ctx;
@@ -603,6 +620,8 @@ void ntlmssp_send_negotiate_message(NTLMSSP *ntlmssp, STREAM s)
 	s_mark_end(s);
 
 	length = s->end - s->data;
+	data_blob_alloc(&ntlmssp->negotiate_message, length);
+	memcpy(ntlmssp->negotiate_message.data, s->data, length);
 
 #ifdef WITH_DEBUG_NLA
 	printf("NEGOTIATE_MESSAGE (length = %d)\n", length);
@@ -679,6 +698,9 @@ void ntlmssp_recv_challenge_message(NTLMSSP *ntlmssp, STREAM s)
 
 	p = s->p + targetNameLen + targetInfoLen;
 	length = p - start_offset;
+
+	data_blob_alloc(&ntlmssp->challenge_message, length);
+	memcpy(ntlmssp->challenge_message.data, start_offset, length);
 
 #ifdef WITH_DEBUG_NLA
 	printf("CHALLENGE_MESSAGE (length = %d)\n", length);
@@ -896,6 +918,8 @@ void ntlmssp_send_authenticate_message(NTLMSSP *ntlmssp, STREAM s)
 #endif
 
 	length = s->end - s->data;
+	data_blob_alloc(&ntlmssp->authenticate_message, length);
+	memcpy(ntlmssp->authenticate_message.data, s->data, length);
 
 #ifdef WITH_DEBUG_NLA
 	printf("AUTHENTICATE_MESSAGE (length = %d)\n", length);

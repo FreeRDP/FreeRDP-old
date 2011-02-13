@@ -16,5 +16,6 @@ void test_ntlmssp_generate_server_signing_key(void);
 void test_ntlmssp_generate_client_sealing_key(void);
 void test_ntlmssp_generate_server_sealing_key(void);
 void test_ntlmssp_encrypt_random_session_key(void);
+void test_ntlmssp_compute_message_integrity_check(void);
 void test_ntlmssp_encrypt_message(void);
 void test_ntlmssp_decrypt_message(void);

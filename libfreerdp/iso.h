@@ -27,7 +27,7 @@
 
 struct rdp_iso
 {
-	char* username;
+        char* cookie;
 	struct _NEGO * nego;
 	struct rdp_mcs * mcs;
 	struct rdp_tcp * tcp;

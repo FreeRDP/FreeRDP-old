@@ -26,6 +26,7 @@
 #include "credssp.h"
 #include "rdp.h"
 #include "mem.h"
+#include <freerdp/rdpset.h>
 
 /* TPKT from T123 - aka ISO DP 8073 */
 
@@ -88,13 +89,16 @@ x224_send_connection_request(rdpIso * iso)
 {
 	STREAM s;
 	int length = 11;
+        int cookie_length;
+
+        cookie_length = strlen(iso->cookie);
 
 	if (iso->mcs->sec->rdp->redirect_routingtoken)
 		/* routingToken */
 		length += iso->mcs->sec->rdp->redirect_routingtoken_len;
 	else
 		/* cookie */
-		length += 19 + strlen(iso->username);
+		length += 19 + cookie_length;
 
 	if (iso->nego->requested_protocols > PROTOCOL_RDP)
 		length += 8;
@@ -120,7 +124,7 @@ x224_send_connection_request(rdpIso * iso)
 	{
 		/* cookie */
 		out_uint8p(s, "Cookie: mstshash=", strlen("Cookie: mstshash="));
-		out_uint8p(s, iso->username, strlen(iso->username));
+		out_uint8p(s, iso->cookie, cookie_length);
 		out_uint8(s, 0x0D);	/* CR */
 		out_uint8(s, 0x0A);	/* LF */
 	}
@@ -364,7 +368,10 @@ iso_connect(rdpIso * iso, char *server, char *username, int port)
 {
 	RD_BOOL ret;
 
-	iso->username = username;
+        if (strlen(iso->mcs->sec->rdp->settings->domain) > 0)
+            iso->cookie = iso->mcs->sec->rdp->settings->domain;
+        else
+            iso->cookie = username;
 
 	if (!tcp_connect(iso->tcp, server, port))
 		return False;
