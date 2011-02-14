@@ -30,27 +30,56 @@
 
 #include "ntlmssp.h"
 
-#define NTLMSSP_NEGOTIATE_56				0x00000001 /* 0 */
-#define NTLMSSP_NEGOTIATE_KEY_EXCH			0x00000002 /* 1 */
-#define NTLMSSP_NEGOTIATE_128				0x00000004 /* 2 */
-#define NTLMSSP_NEGOTIATE_VERSION			0x00000040 /* 6 */
-#define NTLMSSP_NEGOTIATE_TARGET_INFO			0x00000100 /* 8 */
-#define NTLMSSP_REQUEST_NON_NT_SESSION_KEY		0x00000200 /* 9 */
-#define NTLMSSP_NEGOTIATE_IDENTIFY			0x00000800 /* 11 */
-#define NTLMSSP_NEGOTIATE_EXTENDED_SESSION_SECURITY	0x00001000 /* 12 */
-#define NTLMSSP_TARGET_TYPE_SERVER			0x00004000 /* 14 */
-#define NTLMSSP_TARGET_TYPE_DOMAIN			0x00008000 /* 15 */
-#define NTLMSSP_NEGOTIATE_ALWAYS_SIGN			0x00010000 /* 16 */
-#define NTLMSSP_NEGOTIATE_OEM_WORKSTATION_SUPPLIED	0x00040000 /* 18 */
-#define NTLMSSP_NEGOTIATE_OEM_DOMAIN_SUPPLIED		0x00080000 /* 19 */
-#define NTLMSSP_NEGOTIATE_NTLM				0x00400000 /* 22 */
-#define NTLMSSP_NEGOTIATE_LM_KEY			0x01000000 /* 24 */
-#define NTLMSSP_NEGOTIATE_DATAGRAM			0x02000000 /* 25 */
-#define NTLMSSP_NEGOTIATE_SEAL				0x04000000 /* 26 */
-#define NTLMSSP_NEGOTIATE_SIGN				0x08000000 /* 27 */
-#define NTLMSSP_REQUEST_TARGET				0x20000000 /* 29 */
-#define NTLMSSP_NEGOTIATE_OEM				0x40000000 /* 30 */
-#define NTLMSSP_NEGOTIATE_UNICODE			0x80000000 /* 31 */
+#define NTLMSSP_INDEX_NEGOTIATE_56				0
+#define NTLMSSP_INDEX_NEGOTIATE_KEY_EXCH			1
+#define NTLMSSP_INDEX_NEGOTIATE_128				2
+#define NTLMSSP_INDEX_NEGOTIATE_VERSION				6
+#define NTLMSSP_INDEX_NEGOTIATE_TARGET_INFO			8
+#define NTLMSSP_INDEX_REQUEST_NON_NT_SESSION_KEY		9
+#define NTLMSSP_INDEX_NEGOTIATE_IDENTIFY			11
+#define NTLMSSP_INDEX_NEGOTIATE_EXTENDED_SESSION_SECURITY	12
+#define NTLMSSP_INDEX_TARGET_TYPE_SERVER			14
+#define NTLMSSP_INDEX_TARGET_TYPE_DOMAIN			15
+#define NTLMSSP_INDEX_NEGOTIATE_ALWAYS_SIGN			16
+#define NTLMSSP_INDEX_NEGOTIATE_WORKSTATION_SUPPLIED		18
+#define NTLMSSP_INDEX_NEGOTIATE_DOMAIN_SUPPLIED			19
+#define NTLMSSP_INDEX_NEGOTIATE_NTLM				22
+#define NTLMSSP_INDEX_NEGOTIATE_LM_KEY				24
+#define NTLMSSP_INDEX_NEGOTIATE_DATAGRAM			25
+#define NTLMSSP_INDEX_NEGOTIATE_SEAL				26
+#define NTLMSSP_INDEX_NEGOTIATE_SIGN				27
+#define NTLMSSP_INDEX_REQUEST_TARGET				29
+#define NTLMSSP_INDEX_NEGOTIATE_OEM				30
+#define NTLMSSP_INDEX_NEGOTIATE_UNICODE				31
+
+#define NTLMSSP_NEGOTIATE_56					(1 << NTLMSSP_INDEX_NEGOTIATE_56)
+#define NTLMSSP_NEGOTIATE_KEY_EXCH				(1 << NTLMSSP_INDEX_NEGOTIATE_KEY_EXCH)
+#define NTLMSSP_NEGOTIATE_128					(1 << NTLMSSP_INDEX_NEGOTIATE_128)
+#define NTLMSSP_NEGOTIATE_VERSION				(1 << NTLMSSP_INDEX_NEGOTIATE_VERSION)
+#define NTLMSSP_NEGOTIATE_TARGET_INFO				(1 << NTLMSSP_INDEX_NEGOTIATE_TARGET_INFO)
+#define NTLMSSP_REQUEST_NON_NT_SESSION_KEY			(1 << NTLMSSP_INDEX_REQUEST_NON_NT_SESSION_KEY)
+#define NTLMSSP_NEGOTIATE_IDENTIFY				(1 << NTLMSSP_INDEX_NEGOTIATE_IDENTIFY)
+#define NTLMSSP_NEGOTIATE_EXTENDED_SESSION_SECURITY		(1 << NTLMSSP_INDEX_NEGOTIATE_EXTENDED_SESSION_SECURITY)
+#define NTLMSSP_TARGET_TYPE_SERVER				(1 << NTLMSSP_INDEX_TARGET_TYPE_SERVER)
+#define NTLMSSP_TARGET_TYPE_DOMAIN				(1 << NTLMSSP_INDEX_TARGET_TYPE_DOMAIN)
+#define NTLMSSP_NEGOTIATE_ALWAYS_SIGN				(1 << NTLMSSP_INDEX_NEGOTIATE_ALWAYS_SIGN)
+#define NTLMSSP_NEGOTIATE_WORKSTATION_SUPPLIED			(1 << NTLMSSP_INDEX_NEGOTIATE_WORKSTATION_SUPPLIED)
+#define NTLMSSP_NEGOTIATE_DOMAIN_SUPPLIED			(1 << NTLMSSP_INDEX_NEGOTIATE_DOMAIN_SUPPLIED)
+#define NTLMSSP_NEGOTIATE_NTLM					(1 << NTLMSSP_INDEX_NEGOTIATE_NTLM)
+#define NTLMSSP_NEGOTIATE_LM_KEY				(1 << NTLMSSP_INDEX_NEGOTIATE_LM_KEY)
+#define NTLMSSP_NEGOTIATE_DATAGRAM				(1 << NTLMSSP_INDEX_NEGOTIATE_DATAGRAM)
+#define NTLMSSP_NEGOTIATE_SEAL					(1 << NTLMSSP_INDEX_NEGOTIATE_SEAL)
+#define NTLMSSP_NEGOTIATE_SIGN					(1 << NTLMSSP_INDEX_NEGOTIATE_SIGN)
+#define NTLMSSP_REQUEST_TARGET					(1 << NTLMSSP_INDEX_REQUEST_TARGET)
+#define NTLMSSP_NEGOTIATE_OEM					(1 << NTLMSSP_INDEX_NEGOTIATE_OEM)
+#define NTLMSSP_NEGOTIATE_UNICODE				(1 << NTLMSSP_INDEX_NEGOTIATE_UNICODE)
+
+#define WINDOWS_MAJOR_VERSION_5		0x05
+#define WINDOWS_MAJOR_VERSION_6		0x06
+#define WINDOWS_MINOR_VERSION_0		0x00
+#define WINDOWS_MINOR_VERSION_1		0x01
+#define WINDOWS_MINOR_VERSION_2		0x02
+#define NTLMSSP_REVISION_W2K3		0x0F
 
 const char ntlm_signature[] = "NTLMSSP";
 const char lm_magic[] = "KGS!@#$%";
@@ -148,16 +177,16 @@ void ntlmssp_encrypt_random_session_key(NTLMSSP *ntlmssp)
 
 void ntlmssp_generate_timestamp(NTLMSSP *ntlmssp)
 {
+	credssp_current_time(ntlmssp->timestamp);
+
 	if (ntlmssp->ntlm_v2)
 	{
 		if (ntlmssp->av_pairs->Timestamp.length == 8)
 		{
-			memcpy(ntlmssp->timestamp, ntlmssp->av_pairs->Timestamp.value, 8);
+			memcpy(ntlmssp->av_pairs->Timestamp.value, ntlmssp->timestamp, 8);
 			return;
 		}
 	}
-
-	credssp_current_time(ntlmssp->timestamp);
 }
 
 void ntlmssp_generate_signing_key(uint8* exported_session_key, DATA_BLOB *sign_magic, uint8* signing_key)
@@ -525,6 +554,55 @@ void ntlmssp_output_negotiate_flags(STREAM s, uint32 flags)
 	p[2] = tmp;
 }
 
+static void ntlmssp_print_negotiate_flags(uint32 flags)
+{
+	printf("negotiateFlags \"0x%08X\"{\n", flags);
+
+	if (flags & NTLMSSP_NEGOTIATE_56)
+		printf("\tNTLMSSP_NEGOTIATE_56\n");
+	if (flags & NTLMSSP_NEGOTIATE_KEY_EXCH)
+		printf("\tNTLMSSP_NEGOTIATE_KEY_EXCH\n");
+	if (flags & NTLMSSP_NEGOTIATE_128)
+		printf("\tNTLMSSP_NEGOTIATE_128\n");
+	if (flags & NTLMSSP_NEGOTIATE_VERSION)
+		printf("\tNTLMSSP_NEGOTIATE_VERSION\n");
+	if (flags & NTLMSSP_NEGOTIATE_TARGET_INFO)
+		printf("\tNTLMSSP_NEGOTIATE_TARGET_INFO\n");
+	if (flags & NTLMSSP_REQUEST_NON_NT_SESSION_KEY)
+		printf("\tNTLMSSP_REQUEST_NON_NT_SESSION_KEY\n");
+	if (flags & NTLMSSP_NEGOTIATE_IDENTIFY)
+		printf("\tNTLMSSP_NEGOTIATE_IDENTIFY\n");
+	if (flags & NTLMSSP_NEGOTIATE_EXTENDED_SESSION_SECURITY)
+		printf("\tNTLMSSP_NEGOTIATE_EXTENDED_SESSION_SECURITY\n");
+	if (flags & NTLMSSP_TARGET_TYPE_SERVER)
+		printf("\tNTLMSSP_TARGET_TYPE_SERVER\n");
+	if (flags & NTLMSSP_TARGET_TYPE_DOMAIN)
+		printf("\tNTLMSSP_TARGET_TYPE_DOMAIN\n");
+	if (flags & NTLMSSP_NEGOTIATE_ALWAYS_SIGN)
+		printf("\tNTLMSSP_NEGOTIATE_ALWAYS_SIGN\n");
+	if (flags & NTLMSSP_NEGOTIATE_WORKSTATION_SUPPLIED)
+		printf("\tNTLMSSP_NEGOTIATE_WORKSTATION_SUPPLIED\n");
+	if (flags & NTLMSSP_NEGOTIATE_DOMAIN_SUPPLIED)
+		printf("\tNTLMSSP_NEGOTIATE_DOMAIN_SUPPLIED\n");
+	if (flags & NTLMSSP_NEGOTIATE_NTLM)
+		printf("\tNTLMSSP_NEGOTIATE_NTLM\n");
+	if (flags & NTLMSSP_NEGOTIATE_LM_KEY)
+		printf("\tNTLMSSP_NEGOTIATE_LM_KEY\n");
+	if (flags & NTLMSSP_NEGOTIATE_DATAGRAM)
+		printf("\tNTLMSSP_NEGOTIATE_DATAGRAM\n");
+	if (flags & NTLMSSP_NEGOTIATE_SEAL)
+		printf("\tNTLMSSP_NEGOTIATE_SEAL\n");
+	if (flags & NTLMSSP_NEGOTIATE_SIGN)
+		printf("\tNTLMSSP_NEGOTIATE_SIGN\n");
+	if (flags & NTLMSSP_REQUEST_TARGET)
+		printf("\tNTLMSSP_REQUEST_TARGET\n");
+	if (flags & NTLMSSP_NEGOTIATE_OEM)
+		printf("\tNTLMSSP_NEGOTIATE_OEM\n");
+	if (flags & NTLMSSP_NEGOTIATE_UNICODE)
+		printf("\tNTLMSSP_NEGOTIATE_UNICODE\n");
+	printf("}\n");
+}
+
 void ntlmssp_populate_av_pairs(NTLMSSP *ntlmssp)
 {
 	STREAM s;
@@ -758,6 +836,17 @@ void ntlmssp_free_av_pairs(NTLMSSP *ntlmssp)
 	ntlmssp->av_pairs = NULL;
 }
 
+static void ntlmssp_output_version(STREAM s)
+{
+	/* The following version information was observed with Windows 7 */
+
+	out_uint8(s, WINDOWS_MAJOR_VERSION_6); /* ProductMajorVersion (1 byte) */
+	out_uint8(s, WINDOWS_MINOR_VERSION_1); /* ProductMinorVersion (1 byte) */
+	out_uint16_le(s, 7600); /* ProductBuild (2 bytes) */
+	out_uint8s(s, 3); /* Reserved (3 bytes) */
+	out_uint8(s, NTLMSSP_REVISION_W2K3); /* NTLMRevisionCurrent (1 byte) */
+}
+
 void ntlmssp_compute_message_integrity_check(NTLMSSP *ntlmssp)
 {
 	HMAC_CTX hmac_ctx;
@@ -854,30 +943,58 @@ void ntlmssp_send_negotiate_message(NTLMSSP *ntlmssp, STREAM s)
 	out_uint8a(s, ntlm_signature, 8); /* Signature (8 bytes) */
 	out_uint32_le(s, 1); /* MessageType */
 
-	negotiateFlags |= NTLMSSP_NEGOTIATE_56;
-	negotiateFlags |= NTLMSSP_NEGOTIATE_128;
-	negotiateFlags |= NTLMSSP_NEGOTIATE_OEM;
-	negotiateFlags |= NTLMSSP_REQUEST_TARGET;
-	negotiateFlags |= NTLMSSP_TARGET_TYPE_DOMAIN;
-	negotiateFlags |= NTLMSSP_REQUEST_NON_NT_SESSION_KEY;
-	negotiateFlags |= NTLMSSP_NEGOTIATE_OEM_DOMAIN_SUPPLIED;
-	negotiateFlags |= 0x00000030;
+	if (ntlmssp->ntlm_v2)
+	{
+		/* Observed: b7 82 08 e2, Using: 07 82 08 e2 */
+		negotiateFlags |= NTLMSSP_NEGOTIATE_56;
+		negotiateFlags |= NTLMSSP_NEGOTIATE_128;
+		negotiateFlags |= NTLMSSP_NEGOTIATE_OEM;
+		negotiateFlags |= NTLMSSP_REQUEST_TARGET;
+		negotiateFlags |= NTLMSSP_NEGOTIATE_KEY_EXCH;
+		negotiateFlags |= NTLMSSP_NEGOTIATE_DATAGRAM;
+		negotiateFlags |= NTLMSSP_NEGOTIATE_UNICODE;
+		negotiateFlags |= NTLMSSP_NEGOTIATE_VERSION;
+		negotiateFlags |= NTLMSSP_TARGET_TYPE_DOMAIN;
+		negotiateFlags |= NTLMSSP_REQUEST_NON_NT_SESSION_KEY;
+		negotiateFlags |= NTLMSSP_NEGOTIATE_DOMAIN_SUPPLIED;
+	}
+	else
+	{
+		negotiateFlags |= NTLMSSP_NEGOTIATE_56;
+		negotiateFlags |= NTLMSSP_NEGOTIATE_128;
+		negotiateFlags |= NTLMSSP_NEGOTIATE_OEM;
+		negotiateFlags |= NTLMSSP_REQUEST_TARGET;
+		negotiateFlags |= NTLMSSP_TARGET_TYPE_DOMAIN;
+		negotiateFlags |= NTLMSSP_REQUEST_NON_NT_SESSION_KEY;
+		negotiateFlags |= NTLMSSP_NEGOTIATE_DOMAIN_SUPPLIED;
+		negotiateFlags |= 0x00000030;
+	}
 
 	ntlmssp_output_negotiate_flags(s, negotiateFlags); /* NegotiateFlags (4 bytes) */
 
-	/* only set if NTLMSSP_NEGOTIATE_OEM_DOMAIN_SUPPLIED is set */
+#ifdef WITH_DEBUG_NLA
+	ntlmssp_print_negotiate_flags(negotiateFlags);
+#endif
+
+	/* only set if NTLMSSP_NEGOTIATE_DOMAIN_SUPPLIED is set */
 
 	/* DomainNameFields (8 bytes) */
 	out_uint16_le(s, 0); /* DomainNameLen */
 	out_uint16_le(s, 0); /* DomainNameMaxLen */
-	out_uint32_le(s, 32); /* DomainNameBufferOffset */
+	out_uint32_le(s, 0); /* DomainNameBufferOffset */
 
-	/* only set if NTLMSSP_NEGOTIATE_OEM_WORKSTATION_SUPPLIED is set */
+	/* only set if NTLMSSP_NEGOTIATE_WORKSTATION_SUPPLIED is set */
 
 	/* WorkstationFields (8 bytes) */
 	out_uint16_le(s, 0); /* WorkstationLen */
 	out_uint16_le(s, 0); /* WorkstationMaxLen */
-	out_uint32_le(s, 32); /* WorkstationBufferOffset */
+	out_uint32_le(s, 0); /* WorkstationBufferOffset */
+
+	if (negotiateFlags & NTLMSSP_NEGOTIATE_VERSION)
+	{
+		/* Only present if NTLMSSP_NEGOTIATE_VERSION is set */
+		ntlmssp_output_version(s);
+	}
 
 	s_mark_end(s);
 
@@ -914,6 +1031,10 @@ void ntlmssp_recv_challenge_message(NTLMSSP *ntlmssp, STREAM s)
 	in_uint32_le(s, targetNameBufferOffset); /* TargetNameBufferOffset (4 bytes) */
 
 	ntlmssp_input_negotiate_flags(s, &(ntlmssp->negotiate_flags)); /* NegotiateFlags (4 bytes) */
+
+#ifdef WITH_DEBUG_NLA
+	ntlmssp_print_negotiate_flags(ntlmssp->negotiate_flags);
+#endif
 
 	in_uint8a(s, ntlmssp->server_challenge, 8); /* ServerChallenge (8 bytes) */
 	in_uint8s(s, 8); /* Reserved (8 bytes), should be ignored */
@@ -1056,7 +1177,7 @@ void ntlmssp_recv_challenge_message(NTLMSSP *ntlmssp, STREAM s)
 void ntlmssp_send_authenticate_message(NTLMSSP *ntlmssp, STREAM s)
 {
 	int length;
-	uint32 negotiateFlags;
+	uint32 negotiateFlags = 0;
 	uint8* mic_offset = NULL;
 
 	uint16 DomainNameLen;
@@ -1092,9 +1213,39 @@ void ntlmssp_send_authenticate_message(NTLMSSP *ntlmssp, STREAM s)
 	EncryptedRandomSessionKeyBuffer = ntlmssp->encrypted_random_session_key;
 
 	if (ntlmssp->ntlm_v2)
+	{
+		/* Observed: 35 82 88 e2, Using: 35 82 88 e2 */
+		negotiateFlags |= NTLMSSP_NEGOTIATE_56;
+		negotiateFlags |= NTLMSSP_NEGOTIATE_128;
+		negotiateFlags |= NTLMSSP_NEGOTIATE_OEM;
+		negotiateFlags |= NTLMSSP_REQUEST_TARGET;
+		negotiateFlags |= NTLMSSP_NEGOTIATE_VERSION;
+		negotiateFlags |= NTLMSSP_NEGOTIATE_DATAGRAM;
+		negotiateFlags |= NTLMSSP_NEGOTIATE_UNICODE;
+		negotiateFlags |= NTLMSSP_TARGET_TYPE_DOMAIN;
+		negotiateFlags |= NTLMSSP_REQUEST_NON_NT_SESSION_KEY;
+		negotiateFlags |= NTLMSSP_NEGOTIATE_DOMAIN_SUPPLIED;
+		negotiateFlags |= 0x00800000;
+	}
+	else
+	{
+		negotiateFlags |= NTLMSSP_NEGOTIATE_56;
+		negotiateFlags |= NTLMSSP_NEGOTIATE_128;
+		negotiateFlags |= NTLMSSP_NEGOTIATE_OEM;
+		negotiateFlags |= NTLMSSP_REQUEST_TARGET;
+		negotiateFlags |= NTLMSSP_TARGET_TYPE_DOMAIN;
+		negotiateFlags |= NTLMSSP_REQUEST_NON_NT_SESSION_KEY;
+		negotiateFlags |= NTLMSSP_NEGOTIATE_DOMAIN_SUPPLIED;
+		negotiateFlags |= 0x00000030;
+	}
+
+	if (ntlmssp->ntlm_v2)
 		LmChallengeResponseBufferOffset = 80; /* starting buffer offset */
 	else
 		LmChallengeResponseBufferOffset = 64; /* starting buffer offset */
+
+	if (negotiateFlags & NTLMSSP_NEGOTIATE_VERSION)
+		LmChallengeResponseBufferOffset += 8;
 
 	NtChallengeResponseBufferOffset = LmChallengeResponseBufferOffset + LmChallengeResponseLen;
 	DomainNameBufferOffset = NtChallengeResponseBufferOffset + NtChallengeResponseLen;
@@ -1115,7 +1266,7 @@ void ntlmssp_send_authenticate_message(NTLMSSP *ntlmssp, STREAM s)
 	out_uint16_le(s, NtChallengeResponseLen); /* NtChallengeResponseMaxLen */
 	out_uint32_le(s, NtChallengeResponseBufferOffset); /* NtChallengeResponseBufferOffset */
 
-	/* only set if NTLMSSP_NEGOTIATE_OEM_DOMAIN_SUPPLIED is set */
+	/* only set if NTLMSSP_NEGOTIATE_DOMAIN_SUPPLIED is set */
 
 	/* DomainNameFields (8 bytes) */
 	out_uint16_le(s, DomainNameLen); /* DomainNameLen */
@@ -1127,7 +1278,7 @@ void ntlmssp_send_authenticate_message(NTLMSSP *ntlmssp, STREAM s)
 	out_uint16_le(s, UserNameLen); /* UserNameMaxLen */
 	out_uint32_le(s, UserNameBufferOffset); /* UserNameBufferOffset */
 
-	/* only set if NTLMSSP_NEGOTIATE_OEM_WORKSTATION_SUPPLIED is set */
+	/* only set if NTLMSSP_NEGOTIATE_WORKSTATION_SUPPLIED is set */
 
 	/* WorkstationFields (8 bytes) */
 	out_uint16_le(s, WorkstationLen); /* WorkstationLen */
@@ -1139,17 +1290,16 @@ void ntlmssp_send_authenticate_message(NTLMSSP *ntlmssp, STREAM s)
 	out_uint16_le(s, EncryptedRandomSessionKeyLen); /* EncryptedRandomSessionKeyMaxLen */
 	out_uint32_le(s, EncryptedRandomSessionKeyBufferOffset); /* EncryptedRandomSessionKeyBufferOffset */
 
-	negotiateFlags = 0;
-	negotiateFlags |= NTLMSSP_NEGOTIATE_56;
-	negotiateFlags |= NTLMSSP_NEGOTIATE_128;
-	negotiateFlags |= NTLMSSP_NEGOTIATE_OEM;
-	negotiateFlags |= NTLMSSP_REQUEST_TARGET;
-	negotiateFlags |= NTLMSSP_TARGET_TYPE_DOMAIN;
-	negotiateFlags |= NTLMSSP_REQUEST_NON_NT_SESSION_KEY;
-	negotiateFlags |= NTLMSSP_NEGOTIATE_OEM_DOMAIN_SUPPLIED;
-	negotiateFlags |= 0x00000030;
-
 	ntlmssp_output_negotiate_flags(s, negotiateFlags); /* NegotiateFlags (4 bytes) */
+
+#ifdef WITH_DEBUG_NLA
+	ntlmssp_print_negotiate_flags(negotiateFlags);
+#endif
+
+	if (negotiateFlags & NTLMSSP_NEGOTIATE_VERSION)
+	{
+		ntlmssp_output_version(s);
+	}
 
 	if (ntlmssp->ntlm_v2)
 	{
