@@ -29,7 +29,7 @@
 #include "chan_stream.h"
 #include "rdpsnd_types.h"
 
-#define LOG_LEVEL 11
+#define LOG_LEVEL 1
 #define LLOG(_level, _args) \
   do { if (_level < LOG_LEVEL) { printf _args ; } } while (0)
 #define LLOGLN(_level, _args) \
@@ -41,6 +41,7 @@ struct pulse_device_data
 	pa_mainloop *mainloop;
 	pa_context *context;
 	pa_sample_spec sample_spec;
+	int bytes_per_frame;
 	pa_stream *stream;
 };
 
@@ -155,7 +156,7 @@ rdpsnd_pulse_close(rdpsndDevicePlugin * devplugin)
 	pulse_data = (struct pulse_device_data *) devplugin->device_data;
 	if (!pulse_data->context || !pulse_data->stream)
 		return 1;
-	LLOGLN(10, ("rdpsnd_pulse_close:"));
+	LLOGLN(0, ("rdpsnd_pulse_close:"));
 	pa_stream_disconnect(pulse_data->stream);
 	pa_stream_unref(pulse_data->stream);
 	pulse_data->stream = NULL;
@@ -215,7 +216,7 @@ rdpsnd_pulse_open(rdpsndDevicePlugin * devplugin)
 	}
 	if (state == PA_STREAM_READY)
 	{
-		LLOGLN(10, ("rdpsnd_pulse_open: connected"));
+		LLOGLN(0, ("rdpsnd_pulse_open: connected"));
 		return 0;
 	}
 	else
@@ -308,6 +309,7 @@ rdpsnd_pulse_set_format(rdpsndDevicePlugin * devplugin, char * snd_format, int s
 	if (memcmp(&sample_spec, &pulse_data->sample_spec, sizeof(pa_sample_spec)) != 0)
 	{
 		pulse_data->sample_spec = sample_spec;
+		pulse_data->bytes_per_frame = nChannels * wBitsPerSample / 8;
 		rdpsnd_pulse_close(devplugin);
 		rdpsnd_pulse_open(devplugin);
 	}
@@ -326,11 +328,40 @@ static int
 rdpsnd_pulse_play(rdpsndDevicePlugin * devplugin, char * data, int size, int * delay_ms)
 {
 	struct pulse_device_data * pulse_data;
+	int len;
+	int ret;
 
 	pulse_data = (struct pulse_device_data *) devplugin->device_data;
 	if (!pulse_data->stream)
 		return 1;
-	LLOGLN(10, ("rdpsnd_pulse_play: size %d", size));
+
+	*delay_ms = size * 1000 / (pulse_data->bytes_per_frame * pulse_data->sample_spec.rate);
+	LLOGLN(10, ("rdpsnd_pulse_play: size %d delay_ms %d", size, *delay_ms));
+
+	while (size > 0)
+	{
+		while ((len = pa_stream_writable_size(pulse_data->stream)) == 0)
+		{
+			if (pa_mainloop_iterate(pulse_data->mainloop, 1, NULL) < 0)
+			{
+				LLOGLN(0, ("rdpsnd_pulse_play: pa_mainloop_iterate failed"));
+				break;
+			}
+		}
+		if (len <= 0)
+			break;
+		if (len > size)
+			len = size;
+		ret = pa_stream_write(pulse_data->stream, data, len, NULL, 0LL, PA_SEEK_RELATIVE);
+		if (ret < 0)
+		{
+			LLOGLN(0, ("rdpsnd_pulse_play: pa_stream_write failed (%d)",
+				pa_context_errno(pulse_data->context)));
+			break;
+		}
+		data += len;
+		size -= len;
+	}
 
 	return 0;
 }
