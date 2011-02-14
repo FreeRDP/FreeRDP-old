@@ -626,7 +626,7 @@ thread_func(void * arg)
 		listobj[0] = plugin->term_event;
 		listobj[1] = plugin->data_in_event;
 		numobj = 2;
-		timeout = plugin->out_list_head == 0 ? -1 : 500;
+		timeout = plugin->out_list_head == 0 ? 1 : 500;
 		wait_obj_select(listobj, numobj, NULL, 0, timeout);
 		if (wait_obj_is_set(plugin->term_event))
 		{
