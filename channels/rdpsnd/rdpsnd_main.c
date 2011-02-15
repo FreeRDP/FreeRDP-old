@@ -489,6 +489,8 @@ thread_process_message_wave(rdpsndPlugin * plugin, char * data, int data_size)
 	wTimeStamp = plugin->wTimeStamp + plugin->delay_ms;
 	plugin->delay_ms = plugin->delay_ms > process_ms ?
 		plugin->delay_ms - process_ms : 0;
+	if (plugin->delay_ms < 100)
+		plugin->delay_ms = 100;
 	SET_UINT16(out_data, 4, wTimeStamp);
 	SET_UINT8(out_data, 6, plugin->cBlockNo);
 	SET_UINT8(out_data, 7, 0);
