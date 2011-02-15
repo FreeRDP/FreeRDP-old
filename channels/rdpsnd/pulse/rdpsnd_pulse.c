@@ -38,7 +38,7 @@
 struct pulse_device_data
 {
 	char device_name[32];
-	pa_mainloop *mainloop;
+	pa_threaded_mainloop *mainloop;
 	pa_context *context;
 	pa_sample_spec sample_spec;
 	int bytes_per_frame;
@@ -59,13 +59,13 @@ rdpsnd_pulse_context_state_callback(pa_context * context, void * userdata)
 	{
 		case PA_CONTEXT_READY:
 			LLOGLN(10, ("rdpsnd_pulse_context_state_callback: PA_CONTEXT_READY"));
-			pa_mainloop_wakeup (pulse_data->mainloop);
+			pa_threaded_mainloop_signal (pulse_data->mainloop, 0);
 			break;
 
 		case PA_CONTEXT_FAILED:
 		case PA_CONTEXT_TERMINATED:
 			LLOGLN(10, ("rdpsnd_pulse_context_state_callback: state %d", (int)state));
-			pa_mainloop_wakeup (pulse_data->mainloop);
+			pa_threaded_mainloop_signal (pulse_data->mainloop, 0);
 			break;
 
 		default:
@@ -90,6 +90,14 @@ rdpsnd_pulse_connect(rdpsndDevicePlugin * devplugin)
 			pa_context_errno(pulse_data->context)));
 		return 1;
 	}
+	pa_threaded_mainloop_lock(pulse_data->mainloop);
+	if (pa_threaded_mainloop_start(pulse_data->mainloop) < 0)
+	{
+		pa_threaded_mainloop_unlock(pulse_data->mainloop);
+		LLOGLN(0, ("rdpsnd_pulse_connect: pa_threaded_mainloop_start failed (%d)",
+			pa_context_errno(pulse_data->context)));
+		return 1;
+	}
 	for (;;)
 	{
 		state = pa_context_get_state(pulse_data->context);
@@ -101,12 +109,9 @@ rdpsnd_pulse_connect(rdpsndDevicePlugin * devplugin)
 				pa_context_errno(pulse_data->context)));
 			break;
 		}
-		if (pa_mainloop_iterate(pulse_data->mainloop, 1, NULL) < 0)
-		{
-			LLOGLN(0, ("rdpsnd_pulse_connect: pa_mainloop_iterate failed"));
-			break;
-		}
+		pa_threaded_mainloop_wait(pulse_data->mainloop);
 	}
+	pa_threaded_mainloop_unlock(pulse_data->mainloop);
 	if (state == PA_CONTEXT_READY)
 	{
 		LLOGLN(0, ("rdpsnd_pulse_connect: connected"));
@@ -133,19 +138,30 @@ rdpsnd_pulse_stream_state_callback(pa_stream * stream, void * userdata)
 	{
 		case PA_STREAM_READY:
 			LLOGLN(10, ("rdpsnd_pulse_stream_state_callback: PA_STREAM_READY"));
-			pa_mainloop_wakeup (pulse_data->mainloop);
+			pa_threaded_mainloop_signal (pulse_data->mainloop, 0);
 			break;
 
 		case PA_STREAM_FAILED:
 		case PA_STREAM_TERMINATED:
 			LLOGLN(10, ("rdpsnd_pulse_stream_state_callback: state %d", (int)state));
-			pa_mainloop_wakeup (pulse_data->mainloop);
+			pa_threaded_mainloop_signal (pulse_data->mainloop, 0);
 			break;
 
 		default:
 			LLOGLN(10, ("rdpsnd_pulse_stream_state_callback: state %d", (int)state));
 			break;
 	}
+}
+
+static void
+rdpsnd_pulse_stream_request_callback(pa_stream * stream, size_t length, void * userdata)
+{
+	rdpsndDevicePlugin * devplugin;
+	struct pulse_device_data * pulse_data;
+
+	devplugin = (rdpsndDevicePlugin *) userdata;
+	pulse_data = (struct pulse_device_data *) devplugin->device_data;
+	pa_threaded_mainloop_signal(pulse_data->mainloop, 0);
 }
 
 static int
@@ -157,9 +173,11 @@ rdpsnd_pulse_close(rdpsndDevicePlugin * devplugin)
 	if (!pulse_data->context || !pulse_data->stream)
 		return 1;
 	LLOGLN(0, ("rdpsnd_pulse_close:"));
+	pa_threaded_mainloop_lock(pulse_data->mainloop);
 	pa_stream_disconnect(pulse_data->stream);
 	pa_stream_unref(pulse_data->stream);
 	pulse_data->stream = NULL;
+	pa_threaded_mainloop_unlock(pulse_data->mainloop);
 	return 0;
 }
 
@@ -168,6 +186,7 @@ rdpsnd_pulse_open(rdpsndDevicePlugin * devplugin)
 {
 	struct pulse_device_data * pulse_data;
 	pa_stream_state_t state;
+	pa_buffer_attr buffer_attr = { 0 };
 
 	pulse_data = (struct pulse_device_data *) devplugin->device_data;
 	if (!pulse_data->context)
@@ -178,20 +197,30 @@ rdpsnd_pulse_open(rdpsndDevicePlugin * devplugin)
 	if (!pulse_data->sample_spec.rate || pulse_data->stream)
 		return 0;
 	LLOGLN(10, ("rdpsnd_pulse_open:"));
+	pa_threaded_mainloop_lock(pulse_data->mainloop);
 	pulse_data->stream = pa_stream_new(pulse_data->context, "freerdp",
 		&pulse_data->sample_spec, NULL);
 	if (!pulse_data->stream)
 	{
+		pa_threaded_mainloop_unlock(pulse_data->mainloop);
 		LLOGLN(0, ("rdpsnd_pulse_open: pa_stream_new failed (%d)",
 			pa_context_errno(pulse_data->context)));
 		return 1;
 	}
 	pa_stream_set_state_callback(pulse_data->stream,
 		rdpsnd_pulse_stream_state_callback, devplugin);
+	pa_stream_set_write_callback(pulse_data->stream,
+		rdpsnd_pulse_stream_request_callback, devplugin);
+	buffer_attr.maxlength = (uint32_t) -1;
+	buffer_attr.tlength = pa_usec_to_bytes(2000000, &pulse_data->sample_spec);
+	buffer_attr.prebuf = (uint32_t) -1;
+	buffer_attr.minreq = (uint32_t) -1;
+	buffer_attr.fragsize = (uint32_t) -1;
 	if (pa_stream_connect_playback(pulse_data->stream,
 		pulse_data->device_name[0] ? pulse_data->device_name : NULL,
-		NULL, 0, NULL, NULL) < 0)
+		&buffer_attr, PA_STREAM_ADJUST_LATENCY, NULL, NULL) < 0)
 	{
+		pa_threaded_mainloop_unlock(pulse_data->mainloop);
 		LLOGLN(0, ("rdpsnd_pulse_open: pa_stream_connect_playback failed (%d)",
 			pa_context_errno(pulse_data->context)));
 		return 1;
@@ -208,12 +237,9 @@ rdpsnd_pulse_open(rdpsndDevicePlugin * devplugin)
 				pa_context_errno(pulse_data->context)));
 			break;
 		}
-		if (pa_mainloop_iterate(pulse_data->mainloop, 1, NULL) < 0)
-		{
-			LLOGLN(0, ("rdpsnd_pulse_open: pa_mainloop_iterate failed"));
-			break;
-		}
+		pa_threaded_mainloop_wait(pulse_data->mainloop);
 	}
+	pa_threaded_mainloop_unlock(pulse_data->mainloop);
 	if (state == PA_STREAM_READY)
 	{
 		LLOGLN(0, ("rdpsnd_pulse_open: connected"));
@@ -234,13 +260,19 @@ rdpsnd_pulse_free(rdpsndDevicePlugin * devplugin)
 	pulse_data = (struct pulse_device_data *) devplugin->device_data;
 	LLOGLN(10, ("rdpsnd_pulse_free:"));
 	rdpsnd_pulse_close(devplugin);
+	if (pulse_data->mainloop)
+	{
+		pa_threaded_mainloop_stop(pulse_data->mainloop);
+	}
 	if (pulse_data->context)
 	{
 		pa_context_disconnect(pulse_data->context);
 		pa_context_unref(pulse_data->context);
 	}
 	if (pulse_data->mainloop)
-		pa_mainloop_free(pulse_data->mainloop);
+	{
+		pa_threaded_mainloop_free(pulse_data->mainloop);
+	}
 	free(pulse_data);
 }
 
@@ -338,17 +370,15 @@ rdpsnd_pulse_play(rdpsndDevicePlugin * devplugin, char * data, int size, int * d
 	*delay_ms = size * 1000 / (pulse_data->bytes_per_frame * pulse_data->sample_spec.rate);
 	LLOGLN(10, ("rdpsnd_pulse_play: size %d delay_ms %d", size, *delay_ms));
 
+	pa_threaded_mainloop_lock(pulse_data->mainloop);
 	while (size > 0)
 	{
 		while ((len = pa_stream_writable_size(pulse_data->stream)) == 0)
 		{
-			if (pa_mainloop_iterate(pulse_data->mainloop, 1, NULL) < 0)
-			{
-				LLOGLN(0, ("rdpsnd_pulse_play: pa_mainloop_iterate failed"));
-				break;
-			}
+			LLOGLN(10, ("rdpsnd_pulse_play: waiting"));
+			pa_threaded_mainloop_wait(pulse_data->mainloop);
 		}
-		if (len <= 0)
+		if (len < 0)
 			break;
 		if (len > size)
 			len = size;
@@ -362,6 +392,7 @@ rdpsnd_pulse_play(rdpsndDevicePlugin * devplugin, char * data, int size, int * d
 		data += len;
 		size -= len;
 	}
+	pa_threaded_mainloop_unlock(pulse_data->mainloop);
 
 	return 0;
 }
@@ -408,13 +439,13 @@ FreeRDPRdpsndDeviceEntry(PFREERDP_RDPSND_DEVICE_ENTRY_POINTS pEntryPoints)
 	}
 	devplugin->device_data = pulse_data;
 
-	pulse_data->mainloop = pa_mainloop_new();
+	pulse_data->mainloop = pa_threaded_mainloop_new();
 	if (!pulse_data->mainloop)
 	{
-		LLOGLN(0, ("rdpsnd_pulse: pa_mainloop_new failed"));
+		LLOGLN(0, ("rdpsnd_pulse: pa_threaded_mainloop_new failed"));
 		return 1;
 	}
-	pulse_data->context = pa_context_new(pa_mainloop_get_api(pulse_data->mainloop), "freerdp");
+	pulse_data->context = pa_context_new(pa_threaded_mainloop_get_api(pulse_data->mainloop), "freerdp");
 	if (!pulse_data->context)
 	{
 		LLOGLN(0, ("rdpsnd_pulse: pa_context_new failed"));
