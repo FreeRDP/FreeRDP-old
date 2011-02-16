@@ -125,6 +125,30 @@ rdpsnd_pulse_connect(rdpsndDevicePlugin * devplugin)
 }
 
 static void
+rdpsnd_pulse_stream_success_callback(pa_stream * stream, int success, void * userdata)
+{
+	rdpsndDevicePlugin * devplugin;
+	struct pulse_device_data * pulse_data;
+
+	devplugin = (rdpsndDevicePlugin *) userdata;
+	pulse_data = (struct pulse_device_data *) devplugin->device_data;
+	pa_threaded_mainloop_signal(pulse_data->mainloop, 0);
+}
+
+static void
+rdpsnd_pulse_wait_for_operation(rdpsndDevicePlugin * devplugin, pa_operation * operation)
+{
+	struct pulse_device_data * pulse_data;
+
+	pulse_data = (struct pulse_device_data *) devplugin->device_data;
+	while (pa_operation_get_state(operation) == PA_OPERATION_RUNNING)
+	{
+		pa_threaded_mainloop_wait(pulse_data->mainloop);
+	}
+	pa_operation_unref(operation);
+}
+
+static void
 rdpsnd_pulse_stream_state_callback(pa_stream * stream, void * userdata)
 {
 	rdpsndDevicePlugin * devplugin;
@@ -174,6 +198,8 @@ rdpsnd_pulse_close(rdpsndDevicePlugin * devplugin)
 		return 1;
 	LLOGLN(0, ("rdpsnd_pulse_close:"));
 	pa_threaded_mainloop_lock(pulse_data->mainloop);
+	rdpsnd_pulse_wait_for_operation(devplugin,
+		pa_stream_drain(pulse_data->stream, rdpsnd_pulse_stream_success_callback, devplugin));
 	pa_stream_disconnect(pulse_data->stream);
 	pa_stream_unref(pulse_data->stream);
 	pulse_data->stream = NULL;
