@@ -70,6 +70,7 @@ set_default_params(xfInfo * xfi)
 	settings->performanceflags =
 		PERF_DISABLE_WALLPAPER | PERF_DISABLE_FULLWINDOWDRAG | PERF_DISABLE_MENUANIMATIONS;
 	settings->off_screen_bitmaps = 1;
+	settings->polygon_ellipse_orders = 1;
 	settings->triblt = 0;
 	settings->new_cursors = 1;
 	settings->rdp_version = 5;
