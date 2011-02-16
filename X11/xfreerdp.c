@@ -94,7 +94,7 @@ out_args(void)
 		"\t--kbd-list: list all keyboard layout IDs\n"
 		"\t-s: shell\n"
 		"\t-c: directory\n"
-		"\t-g: geometry, using format WxH, default is 1024x768\n"
+		"\t-g: geometry, using format WxH or X%, default is 1024x768\n"
 		"\t-t: alternative port number, default is 3389\n"
 		"\t-n: hostname\n"
 		"\t-o: console audio\n"
@@ -269,11 +269,9 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 			{
 				settings->height = strtol(p + 1, &p, 10);
 			}
-			if ((settings->width < 16) || (settings->height < 16) ||
-				(settings->width > 4096) || (settings->height > 4096))
+			if (*p == '%')
 			{
-				printf("invalid dimensions\n");
-				return 1;
+				xfi->percentscreen = settings->width;
 			}
 		}
 		else if (strcmp("-t", argv[*pindex]) == 0)

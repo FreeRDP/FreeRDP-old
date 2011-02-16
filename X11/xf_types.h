@@ -49,6 +49,7 @@ struct xf_info
 
 	/* UI settings */
 	int fullscreen;
+	int percentscreen;
 	int fs_toggle;
 	int keyboard_layout_id;
 	int decoration;
