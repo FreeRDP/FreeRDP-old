@@ -21,10 +21,12 @@
 #include "tcp.h"
 #include "iso.h"
 #include "mcs.h"
+#include "nego.h"
 #include "secure.h"
 #include "credssp.h"
 #include "rdp.h"
 #include "mem.h"
+#include <freerdp/rdpset.h>
 
 /* TPKT from T123 - aka ISO DP 8073 */
 
@@ -82,29 +84,24 @@ x224_send_dst_src_class(rdpIso * iso, uint8 code)
 }
 
 /* Output and send X.224 Connection Request TPDU with routing for username */
-static void
-x224_send_connection_request(rdpIso * iso, char *username)
+void
+x224_send_connection_request(rdpIso * iso)
 {
 	STREAM s;
 	int length = 11;
+        int cookie_length;
+
+        cookie_length = strlen(iso->cookie);
 
 	if (iso->mcs->sec->rdp->redirect_routingtoken)
 		/* routingToken */
 		length += iso->mcs->sec->rdp->redirect_routingtoken_len;
 	else
 		/* cookie */
-		length += 19 + strlen(username);
+		length += 19 + cookie_length;
 
-	if (iso->mcs->sec->requested_protocol > PROTOCOL_RDP)
+	if (iso->nego->requested_protocols > PROTOCOL_RDP)
 		length += 8;
-
-	/*
-	 * negotiation_state is used so that tcp_recv() will be able to make
-	 * the distinction between an unexpected disconnection and a
-	 * disconnection that is to be expected if negotation fails, such as
-	 * when the client claims to support TLS with NLA but the server only
-	 * supports the legacy encryption.
-	 */
 
 	/* FIXME: Use x224_send_dst_src_class */
 	s = tcp_init(iso->tcp, length);
@@ -127,96 +124,21 @@ x224_send_connection_request(rdpIso * iso, char *username)
 	{
 		/* cookie */
 		out_uint8p(s, "Cookie: mstshash=", strlen("Cookie: mstshash="));
-		out_uint8p(s, username, strlen(username));
+		out_uint8p(s, iso->cookie, cookie_length);
 		out_uint8(s, 0x0D);	/* CR */
 		out_uint8(s, 0x0A);	/* LF */
 	}
 
-	if (iso->mcs->sec->requested_protocol > PROTOCOL_RDP)
+	if (iso->nego->requested_protocols > PROTOCOL_RDP)
 	{
 		out_uint8(s, TYPE_RDP_NEG_REQ); /* When using TLS, NLA, or both, RDP_NEG_DATA should be present */
 		out_uint8(s, 0x00);	/* flags, must be set to zero */
 		out_uint16_le(s, 8);	/* RDP_NEG_DATA length (8) */
-		out_uint32_le(s, iso->mcs->sec->requested_protocol); /* requestedProtocols */
+		out_uint32_le(s, iso->nego->requested_protocols); /* requestedProtocols */
 	}
 
 	s_mark_end(s);
 	tcp_send(iso->tcp, s);
-}
-
-/* Process Negotiation Response from Connection Confirm payload
- * Return selected protocol */
-static uint32 /* or enum RDP_NEG_PROTOCOLS */
-rdp_process_negotiation_response(rdpIso * iso, STREAM s)
-{
-	uint8 flags;
-	uint16 length;
-	uint32 selectedProtocol;
-
-	in_uint8(s, flags);
-	in_uint16_le(s, length);
-	in_uint32_le(s, selectedProtocol);
-
-	if (iso->mcs->sec->requested_protocol > PROTOCOL_RDP)
-	{
-		switch (selectedProtocol)
-		{
-			case PROTOCOL_RDP:
-				iso->mcs->sec->negotiated_protocol = PROTOCOL_RDP;
-				break;
-			case PROTOCOL_TLS:
-				iso->mcs->sec->negotiated_protocol = PROTOCOL_TLS;
-				break;
-			case PROTOCOL_NLA:
-				iso->mcs->sec->negotiated_protocol = PROTOCOL_NLA;
-				break;
-			default:
-				iso->mcs->sec->negotiated_protocol = PROTOCOL_RDP;
-				printf("Error: unknown protocol security\n");
-				break;
-		}
-	}
-
-	return selectedProtocol;
-}
-
-/* Process Negotiation Failure from Connection Confirm payload */
-static void
-rdp_process_negotiation_failure(rdpIso * iso, STREAM s)
-{
-	uint8 flags;
-	uint16 length;
-	uint32 failureCode;
-
-	in_uint8(s, flags);
-	in_uint16_le(s, length);
-	in_uint32_le(s, failureCode);
-
-	if (iso->mcs->sec->requested_protocol > PROTOCOL_RDP)
-	{
-		switch (failureCode)
-		{
-			case SSL_REQUIRED_BY_SERVER:
-				printf("Error: SSL_REQUIRED_BY_SERVER\n");
-				break;
-			case SSL_NOT_ALLOWED_BY_SERVER:
-				printf("Error: SSL_NOT_ALLOWED_BY_SERVER\n");
-				break;
-			case SSL_CERT_NOT_ON_SERVER:
-				printf("Error: SSL_CERT_NOT_ON_SERVER\n");
-				break;
-			case INCONSISTENT_FLAGS:
-				printf("Error: INCONSISTENT_FLAGS\n");
-				break;
-			case HYBRID_REQUIRED_BY_SERVER:
-				printf("Error: HYBRID_REQUIRED_BY_SERVER\n");
-				break;
-			default:
-				printf("Error: Unknown protocol security error %d\n", failureCode);
-				break;
-		}
-	}
-	iso->mcs->sec->denied_protocols |= iso->mcs->sec->requested_protocol;
 }
 
 /* Receive an X.224 TPDU */
@@ -226,7 +148,6 @@ x224_recv(rdpIso * iso, STREAM s, int length, uint8 * pcode)
 	uint8 lengthIndicator;
 	uint8 code;
 	uint8 subcode;
-	uint8 type;
 
 	s = tcp_recv(iso->tcp, s, length - 4);
 
@@ -257,27 +178,22 @@ x224_recv(rdpIso * iso, STREAM s, int length, uint8 * pcode)
 	{
 		/* Connection Request */
 		case X224_TPDU_CONNECTION_REQUEST:
-			//printf("X224_TPDU_CONNECTION_REQUEST\n");
 			break;
 
 		/* Connection Confirm */
 		case X224_TPDU_CONNECTION_CONFIRM:
-			//printf("X224_TPDU_CONNECTION_CONFIRM\n");
 			break;
 
 		/* Disconnect Request */
 		case X224_TPDU_DISCONNECT_REQUEST:
-			//printf("X224_TPDU_DISCONNECT_REQUEST\n");
 			break;
 
 		/* Data */
 		case X224_TPDU_DATA:
-			//printf("X224_TPDU_DATA\n");
 			break;
 
 		/* Error */
 		case X224_TPDU_ERROR:
-			//printf("X224_TPDU_ERROR\n");
 			break;
 	}
 
@@ -285,18 +201,7 @@ x224_recv(rdpIso * iso, STREAM s, int length, uint8 * pcode)
 	   and its length is included in the X.224 length indicator */
 	if (lengthIndicator > 6)
 	{
-		in_uint8(s, type);	/* Type */
-		switch (type)
-		{
-			case TYPE_RDP_NEG_RSP:
-				//printf("TYPE_RDP_NEG_RSP\n");
-				rdp_process_negotiation_response(iso, s);
-				break;
-			case TYPE_RDP_NEG_FAILURE:
-				//printf("TYPE_RDP_NEG_FAILURE\n");
-				rdp_process_negotiation_failure(iso, s);
-				break;
-		}
+		nego_recv(iso->nego, s);
 	}
 
 	return s;
@@ -306,7 +211,7 @@ x224_recv(rdpIso * iso, STREAM s, int length, uint8 * pcode)
  * If no ptype then only TPKT header with X.224 is accepted.
  * If ptype then Fast-Path packets are accepted too.
  * Return NULL on error. */
-static STREAM
+STREAM
 tpkt_recv(rdpIso * iso, uint8 * pcode, isoRecvType * ptype)
 {
 	STREAM s;
@@ -351,40 +256,6 @@ tpkt_recv(rdpIso * iso, uint8 * pcode, isoRecvType * ptype)
 	return NULL;	/* Fast-Path not allowed */
 }
 
-static RD_BOOL
-iso_negotiate_encryption(rdpIso * iso, char *username)
-{
-	uint8 code;
-
-	iso->mcs->sec->denied_protocols = 0;
-	if (iso->mcs->sec->requested_protocol == PROTOCOL_RDP)
-	{
-		/* We use legacy RDP encryption, so we won't attempt to negotiate */
-		iso->mcs->sec->negotiation_state = 2;
-		x224_send_connection_request(iso, username);
-
-		/* Receive negotiation response */
-		if (tpkt_recv(iso, &code, NULL) == NULL)
-			return False;
-	}
-	else
-	{
-		/* first negotiation attempt */
-		iso->mcs->sec->negotiation_state = 1;
-
-		x224_send_connection_request(iso, username);
-
-		/* Attempt to receive negotiation response */
-		if (tpkt_recv(iso, &code, NULL) == NULL)
-			return False;
-
-		if (iso->mcs->sec->denied_protocols & iso->mcs->sec->requested_protocol)
-			return False;
-	}
-
-	return True;
-}
-
 /* Receive a message on the ISO layer, return code */
 static STREAM
 iso_recv_msg(rdpIso * iso, uint8 * code, isoRecvType * ptype)
@@ -392,7 +263,7 @@ iso_recv_msg(rdpIso * iso, uint8 * code, isoRecvType * ptype)
 	return tpkt_recv(iso, code, ptype);
 }
 
-/* Initialise ISO transport data packet */
+/* Initialize ISO transport data packet */
 STREAM
 iso_init(rdpIso * iso, int length)
 {
@@ -402,7 +273,7 @@ iso_init(rdpIso * iso, int length)
 	return s;
 }
 
-/* Initialise fast path data packet */
+/* Initialize fast path data packet */
 STREAM
 iso_fp_init(rdpIso * iso, int length)
 {
@@ -497,19 +368,23 @@ iso_connect(rdpIso * iso, char *server, char *username, int port)
 {
 	RD_BOOL ret;
 
+        if (strlen(iso->mcs->sec->rdp->settings->domain) > 0)
+            iso->cookie = iso->mcs->sec->rdp->settings->domain;
+        else
+            iso->cookie = username;
+
 	if (!tcp_connect(iso->tcp, server, port))
 		return False;
 
-	ret = iso_negotiate_encryption(iso, username);
-	if (!ret && iso->mcs->sec->negotiation_state == 1)
+	if (nego_connect(iso->nego) > 0)
 	{
+		ret = True;
+	}
+	else
+	{
+		ret = False;
+		printf("Protocol security negotiation failure, disconnecting\n");
 		tcp_disconnect(iso->tcp);
-		if (!tcp_connect(iso->tcp, server, port))
-			return False;
-
-		/* Negotiation failure, downgrade encryption and try again */
-		iso->mcs->sec->requested_protocol = PROTOCOL_RDP;
-		ret = iso_negotiate_encryption(iso, username);
 	}
 
 	return ret;
@@ -540,6 +415,7 @@ iso_new(struct rdp_mcs *mcs)
 		memset(self, 0, sizeof(rdpIso));
 		self->mcs = mcs;
 		self->tcp = tcp_new(self);
+		self->nego = nego_new(self);
 	}
 
 	return self;

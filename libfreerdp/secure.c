@@ -29,6 +29,7 @@
 #include "mem.h"
 #include "debug.h"
 #include "tcp.h"
+#include "data_blob.h"
 
 #ifndef DISABLE_TLS
 #include "tls.h"
@@ -437,7 +438,7 @@ sec_out_client_core_data(rdpSec * sec, rdpSet * settings, STREAM s)
 	out_uint8s(s, 64); /* clientDigProductId (64 bytes) */
 	out_uint8(s, 0); /* connectionType, only valid when RNS_UD_CS_VALID_CONNECTION_TYPE is set in earlyCapabilityFlags */
 	out_uint8(s, 0); /* pad1octet */
-	out_uint32_le(s, sec->negotiated_protocol); /* serverSelectedProtocol */
+	out_uint32_le(s, sec->mcs->iso->nego->selected_protocol); /* serverSelectedProtocol */
 }
 
 static void
@@ -968,33 +969,35 @@ sec_recv(rdpSec * sec, secRecvType * type)
 RD_BOOL
 sec_connect(rdpSec * sec, char *server, char *username, int port)
 {
-	/* Don't forget to set this *before* iso_connect(), otherwise you'll bang your head on the wall */
+	NEGO *nego = sec->mcs->iso->nego;
 
 	if (sec->rdp->settings->tls)
-		sec->requested_protocol = PROTOCOL_TLS;
+		nego->state = NEGO_STATE_NLA;
 	else
-		sec->requested_protocol = PROTOCOL_RDP;
+		nego->state = NEGO_STATE_RDP;
 
 	if (!iso_connect(sec->mcs->iso, server, username, port))
 		return False;
 
 #ifndef DISABLE_TLS
-	if(sec->negotiated_protocol == PROTOCOL_NLA)
+	if(nego->selected_protocol & PROTOCOL_NLA)
 	{
 		/* TLS with NLA was successfully negotiated */
+		RD_BOOL success = 1;
 		printf("TLS encryption with NLA negotiated\n");
 		sec->ctx = tls_create_context();
 		sec->ssl = tls_connect(sec->ctx, sec->mcs->iso->tcp->sock, server);
 		sec->tls_connected = 1;
-		ntlm_send_negotiate_message(sec);
-		credssp_recv(sec);
-		return False; /* not implemented from this point */
+		sec->rdp->settings->encryption = 0;
+		credssp_authenticate(sec->credssp);
+		success = mcs_connect(sec->mcs);
+		return success;
 	}
-	else if(sec->negotiated_protocol == PROTOCOL_TLS)
+	else if(nego->selected_protocol & PROTOCOL_TLS)
 	{
 		/* TLS without NLA was successfully negotiated */
 		RD_BOOL success;
-		printf("TLS Encryption negotiated\n");
+		printf("TLS encryption negotiated\n");
 		sec->ctx = tls_create_context();
 		sec->ssl = tls_connect(sec->ctx, sec->mcs->iso->tcp->sock, server);
 		sec->tls_connected = 1;
@@ -1007,11 +1010,7 @@ sec_connect(rdpSec * sec, char *server, char *username, int port)
 	{
 		RD_BOOL success;
 
-		if (sec->requested_protocol > PROTOCOL_RDP)
-		{
-			/* only tell about the legacy RDP negotiation success when it wasn't the requested encryption */
-			printf("Legacy RDP encryption negotiated\n");
-		}
+		printf("Standard RDP encryption negotiated\n");
 
 		success = mcs_connect(sec->mcs);
 
@@ -1058,7 +1057,7 @@ sec_new(struct rdp_rdp * rdp)
 		self->licence = licence_new(self);
 
 #ifndef DISABLE_TLS
-		self->nla = nla_new(self);
+		self->credssp = credssp_new(self);
 #endif
 
 		self->rc4_decrypt_key = NULL;
@@ -1076,7 +1075,7 @@ sec_free(rdpSec * sec)
 		mcs_free(sec->mcs);
 
 #ifndef DISABLE_TLS
-		nla_free(sec->nla);
+		credssp_free(sec->credssp);
 #endif
 
 		xfree(sec);

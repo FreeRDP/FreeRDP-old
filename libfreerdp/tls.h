@@ -31,6 +31,8 @@
 #include <openssl/bn.h>
 #include <openssl/x509v3.h>
 
+#include "data_blob.h"
+
 SSL_CTX*
 tls_create_context();
 void
@@ -43,5 +45,7 @@ int
 tls_write(SSL *ssl, char* b, int length);
 int
 tls_read(SSL *ssl, char* b, int length);
+int
+tls_get_public_key(SSL *connection, DATA_BLOB *public_key);
 
 #endif	// __TLS_H

@@ -20,6 +20,7 @@ AH_TEMPLATE(NEED_ALIGN, [Alignment])
 AH_TEMPLATE(DISABLE_TLS, [Disable TLS encryption])
 AH_TEMPLATE(WITH_SCARD, [Define if smartcard is enabled])
 AH_TEMPLATE(WITH_DEBUG, [Turn on debugging messages])
+AH_TEMPLATE(WITH_DEBUG_NLA, [Turn on debugging messages])
 AH_TEMPLATE(WITH_DEBUG_CHANNEL, [Turn on debugging messages])
 AH_TEMPLATE(WITH_DEBUG_KBD, [Turn on debugging messages])
 AH_TEMPLATE(WITH_DEBUG_RDP5, [Turn on debugging messages])
@@ -763,6 +764,15 @@ AC_ARG_WITH(debug,
             AC_DEFINE(WITH_DEBUG,1)
             debug_support=yes
         fi
+    ])
+
+AC_ARG_WITH(debug-nla,
+    [  --with-debug-nla        enable debugging of network level authentication],
+    [
+        if test $withval != "no";
+        then
+            AC_DEFINE(WITH_DEBUG_NLA,1)
+	fi
     ])
 
 AC_ARG_WITH(debug-kbd,
