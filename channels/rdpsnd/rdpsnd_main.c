@@ -466,6 +466,7 @@ thread_process_message_wave(rdpsndPlugin * plugin, char * data, int data_size)
 	int size;
 	int wTimeStamp;
 	char * out_data;
+	uint32 process_ms;
 
 	plugin->expectingWave = 0;
 	memcpy(data, plugin->waveData, 4);
@@ -481,10 +482,13 @@ thread_process_message_wave(rdpsndPlugin * plugin, char * data, int data_size)
 	SET_UINT8(out_data, 0, SNDC_WAVECONFIRM);
 	SET_UINT8(out_data, 1, 0);
 	SET_UINT16(out_data, 2, size - 4);
+	process_ms = get_mstime() - plugin->local_time_stamp;
 	LLOGLN(10, ("thread_process_message_wave: "
-		"data_size %d delay %d local_time %u",
-		data_size, plugin->delay_ms, plugin->local_time_stamp));
+		"data_size %d delay_ms %d process_ms %u",
+		data_size, plugin->delay_ms, process_ms));
 	wTimeStamp = plugin->wTimeStamp + plugin->delay_ms;
+	plugin->delay_ms = plugin->delay_ms > process_ms ?
+		plugin->delay_ms - process_ms : 0;
 	SET_UINT16(out_data, 4, wTimeStamp);
 	SET_UINT8(out_data, 6, plugin->cBlockNo);
 	SET_UINT8(out_data, 7, 0);
@@ -626,7 +630,7 @@ thread_func(void * arg)
 		listobj[0] = plugin->term_event;
 		listobj[1] = plugin->data_in_event;
 		numobj = 2;
-		timeout = plugin->out_list_head == 0 ? -1 : 500;
+		timeout = plugin->out_list_head == 0 ? 1 : 500;
 		wait_obj_select(listobj, numobj, NULL, 0, timeout);
 		if (wait_obj_is_set(plugin->term_event))
 		{

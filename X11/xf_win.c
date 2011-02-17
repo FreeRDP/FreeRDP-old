@@ -669,6 +669,38 @@ l_ui_destroy_cursor(struct rdp_inst * inst, RD_HCURSOR cursor)
 	XFreeCursor(xfi->display, (Cursor) cursor);
 }
 
+static int
+convert_a(int owidth, int oheight, void * odata, int iwidth, int iheight, void * idata)
+{
+	int * d32;
+	int * s32;
+	int i1;
+	int j1;
+	int imax;
+	int jmax;
+	int pixel;
+	int a1, r1, g1, b1;
+
+	imax = oheight > iheight ? iheight : oheight;
+	jmax = owidth > iwidth ? iwidth : owidth;
+	s32 = (int *) idata;
+	d32 = (int *) odata;
+	for (i1 = 0; i1 < imax; i1++)
+	{
+		for (j1 = 0; j1 < jmax; j1++)
+		{
+			pixel = s32[i1 * iwidth + j1];
+			a1 = (pixel >> 24) & 0xff;
+			r1 = (pixel >> 16) & 0xff;
+			g1 = (pixel >> 8) & 0xff;
+			b1 = (pixel >> 0) & 0xff;
+			pixel = (a1 << 24) | (b1 << 16) | (g1 << 8) | r1;
+			d32[i1 * owidth + j1] = pixel;
+		}
+	}
+	return 0;
+}
+
 #ifdef USE_XCURSOR
 
 static RD_HCURSOR
@@ -695,6 +727,10 @@ l_ui_create_cursor(struct rdp_inst * inst, uint32 x, uint32 y,
 	{
 		xf_cursor_convert_alpha(xfi, (uint8 *) (ci.pixels), xormask, andmask,
 			width, height, bpp);
+	}
+	if (bpp > 24)
+	{
+		convert_a(width, height, ci.pixels, width, height, ci.pixels);
 	}
 	cur = XcursorImageLoadCursor(xfi->display, &ci);
 	free(ci.pixels);
@@ -962,6 +998,8 @@ xf_get_pixmap_info(xfInfo * xfi)
 int
 xf_pre_connect(xfInfo * xfi)
 {
+	int i1;
+
 	xf_assign_callbacks(xfi->inst);
 	xfi->display = XOpenDisplay(NULL);
 	if (xfi->display == NULL)
@@ -975,13 +1013,27 @@ xf_pre_connect(xfInfo * xfi)
 	xfi->depth = DefaultDepthOfScreen(xfi->screen);
 	xfi->xserver_be = (ImageByteOrder(xfi->display) == MSBFirst);
 	xf_kb_inst_init(xfi);
-
+	if (xfi->percentscreen > 0)
+	{
+		i1 = (WidthOfScreen(xfi->screen) * xfi->percentscreen) / 100;
+		xfi->settings->width = i1;
+		i1 = (HeightOfScreen(xfi->screen) * xfi->percentscreen) / 100;
+		xfi->settings->height = i1;
+	}
 	if (xfi->fullscreen)
 	{
 		xfi->settings->width = WidthOfScreen(xfi->screen);
 		xfi->settings->height = HeightOfScreen(xfi->screen);
 	}
-
+	i1 = xfi->settings->width;
+	i1 = (i1 + 3) & (~3);
+	xfi->settings->width = i1;
+	if ((xfi->settings->width < 64) || (xfi->settings->height < 64) ||
+		(xfi->settings->width > 4096) || (xfi->settings->height > 4096))
+	{
+		printf("xf_init: invalid dimensions %d %d\n", xfi->settings->width, xfi->settings->height);
+		return 1;
+	}
 	return 0;
 }
 
@@ -1020,6 +1072,7 @@ xf_post_connect(xfInfo * xfi)
 	int fullscreen;
 	XSetWindowAttributes attribs;
 	XSizeHints *sizehints;
+	XClassHint *classhints;
 
 	if (xf_get_pixmap_info(xfi) != 0)
 	{
@@ -1040,6 +1093,14 @@ xf_post_connect(xfInfo * xfi)
 		0, 0, width, height, 0, xfi->depth, InputOutput, xfi->visual,
 		CWBackPixel | CWBackingStore | CWOverrideRedirect | CWColormap |
 		CWBorderPixel, &attribs);
+
+	classhints = XAllocClassHint();
+	if (classhints != NULL) {
+		classhints->res_name = "xfreerdp";
+		classhints->res_class = "freerdp";
+		XSetClassHint(xfi->display, xfi->wnd, classhints);
+		XFree(classhints);
+	}
 
 	sizehints = XAllocSizeHints();
 	if (sizehints)

@@ -296,7 +296,7 @@ rdpsnd_alsa_play(rdpsndDevicePlugin * devplugin, char * data, int size, int * de
 	if (resampled_data != data)
 		free(resampled_data);
 
-	*delay_ms = (size / bytes_per_frame) * (1000000 / alsa_data->actual_rate) / 1000;
+	*delay_ms = size * 1000 / (bytes_per_frame * alsa_data->actual_rate);
 
 	return 0;
 }
