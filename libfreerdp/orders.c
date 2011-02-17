@@ -92,6 +92,33 @@ parse_delta(uint8 * buffer, int *offset)
 	return value;
 }
 
+static int
+parse_s2byte(uint8 * buffer, int *offset)
+{
+	int value = buffer[(*offset)++];
+	int two_byte = value & 0x80;
+	int sign = value & 0x40;
+
+	value &= 0x3f;
+	if (two_byte)
+		value = (value << 8) | buffer[(*offset)++];
+	if (sign)
+		value = value * -1;
+	return value;
+}
+
+static int
+parse_u2byte(uint8 * buffer, int *offset)
+{
+	int value = buffer[(*offset)++];
+	int two_byte = value & 0x80;
+
+	value &= 0x7f;
+	if (two_byte)
+		value = (value << 8) | buffer[(*offset)++];
+	return value;
+}
+
 /* Read a color entry */
 static void
 rdp_in_color(STREAM s, uint32 * color)
@@ -263,6 +290,105 @@ process_patblt(rdpOrders * orders, STREAM s, PATBLT_ORDER * os, uint32 present, 
 
 	ui_patblt(orders->rdp->inst, os->opcode, os->x, os->y, os->cx, os->cy,
 		  &brush, os->bgcolor, os->fgcolor);
+}
+
+/* Process a multi pattern blt order */
+static void
+process_multipatblt(rdpOrders * orders, STREAM s, MULTIPATBLT_ORDER * os, uint32 present, RD_BOOL delta)
+{
+	RD_BRUSH brush;
+	int size;
+	int index, data, next;
+	int x, y, w = 0, h = 0;
+	uint8 flags = 0;
+	RECTANGLE *rects;
+
+	if (present & 0x0001)
+		rdp_in_coord(s, &os->x, delta);
+
+	if (present & 0x0002)
+		rdp_in_coord(s, &os->y, delta);
+
+	if (present & 0x0004)
+		rdp_in_coord(s, &os->cx, delta);
+
+	if (present & 0x0008)
+		rdp_in_coord(s, &os->cy, delta);
+
+	if (present & 0x0010)
+		in_uint8(s, os->opcode);
+
+	if (present & 0x0020)
+		rdp_in_color(s, &os->bgcolor);
+
+	if (present & 0x0040)
+		rdp_in_color(s, &os->fgcolor);
+
+	rdp_parse_brush(s, &os->brush, present >> 7);
+
+	if (present & 0x1000)
+		in_uint8(s, os->nentries);
+
+	if (present & 0x2000)
+	{
+		in_uint16_le(s, os->datasize);
+		in_uint8a(s, os->data, os->datasize);
+	}
+
+	DEBUG("MULTIPATBLT(op=0x%x,x=%d,y=%d,cx=%d,cy=%d,n=%d)\n",
+	      os->opcode, os->x, os->y, os->cx, os->cy, os->nentries);
+
+	setup_brush(orders, &brush, &os->brush);
+
+	size = (os->nentries + 1) * sizeof(RECTANGLE);
+	if (size > orders->buffer_size)
+	{
+		orders->buffer = xrealloc(orders->buffer, size);
+		orders->buffer_size = size;
+	}
+
+	rects = (RECTANGLE *) orders->buffer;
+	memset(rects, 0, size);
+
+	rects[0].l = os->x;
+	rects[0].t = os->y;
+
+	index = 0;
+	data = ((os->nentries - 1) / 8) + 1;
+	for (next = 1; (next <= os->nentries) && (next <= 45) && (data < os->datasize); next++)
+	{
+		if ((next - 1) % 8 == 0)
+			flags = os->data[index++];
+
+		if (~flags & 0x80)
+			rects[next].l = parse_delta(os->data, &data);
+		else
+			rects[next].l = rects[next - 1].l;
+
+		if (~flags & 0x40)
+			rects[next].t = parse_delta(os->data, &data);
+		else
+			rects[next].t = rects[next - 1].t;
+
+		if (~flags & 0x20)
+			rects[next].r = parse_delta(os->data, &data);
+		else
+			rects[next].r = rects[next - 1].r;
+
+		if (~flags & 0x10)
+			rects[next].b = parse_delta(os->data, &data);
+		else
+			rects[next].b = rects[next - 1].b;
+
+		x = rects[next].l - rects[next - 1].l;
+		y = rects[next].t - rects[next - 1].t;
+
+		DEBUG("rectXY (%d, %d)\n", x, y);
+
+		flags <<= 4;
+
+		ui_patblt(orders->rdp->inst, os->opcode, x, y, w, h, &brush, os->bgcolor, os->fgcolor);
+	}
 }
 
 /* Process a screen blt order */
@@ -943,8 +1069,8 @@ draw_text(rdpOrders * orders, uint8 font, uint8 flags, uint8 opcode, int mixmode
 				{
 					ui_warning(orders->rdp->inst, "Skipping short 0xff command:");
 					for (j = 0; j < length; j++)
-						fprintf(stderr, "%02x ", text[j]);
-					fprintf(stderr, "\n");
+						printf("%02x ", text[j]);
+					printf("\n");
 					i = length = 0;
 					break;
 				}
@@ -962,8 +1088,8 @@ draw_text(rdpOrders * orders, uint8 font, uint8 flags, uint8 opcode, int mixmode
 				{
 					ui_warning(orders->rdp->inst, "Skipping short 0xfe command:");
 					for (j = 0; j < length; j++)
-						fprintf(stderr, "%02x ", text[j]);
-					fprintf(stderr, "\n");
+						printf("%02x ", text[j]);
+					printf("\n");
 					i = length = 0;
 					break;
 				}
@@ -1087,6 +1213,274 @@ process_glyph_index(rdpOrders * orders, STREAM s, GLYPH_INDEX_ORDER * os, uint32
 		  os->clipbottom - os->cliptop, os->boxleft, os->boxtop,
 		  os->boxright - os->boxleft, os->boxbottom - os->boxtop,
 		  &brush, os->bgcolor, os->fgcolor, os->text, os->length);
+}
+
+static void
+process_fast_index(rdpOrders * orders, STREAM s, FAST_INDEX_ORDER * os, uint32 present, RD_BOOL delta)
+{
+	int x;
+	int y;
+	int clipx1;
+	int clipy1;
+	int clipx2;
+	int clipy2;
+	int boxx1;
+	int boxy1;
+	int boxx2;
+	int boxy2;
+
+	/* cacheId */
+	if (present & 0x000001)
+		in_uint8(s, os->font);
+	/* fDrawing */
+	if (present & 0x000002)
+	{
+		in_uint8(s, os->opcode);
+		in_uint8(s, os->flags);
+	}
+	/* BackColor */
+	if (present & 0x000004)
+		rdp_in_color(s, &os->fgcolor);
+	/* ForeColor */
+	if (present & 0x000008)
+		rdp_in_color(s, &os->bgcolor);
+	/* BkLeft */
+	if (present & 0x000010)
+		rdp_in_coord(s, &os->clipleft, delta);
+	/* BkTop */
+	if (present & 0x000020)
+		rdp_in_coord(s, &os->cliptop, delta);
+	/* BkRight */
+	if (present & 0x000040)
+		rdp_in_coord(s, &os->clipright, delta);
+	/* BkBottom */
+	if (present & 0x000080)
+		rdp_in_coord(s, &os->clipbottom, delta);
+	/* OpLeft */
+	if (present & 0x000100)
+		rdp_in_coord(s, &os->boxleft, delta);
+	/* OpTop */
+	if (present & 0x000200)
+		rdp_in_coord(s, &os->boxtop, delta);
+	/* OpRight */
+	if (present & 0x000400)
+		rdp_in_coord(s, &os->boxright, delta);
+	/* OpBottom */
+	if (present & 0x000800)
+		rdp_in_coord(s, &os->boxbottom, delta);
+	/* x */
+	if (present & 0x001000)
+		rdp_in_coord(s, &os->x, delta);
+	/* y */
+	if (present & 0x002000)
+		rdp_in_coord(s, &os->y, delta);
+	/* VariableBytes */
+	if (present & 0x004000)
+	{
+		in_uint8(s, os->length);
+		in_uint8a(s, os->text, os->length);
+	}
+	DEBUG("FAST_INDEX(x=%d,y=%d,cl=%d,ct=%d,cr=%d,cb=%d,bl=%d,bt=%d,br=%d,bb=%d,bg=0x%x,fg=0x%x,font=%d,fl=0x%x,op=0x%x,n=%d)\n", os->x, os->y, os->clipleft, os->cliptop, os->clipright, os->clipbottom, os->boxleft, os->boxtop, os->boxright, os->boxbottom, os->bgcolor, os->fgcolor, os->font, os->flags, os->opcode, os->length);
+	x = os->x == -32768 ? os->clipleft : os->x;
+	y = os->y == -32768 ? os->cliptop : os->y;
+	clipx1 = os->clipleft;
+	clipy1 = os->cliptop;
+	clipx2 = os->clipright;
+	clipy2 = os->clipbottom;
+	boxx1 = os->boxleft;
+	boxy1 = os->boxtop;
+	boxx2 = os->boxright;
+	boxy2 = os->boxbottom;
+	if (os->boxleft == 0)
+	{
+		boxx1 = os->clipleft;
+	}
+	if (os->boxright == 0)
+	{
+		boxx2 = os->clipright;
+	}
+	if (os->boxbottom == -32768)
+	{
+		if (os->boxtop & 0x01)
+		{
+			boxy2 = os->clipbottom;
+		}
+		if (os->boxtop & 0x02)
+		{
+			boxx2 = os->clipright;
+		}
+		if (os->boxtop & 0x04)
+		{
+			boxy1 = os->cliptop;
+		}
+		if (os->boxtop & 0x08)
+		{
+			boxx1 = os->clipleft;
+		}
+	}
+	if (!((boxx2 > boxx1) && (boxy2 > boxy1)))
+	{
+		boxx1 = 0;
+		boxy1 = 0;
+		boxx2 = 0;
+		boxy2 = 0;
+	}
+	draw_text(orders, os->font, os->flags, os->opcode,
+		  MIX_TRANSPARENT, x, y,
+		  clipx1, clipy1, clipx2 - clipx1, clipy2 - clipy1,
+		  boxx1, boxy1, boxx2 - boxx1, boxy2 - boxy1,
+		  &os->brush, os->bgcolor, os->fgcolor, os->text, os->length);
+}
+
+/* Process a fast glyph order */
+static void
+process_fast_glyph(rdpOrders * orders, STREAM s, FAST_GLYPH_ORDER * os, uint32 present, RD_BOOL delta)
+{
+	int x;
+	int y;
+	int clipx1;
+	int clipy1;
+	int clipx2;
+	int clipy2;
+	int clipcx;
+	int clipcy;
+	int boxx1;
+	int boxy1;
+	int boxx2;
+	int boxy2;
+	int boxcx;
+	int boxcy;
+	int character;
+	int offset;
+	int baseline;
+	int width;
+	int height;
+	RD_HGLYPH gl;
+	FONTGLYPH * ft;
+	int gx;
+	int gy;
+	int index;
+
+	if (present & 0x000001)
+		in_uint8(s, os->font);
+	if (present & 0x000002)
+	{
+		in_uint8(s, os->opcode);
+		in_uint8(s, os->flags);
+	}
+	if (present & 0x000004)
+		rdp_in_color(s, &os->fgcolor);
+	if (present & 0x000008)
+		rdp_in_color(s, &os->bgcolor);
+	if (present & 0x000010)
+		rdp_in_coord(s, &os->clipleft, delta);
+	if (present & 0x000020)
+		rdp_in_coord(s, &os->cliptop, delta);
+	if (present & 0x000040)
+		rdp_in_coord(s, &os->clipright, delta);
+	if (present & 0x000080)
+		rdp_in_coord(s, &os->clipbottom, delta);
+	if (present & 0x000100)
+		rdp_in_coord(s, &os->boxleft, delta);
+	if (present & 0x000200)
+		rdp_in_coord(s, &os->boxtop, delta);
+	if (present & 0x000400)
+		rdp_in_coord(s, &os->boxright, delta);
+	if (present & 0x000800)
+		rdp_in_coord(s, &os->boxbottom, delta);
+	if (present & 0x001000)
+		rdp_in_coord(s, &os->x, delta);
+	if (present & 0x002000)
+		rdp_in_coord(s, &os->y, delta);
+	if (present & 0x004000)
+	{
+		in_uint8(s, os->length);
+		in_uint8a(s, os->data, os->length);
+	}
+	DEBUG("FAST_GLYPH(x=%d,y=%d,cl=%d,ct=%d,cr=%d,cb=%d,bl=%d,bt=%d,br=%d,bb=%d,bg=0x%x,fg=0x%x,font=%d,fl=0x%x,op=0x%x,n=%d)\n", os->x, os->y, os->clipleft, os->cliptop, os->clipright, os->clipbottom, os->boxleft, os->boxtop, os->boxright, os->boxbottom, os->bgcolor, os->fgcolor, os->font, os->flags, os->opcode, os->length);
+	x = os->x == -32768 ? os->clipleft : os->x;
+	y = os->y == -32768 ? os->cliptop : os->y;
+	clipx1 = os->clipleft;
+	clipy1 = os->cliptop;
+	clipx2 = os->clipright;
+	clipy2 = os->clipbottom;
+	boxx1 = os->boxleft;
+	boxy1 = os->boxtop;
+	boxx2 = os->boxright;
+	boxy2 = os->boxbottom;
+	if (os->boxleft == 0)
+	{
+		boxx1 = os->clipleft;
+	}
+	if (os->boxright == 0)
+	{
+		boxx2 = os->clipright;
+	}
+	if (os->boxbottom == -32768)
+	{
+		if (os->boxtop & 0x01)
+		{
+			boxy2 = os->clipbottom;
+		}
+		if (os->boxtop & 0x02)
+		{
+			boxx2 = os->clipright;
+		}
+		if (os->boxtop & 0x04)
+		{
+			boxy1 = os->cliptop;
+		}
+		if (os->boxtop & 0x08)
+		{
+			boxx1 = os->clipleft;
+		}
+	}
+	if (!((boxx2 > boxx1) && (boxy2 > boxy1)))
+	{
+		boxx1 = 0;
+		boxy1 = 0;
+		boxx2 = 0;
+		boxy2 = 0;
+	}
+	clipcx = clipx2 - clipx1;
+	clipcy = clipy2 - clipy1;
+	boxcx = boxx2 - boxx1;
+	boxcy = boxy2 - boxy1;
+	if (os->length < 2)
+	{
+		character = os->data[0];
+	}
+	else
+	{
+		character = os->data[0];
+		index = 1;
+		offset = parse_s2byte(os->data, &index);
+		baseline = parse_s2byte(os->data, &index);
+		width = parse_u2byte(os->data, &index);
+		height = parse_u2byte(os->data, &index);
+		gl = ui_create_glyph(orders->rdp->inst, width, height, os->data + index);
+		cache_put_font(orders->rdp->cache, os->font, character, offset, baseline, width, height, gl);
+	}
+	ft = cache_get_font(orders->rdp->cache, os->font, character);
+	if (ft != NULL)
+	{
+		gx = x + ft->offset;
+		gy = y + ft->baseline;
+		if (boxcx > 1)
+		{
+			ui_rect(orders->rdp->inst, boxx1, boxy1, boxcx, boxcy, os->bgcolor);
+		}
+		ui_start_draw_glyphs(orders->rdp->inst, os->bgcolor, os->fgcolor);
+		ui_draw_glyph(orders->rdp->inst, gx, gy, ft->width, ft->height, ft->pixmap);
+		if (boxcx > 1)
+		{
+			ui_end_draw_glyphs(orders->rdp->inst, boxx1, boxy1, boxcx, boxcy);
+		}
+		else
+		{
+			ui_end_draw_glyphs(orders->rdp->inst, clipx1, clipy1, clipcx, clipcy);
+		}
+	}
 }
 
 /* Process a raw bitmap cache order */
@@ -1501,13 +1895,13 @@ process_create_offscr_bitmap(rdpOrders * orders, STREAM s)
 }
 
 /* Process a non-standard order */
-static void
+static int
 process_alternate_secondary_order(rdpOrders * orders, STREAM s, uint8 order_flags)
 {
 	if (!(order_flags & 0x2))
 	{
 		perror("order parsing failed\n");
-		exit(1);
+		return 1;
 	}
 	order_flags >>= 2;
 	switch (order_flags)
@@ -1520,8 +1914,9 @@ process_alternate_secondary_order(rdpOrders * orders, STREAM s, uint8 order_flag
 			break;
 		default:
 			ui_unimpl(orders->rdp->inst, "alternate secondary order %d:\n", order_flags);
-			exit(1);
+			return 1;
 	}
+	return 0;
 }
 
 /* Process a secondary order */
@@ -1617,10 +2012,13 @@ process_orders(rdpOrders * orders, STREAM s, uint16 num_orders)
 					break;
 
 				case RDP_ORDER_PATBLT:
+				case RDP_ORDER_MULTIPATBLT:
 				case RDP_ORDER_MEMBLT:
 				case RDP_ORDER_LINETO:
 				case RDP_ORDER_POLYGON_CB:
+				case RDP_ORDER_FAST_INDEX:
 				case RDP_ORDER_ELLIPSE_CB:
+				case RDP_ORDER_FAST_GLYPH:
 					size = 2;
 					break;
 
@@ -1652,6 +2050,10 @@ process_orders(rdpOrders * orders, STREAM s, uint16 num_orders)
 
 				case RDP_ORDER_PATBLT:
 					process_patblt(orders, s, &os->patblt, present, delta);
+					break;
+
+				case RDP_ORDER_MULTIPATBLT:
+					process_multipatblt(orders, s, &os->multipatblt, present, delta);
 					break;
 
 				case RDP_ORDER_SCRBLT:
@@ -1700,6 +2102,14 @@ process_orders(rdpOrders * orders, STREAM s, uint16 num_orders)
 
 				case RDP_ORDER_GLYPH_INDEX:
 					process_glyph_index(orders, s, &os->glyph_index, present, delta);
+					break;
+
+				case RDP_ORDER_FAST_INDEX:
+					process_fast_index(orders, s, &os->fast_index, present, delta);
+					break;
+
+				case RDP_ORDER_FAST_GLYPH:
+					process_fast_glyph(orders, s, &os->fast_glyph, present, delta);
 					break;
 
 				default:

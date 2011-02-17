@@ -622,6 +622,7 @@ clipboard_process_requested_html(struct clipboard_data * cdata,
 	memcpy(outbuf + 43, num, 10);
 
 	*length = strlen(outbuf) + 1;
+	free(inbuf);
 	return outbuf;
 }
 #endif

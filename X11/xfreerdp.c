@@ -29,6 +29,7 @@
 #include <sys/types.h>
 #include <errno.h>
 #include <pwd.h>
+#include <fcntl.h>
 #include <pthread.h>
 #include <semaphore.h>
 #include <freerdp/freerdp.h>
@@ -41,7 +42,8 @@
 #define MAX_PLUGIN_DATA 20
 
 static volatile int g_thread_count = 0;
-static sem_t g_sem;
+char g_sem_name[64];
+static sem_t *g_sem;
 
 static int
 set_default_params(xfInfo * xfi)
@@ -71,6 +73,7 @@ set_default_params(xfInfo * xfi)
 	settings->tls = 1;
 #endif
 	xfi->fullscreen = xfi->fs_toggle = 0;
+	xfi->decoration = 1;
 	return 0;
 }
 
@@ -91,14 +94,16 @@ out_args(void)
 		"\t--kbd-list: list all keyboard layout IDs\n"
 		"\t-s: shell\n"
 		"\t-c: directory\n"
-		"\t-g: geometry, using format WxH, default is 1024x768\n"
+		"\t-g: geometry, using format WxH or X%, default is 1024x768\n"
 		"\t-t: alternative port number, default is 3389\n"
 		"\t-n: hostname\n"
 		"\t-o: console audio\n"
 		"\t-0: console session\n"
 		"\t-f: fullscreen mode\n"
+		"\t-D: hide window decorations\n"
 		"\t-z: enable bulk compression\n"
 		"\t-x: performance flags (m, b or l for modem, broadband or lan)\n"
+		"\t-X: embed into another window with a given XID.\n"
 #ifndef DISABLE_TLS
 		"\t--no-tls: disable TLS encryption\n"
 #endif
@@ -121,9 +126,11 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 	int index;
 	int i, j;
 	struct passwd * pw;
+	int num_extensions;
 
 	set_default_params(xfi);
 	settings = xfi->settings;
+	num_extensions = 0;
 	p = getlogin();
 	i = sizeof(settings->username) - 1;
 	if (p != 0)
@@ -262,11 +269,9 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 			{
 				settings->height = strtol(p + 1, &p, 10);
 			}
-			if ((settings->width < 16) || (settings->height < 16) ||
-				(settings->width > 4096) || (settings->height > 4096))
+			if (*p == '%')
 			{
-				printf("invalid dimensions\n");
-				return 1;
+				xfi->percentscreen = settings->width;
 			}
 		}
 		else if (strcmp("-t", argv[*pindex]) == 0)
@@ -311,6 +316,10 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 			xfi->fullscreen = xfi->fs_toggle = 1;
 			printf("full screen option\n");
 		}
+		else if (strcmp("-D", argv[*pindex]) == 0)
+		{
+			xfi->decoration = 0;
+		}
 		else if (strcmp("-x", argv[*pindex]) == 0)
 		{
 			*pindex = *pindex + 1;
@@ -336,6 +345,19 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 			else
 			{
 				settings->performanceflags = strtol(argv[*pindex], 0, 16);
+			}
+		} else if (strcmp("-X", argv[*pindex]) == 0) {
+			*pindex = *pindex + 1;
+
+			if (*pindex == argc) {
+				printf("missing XID\n");
+				return 1;
+			}
+
+			xfi->embed = strtoul(argv[*pindex], NULL, 16);
+			if (!xfi->embed) {
+				printf("bad XID\n");
+				return 1;
 			}
 		}
 #ifndef DISABLE_TLS
@@ -373,6 +395,37 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 				}
 			}
 			freerdp_chanman_load_plugin(xfi->chan_man, settings, argv[index], plugin_data);
+		}
+		else if (strcmp("--ext", argv[*pindex]) == 0)
+		{
+			*pindex = *pindex + 1;
+			if (*pindex == argc)
+			{
+				printf("missing extension name\n");
+				return 1;
+			}
+			if (num_extensions >= sizeof(settings->extensions) / sizeof(struct rdp_ext_set))
+			{
+				printf("maximum extensions reached\n");
+				return 1;
+			}
+			index = *pindex;
+			snprintf(settings->extensions[num_extensions].name,
+				sizeof(settings->extensions[num_extensions].name),
+				"%s", argv[index]);
+			settings->extensions[num_extensions].data = NULL;
+			if (*pindex < argc - 1 && strcmp("--data", argv[*pindex + 1]) == 0)
+			{
+				*pindex = *pindex + 2;
+				settings->extensions[num_extensions].data = argv[*pindex];
+				i = 0;
+				while (*pindex < argc && strcmp("--", argv[*pindex]) != 0)
+				{
+					*pindex = *pindex + 1;
+					i++;
+				}
+			}
+			num_extensions++;
 		}
 		else if ((strcmp("-h", argv[*pindex]) == 0) || strcmp("--help", argv[*pindex]) == 0)
 		{
@@ -587,7 +640,7 @@ thread_func(void * arg)
 	g_thread_count--;
 	if (g_thread_count < 1)
 	{
-		sem_post(&g_sem);
+		sem_post(g_sem);
 	}
 	return NULL;
 }
@@ -595,8 +648,9 @@ thread_func(void * arg)
 int
 main(int argc, char ** argv)
 {
-	xfInfo * xfi;
 	int rv;
+	pid_t pid;
+	xfInfo * xfi;
 	pthread_t thread;
 	int index = 1;
 
@@ -612,7 +666,16 @@ main(int argc, char ** argv)
 		return 1;
 	}
 	freerdp_chanman_init();
-	sem_init(&g_sem, 0, 0);
+	
+	pid = getpid();
+	sprintf(g_sem_name, "xfreerdp_%d", pid);
+	g_sem = sem_open(g_sem_name, O_CREAT, 0, 0);
+	if (g_sem == SEM_FAILED)
+	{
+		printf("Error calling 'sem_open: %s'\n", strerror(errno));
+		return 1;
+	}
+	
 	while (1)
 	{
 		xfi = (xfInfo *) malloc(sizeof(xfInfo));
@@ -640,8 +703,9 @@ main(int argc, char ** argv)
 	if (g_thread_count > 0)
 	{
 		printf("main thread, waiting for all threads to exit\n");
-		sem_wait(&g_sem);
+		sem_wait(g_sem);
 		printf("main thread, all threads did exit\n");
+		sem_unlink(g_sem_name);
 	}
 
 	freerdp_chanman_uninit();

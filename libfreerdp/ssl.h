@@ -27,23 +27,23 @@
 
 struct rc4_state
 {
-  int x;
-  int y;
-  int m[256];
+	int x;
+	int y;
+	int m[256];
 };
 
 struct sha1_context
 {
-  int total[2];
-  int state[5];
-  char buffer[64];
+	int total[2];
+	int state[5];
+	char buffer[64];
 };
 
 struct md5_context
 {
-  int total[2];
-  int state[4];
-  char buffer[64];
+	int total[2];
+	int state[4];
+	char buffer[64];
 };
 
 #define SSL_RC4 struct rc4_state

@@ -49,10 +49,13 @@ struct xf_info
 
 	/* UI settings */
 	int fullscreen;
+	int percentscreen;
 	int fs_toggle;
 	int keyboard_layout_id;
+	int decoration;
 
 	/* X11 stuff */
+	Window embed;
 	Window wnd;
 	GC gc;
 	Display * display;
@@ -86,7 +89,7 @@ struct xf_info
 typedef struct xf_info xfInfo;
 
 #ifdef WITH_DEBUG
-#define DEBUG(fmt, ...)	fprintf(stderr, "DBG %s (%d): " fmt, __FUNCTION__, __LINE__, ## __VA_ARGS__)
+#define DEBUG(fmt, ...)	printf("DBG %s (%d): " fmt, __FUNCTION__, __LINE__, ## __VA_ARGS__)
 #else
 #define DEBUG(fmt, ...) do { } while (0)
 #endif

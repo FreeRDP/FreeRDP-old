@@ -41,6 +41,8 @@ typedef struct _DEVICE DEVICE;
 typedef struct _DEVMAN DEVMAN;
 typedef struct _IRP IRP;
 
+typedef struct irp_queue IRPQueue;
+
 struct _SERVICE
 {
 	uint32 type;

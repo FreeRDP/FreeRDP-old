@@ -56,6 +56,13 @@ struct rdpdr_plugin
 	uint16 versionMinor;
 	uint16 clientID;
 	DEVMAN* devman;
+
+	/* Async IO stuff */
+	IRPQueue * queue;
+	fd_set readfds, writefds;
+	int nfds;
+	struct timeval tv;
+	uint32 select_timeout;
 };
 
 #endif /* __RDPDR_MAIN_H */

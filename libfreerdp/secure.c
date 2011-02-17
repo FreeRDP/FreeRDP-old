@@ -988,7 +988,7 @@ sec_connect(rdpSec * sec, char *server, char *username, int port)
 		sec->tls_connected = 1;
 		ntlm_send_negotiate_message(sec);
 		credssp_recv(sec);
-		exit(0); /* not implemented from this point */
+		return False; /* not implemented from this point */
 	}
 	else if(sec->negotiated_protocol == PROTOCOL_TLS)
 	{
@@ -1029,6 +1029,12 @@ void
 sec_disconnect(rdpSec * sec)
 {
 	mcs_disconnect(sec->mcs);
+
+#ifndef DISABLE_TLS
+	if (sec->ctx)
+		tls_destroy_context(sec->ctx);
+	sec->ctx = NULL;
+#endif
 
 	if (sec->rc4_decrypt_key)
 		crypto_rc4_free(sec->rc4_decrypt_key);

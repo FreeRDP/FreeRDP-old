@@ -21,7 +21,6 @@
    DEALINGS IN THE SOFTWARE.
 */
 
-#include <windows.h>
 #include <stdio.h>
 #include <freerdp/freerdp.h>
 #include "wf_event.h"

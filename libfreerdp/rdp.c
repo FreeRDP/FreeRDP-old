@@ -38,6 +38,7 @@
 #include "bitmap.h"
 #include "mem.h"
 #include "debug.h"
+#include "ext.h"
 
 #ifdef HAVE_ICONV
 #ifdef HAVE_ICONV_H
@@ -798,15 +799,15 @@ rdp_send_confirm_active(rdpRdp * rdp)
 	out_uint16_le(s, (rdp->sec->mcs->mcs_userid + 1001));
 
 	out_uint32_le(s, rdp->rdp_shareid); /* sharedId */
-        /* originatorId must be set to the server channel ID
-            This value is always 0x3EA for Microsoft RDP server implementations */
+	/* originatorId must be set to the server channel ID
+	   This value is always 0x3EA for Microsoft RDP server implementations */
 	out_uint16_le(s, rdp->rdp_serverid); /* originatorId */
 	out_uint16_le(s, sizeof(RDP_SOURCE)); /* lengthSourceDescriptor */
-        /* lengthCombinedCapabilities is the combined size of
-            numberCapabilities, pad2Octets and capabilitySets */
+	/* lengthCombinedCapabilities is the combined size of
+	   numberCapabilities, pad2Octets and capabilitySets */
 	out_uint16_le(s, caplen + 4); /* lengthCombinedCapabilities */
 
-        /* sourceDescriptor is "MSTSC" for Microsoft RDP clients */
+	/* sourceDescriptor is "MSTSC" for Microsoft RDP clients */
 	out_uint8p(s, RDP_SOURCE, sizeof(RDP_SOURCE)); /* sourceDescriptor */
 	out_uint16_le(s, numberCapabilities); /* numberCapabilities */
 	out_uint8s(s, 2); /* pad2Octets */
@@ -842,8 +843,8 @@ rdp_process_server_caps(rdpRdp * rdp, STREAM s, uint16 length)
 
 	start = s->p;
 
-        in_uint16_le(s, numberCapabilities); /* numberCapabilities */
-        in_uint8s(s, 2); /* pad */
+	in_uint16_le(s, numberCapabilities); /* numberCapabilities */
+	in_uint8s(s, 2); /* pad */
 
 	for (n = 0; n < numberCapabilities; n++)
 	{
@@ -1012,9 +1013,9 @@ process_color_pointer_common(rdpRdp * rdp, STREAM s, int bpp)
 	in_uint8p(s, mask, masklen);
 	if ((width != 32) || (height != 32))
 	{
-		ui_error(rdp->inst, "process_color_pointer_common: error "
-			"width %d height %d\n", width, height);
-		return;
+		/* TODO remove this warning if non 32x32 cursors prove reliable */
+		ui_warning(rdp->inst, "process_color_pointer_common: "
+			"width %d height %d bpp %d\n", width, height, bpp);
 	}
 	x = MAX(x, 0);
 	x = MIN(x, width - 1);
@@ -1113,12 +1114,25 @@ process_pointer_pdu(rdpRdp * rdp, STREAM s)
 	}
 }
 
+static void /* see [MS-RDPBCGR] 2.2.9.1.1.5.1 */
+process_play_sound_pdu(rdpRdp * rdp, STREAM s)
+{
+	uint16 duration, frequency;
+
+	in_uint16_le(s, duration);
+	in_uint8s(s, 2); /* pad */
+	in_uint16_le(s, frequency);
+	in_uint8s(s, 2);
+
+	DEBUG("(beep not implemented) duration %d frequency %d\n", duration, frequency);
+}
+
 /* Process bitmap updates */
 void
 process_bitmap_updates(rdpRdp * rdp, STREAM s)
 {
 	int i;
-	int buffer_size;
+	size_t buffer_size;
 	uint16 num_updates;
 	uint16 left, top, right, bottom, width, height;
 	uint16 cx, cy, bpp, Bpp, compress, bufsize, size;
@@ -1204,7 +1218,7 @@ void
 process_palette(rdpRdp * rdp, STREAM s)
 {
 	int i;
-	int size;
+	size_t size;
 	RD_COLORENTRY *entry;
 	RD_PALETTE map;
 	RD_HPALETTE hmap;
@@ -1291,7 +1305,8 @@ process_data_pdu(rdpRdp * rdp, STREAM s)
 	uint16 compressedLength;
 	uint32 roff, rlen;
 	STREAM data_s;
-	void * s_end = s->p;
+	uint8 * s_p_after = s->p;
+	uint8 * data_s_end;
 
 	/* rest of Share Data Header */
 	in_uint8s(s, 6);	/* shareid, pad, streamid */
@@ -1299,7 +1314,7 @@ process_data_pdu(rdpRdp * rdp, STREAM s)
 	in_uint8(s, pduType2);
 	in_uint8(s, compressedType);
 	in_uint16_le(s, compressedLength);
-	s_end += compressedLength;
+	s_p_after += compressedLength;
 
 	if (compressedType & RDP_MPPC_COMPRESSED)
 	{
@@ -1321,12 +1336,13 @@ process_data_pdu(rdpRdp * rdp, STREAM s)
 	{
 		data_s = s;
 	}
+	data_s_end = data_s->p + uncompressedLength;
 
 	switch (pduType2)
 	{
 		case RDP_DATA_PDU_UPDATE:
 			process_update_pdu(rdp, data_s);
-			ASSERT(s_check_end(data_s));
+			ASSERT(data_s->p == data_s_end);
 			break;
 
 		case RDP_DATA_PDU_CONTROL:
@@ -1339,12 +1355,12 @@ process_data_pdu(rdpRdp * rdp, STREAM s)
 
 		case RDP_DATA_PDU_POINTER:
 			process_pointer_pdu(rdp, data_s);
-			ASSERT(s_check_end(data_s));
+			ASSERT(data_s->p == data_s_end);
 			break;
 
 		case RDP_DATA_PDU_PLAY_SOUND:
-			ui_bell(rdp->inst);
-			ASSERT(s_check_end(data_s));
+			process_play_sound_pdu(rdp, data_s);
+			ASSERT(data_s->p == data_s_end);
 			break;
 
 		case RDP_DATA_PDU_SAVE_SESSION_INFO:
@@ -1359,13 +1375,13 @@ process_data_pdu(rdpRdp * rdp, STREAM s)
 		case RDP_DATA_PDU_SET_ERROR_INFO:
 			/* A FYI message - don't give up yet */
 			process_set_error_info_pdu(data_s, rdp->inst);
-			ASSERT(s_check_end(data_s));
+			ASSERT(data_s->p == data_s_end);
 			break;
 
 		default:
 			ui_unimpl(rdp->inst, "Unknown data PDU type 0x%x\n", pduType2);
 	}
-	s->end = s_end;
+	s->p = s_p_after;
 	return False;
 }
 
@@ -1615,6 +1631,7 @@ rdp_new(struct rdp_set *settings, struct rdp_inst *inst)
 		self->orders = orders_new(self);
 		self->pcache = pcache_new(self);
 		self->cache = cache_new(self);
+		self->ext = ext_new(self);
 	}
 	return self;
 }
@@ -1633,6 +1650,7 @@ rdp_free(rdpRdp * rdp)
 		orders_free(rdp->orders);
 		xfree(rdp->buffer);
 		sec_free(rdp->sec);
+		ext_free(rdp->ext);
 		xfree(rdp->redirect_server);
 		xfree(rdp->redirect_routingtoken);
 		xfree(rdp->redirect_username);

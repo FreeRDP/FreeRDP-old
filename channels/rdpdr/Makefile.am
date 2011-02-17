@@ -14,7 +14,7 @@ rdpdr_la_SOURCES = \
 	irp.c irp.h \
 	irp_queue.c irp_queue.h
 
-rdpdr_la_CFLAGS = -I$(top_srcdir)/include -I$(srcdir)/../common -I. \
+rdpdr_la_CFLAGS = -I$(top_srcdir)/include -I$(srcdir)/../common \
 	-DPLUGIN_PATH=\"$(PLUGIN_PATH)\"
 
 rdpdr_la_LDFLAGS = -avoid-version -module

@@ -33,6 +33,8 @@
 
 SSL_CTX*
 tls_create_context();
+void
+tls_destroy_context(SSL_CTX *ctx);
 SSL*
 tls_connect(SSL_CTX *ctx, int sockfd, char *server);
 void

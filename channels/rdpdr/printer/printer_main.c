@@ -100,6 +100,7 @@ printer_get_data(const char * name, int * len)
 		buf = (char *) malloc(*len);
 		memset(buf, 0, *len);
 		i = fread(buf, 1, *len, fp);
+		fclose(fp);
 	}
 	free(filename);
 	return buf;
@@ -323,10 +324,14 @@ DeviceServiceEntry(PDEVMAN pDevman, PDEVMAN_ENTRY_POINTS pEntryPoints)
 				srv = printer_register_service(pDevman, pEntryPoints);
 
 			if (data->data[1] == NULL)
+			{
 				printer_hw_register_auto(pDevman, pEntryPoints, srv, &port);
+				break;
+			}
 			else
+			{
 				printer_register(pDevman, pEntryPoints, srv, data->data[1], data->data[2], (port == 1), &port);
-			break;
+			}
 		}
 		data = (RD_PLUGIN_DATA *) (((void *) data) + data->size);
 	}

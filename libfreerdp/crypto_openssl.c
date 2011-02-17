@@ -143,7 +143,7 @@ void
 crypto_cert_free(CryptoCert cert)
 {
 	X509_free(cert->px509);
-    xfree(cert);
+	xfree(cert);
 }
 
 RD_BOOL

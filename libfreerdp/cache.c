@@ -82,7 +82,6 @@ cache_rebuild_bmpcache_linked_list(rdpCache * cache, uint8 id, sint16 * idx, int
 	{
 		ui_error(cache->rdp->inst, "Oops. %d in bitmap cache linked list, %d in ui "
 			 "cache...\n", c, cache->bmpcache_count[id]);
-		exit(1);
 	}
 }
 

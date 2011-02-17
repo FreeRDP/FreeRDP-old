@@ -9,12 +9,12 @@
 #define	_TSCspDataDetail_H_
 
 
-#include <asn_application.h>
+#include "asn_application.h"
 
 /* Including external dependencies */
-#include <NativeInteger.h>
-#include <OCTET_STRING.h>
-#include <constr_SEQUENCE.h>
+#include "NativeInteger.h"
+#include "OCTET_STRING.h"
+#include "constr_SEQUENCE.h"
 
 #ifdef __cplusplus
 extern "C" {

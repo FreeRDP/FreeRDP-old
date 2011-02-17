@@ -41,8 +41,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\include;..\include\freerdp;C:\OpenSSL\include;&quot;C:\OpenSSL-Win32\include&quot;;..\asn1"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;FREERDP_EXPORTS;_CRT_SECURE_NO_WARNINGS;L_ENDIAN"
+				AdditionalIncludeDirectories="..\include;..;C:\OpenSSL\include"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;FREERDP_EXPORTS;_CRT_SECURE_NO_WARNINGS;L_ENDIAN;EXT_PATH=\&quot;extensions\&quot;"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -63,7 +63,7 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="ws2_32.lib libeay32.lib ssleay32.lib"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="C:\OpenSSL\lib;&quot;C:\OpenSSL-Win32\lib&quot;"
+				AdditionalLibraryDirectories="C:\OpenSSL\lib"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				TargetMachine="1"
@@ -117,8 +117,8 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="..\include;..\include\freerdp;C:\OpenSSL\include;..\asn1"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;FREERDP_EXPORTS"
+				AdditionalIncludeDirectories="..\include;..;C:\OpenSSL\include"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;FREERDP_EXPORTS;_CRT_SECURE_NO_WARNINGS;L_ENDIAN;EXT_PATH=\&quot;extensions\&quot;"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
@@ -136,7 +136,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="ws2_32.lib libeay32.lib ssleay32.lib"
 				LinkIncremental="1"
+				AdditionalLibraryDirectories="C:\OpenSSL\lib"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				OptimizeReferences="2"
@@ -203,6 +205,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\libfreerdp\ext.c"
+				>
+			</File>
+			<File
 				RelativePath="..\libfreerdp\freerdp.c"
 				>
 			</File>
@@ -232,6 +238,10 @@
 			</File>
 			<File
 				RelativePath="..\libfreerdp\pstcache.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libfreerdp\rail.c"
 				>
 			</File>
 			<File
@@ -285,6 +295,46 @@
 				>
 			</File>
 			<File
+				RelativePath="..\include\freerdp\chanman.h"
+				>
+			</File>
+			<File
+				RelativePath="..\libfreerdp\constants.h"
+				>
+			</File>
+			<File
+				RelativePath="..\libfreerdp\constants_capabilities.h"
+				>
+			</File>
+			<File
+				RelativePath="..\libfreerdp\constants_core.h"
+				>
+			</File>
+			<File
+				RelativePath="..\libfreerdp\constants_crypto.h"
+				>
+			</File>
+			<File
+				RelativePath="..\libfreerdp\constants_license.h"
+				>
+			</File>
+			<File
+				RelativePath="..\libfreerdp\constants_pdu.h"
+				>
+			</File>
+			<File
+				RelativePath="..\libfreerdp\constants_rail.h"
+				>
+			</File>
+			<File
+				RelativePath="..\include\freerdp\constants_vchan.h"
+				>
+			</File>
+			<File
+				RelativePath="..\libfreerdp\constants_window.h"
+				>
+			</File>
+			<File
 				RelativePath="..\libfreerdp\credssp.h"
 				>
 			</File>
@@ -297,11 +347,23 @@
 				>
 			</File>
 			<File
+				RelativePath="..\include\freerdp\dvc.h"
+				>
+			</File>
+			<File
+				RelativePath="..\libfreerdp\ext.h"
+				>
+			</File>
+			<File
 				RelativePath="..\libfreerdp\frdp.h"
 				>
 			</File>
 			<File
 				RelativePath="..\libfreerdp\iso.h"
+				>
+			</File>
+			<File
+				RelativePath="..\include\freerdp\kbd.h"
 				>
 			</File>
 			<File
@@ -329,7 +391,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\libfreerdp\rail.h"
+				>
+			</File>
+			<File
 				RelativePath="..\libfreerdp\rdp.h"
+				>
+			</File>
+			<File
+				RelativePath="..\include\freerdp\rdpext.h"
 				>
 			</File>
 			<File
@@ -346,6 +416,10 @@
 			</File>
 			<File
 				RelativePath="..\libfreerdp\tcp.h"
+				>
+			</File>
+			<File
+				RelativePath="..\libfreerdp\tls.h"
 				>
 			</File>
 			<File

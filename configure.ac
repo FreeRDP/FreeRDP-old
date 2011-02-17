@@ -26,6 +26,8 @@ AH_TEMPLATE(WITH_DEBUG_RDP5, [Turn on debugging messages])
 AH_TEMPLATE(WITH_DEBUG_SCARD, [Turn on debugging messages])
 AH_TEMPLATE(WITH_DEBUG_SERIAL, [Turn on debugging messages])
 AH_TEMPLATE(WITH_DEBUG_SOUND, [Turn on debugging messages])
+AH_TEMPLATE(WITH_DEBUG_ASSERT, [Turn on debugging messages])
+AH_TEMPLATE(WITH_DEBUG_STREAM_ASSERT, [Turn on debugging messages])
 
 AC_PROG_INSTALL
 AC_PROG_LIBTOOL
@@ -61,6 +63,10 @@ AC_SUBST(KEYMAP_PATH)
 dnl Define plugin path
 PLUGIN_PATH='${libdir}/freerdp'
 AC_SUBST(PLUGIN_PATH)
+
+dnl Define extensions path
+EXT_PATH='${PLUGIN_PATH}/extensions'
+AC_SUBST(EXT_PATH)
 
 #
 # Check Crypto libraries
@@ -222,60 +228,16 @@ int main(int argc, char **argv)
 #
 # sound
 #
-
-sound="yes"
-AC_ARG_WITH(sound,
-    [  --with-sound=alsa       select sound system ("alsa" is only option) ],
-    [
-    sound="$withval"
-    ])
-
-AC_ARG_ENABLE(static-libsamplerate,
-    [  --enable-static-libsamplerate link libsamplerate statically],
-    [static_libsamplerate=yes],
-    [static_libsamplerate=no])
-
-if test -n "$PKG_CONFIG"; then
-    PKG_CHECK_MODULES(ALSA, alsa, [HAVE_ALSA=1], [HAVE_ALSA=0])
-    AC_ARG_WITH(libsamplerate,
-        [  --without-libsamplerate disable libsamplerate support])
-    if test "x$with_libsamplerate" != "xno"; then
-        PKG_CHECK_MODULES(LIBSAMPLERATE, samplerate, [HAVE_LIBSAMPLERATE=1], [HAVE_LIBSAMPLERATE=0])
-    fi
-    if test x"$HAVE_LIBSAMPLERATE" = "x1"; then
-        AC_DEFINE(HAVE_LIBSAMPLERATE)
-        if test x"$static_libsamplerate" = "xyes"; then
-            _libsamplerate_libdir=`$PKG_CONFIG --errors-to-stdout --variable=libdir samplerate`
-            LIBSAMPLERATE_LIBS="$_libsamplerate_libdir""/libsamplerate.a"
-        fi
-        LIBSAMPLERATE_LIBS="$LIBSAMPLERATE_LIBS -lm"
-    fi
-fi
-
-AM_CONDITIONAL(WITH_RDPSND, [test "$sound" != "no"])
 AM_CONDITIONAL(RDPSND_ALSA, false)
 
-case $sound in
-    yes)
-        AM_CONDITIONAL(RDPSND_ALSA, [test x"$HAVE_ALSA" = "x1"])
-        ;;
-
-    alsa)
-        if test x"$HAVE_ALSA" = "x1"; then
-            AM_CONDITIONAL(RDPSND_ALSA, true)
-        else
-            AC_MSG_ERROR([Selected sound system is not available.])
-        fi
-        ;;
-
-    no)
-        ;;
-
-    *)
-        AC_MSG_WARN([sound support disabled])
-        AC_MSG_WARN([Currently supported systems is ALSA (alsa) only])
-        ;;
-esac
+PKG_CHECK_MODULES(ALSA, alsa, [
+	HAVE_ALSA=1
+	alsa="yes"
+	AM_CONDITIONAL(RDPSND_ALSA, true)
+], [
+	HAVE_ALSA=0
+	alsa="no"
+])
 
 #
 # printer
@@ -799,7 +761,8 @@ AC_ARG_WITH(debug,
         if test $withval != "no";
         then
             AC_DEFINE(WITH_DEBUG,1)
-	fi
+            debug_support=yes
+        fi
     ])
 
 AC_ARG_WITH(debug-kbd,
@@ -808,7 +771,8 @@ AC_ARG_WITH(debug-kbd,
         if test $withval != "no";
         then
             AC_DEFINE(WITH_DEBUG_KBD,1)
-	fi
+            debug_support=yes
+        fi
     ])
 
 AC_ARG_WITH(debug-rdp5,
@@ -817,7 +781,8 @@ AC_ARG_WITH(debug-rdp5,
         if test $withval != "no";
         then
             AC_DEFINE(WITH_DEBUG_RDP5,1)
-	fi
+            debug_support=yes
+        fi
     ])
 
 AC_ARG_WITH(debug-sound,
@@ -826,7 +791,8 @@ AC_ARG_WITH(debug-sound,
         if test $withval != "no";
         then
             AC_DEFINE(WITH_DEBUG_SOUND,1)
-	fi
+            debug_support=yes
+        fi
     ])
 
 AC_ARG_WITH(debug-channel,
@@ -835,7 +801,8 @@ AC_ARG_WITH(debug-channel,
         if test $withval != "no";
         then
             AC_DEFINE(WITH_DEBUG_CHANNEL,1)
-	fi
+            debug_support=yes
+        fi
     ])
 
 AC_ARG_WITH(debug-serial,
@@ -844,7 +811,8 @@ AC_ARG_WITH(debug-serial,
         if test $withval != "no";
         then
             AC_DEFINE(WITH_DEBUG_SERIAL,1)
-	fi
+            debug_support=yes
+        fi
     ])
 
 AC_ARG_WITH(debug-smartcard,
@@ -852,11 +820,36 @@ AC_ARG_WITH(debug-smartcard,
     [
         if test $withval != "no";
         then
-		if test x"$WITH_SCARD" = "x1"; then
-			AC_DEFINE(WITH_DEBUG_SCARD,1)
-		fi
-	fi
+          if test x"$WITH_SCARD" = "x1"; then
+            AC_DEFINE(WITH_DEBUG_SCARD,1)
+            debug_support=yes
+          fi
+        fi
     ])
+
+AC_ARG_WITH(debug-assert,
+    [  --with-debug-assert     enable assert debugging],
+    [
+        if test $withval != "no";
+        then
+            AC_DEFINE(WITH_DEBUG_ASSERT,1)
+            debug_support=yes
+        fi
+    ])
+
+AC_ARG_WITH(debug-stream-assert,
+    [  --with-debug-stream-assert     enable stream assert debugging],
+    [
+        if test $withval != "no";
+        then
+            AC_DEFINE(WITH_DEBUG_STREAM_ASSERT,1)
+            debug_support=yes
+        fi
+    ])
+
+if test "$debug_support" != "yes"; then
+    CFLAGS="$CFLAGS -DNDEBUG"
+fi
 
 #
 # target-specific stuff
@@ -883,6 +876,13 @@ esac
 # Optional build targets
 #
 EXTRA_SUBDIRS=""
+
+#
+# rdpsnd_alsa
+#
+if test x"$HAVE_ALSA" = "x1"; then
+	EXTRA_SUBDIRS="$EXTRA_SUBDIRS channels/rdpsnd/alsa"
+fi
 
 #
 # CUnit
@@ -946,6 +946,7 @@ dfb/Makefile
 win/Makefile
 channels/common/Makefile
 channels/rdpsnd/Makefile
+channels/rdpsnd/alsa/Makefile
 channels/drdynvc/Makefile
 channels/drdynvc/pnpdr/Makefile
 channels/drdynvc/audin/Makefile
@@ -956,6 +957,7 @@ channels/rdpdr/printer/Makefile
 channels/rdpdr/serial/Makefile
 channels/rdpdr/parallel/Makefile
 contrib/Makefile
+tests/Makefile
 ])
 
 AC_OUTPUT
@@ -969,9 +971,8 @@ if test "x$disable_tls" = "xyes"; then
 else
 	echo "TLS          : enabled"
 fi
-echo "Sound        : $sound"
+echo "ALSA         : $alsa"
 echo "Printer      : $printer"
 echo "CUnit        : $cunit"
 echo "X11          : $x11"
 echo "DirectFB     : $dfb"
-

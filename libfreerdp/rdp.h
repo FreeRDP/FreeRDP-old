@@ -49,6 +49,7 @@ struct rdp_rdp
 	struct rdp_pcache * pcache;
 	struct rdp_cache * cache;
 	struct rdp_app * app; // RemoteApp
+	struct rdp_ext * ext;
 	/* Session Directory redirection */
 	int redirect;
 	uint32 redirect_session_id;

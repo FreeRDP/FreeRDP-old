@@ -8,11 +8,13 @@ libcommon_la_SOURCES = \
 	wait_obj.c wait_obj.h \
 	types.h
 
-libcommon_la_CFLAGS = -I$(top_srcdir)/include -I.
+libcommon_la_CFLAGS = \
+	-I$(top_srcdir)/include \
+	-pthread
 
 libcommon_la_LDFLAGS =
 
-libcommon_la_LIBADD = -lpthread @LIBICONV@
+libcommon_la_LIBADD = @LIBICONV@
 
 # extra
 EXTRA_DIST =
