@@ -315,22 +315,39 @@ rdpsnd_pulse_format_supported(rdpsndDevicePlugin * devplugin, char * snd_format,
 	pulse_data = (struct pulse_device_data *) devplugin->device_data;
 	if (!pulse_data->context)
 		return 0;
-	LLOGLN(10, ("rdpsnd_pulse_format_supported: size %d", size));
 	wFormatTag = GET_UINT16(snd_format, 0);
 	nChannels = GET_UINT16(snd_format, 2);
 	nSamplesPerSec = GET_UINT32(snd_format, 4);
 	wBitsPerSample = GET_UINT16(snd_format, 14);
 	cbSize = GET_UINT16(snd_format, 16);
-	if (cbSize == 0 &&
-		(nSamplesPerSec == 22050 || nSamplesPerSec == 44100) &&
-		(wBitsPerSample == 8 || wBitsPerSample == 16) &&
-		(nChannels == 1 || nChannels == 2) &&
-		wFormatTag == 1) /* WAVE_FORMAT_PCM */
+	LLOGLN(10, ("rdpsnd_pulse_format_supported: wFormatTag=%d "
+		"nChannels=%d nSamplesPerSec=%d wBitsPerSample=%d cbSize=%d",
+		wFormatTag, nChannels, nSamplesPerSec, wBitsPerSample, cbSize));
+	switch (wFormatTag)
 	{
-		LLOGLN(0, ("rdpsnd_pulse_format_supported: ok"));
-		return 1;
-	}
+		case 1: /* PCM */
+			if (cbSize == 0 &&
+				(nSamplesPerSec <= PA_RATE_MAX) &&
+				(wBitsPerSample == 8 || wBitsPerSample == 16) &&
+				(nChannels >= 1 && nChannels <= PA_CHANNELS_MAX))
+			{
+				LLOGLN(0, ("rdpsnd_pulse_format_supported: ok"));
+				return 1;
+			}
+			break;
 
+		case 6: /* A-LAW */
+		case 7: /* U-LAW */
+			if (cbSize == 0 &&
+				(nSamplesPerSec <= PA_RATE_MAX) &&
+				(wBitsPerSample == 8) &&
+				(nChannels >= 1 && nChannels <= PA_CHANNELS_MAX))
+			{
+				LLOGLN(0, ("rdpsnd_pulse_format_supported: ok"));
+				return 1;
+			}
+			break;
+	}
 	return 0;
 }
 
@@ -342,28 +359,43 @@ rdpsnd_pulse_set_format(rdpsndDevicePlugin * devplugin, char * snd_format, int s
 	int nChannels;
 	int wBitsPerSample;
 	int nSamplesPerSec;
+	int wFormatTag;
 
 	pulse_data = (struct pulse_device_data *) devplugin->device_data;
 	if (!pulse_data->context)
 		return 1;
+	wFormatTag = GET_UINT16(snd_format, 0);
 	nChannels = GET_UINT16(snd_format, 2);
 	nSamplesPerSec = GET_UINT32(snd_format, 4);
 	wBitsPerSample = GET_UINT16(snd_format, 14);
 
 	sample_spec.rate = nSamplesPerSec;
 	sample_spec.channels = nChannels;
-	switch (wBitsPerSample)
+	switch (wFormatTag)
 	{
-		case 8:
-			sample_spec.format = PA_SAMPLE_U8;
+		case 1: /* PCM */
+			switch (wBitsPerSample)
+			{
+				case 8:
+					sample_spec.format = PA_SAMPLE_U8;
+					break;
+				case 16:
+					sample_spec.format = PA_SAMPLE_S16LE;
+					break;
+			}
 			break;
-		case 16:
-			sample_spec.format = PA_SAMPLE_S16LE;
+
+		case 6: /* A-LAW */
+			sample_spec.format = PA_SAMPLE_ALAW;
+			break;
+
+		case 7: /* U-LAW */
+			sample_spec.format = PA_SAMPLE_ULAW;
 			break;
 	}
-	LLOGLN(0, ("rdpsnd_pulse_set_format: nChannels %d "
-		"nSamplesPerSec %d wBitsPerSample %d",
-		nChannels, nSamplesPerSec, wBitsPerSample));
+	LLOGLN(0, ("rdpsnd_pulse_set_format: wFormatTag=%d nChannels=%d "
+		"nSamplesPerSec=%d wBitsPerSample=%d",
+		wFormatTag, nChannels, nSamplesPerSec, wBitsPerSample));
 	if (memcmp(&sample_spec, &pulse_data->sample_spec, sizeof(pa_sample_spec)) != 0)
 	{
 		pulse_data->sample_spec = sample_spec;
