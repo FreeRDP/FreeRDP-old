@@ -51,15 +51,11 @@ struct rdp_sec
 	int sec_decrypt_use_count;
 	struct rdp_mcs * mcs;
 	struct rdp_licence * licence;
-	int negotiation_state;
-	int requested_protocol;
-	int negotiated_protocol;
-	int denied_protocols;
 	int tls_connected;
 #ifndef DISABLE_TLS
 	SSL *ssl;
 	SSL_CTX *ctx;
-	struct rdp_nla * nla;
+	struct rdp_credssp * credssp;
 #endif
 };
 typedef struct rdp_sec rdpSec;

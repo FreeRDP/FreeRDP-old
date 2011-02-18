@@ -1,94 +1,56 @@
-/* -*- c-basic-offset: 8 -*-
+/*
    FreeRDP: A Remote Desktop Protocol client.
    Credential Security Support Provider (CredSSP)
 
-   Copyright (C) Marc-Andre Moreau <marcandre.moreau@gmail.com> 2010
+   Copyright 2010 Marc-Andre Moreau <marcandre.moreau@gmail.com>
 
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
-   (at your option) any later version.
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
 
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
 */
 
 #ifndef __CREDSSP_H
 #define __CREDSSP_H
 
 #include "secure.h"
+#include "ntlmssp.h"
+#include "data_blob.h"
 
-struct _AV_PAIR
+struct rdp_credssp
 {
-	uint16 length;
-	uint8* value;
-};
-typedef struct _AV_PAIR AV_PAIR;
-
-struct _AV_PAIRS
-{
-	AV_PAIR NbComputerName;
-	AV_PAIR NbDomainName;
-	AV_PAIR DnsComputerName;
-	AV_PAIR DnsDomainName;
-	AV_PAIR DnsTreeName;
-	AV_PAIR Timestamp;
-	AV_PAIR Restrictions;
-	AV_PAIR TargetName;
-	AV_PAIR ChannelBindings;
-	uint32 Flags;
-};
-typedef struct _AV_PAIRS AV_PAIRS;
-
-enum _AV_ID
-{
-	MsvAvEOL,
-	MsvAvNbComputerName,
-	MsvAvNbDomainName,
-	MsvAvDnsComputerName,
-	MsvAvDnsDomainName,
-	MsvAvDnsTreeName,
-	MsvAvFlags,
-	MsvAvTimestamp,
-	MsvAvRestrictions,
-	MsvAvTargetName,
-	MsvChannelBindings
-};
-typedef enum _AV_ID AV_ID;
-
-struct rdp_nla
-{
+	int send_seq_num;
+	DATA_BLOB public_key;
+	DATA_BLOB ts_credentials;
+	CryptoRc4 rc4_seal_state;
+	struct _NTLMSSP *ntlmssp;
 	struct rdp_sec * sec;
-	AV_PAIRS* target_info;
-	uint8* target_name;
-	uint32 negotiate_flags;
-	uint8 server_challenge[8];
 };
-typedef struct rdp_nla rdpNla;
+typedef struct rdp_credssp rdpCredssp;
 
-void
-credssp_send(rdpSec * sec, STREAM s);
-void
-credssp_recv(rdpSec * sec);
+int credssp_authenticate(rdpCredssp *credssp);
 
-void
-ntlm_send_negotiate_message(rdpSec * sec);
-void
-ntlm_recv_challenge_message(rdpSec * sec, STREAM s);
-void
-ntlm_send_authenticate_message(rdpSec * sec);
-void
-ntlm_recv(rdpSec * sec, STREAM s);
+void credssp_send(rdpCredssp *credssp, STREAM negoToken, STREAM pubKeyAuth, STREAM authInfo);
+void credssp_recv(rdpCredssp *credssp, STREAM negoToken, STREAM pubKeyAuth, STREAM authInfo);
 
-rdpNla *
-nla_new(rdpSec * sec);
-void
-nla_free(rdpNla * nla);
+void credssp_encrypt_public_key(rdpCredssp *credssp, STREAM s);
+void credssp_encrypt_ts_credentials(rdpCredssp *credssp, STREAM s);
+int credssp_verify_public_key(rdpCredssp *credssp, STREAM s);
+void credssp_encode_ts_credentials(rdpCredssp *credssp);
+
+void credssp_nonce(uint8* nonce, int size);
+void credssp_current_time(uint8* timestamp);
+void credssp_str_to_wstr(char* str, uint8* wstr, int length);
+void credssp_rc4k(uint8* key, int length, uint8* plaintext, uint8* ciphertext);
+
+rdpCredssp* credssp_new(rdpSec *sec);
+void credssp_free(rdpCredssp *credssp);
 
 #endif // __CREDSSP_H

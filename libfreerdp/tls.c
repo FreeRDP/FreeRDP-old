@@ -1,22 +1,20 @@
-/* -*- c-basic-offset: 8 -*-
+/*
    FreeRDP: A Remote Desktop Protocol client.
    Transport Layer Security (TLS) encryption
 
-   Copyright (C) Marc-Andre Moreau <marcandre.moreau@gmail.com> 2010
+   Copyright 2010 Marc-Andre Moreau <marcandre.moreau@gmail.com>
 
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
-   (at your option) any later version.
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
 
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
 */
 
 #include "frdp.h"
@@ -148,6 +146,55 @@ exit:
 	}
 
 	return verified;
+}
+
+int
+tls_get_public_key(SSL *connection, DATA_BLOB *public_key)
+{
+	int length;
+	int success = 1;
+	X509 *cert = NULL;
+	EVP_PKEY *pkey = NULL;
+	unsigned char *p;
+
+	cert = SSL_get_peer_certificate(connection);
+
+	if (!cert)
+	{
+		printf("tls_get_public_key: SSL_get_peer_certificate() failed\n");
+		success = 0;
+		goto exit;
+	}
+
+	pkey = X509_get_pubkey(cert);
+
+	if (!cert)
+	{
+		printf("tls_get_public_key: X509_get_pubkey() failed\n");
+		success = 0;
+		goto exit;
+	}
+
+	length = i2d_PublicKey(pkey, NULL);
+
+	if (length < 1)
+	{
+		printf("tls_get_public_key: i2d_PublicKey() failed\n");
+		success = 0;
+		goto exit;
+	}
+
+	data_blob_alloc(public_key, length);
+	p = (unsigned char*) public_key->data;
+	i2d_PublicKey(pkey, &p);
+
+	exit:
+		if (cert)
+			X509_free(cert);
+		if (pkey)
+			EVP_PKEY_free(pkey);
+
+	return success;
 }
 
 /* Handle an SSL error and returns True if the caller should abort (error was fatal) */

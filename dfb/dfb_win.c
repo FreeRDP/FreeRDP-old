@@ -1,22 +1,20 @@
-/* -*- c-basic-offset: 8 -*-
+/*
    FreeRDP: A Remote Desktop Protocol client.
    DirectFB UI Main Window
 
-   Copyright (C) Marc-Andre Moreau <marcandre.moreau@gmail.com> 2010
+   Copyright 2010 Marc-Andre Moreau <marcandre.moreau@gmail.com>
 
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
-   (at your option) any later version.
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
 
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
 */
 
 #include <stdio.h>
@@ -31,19 +29,19 @@
 #include "dfb_keyboard.h"
 
 static void
-l_ui_error(struct rdp_inst * inst, char * text)
+l_ui_error(struct rdp_inst * inst, const char * text)
 {
 	printf("ui_error: %s", text);
 }
 
 static void
-l_ui_warning(struct rdp_inst * inst, char * text)
+l_ui_warning(struct rdp_inst * inst, const char * text)
 {
 	printf("ui_warning: %s\n", text);
 }
 
 static void
-l_ui_unimpl(struct rdp_inst * inst, char * text)
+l_ui_unimpl(struct rdp_inst * inst, const char * text)
 {
 	printf("ui_unimpl: %s\n", text);
 }
@@ -51,6 +49,8 @@ l_ui_unimpl(struct rdp_inst * inst, char * text)
 static void
 l_ui_begin_update(struct rdp_inst * inst)
 {
+	GDI *gdi = GET_GDI(inst);
+	gdi->primary->hdc->hwnd->invalid->null = 1;
 }
 
 static void
@@ -68,7 +68,6 @@ l_ui_end_update(struct rdp_inst * inst)
 	dfbi->update_rect.h = gdi->primary->hdc->hwnd->invalid->h;
 	
 	dfbi->primary->Blit(dfbi->primary, dfbi->surface, &(dfbi->update_rect), dfbi->update_rect.x, dfbi->update_rect.y);
-	gdi->primary->hdc->hwnd->invalid->null = 1;
 }
 
 static uint32
@@ -196,16 +195,16 @@ dfb_post_connect(rdpInst * inst)
 	
 	dfbi->dfb->GetDisplayLayer(dfbi->dfb, 0, &(dfbi->layer));
 	dfbi->layer->EnableCursor(dfbi->layer, 1);
-	
+
 	dfbi->dsc.flags = DSDESC_CAPS | DSDESC_WIDTH | DSDESC_HEIGHT | DSDESC_PREALLOCATED | DSDESC_PIXELFORMAT;
 	dfbi->dsc.caps = DSCAPS_SYSTEMONLY;
 	dfbi->dsc.width = gdi->width;
 	dfbi->dsc.height = gdi->height;
-	dfbi->dsc.pixelformat = DSPF_AiRGB;
+	dfbi->dsc.pixelformat = (gdi->dstBpp == 32) ? DSPF_AiRGB : DSPF_RGB16;
 	dfbi->dsc.preallocated[0].data = gdi->primary_buffer;
-	dfbi->dsc.preallocated[0].pitch = gdi->width * 4;
+	dfbi->dsc.preallocated[0].pitch = gdi->width * gdi->bytesPerPixel;
 	dfbi->dfb->CreateSurface(dfbi->dfb, &(dfbi->dsc), &(dfbi->surface));
-
+	
 	return 0;
 }
 

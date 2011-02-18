@@ -1,22 +1,20 @@
-/* -*- c-basic-offset: 8 -*-
+/*
    FreeRDP: A Remote Desktop Protocol client.
    RDP GDI Adaption Layer
 
-   Copyright (C) Marc-Andre Moreau <marcandre.moreau@gmail.com> 2010
+   Copyright 2010 Marc-Andre Moreau <marcandre.moreau@gmail.com>
 
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
-   (at your option) any later version.
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
 
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
 */
 
 #include <freerdp/freerdp.h>
@@ -233,6 +231,15 @@ HBRUSH CreateSolidBrush(COLORREF crColor);
 HBRUSH CreatePatternBrush(HBITMAP hbmp);
 HRGN CreateRectRgn(int nLeftRect, int nTopRect, int nRightRect, int nBottomRect);
 HRECT CreateRect(int xLeft, int yTop, int xRight, int yBottom);
+void RectToRgn(HRECT rect, HRGN rgn);
+void RgnToRect(HRGN rgn, HRECT rect);
+void CRectToRgn(int left, int top, int right, int bottom, HRGN rgn);
+void RectToCRgn(HRECT rect, int *x, int *y, int *w, int *h);
+void CRgnToRect(int x, int y, int w, int h, HRECT rect);
+void RgnToCRect(HRGN rgn, int *left, int *top, int *right, int *bottom);
+void CRectToCRgn(int left, int top, int right, int bottom, int *x, int *y, int *w, int *h);
+void CRgnToCRect(int x, int y, int w, int h, int *left, int *top, int *right, int *bottom);
+int CopyOverlap(int x, int y, int width, int height, int srcx, int srcy);
 int SetROP2(HDC hdc, int fnDrawMode);
 int LineTo(HDC hdc, int nXEnd, int nYEnd);
 int MoveTo(HDC hdc, int X, int Y);
@@ -242,19 +249,19 @@ int SetRectRgn(HRGN hRgn, int nLeftRect, int nTopRect, int nRightRect, int nBott
 int SetClipRgn(HDC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight);
 HRGN GetClipRgn(HDC hdc);
 int SetNullClipRgn(HDC hdc);
-int ClipCoords(HDC hdc, int *x, int *y, int *w, int *h);
+int ClipCoords(HDC hdc, int *x, int *y, int *w, int *h, int *srcx, int *srcy);
 int InvalidateRegion(HDC hdc, int x, int y, int w, int h);
 int EqualRgn(HRGN hSrcRgn1, HRGN hSrcRgn2);
 int CopyRect(HRECT dst, HRECT src);
 int PtInRect(HRECT rc, int x, int y);
-int FillRect(HDC hdc, HRECT rect, HBRUSH hbr);
 int SelectClipRgn(HDC hdc, HRGN hrgn);
-COLORREF GetPixel(HDC hdc, int nXPos, int nYPos);
-COLORREF SetPixel(HDC hdc, int X, int Y, COLORREF crColor);
 COLORREF GetBkColor(HDC hdc);
 COLORREF SetBkColor(HDC hdc, COLORREF crColor);
 COLORREF SetTextColor(HDC hdc, COLORREF crColor);
 int SetBkMode(HDC hdc, int iBkMode);
+COLORREF GetPixel(HDC hdc, int nXPos, int nYPos);
+COLORREF SetPixel(HDC hdc, int X, int Y, COLORREF crColor);
+int FillRect(HDC hdc, HRECT rect, HBRUSH hbr);
 int PatBlt(HDC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight, int rop);
 int BitBlt(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc, int rop);
 HGDIOBJ SelectObject(HDC hdc, HGDIOBJ hgdiobj);
@@ -263,8 +270,6 @@ int DeleteDC(HDC hdc);
 
 #define SET_GDI(_inst, _gdi) (_inst)->param2 = _gdi
 #define GET_GDI(_inst) ((GDI*) ((_inst)->param2))
-
-#define WITH_DEBUG_GDI
 
 #ifdef WITH_DEBUG_GDI
 #define DEBUG_GDI(fmt, ...) fprintf(stderr, "DBG (RDP5) %s (%d): " fmt, __FUNCTION__, __LINE__, ## __VA_ARGS__)

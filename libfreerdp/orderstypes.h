@@ -32,6 +32,8 @@
 #define RDP_ORDER_SMALL      0x40
 #define RDP_ORDER_TINY       0x80
 
+#define MAX_DATA 256
+
 /* Primary Drawing Orders */
 enum RDP_ORDER_TYPE
 {
@@ -48,10 +50,11 @@ enum RDP_ORDER_TYPE
 	RDP_ORDER_MULTIPATBLT = 16,
 	RDP_ORDER_MULTISCRBLT = 17,
 	RDP_ORDER_MULTIOPAQUERECT = 18,
-	RDP_ORDER_FAST_GLYPH_INDEX = 19,
+	RDP_ORDER_FAST_INDEX = 19,
 	RDP_ORDER_POLYGON_SC = 20,
 	RDP_ORDER_POLYGON_CB = 21,
 	RDP_ORDER_POLYLINE = 22,
+	RDP_ORDER_FAST_GLYPH = 24,
 	RDP_ORDER_ELLIPSE_SC = 25,
 	RDP_ORDER_ELLIPSE_CB = 26,
 	RDP_ORDER_GLYPH_INDEX = 27
@@ -113,6 +116,22 @@ typedef struct _PATBLT_ORDER
 
 }
 PATBLT_ORDER;
+
+typedef struct _MULTIPATBLT_ORDER
+{
+	sint16 x;
+	sint16 y;
+	sint16 cx;
+	sint16 cy;
+	uint8 opcode;
+	uint32 bgcolor;
+	uint32 fgcolor;
+	RD_BRUSH brush;
+	uint8 nentries;
+	uint16 datasize;
+	uint8 data[MAX_DATA];
+}
+MULTIPATBLT_ORDER;
 
 typedef struct _SCRBLT_ORDER
 {
@@ -199,8 +218,6 @@ typedef struct _MEMBLT_ORDER
 
 }
 MEMBLT_ORDER;
-
-#define MAX_DATA 256
 
 typedef struct _POLYGON_SC_ORDER
 {
@@ -300,6 +317,51 @@ typedef struct _GLYPH_INDEX_ORDER
 }
 GLYPH_INDEX_ORDER;
 
+typedef struct _FAST_INDEX_ORDER
+{
+	uint8 font;
+	uint8 flags;
+	uint8 opcode;
+	uint32 bgcolor;
+	uint32 fgcolor;
+	sint16 clipleft;
+	sint16 cliptop;
+	sint16 clipright;
+	sint16 clipbottom;
+	sint16 boxleft;
+	sint16 boxtop;
+	sint16 boxright;
+	sint16 boxbottom;
+	RD_BRUSH brush;
+	sint16 x;
+	sint16 y;
+	uint8 length;
+	uint8 text[MAX_TEXT];
+}
+FAST_INDEX_ORDER;
+
+typedef struct _FAST_GLYPH_ORDER
+{
+	uint8 font;
+	uint8 flags;
+	uint8 opcode;
+	uint32 bgcolor;
+	uint32 fgcolor;
+	sint16 clipleft;
+	sint16 cliptop;
+	sint16 clipright;
+	sint16 clipbottom;
+	sint16 boxleft;
+	sint16 boxtop;
+	sint16 boxright;
+	sint16 boxbottom;
+	sint16 x;
+	sint16 y;
+	uint8 length;
+	uint8 data[256];
+}
+FAST_GLYPH_ORDER;
+
 typedef struct _RDP_ORDER_STATE
 {
 	uint8 order_type;
@@ -307,6 +369,7 @@ typedef struct _RDP_ORDER_STATE
 
 	DSTBLT_ORDER dstblt;
 	PATBLT_ORDER patblt;
+	MULTIPATBLT_ORDER multipatblt;
 	SCRBLT_ORDER scrblt;
 	LINETO_ORDER lineto;
 	OPAQUERECT_ORDER opaquerect;
@@ -319,6 +382,8 @@ typedef struct _RDP_ORDER_STATE
 	ELLIPSE_SC_ORDER ellipse_sc;
 	ELLIPSE_CB_ORDER ellipse_cb;
 	GLYPH_INDEX_ORDER glyph_index;
+	FAST_INDEX_ORDER fast_index;
+	FAST_GLYPH_ORDER fast_glyph;
 }
 RDP_ORDER_STATE;
 

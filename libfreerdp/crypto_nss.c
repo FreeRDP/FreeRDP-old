@@ -54,7 +54,7 @@ static
 void check(SECStatus s, char* msg) {
 	if (s != SECSuccess) {
 		/* http://www.mozilla.org/projects/security/pki/nss/ref/ssl/sslerr.html */
-		fprintf(stderr, "NSS error %d: %s\n", PR_GetError(), msg);
+		printf("NSS error %d: %s\n", PR_GetError(), msg);
 		ASSERT(s == SECSuccess);
 	}
 }
@@ -183,7 +183,7 @@ crypto_rc4_free(CryptoRc4 rc4)
 
 struct crypto_cert_struct
 {
-    CERTCertificate * cert;
+	CERTCertificate * cert;
 };
 
 CryptoCert
@@ -206,7 +206,7 @@ void
 crypto_cert_free(CryptoCert cert)
 {
 	CERT_DestroyCertificate(cert->cert);
-    xfree(cert);
+	xfree(cert);
 }
 
 RD_BOOL

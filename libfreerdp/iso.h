@@ -20,12 +20,15 @@
 
 #include <freerdp/types_ui.h>
 #include "stream.h"
+#include "nego.h"
 
 #ifndef __ISO_H
 #define __ISO_H
 
 struct rdp_iso
 {
+        char* cookie;
+	struct _NEGO * nego;
 	struct rdp_mcs * mcs;
 	struct rdp_tcp * tcp;
 };
@@ -47,8 +50,12 @@ void
 iso_send(rdpIso * iso, STREAM s);
 void
 iso_fp_send(rdpIso * iso, STREAM s, uint32 flags);
+void
+x224_send_connection_request(rdpIso * iso);
 STREAM
 iso_recv(rdpIso * iso, isoRecvType * ptype);
+STREAM
+tpkt_recv(rdpIso * iso, uint8 * pcode, isoRecvType * ptype);
 RD_BOOL
 iso_connect(rdpIso * iso, char * server, char * username, int port);
 void

@@ -1,22 +1,20 @@
-/* -*- c-basic-offset: 8 -*-
+/*
    FreeRDP: A Remote Desktop Protocol client.
    GDI Window Routines
 
-   Copyright (C) Marc-Andre Moreau <marcandre.moreau@gmail.com> 2010
+   Copyright 2010 Marc-Andre Moreau <marcandre.moreau@gmail.com>
 
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
-   (at your option) any later version.
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
 
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
 */
 
 #include <stdio.h>
@@ -511,7 +509,7 @@ gdi_ui_paint_bitmap(struct rdp_inst * inst, int x, int y, int cx, int cy, int wi
 	gdi_bitmap *gdi_bmp;
 	GDI *gdi = GET_GDI(inst);
 
-	DEBUG_GDI("ui_paint_bitmap: x:%d y:%d cx:%d cy:%d\n", x, y, cx, cy);
+	//DEBUG_GDI("ui_paint_bitmap: x:%d y:%d cx:%d cy:%d\n", x, y, cx, cy);
 
 	gdi_bmp = (gdi_bitmap*) inst->ui_create_bitmap(inst, width, height, data);
 	BitBlt(gdi->primary->hdc, x, y, cx, cy, gdi_bmp->hdc, 0, 0, SRCCOPY);
@@ -527,17 +525,16 @@ gdi_ui_destroy_bitmap(struct rdp_inst * inst, RD_HBITMAP bmp)
 static void
 gdi_ui_line(struct rdp_inst * inst, uint8 opcode, int startx, int starty, int endx, int endy, RD_PEN * pen)
 {
+	return;
 	DEBUG_GDI("ui_line opcode:%d startx:%d starty:%d endx:%d endy:%d\n", opcode, startx, starty, endx, endy);
 
 	int cx;
 	int cy;
 	HPEN hPen;
 	GDI *gdi = GET_GDI(inst);
-	
-	cx = endx - startx;
-	cy = endy - starty;
-	endx = startx + cx;
-	endy = starty + cy;
+
+	cx = endx - startx + 1;
+	cy = endy - starty + 1;
 	
 	gdi_color_convert(&(gdi->pixel), pen->color, gdi->srcBpp, gdi->palette);
 	
@@ -559,12 +556,8 @@ gdi_ui_rect(struct rdp_inst * inst, int x, int y, int cx, int cy, int color)
 	GDI *gdi = GET_GDI(inst);
 
 	//DEBUG_GDI("ui_rect: x:%d y:%d cx:%d cy:%d\n", x, y, cx, cy);
-	
-	rect.left = x;
-	rect.top = y;
-	rect.right = x + cx;
-	rect.bottom = y + cy;
-	
+
+	CRgnToRect(x, y, cx, cy, &rect);
 	gdi_color_convert(&(gdi->pixel), color, gdi->srcBpp, gdi->palette);
 	hBrush = CreateSolidBrush(PixelRGB(gdi->pixel));
 	FillRect(gdi->drawing->hdc, &rect, hBrush);
@@ -631,28 +624,42 @@ gdi_ui_patblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy
 	
 	if (brush->style == BS_PATTERN)
 	{
+		char* data;
 		HBITMAP hBmp;
 		HBRUSH originalBrush;
-		
-		hBmp = CreateBitmap(8, 8, gdi->drawing->hdc->bitsPerPixel,
-			(char*) gdi_image_convert((char*) brush->bd->data, 8, 8, gdi->srcBpp, gdi->dstBpp, gdi->palette));
 
-		originalBrush = gdi->drawing->hdc->brush;
-		gdi->drawing->hdc->brush = CreatePatternBrush(hBmp);
+		if (brush->bd == 0) /* RDP4 Brush */
+		{
 
-		PatBlt(gdi->drawing->hdc, x, y, cx, cy, gdi_rop3_code(opcode));
+		}
+		else if (brush->bd->color_code > 1) /*  > 1 bpp */
+		{
+			data = (char*) gdi_image_convert((char*) brush->bd->data, 8, 8, gdi->srcBpp, gdi->dstBpp, gdi->palette);
+			hBmp = CreateBitmap(8, 8, gdi->drawing->hdc->bitsPerPixel, data);
 
-		DeleteObject((HGDIOBJ) gdi->drawing->hdc->brush);
-		gdi->drawing->hdc->brush = originalBrush;
+			originalBrush = gdi->drawing->hdc->brush;
+			gdi->drawing->hdc->brush = CreatePatternBrush(hBmp);
+
+			PatBlt(gdi->drawing->hdc, x, y, cx, cy, gdi_rop3_code(opcode));
+
+			DeleteObject((HGDIOBJ) gdi->drawing->hdc->brush);
+			gdi->drawing->hdc->brush = originalBrush;
+		}
+		else
+		{
+
+		}
 	}
 	else if (brush->style == BS_SOLID)
 	{
+#if 0
 		gdi_color_convert(&(gdi->pixel), fgcolor, gdi->dstBpp, gdi->palette);
 		gdi->textColor = SetTextColor(gdi->drawing->hdc, PixelRGB(gdi->pixel));
 		
 		PatBlt(gdi->drawing->hdc, x, y, cx, cy, gdi_rop3_code(opcode));
 
 		SetTextColor(gdi->drawing->hdc, gdi->textColor);
+#endif
 	}
 	else
 	{
@@ -846,13 +853,22 @@ gdi_init(rdpInst * inst)
 
 	gdi->width = inst->settings->width;
 	gdi->height = inst->settings->height;
-
-	gdi->dstBpp = 32;
 	gdi->srcBpp = inst->settings->server_depth;
+
+	if (gdi->srcBpp > 16)
+	{
+		gdi->dstBpp = 32;
+		gdi->bytesPerPixel = 4;
+	}
+	else
+	{
+		gdi->dstBpp = 16;
+		gdi->bytesPerPixel = 2;
+	}
 	
 	gdi->hdc = GetDC();
-	gdi->hdc->bytesPerPixel = 4;
 	gdi->hdc->bitsPerPixel = gdi->dstBpp;
+	gdi->hdc->bytesPerPixel = gdi->bytesPerPixel;
 
 	gdi->primary = gdi_bitmap_new(gdi, gdi->width, gdi->height, gdi->dstBpp, 0, NULL);
 	gdi->primary_buffer = gdi->primary->bitmap->data;

@@ -122,7 +122,7 @@ tcp_can_recv(int sck, int millis)
 	return False;
 }
 
-/* Initialise and return STREAM.
+/* Initialize and return STREAM.
  * The stream will have room for at least minsize.
  * The tcp layers out stream will be used. */
 STREAM

@@ -1,22 +1,20 @@
-/* -*- c-basic-offset: 8 -*-
+/*
    FreeRDP: A Remote Desktop Protocol client.
-   Protocol services - Capability sets
+   RDP Capabilities
 
-   Copyright (C) Marc-Andre Moreau <marcandre.moreau@gmail.com> 2009
+   Copyright 2009 Marc-Andre Moreau <marcandre.moreau@gmail.com>
 
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
-   (at your option) any later version.
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
 
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
 */
 
 #include <freerdp/rdpset.h>
@@ -188,14 +186,14 @@ rdp_out_order_capset(rdpRdp * rdp, STREAM s)
 	orderSupport[NEG_MULTI_DRAWNINEGRID_INDEX] = 1;
 	orderSupport[NEG_SAVEBITMAP_INDEX] = (rdp->settings->desktop_save ? 1 : 0);
 	// orderSupport[NEG_MULTIDSTBLT_INDEX] = 1;
-	// orderSupport[NEG_MULTIPATBLT_INDEX] = 1;
+	orderSupport[NEG_MULTIPATBLT_INDEX] = 1;
 	// orderSupport[NEG_MULTISCRBLT_INDEX] = 1;
 	// orderSupport[NEG_MULTIOPAQUERECT_INDEX] = 1;
-	// orderSupport[NEG_FAST_INDEX_INDEX] = 1;
+	orderSupport[NEG_FAST_INDEX_INDEX] = 1;
 	orderSupport[NEG_POLYGON_SC_INDEX] = (rdp->settings->polygon_ellipse_orders ? 1 : 0);
 	orderSupport[NEG_POLYGON_CB_INDEX] = (rdp->settings->polygon_ellipse_orders ? 1 : 0);
 	orderSupport[NEG_POLYLINE_INDEX] = 1;
-	// orderSupport[NEG_FAST_GLYPH_INDEX] = 1;
+	orderSupport[NEG_FAST_GLYPH_INDEX] = 1;
 	orderSupport[NEG_ELLIPSE_SC_INDEX] = (rdp->settings->polygon_ellipse_orders ? 1 : 0);
 	orderSupport[NEG_ELLIPSE_CB_INDEX] = (rdp->settings->polygon_ellipse_orders ? 1 : 0);
 	orderSupport[NEG_INDEX_INDEX] = 1;

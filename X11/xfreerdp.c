@@ -127,7 +127,7 @@ out_args(void)
 		"\t--kbd-list: list all keyboard layout IDs\n"
 		"\t-s: shell\n"
 		"\t-c: directory\n"
-		"\t-g: geometry, using format WxH, default is 1024x768\n"
+		"\t-g: geometry, using format WxH or X%, default is 1024x768\n"
 		"\t-t: alternative port number, default is 3389\n"
 		"\t-n: hostname\n"
 		"\t-o: console audio\n"
@@ -136,6 +136,7 @@ out_args(void)
 		"\t-D: hide window decorations\n"
 		"\t-z: enable bulk compression\n"
 		"\t-x: performance flags (m, b or l for modem, broadband or lan)\n"
+		"\t-X: embed into another window with a given XID.\n"
 #ifndef DISABLE_TLS
 		"\t--no-tls: disable TLS encryption\n"
 #endif
@@ -301,11 +302,9 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 			{
 				settings->height = strtol(p + 1, &p, 10);
 			}
-			if ((settings->width < 16) || (settings->height < 16) ||
-				(settings->width > 4096) || (settings->height > 4096))
+			if (*p == '%')
 			{
-				printf("invalid dimensions\n");
-				return 1;
+				xfi->percentscreen = settings->width;
 			}
 		}
 		else if (strcmp("-t", argv[*pindex]) == 0)
@@ -379,6 +378,19 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 			else
 			{
 				settings->performanceflags = strtol(argv[*pindex], 0, 16);
+			}
+		} else if (strcmp("-X", argv[*pindex]) == 0) {
+			*pindex = *pindex + 1;
+
+			if (*pindex == argc) {
+				printf("missing XID\n");
+				return 1;
+			}
+
+			xfi->embed = strtoul(argv[*pindex], NULL, 16);
+			if (!xfi->embed) {
+				printf("bad XID\n");
+				return 1;
 			}
 		}
 #ifndef DISABLE_TLS

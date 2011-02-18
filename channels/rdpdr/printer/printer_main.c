@@ -1,23 +1,21 @@
-/* -*- c-basic-offset: 8 -*-
+/*
    FreeRDP: A Remote Desktop Protocol client.
-   Redirected Printer Device Service
+   Redirected Device Manager
 
-   Copyright (C) Marc-Andre Moreau <marcandre.moreau@gmail.com> 2010
-   Copyright (C) Vic Lee <llyzs@163.com> 2010
+   Copyright 2010-2011 Marc-Andre Moreau <marcandre.moreau@gmail.com>
+   Copyright 2010-2011 Vic Lee
 
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
-   (at your option) any later version.
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
 
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
 */
 
 #include <stdio.h>
@@ -100,6 +98,7 @@ printer_get_data(const char * name, int * len)
 		buf = (char *) malloc(*len);
 		memset(buf, 0, *len);
 		i = fread(buf, 1, *len, fp);
+		fclose(fp);
 	}
 	free(filename);
 	return buf;
@@ -323,10 +322,14 @@ DeviceServiceEntry(PDEVMAN pDevman, PDEVMAN_ENTRY_POINTS pEntryPoints)
 				srv = printer_register_service(pDevman, pEntryPoints);
 
 			if (data->data[1] == NULL)
+			{
 				printer_hw_register_auto(pDevman, pEntryPoints, srv, &port);
+				break;
+			}
 			else
+			{
 				printer_register(pDevman, pEntryPoints, srv, data->data[1], data->data[2], (port == 1), &port);
-			break;
+			}
 		}
 		data = (RD_PLUGIN_DATA *) (((void *) data) + data->size);
 	}

@@ -1,22 +1,20 @@
-/* -*- c-basic-offset: 8 -*-
+/*
    FreeRDP: A Remote Desktop Protocol client.
    GDI Color Conversion Routines
 
-   Copyright (C) Marc-Andre Moreau <marcandre.moreau@gmail.com> 2010
+   Copyright 2010 Marc-Andre Moreau <marcandre.moreau@gmail.com>
 
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
-   (at your option) any later version.
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
 
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
 */
 
 #include <stdio.h>
@@ -40,13 +38,13 @@ gdi_color_convert(PIXEL *pixel, int color, int bpp, HPALETTE palette)
 	switch (bpp)
 	{
 		case 32:
-			GetABGR32(pixel->alpha, pixel->red, pixel->green, pixel->blue, color);
+			GetBGR32(pixel->red, pixel->green, pixel->blue, color);
 			break;
 		case 24:
 			GetBGR24(pixel->red, pixel->green, pixel->blue, color);
 			break;
 		case 16:
-			GetBGR16(pixel->red, pixel->green, pixel->blue, color);
+			GetRGB16(pixel->red, pixel->green, pixel->blue, color);
 			break;
 		case 15:
 			GetBGR15(pixel->red, pixel->green, pixel->blue, color);
@@ -69,32 +67,61 @@ gdi_image_convert(char* srcData, int width, int height, int srcBpp, int dstBpp, 
 	int green;
 	int blue;
 	int index;
-	int pixel;
 	char *src8;
-	unsigned short *src16;
-	unsigned short *dst16;
-	unsigned int *dst32;
+	uint32 pixel;
+	uint16 *src16;
+	uint16 *dst16;
+	uint32 *dst32;
 	char *dstData;
-
+	
 	if (srcBpp == dstBpp)
 	{
-		int x, y;
-		char *dstp;
-
-		dstData = (char*) malloc(width * height * 4);
-		memcpy(dstData, srcData, width * height * 4);
-
-		dstp = dstData;
-		for (y = 0; y < height; y++)
+		if (dstBpp == 32)
 		{
-			for (x = 0; x < width * 4; x += 4)
-			{
-				dstp += 3;
-				*dstp = 0xFF;
-				dstp++;
-			}
-		}
+#ifdef USE_ALPHA
+			int x, y;
+			char *dstp;
 
+			dstData = (char*) malloc(width * height * 4);
+			memcpy(dstData, srcData, width * height * 4);
+
+			dstp = dstData;
+			for (y = 0; y < height; y++)
+			{
+				for (x = 0; x < width * 4; x += 4)
+				{
+					dstp += 3;
+					*dstp = 0xFF;
+					dstp++;
+				}
+			}
+#else
+			dstData = (char*) malloc(width * height * 4);
+			memcpy(dstData, srcData, width * height * 4);
+#endif
+		}
+		else if (dstBpp == 16)
+		{
+			dstData = (char*) malloc(width * height * 2);
+#ifdef GDI_SWAP_16BPP
+			src16 = (uint16*) srcData;
+			dst16 = (uint16*) dstData;
+			for (index = width * height; index > 0; index--)
+			{
+				*dst16 = (*src16 >> 8) | (*src16 << 8);
+				src16++;
+				dst16++;
+			}
+#else
+			memcpy(dstData, srcData, width * height * 2);
+#endif
+		}
+		else
+		{
+			printf("OMG HAX BPP:%d\n", dstBpp);
+			dstData = (char*) malloc(width * height * 4);
+			memcpy(dstData, srcData, width * height * 4);
+		}
 		return dstData;
 	}
 	if ((srcBpp == 24) && (dstBpp == 32))
@@ -123,7 +150,7 @@ gdi_image_convert(char* srcData, int width, int height, int srcBpp, int dstBpp, 
 			pixel = *src16;
 			src16++;
 			GetBGR16(red, green, blue, pixel);
-			pixel = RGB32(red, green, blue);
+			pixel = BGR32(red, green, blue);
 			*dst32 = pixel;
 			dst32++;
 		}

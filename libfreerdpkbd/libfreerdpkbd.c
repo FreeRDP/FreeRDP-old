@@ -1,22 +1,20 @@
-/* -*- c-basic-offset: 8 -*-
+/*
    FreeRDP: A Remote Desktop Protocol client.
-   User interface services - X keyboard mapping using XKB
+   XKB-based Keyboard Mapping to Microsoft Keyboard System
 
-   Copyright (C) Marc-Andre Moreau <marcandre.moreau@gmail.com> 2009
+   Copyright 2009 Marc-Andre Moreau <marcandre.moreau@gmail.com>
 
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
-   (at your option) any later version.
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
 
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
 */
 
 #include <stdio.h>
@@ -108,7 +106,7 @@ get_keyboard_layouts(int types)
 unsigned int
 detect_keyboard_layout_from_xkb()
 {
-        FILE* xprop;
+	FILE* xprop;
 
 	char* pch;
 	char* beg;
@@ -117,12 +115,12 @@ detect_keyboard_layout_from_xkb()
 	char* layout = NULL;
 	char* variant = NULL;
 
-        char buffer[1024];
+	char buffer[1024];
 	unsigned int keyboard_layout = 0;
 
 	/* We start by looking for _XKB_RULES_NAMES_BACKUP which appears to be used by libxklavier */
 
-        xprop = popen("xprop -root _XKB_RULES_NAMES_BACKUP", "r");
+	xprop = popen("xprop -root _XKB_RULES_NAMES_BACKUP", "r");
 
 	/* Sample output for "Canadian Multilingual Standard"
 	 *
@@ -133,8 +131,8 @@ detect_keyboard_layout_from_xkb()
 	 * "multi" the keyboard layout variant
 	 */
 
-        while(fgets(buffer, sizeof(buffer), xprop) != NULL)
-        {
+	while(fgets(buffer, sizeof(buffer), xprop) != NULL)
+	{
 		if((pch = strstr(buffer, "_XKB_RULES_NAMES_BACKUP(STRING) = ")) != NULL)
 		{
 			/* "rules" */
@@ -162,8 +160,8 @@ detect_keyboard_layout_from_xkb()
 
 			variant = beg;
 		}
-        }
-        pclose(xprop);
+	}
+	pclose(xprop);
 
 	keyboard_layout = find_keyboard_layout_in_xorg_rules(layout, variant);
 
@@ -172,10 +170,10 @@ detect_keyboard_layout_from_xkb()
 
 	/* Check _XKB_RULES_NAMES if _XKB_RULES_NAMES_BACKUP fails */
 
-        xprop = popen("xprop -root _XKB_RULES_NAMES", "r");
+	xprop = popen("xprop -root _XKB_RULES_NAMES", "r");
 
-        while(fgets(buffer, sizeof(buffer), xprop) != NULL)
-        {
+	while(fgets(buffer, sizeof(buffer), xprop) != NULL)
+	{
 		if((pch = strstr(buffer, "_XKB_RULES_NAMES(STRING) = ")) != NULL)
 		{
 			/* "rules" */
@@ -203,8 +201,8 @@ detect_keyboard_layout_from_xkb()
 
 			variant = beg;
 		}
-        }
-        pclose(xprop);
+	}
+	pclose(xprop);
 
 	keyboard_layout = find_keyboard_layout_in_xorg_rules(layout, variant);
 	return keyboard_layout;
@@ -352,7 +350,7 @@ detect_keyboard_layout_from_locale()
 unsigned int
 detect_keyboard_type_and_layout_sunos(char* xkbfile, int length)
 {
-        FILE* kbd;
+	FILE* kbd;
 
 	int i;
 	int type = 0;
@@ -362,7 +360,7 @@ detect_keyboard_type_and_layout_sunos(char* xkbfile, int length)
 	char* beg;
 	char* end;
 
-        char buffer[1024];
+	char buffer[1024];
 
 	/*
 		Sample output for "kbd -t -l" :
@@ -374,10 +372,10 @@ detect_keyboard_type_and_layout_sunos(char* xkbfile, int length)
 		rate(ms)=40
 	*/
 
-        kbd = popen("kbd -t -l", "r");
+	kbd = popen("kbd -t -l", "r");
 
-        while(fgets(buffer, sizeof(buffer), kbd) != NULL)
-        {
+	while(fgets(buffer, sizeof(buffer), kbd) != NULL)
+	{
 		if((pch = strstr(buffer, "type=")) != NULL)
 		{
 			beg = pch + sizeof("type=") - 1;
@@ -392,7 +390,8 @@ detect_keyboard_type_and_layout_sunos(char* xkbfile, int length)
 			end[0] = '\0';
 			layout = atoi(beg);
 		}
-        }
+	}
+	pclose(kbd);
 
 	for(i = 0; i < sizeof(SunOSKeyboards) / sizeof(SunOSKeyboard); i++)
 	{

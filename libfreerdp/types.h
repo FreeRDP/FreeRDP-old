@@ -85,4 +85,9 @@ typedef struct _RDPCOMP
 	struct stream ns;
 } RDPCOMP;
 
+typedef struct _RECTANGLE
+{
+	sint16 l, t, r, b;
+} RECTANGLE;
+
 #endif // __TYPES_H
