@@ -43,6 +43,11 @@ struct pulse_device_data
 	pa_sample_spec sample_spec;
 	int bytes_per_frame;
 	pa_stream *stream;
+	int format;
+	int block_size;
+	rdpsndDspAdpcm adpcm;
+
+	PRDPSNDDSPDECODEIMAADPCM pDecodeImaAdpcm;
 };
 
 static void
@@ -268,6 +273,7 @@ rdpsnd_pulse_open(rdpsndDevicePlugin * devplugin)
 	pa_threaded_mainloop_unlock(pulse_data->mainloop);
 	if (state == PA_STREAM_READY)
 	{
+		memset(&pulse_data->adpcm, 0, sizeof(rdpsndDspAdpcm));
 		LLOGLN(0, ("rdpsnd_pulse_open: connected"));
 		return 0;
 	}
@@ -347,6 +353,16 @@ rdpsnd_pulse_format_supported(rdpsndDevicePlugin * devplugin, char * snd_format,
 				return 1;
 			}
 			break;
+
+		case 0x11: /* IMA ADPCM */
+			if ((nSamplesPerSec <= PA_RATE_MAX) &&
+				(wBitsPerSample == 4) &&
+				(nChannels == 1 || nChannels == 2))
+			{
+				LLOGLN(0, ("rdpsnd_pulse_format_supported: ok"));
+				return 1;
+			}
+			break;
 	}
 	return 0;
 }
@@ -360,6 +376,7 @@ rdpsnd_pulse_set_format(rdpsndDevicePlugin * devplugin, char * snd_format, int s
 	int wBitsPerSample;
 	int nSamplesPerSec;
 	int wFormatTag;
+	int nBlockAlign;
 
 	pulse_data = (struct pulse_device_data *) devplugin->device_data;
 	if (!pulse_data->context)
@@ -367,7 +384,11 @@ rdpsnd_pulse_set_format(rdpsndDevicePlugin * devplugin, char * snd_format, int s
 	wFormatTag = GET_UINT16(snd_format, 0);
 	nChannels = GET_UINT16(snd_format, 2);
 	nSamplesPerSec = GET_UINT32(snd_format, 4);
+	nBlockAlign = GET_UINT16(snd_format, 12);
 	wBitsPerSample = GET_UINT16(snd_format, 14);
+	LLOGLN(0, ("rdpsnd_pulse_set_format: wFormatTag=%d nChannels=%d "
+		"nSamplesPerSec=%d wBitsPerSample=%d nBlockAlign=%d",
+		wFormatTag, nChannels, nSamplesPerSec, wBitsPerSample, nBlockAlign));
 
 	sample_spec.rate = nSamplesPerSec;
 	sample_spec.channels = nChannels;
@@ -392,17 +413,19 @@ rdpsnd_pulse_set_format(rdpsndDevicePlugin * devplugin, char * snd_format, int s
 		case 7: /* U-LAW */
 			sample_spec.format = PA_SAMPLE_ULAW;
 			break;
+
+		case 0x11: /* IMA ADPCM */
+			sample_spec.format = PA_SAMPLE_S16LE;
+			wBitsPerSample = 16;
+			break;
 	}
-	LLOGLN(0, ("rdpsnd_pulse_set_format: wFormatTag=%d nChannels=%d "
-		"nSamplesPerSec=%d wBitsPerSample=%d",
-		wFormatTag, nChannels, nSamplesPerSec, wBitsPerSample));
-	if (memcmp(&sample_spec, &pulse_data->sample_spec, sizeof(pa_sample_spec)) != 0)
-	{
-		pulse_data->sample_spec = sample_spec;
-		pulse_data->bytes_per_frame = nChannels * wBitsPerSample / 8;
-		rdpsnd_pulse_close(devplugin);
-		rdpsnd_pulse_open(devplugin);
-	}
+
+	pulse_data->sample_spec = sample_spec;
+	pulse_data->bytes_per_frame = nChannels * wBitsPerSample / 8;
+	pulse_data->format = wFormatTag;
+	pulse_data->block_size = nBlockAlign;
+	rdpsnd_pulse_close(devplugin);
+	rdpsnd_pulse_open(devplugin);
 
 	return 0;
 }
@@ -420,10 +443,26 @@ rdpsnd_pulse_play(rdpsndDevicePlugin * devplugin, char * data, int size, int * d
 	struct pulse_device_data * pulse_data;
 	int len;
 	int ret;
+	uint8 * decoded_data;
+	char * src;
+	int decoded_size;
 
 	pulse_data = (struct pulse_device_data *) devplugin->device_data;
 	if (!pulse_data->stream)
 		return 1;
+
+	if (pulse_data->format == 17)
+	{
+		decoded_data = pulse_data->pDecodeImaAdpcm(&pulse_data->adpcm,
+			(uint8 *) data, size, pulse_data->sample_spec.channels, pulse_data->block_size, &decoded_size);
+		size = decoded_size;
+		src = (char *) decoded_data;
+	}
+	else
+	{
+		decoded_data = NULL;
+		src = data;
+	}
 
 	*delay_ms = size * 1000 / (pulse_data->bytes_per_frame * pulse_data->sample_spec.rate);
 	LLOGLN(10, ("rdpsnd_pulse_play: size %d delay_ms %d", size, *delay_ms));
@@ -440,17 +479,20 @@ rdpsnd_pulse_play(rdpsndDevicePlugin * devplugin, char * data, int size, int * d
 			break;
 		if (len > size)
 			len = size;
-		ret = pa_stream_write(pulse_data->stream, data, len, NULL, 0LL, PA_SEEK_RELATIVE);
+		ret = pa_stream_write(pulse_data->stream, src, len, NULL, 0LL, PA_SEEK_RELATIVE);
 		if (ret < 0)
 		{
 			LLOGLN(0, ("rdpsnd_pulse_play: pa_stream_write failed (%d)",
 				pa_context_errno(pulse_data->context)));
 			break;
 		}
-		data += len;
+		src += len;
 		size -= len;
 	}
 	pa_threaded_mainloop_unlock(pulse_data->mainloop);
+
+	if (decoded_data)
+		free(decoded_data);
 
 	return 0;
 }
@@ -495,6 +537,7 @@ FreeRDPRdpsndDeviceEntry(PFREERDP_RDPSND_DEVICE_ENTRY_POINTS pEntryPoints)
 				sizeof(pulse_data->device_name) - strlen(pulse_data->device_name));
 		}
 	}
+	pulse_data->pDecodeImaAdpcm = pEntryPoints->pDecodeImaAdpcm;
 	devplugin->device_data = pulse_data;
 
 	pulse_data->mainloop = pa_threaded_mainloop_new();

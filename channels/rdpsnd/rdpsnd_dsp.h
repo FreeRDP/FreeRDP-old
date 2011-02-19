@@ -29,5 +29,9 @@ rdpsnd_dsp_resample(uint8 * src, int bytes_per_frame,
 	uint32 srate, int sframes,
 	uint32 rrate, int * prframes);
 
+uint8 *
+rdpsnd_dsp_decode_ima_adpcm(rdpsndDspAdpcm * adpcm,
+	uint8 * src, int size, int channels, int block_size, int * out_size);
+
 #endif
 

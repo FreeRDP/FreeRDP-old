@@ -853,6 +853,7 @@ rdpsnd_load_device_plugin(rdpsndPlugin * plugin, const char * name, RD_PLUGIN_DA
 	entryPoints.plugin = plugin;
 	entryPoints.pRegisterRdpsndDevice = rdpsnd_register_device_plugin;
 	entryPoints.pResample = rdpsnd_dsp_resample;
+	entryPoints.pDecodeImaAdpcm = rdpsnd_dsp_decode_ima_adpcm;
 	entryPoints.data = data;
 	if (entry(&entryPoints) != 0)
 	{
