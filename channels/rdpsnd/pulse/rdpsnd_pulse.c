@@ -41,7 +41,6 @@ struct pulse_device_data
 	pa_threaded_mainloop *mainloop;
 	pa_context *context;
 	pa_sample_spec sample_spec;
-	int bytes_per_frame;
 	pa_stream *stream;
 	int format;
 	int block_size;
@@ -416,12 +415,10 @@ rdpsnd_pulse_set_format(rdpsndDevicePlugin * devplugin, char * snd_format, int s
 
 		case 0x11: /* IMA ADPCM */
 			sample_spec.format = PA_SAMPLE_S16LE;
-			wBitsPerSample = 16;
 			break;
 	}
 
 	pulse_data->sample_spec = sample_spec;
-	pulse_data->bytes_per_frame = nChannels * wBitsPerSample / 8;
 	pulse_data->format = wFormatTag;
 	pulse_data->block_size = nBlockAlign;
 
