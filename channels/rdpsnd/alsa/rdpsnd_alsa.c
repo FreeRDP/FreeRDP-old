@@ -236,7 +236,7 @@ rdpsnd_alsa_set_volume(rdpsndDevicePlugin * devplugin, uint32 value)
 }
 
 static int
-rdpsnd_alsa_play(rdpsndDevicePlugin * devplugin, char * data, int size, int * delay_ms)
+rdpsnd_alsa_play(rdpsndDevicePlugin * devplugin, char * data, int size)
 {
 	struct alsa_device_data * alsa_data;
 	char * resampled_data;
@@ -295,8 +295,6 @@ rdpsnd_alsa_play(rdpsndDevicePlugin * devplugin, char * data, int size, int * de
 
 	if (resampled_data != data)
 		free(resampled_data);
-
-	*delay_ms = size * 1000 / (bytes_per_frame * alsa_data->actual_rate);
 
 	return 0;
 }

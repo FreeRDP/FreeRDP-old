@@ -34,7 +34,7 @@ struct rdpsnd_device_plugin
 	int (*format_supported) (rdpsndDevicePlugin * devplugin, char * snd_format, int size);
 	int (*set_format) (rdpsndDevicePlugin * devplugin, char * snd_format, int size);
 	int (*set_volume) (rdpsndDevicePlugin * devplugin, uint32 value);
-	int (*play) (rdpsndDevicePlugin * devplugin, char * data, int size, int * delay_ms);
+	int (*play) (rdpsndDevicePlugin * devplugin, char * data, int size);
 	int (*close) (rdpsndDevicePlugin * devplugin);
 	void (*free) (rdpsndDevicePlugin * devplugin);
 	void * device_data;

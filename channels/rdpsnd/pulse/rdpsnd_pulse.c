@@ -222,9 +222,9 @@ rdpsnd_pulse_open(rdpsndDevicePlugin * devplugin)
 	pulse_data = (struct pulse_device_data *) devplugin->device_data;
 	if (!pulse_data->context)
 		return 1;
-	/* Since RDP server sends set_format request after open request, but we
-	   need the format spec to open the stream, we will defer the open request
-	   if initial set_format request is not yet received */
+	/* Since rdpsnd_main calls set_format() after open(), but we need the
+	   format spec to open the stream, we will defer the open request if
+	   initial set_format request is not yet received */
 	if (!pulse_data->sample_spec.rate || pulse_data->stream)
 		return 0;
 	LLOGLN(10, ("rdpsnd_pulse_open:"));
@@ -243,13 +243,13 @@ rdpsnd_pulse_open(rdpsndDevicePlugin * devplugin)
 	pa_stream_set_write_callback(pulse_data->stream,
 		rdpsnd_pulse_stream_request_callback, devplugin);
 	buffer_attr.maxlength = (uint32_t) -1;
-	buffer_attr.tlength = pa_usec_to_bytes(2000000, &pulse_data->sample_spec);
+	buffer_attr.tlength = (uint32_t) -1;//pa_usec_to_bytes(2000000, &pulse_data->sample_spec);
 	buffer_attr.prebuf = (uint32_t) -1;
 	buffer_attr.minreq = (uint32_t) -1;
 	buffer_attr.fragsize = (uint32_t) -1;
 	if (pa_stream_connect_playback(pulse_data->stream,
 		pulse_data->device_name[0] ? pulse_data->device_name : NULL,
-		&buffer_attr, PA_STREAM_ADJUST_LATENCY, NULL, NULL) < 0)
+		&buffer_attr, 0, NULL, NULL) < 0)
 	{
 		pa_threaded_mainloop_unlock(pulse_data->mainloop);
 		LLOGLN(0, ("rdpsnd_pulse_open: pa_stream_connect_playback failed (%d)",
@@ -424,7 +424,15 @@ rdpsnd_pulse_set_format(rdpsndDevicePlugin * devplugin, char * snd_format, int s
 	pulse_data->bytes_per_frame = nChannels * wBitsPerSample / 8;
 	pulse_data->format = wFormatTag;
 	pulse_data->block_size = nBlockAlign;
-	rdpsnd_pulse_close(devplugin);
+
+	if (pulse_data->stream)
+	{
+		pa_threaded_mainloop_lock(pulse_data->mainloop);
+		pa_stream_disconnect(pulse_data->stream);
+		pa_stream_unref(pulse_data->stream);
+		pulse_data->stream = NULL;
+		pa_threaded_mainloop_unlock(pulse_data->mainloop);
+	}
 	rdpsnd_pulse_open(devplugin);
 
 	return 0;
@@ -438,7 +446,7 @@ rdpsnd_pulse_set_volume(rdpsndDevicePlugin * devplugin, uint32 value)
 }
 
 static int
-rdpsnd_pulse_play(rdpsndDevicePlugin * devplugin, char * data, int size, int * delay_ms)
+rdpsnd_pulse_play(rdpsndDevicePlugin * devplugin, char * data, int size)
 {
 	struct pulse_device_data * pulse_data;
 	int len;
@@ -451,7 +459,7 @@ rdpsnd_pulse_play(rdpsndDevicePlugin * devplugin, char * data, int size, int * d
 	if (!pulse_data->stream)
 		return 1;
 
-	if (pulse_data->format == 17)
+	if (pulse_data->format == 0x11)
 	{
 		decoded_data = pulse_data->pDecodeImaAdpcm(&pulse_data->adpcm,
 			(uint8 *) data, size, pulse_data->sample_spec.channels, pulse_data->block_size, &decoded_size);
@@ -464,8 +472,7 @@ rdpsnd_pulse_play(rdpsndDevicePlugin * devplugin, char * data, int size, int * d
 		src = data;
 	}
 
-	*delay_ms = size * 1000 / (pulse_data->bytes_per_frame * pulse_data->sample_spec.rate);
-	LLOGLN(10, ("rdpsnd_pulse_play: size %d delay_ms %d", size, *delay_ms));
+	LLOGLN(10, ("rdpsnd_pulse_play: size %d", size));
 
 	pa_threaded_mainloop_lock(pulse_data->mainloop);
 	while (size > 0)
