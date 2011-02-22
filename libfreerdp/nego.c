@@ -30,7 +30,16 @@
 int nego_connect(NEGO *nego)
 {
 	if (nego->state == NEGO_STATE_INITIAL)
-		nego->state = NEGO_STATE_NLA;
+	{
+		if (nego->enabled_protocols[PROTOCOL_NLA] > 0)
+			nego->state = NEGO_STATE_NLA;
+		else if (nego->enabled_protocols[PROTOCOL_TLS] > 0)
+			nego->state = NEGO_STATE_TLS;
+		else if (nego->enabled_protocols[PROTOCOL_RDP] > 0)
+			nego->state = NEGO_STATE_RDP;
+		else
+			nego->state = NEGO_STATE_FAIL;
+	}
 
 	while (nego->state != NEGO_STATE_FINAL)
 	{

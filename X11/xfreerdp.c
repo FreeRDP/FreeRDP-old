@@ -102,8 +102,10 @@ set_default_params(xfInfo * xfi)
 	settings->triblt = 0;
 	settings->new_cursors = 1;
 	settings->rdp_version = 5;
+	settings->rdp_security = 1;
 #ifndef DISABLE_TLS
-	settings->tls = 1;
+	settings->tls_security = 1;
+	settings->nla_security = 1;
 #endif
 	xfi->fullscreen = xfi->fs_toggle = 0;
 	xfi->decoration = 1;
@@ -138,7 +140,10 @@ out_args(void)
 		"\t-x: performance flags (m, b or l for modem, broadband or lan)\n"
 		"\t-X: embed into another window with a given XID.\n"
 #ifndef DISABLE_TLS
+		"\t--no-rdp: disable Standard RDP encryption\n"
 		"\t--no-tls: disable TLS encryption\n"
+		"\t--no-nla: disable network level authentication\n"
+		"\t--sec: force protocol security (rdp, tls or nla)\n"
 #endif
 		"\t--plugin: load a virtual channel plugin\n"
 		"\t--no-osb: disable off screen bitmaps, default on\n"
@@ -233,6 +238,9 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 			}
 			strncpy(settings->domain, argv[*pindex], sizeof(settings->domain) - 1);
 			settings->domain[sizeof(settings->domain) - 1] = 0;
+
+			/* Domain logon for NLA doesn't work yet */
+			settings->nla_security = 0;
 		}
 		else if (strcmp("-k", argv[*pindex]) == 0)
 		{
@@ -394,9 +402,49 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 			}
 		}
 #ifndef DISABLE_TLS
+		else if (strcmp("--no-rdp", argv[*pindex]) == 0)
+		{
+			settings->rdp_security = 0;
+		}
 		else if (strcmp("--no-tls", argv[*pindex]) == 0)
 		{
-			settings->tls = 0;
+			settings->tls_security = 0;
+		}
+		else if (strcmp("--no-nla", argv[*pindex]) == 0)
+		{
+			settings->nla_security = 0;
+		}
+		else if (strcmp("--sec", argv[*pindex]) == 0)
+		{
+			*pindex = *pindex + 1;
+			if (*pindex == argc)
+			{
+				printf("missing protocol security\n");
+				return 1;
+			}
+			if (strncmp("rdp", argv[*pindex], 1) == 0) /* Standard RDP */
+			{
+				settings->rdp_security = 1;
+				settings->tls_security = 0;
+				settings->nla_security = 0;
+			}
+			else if (strncmp("tls", argv[*pindex], 1) == 0) /* TLS */
+			{
+				settings->rdp_security = 0;
+				settings->tls_security = 1;
+				settings->nla_security = 0;
+			}
+			else if (strncmp("nla", argv[*pindex], 1) == 0) /* NLA */
+			{
+				settings->rdp_security = 0;
+				settings->tls_security = 0;
+				settings->nla_security = 1;
+			}
+			else
+			{
+				printf("unknown protocol security\n");
+				return 1;
+			}
 		}
 #endif
 		else if (strcmp("--plugin", argv[*pindex]) == 0)
@@ -498,6 +546,14 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 			/* server is the last argument for the current session. arguments
 			   followed will be parsed for the next session. */
 			*pindex = *pindex + 1;
+
+			if (settings->nla_security == 1 && settings->autologin == 0)
+			{
+				/* NLA requires the password to be known ahead of time */
+				printf("No password given, disabling network level authentication\n");
+				settings->nla_security = 0;
+			}
+			
 			return 0;
 		}
 		else

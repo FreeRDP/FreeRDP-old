@@ -21,6 +21,8 @@
 #ifndef __STREAM_H
 #define __STREAM_H
 
+#include "frdp.h"
+
 #if !(defined(L_ENDIAN) || defined(B_ENDIAN))
 #warning no endian defined
 #endif

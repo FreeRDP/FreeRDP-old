@@ -553,6 +553,7 @@ void ntlmssp_output_negotiate_flags(STREAM s, uint32 flags)
 	p[2] = tmp;
 }
 
+#if 0
 static void ntlmssp_print_negotiate_flags(uint32 flags)
 {
 	printf("negotiateFlags \"0x%08X\"{\n", flags);
@@ -601,6 +602,7 @@ static void ntlmssp_print_negotiate_flags(uint32 flags)
 		printf("\tNTLMSSP_NEGOTIATE_UNICODE\n");
 	printf("}\n");
 }
+#endif
 
 void ntlmssp_populate_av_pairs(NTLMSSP *ntlmssp)
 {

@@ -41,6 +41,7 @@ struct _NEGO
 	struct rdp_iso * iso;
 	uint32 selected_protocol;
 	uint32 requested_protocols;
+        uint8 enabled_protocols[3];
 };
 typedef struct _NEGO NEGO;
 

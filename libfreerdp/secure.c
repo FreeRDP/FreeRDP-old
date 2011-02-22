@@ -971,10 +971,12 @@ sec_connect(rdpSec * sec, char *server, char *username, int port)
 {
 	NEGO *nego = sec->mcs->iso->nego;
 
-	if (sec->rdp->settings->tls)
-		nego->state = NEGO_STATE_NLA;
-	else
-		nego->state = NEGO_STATE_RDP;
+	if (sec->rdp->settings->nla_security)
+		nego->enabled_protocols[PROTOCOL_NLA] = 1;
+	if (sec->rdp->settings->tls_security)
+		nego->enabled_protocols[PROTOCOL_TLS] = 1;
+	if (sec->rdp->settings->rdp_security)
+		nego->enabled_protocols[PROTOCOL_RDP] = 1;
 
 	if (!iso_connect(sec->mcs->iso, server, username, port))
 		return False;
