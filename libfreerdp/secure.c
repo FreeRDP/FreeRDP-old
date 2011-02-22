@@ -29,7 +29,7 @@
 #include "mem.h"
 #include "debug.h"
 #include "tcp.h"
-#include "data_blob.h"
+#include "types.h"
 
 #ifndef DISABLE_TLS
 #include "tls.h"

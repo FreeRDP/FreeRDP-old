@@ -1,6 +1,6 @@
 /*
    FreeRDP: A Remote Desktop Protocol client.
-   DATA_BLOB routines
+   DATABLOB routines
 
    Copyright 2011 Marc-Andre Moreau <marcandre.moreau@gmail.com>
 
@@ -18,19 +18,18 @@
 */
 
 #include "mem.h"
+#include "datablob.h"
 
-#include "data_blob.h"
-
-void data_blob_alloc(DATA_BLOB *data_blob, int length)
+void datablob_alloc(DATABLOB *datablob, int length)
 {
-	data_blob->data = xmalloc(length);
-	data_blob->length = length;
+	datablob->data = xmalloc(length);
+	datablob->length = length;
 }
 
-void data_blob_free(DATA_BLOB *data_blob)
+void datablob_free(DATABLOB *datablob)
 {
-	if (data_blob->data)
-		xfree(data_blob->data);
+	if (datablob->data)
+		xfree(datablob->data);
 	
-	data_blob->length = 0;
+	datablob->length = 0;
 }

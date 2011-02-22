@@ -149,7 +149,7 @@ exit:
 }
 
 int
-tls_get_public_key(SSL *connection, DATA_BLOB *public_key)
+tls_get_public_key(SSL *connection, DATABLOB *public_key)
 {
 	int length;
 	int success = 1;
@@ -184,7 +184,7 @@ tls_get_public_key(SSL *connection, DATA_BLOB *public_key)
 		goto exit;
 	}
 
-	data_blob_alloc(public_key, length);
+	datablob_alloc(public_key, length);
 	p = (unsigned char*) public_key->data;
 	i2d_PublicKey(pkey, &p);
 

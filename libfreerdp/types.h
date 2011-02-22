@@ -24,6 +24,7 @@
 #include <freerdp/types_ui.h>
 #include "constants.h"
 #include "stream.h"
+#include "datablob.h"
 
 #ifndef True
 #define True  (1)
@@ -46,12 +47,6 @@ typedef struct _FONTGLYPH
 	uint16 height;
 	RD_HBITMAP pixmap;
 } FONTGLYPH;
-
-typedef struct _DATABLOB
-{
-	void *data;
-	int size;
-} DATABLOB;
 
 typedef struct _systemTime
 {

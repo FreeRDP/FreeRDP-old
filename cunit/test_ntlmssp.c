@@ -473,10 +473,10 @@ void test_ntlmssp_encrypt_message(void)
 	int i;
 	uint8* p;
 	NTLMSSP *ntlmssp;
-	DATA_BLOB public_key;
-	DATA_BLOB ts_credentials;
-	DATA_BLOB encrypted_public_key;
-	DATA_BLOB encrypted_ts_credentials;
+	DATABLOB public_key;
+	DATABLOB ts_credentials;
+	DATABLOB encrypted_public_key;
+	DATABLOB encrypted_ts_credentials;
 	uint8 public_key_signature[16];
 	uint8 ts_credentials_signature[16];
 	int encrypted_public_key_good;
@@ -599,8 +599,8 @@ void test_ntlmssp_decrypt_message(void)
 	int i;
 	uint8* p;
 	NTLMSSP *ntlmssp;
-	DATA_BLOB public_key;
-	DATA_BLOB encrypted_public_key;
+	DATABLOB public_key;
+	DATABLOB encrypted_public_key;
 	int public_key_good;
 	uint8 server_signing_key[16] = "\x9b\x3b\x64\x89\xda\x84\x52\x17\xd5\xc2\x6e\x90\x16\x3b\x42\x11";
 	uint8 server_sealing_key[16] = "\x14\xb7\x1d\x06\x2c\x68\x2e\xad\x4b\x0e\x95\x23\x70\x91\x98\x90";

@@ -22,7 +22,7 @@
 
 #include "secure.h"
 #include "credssp.h"
-#include "data_blob.h"
+#include "types.h"
 
 struct _AV_PAIR
 {
@@ -75,12 +75,12 @@ typedef enum _NTLMSSP_STATE NTLMSSP_STATE;
 struct _NTLMSSP
 {
 	NTLMSSP_STATE state;
-	DATA_BLOB password;
-	DATA_BLOB username;
-	DATA_BLOB domain;
-	DATA_BLOB target_info;
-	DATA_BLOB target_name;
-	DATA_BLOB spn;
+	DATABLOB password;
+	DATABLOB username;
+	DATABLOB domain;
+	DATABLOB target_info;
+	DATABLOB target_name;
+	DATABLOB spn;
 	uint32 negotiate_flags;
 	uint8 timestamp[8];
 	uint8 server_challenge[8];
@@ -95,11 +95,11 @@ struct _NTLMSSP
 	uint8 server_signing_key[16];
 	uint8 server_sealing_key[16];
 	uint8 message_integrity_check[16];
-	DATA_BLOB nt_challenge_response;
-	DATA_BLOB lm_challenge_response;
-	DATA_BLOB negotiate_message;
-	DATA_BLOB challenge_message;
-	DATA_BLOB authenticate_message;
+	DATABLOB nt_challenge_response;
+	DATABLOB lm_challenge_response;
+	DATABLOB negotiate_message;
+	DATABLOB challenge_message;
+	DATABLOB authenticate_message;
 	CryptoRc4 send_rc4_seal;
 	CryptoRc4 recv_rc4_seal;
 	AV_PAIRS *av_pairs;
@@ -128,8 +128,8 @@ void ntlmssp_generate_server_sealing_key(NTLMSSP *ntlmssp);
 void ntlmssp_init_rc4_seal_states(NTLMSSP *ntlmssp);
 
 void ntlmssp_compute_lm_hash(char* password, char* hash);
-void ntlmssp_compute_ntlm_hash(DATA_BLOB* password, char* hash);
-void ntlmssp_compute_ntlm_v2_hash(DATA_BLOB *password, DATA_BLOB *username, DATA_BLOB *domain, char* hash);
+void ntlmssp_compute_ntlm_hash(DATABLOB* password, char* hash);
+void ntlmssp_compute_ntlm_v2_hash(DATABLOB *password, DATABLOB *username, DATABLOB *domain, char* hash);
 
 void ntlmssp_compute_lm_response(char* password, char* challenge, char* response);
 void ntlmssp_compute_lm_v2_response(NTLMSSP *ntlmssp);
@@ -142,8 +142,8 @@ void ntlmssp_free_av_pairs(NTLMSSP *ntlmssp);
 
 void ntlmssp_compute_message_integrity_check(NTLMSSP *ntlmssp);
 
-void ntlmssp_encrypt_message(NTLMSSP *ntlmssp, DATA_BLOB *msg, DATA_BLOB *encrypted_msg, uint8* signature);
-int ntlmssp_decrypt_message(NTLMSSP *ntlmssp, DATA_BLOB *encrypted_msg, DATA_BLOB *msg, uint8* signature);
+void ntlmssp_encrypt_message(NTLMSSP *ntlmssp, DATABLOB *msg, DATABLOB *encrypted_msg, uint8* signature);
+int ntlmssp_decrypt_message(NTLMSSP *ntlmssp, DATABLOB *encrypted_msg, DATABLOB *msg, uint8* signature);
 
 int ntlmssp_recv(NTLMSSP *ntlmssp, STREAM s);
 int ntlmssp_send(NTLMSSP *ntlmssp, STREAM s);

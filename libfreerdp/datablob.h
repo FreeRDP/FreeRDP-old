@@ -1,6 +1,6 @@
 /*
    FreeRDP: A Remote Desktop Protocol client.
-   DATA_BLOB routines
+   DATABLOB routines
 
    Copyright 2011 Marc-Andre Moreau <marcandre.moreau@gmail.com>
 
@@ -17,17 +17,17 @@
    limitations under the License.
 */
 
-#ifndef __DATA_BLOB_H
-#define __DATA_BLOB_H
+#ifndef __DATABLOB_H
+#define __DATABLOB_H
 
-struct _DATA_BLOB
+struct _DATABLOB
 {
 	void* data;
 	int length;
 };
-typedef struct _DATA_BLOB DATA_BLOB;
+typedef struct _DATABLOB DATABLOB;
 
-void data_blob_alloc(DATA_BLOB *data_blob, int length);
-void data_blob_free(DATA_BLOB *data_blob);
+void datablob_alloc(DATABLOB *datablob, int length);
+void datablob_free(DATABLOB *datablob);
 
-#endif // __DATA_BLOB_H
+#endif // __DATABLOB_H

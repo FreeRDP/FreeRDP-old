@@ -1105,7 +1105,7 @@ draw_text(rdpOrders * orders, uint8 font, uint8 flags, uint8 opcode, int mixmode
 						else
 							x += text[i + 2];
 					}
-					for (j = 0; j < entry->size; j++)
+					for (j = 0; j < entry->length; j++)
 						do_glyph(orders, btext, &j, &x, &y, flags, font);
 				}
 				if (i + 2 < length)

@@ -24,7 +24,7 @@
 #include "asn1.h"
 #include "secure.h"
 #include "stream.h"
-#include "data_blob.h"
+#include "types.h"
 #include "mem.h"
 #include "tcp.h"
 #include "mcs.h"
@@ -140,7 +140,7 @@ int credssp_authenticate(rdpCredssp * credssp)
 void credssp_encrypt_public_key(rdpCredssp *credssp, STREAM s)
 {
 	uint8 signature[16];
-	DATA_BLOB encrypted_public_key;
+	DATABLOB encrypted_public_key;
 	NTLMSSP *ntlmssp = credssp->ntlmssp;
 
 	ntlmssp_encrypt_message(ntlmssp, &credssp->public_key, &encrypted_public_key, signature);
@@ -173,8 +173,8 @@ int credssp_verify_public_key(rdpCredssp *credssp, STREAM s)
 {
 	uint8 *p1, *p2;
 	uint8 *signature;
-	DATA_BLOB public_key;
-	DATA_BLOB encrypted_public_key;
+	DATABLOB public_key;
+	DATABLOB encrypted_public_key;
 
 	signature = s->data;
 	encrypted_public_key.data = (void*) signature + 16;
@@ -200,7 +200,7 @@ int credssp_verify_public_key(rdpCredssp *credssp, STREAM s)
 void credssp_encrypt_ts_credentials(rdpCredssp *credssp, STREAM s)
 {
 	uint8 signature[16];
-	DATA_BLOB encrypted_ts_credentials;
+	DATABLOB encrypted_ts_credentials;
 	NTLMSSP *ntlmssp = credssp->ntlmssp;
 
 	ntlmssp_encrypt_message(ntlmssp, &credssp->ts_credentials, &encrypted_ts_credentials, signature);
@@ -234,7 +234,7 @@ void credssp_encode_ts_credentials(rdpCredssp *credssp)
 	asn_enc_rval_t enc_rval;
 	TSCredentials_t *ts_credentials;
 	TSPasswordCreds_t *ts_password_creds;
-	DATA_BLOB ts_password_creds_buffer;
+	DATABLOB ts_password_creds_buffer;
 
 	ts_credentials = calloc(1, sizeof(TSCredentials_t));
 	ts_credentials->credType = 1; /* TSPasswordCreds */
@@ -258,7 +258,7 @@ void credssp_encode_ts_credentials(rdpCredssp *credssp)
 
 	if (enc_rval.encoded != -1)
 	{
-		data_blob_alloc(&ts_password_creds_buffer, enc_rval.encoded);
+		datablob_alloc(&ts_password_creds_buffer, enc_rval.encoded);
 
 		enc_rval = der_encode_to_buffer(&asn_DEF_TSPasswordCreds, ts_password_creds,
 			ts_password_creds_buffer.data, ts_password_creds_buffer.length);
@@ -272,7 +272,7 @@ void credssp_encode_ts_credentials(rdpCredssp *credssp)
 
 	if (enc_rval.encoded != -1)
 	{
-		data_blob_alloc(&credssp->ts_credentials, enc_rval.encoded);
+		datablob_alloc(&credssp->ts_credentials, enc_rval.encoded);
 
 		enc_rval = der_encode_to_buffer(&asn_DEF_TSCredentials, ts_credentials,
 			credssp->ts_credentials.data, credssp->ts_credentials.length);

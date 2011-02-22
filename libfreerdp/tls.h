@@ -29,7 +29,7 @@
 #include <openssl/bn.h>
 #include <openssl/x509v3.h>
 
-#include "data_blob.h"
+#include "types.h"
 
 SSL_CTX*
 tls_create_context();
@@ -44,6 +44,6 @@ tls_write(SSL *ssl, char* b, int length);
 int
 tls_read(SSL *ssl, char* b, int length);
 int
-tls_get_public_key(SSL *connection, DATA_BLOB *public_key);
+tls_get_public_key(SSL *connection, DATABLOB *public_key);
 
 #endif	// __TLS_H

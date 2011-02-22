@@ -22,13 +22,13 @@
 
 #include "secure.h"
 #include "ntlmssp.h"
-#include "data_blob.h"
+#include "types.h"
 
 struct rdp_credssp
 {
 	int send_seq_num;
-	DATA_BLOB public_key;
-	DATA_BLOB ts_credentials;
+	DATABLOB public_key;
+	DATABLOB ts_credentials;
 	CryptoRc4 rc4_seal_state;
 	struct _NTLMSSP *ntlmssp;
 	struct rdp_sec * sec;

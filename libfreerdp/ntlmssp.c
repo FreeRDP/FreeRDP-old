@@ -18,6 +18,7 @@
 */
 
 #include "mem.h"
+#include "types.h"
 
 #include <time.h>
 #include <openssl/des.h>
@@ -89,36 +90,36 @@ const char server_seal_magic[] = "session key to server-to-client sealing key ma
 
 void ntlmssp_set_username(NTLMSSP *ntlmssp, char* username)
 {
-	data_blob_free(&ntlmssp->username);
+	datablob_free(&ntlmssp->username);
 
 	if (username != NULL)
 	{
 		int length = strlen((char*) username);
-		data_blob_alloc(&ntlmssp->username, length * 2);
+		datablob_alloc(&ntlmssp->username, length * 2);
 		credssp_str_to_wstr(username, ntlmssp->username.data, length);
 	}
 }
 
 void ntlmssp_set_domain(NTLMSSP *ntlmssp, char* domain)
 {
-	data_blob_free(&ntlmssp->domain);
+	datablob_free(&ntlmssp->domain);
 
 	if (domain != NULL)
 	{
 		int length = strlen((char*) domain);
-		data_blob_alloc(&ntlmssp->domain, length * 2);
+		datablob_alloc(&ntlmssp->domain, length * 2);
 		credssp_str_to_wstr(domain, ntlmssp->domain.data, length);
 	}
 }
 
 void ntlmssp_set_password(NTLMSSP *ntlmssp, char* password)
 {
-	data_blob_free(&ntlmssp->password);
+	datablob_free(&ntlmssp->password);
 
 	if (password != NULL)
 	{
 		int length = strlen((char*) password);
-		data_blob_alloc(&ntlmssp->password, length * 2);
+		datablob_alloc(&ntlmssp->password, length * 2);
 		credssp_str_to_wstr(password, ntlmssp->password.data, length);
 	}
 }
@@ -126,7 +127,7 @@ void ntlmssp_set_password(NTLMSSP *ntlmssp, char* password)
 void ntlmssp_set_target_name(NTLMSSP *ntlmssp, char* target_name)
 {
 	char service_name[8] = "TERMSRV/";
-	data_blob_free(&ntlmssp->target_name);
+	datablob_free(&ntlmssp->target_name);
 
 	if (target_name != NULL)
 	{
@@ -134,7 +135,7 @@ void ntlmssp_set_target_name(NTLMSSP *ntlmssp, char* target_name)
 		int length;
 
 		length = strlen((char*) target_name);
-		data_blob_alloc(&ntlmssp->spn, length * 2 + (8 * 2));
+		datablob_alloc(&ntlmssp->spn, length * 2 + (8 * 2));
 		p = (void*) ntlmssp->spn.data;
 
 		credssp_str_to_wstr(service_name, ntlmssp->spn.data, 8);
@@ -187,7 +188,7 @@ void ntlmssp_generate_timestamp(NTLMSSP *ntlmssp)
 	}
 }
 
-void ntlmssp_generate_signing_key(uint8* exported_session_key, DATA_BLOB *sign_magic, uint8* signing_key)
+void ntlmssp_generate_signing_key(uint8* exported_session_key, DATABLOB *sign_magic, uint8* signing_key)
 {
 	int length;
 	uint8* value;
@@ -209,7 +210,7 @@ void ntlmssp_generate_signing_key(uint8* exported_session_key, DATA_BLOB *sign_m
 
 void ntlmssp_generate_client_signing_key(NTLMSSP *ntlmssp)
 {
-	DATA_BLOB sign_magic;
+	DATABLOB sign_magic;
 	sign_magic.data = (void*) client_sign_magic;
 	sign_magic.length = sizeof(client_sign_magic);
 	ntlmssp_generate_signing_key(ntlmssp->exported_session_key, &sign_magic, ntlmssp->client_signing_key);
@@ -217,19 +218,19 @@ void ntlmssp_generate_client_signing_key(NTLMSSP *ntlmssp)
 
 void ntlmssp_generate_server_signing_key(NTLMSSP *ntlmssp)
 {
-	DATA_BLOB sign_magic;
+	DATABLOB sign_magic;
 	sign_magic.data = (void*) server_sign_magic;
 	sign_magic.length = sizeof(server_sign_magic);
 	ntlmssp_generate_signing_key(ntlmssp->exported_session_key, &sign_magic, ntlmssp->server_signing_key);
 }
 
-void ntlmssp_generate_sealing_key(uint8* exported_session_key, DATA_BLOB *seal_magic, uint8* sealing_key)
+void ntlmssp_generate_sealing_key(uint8* exported_session_key, DATABLOB *seal_magic, uint8* sealing_key)
 {
 	uint8* p;
 	CryptoMd5 md5;
-	DATA_BLOB blob;
+	DATABLOB blob;
 
-	data_blob_alloc(&blob, 16 + seal_magic->length);
+	datablob_alloc(&blob, 16 + seal_magic->length);
 	p = (uint8*) blob.data;
 
 	/* Concatenate ExportedSessionKey with seal magic */
@@ -240,12 +241,12 @@ void ntlmssp_generate_sealing_key(uint8* exported_session_key, DATA_BLOB *seal_m
 	crypto_md5_update(md5, blob.data, blob.length);
 	crypto_md5_final(md5, sealing_key);
 
-	data_blob_free(&blob);
+	datablob_free(&blob);
 }
 
 void ntlmssp_generate_client_sealing_key(NTLMSSP *ntlmssp)
 {
-	DATA_BLOB seal_magic;
+	DATABLOB seal_magic;
 	seal_magic.data = (void*) client_seal_magic;
 	seal_magic.length = sizeof(client_seal_magic);
 	ntlmssp_generate_signing_key(ntlmssp->exported_session_key, &seal_magic, ntlmssp->client_sealing_key);
@@ -253,7 +254,7 @@ void ntlmssp_generate_client_sealing_key(NTLMSSP *ntlmssp)
 
 void ntlmssp_generate_server_sealing_key(NTLMSSP *ntlmssp)
 {
-	DATA_BLOB seal_magic;
+	DATABLOB seal_magic;
 	seal_magic.data = (void*) server_seal_magic;
 	seal_magic.length = sizeof(server_seal_magic);
 	ntlmssp_generate_signing_key(ntlmssp->exported_session_key, &seal_magic, ntlmssp->server_sealing_key);
@@ -341,7 +342,7 @@ void ntlmssp_compute_lm_hash(char* password, char* hash)
 	DES_ecb_encrypt((const_DES_cblock*) lm_magic, (DES_cblock*)&hash[8], &ks, DES_ENCRYPT);
 }
 
-void ntlmssp_compute_ntlm_hash(DATA_BLOB* password, char* hash)
+void ntlmssp_compute_ntlm_hash(DATABLOB* password, char* hash)
 {
 	/* NTLMv1("password") = 8846F7EAEE8FB117AD06BDD830B7586C */
 
@@ -356,14 +357,14 @@ void ntlmssp_compute_ntlm_hash(DATA_BLOB* password, char* hash)
 	MD4_Final((void*) hash, &md4_ctx);
 }
 
-void ntlmssp_compute_ntlm_v2_hash(DATA_BLOB *password, DATA_BLOB *username, DATA_BLOB *domain, char* hash)
+void ntlmssp_compute_ntlm_v2_hash(DATABLOB *password, DATABLOB *username, DATABLOB *domain, char* hash)
 {
 	int i;
 	char* p;
-	DATA_BLOB blob;
+	DATABLOB blob;
 	char ntlm_hash[16];
 
-	data_blob_alloc(&blob, username->length + domain->length);
+	datablob_alloc(&blob, username->length + domain->length);
 	p = (char*) blob.data;
 
 	/* First, compute the NTLMv1 hash of the password */
@@ -424,7 +425,7 @@ void ntlmssp_compute_lm_v2_response(NTLMSSP *ntlmssp)
 	memcpy(value, ntlmssp->server_challenge, 8);
 	memcpy(&value[8], ntlmssp->client_challenge, 8);
 
-	data_blob_alloc(&ntlmssp->lm_challenge_response, 24);
+	datablob_alloc(&ntlmssp->lm_challenge_response, 24);
 	response = (char*) ntlmssp->lm_challenge_response.data;
 
 	/* Compute the HMAC-MD5 hash of the resulting value using the NTLMv2 hash as the key */
@@ -439,10 +440,10 @@ void ntlmssp_compute_ntlm_v2_response(NTLMSSP *ntlmssp)
 	uint8* blob;
 	uint8 ntlm_v2_hash[16];
 	uint8 nt_proof_str[16];
-	DATA_BLOB ntlm_v2_temp;
-	DATA_BLOB ntlm_v2_temp_chal;
+	DATABLOB ntlm_v2_temp;
+	DATABLOB ntlm_v2_temp_chal;
 
-	data_blob_alloc(&ntlm_v2_temp, ntlmssp->target_info.length + 28);
+	datablob_alloc(&ntlm_v2_temp, ntlmssp->target_info.length + 28);
 	memset(ntlm_v2_temp.data, '\0', ntlm_v2_temp.length);
 	blob = (uint8*) ntlm_v2_temp.data;
 
@@ -485,7 +486,7 @@ void ntlmssp_compute_ntlm_v2_response(NTLMSSP *ntlmssp)
 #endif
 
 	/* Concatenate server challenge with temp */
-	data_blob_alloc(&ntlm_v2_temp_chal, ntlm_v2_temp.length + 8);
+	datablob_alloc(&ntlm_v2_temp_chal, ntlm_v2_temp.length + 8);
 	blob = (uint8*) ntlm_v2_temp_chal.data;
 	memcpy(blob, ntlmssp->server_challenge, 8);
 	memcpy(&blob[8], ntlm_v2_temp.data, ntlm_v2_temp.length);
@@ -494,7 +495,7 @@ void ntlmssp_compute_ntlm_v2_response(NTLMSSP *ntlmssp)
 		ntlm_v2_temp_chal.length, (void*) nt_proof_str, NULL);
 
 	/* NtChallengeResponse, Concatenate NTProofStr with temp */
-	data_blob_alloc(&ntlmssp->nt_challenge_response, ntlm_v2_temp.length + 16);
+	datablob_alloc(&ntlmssp->nt_challenge_response, ntlm_v2_temp.length + 16);
 	blob = (uint8*) ntlmssp->nt_challenge_response.data;
 	memcpy(blob, nt_proof_str, 16);
 	memcpy(&blob[16], ntlm_v2_temp.data, ntlm_v2_temp.length);
@@ -604,7 +605,7 @@ static void ntlmssp_print_negotiate_flags(uint32 flags)
 void ntlmssp_populate_av_pairs(NTLMSSP *ntlmssp)
 {
 	STREAM s;
-	DATA_BLOB target_info;
+	DATABLOB target_info;
 	AV_PAIRS *av_pairs = ntlmssp->av_pairs;
 
 	/* MsvAvFlags */
@@ -624,7 +625,7 @@ void ntlmssp_populate_av_pairs(NTLMSSP *ntlmssp)
 	s->p = s->data;
 
 	ntlmssp_output_av_pairs(ntlmssp, s);
-	data_blob_alloc(&target_info, s->end - s->data);
+	datablob_alloc(&target_info, s->end - s->data);
 	memcpy(target_info.data, s->data, target_info.length);
 
 	ntlmssp->target_info.data = target_info.data;
@@ -862,7 +863,7 @@ void ntlmssp_compute_message_integrity_check(NTLMSSP *ntlmssp)
 	HMAC_Final(&hmac_ctx, ntlmssp->message_integrity_check, NULL);
 }
 
-void ntlmssp_encrypt_message(NTLMSSP *ntlmssp, DATA_BLOB *msg, DATA_BLOB *encrypted_msg, uint8* signature)
+void ntlmssp_encrypt_message(NTLMSSP *ntlmssp, DATABLOB *msg, DATABLOB *encrypted_msg, uint8* signature)
 {
 	HMAC_CTX hmac_ctx;
 	uint8 digest[16];
@@ -877,7 +878,7 @@ void ntlmssp_encrypt_message(NTLMSSP *ntlmssp, DATA_BLOB *msg, DATA_BLOB *encryp
 	HMAC_Final(&hmac_ctx, digest, NULL);
 
 	/* Allocate space for encrypted message */
-	data_blob_alloc(encrypted_msg, msg->length);
+	datablob_alloc(encrypted_msg, msg->length);
 
 	/* Encrypt message using with RC4 */
 	crypto_rc4(ntlmssp->send_rc4_seal, msg->length, msg->data, encrypted_msg->data);
@@ -893,7 +894,7 @@ void ntlmssp_encrypt_message(NTLMSSP *ntlmssp, DATA_BLOB *msg, DATA_BLOB *encryp
 	ntlmssp->send_seq_num++;
 }
 
-int ntlmssp_decrypt_message(NTLMSSP *ntlmssp, DATA_BLOB *encrypted_msg, DATA_BLOB *msg, uint8* signature)
+int ntlmssp_decrypt_message(NTLMSSP *ntlmssp, DATABLOB *encrypted_msg, DATABLOB *msg, uint8* signature)
 {
 	HMAC_CTX hmac_ctx;
 	uint8 digest[16];
@@ -902,7 +903,7 @@ int ntlmssp_decrypt_message(NTLMSSP *ntlmssp, DATA_BLOB *encrypted_msg, DATA_BLO
 	uint8 expected_signature[16];
 
 	/* Allocate space for encrypted message */
-	data_blob_alloc(msg, encrypted_msg->length);
+	datablob_alloc(msg, encrypted_msg->length);
 
 	/* Encrypt message using with RC4 */
 	crypto_rc4(ntlmssp->recv_rc4_seal, encrypted_msg->length, encrypted_msg->data, msg->data);
@@ -997,7 +998,7 @@ void ntlmssp_send_negotiate_message(NTLMSSP *ntlmssp, STREAM s)
 	s_mark_end(s);
 
 	length = s->end - s->data;
-	data_blob_alloc(&ntlmssp->negotiate_message, length);
+	datablob_alloc(&ntlmssp->negotiate_message, length);
 	memcpy(ntlmssp->negotiate_message.data, s->data, length);
 
 #ifdef WITH_DEBUG_NLA
@@ -1054,7 +1055,7 @@ void ntlmssp_recv_challenge_message(NTLMSSP *ntlmssp, STREAM s)
 	if (targetNameLen > 0)
 	{
 		p = start_offset + targetNameBufferOffset;
-		data_blob_alloc(&ntlmssp->target_name, targetNameLen);
+		datablob_alloc(&ntlmssp->target_name, targetNameLen);
 		memcpy(ntlmssp->target_name.data, p, targetNameLen);
 
 #ifdef WITH_DEBUG_NLA
@@ -1067,7 +1068,7 @@ void ntlmssp_recv_challenge_message(NTLMSSP *ntlmssp, STREAM s)
 	if (targetInfoLen > 0)
 	{
 		p = start_offset + targetInfoBufferOffset;
-		data_blob_alloc(&ntlmssp->target_info, targetInfoLen);
+		datablob_alloc(&ntlmssp->target_info, targetInfoLen);
 		memcpy(ntlmssp->target_info.data, p, targetInfoLen);
 
 #ifdef WITH_DEBUG_NLA
@@ -1093,7 +1094,7 @@ void ntlmssp_recv_challenge_message(NTLMSSP *ntlmssp, STREAM s)
 	p = s->p + targetNameLen + targetInfoLen;
 	length = p - start_offset;
 
-	data_blob_alloc(&ntlmssp->challenge_message, length);
+	datablob_alloc(&ntlmssp->challenge_message, length);
 	memcpy(ntlmssp->challenge_message.data, start_offset, length);
 
 #ifdef WITH_DEBUG_NLA
@@ -1354,7 +1355,7 @@ void ntlmssp_send_authenticate_message(NTLMSSP *ntlmssp, STREAM s)
 #endif
 
 	length = s->end - s->data;
-	data_blob_alloc(&ntlmssp->authenticate_message, length);
+	datablob_alloc(&ntlmssp->authenticate_message, length);
 	memcpy(ntlmssp->authenticate_message.data, s->data, length);
 
 	if (ntlmssp->ntlm_v2)

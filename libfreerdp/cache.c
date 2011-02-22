@@ -327,7 +327,7 @@ cache_put_text(rdpCache * cache, uint8 cache_id, void *data, int length)
 	if (text->data != NULL)
 		xfree(text->data);
 	text->data = xmalloc(length);
-	text->size = length;
+	text->length = length;
 	memcpy(text->data, data, length);
 }
 
