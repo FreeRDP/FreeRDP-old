@@ -116,7 +116,7 @@ Following plugins are currently supported:
 Synchronize client and server clipboard data. Plain text, Unicode text, HTML
 content and images are supported.
 .TP
-.BR "--plugin rdpsnd [--data <subplugin> --]"
+.BR "--plugin rdpsnd [--data [<subplugin>] [<param>] ... --]"
 Redirects sound generated on the server to the client. <subplugin> can be one
 of the following:
 
@@ -124,6 +124,30 @@ of the following:
 alsa[:<alsa_device>]
 Redirect sound to ALSA device <alsa_device>. If :<alsa_device> is omitted,
 sound will be redirected to 'default' device.
+
+.B
+pulse[:<pulse_device>]
+Redirect sound to PulseAudio device <pulse_device> on the default PA server.
+If :<pulse_device> is omitted, default device is used.
+
+<param> can be a combination of the following:
+
+.B
+format:n
+Force to use specific audio format. Possible values are 1(PCM), 6(A-LAW),
+7(MU-LAW) and 17(Microsoft IMA ADPCM). If omitted, the server will usually
+choose the format with best compression.
+
+.B
+rate:n
+Force to use specific sample rate. Possible values are 8000, 11025, 22050 and
+44100. If omitted, the server will choose one that is best suited for the
+network speed and latency.
+
+.B
+channel:n
+Force to use specific number of channels. Possible values are 1(mono) and
+2(stereo).
 
 .TP
 .BR "--plugin rdpdr --data <subplugin> [<subplugin> ...] --"
