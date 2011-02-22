@@ -933,6 +933,12 @@ VirtualChannelEntry(PCHANNEL_ENTRY_POINTS pEntryPoints)
 		ret = rdpsnd_load_device_plugin(plugin, "pulse", default_data);
 		if (ret)
 		{
+			if (plugin->device_plugin)
+			{
+				plugin->device_plugin->free(plugin->device_plugin);
+				free(plugin->device_plugin);
+				plugin->device_plugin = NULL;
+			}
 			default_data[0].size = sizeof(RD_PLUGIN_DATA);
 			default_data[0].data[0] = "alsa";
 			default_data[0].data[1] = "default";
