@@ -122,6 +122,10 @@ struct rdpsnd_plugin
 	uint32 local_time_stamp; /* client timestamp */
 	int thread_status;
 
+	int fixed_format;
+	int fixed_rate;
+	int fixed_channel;
+
 	/* Device plugin */
 	rdpsndDevicePlugin * device_plugin;
 };
@@ -301,16 +305,21 @@ thread_process_message_formats(rdpsndPlugin * plugin, char * data, int data_size
 	/* remainder is sndFormats (variable) */
 	ldata = data + 20;
 	out_format_count = 0;
-	for (index = 0; index < format_count; index++)
+	for (index = 0; index < format_count; index++, ldata += size)
 	{
 		size = 18 + GET_UINT16(ldata, 16);
+		if (plugin->fixed_format > 0 && plugin->fixed_format != GET_UINT16(ldata, 0))
+			continue;
+		if (plugin->fixed_channel > 0 && plugin->fixed_channel != GET_UINT16(ldata, 2))
+			continue;
+		if (plugin->fixed_rate > 0 && plugin->fixed_rate != GET_UINT32(ldata, 4))
+			continue;
 		if (plugin->device_plugin && plugin->device_plugin->format_supported(plugin->device_plugin, ldata, size))
 		{
 			memcpy(lout_formats, ldata, size);
 			lout_formats += size;
 			out_format_count++;
 		}
-		ldata += size;
 	}
 	out_format_size = (int) (lout_formats - out_formats);
 	if ((out_format_size > 0) && (out_format_count > 0))
@@ -806,7 +815,7 @@ rdpsnd_register_device_plugin(rdpsndPlugin * plugin)
 
 	if (plugin->device_plugin)
 	{
-		LLOGLN(0, ("rdpsnd_process_plugin_data: existing device, abort."));
+		LLOGLN(0, ("rdpsnd_register_device_plugin: existing device, abort."));
 		return NULL;
 	}
 
@@ -864,9 +873,19 @@ rdpsnd_load_device_plugin(rdpsndPlugin * plugin, const char * name, RD_PLUGIN_DA
 static int
 rdpsnd_process_plugin_data(rdpsndPlugin * plugin, RD_PLUGIN_DATA * data)
 {
-	if (strcmp((char*)data->data[0], "buffer") == 0)
+	if (strcmp((char*)data->data[0], "format") == 0)
 	{
-		/* TODO: Set the sound buffer size */
+		plugin->fixed_format = atoi(data->data[1]);
+		return 0;
+	}
+	else if (strcmp((char*)data->data[0], "rate") == 0)
+	{
+		plugin->fixed_rate = atoi(data->data[1]);
+		return 0;
+	}
+	else if (strcmp((char*)data->data[0], "channel") == 0)
+	{
+		plugin->fixed_channel = atoi(data->data[1]);
 		return 0;
 	}
 	else
