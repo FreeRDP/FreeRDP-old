@@ -29,9 +29,9 @@
 #include "rdpsnd_dsp.h"
 
 uint8 *
-rdpsnd_dsp_resample(uint8 * src, int bytes_per_frame,
-	uint32 srate, int sframes,
-	uint32 rrate, int * prframes)
+rdpsnd_dsp_resample(uint8 * src, int bytes_per_sample,
+	uint32 schan, uint32 srate, int sframes,
+	uint32 rchan, uint32 rrate, int * prframes)
 {
 	uint8 * dst;
 	uint8 * p;
@@ -39,10 +39,13 @@ rdpsnd_dsp_resample(uint8 * src, int bytes_per_frame,
 	int rsize;
 	int i, j;
 	int n1, n2;
+	int sbytes, rbytes;
 
+	sbytes = bytes_per_sample * schan;
+	rbytes = bytes_per_sample * rchan;
 	rframes = sframes * rrate / srate;
 	*prframes = rframes;
-	rsize = bytes_per_frame * rframes;
+	rsize = rbytes * rframes;
 	dst = (uint8 *) malloc(rsize);
 	memset(dst, 0, rsize);
 
@@ -53,12 +56,12 @@ rdpsnd_dsp_resample(uint8 * src, int bytes_per_frame,
 		if (n1 >= sframes)
 			n1 = sframes - 1;
 		n2 = (n1 * rrate == i * srate || n1 == sframes - 1 ? n1 : n1 + 1);
-		for (j = 0; j < bytes_per_frame; j++)
+		for (j = 0; j < rbytes; j++)
 		{
 			/* Nearest Interpolation, probably the easiest, but works */
 			*p++ = (i * srate - n1 * rrate > n2 * rrate - i * srate ?
-				src[n2 * bytes_per_frame + j] :
-				src[n1 * bytes_per_frame + j]);
+				src[n2 * sbytes + (j % sbytes)] :
+				src[n1 * sbytes + (j % sbytes)]);
 		}
 	}
 

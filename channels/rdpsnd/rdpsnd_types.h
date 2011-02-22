@@ -51,9 +51,9 @@ typedef struct rdpsnd_dsp_adpcm rdpsndDspAdpcm;
 
 typedef rdpsndDevicePlugin * (* PREGISTERRDPSNDDEVICE)(rdpsndPlugin * plugin);
 
-typedef uint8 * (* PRDPSNDDSPRESAMPLE)(uint8 * src, int bytes_per_frame, \
-	uint32 srate, int sframes, \
-	uint32 rrate, int * prframes);
+typedef uint8 * (* PRDPSNDDSPRESAMPLE)(uint8 * src, int bytes_per_sample, \
+	uint32 schan, uint32 srate, int sframes, \
+	uint32 rchan, uint32 rrate, int * prframes);
 
 typedef uint8 * (* PRDPSNDDSPDECODEIMAADPCM)(rdpsndDspAdpcm * adpcm, \
 	uint8 * src, int size, int channels, int block_size, int * out_size);

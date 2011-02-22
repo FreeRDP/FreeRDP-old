@@ -44,10 +44,15 @@ struct alsa_device_data
 	uint32 source_rate;
 	uint32 actual_rate;
 	snd_pcm_format_t format;
-	int num_channels;
+	uint32 source_channels;
+	uint32 actual_channels;
 	int bytes_per_channel;
+	int wformat;
+	int block_size;
+	rdpsndDspAdpcm adpcm;
 
 	PRDPSNDDSPRESAMPLE pResample;
+	PRDPSNDDSPDECODEIMAADPCM pDecodeImaAdpcm;
 };
 
 static int
@@ -71,8 +76,8 @@ set_params(struct alsa_device_data * alsa_data)
 		alsa_data->format);
 	snd_pcm_hw_params_set_rate_near(alsa_data->out_handle, hw_params,
 		&alsa_data->actual_rate, NULL);
-	snd_pcm_hw_params_set_channels(alsa_data->out_handle, hw_params,
-		alsa_data->num_channels);
+	snd_pcm_hw_params_set_channels_near(alsa_data->out_handle, hw_params,
+		&alsa_data->actual_channels);
 	frames = alsa_data->actual_rate * 4;
 	snd_pcm_hw_params_set_buffer_size_near(alsa_data->out_handle, hw_params,
 		&frames);
@@ -97,10 +102,11 @@ set_params(struct alsa_device_data * alsa_data)
 
 	LLOGLN(10, ("set_params: hardware buffer %d frames, playback buffer %.2g seconds",
 		(int)frames, (double)frames / 2.0 / (double)alsa_data->actual_rate));
-	if (alsa_data->actual_rate != alsa_data->source_rate)
+	if ((alsa_data->actual_rate != alsa_data->source_rate) ||
+		(alsa_data->actual_channels != alsa_data->source_channels))
 	{
-		LLOGLN(0, ("set_params: actual rate %d is different from source rate %d, resampling required.",
-			alsa_data->actual_rate, alsa_data->source_rate));
+		LLOGLN(0, ("set_params: actual rate %d / channel %d is different from source rate %d / channel %d, resampling required.",
+			alsa_data->actual_rate, alsa_data->actual_channels, alsa_data->source_rate, alsa_data->source_channels));
 	}
 	return 0;
 }
@@ -125,6 +131,7 @@ rdpsnd_alsa_open(rdpsndDevicePlugin * devplugin)
 		LLOGLN(0, ("rdpsnd_alsa_open: snd_pcm_open failed"));
 		return 1;
 	}
+	memset(&alsa_data->adpcm, 0, sizeof(rdpsndDspAdpcm));
 	set_params(alsa_data);
 	return 0;
 }
@@ -176,20 +183,36 @@ rdpsnd_alsa_format_supported(rdpsndDevicePlugin * devplugin, char * snd_format, 
 
 	alsa_data = (struct alsa_device_data *) devplugin->device_data;
 
-	LLOGLN(10, ("rdpsnd_alsa_format_supported: size %d", size));
 	wFormatTag = GET_UINT16(snd_format, 0);
 	nChannels = GET_UINT16(snd_format, 2);
 	nSamplesPerSec = GET_UINT32(snd_format, 4);
 	wBitsPerSample = GET_UINT16(snd_format, 14);
 	cbSize = GET_UINT16(snd_format, 16);
-	if (cbSize == 0 &&
-		(nSamplesPerSec == 22050 || nSamplesPerSec == 44100) &&
-		(wBitsPerSample == 8 || wBitsPerSample == 16) &&
-		(nChannels == 1 || nChannels == 2) &&
-		wFormatTag == 1) /* WAVE_FORMAT_PCM */
+	LLOGLN(10, ("rdpsnd_alsa_format_supported: wFormatTag=%d "
+		"nChannels=%d nSamplesPerSec=%d wBitsPerSample=%d cbSize=%d",
+		wFormatTag, nChannels, nSamplesPerSec, wBitsPerSample, cbSize));
+	switch (wFormatTag)
 	{
-		LLOGLN(0, ("rdpsnd_alsa_format_supported: ok"));
-		return 1;
+		case 1: /* PCM */
+			if (cbSize == 0 &&
+				(nSamplesPerSec <= 48000) &&
+				(wBitsPerSample == 8 || wBitsPerSample == 16) &&
+				(nChannels == 1 || nChannels == 2))
+			{
+				LLOGLN(0, ("rdpsnd_alsa_format_supported: ok"));
+				return 1;
+			}
+			break;
+
+		case 0x11: /* IMA ADPCM */
+			if ((nSamplesPerSec <= 48000) &&
+				(wBitsPerSample == 4) &&
+				(nChannels == 1 || nChannels == 2))
+			{
+				LLOGLN(0, ("rdpsnd_alsa_format_supported: ok"));
+				return 1;
+			}
+			break;
 	}
 	return 0;
 }
@@ -201,29 +224,47 @@ rdpsnd_alsa_set_format(rdpsndDevicePlugin * devplugin, char * snd_format, int si
 	int nChannels;
 	int wBitsPerSample;
 	int nSamplesPerSec;
+	int wFormatTag;
+	int nBlockAlign;
 
 	alsa_data = (struct alsa_device_data *) devplugin->device_data;
 
+	wFormatTag = GET_UINT16(snd_format, 0);
 	nChannels = GET_UINT16(snd_format, 2);
 	nSamplesPerSec = GET_UINT32(snd_format, 4);
+	nBlockAlign = GET_UINT16(snd_format, 12);
 	wBitsPerSample = GET_UINT16(snd_format, 14);
-	LLOGLN(0, ("rdpsnd_alsa_set_format: nChannels %d "
-		"nSamplesPerSec %d wBitsPerSample %d",
-		nChannels, nSamplesPerSec, wBitsPerSample));
+	LLOGLN(0, ("rdpsnd_alsa_set_format: wFormatTag=%d nChannels=%d "
+		"nSamplesPerSec=%d wBitsPerSample=%d nBlockAlign=%d",
+		wFormatTag, nChannels, nSamplesPerSec, wBitsPerSample, nBlockAlign));
 	alsa_data->source_rate = nSamplesPerSec;
 	alsa_data->actual_rate = nSamplesPerSec;
-	alsa_data->num_channels = nChannels;
-	switch (wBitsPerSample)
+	alsa_data->source_channels = nChannels;
+	alsa_data->actual_channels = nChannels;
+	switch (wFormatTag)
 	{
-		case 8:
-			alsa_data->format = SND_PCM_FORMAT_S8;
-			alsa_data->bytes_per_channel = 1;
+		case 1: /* PCM */
+			switch (wBitsPerSample)
+			{
+				case 8:
+					alsa_data->format = SND_PCM_FORMAT_S8;
+					alsa_data->bytes_per_channel = 1;
+					break;
+				case 16:
+					alsa_data->format = SND_PCM_FORMAT_S16_LE;
+					alsa_data->bytes_per_channel = 2;
+					break;
+			}
 			break;
-		case 16:
+
+		case 0x11: /* IMA ADPCM */
 			alsa_data->format = SND_PCM_FORMAT_S16_LE;
 			alsa_data->bytes_per_channel = 2;
 			break;
 	}
+	alsa_data->wformat = wFormatTag;
+	alsa_data->block_size = nBlockAlign;
+
 	set_params(alsa_data);
 	return 0;
 }
@@ -239,45 +280,69 @@ static int
 rdpsnd_alsa_play(rdpsndDevicePlugin * devplugin, char * data, int size)
 {
 	struct alsa_device_data * alsa_data;
-	char * resampled_data;
+	uint8 * decoded_data;
+	int decoded_size;
+	char * src;
+	uint8 * resampled_data;
 	int len;
 	int error;
 	int frames;
-	int bytes_per_frame;
+	int rbytes_per_frame;
+	int sbytes_per_frame;
 	char * pindex;
 	char * end;
 
 	alsa_data = (struct alsa_device_data *) devplugin->device_data;
+	if (alsa_data->out_handle == 0)
+	{
+		return 0;
+	}
+
+	if (alsa_data->wformat == 0x11)
+	{
+		decoded_data = alsa_data->pDecodeImaAdpcm(&alsa_data->adpcm,
+			(uint8 *) data, size, alsa_data->source_channels, alsa_data->block_size, &decoded_size);
+		size = decoded_size;
+		src = (char *) decoded_data;
+	}
+	else
+	{
+		decoded_data = NULL;
+		src = data;
+	}
 
 	LLOGLN(10, ("rdpsnd_alsa_play: size %d", size));
 
-	bytes_per_frame = alsa_data->num_channels * alsa_data->bytes_per_channel;
-	if ((size % bytes_per_frame) != 0)
+	sbytes_per_frame = alsa_data->source_channels * alsa_data->bytes_per_channel;
+	rbytes_per_frame = alsa_data->actual_channels * alsa_data->bytes_per_channel;
+	if ((size % sbytes_per_frame) != 0)
 	{
 		LLOGLN(0, ("rdpsnd_alsa_play: error len mod"));
 		return 1;
 	}
 
-	if (alsa_data->source_rate == alsa_data->actual_rate)
+	if ((alsa_data->source_rate == alsa_data->actual_rate) &&
+		(alsa_data->source_channels == alsa_data->actual_channels))
 	{
-		resampled_data = data;
+		resampled_data = NULL;
 	}
 	else
 	{
-		resampled_data = (char*)alsa_data->pResample((uint8*)data, bytes_per_frame,
-			alsa_data->source_rate, size / bytes_per_frame,
-			alsa_data->actual_rate, &frames);
+		resampled_data = alsa_data->pResample((uint8 *) src, alsa_data->bytes_per_channel,
+			alsa_data->source_channels, alsa_data->source_rate, size / sbytes_per_frame,
+			alsa_data->actual_channels, alsa_data->actual_rate, &frames);
 		LLOGLN(10, ("rdpsnd_alsa_play: resampled %d frames at %d to %d frames at %d",
-			size / bytes_per_frame, alsa_data->source_rate, frames, alsa_data->actual_rate));
-		size = frames * bytes_per_frame;
+			size / sbytes_per_frame, alsa_data->source_rate, frames, alsa_data->actual_rate));
+		size = frames * rbytes_per_frame;
+		src = (char *) resampled_data;
 	}
 
-	pindex = resampled_data;
+	pindex = src;
 	end = pindex + size;
 	while (pindex < end)
 	{
 		len = end - pindex;
-		frames = len / bytes_per_frame;
+		frames = len / rbytes_per_frame;
 		error = snd_pcm_writei(alsa_data->out_handle, pindex, frames);
 		if (error == -EPIPE)
 		{
@@ -288,13 +353,18 @@ rdpsnd_alsa_play(rdpsndDevicePlugin * devplugin, char * data, int size)
 		else if (error < 0)
 		{
 			LLOGLN(0, ("rdpsnd_alsa_play: error len %d", error));
+			snd_pcm_close(alsa_data->out_handle);
+			alsa_data->out_handle = 0;
+			rdpsnd_alsa_open(devplugin);
 			break;
 		}
-		pindex += error * bytes_per_frame;
+		pindex += error * rbytes_per_frame;
 	}
 
-	if (resampled_data != data)
+	if (resampled_data)
 		free(resampled_data);
+	if (decoded_data)
+		free(decoded_data);
 
 	return 0;
 }
@@ -347,9 +417,11 @@ FreeRDPRdpsndDeviceEntry(PFREERDP_RDPSND_DEVICE_ENTRY_POINTS pEntryPoints)
 	alsa_data->source_rate = 22050;
 	alsa_data->actual_rate = 22050;
 	alsa_data->format = SND_PCM_FORMAT_S16_LE;
-	alsa_data->num_channels = 2;
+	alsa_data->source_channels = 2;
+	alsa_data->actual_channels = 2;
 	alsa_data->bytes_per_channel = 2;
 	alsa_data->pResample = pEntryPoints->pResample;
+	alsa_data->pDecodeImaAdpcm = pEntryPoints->pDecodeImaAdpcm;
 	devplugin->device_data = alsa_data;
 
 	LLOGLN(0, ("rdpsnd_alsa: alsa device '%s' registered.", alsa_data->device_name));

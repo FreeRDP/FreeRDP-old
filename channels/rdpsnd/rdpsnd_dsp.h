@@ -25,9 +25,9 @@
 #define __RDPSND_DSP_H
 
 uint8 *
-rdpsnd_dsp_resample(uint8 * src, int bytes_per_frame,
-	uint32 srate, int sframes,
-	uint32 rrate, int * prframes);
+rdpsnd_dsp_resample(uint8 * src, int bytes_per_sample,
+	uint32 schan, uint32 srate, int sframes,
+	uint32 rchan, uint32 rrate, int * prframes);
 
 uint8 *
 rdpsnd_dsp_decode_ima_adpcm(rdpsndDspAdpcm * adpcm,
