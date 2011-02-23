@@ -164,7 +164,6 @@ void ntlmssp_generate_random_session_key(NTLMSSP *ntlmssp)
 
 void ntlmssp_generate_exported_session_key(NTLMSSP *ntlmssp)
 {
-	//credssp_nonce(ntlmssp->exported_session_key, 16);
 	memcpy(ntlmssp->exported_session_key, ntlmssp->random_session_key, 16);
 }
 
@@ -443,7 +442,11 @@ void ntlmssp_compute_ntlm_v2_response(NTLMSSP *ntlmssp)
 	DATABLOB ntlm_v2_temp;
 	DATABLOB ntlm_v2_temp_chal;
 
-	datablob_alloc(&ntlm_v2_temp, ntlmssp->target_info.length + 28);
+	if (ntlmssp->ntlm_v2)
+		datablob_alloc(&ntlm_v2_temp, ntlmssp->target_info.length + 32);
+	else
+		datablob_alloc(&ntlm_v2_temp, ntlmssp->target_info.length + 28);
+
 	memset(ntlm_v2_temp.data, '\0', ntlm_v2_temp.length);
 	blob = (uint8*) ntlm_v2_temp.data;
 
@@ -505,7 +508,6 @@ void ntlmssp_compute_ntlm_v2_response(NTLMSSP *ntlmssp)
 		(void*) nt_proof_str, 16, (void*) ntlmssp->session_base_key, NULL);
 }
 
-
 void ntlmssp_input_negotiate_flags(STREAM s, uint32 *flags)
 {
 	uint8* p;
@@ -553,7 +555,7 @@ void ntlmssp_output_negotiate_flags(STREAM s, uint32 flags)
 	p[2] = tmp;
 }
 
-#if 0
+#ifdef WITH_DEBUG_NLA
 static void ntlmssp_print_negotiate_flags(uint32 flags)
 {
 	printf("negotiateFlags \"0x%08X\"{\n", flags);
@@ -604,6 +606,36 @@ static void ntlmssp_print_negotiate_flags(uint32 flags)
 }
 #endif
 
+static void ntlmssp_output_restriction_encoding(NTLMSSP *ntlmssp)
+{
+	AV_PAIR *restrictions = &ntlmssp->av_pairs->Restrictions;
+	STREAM s = xmalloc(sizeof(struct stream));
+
+	uint8 machineID[32] =
+		"\x3A\x15\x8E\xA6\x75\x82\xD8\xF7\x3E\x06\xFA\x7A\xB4\xDF\xFD\x43"
+		"\x84\x6C\x02\x3A\xFD\x5A\x94\xFE\xCF\x97\x0F\x3D\x19\x2C\x38\x20";
+
+	restrictions->value = xmalloc(48);
+	restrictions->length = 48;
+
+	s->data = restrictions->value;
+	s->size = restrictions->length;
+	s->end = s->data + s->size;
+	s->p = s->data;
+
+	out_uint32_le(s, 48); /* Size */
+	out_uint8s(s, 4); /* Z4 (set to zero) */
+
+	/* IntegrityLevel (bit 31 set to 1) */
+	out_uint8(s, 1);
+	out_uint8s(s, 3);
+
+	out_uint32_le(s, 0x20000000); /* SubjectIntegrityLevel */
+	out_uint8p(s, machineID, 32); /* MachineID */
+
+	xfree(s);
+}
+
 void ntlmssp_populate_av_pairs(NTLMSSP *ntlmssp)
 {
 	STREAM s;
@@ -613,17 +645,11 @@ void ntlmssp_populate_av_pairs(NTLMSSP *ntlmssp)
 	/* MsvAvFlags */
 	av_pairs->Flags = 0x00000002; /* Indicates the present of a Message Integrity Check (MIC) */
 
-	/* MsvChannelBindings */
-	av_pairs->ChannelBindings.length = 16;
-	av_pairs->ChannelBindings.value = (uint8*) xmalloc(16);
-	memset(av_pairs->ChannelBindings.value, '\0', 16);
-
-	/* MsvAvTargetName */
-	av_pairs->TargetName.length = ntlmssp->spn.length;
-	av_pairs->TargetName.value = (uint8*) ntlmssp->spn.data;
+	/* Restriction_Encoding */
+	ntlmssp_output_restriction_encoding(ntlmssp);
 
 	s = xmalloc(sizeof(struct stream));
-	s->data = xmalloc(ntlmssp->target_info.length + 1024);
+	s->data = xmalloc(ntlmssp->target_info.length + 512);
 	s->p = s->data;
 
 	ntlmssp_output_av_pairs(ntlmssp, s);
@@ -802,6 +828,11 @@ void ntlmssp_output_av_pairs(NTLMSSP *ntlmssp, STREAM s)
 	/* This endicates the end of the AV_PAIR array */
 	out_uint16_le(s, MsvAvEOL); /* AvId */
 	out_uint16_le(s, 0); /* AvLen */
+
+	if (ntlmssp->ntlm_v2)
+	{
+		out_uint8s(s, 8);
+	}
 
 	s_mark_end(s);
 }
@@ -1017,6 +1048,7 @@ void ntlmssp_recv_challenge_message(NTLMSSP *ntlmssp, STREAM s)
 	uint8* p;
 	int length;
 	uint8* start_offset;
+	uint8* payload_offset;
 	uint16 targetNameLen;
 	uint16 targetNameMaxLen;
 	uint32 targetNameBufferOffset;
@@ -1053,6 +1085,7 @@ void ntlmssp_recv_challenge_message(NTLMSSP *ntlmssp, STREAM s)
 	}
 
 	/* Payload (variable) */
+	payload_offset = s->p;
 
 	if (targetNameLen > 0)
 	{
@@ -1083,18 +1116,10 @@ void ntlmssp_recv_challenge_message(NTLMSSP *ntlmssp, STREAM s)
 		{
 			s->p = p;
 			ntlmssp_input_av_pairs(ntlmssp, s);
-			ntlmssp_populate_av_pairs(ntlmssp);
-
-#ifdef WITH_DEBUG_NLA
-			printf("targetInfo (populated) (length = %d)\n", ntlmssp->target_info.length);
-			hexdump(ntlmssp->target_info.data, ntlmssp->target_info.length);
-			printf("\n");
-#endif
 		}
 	}
 
-	p = s->p + targetNameLen + targetInfoLen;
-	length = p - start_offset;
+	length = (payload_offset - start_offset) + targetNameLen + targetInfoLen;
 
 	datablob_alloc(&ntlmssp->challenge_message, length);
 	memcpy(ntlmssp->challenge_message.data, start_offset, length);
@@ -1103,6 +1128,16 @@ void ntlmssp_recv_challenge_message(NTLMSSP *ntlmssp, STREAM s)
 	printf("CHALLENGE_MESSAGE (length = %d)\n", length);
 	hexdump(start_offset, length);
 	printf("\n");
+#endif
+
+	/* AV_PAIRs */
+	if (ntlmssp->ntlm_v2)
+		ntlmssp_populate_av_pairs(ntlmssp);
+
+#ifdef WITH_DEBUG_NLA
+			printf("targetInfo (populated) (length = %d)\n", ntlmssp->target_info.length);
+			hexdump(ntlmssp->target_info.data, ntlmssp->target_info.length);
+			printf("\n");
 #endif
 
 	/* Timestamp */
