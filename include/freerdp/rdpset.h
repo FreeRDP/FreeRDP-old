@@ -54,8 +54,8 @@ struct rdp_set
 	char xkb_layout[32];
 	char xkb_variant[32];
 	int tls_security;
-        int nla_security;
-        int rdp_security;
+	int nla_security;
+	int rdp_security;
 	int encryption;
 	int rdp_version;
 	int remote_app;
