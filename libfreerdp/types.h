@@ -82,7 +82,7 @@ typedef struct _RDPCOMP
 
 typedef struct _RECTANGLE
 {
-	sint16 l, t, r, b;
+	sint16 l, t, w, h;
 } RECTANGLE;
 
 #endif // __TYPES_H
