@@ -1,6 +1,6 @@
 /*
    FreeRDP: A Remote Desktop Protocol client.
-   Redirected Device Manager
+   Audio Input Redirection Virtual Channel
 
    Copyright 2010-2011 Vic Lee
 
