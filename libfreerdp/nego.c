@@ -23,6 +23,7 @@
 #include "frdp.h"
 #include "rdp.h"
 #include "mem.h"
+#include "tcp.h"
 #include "stream.h"
 
 #include "nego.h"
@@ -55,32 +56,82 @@ int nego_connect(NEGO *nego)
 	return 1;
 }
 
+int nego_tcp_connect(NEGO *nego)
+{
+	if (nego->tcp_connected == 0)
+	{
+		if (tcp_connect(nego->iso->tcp, nego->hostname, nego->port) == False)
+		{
+			nego->tcp_connected = 0;
+			return 0;
+		}
+		else
+		{
+			nego->tcp_connected = 1;
+			return 1;
+		}
+	}
+
+	return 1;
+}
+
+int nego_tcp_disconnect(NEGO *nego)
+{
+	if (nego->tcp_connected)
+		tcp_disconnect(nego->iso->tcp);
+
+	nego->tcp_connected = 0;
+	return 1;
+}
+
 void nego_attempt_nla(NEGO *nego)
 {
 	uint8 code;
 	nego->requested_protocols = PROTOCOL_NLA | PROTOCOL_TLS;
+
+	nego_tcp_connect(nego);
 	x224_send_connection_request(nego->iso);
 	tpkt_recv(nego->iso, &code, NULL);
 
 	if (nego->state != NEGO_STATE_FINAL)
-		nego->state = NEGO_STATE_TLS;
+	{
+		nego_tcp_disconnect(nego);
+
+		if (nego->enabled_protocols[PROTOCOL_TLS] > 0)
+			nego->state = NEGO_STATE_TLS;
+		else if (nego->enabled_protocols[PROTOCOL_RDP] > 0)
+			nego->state = NEGO_STATE_RDP;
+		else
+			nego->state = NEGO_STATE_FAIL;
+	}
 }
 
 void nego_attempt_tls(NEGO *nego)
 {
 	uint8 code;
 	nego->requested_protocols = PROTOCOL_TLS;
+
+	nego_tcp_connect(nego);
 	x224_send_connection_request(nego->iso);
 	tpkt_recv(nego->iso, &code, NULL);
 
 	if (nego->state != NEGO_STATE_FINAL)
-		nego->state = NEGO_STATE_RDP;
+	{
+		nego_tcp_disconnect(nego);
+
+		if (nego->enabled_protocols[PROTOCOL_RDP] > 0)
+			nego->state = NEGO_STATE_RDP;
+		else
+			nego->state = NEGO_STATE_FAIL;
+	}
 }
 
 void nego_attempt_rdp(NEGO *nego)
 {
 	uint8 code;
 	nego->requested_protocols = PROTOCOL_RDP;
+
+	nego_tcp_connect(nego);
 	x224_send_connection_request(nego->iso);
 
 	if (tpkt_recv(nego->iso, &code, NULL) == NULL)
@@ -150,19 +201,19 @@ void nego_process_negotiation_failure(NEGO *nego, STREAM s)
 	switch (failureCode)
 	{
 		case SSL_REQUIRED_BY_SERVER:
-			printf("Error: SSL_REQUIRED_BY_SERVER\n");
+			//printf("Error: SSL_REQUIRED_BY_SERVER\n");
 			break;
 		case SSL_NOT_ALLOWED_BY_SERVER:
-			printf("Error: SSL_NOT_ALLOWED_BY_SERVER\n");
+			//printf("Error: SSL_NOT_ALLOWED_BY_SERVER\n");
 			break;
 		case SSL_CERT_NOT_ON_SERVER:
-			printf("Error: SSL_CERT_NOT_ON_SERVER\n");
+			//printf("Error: SSL_CERT_NOT_ON_SERVER\n");
 			break;
 		case INCONSISTENT_FLAGS:
-			printf("Error: INCONSISTENT_FLAGS\n");
+			//printf("Error: INCONSISTENT_FLAGS\n");
 			break;
 		case HYBRID_REQUIRED_BY_SERVER:
-			printf("Error: HYBRID_REQUIRED_BY_SERVER\n");
+			//printf("Error: HYBRID_REQUIRED_BY_SERVER\n");
 			break;
 		default:
 			printf("Error: Unknown protocol security error %d\n", failureCode);

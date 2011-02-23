@@ -366,28 +366,24 @@ iso_recv(rdpIso * iso, isoRecvType * ptype)
 RD_BOOL
 iso_connect(rdpIso * iso, char *server, char *username, int port)
 {
-	RD_BOOL ret;
-
         if (strlen(iso->mcs->sec->rdp->settings->domain) > 0)
             iso->cookie = iso->mcs->sec->rdp->settings->domain;
         else
             iso->cookie = username;
 
-	if (!tcp_connect(iso->tcp, server, port))
-		return False;
+	iso->nego->port = port;
+	iso->nego->hostname = server;
+	iso->nego->tcp_connected = 0;
 
 	if (nego_connect(iso->nego) > 0)
 	{
-		ret = True;
+		return True;
 	}
 	else
 	{
-		ret = False;
 		printf("Protocol security negotiation failure, disconnecting\n");
-		tcp_disconnect(iso->tcp);
+		return False;
 	}
-
-	return ret;
 }
 
 /* Disconnect from the ISO layer */

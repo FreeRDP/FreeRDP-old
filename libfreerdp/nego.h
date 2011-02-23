@@ -37,7 +37,10 @@ typedef enum _NEGO_STATE NEGO_STATE;
 
 struct _NEGO
 {
+        int port;
+        char *hostname;
 	NEGO_STATE state;
+        int tcp_connected;
 	struct rdp_iso * iso;
 	uint32 selected_protocol;
 	uint32 requested_protocols;
