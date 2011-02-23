@@ -227,6 +227,13 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 			strncpy(settings->password, argv[*pindex], sizeof(settings->password) - 1);
 			settings->password[sizeof(settings->password) - 1] = 0;
 			settings->autologin = 1;
+
+			/*
+			 * Overwrite original password which could be revealed by a simple "ps aux" command.
+			 * This approach won't hide the password length, but it is better than nothing.
+			 */
+			
+			memset(argv[*pindex], '*', strlen(argv[*pindex]));
 		}
 		else if (strcmp("-d", argv[*pindex]) == 0)
 		{
