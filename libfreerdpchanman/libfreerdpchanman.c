@@ -1,6 +1,6 @@
 /*
    FreeRDP: A Remote Desktop Protocol client.
-   Redirected Device Manager
+   Virtual Channel Manager
 
    Copyright 2009-2011 Jay Sorg
    Copyright 2010-2011 Vic Lee

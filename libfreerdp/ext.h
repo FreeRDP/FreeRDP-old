@@ -1,6 +1,6 @@
 /*
    FreeRDP: A Remote Desktop Protocol client.
-   Redirected Device Manager
+   Extension
 
    Copyright 2010-2011 Vic Lee
 
