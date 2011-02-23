@@ -1487,10 +1487,34 @@ void ntlmssp_init(NTLMSSP *ntlmssp)
 	ntlmssp->state = NTLMSSP_STATE_INITIAL;
 }
 
+void ntlmssp_uninit(NTLMSSP *ntlmssp)
+{
+	/* Finalize NTLMSSP state machine */
+	
+	datablob_free(&ntlmssp->username);
+	datablob_free(&ntlmssp->password);
+	datablob_free(&ntlmssp->domain);
+
+	datablob_free(&ntlmssp->spn);
+	datablob_free(&ntlmssp->workstation);
+	datablob_free(&ntlmssp->target_info);
+	datablob_free(&ntlmssp->target_name);
+
+	datablob_free(&ntlmssp->negotiate_message);
+	datablob_free(&ntlmssp->challenge_message);
+	datablob_free(&ntlmssp->authenticate_message);
+
+	datablob_free(&ntlmssp->lm_challenge_response);
+	datablob_free(&ntlmssp->nt_challenge_response);
+
+	ntlmssp_free_av_pairs(ntlmssp);
+
+	ntlmssp->state = NTLMSSP_STATE_FINAL;
+}
+
 void ntlmssp_free(NTLMSSP *ntlmssp)
 {
-	/* Free AV_PAIRS */
-	ntlmssp_free_av_pairs(ntlmssp);
+	ntlmssp_uninit(ntlmssp);
 
 	/* Free NTLMSSP state machine */
 	xfree(ntlmssp);

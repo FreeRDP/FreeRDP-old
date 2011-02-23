@@ -991,7 +991,11 @@ sec_connect(rdpSec * sec, char *server, char *username, int port)
 		sec->ssl = tls_connect(sec->ctx, sec->mcs->iso->tcp->sock, server);
 		sec->tls_connected = 1;
 		sec->rdp->settings->encryption = 0;
+
+		sec->credssp = credssp_new(sec);
 		credssp_authenticate(sec->credssp);
+		credssp_free(sec->credssp);
+
 		success = mcs_connect(sec->mcs);
 		return success;
 	}
@@ -1057,11 +1061,6 @@ sec_new(struct rdp_rdp * rdp)
 		self->rdp = rdp;
 		self->mcs = mcs_new(self);
 		self->licence = licence_new(self);
-
-#ifndef DISABLE_TLS
-		self->credssp = credssp_new(self);
-#endif
-
 		self->rc4_decrypt_key = NULL;
 		self->rc4_encrypt_key = NULL;
 	}
@@ -1075,11 +1074,6 @@ sec_free(rdpSec * sec)
 	{
 		licence_free(sec->licence);
 		mcs_free(sec->mcs);
-
-#ifndef DISABLE_TLS
-		credssp_free(sec->credssp);
-#endif
-
 		xfree(sec);
 	}
 }

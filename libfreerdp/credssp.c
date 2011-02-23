@@ -82,8 +82,8 @@ void credssp_ntlmssp_init(rdpCredssp * credssp)
 	ntlmssp_generate_random_session_key(ntlmssp);
 	ntlmssp_generate_exported_session_key(ntlmssp);
 
-	ntlmssp_set_workstation(ntlmssp, "WINDOWS7");
-
+	ntlmssp_set_workstation(ntlmssp, "workstation");
+	
 	ntlmssp->ntlm_v2 = 0;
 }
 
@@ -448,6 +448,10 @@ credssp_free(rdpCredssp * credssp)
 {
 	if (credssp != NULL)
 	{
+		datablob_free(&credssp->public_key);
+		datablob_free(&credssp->ts_credentials);
+
+		ntlmssp_free(credssp->ntlmssp);
 		xfree(credssp);
 	}
 }
