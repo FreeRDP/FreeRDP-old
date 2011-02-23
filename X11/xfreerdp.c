@@ -551,13 +551,6 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 			   followed will be parsed for the next session. */
 			*pindex = *pindex + 1;
 
-			if (settings->nla_security == 1 && settings->autologin == 0)
-			{
-				/* NLA requires the password to be known ahead of time */
-				printf("No password given, disabling network level authentication\n");
-				settings->nla_security = 0;
-			}
-			
 			return 0;
 		}
 		else

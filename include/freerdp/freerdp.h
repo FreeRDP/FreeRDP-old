@@ -140,6 +140,7 @@ struct rdp_inst
 	void (* ui_destroy_surface)(rdpInst * inst, RD_HBITMAP surface);
 	void (* ui_channel_data)(rdpInst * inst, int chan_id, char * data, int data_size,
 		int flags, int total_size);
+	RD_BOOL (* ui_authenticate)(rdpInst * inst);
 };
 
 FREERDP_API rdpInst *

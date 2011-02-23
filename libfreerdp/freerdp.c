@@ -416,6 +416,12 @@ ui_channel_data(rdpInst * inst, int chan_id, char * data, int data_size,
 	inst->ui_channel_data(inst, chan_id, data, data_size, flags, total_size);
 }
 
+RD_BOOL
+ui_authenticate(rdpInst * inst)
+{
+	return inst->ui_authenticate(inst);
+}
+
 /* returns error */
 static int
 l_rdp_connect(rdpInst * inst)

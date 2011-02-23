@@ -32,6 +32,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include <freerdp/chanman.h>
 #include "xf_types.h"
 #include "xf_event.h"
@@ -890,6 +891,44 @@ l_ui_channel_data(struct rdp_inst * inst, int chan_id, char * data, int data_siz
 	freerdp_chanman_data(inst, chan_id, data, data_size, flags, total_size);
 }
 
+static RD_BOOL
+l_ui_authenticate(struct rdp_inst * inst)
+{
+	char * pass;
+	int l;
+
+	printf("Please enter NLA login credential.\n");
+
+	printf("User name:");
+	if (inst->settings->username[0] == 0)
+	{
+		fgets(inst->settings->username, sizeof(inst->settings->username), stdin);
+		l = strlen(inst->settings->username);
+		if (l > 0 && inst->settings->username[l - 1] == '\n')
+			inst->settings->username[l - 1] = 0;
+	}
+	else
+		printf("%s\n", inst->settings->username);
+
+	printf("Domain:");
+	if (inst->settings->domain[0] == 0)
+	{
+		fgets(inst->settings->domain, sizeof(inst->settings->domain), stdin);
+		l = strlen(inst->settings->domain);
+		if (l > 0 && inst->settings->domain[l - 1] == '\n')
+			inst->settings->domain[l - 1] = 0;
+	}
+	else
+		printf("%s\n", inst->settings->domain);
+
+	if (!inst->settings->password[0])
+	{
+		pass = getpass("Password:");
+		strncpy(inst->settings->password, pass, sizeof(inst->settings->password) - 1);
+	}
+	return True;
+}
+
 static int
 xf_assign_callbacks(rdpInst * inst)
 {
@@ -936,6 +975,7 @@ xf_assign_callbacks(rdpInst * inst)
 	inst->ui_set_surface = l_ui_set_surface;
 	inst->ui_destroy_surface = l_ui_destroy_surface;
 	inst->ui_channel_data = l_ui_channel_data;
+	inst->ui_authenticate = l_ui_authenticate;
 	return 0;
 }
 

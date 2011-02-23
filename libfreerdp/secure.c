@@ -992,6 +992,10 @@ sec_connect(rdpSec * sec, char *server, char *username, int port)
 		sec->tls_connected = 1;
 		sec->rdp->settings->encryption = 0;
 
+		if (!sec->rdp->settings->autologin)
+			if (!ui_authenticate(sec->rdp->inst))
+				return False;
+
 		sec->credssp = credssp_new(sec);
 		credssp_authenticate(sec->credssp);
 		credssp_free(sec->credssp);
