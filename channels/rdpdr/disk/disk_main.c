@@ -933,8 +933,40 @@ disk_query_directory(IRP * irp, uint8 initialQuery, const char * path)
 			size = 68 + len;
 			break;
 
+		case FileNamesInformation:
+			size = 12 + strlen(pdirent->d_name) * 2;
+			buf = malloc(size);
+			memset(buf, 0, size);
+
+			SET_UINT32(buf, 0, 0); /* NextEntryOffset */
+			SET_UINT32(buf, 4, 0); /* FileIndex */
+			len = freerdp_set_wstr(buf + 12, size - 12, pdirent->d_name, strlen(pdirent->d_name));
+			SET_UINT32(buf, 8, len); /* FileNameLength */
+			size = 12 + len;
+			break;
+
+		case FileDirectoryInformation:
+			size = 64 + strlen(pdirent->d_name) * 2;
+			buf = malloc(size);
+			memset(buf, 0, size);
+
+			SET_UINT32(buf, 0, 0); /* NextEntryOffset */
+			SET_UINT32(buf, 4, 0); /* FileIndex */
+			SET_UINT64(buf, 8, get_rdp_filetime(file_stat.st_ctime < file_stat.st_mtime ?
+				file_stat.st_ctime : file_stat.st_mtime)); /* CreationTime */
+			SET_UINT64(buf, 16, get_rdp_filetime(file_stat.st_atime)); /* LastAccessTime */
+			SET_UINT64(buf, 24, get_rdp_filetime(file_stat.st_mtime)); /* LastWriteTime */
+			SET_UINT64(buf, 32, get_rdp_filetime(file_stat.st_ctime)); /* ChangeTime */
+			SET_UINT64(buf, 40, file_stat.st_size); /* EndOfFile */
+			SET_UINT64(buf, 48, file_stat.st_size); /* AllocationSize */
+			SET_UINT32(buf, 56, attr); /* FileAttributes */
+			len = freerdp_set_wstr(buf + 64, size - 64, pdirent->d_name, strlen(pdirent->d_name));
+			SET_UINT32(buf, 60, len); /* FileNameLength */
+			size = 64 + len;
+			break;
+
 		default:
-			LLOGLN(0, ("disk_query_directory: invalid info class"));
+			LLOGLN(0, ("disk_query_directory: invalid info class %d", irp->infoClass));
 			status = RD_STATUS_NOT_SUPPORTED;
 			break;
 	}
