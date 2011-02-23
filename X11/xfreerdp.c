@@ -238,9 +238,6 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 			}
 			strncpy(settings->domain, argv[*pindex], sizeof(settings->domain) - 1);
 			settings->domain[sizeof(settings->domain) - 1] = 0;
-
-			/* Domain logon for NLA doesn't work yet */
-			settings->nla_security = 0;
 		}
 		else if (strcmp("-k", argv[*pindex]) == 0)
 		{

@@ -82,6 +82,8 @@ void credssp_ntlmssp_init(rdpCredssp * credssp)
 	ntlmssp_generate_random_session_key(ntlmssp);
 	ntlmssp_generate_exported_session_key(ntlmssp);
 
+	ntlmssp_set_workstation(ntlmssp, "WINDOWS7");
+
 	ntlmssp->ntlm_v2 = 0;
 }
 
