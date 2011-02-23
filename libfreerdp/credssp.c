@@ -421,7 +421,7 @@ void credssp_current_time(uint8* timestamp)
 	uint64 time64;
 
 	/* Timestamp (8 bytes), represented as the number of tenths of microseconds since midnight of January 1, 1601 */
-	time64 = time(NULL) + 11644473600; /* Seconds since January 1, 1601 */
+	time64 = time(NULL) + 11644473600LL; /* Seconds since January 1, 1601 */
 	time64 *= 10000000; /* Convert timestamp to tenths of a microsecond */
 
 	memcpy(timestamp, &time64, 8); /* Copy into timestamp in little-endian */
