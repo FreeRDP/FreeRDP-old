@@ -954,7 +954,6 @@ VirtualChannelEntry(PCHANNEL_ENTRY_POINTS pEntryPoints)
 		{
 			if (plugin->device_plugin)
 			{
-				plugin->device_plugin->free(plugin->device_plugin);
 				free(plugin->device_plugin);
 				plugin->device_plugin = NULL;
 			}

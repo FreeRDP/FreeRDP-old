@@ -285,6 +285,8 @@ rdpsnd_pulse_free(rdpsndDevicePlugin * devplugin)
 
 	pulse_data = (struct pulse_device_data *) devplugin->device_data;
 	LLOGLN(10, ("rdpsnd_pulse_free:"));
+	if (!pulse_data)
+		return;
 	rdpsnd_pulse_close(devplugin);
 	if (pulse_data->mainloop)
 	{
@@ -294,12 +296,15 @@ rdpsnd_pulse_free(rdpsndDevicePlugin * devplugin)
 	{
 		pa_context_disconnect(pulse_data->context);
 		pa_context_unref(pulse_data->context);
+		pulse_data->context = NULL;
 	}
 	if (pulse_data->mainloop)
 	{
 		pa_threaded_mainloop_free(pulse_data->mainloop);
+		pulse_data->mainloop = NULL;
 	}
 	free(pulse_data);
+	devplugin->device_data = NULL;
 }
 
 static int
@@ -543,18 +548,21 @@ FreeRDPRdpsndDeviceEntry(PFREERDP_RDPSND_DEVICE_ENTRY_POINTS pEntryPoints)
 	if (!pulse_data->mainloop)
 	{
 		LLOGLN(0, ("rdpsnd_pulse: pa_threaded_mainloop_new failed"));
+		rdpsnd_pulse_free(devplugin);
 		return 1;
 	}
 	pulse_data->context = pa_context_new(pa_threaded_mainloop_get_api(pulse_data->mainloop), "freerdp");
 	if (!pulse_data->context)
 	{
 		LLOGLN(0, ("rdpsnd_pulse: pa_context_new failed"));
+		rdpsnd_pulse_free(devplugin);
 		return 1;
 	}
 	pa_context_set_state_callback(pulse_data->context, rdpsnd_pulse_context_state_callback, devplugin);
 	if (rdpsnd_pulse_connect(devplugin))
 	{
 		LLOGLN(0, ("rdpsnd_pulse: rdpsnd_pulse_connect failed"));
+		rdpsnd_pulse_free(devplugin);
 		return 1;
 	}
 
