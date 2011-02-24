@@ -122,6 +122,10 @@ struct rdpsnd_plugin
 	uint32 local_time_stamp; /* client timestamp */
 	int thread_status;
 
+	int fixed_format;
+	int fixed_rate;
+	int fixed_channel;
+
 	/* Device plugin */
 	rdpsndDevicePlugin * device_plugin;
 };
@@ -301,16 +305,21 @@ thread_process_message_formats(rdpsndPlugin * plugin, char * data, int data_size
 	/* remainder is sndFormats (variable) */
 	ldata = data + 20;
 	out_format_count = 0;
-	for (index = 0; index < format_count; index++)
+	for (index = 0; index < format_count; index++, ldata += size)
 	{
 		size = 18 + GET_UINT16(ldata, 16);
+		if (plugin->fixed_format > 0 && plugin->fixed_format != GET_UINT16(ldata, 0))
+			continue;
+		if (plugin->fixed_channel > 0 && plugin->fixed_channel != GET_UINT16(ldata, 2))
+			continue;
+		if (plugin->fixed_rate > 0 && plugin->fixed_rate != GET_UINT32(ldata, 4))
+			continue;
 		if (plugin->device_plugin && plugin->device_plugin->format_supported(plugin->device_plugin, ldata, size))
 		{
 			memcpy(lout_formats, ldata, size);
 			lout_formats += size;
 			out_format_count++;
 		}
-		ldata += size;
 	}
 	out_format_size = (int) (lout_formats - out_formats);
 	if ((out_format_size > 0) && (out_format_count > 0))
@@ -335,7 +344,7 @@ thread_process_message_formats(rdpsndPlugin * plugin, char * data, int data_size
 	SET_UINT16(out_data, 16, 0); /* wDGramPort */
 	SET_UINT16(out_data, 18, out_format_count); /* wNumberOfFormats */
 	SET_UINT8(out_data, 20, 0); /* cLastBlockConfirmed */
-	SET_UINT16(out_data, 21, 2); /* wVersion */
+	SET_UINT16(out_data, 21, 6); /* wVersion */
 	SET_UINT8(out_data, 23, 0); /* bPad */
 	error = plugin->ep.pVirtualChannelWrite(plugin->open_handle,
 		out_data, size, out_data);
@@ -476,19 +485,18 @@ thread_process_message_wave(rdpsndPlugin * plugin, char * data, int data_size)
 			"size error"));
 	}
 	if (plugin->device_plugin)
-		plugin->device_plugin->play(plugin->device_plugin, data, data_size, &plugin->delay_ms);
+		plugin->device_plugin->play(plugin->device_plugin, data, data_size);
 	size = 8;
 	out_data = (char *) malloc(size);
 	SET_UINT8(out_data, 0, SNDC_WAVECONFIRM);
 	SET_UINT8(out_data, 1, 0);
 	SET_UINT16(out_data, 2, size - 4);
 	process_ms = get_mstime() - plugin->local_time_stamp;
+	plugin->delay_ms = 250;
 	LLOGLN(10, ("thread_process_message_wave: "
 		"data_size %d delay_ms %d process_ms %u",
 		data_size, plugin->delay_ms, process_ms));
 	wTimeStamp = plugin->wTimeStamp + plugin->delay_ms;
-	plugin->delay_ms = plugin->delay_ms > process_ms ?
-		plugin->delay_ms - process_ms : 0;
 	SET_UINT16(out_data, 4, wTimeStamp);
 	SET_UINT8(out_data, 6, plugin->cBlockNo);
 	SET_UINT8(out_data, 7, 0);
@@ -630,7 +638,7 @@ thread_func(void * arg)
 		listobj[0] = plugin->term_event;
 		listobj[1] = plugin->data_in_event;
 		numobj = 2;
-		timeout = plugin->out_list_head == 0 ? 1 : 500;
+		timeout = plugin->out_list_head == 0 ? -1 : 10;
 		wait_obj_select(listobj, numobj, NULL, 0, timeout);
 		if (wait_obj_is_set(plugin->term_event))
 		{
@@ -807,7 +815,7 @@ rdpsnd_register_device_plugin(rdpsndPlugin * plugin)
 
 	if (plugin->device_plugin)
 	{
-		LLOGLN(0, ("rdpsnd_process_plugin_data: existing device, abort."));
+		LLOGLN(0, ("rdpsnd_register_device_plugin: existing device, abort."));
 		return NULL;
 	}
 
@@ -851,6 +859,7 @@ rdpsnd_load_device_plugin(rdpsndPlugin * plugin, const char * name, RD_PLUGIN_DA
 	entryPoints.plugin = plugin;
 	entryPoints.pRegisterRdpsndDevice = rdpsnd_register_device_plugin;
 	entryPoints.pResample = rdpsnd_dsp_resample;
+	entryPoints.pDecodeImaAdpcm = rdpsnd_dsp_decode_ima_adpcm;
 	entryPoints.data = data;
 	if (entry(&entryPoints) != 0)
 	{
@@ -864,9 +873,19 @@ rdpsnd_load_device_plugin(rdpsndPlugin * plugin, const char * name, RD_PLUGIN_DA
 static int
 rdpsnd_process_plugin_data(rdpsndPlugin * plugin, RD_PLUGIN_DATA * data)
 {
-	if (strcmp((char*)data->data[0], "buffer") == 0)
+	if (strcmp((char*)data->data[0], "format") == 0)
 	{
-		/* TODO: Set the sound buffer size */
+		plugin->fixed_format = atoi(data->data[1]);
+		return 0;
+	}
+	else if (strcmp((char*)data->data[0], "rate") == 0)
+	{
+		plugin->fixed_rate = atoi(data->data[1]);
+		return 0;
+	}
+	else if (strcmp((char*)data->data[0], "channel") == 0)
+	{
+		plugin->fixed_channel = atoi(data->data[1]);
 		return 0;
 	}
 	else
@@ -882,6 +901,7 @@ VirtualChannelEntry(PCHANNEL_ENTRY_POINTS pEntryPoints)
 	rdpsndPlugin * plugin;
 	RD_PLUGIN_DATA * data;
 	RD_PLUGIN_DATA default_data[2] = { { 0 }, { 0 } };
+	int ret;
 
 	LLOGLN(10, ("VirtualChannelEntry:"));
 
@@ -927,9 +947,21 @@ VirtualChannelEntry(PCHANNEL_ENTRY_POINTS pEntryPoints)
 	if (plugin->device_plugin == NULL)
 	{
 		default_data[0].size = sizeof(RD_PLUGIN_DATA);
-		default_data[0].data[0] = "alsa";
-		default_data[0].data[1] = "default";
-		rdpsnd_load_device_plugin(plugin, "alsa", default_data);
+		default_data[0].data[0] = "pulse";
+		default_data[0].data[1] = "";
+		ret = rdpsnd_load_device_plugin(plugin, "pulse", default_data);
+		if (ret)
+		{
+			if (plugin->device_plugin)
+			{
+				free(plugin->device_plugin);
+				plugin->device_plugin = NULL;
+			}
+			default_data[0].size = sizeof(RD_PLUGIN_DATA);
+			default_data[0].data[0] = "alsa";
+			default_data[0].data[1] = "default";
+			ret = rdpsnd_load_device_plugin(plugin, "alsa", default_data);
+		}
 	}
 	if (plugin->device_plugin == NULL)
 	{
