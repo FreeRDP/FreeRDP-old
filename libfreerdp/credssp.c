@@ -179,7 +179,7 @@ int credssp_verify_public_key(rdpCredssp *credssp, STREAM s)
 	DATABLOB encrypted_public_key;
 
 	signature = s->data;
-	encrypted_public_key.data = (void*) signature + 16;
+	encrypted_public_key.data = (void*) (signature + 16);
 	encrypted_public_key.length = s->size - 16;
 
 	ntlmssp_decrypt_message(credssp->ntlmssp, &encrypted_public_key, &public_key, signature);

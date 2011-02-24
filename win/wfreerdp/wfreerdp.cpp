@@ -69,8 +69,10 @@ set_default_params(rdpSet * settings)
 	settings->triblt = 0;
 	settings->new_cursors = 1;
 	settings->rdp_version = 5;
+	settings->rdp_security = 1;
 #ifndef DISABLE_TLS
-	settings->tls = 1;
+	settings->tls_security = 1;
+	settings->nla_security = 1;
 #endif
 	return 0;
 }
@@ -274,9 +276,49 @@ process_params(rdpSet * settings, rdpChanMan * chan_man, int argc, LPWSTR * argv
 			}
 		}
 #ifndef DISABLE_TLS
+		else if (wcscmp(L"--no-rdp", argv[*pindex]) == 0)
+		{
+			settings->rdp_security = 0;
+		}
 		else if (wcscmp(L"--no-tls", argv[*pindex]) == 0)
 		{
-			settings->tls = 0;
+			settings->tls_security = 0;
+		}
+		else if (wcscmp(L"--no-nla", argv[*pindex]) == 0)
+		{
+			settings->nla_security = 0;
+		}
+		else if (wcscmp(L"--sec", argv[*pindex]) == 0)
+		{
+			*pindex = *pindex + 1;
+			if (*pindex == argc)
+			{
+				printf("missing protocol security\n");
+				return 1;
+			}
+			if (wcsncmp(L"rdp", argv[*pindex], 1) == 0) /* Standard RDP */
+			{
+				settings->rdp_security = 1;
+				settings->tls_security = 0;
+				settings->nla_security = 0;
+			}
+			else if (wcsncmp(L"tls", argv[*pindex], 1) == 0) /* TLS */
+			{
+				settings->rdp_security = 0;
+				settings->tls_security = 1;
+				settings->nla_security = 0;
+			}
+			else if (wcsncmp(L"nla", argv[*pindex], 1) == 0) /* NLA */
+			{
+				settings->rdp_security = 0;
+				settings->tls_security = 0;
+				settings->nla_security = 1;
+			}
+			else
+			{
+				printf("unknown protocol security\n");
+				return 1;
+			}
 		}
 #endif
 		else if (wcscmp(L"-plugin", argv[*pindex]) == 0)
