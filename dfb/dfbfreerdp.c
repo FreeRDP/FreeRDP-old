@@ -55,6 +55,52 @@ set_default_params(rdpSet * settings)
 	settings->triblt = 0;
 	settings->new_cursors = 1;
 	settings->rdp_version = 5;
+	settings->rdp_security = 1;
+#ifndef DISABLE_TLS
+	settings->tls_security = 1;
+	settings->nla_security = 1;
+#endif
+	return 0;
+}
+
+static int
+out_args(void)
+{
+	char help[] =
+		"\n"
+		"FreeRDP - A Free Remote Desktop Protocol Client\n"
+		"See http://freerdp.sourceforge.net for more information\n"
+		"\n"
+		"Usage: xfreerdp [options] server:port\n"
+		"\t-a: color depth (8, 15, 16, 24 or 32)\n"
+		"\t-u: username\n"
+		"\t-p: password\n"
+		"\t-d: domain\n"
+		"\t-k: keyboard layout ID\n"
+		"\t--kbd-list: list all keyboard layout IDs\n"
+		"\t-s: shell\n"
+		"\t-c: directory\n"
+		"\t-g: geometry, using format WxH or X%, default is 1024x768\n"
+		"\t-t: alternative port number, default is 3389\n"
+		"\t-n: hostname\n"
+		"\t-o: console audio\n"
+		"\t-0: console session\n"
+		"\t-f: fullscreen mode\n"
+		"\t-D: hide window decorations\n"
+		"\t-z: enable bulk compression\n"
+		"\t-x: performance flags (m, b or l for modem, broadband or lan)\n"
+		"\t-X: embed into another window with a given XID.\n"
+#ifndef DISABLE_TLS
+		"\t--no-rdp: disable Standard RDP encryption\n"
+		"\t--no-tls: disable TLS encryption\n"
+		"\t--no-nla: disable network level authentication\n"
+		"\t--sec: force protocol security (rdp, tls or nla)\n"
+#endif
+		"\t--plugin: load a virtual channel plugin\n"
+		"\t--no-osb: disable off screen bitmaps, default on\n"
+		"\t--version: Print out the version and exit\n"
+		"\t-h: show this help\n";
+	printf("%s\n", help);
 	return 0;
 }
 
@@ -204,6 +250,11 @@ process_params(rdpSet * settings, rdpChanMan * chan_man, int argc, char ** argv,
 		{
 			settings->bulk_compression = 1;
 		}
+		else if ((strcmp("-h", argv[*pindex]) == 0) || strcmp("--help", argv[*pindex]) == 0)
+		{
+			out_args();
+			return 1;
+		}
 		else if (strcmp("-x", argv[*pindex]) == 0)
 		{
 			*pindex = *pindex + 1;
@@ -231,6 +282,52 @@ process_params(rdpSet * settings, rdpChanMan * chan_man, int argc, char ** argv,
 				settings->performanceflags = strtol(argv[*pindex], 0, 16);
 			}
 		}
+#ifndef DISABLE_TLS
+		else if (strcmp("--no-rdp", argv[*pindex]) == 0)
+		{
+			settings->rdp_security = 0;
+		}
+		else if (strcmp("--no-tls", argv[*pindex]) == 0)
+		{
+			settings->tls_security = 0;
+		}
+		else if (strcmp("--no-nla", argv[*pindex]) == 0)
+		{
+			settings->nla_security = 0;
+		}
+		else if (strcmp("--sec", argv[*pindex]) == 0)
+		{
+			*pindex = *pindex + 1;
+			if (*pindex == argc)
+			{
+				printf("missing protocol security\n");
+				return 1;
+			}
+			if (strncmp("rdp", argv[*pindex], 1) == 0) /* Standard RDP */
+			{
+				settings->rdp_security = 1;
+				settings->tls_security = 0;
+				settings->nla_security = 0;
+			}
+			else if (strncmp("tls", argv[*pindex], 1) == 0) /* TLS */
+			{
+				settings->rdp_security = 0;
+				settings->tls_security = 1;
+				settings->nla_security = 0;
+			}
+			else if (strncmp("nla", argv[*pindex], 1) == 0) /* NLA */
+			{
+				settings->rdp_security = 0;
+				settings->tls_security = 0;
+				settings->nla_security = 1;
+			}
+			else
+			{
+				printf("unknown protocol security\n");
+				return 1;
+			}
+		}
+#endif
 		else if (strcmp("-plugin", argv[*pindex]) == 0)
 		{
 			*pindex = *pindex + 1;
