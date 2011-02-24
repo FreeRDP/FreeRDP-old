@@ -492,7 +492,7 @@ thread_process_message_wave(rdpsndPlugin * plugin, char * data, int data_size)
 	SET_UINT8(out_data, 1, 0);
 	SET_UINT16(out_data, 2, size - 4);
 	process_ms = get_mstime() - plugin->local_time_stamp;
-	plugin->delay_ms = 300;
+	plugin->delay_ms = 250;
 	LLOGLN(10, ("thread_process_message_wave: "
 		"data_size %d delay_ms %d process_ms %u",
 		data_size, plugin->delay_ms, process_ms));
