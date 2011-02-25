@@ -2,7 +2,7 @@
    FreeRDP: A Remote Desktop Protocol client.
    NSS Cryptographic Abstraction Layer
 
-   Copyright 2010 Marc-Andre Moreau <marcandre.moreau@gmail.com>
+   Copyright 2010 Mads Kiilerich <mads@kiilerich.com>
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
