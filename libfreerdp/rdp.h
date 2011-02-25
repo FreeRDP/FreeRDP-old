@@ -69,6 +69,9 @@ struct rdp_rdp
 	rdpInst * inst;
 	void* buffer;
 	size_t buffer_size;
+	/* large pointers */
+	int got_large_pointer_caps;
+	int large_pointers;
 };
 typedef struct rdp_rdp rdpRdp;
 

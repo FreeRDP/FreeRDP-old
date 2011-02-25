@@ -782,6 +782,11 @@ rdp_send_confirm_active(rdpRdp * rdp)
 		rdp_out_rail_capset(caps);
 		rdp_out_window_capset(caps);
 	}
+	if (rdp->got_large_pointer_caps)
+	{
+		numberCapabilities++;
+		rdp_out_large_pointer_capset(rdp, caps);
+	}
 	s_mark_end(caps);
 	caplen = (int) (caps->end - caps->data);
 

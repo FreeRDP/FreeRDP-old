@@ -782,12 +782,12 @@ rdp_process_window_capset(rdpRdp * rdp, STREAM s)
 
 /* Output large pointer capability set */
 void
-rdp_out_large_pointer_capset(STREAM s)
+rdp_out_large_pointer_capset(rdpRdp * rdp, STREAM s)
 {
 	capsetHeaderRef header;
 
 	header = rdp_skip_capset_header(s);
-	out_uint16_le(s, LARGE_POINTER_FLAG_96x96); // largePointerSupportFlags
+	out_uint16_le(s, rdp->large_pointers); // largePointerSupportFlags
 	rdp_out_capset_header(s, header, CAPSET_TYPE_LARGE_POINTER);
 }
 
@@ -795,8 +795,8 @@ rdp_out_large_pointer_capset(STREAM s)
 void
 rdp_process_large_pointer_capset(rdpRdp * rdp, STREAM s)
 {
-	uint16 largePointerSupportFlags;
-	in_uint16_le(s, largePointerSupportFlags); // largePointerSupportFlags
+	rdp->got_large_pointer_caps = 1;
+	in_uint16_le(s, rdp->large_pointers); // largePointerSupportFlags
 }
 
 /* Process surface commands capability set */
