@@ -662,7 +662,7 @@ detect_and_load_keyboard()
 
 #ifdef __APPLE__
 	/* Apple X11 breaks XKB detection */
-	keymapLoaded += load_keyboard("macintosh(old)");
+	keymapLoaded += load_keyboard("macosx(macosx)");
 #else
 	do
 	{
