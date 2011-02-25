@@ -345,6 +345,68 @@ disk_get_file_info(DEVICE * dev, uint32 file_id)
 	return NULL;
 }
 
+static uint32
+disk_remove_dir(const char * path)
+{
+	DIR * dir;
+	struct dirent * pdirent;
+	struct stat file_stat;
+	char * p;
+	uint32 ret = RD_STATUS_SUCCESS;
+
+	dir = opendir(path);
+	if (dir == NULL)
+		return get_error_status();
+
+	pdirent = readdir(dir);
+	while (pdirent)
+	{
+		if (strcmp(pdirent->d_name, ".") == 0 || strcmp(pdirent->d_name, "..") == 0)
+		{
+			pdirent = readdir(dir);
+			continue;
+		}
+
+		p = malloc(strlen(path) + strlen(pdirent->d_name) + 2);
+		sprintf(p, "%s/%s", path, pdirent->d_name);
+		if (stat(p, &file_stat) != 0)
+		{
+			LLOGLN(0, ("disk_remove_dir: stat %s failed (%i)\n", p, errno));
+			ret = get_error_status();
+		}
+		else if (S_ISDIR(file_stat.st_mode))
+		{
+			ret = disk_remove_dir(p);
+		}
+		else
+		{
+			if (unlink(p) < 0)
+			{
+				LLOGLN(0, ("disk_remove_dir: unlink %s failed (%i)\n", p, errno));
+				ret = get_error_status();
+			}
+		}
+		free(p);
+
+		if (ret != RD_STATUS_SUCCESS)
+			break;
+
+		pdirent = readdir(dir);
+	}
+
+	closedir(dir);
+	if (ret == RD_STATUS_SUCCESS)
+	{
+		if (rmdir(path) < 0)
+		{
+			LLOGLN(0, ("disk_remove_dir: rmdir %s failed (%i)\n", path, errno));
+			ret = get_error_status();
+		}
+	}
+
+	return ret;
+}
+
 static void
 disk_remove_file(DEVICE * dev, uint32 file_id)
 {
@@ -367,8 +429,7 @@ disk_remove_file(DEVICE * dev, uint32 file_id)
 			{
 				if (curr->is_dir)
 				{
-					/* TODO: this should delete files recursively */
-					rmdir(curr->fullpath);
+					disk_remove_dir(curr->fullpath);
 				}
 				else
 				{
