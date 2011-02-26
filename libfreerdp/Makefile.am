@@ -29,11 +29,10 @@ libfreerdp_la_SOURCES = \
 	mppc.c \
 	orders.c orders.h \
 	orderstypes.h \
-	stream.h \
+	stream.c stream.h \
 	pstcache.c pstcache.h \
 	rail.c rail.h \
 	rdp.c rdp.h \
-	rdp5.c \
 	secure.c secure.h \
 	crypto.h \
 	tcp.c tcp.h \

@@ -23,6 +23,7 @@
 #include "pstcache.h"
 #include "capabilities.h"
 #include "stream.h"
+#include "mem.h"
 
 typedef uint8 * capsetHeaderRef;
 
@@ -829,7 +830,7 @@ rdp_process_compdesk_capset(rdpRdp * rdp, STREAM s)
 
 /* Output multifragment update capability set */
 void
-rdp_out_multifragmentupdate_capset(STREAM s)
+rdp_out_multifragmentupdate_capset(rdpRdp * rdp, STREAM s)
 {
 	capsetHeaderRef header;
 
@@ -840,7 +841,7 @@ rdp_out_multifragmentupdate_capset(STREAM s)
 	* fast-path update. The size of this buffer places a cap on the
 	* size of the largest fast-path update that can be fragmented.
 	*/
-	out_uint32_le(s, 0x2000); // maxRequestSize
+	out_uint32_le(s, rdp->multifragmentupdate_request_size);
 	rdp_out_capset_header(s, header, CAPSET_TYPE_MULTIFRAGMENTUPDATE);
 }
 
@@ -848,8 +849,9 @@ rdp_out_multifragmentupdate_capset(STREAM s)
 void
 rdp_process_multifragmentupdate_capset(rdpRdp * rdp, STREAM s)
 {
-	uint32 maxRequestSize;
-	in_uint32_le(s, maxRequestSize); // maxRequestSize
+	rdp->got_multifragmentupdate_caps = 1;
+	in_uint32_le(s, rdp->multifragmentupdate_request_size);
+	rdp->fragment_data = stream_new(rdp->multifragmentupdate_request_size);
 }
 
 /* Output surface commands capability set */

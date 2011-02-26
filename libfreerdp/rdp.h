@@ -72,6 +72,10 @@ struct rdp_rdp
 	/* large pointers */
 	int got_large_pointer_caps;
 	int large_pointers;
+	/* fragment */
+	int got_multifragmentupdate_caps;
+	int multifragmentupdate_request_size;
+	STREAM fragment_data;
 };
 typedef struct rdp_rdp rdpRdp;
 

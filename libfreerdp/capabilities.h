@@ -71,7 +71,7 @@ rdp_out_large_pointer_capset(rdpRdp * rdp, STREAM s);
 void
 rdp_out_compdesk_capset(STREAM s);
 void
-rdp_out_multifragmentupdate_capset(STREAM s);
+rdp_out_multifragmentupdate_capset(rdpRdp * rdp, STREAM s);
 void
 rdp_out_surface_commands_capset(STREAM s);
 void
