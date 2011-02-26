@@ -804,8 +804,14 @@ rdp_process_large_pointer_capset(rdpRdp * rdp, STREAM s)
 void
 rdp_process_surface_commands_capset(rdpRdp * rdp, STREAM s)
 {
-	uint32 cmdFlags;
-	in_uint32_le(s, cmdFlags); // cmdFlags
+	rdp->got_surface_commands_caps = 1;
+	in_uint32_le(s, rdp->surface_commands);
+	/* only support
+	SURFCMDS_SETSURFACEBITS    0x02
+	SURFCMDS_FRAMEMARKER       0x10
+	SURFCMDS_STREAMSURFACEBITS 0x40 */
+	rdp->surface_commands &= (0x02 | 0x10 | 0x20 | 0x40);
+	printf("got surface commands 0x%8.8x\n", rdp->surface_commands);
 	/* Reserved (4 bytes) */
 }
 
@@ -856,14 +862,22 @@ rdp_process_multifragmentupdate_capset(rdpRdp * rdp, STREAM s)
 
 /* Output surface commands capability set */
 void
-rdp_out_surface_commands_capset(STREAM s)
+rdp_out_surface_commands_capset(rdpRdp * rdp, STREAM s)
 {
 	capsetHeaderRef header;
 
 	header = rdp_skip_capset_header(s);
-	out_uint32_le(s, SURFCMDS_SETSURFACEBITS); // cmdFlags
+	out_uint32_le(s, rdp->surface_commands); // cmdFlags
 	out_uint32_le(s, 0); // reserved for future use
 	rdp_out_capset_header(s, header, CAPSET_TYPE_SURFACE_COMMANDS);
+}
+
+/* Process bitmap codec capability set */
+void
+rdp_process_bitmap_codecs_capset(rdpRdp * rdp, STREAM s, int size)
+{
+	printf("rdp_process_bitmap_codecs_capset:\n");
+	hexdump(s->p, size);
 }
 
 /* Output a bitmap codec structure */

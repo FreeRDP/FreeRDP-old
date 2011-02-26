@@ -468,6 +468,10 @@ rdp_send_client_info(rdpRdp * rdp, uint32 flags, char *domain_name,
 		out_uint8a(s, clientDir, cbClientDir + 2);		/* clientDir */
 		rdp_out_client_timezone_info(rdp, s);			/* clientTimeZone (172 bytes) */
 		out_uint32_le(s, 0);					/* clientSessionId, should be set to zero */
+		if (rdp->settings->performanceflags == PERF_FLAG_NONE)
+		{
+			rdp->settings->performanceflags |= PERF_ENABLE_DESKTOP_COMPOSITION;
+		}
 		out_uint32_le(s, rdp->settings->performanceflags);	/* performanceFlags */
 		out_uint16_le(s, 0);					/* cbAutoReconnectLen */
 		/* autoReconnectCookie */ /* FIXME: populate this field */
@@ -790,6 +794,11 @@ rdp_send_confirm_active(rdpRdp * rdp)
 		numberCapabilities++;
 		rdp_out_large_pointer_capset(rdp, caps);
 	}
+	if (rdp->got_surface_commands_caps)
+	{
+		numberCapabilities++;
+		rdp_out_surface_commands_capset(rdp, caps);
+	}
 	if (rdp->got_multifragmentupdate_caps)
 	{
 		numberCapabilities++;
@@ -940,7 +949,7 @@ rdp_process_server_caps(rdpRdp * rdp, STREAM s, uint16 length)
 				break;
 
 			case CAPSET_TYPE_BITMAP_CODECS:
-				/* TODO: utilize advertised support for NSCodec and RemoteFX Bitmap Codecs */
+				rdp_process_bitmap_codecs_capset(rdp, s, lengthCapability);
 				break;
 
 			default:

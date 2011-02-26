@@ -386,6 +386,7 @@ sec_out_client_core_data(rdpSec * sec, rdpSet * settings, STREAM s)
 	uint16 highColorDepth;
 	uint16 supportedColorDepths;
 	uint16 earlyCapabilityFlags;
+	int con_type;
 
 	out_uint16_le(s, UDH_CS_CORE);	/* User Data Header type */
 	out_uint16_le(s, 216);		/* total length */
@@ -429,14 +430,21 @@ sec_out_client_core_data(rdpSec * sec, rdpSet * settings, STREAM s)
 	supportedColorDepths = RNS_UD_32BPP_SUPPORT | RNS_UD_24BPP_SUPPORT | RNS_UD_16BPP_SUPPORT | RNS_UD_15BPP_SUPPORT;
 	out_uint16_le(s, supportedColorDepths); /* supportedColorDepths */
 
+	con_type = 0;
 	earlyCapabilityFlags = RNS_UD_CS_SUPPORT_ERRINFO_PDU;
-
+	if (sec->rdp->settings->performanceflags == PERF_FLAG_NONE)
+	{
+		earlyCapabilityFlags |= RNS_UD_CS_VALID_CONNECTION_TYPE;
+		con_type = CONNECTION_TYPE_LAN;
+	}
 	if (settings->server_depth == 32)
 		earlyCapabilityFlags |= RNS_UD_CS_WANT_32BPP_SESSION;
 
 	out_uint16_le(s, earlyCapabilityFlags); /* earlyCapabilityFlags */
 	out_uint8s(s, 64); /* clientDigProductId (64 bytes) */
-	out_uint8(s, 0); /* connectionType, only valid when RNS_UD_CS_VALID_CONNECTION_TYPE is set in earlyCapabilityFlags */
+	/* connectionType, only valid when RNS_UD_CS_VALID_CONNECTION_TYPE
+		is set in earlyCapabilityFlags */
+	out_uint8(s, con_type);
 	out_uint8(s, 0); /* pad1octet */
 	out_uint32_le(s, sec->mcs->iso->nego->selected_protocol); /* serverSelectedProtocol */
 }

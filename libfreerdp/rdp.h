@@ -72,6 +72,9 @@ struct rdp_rdp
 	/* large pointers */
 	int got_large_pointer_caps;
 	int large_pointers;
+	/* surface commands */
+	int got_surface_commands_caps;
+	int surface_commands;
 	/* fragment */
 	int got_multifragmentupdate_caps;
 	int multifragmentupdate_request_size;

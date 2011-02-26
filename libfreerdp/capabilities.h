@@ -73,10 +73,11 @@ rdp_out_compdesk_capset(STREAM s);
 void
 rdp_out_multifragmentupdate_capset(rdpRdp * rdp, STREAM s);
 void
-rdp_out_surface_commands_capset(STREAM s);
+rdp_out_surface_commands_capset(rdpRdp * rdp, STREAM s);
+void
+rdp_process_bitmap_codecs_capset(rdpRdp * rdp, STREAM s, int size);
 void
 rdp_out_bitmap_codecs_capset(STREAM s);
-
 void
 rdp_process_bitmap_capset(rdpRdp * rdp, STREAM s);
 void
