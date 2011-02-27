@@ -705,7 +705,7 @@ disk_query_info(IRP * irp)
 			SET_UINT64(buf, 0, finfo->file_stat.st_size); /* AllocationSize */
 			SET_UINT64(buf, 8, finfo->file_stat.st_size); /* EndOfFile */
 			SET_UINT32(buf, 16, finfo->file_stat.st_nlink); /* NumberOfLinks */
-			SET_UINT8(buf, 20, 0); /* DeletePending */
+			SET_UINT8(buf, 20, finfo->delete_pending); /* DeletePending */
 			SET_UINT8(buf, 21, finfo->is_dir); /* Directory */
 			size = 22;
 			break;
@@ -948,6 +948,10 @@ disk_query_directory(IRP * irp, uint8 initialQuery, const char * path)
 static uint32
 disk_notify_change_directory(IRP * irp)
 {
+	LLOGLN(10, ("disk_notify_change_directory: id=%d", irp->fileID));
+	/* TODO: directory change notify is not yet implemented.
+	   We simply bypass the request here. */
+	irp->rwBlocking = 0;
 	return RD_STATUS_PENDING;
 }
 
