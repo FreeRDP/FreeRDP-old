@@ -18,6 +18,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#include <math.h>
 #include <freerdp/rdpset.h>
 #include "frdp.h"
 #include "orderstypes.h"
@@ -299,7 +300,6 @@ process_multipatblt(rdpOrders * orders, STREAM s, MULTIPATBLT_ORDER * os, uint32
 	RD_BRUSH brush;
 	int size;
 	int index, data, next;
-	int x, y, w = 0, h = 0;
 	uint8 flags = 0;
 	RECTANGLE *rects;
 
@@ -350,44 +350,39 @@ process_multipatblt(rdpOrders * orders, STREAM s, MULTIPATBLT_ORDER * os, uint32
 	rects = (RECTANGLE *) orders->buffer;
 	memset(rects, 0, size);
 
-	rects[0].l = os->x;
-	rects[0].t = os->y;
-
 	index = 0;
-	data = ((os->nentries - 1) / 8) + 1;
+	data = ceil(((double)os->nentries) / 2.0);
 	for (next = 1; (next <= os->nentries) && (next <= 45) && (data < os->datasize); next++)
 	{
-		if ((next - 1) % 8 == 0)
+		if ((next - 1) % 2 == 0)
 			flags = os->data[index++];
 
 		if (~flags & 0x80)
 			rects[next].l = parse_delta(os->data, &data);
-		else
-			rects[next].l = rects[next - 1].l;
 
 		if (~flags & 0x40)
 			rects[next].t = parse_delta(os->data, &data);
-		else
-			rects[next].t = rects[next - 1].t;
 
 		if (~flags & 0x20)
-			rects[next].r = parse_delta(os->data, &data);
+			rects[next].w = parse_delta(os->data, &data);
 		else
-			rects[next].r = rects[next - 1].r;
+			rects[next].w = rects[next - 1].w;
 
 		if (~flags & 0x10)
-			rects[next].b = parse_delta(os->data, &data);
+			rects[next].h = parse_delta(os->data, &data);
 		else
-			rects[next].b = rects[next - 1].b;
+			rects[next].h = rects[next - 1].h;
 
-		x = rects[next].l - rects[next - 1].l;
-		y = rects[next].t - rects[next - 1].t;
+		rects[next].l = rects[next].l + rects[next - 1].l;
+		rects[next].t = rects[next].t + rects[next - 1].t;
 
-		DEBUG("rectXY (%d, %d)\n", x, y);
+		DEBUG("rect (%d, %d, %d, %d)\n",
+			rects[next].l, rects[next].t, rects[next].w, rects[next].h);
 
 		flags <<= 4;
 
-		ui_patblt(orders->rdp->inst, os->opcode, x, y, w, h, &brush, os->bgcolor, os->fgcolor);
+		ui_patblt(orders->rdp->inst, os->opcode, rects[next].l, rects[next].t,
+			rects[next].w, rects[next].h, &brush, os->bgcolor, os->fgcolor);
 	}
 }
 
