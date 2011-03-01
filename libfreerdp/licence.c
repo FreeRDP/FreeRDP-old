@@ -383,6 +383,17 @@ licence_process(rdpLicence * licence, STREAM s)
 
 		case LICENCE_ERROR_ALERT:
 			DEBUG("LICENCE ERROR_ALERT - assuming it is a license grant\n");
+			{
+				uint32 dwErrorCode, dwStateTransition;
+				uint32 wBlobType, wBlobLen;
+				in_uint32_le(s, dwErrorCode);
+				in_uint32_le(s, dwStateTransition);
+				DEBUG("dwErrorCode %x dwStateTransition %x\n", dwErrorCode, dwStateTransition);
+				in_uint16_le(s, wBlobType);
+				in_uint16_le(s, wBlobLen);
+				DEBUG("bbErrorInfo: wBlobType %x wBlobLen %x\n", wBlobType, wBlobLen);
+				/* hexdump(s->p, wBlobLen); */
+			}
 			licence->licence_issued = True;	/* TODO ... */
 			break;
 
