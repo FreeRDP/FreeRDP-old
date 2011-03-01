@@ -1573,6 +1573,10 @@ rdp_reconnect(rdpRdp * rdp)
 
 	server = rdp->redirect_server ? rdp->redirect_server : rdp->settings->server;
 	username = rdp->redirect_username ? rdp->redirect_username : rdp->settings->username;
+
+	sec_disconnect(rdp->sec);
+	sec_free(rdp->sec);
+	rdp->sec = sec_new(rdp);
 	if (!sec_connect(rdp->sec, server, username, rdp->settings->tcp_port_rdp))
 		return False;
 
