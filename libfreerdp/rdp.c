@@ -795,6 +795,11 @@ rdp_send_confirm_active(rdpRdp * rdp)
 		numberCapabilities++;
 		rdp_out_large_pointer_capset(rdp, caps);
 	}
+	if (rdp->got_frame_ack_caps)
+	{
+		numberCapabilities++;
+		rdp_out_frame_ack_capset(rdp, caps);
+	}
 	if (rdp->got_surface_commands_caps)
 	{
 		numberCapabilities++;
@@ -951,6 +956,10 @@ rdp_process_server_caps(rdpRdp * rdp, STREAM s, uint16 length)
 
 			case CAPSET_TYPE_BITMAP_CODECS:
 				rdp_process_bitmap_codecs_capset(rdp, s, lengthCapability);
+				break;
+
+			case CAPSET_TYPE_FRAME_ACKNOWLEDGE:
+				rdp_process_frame_ack_capset(rdp, s);
 				break;
 
 			default:

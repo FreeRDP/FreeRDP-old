@@ -75,6 +75,9 @@ struct rdp_rdp
 	/* surface commands */
 	int got_surface_commands_caps;
 	int surface_commands;
+	/* frame ack */
+	int got_frame_ack_caps;
+	int frame_ack;
 	/* fragment */
 	int got_multifragmentupdate_caps;
 	int multifragmentupdate_request_size;

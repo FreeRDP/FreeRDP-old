@@ -48,6 +48,7 @@
 #define CAPSET_TYPE_LARGE_POINTER               0x001B
 #define CAPSET_TYPE_SURFACE_COMMANDS            0x001C
 #define CAPSET_TYPE_BITMAP_CODECS               0x001D
+#define CAPSET_TYPE_FRAME_ACKNOWLEDGE           0x001E
 
 #define CAPSET_LEN_GENERAL                      0x0018
 #define CAPSET_LEN_ORDER                        0x0058

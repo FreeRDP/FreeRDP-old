@@ -897,3 +897,22 @@ rdp_out_bitmap_codecs_capset(STREAM s)
 	// rdp_out_bitmap_codec(s, ...);
 	rdp_out_capset_header(s, header, CAPSET_TYPE_BITMAP_CODECS);
 }
+
+void
+rdp_process_frame_ack_capset(rdpRdp * rdp, STREAM s)
+{
+	rdp->got_frame_ack_caps = 1;
+	in_uint32_le(s, rdp->frame_ack);
+	printf("rdp_process_frame_ack_capset: 0x%8.8x\n", rdp->frame_ack);
+}
+
+void
+rdp_out_frame_ack_capset(rdpRdp * rdp, STREAM s)
+{
+	capsetHeaderRef header;
+
+	printf("rdp_out_frame_ack_capset:\n");
+	header = rdp_skip_capset_header(s);
+	out_uint32_le(s, 2);
+	rdp_out_capset_header(s, header, CAPSET_TYPE_FRAME_ACKNOWLEDGE);
+}

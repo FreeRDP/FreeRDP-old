@@ -110,5 +110,9 @@ void
 rdp_process_compdesk_capset(rdpRdp * rdp, STREAM s);
 void
 rdp_process_multifragmentupdate_capset(rdpRdp * rdp, STREAM s);
+void
+rdp_process_frame_ack_capset(rdpRdp * rdp, STREAM s);
+void
+rdp_out_frame_ack_capset(rdpRdp * rdp, STREAM s);
 
 #endif // __CAPABILITIES_H
