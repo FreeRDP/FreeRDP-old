@@ -55,7 +55,7 @@
 #endif
 
 #ifdef WITH_DEBUG_NLA
-#define DEBUG_NLA(fmt, ...) fprintf(stderr, "DBG (NLA) %s (%d): " fmt, __FUNCTION__, __LINE__, ## __VA_ARGS__)
+#define DEBUG_NLA(fmt, ...) printf("DBG (NLA) %s (%d): " fmt, __FUNCTION__, __LINE__, ## __VA_ARGS__)
 #else
 #define DEBUG_NLA(fmt, ...) do { } while (0)
 #endif
