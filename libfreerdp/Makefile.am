@@ -37,7 +37,8 @@ libfreerdp_la_SOURCES = \
 	crypto.h \
 	tcp.c tcp.h \
 	nego.c nego.h \
-	types.h debug.h frdp.h
+	types.h debug.h frdp.h \
+	surface.c surface.h
 
 if CRYPTO_NSS
 libfreerdp_la_SOURCES += crypto_nss.c

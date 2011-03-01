@@ -24,6 +24,11 @@
 #include "capabilities.h"
 #include "stream.h"
 #include "mem.h"
+#include "surface.h"
+
+static uint8 g_rfx_guid[] =
+{ 0x12, 0x2f, 0x77, 0x76, 0x72, 0xbd, 0x63, 0x44,
+  0xaf, 0xb3, 0xb7, 0x3c, 0x9c, 0x6f, 0x78, 0x86 };
 
 typedef uint8 * capsetHeaderRef;
 
@@ -878,28 +883,6 @@ rdp_process_bitmap_codecs_capset(rdpRdp * rdp, STREAM s, int size)
 {
 	printf("rdp_process_bitmap_codecs_capset:\n");
 	hexdump(s->p, size);
-}
-
-/* Output a bitmap codec structure */
-void
-rdp_out_bitmap_codec(STREAM s)
-{
-	// codecGUID (16 bytes)
-	out_uint32_le(s, 0); // codecGUID1
-	out_uint16_le(s, 0); // codecGUID2
-	out_uint16_le(s, 0); // codecGUID3
-	out_uint8(s, 0); // codecGUID4
-	out_uint8(s, 0); // codecGUID5
-	out_uint8(s, 0); // codecGUID6
-	out_uint8(s, 0); // codecGUID7
-	out_uint8(s, 0); // codecGUID8
-	out_uint8(s, 0); // codecGUID9
-	out_uint8(s, 0); // codecGUID10
-	out_uint8(s, 0); // codecGUID11
-
-	out_uint8(s, 0); // codecID
-	out_uint32_le(s, 0); // codecPropertiesLength
-	//out_uint8s(s, 0); // codecProperties
 }
 
 /* Output bitmap codecs capability set */

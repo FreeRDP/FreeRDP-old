@@ -39,6 +39,7 @@
 #include "mem.h"
 #include "debug.h"
 #include "ext.h"
+#include "surface.h"
 
 #ifdef HAVE_ICONV
 #ifdef HAVE_ICONV_H
@@ -1507,124 +1508,125 @@ process_redirect_pdu(rdpRdp * rdp, STREAM s)
 static void
 process_fp(rdpRdp * rdp, STREAM s)
 {
-  uint16 count, x, y;
-  uint8 type, ctype;
-  uint8 *next;
-  int frag_bits;
-  int comp_bits;
-  int length;
-  int skip_switch;
-  uint32 roff, rlen;
-  STREAM ns = &(rdp->mppc_dict.ns);
-  STREAM ts;
-  STREAM fd_s;
+	uint16 count, x, y;
+	uint8 type, ctype;
+	uint8 *next;
+	int frag_bits;
+	int comp_bits;
+	int length;
+	int skip_switch;
+	uint32 roff, rlen;
+	STREAM ns = &(rdp->mppc_dict.ns);
+	STREAM ts;
+	STREAM fd_s;
 
-  ui_begin_update(rdp->inst);
-  while (s->p < s->end)
-  {
-    skip_switch = 0;
-    in_uint8(s, type);
-    frag_bits = (type & 0x30) >> 4;
-    comp_bits = (type & 0xc0) >> 6;
-    type = type & 0xf;
-    if (comp_bits & 0x2) /* FASTPATH_OUTPUT_COMPRESSION_USED */
-    {
-      in_uint8(s, ctype);
-      in_uint16_le(s, length);
-    }
-    else
-    {
-      ctype = 0;
-      in_uint16_le(s, length);
-    }
-    rdp->next_packet = next = s->p + length;
-    if (ctype & RDP_MPPC_COMPRESSED)
-    {
-      if (mppc_expand(rdp, s->p, length, ctype, &roff, &rlen) == -1)
-        ui_error(rdp->inst, "error while decompressing packet\n");
-      /* allocate memory and copy the uncompressed data into the
-          temporary stream */
-      ns->data = (uint8 *) xrealloc(ns->data, rlen);
-      memcpy(ns->data, rdp->mppc_dict.hist + roff, rlen);
-      ns->size = rlen;
-      ns->end = ns->data + ns->size;
-      ns->p = ns->data;
-      ns->rdp_hdr = ns->p;
-      length = rlen;
-      ts = ns;
-    }
-    else
-    {
-      ts = s;
-    }
-    if (frag_bits != 0)
-    {
-      fd_s = rdp->fragment_data;
-      switch (frag_bits)
-      {
-        case 1: /* FASTPATH_FRAGMENT_LAST */
-          out_uint8a(fd_s, ts->p, length);
-          fd_s->end = fd_s->p;
-          fd_s->p = fd_s->data;
-          ts = fd_s;
-          break;
-        case 2: /* FASTPATH_FRAGMENT_FIRST */
-          skip_switch = 1;
-          fd_s->p = fd_s->data;
-          out_uint8a(fd_s, ts->p, length);
-          break;
-        case 3: /* FASTPATH_FRAGMENT_NEXT */
-          skip_switch = 1;
-          out_uint8a(fd_s, ts->p, length);
-          break;
-      }
-    }
-    if (skip_switch)
-    {
-      s->p = next;
-      continue;
-    }
-    switch (type)
-    {
-      case 0: /* update orders */
-        in_uint16_le(ts, count);
-        process_orders(rdp->orders, ts, count);
-        break;
-      case 1: /* update bitmap */
-        in_uint8s(ts, 2); /* part length */
-        process_bitmap_updates(rdp, ts);
-        break;
-      case 2: /* update palette */
-        in_uint8s(ts, 2); /* uint16 = 2 */
-        process_palette(rdp, ts);
-        break;
-      case 3: /* update synchronize */
-        break;
-      case 5: /* null pointer */
-        ui_set_null_cursor(rdp->inst);
-        break;
-      case 6: /* default pointer */
-        break;
-      case 8: /* pointer position */
-        in_uint16_le(ts, x);
-        in_uint16_le(ts, y);
-        ui_move_pointer(rdp->inst, x, y);
-        break;
-      case 9: /* color pointer */
-        process_color_pointer_pdu(rdp, ts);
-        break;
-      case 10:  /* cached pointer */
-        process_cached_pointer_pdu(rdp, ts);
-        break;
-      case 11:
-        process_new_pointer_pdu(rdp, ts);
-        break;
-      default:
-        ui_unimpl(rdp->inst, "RDP5 opcode %d\n", type);
-    }
-    s->p = next;
-  }
-  ui_end_update(rdp->inst);
+	ui_begin_update(rdp->inst);
+	while (s->p < s->end)
+	{
+		skip_switch = 0;
+		in_uint8(s, type);
+		frag_bits = (type & 0x30) >> 4;
+		comp_bits = (type & 0xc0) >> 6;
+		type = type & 0xf;
+		if (comp_bits & 0x2) /* FASTPATH_OUTPUT_COMPRESSION_USED */
+		{
+			in_uint8(s, ctype);
+			in_uint16_le(s, length);
+		}
+		else
+		{
+			ctype = 0;
+			in_uint16_le(s, length);
+		}
+		rdp->next_packet = next = s->p + length;
+		if (ctype & RDP_MPPC_COMPRESSED)
+		{
+			if (mppc_expand(rdp, s->p, length, ctype, &roff, &rlen) == -1)
+				ui_error(rdp->inst, "error while decompressing packet");
+			ns->data = (uint8 *) xrealloc(ns->data, rlen);
+			memcpy(ns->data, rdp->mppc_dict.hist + roff, rlen);
+			ns->size = rlen;
+			ns->end = ns->data + ns->size;
+			ns->p = ns->data;
+			ns->rdp_hdr = ns->p;
+			length = rlen;
+			ts = ns;
+		}
+		else
+		{
+			ts = s;
+		}
+		if (frag_bits != 0)
+		{
+			fd_s = rdp->fragment_data;
+			switch (frag_bits)
+			{
+				case 1: /* FASTPATH_FRAGMENT_LAST */
+					out_uint8a(fd_s, ts->p, length);
+					fd_s->end = fd_s->p;
+					fd_s->p = fd_s->data;
+					ts = fd_s;
+					break;
+				case 2: /* FASTPATH_FRAGMENT_FIRST */
+					skip_switch = 1;
+					fd_s->p = fd_s->data;
+					out_uint8a(fd_s, ts->p, length);
+					break;
+				case 3: /* FASTPATH_FRAGMENT_NEXT */
+					skip_switch = 1;
+					out_uint8a(fd_s, ts->p, length);
+					break;
+			}
+		}
+		if (skip_switch)
+		{
+			s->p = next;
+			continue;
+		}
+		switch (type)
+		{
+			case 0: /* update orders */
+				in_uint16_le(ts, count);
+				process_orders(rdp->orders, ts, count);
+				break;
+			case 1: /* update bitmap */
+				in_uint8s(ts, 2); /* part length */
+				process_bitmap_updates(rdp, ts);
+				break;
+			case 2: /* update palette */
+				in_uint8s(ts, 2); /* uint16 = 2 */
+				process_palette(rdp, ts);
+				break;
+			case 3: /* update synchronize */
+				break;
+			case 4: /* surface commands */
+				surface_cmd(rdp, ts);
+				break;
+			case 5: /* null pointer */
+				ui_set_null_cursor(rdp->inst);
+				break;
+			case 6: /* default pointer */
+				break;
+			case 8: /* pointer position */
+				in_uint16_le(ts, x);
+				in_uint16_le(ts, y);
+				ui_move_pointer(rdp->inst, x, y);
+				break;
+			case 9: /* color pointer */
+				process_color_pointer_pdu(rdp, ts);
+				break;
+			case 10:  /* cached pointer */
+				process_cached_pointer_pdu(rdp, ts);
+				break;
+			case 11:
+				process_new_pointer_pdu(rdp, ts);
+				break;
+			default:
+				ui_unimpl(rdp->inst, "RDP5 opcode %d\n", type);
+		}
+		s->p = next;
+	}
+	ui_end_update(rdp->inst);
 }
 
 /* used in uiports and rdp_main_loop, processes the rdp packets waiting */

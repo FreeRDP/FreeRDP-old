@@ -74,6 +74,7 @@ struct rdp_set
 	int triblt;
 	int new_cursors;
 	int bulk_compression;
+	int rfx_flags; /* 0 no remotefx */
 	int num_channels;
 	struct rdp_chan channels[16];
 	struct rdp_ext_set extensions[16];
