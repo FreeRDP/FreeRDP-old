@@ -797,8 +797,8 @@ rdp_send_confirm_active(rdpRdp * rdp)
 	}
 	if (rdp->got_frame_ack_caps)
 	{
-		numberCapabilities++;
-		rdp_out_frame_ack_capset(rdp, caps);
+		//numberCapabilities++;
+		//rdp_out_frame_ack_capset(rdp, caps);
 	}
 	if (rdp->got_surface_commands_caps)
 	{
@@ -809,6 +809,11 @@ rdp_send_confirm_active(rdpRdp * rdp)
 	{
 		numberCapabilities++;
 		rdp_out_multifragmentupdate_capset(rdp, caps);
+	}
+	if (rdp->got_bitmap_codecs_caps)
+	{
+		numberCapabilities++;
+		rdp_out_bitmap_codecs_capset(rdp, caps);
 	}
 	s_mark_end(caps);
 	caplen = (int) (caps->end - caps->data);
@@ -1043,12 +1048,6 @@ process_color_pointer_common(rdpRdp * rdp, STREAM s, int bpp)
 	in_uint16_le(s, datalen);
 	in_uint8p(s, data, datalen);
 	in_uint8p(s, mask, masklen);
-	if ((width != 32) || (height != 32))
-	{
-		/* TODO remove this warning if non 32x32 cursors prove reliable */
-		ui_warning(rdp->inst, "process_color_pointer_common: "
-			"width %d height %d bpp %d", width, height, bpp);
-	}
 	x = MAX(x, 0);
 	x = MIN(x, width - 1);
 	y = MAX(y, 0);

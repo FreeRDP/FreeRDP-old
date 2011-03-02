@@ -916,6 +916,7 @@ rdp_process_bitmap_codecs_capset(rdpRdp * rdp, STREAM s, int size)
 		{
 			if (rdp_caps_add_codec(rdp, out_codec_s) == 0)
 			{
+				printf("rdp_process_bitmap_codecs_capset: added ok\n");
 				rdp->got_bitmap_codecs_caps = 1;
 			}
 			else
@@ -928,15 +929,35 @@ rdp_process_bitmap_codecs_capset(rdpRdp * rdp, STREAM s, int size)
 
 /* Output bitmap codecs capability set */
 void
-rdp_out_bitmap_codecs_capset(STREAM s)
+rdp_out_bitmap_codecs_capset(rdpRdp * rdp, STREAM s)
 {
 	capsetHeaderRef header;
+	uint8 * count_ptr;
+	int index;
+	int out_count;
+	int out_bytes;
+	STREAM ls;
 
+	printf("rdp_out_bitmap_codecs_capset:\n");
+	out_count = 0;
 	header = rdp_skip_capset_header(s);
-	out_uint8(s, 0); // bitmapCodecCount, the number of bitmap codec entries
-	// bitmapCodecArray
-	// rdp_out_bitmap_codec(s, ...);
+	count_ptr = s->p;
+	out_uint8s(s, 1);
+	for (index = 0; index < MAX_BITMAP_CODECS; index++)
+	{
+		ls = rdp->out_codec_caps[index];
+		if (ls != NULL)
+		{
+			out_bytes = (int) (ls->end - ls->data);
+			out_uint8a(s, ls->data, out_bytes);
+			stream_delete(ls);
+			rdp->out_codec_caps[index] = NULL;
+			out_count++;
+		}
+	}
+	*count_ptr = out_count;
 	rdp_out_capset_header(s, header, CAPSET_TYPE_BITMAP_CODECS);
+	hexdump(count_ptr, s->p - count_ptr);
 }
 
 void

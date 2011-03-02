@@ -39,12 +39,41 @@ STREAM
 surface_codec_cap(rdpRdp * rdp, uint8 * codec_guid, int codec_id,
 	uint8 * codec_property, int codec_properties_size)
 {
-	STREAM rv;
+	STREAM s;
 
-	rv = 0;
+	s = 0;
 	if (memcmp(codec_guid, g_rfx_guid, 16) == 0)
 	{
 		printf("got remotefx guid\n");
+		if (rdp->settings->rfx_flags)
+		{
+			s = stream_new(1024);
+			out_uint8a(s, g_rfx_guid, 16);
+			out_uint8(s, codec_id);
+			out_uint16_le(s, 29 + 12);
+			out_uint32_le(s, 29 + 12); /* total size */
+			out_uint32_le(s, 0x00000000); /* Capture Flags */
+			out_uint32_le(s, 29); /* size after this */
+			/* struct CbyCaps */
+			out_uint16_le(s, 0xcbc0); /* CBY_CAPS */
+			out_uint32_le(s, 8); /* size of this struct */
+			out_uint16_le(s, 1); /* numCapsets */
+			/* struct ClyCapset */
+			out_uint16_le(s, 0xcbc1); /* CBY_CAPSET */
+			out_uint32_le(s, 21); /* size of this struct */
+			out_uint8(s, 1); /* codec id */
+			out_uint16_le(s, 0xcfc0); /* CLY_CAPSET */
+			out_uint16_le(s, 1); /* numIcaps */
+			out_uint16_le(s, 8); /* icapLen */
+			/* 64x64 tiles */
+			out_uint16_le(s, 0x100); /* version */
+			out_uint16_le(s, 64); /* tile size */
+			out_uint8(s, 0); /* flags */
+			out_uint8(s, 1); /* colConvBits */
+			out_uint8(s, 1); /* transformBits */
+			out_uint8(s, 1); /* entropyBits */
+			s_mark_end(s);
+		}
 	}
 	else if (memcmp(codec_guid, g_nsc_guid, 16) == 0)
 	{
@@ -55,12 +84,12 @@ surface_codec_cap(rdpRdp * rdp, uint8 * codec_guid, int codec_id,
 		printf("unknown guid\n");
 		hexdump(codec_guid, 16);
 	}
-	return rv;
+	return s;
 }
 
 int
 surface_cmd(rdpRdp * rdp, STREAM s)
 {
-	printf("surface_cmd:\n");
+	printf("surface_cmd: size %d\n", s->end - s->p);
   return 0;
 }
