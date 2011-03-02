@@ -26,10 +26,6 @@
 #include "mem.h"
 #include "surface.h"
 
-static uint8 g_rfx_guid[] =
-{ 0x12, 0x2f, 0x77, 0x76, 0x72, 0xbd, 0x63, 0x44,
-  0xaf, 0xb3, 0xb7, 0x3c, 0x9c, 0x6f, 0x78, 0x86 };
-
 typedef uint8 * capsetHeaderRef;
 
 /* Leave room in s for capability set header and return address for back patching */
@@ -877,12 +873,57 @@ rdp_out_surface_commands_capset(rdpRdp * rdp, STREAM s)
 	rdp_out_capset_header(s, header, CAPSET_TYPE_SURFACE_COMMANDS);
 }
 
+static int
+rdp_caps_add_codec(rdpRdp * rdp, STREAM s)
+{
+	int index;
+
+	for (index = 0; index < MAX_BITMAP_CODECS; index++)
+	{
+		if (rdp->out_codec_caps[index] == NULL)
+		{
+			rdp->out_codec_caps[index] = s;
+			return 0;
+		}
+	}
+	return 1;
+}
+
 /* Process bitmap codec capability set */
 void
 rdp_process_bitmap_codecs_capset(rdpRdp * rdp, STREAM s, int size)
 {
+	int num_codecs;
+	int index;
+	int codec_id;
+	int codec_properties_size;
+	uint8 * codec_guid;
+	uint8 * codec_property;
+	STREAM out_codec_s;
+
 	printf("rdp_process_bitmap_codecs_capset:\n");
 	hexdump(s->p, size);
+	in_uint8(s, num_codecs);
+	for (index = 0; index < num_codecs; index++)
+	{
+		in_uint8p(s, codec_guid, 16);
+		in_uint8(s, codec_id);
+		in_uint16_le(s, codec_properties_size);
+		in_uint8p(s, codec_property, codec_properties_size);
+		out_codec_s = surface_codec_cap(rdp, codec_guid, codec_id,
+			codec_property, codec_properties_size);
+		if (out_codec_s != NULL)
+		{
+			if (rdp_caps_add_codec(rdp, out_codec_s) == 0)
+			{
+				rdp->got_bitmap_codecs_caps = 1;
+			}
+			else
+			{
+				stream_delete(out_codec_s);
+			}
+		}
+	}
 }
 
 /* Output bitmap codecs capability set */
@@ -913,6 +954,6 @@ rdp_out_frame_ack_capset(rdpRdp * rdp, STREAM s)
 
 	printf("rdp_out_frame_ack_capset:\n");
 	header = rdp_skip_capset_header(s);
-	out_uint32_le(s, 2);
+	out_uint32_le(s, 2); /* in flight frames */
 	rdp_out_capset_header(s, header, CAPSET_TYPE_FRAME_ACKNOWLEDGE);
 }

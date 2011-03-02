@@ -30,6 +30,8 @@ rdp_global_init(void);
 void
 rdp_global_finish(void);
 
+#define MAX_BITMAP_CODECS 2
+
 struct rdp_rdp
 {
 	uint8 * next_packet;
@@ -82,6 +84,9 @@ struct rdp_rdp
 	int got_multifragmentupdate_caps;
 	int multifragmentupdate_request_size;
 	STREAM fragment_data;
+	/* bitmap codecs */
+	int got_bitmap_codecs_caps;
+	STREAM out_codec_caps[MAX_BITMAP_CODECS];
 };
 typedef struct rdp_rdp rdpRdp;
 

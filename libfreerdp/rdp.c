@@ -1795,6 +1795,8 @@ rdp_new(struct rdp_set *settings, struct rdp_inst *inst)
 void
 rdp_free(rdpRdp * rdp)
 {
+	int index;
+
 	if (rdp != NULL)
 	{
 #ifdef HAVE_ICONV
@@ -1815,6 +1817,10 @@ rdp_free(rdpRdp * rdp)
 		xfree(rdp->redirect_target_fqdn);
 		xfree(rdp->redirect_target_netbios_name);
 		xfree(rdp->redirect_target_net_addresses);
+		for (index = 0; index < MAX_BITMAP_CODECS; index++)
+		{
+			stream_delete(rdp->out_codec_caps[index]);
+		}
 		stream_delete(rdp->fragment_data);
 		xfree(rdp);
 	}

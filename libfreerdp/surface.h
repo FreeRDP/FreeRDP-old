@@ -20,6 +20,9 @@
 #ifndef __SURFACE_H
 #define __SURFACE_H
 
+STREAM
+surface_codec_cap(rdpRdp * rdp, uint8 * codec_guid, int codec_id,
+	uint8 * codec_property, int codec_properties_size);
 int
 surface_cmd(rdpRdp * rdp, STREAM s);
 
