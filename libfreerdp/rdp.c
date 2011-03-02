@@ -1313,7 +1313,6 @@ process_data_pdu(rdpRdp * rdp, STREAM s)
 	uint16 compressedLength;
 	uint32 roff, rlen;
 	STREAM data_s;
-	uint8 * s_p_after = s->p;
 	uint8 * data_s_end;
 
 	/* rest of Share Data Header */
@@ -1322,7 +1321,6 @@ process_data_pdu(rdpRdp * rdp, STREAM s)
 	in_uint8(s, pduType2);
 	in_uint8(s, compressedType);
 	in_uint16_le(s, compressedLength);
-	s_p_after += compressedLength;
 
 	if (compressedType & RDP_MPPC_COMPRESSED)
 	{
@@ -1335,16 +1333,18 @@ process_data_pdu(rdpRdp * rdp, STREAM s)
 		/* allocate memory and copy the uncompressed data into the temporary stream */
 		data_s->data = (uint8 *) xrealloc(data_s->data, rlen);
 		memcpy(data_s->data, rdp->mppc_dict.hist + roff, rlen);
+		ASSERT(rlen == uncompressedLength);
 		data_s->size = rlen;
 		data_s->end = data_s->data + data_s->size;
 		data_s->p = data_s->data;
 		data_s->rdp_hdr = data_s->p;
+		data_s_end = data_s->p + rlen;
 	}
 	else
 	{
 		data_s = s;
+		data_s_end = rdp->next_packet;
 	}
-	data_s_end = data_s->p + uncompressedLength;
 
 	switch (pduType2)
 	{
@@ -1389,7 +1389,6 @@ process_data_pdu(rdpRdp * rdp, STREAM s)
 		default:
 			ui_unimpl(rdp->inst, "Unknown data PDU type 0x%x\n", pduType2);
 	}
-	s->p = s_p_after;
 	return False;
 }
 
