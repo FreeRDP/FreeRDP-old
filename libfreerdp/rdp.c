@@ -98,6 +98,7 @@ rdp_recv(rdpRdp * rdp, enum RDP_PDU_TYPE * type, uint16 * source)
 		else if (sec_type == SEC_RECV_REDIRECT)
 		{
 			process_redirect_pdu(rdp, rdp->rdp_s);
+			rdp->next_packet = rdp->rdp_s->p;
 			return rdp->rdp_s;
 		}
 		ASSERT(sec_type == SEC_RECV_SHARE_CONTROL);
@@ -121,6 +122,8 @@ rdp_recv(rdpRdp * rdp, enum RDP_PDU_TYPE * type, uint16 * source)
 		return rdp->rdp_s;
 	}
 
+	rdp->next_packet += totalLength;
+
 	in_uint16_le(rdp->rdp_s, pduType); /* pduType */
 	if ((pduType >> 8 != 0) || (((pduType >> 4) & 0xF) != 1))
 	{
@@ -128,7 +131,6 @@ rdp_recv(rdpRdp * rdp, enum RDP_PDU_TYPE * type, uint16 * source)
 		if (rdp->sec->tls_connected)
 		{
 			ui_error(rdp->inst, "- known bug for TLS mode - skipping rest of PDU\n");
-			rdp->next_packet += totalLength;
 			return rdp->rdp_s;
 		}
 	}
@@ -140,7 +142,6 @@ rdp_recv(rdpRdp * rdp, enum RDP_PDU_TYPE * type, uint16 * source)
 	hexdump(rdp->next_packet, totalLength);
 #endif
 
-	rdp->next_packet += totalLength;
 	return rdp->rdp_s;
 }
 
@@ -1413,6 +1414,7 @@ static void
 process_redirect_pdu(rdpRdp * rdp, STREAM s)
 {
 	uint16 length;
+	unsigned char * s_start = s->p;
 	uint32 redirFlags;
 
 	in_uint8s(s, 2);				/* flags, MUST be set to SEC_REDIRECTION_PKT = 0x0400 */
@@ -1479,7 +1481,8 @@ process_redirect_pdu(rdpRdp * rdp, STREAM s)
 	/* TODO: LB_SMARTCARD_LOGON */
 
 	/* Skip optional padding up to length */
-	rdp->next_packet += length; /* FIXME: Is this correct? */
+	ASSERT(s->p <= s_start + length);
+	in_uint8s(s, length - (s->p - s_start));
 }
 
 /* used in uiports and rdp_main_loop, processes the rdp packets waiting */
