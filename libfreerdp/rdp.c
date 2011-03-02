@@ -125,17 +125,24 @@ rdp_recv(rdpRdp * rdp, enum RDP_PDU_TYPE * type, uint16 * source)
 	rdp->next_packet += totalLength;
 
 	in_uint16_le(rdp->rdp_s, pduType); /* pduType */
+	in_uint16_le(rdp->rdp_s, *source);	/* PDUSource */
+
+	if (pduType == RDP_PDU_SERVER_REDIR_PKT)
+	{
+		DEBUG("Enhanced Security Server Redirection PDU\n");
+		in_uint8s(rdp->rdp_s, 2);
+		process_redirect_pdu(rdp, rdp->rdp_s);
+		if (rdp->rdp_s->p == rdp->next_packet - 1)
+			in_uint8s(rdp->rdp_s, 1);
+		ASSERT(rdp->rdp_s->p == rdp->next_packet);
+		return rdp->rdp_s;
+	}
+
 	if ((pduType >> 8 != 0) || (((pduType >> 4) & 0xF) != 1))
 	{
 		ui_error(rdp->inst, "pduType version must be 0 and 1 but is %d and %d\n", pduType >> 8, (pduType >> 4) & 0xF);
-		if (rdp->sec->tls_connected)
-		{
-			ui_error(rdp->inst, "- known bug for TLS mode - skipping rest of PDU\n");
-			return rdp->rdp_s;
-		}
 	}
 	*type = pduType & 0xF; /* type is in 4 lower bits, version in high bits */
-	in_uint16_le(rdp->rdp_s, *source);	/* PDUSource */
 
 #if WITH_DEBUG
 	DEBUG("Share Control Data PDU #%d, (type %x)\n", ++(rdp->packetno), *type);
