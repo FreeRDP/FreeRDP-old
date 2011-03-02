@@ -482,7 +482,6 @@ l_rdp_check_fds(rdpInst * inst)
 	if ((rv != 0) && rdp->redirect)
 	{
 		rdp->redirect = False;
-		rdp_disconnect(rdp);
 		if (rdp_reconnect(rdp))
 		{
 			rv = 0;
