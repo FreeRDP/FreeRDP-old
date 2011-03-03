@@ -210,6 +210,19 @@ rdp_fp_send(rdpRdp * rdp, STREAM s)
 	sec_fp_send(rdp->sec, s, rdp->settings->encryption ? SEC_ENCRYPT : 0);
 }
 
+int
+rdp_send_frame_ack(rdpRdp * rdp, int frame_id)
+{
+	STREAM s;
+
+	printf("send_frame_ack: frame_id %d\n", frame_id);
+	s = rdp_init_data(rdp, 4);
+	out_uint32_le(s, frame_id);
+	s_mark_end(s);
+	rdp_send_data(rdp, s, 56);
+	return 0;
+}
+
 /* Convert str from DEFAULT_CODEPAGE to WINDOWS_CODEPAGE and return buffer like xstrdup.
  * Buffer is 0-terminated but that is not included in the returned length. */
 char*
@@ -797,8 +810,8 @@ rdp_send_confirm_active(rdpRdp * rdp)
 	}
 	if (rdp->got_frame_ack_caps)
 	{
-		//numberCapabilities++;
-		//rdp_out_frame_ack_capset(rdp, caps);
+		numberCapabilities++;
+		rdp_out_frame_ack_capset(rdp, caps);
 	}
 	if (rdp->got_surface_commands_caps)
 	{

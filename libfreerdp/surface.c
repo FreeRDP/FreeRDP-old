@@ -90,6 +90,55 @@ surface_codec_cap(rdpRdp * rdp, uint8 * codec_guid, int codec_id,
 int
 surface_cmd(rdpRdp * rdp, STREAM s)
 {
+	int cmdType;
+	int frameAction;
+	int frameId;
+	int destLeft;
+	int destTop;
+	int destRight;
+	int destBottom;
+	int bpp;
+	int codecID;
+	int width;
+	int height;
+	int bitmapDataLength;
+
 	printf("surface_cmd: size %d\n", s->end - s->p);
-  return 0;
+	//hexdump(s->p, 1024);
+	frameId = 0;
+	while (s->p < s->end)
+	{
+		in_uint16_le(s, cmdType);
+		printf("  surface_cmd: %d\n", cmdType);
+		switch (cmdType)
+		{
+			case 4: /* CMDTYPE_FRAME_MARKER */
+				in_uint16_le(s, frameAction);
+				in_uint32_le(s, frameId);
+				printf("    surface_cmd: CMDTYPE_FRAME_MARKER %d %d\n",
+					frameAction, frameId);
+				break;
+			case 6: /* CMDTYPE_STREAM_SURFACE_BITS */
+				in_uint16_le(s, destLeft);
+				in_uint16_le(s, destTop);
+				in_uint16_le(s, destRight);
+				in_uint16_le(s, destBottom);
+				in_uint8(s, bpp);
+				in_uint8s(s, 2);
+				in_uint8(s, codecID);
+				in_uint16_le(s, width);
+				in_uint16_le(s, height);
+				in_uint32_le(s, bitmapDataLength);
+				in_uint8s(s, bitmapDataLength);
+				printf("    surface_cmd: CMDTYPE_STREAM_SURFACE_BITS "
+					"id %d width %d height %d bpp %d size %d\n",
+					codecID, width, height, bpp, bitmapDataLength);
+				break;
+		}
+	}
+	if (rdp->got_frame_ack_caps)
+	{
+		rdp_send_frame_ack(rdp, frameId);
+	}
+	return 0;
 }

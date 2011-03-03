@@ -101,6 +101,8 @@ xstrdup_in_unistr(rdpRdp * rdp, unsigned char* pin, size_t in_len);
 void
 rdp_send_input(rdpRdp * rdp, time_t time, uint16 message_type, uint16 device_flags, uint16 param1,
 	       uint16 param2);
+int
+rdp_send_frame_ack(rdpRdp * rdp, int frame_id);
 void
 rdp_sync_input(rdpRdp * rdp, time_t time, uint32 toggle_keys_state);
 void
