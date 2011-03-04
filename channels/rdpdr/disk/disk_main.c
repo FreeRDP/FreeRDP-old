@@ -299,6 +299,8 @@ disk_create_fullpath(IRP * irp, FILE_INFO * finfo, const char * fullpath)
 			default:
 				return RD_STATUS_INVALID_PARAMETER;
 		}
+		if ((flags & O_CREAT) && (irp->createOptions & FILE_DELETE_ON_CLOSE))
+			finfo->delete_pending = 1;
 
 		if ((irp->desiredAccess & GENERIC_ALL)
 			|| (irp->desiredAccess & GENERIC_WRITE)
