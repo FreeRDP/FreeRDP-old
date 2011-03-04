@@ -21,6 +21,6 @@ dfbfreerdp_LDADD = \
 	../libfreerdpkbd/libfreerdpkbd.la \
 	../libfreerdpgdi/libfreerdpgdi.la \
 	../libfreerdpchanman/libfreerdpchanman.la \
-	@DFB_LIBS@ -lfusion -ldirect -lz
+	@DFB_LIBS@ -lfusion -ldirect -lz -lm
 
 
