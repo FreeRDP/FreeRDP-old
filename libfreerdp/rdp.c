@@ -215,6 +215,10 @@ rdp_send_frame_ack(rdpRdp * rdp, int frame_id)
 {
 	STREAM s;
 
+	if (rdp->send_frame_ack == 0)
+	{
+		return 0;
+	}
 	printf("send_frame_ack: frame_id %d\n", frame_id);
 	s = rdp_init_data(rdp, 4);
 	out_uint32_le(s, frame_id);
@@ -810,8 +814,11 @@ rdp_send_confirm_active(rdpRdp * rdp)
 	}
 	if (rdp->got_frame_ack_caps)
 	{
-		numberCapabilities++;
-		rdp_out_frame_ack_capset(rdp, caps);
+		if (rdp->settings->use_frame_ack)
+		{
+			numberCapabilities++;
+			rdp_out_frame_ack_capset(rdp, caps);
+		}
 	}
 	if (rdp->got_surface_commands_caps)
 	{
@@ -1577,7 +1584,13 @@ process_fp(rdpRdp * rdp, STREAM s)
 		{
 			ts = s;
 		}
-		if (frag_bits != 0)
+		if ((frag_bits != 0) && (type == 4) &&
+			(rdp->settings->ui_decode_flags & 2))
+		{
+			ui_decode(rdp->inst, ts->p, (int) (ts->end - ts->p));
+			skip_switch = 1;
+		}
+		else if (frag_bits != 0)
 		{
 			fd_s = rdp->fragment_data;
 			switch (frag_bits)
@@ -1621,7 +1634,14 @@ process_fp(rdpRdp * rdp, STREAM s)
 			case 3: /* update synchronize */
 				break;
 			case 4: /* surface commands */
-				surface_cmd(rdp, ts);
+				if (rdp->settings->ui_decode_flags & 3)
+				{
+					ui_decode(rdp->inst, ts->p, (int) (ts->end - ts->p));
+				}
+				else
+				{
+					surface_cmd(rdp, ts);
+				}
 				break;
 			case 5: /* null pointer */
 				ui_set_null_cursor(rdp->inst);

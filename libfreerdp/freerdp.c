@@ -422,6 +422,12 @@ ui_authenticate(rdpInst * inst)
 	return inst->ui_authenticate(inst);
 }
 
+int
+ui_decode(rdpInst * inst, uint8 * data, int data_size)
+{
+	return inst->ui_decode(inst, data, data_size);
+}
+
 /* returns error */
 static int
 l_rdp_connect(rdpInst * inst)
@@ -530,6 +536,15 @@ l_rdp_disconnect(rdpInst * inst)
 	rdp_disconnect(rdp);
 }
 
+static int
+l_rdp_send_frame_ack(rdpInst * inst, int frame_id)
+{
+	rdpRdp * rdp;
+	rdp = RDP_FROM_INST(inst);
+	rdp_send_frame_ack(rdp, frame_id);
+	return 0;
+}
+
 RD_BOOL
 freerdp_global_init(void)
 {
@@ -558,6 +573,7 @@ freerdp_new(rdpSet * settings)
 	inst->rdp_sync_input = l_rdp_sync_input;
 	inst->rdp_channel_data = l_rdp_channel_data;
 	inst->rdp_disconnect = l_rdp_disconnect;
+	inst->rdp_send_frame_ack = l_rdp_send_frame_ack;
 	inst->rdp = (void *) rdp_new(settings, inst);
 	return inst;
 }

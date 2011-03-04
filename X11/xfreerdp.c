@@ -360,6 +360,8 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 		else if (strcmp("--rfx", argv[*pindex]) == 0)
 		{
 			settings->rfx_flags = 1;
+			settings->ui_decode_flags = 0;
+			settings->use_frame_ack = 1;
 		}
 		else if (strcmp("-f", argv[*pindex]) == 0)
 		{

@@ -87,6 +87,7 @@ surface_codec_cap(rdpRdp * rdp, uint8 * codec_guid, int codec_id,
 	return s;
 }
 
+/* software decode */
 int
 surface_cmd(rdpRdp * rdp, STREAM s)
 {
@@ -117,6 +118,10 @@ surface_cmd(rdpRdp * rdp, STREAM s)
 				in_uint32_le(s, frameId);
 				printf("    surface_cmd: CMDTYPE_FRAME_MARKER %d %d\n",
 					frameAction, frameId);
+				if (frameAction == 1)
+				{
+					rdp_send_frame_ack(rdp, frameId);
+				}
 				break;
 			case 6: /* CMDTYPE_STREAM_SURFACE_BITS */
 				in_uint16_le(s, destLeft);
@@ -135,10 +140,6 @@ surface_cmd(rdpRdp * rdp, STREAM s)
 					codecID, width, height, bpp, bitmapDataLength);
 				break;
 		}
-	}
-	if (rdp->got_frame_ack_caps)
-	{
-		rdp_send_frame_ack(rdp, frameId);
 	}
 	return 0;
 }

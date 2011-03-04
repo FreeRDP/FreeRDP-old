@@ -977,4 +977,5 @@ rdp_out_frame_ack_capset(rdpRdp * rdp, STREAM s)
 	header = rdp_skip_capset_header(s);
 	out_uint32_le(s, 2); /* in flight frames */
 	rdp_out_capset_header(s, header, CAPSET_TYPE_FRAME_ACKNOWLEDGE);
+	rdp->send_frame_ack = 1;
 }

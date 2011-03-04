@@ -902,7 +902,9 @@ l_ui_authenticate(struct rdp_inst * inst)
 	printf("User name:");
 	if (inst->settings->username[0] == 0)
 	{
-		fgets(inst->settings->username, sizeof(inst->settings->username), stdin);
+		if (fgets(inst->settings->username, sizeof(inst->settings->username), stdin) == NULL)
+		{
+		}
 		l = strlen(inst->settings->username);
 		if (l > 0 && inst->settings->username[l - 1] == '\n')
 			inst->settings->username[l - 1] = 0;
@@ -913,7 +915,9 @@ l_ui_authenticate(struct rdp_inst * inst)
 	printf("Domain:");
 	if (inst->settings->domain[0] == 0)
 	{
-		fgets(inst->settings->domain, sizeof(inst->settings->domain), stdin);
+		if (fgets(inst->settings->domain, sizeof(inst->settings->domain), stdin) == NULL)
+		{
+		}
 		l = strlen(inst->settings->domain);
 		if (l > 0 && inst->settings->domain[l - 1] == '\n')
 			inst->settings->domain[l - 1] = 0;
@@ -927,6 +931,13 @@ l_ui_authenticate(struct rdp_inst * inst)
 		strncpy(inst->settings->password, pass, sizeof(inst->settings->password) - 1);
 	}
 	return True;
+}
+
+static int
+l_ui_decode(struct rdp_inst * inst, uint8 * data, int data_size)
+{
+	printf("l_ui_decode: size %d\n", data_size);
+	return 0;
 }
 
 static int
@@ -976,6 +987,7 @@ xf_assign_callbacks(rdpInst * inst)
 	inst->ui_destroy_surface = l_ui_destroy_surface;
 	inst->ui_channel_data = l_ui_channel_data;
 	inst->ui_authenticate = l_ui_authenticate;
+	inst->ui_decode = l_ui_decode;
 	return 0;
 }
 

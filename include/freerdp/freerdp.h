@@ -1,23 +1,20 @@
 /*
-   Copyright (c) 2009-2010 Jay Sorg
+   FreeRDP: A Remote Desktop Protocol client.
+   RDP settings
 
-   Permission is hereby granted, free of charge, to any person obtaining a
-   copy of this software and associated documentation files (the "Software"),
-   to deal in the Software without restriction, including without limitation
-   the rights to use, copy, modify, merge, publish, distribute, sublicense,
-   and/or sell copies of the Software, and to permit persons to whom the
-   Software is furnished to do so, subject to the following conditions:
+   Copyright (C) Jay Sorg 2009-2011
 
-   The above copyright notice and this permission notice shall be included
-   in all copies or substantial portions of the Software.
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
 
-   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-   OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-   DEALINGS IN THE SOFTWARE.
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
 */
 
 #ifndef __FREERDP_H
@@ -28,7 +25,7 @@
 #include "constants_ui.h"
 #include "rdpext.h"
 
-#define FREERDP_INTERFACE_VERSION 3
+#define FREERDP_INTERFACE_VERSION 4
 
 #if defined _WIN32 || defined __CYGWIN__
   #ifdef FREERDP_EXPORTS
@@ -82,6 +79,7 @@ struct rdp_inst
 	int (* rdp_sync_input)(rdpInst * inst, int toggle_flags);
 	int (* rdp_channel_data)(rdpInst * inst, int chan_id, char * data, int data_size);
 	void (* rdp_disconnect)(rdpInst * inst);
+	int (* rdp_send_frame_ack)(rdpInst * inst, int frame_id);
 	/* calls from library to ui */
 	void (* ui_error)(rdpInst * inst, const char * text);
 	void (* ui_warning)(rdpInst * inst, const char * text);
@@ -141,6 +139,7 @@ struct rdp_inst
 	void (* ui_channel_data)(rdpInst * inst, int chan_id, char * data, int data_size,
 		int flags, int total_size);
 	RD_BOOL (* ui_authenticate)(rdpInst * inst);
+	int (* ui_decode)(rdpInst * inst, uint8 * data, int data_size);
 };
 
 FREERDP_API rdpInst *

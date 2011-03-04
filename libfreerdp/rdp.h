@@ -80,6 +80,7 @@ struct rdp_rdp
 	/* frame ack */
 	int got_frame_ack_caps;
 	int frame_ack;
+	int send_frame_ack;
 	/* fragment */
 	int got_multifragmentupdate_caps;
 	int multifragmentupdate_request_size;
