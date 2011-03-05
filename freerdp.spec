@@ -7,9 +7,9 @@ Summary: Remote Desktop Protocol functionality
 Name: freerdp
 Version: UNKNOWN
 Release: 1%{?dist}
-License: GPLv2
+License: Apache License 2.0
 Group: Applications/Communications
-Url: http://freerdp.sourceforge.net/
+URL: http://freerdp.sourceforge.net/
 Source: http://downloads.sourceforge.net/%{name}/%{name}-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  openssl-devel, libX11-devel, libXcursor-devel, cups-devel, alsa-lib-devel
