@@ -21,6 +21,6 @@ test_freerdp_LDADD = \
 	../libfreerdpkbd/libfreerdpkbd.la \
 	../libfreerdpgdi/libfreerdpgdi.la \
 	../libfreerdpchanman/libfreerdpchanman.la \
-	-lfusion -ldirect -lz -lcunit
+	-lfusion -ldirect -lz -lcunit -lm -lncurses
 
 
