@@ -712,7 +712,7 @@ disk_query_info(IRP * irp)
 			size = 22;
 			break;
 
-		case FileObjectIdInformation:
+		case FileAttributeTagInformation:
 			SET_UINT32(buf, 0, finfo->file_attr); /* FileAttributes */
 			SET_UINT32(buf, 4, 0);	/* ReparseTag */
 			size = 8;
