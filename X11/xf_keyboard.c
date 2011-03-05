@@ -1,6 +1,6 @@
 /*
    FreeRDP: A Remote Desktop Protocol client.
-   Channels
+   Keyboard
 
    Copyright (C) Jay Sorg 2009-2011
 

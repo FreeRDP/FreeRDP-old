@@ -1,6 +1,6 @@
 /*
    FreeRDP: A Remote Desktop Protocol client.
-   Channels
+   memory functions
 
    Copyright (C) Jay Sorg 2009-2011
 
