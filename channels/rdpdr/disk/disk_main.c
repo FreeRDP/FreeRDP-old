@@ -126,7 +126,6 @@ dummy_statfs(struct dummy_statfs_t *buf)
 struct _FILE_INFO
 {
 	uint32 file_id;
-	struct stat file_stat;
 	uint32 file_attr;
 	int is_dir;
 	int file;
@@ -319,13 +318,13 @@ disk_create_fullpath(IRP * irp, FILE_INFO * finfo, const char * fullpath)
 			return get_error_status();
 	}
 
-	if (stat(fullpath, &finfo->file_stat) != 0)
+	if (stat(fullpath, &file_stat) != 0)
 	{
 		return RD_STATUS_NO_SUCH_FILE;
 	}
 
 	p = strrchr(fullpath, '/');
-	finfo->file_attr = get_file_attribute((p ? p + 1 : fullpath), &finfo->file_stat);
+	finfo->file_attr = get_file_attribute((p ? p + 1 : fullpath), &file_stat);
 
 	return RD_STATUS_SUCCESS;
 }
@@ -676,6 +675,7 @@ disk_query_info(IRP * irp)
 	uint32 status;
 	int size;
 	char * buf;
+	struct stat file_stat;
 
 	LLOGLN(10, ("disk_query_info: class=%d id=%d", irp->infoClass, irp->fileID));
 	finfo = disk_get_file_info(irp->dev, irp->fileID);
@@ -691,22 +691,27 @@ disk_query_info(IRP * irp)
 
 	status = RD_STATUS_SUCCESS;
 
+	if (stat(finfo->fullpath, &file_stat) != 0)
+	{
+		return RD_STATUS_NO_SUCH_FILE;
+	}
+
 	switch (irp->infoClass)
 	{
 		case FileBasicInformation:
-			SET_UINT64(buf, 0, get_rdp_filetime(finfo->file_stat.st_ctime < finfo->file_stat.st_mtime ?
-				finfo->file_stat.st_ctime : finfo->file_stat.st_mtime)); /* CreationTime */
-			SET_UINT64(buf, 8, get_rdp_filetime(finfo->file_stat.st_atime)); /* LastAccessTime */
-			SET_UINT64(buf, 16, get_rdp_filetime(finfo->file_stat.st_mtime)); /* LastWriteTime */
-			SET_UINT64(buf, 24, get_rdp_filetime(finfo->file_stat.st_ctime)); /* ChangeTime */
+			SET_UINT64(buf, 0, get_rdp_filetime(file_stat.st_ctime < file_stat.st_mtime ?
+				file_stat.st_ctime : file_stat.st_mtime)); /* CreationTime */
+			SET_UINT64(buf, 8, get_rdp_filetime(file_stat.st_atime)); /* LastAccessTime */
+			SET_UINT64(buf, 16, get_rdp_filetime(file_stat.st_mtime)); /* LastWriteTime */
+			SET_UINT64(buf, 24, get_rdp_filetime(file_stat.st_ctime)); /* ChangeTime */
 			SET_UINT32(buf, 32, finfo->file_attr); /* FileAttributes */
 			size = 36;
 			break;
 
 		case FileStandardInformation:
-			SET_UINT64(buf, 0, finfo->file_stat.st_size); /* AllocationSize */
-			SET_UINT64(buf, 8, finfo->file_stat.st_size); /* EndOfFile */
-			SET_UINT32(buf, 16, finfo->file_stat.st_nlink); /* NumberOfLinks */
+			SET_UINT64(buf, 0, file_stat.st_size); /* AllocationSize */
+			SET_UINT64(buf, 8, file_stat.st_size); /* EndOfFile */
+			SET_UINT32(buf, 16, file_stat.st_nlink); /* NumberOfLinks */
 			SET_UINT8(buf, 20, finfo->delete_pending); /* DeletePending */
 			SET_UINT8(buf, 21, finfo->is_dir); /* Directory */
 			size = 22;
