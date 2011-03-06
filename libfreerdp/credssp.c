@@ -299,8 +299,9 @@ void credssp_send(rdpCredssp *credssp, STREAM negoToken, STREAM pubKeyAuth, STRE
 		ts_request->negoTokens = calloc(1, sizeof(NegoData_t));
 		nego_token = calloc(1, sizeof(OCTET_STRING_t));
 		negotiation_token = calloc(1, sizeof(NegotiationToken_t));
-		nego_token->buf = negoToken->data;
 		nego_token->size = negoToken->end - negoToken->data;
+		nego_token->buf = malloc(nego_token->size);
+		memcpy(nego_token->buf, negoToken->data, nego_token->size);
 		ASN_SEQUENCE_ADD(ts_request->negoTokens, nego_token);
 	}
 
