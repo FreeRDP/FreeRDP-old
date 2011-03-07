@@ -393,6 +393,8 @@ void ntlmssp_compute_ntlm_v2_hash(DATABLOB *password, DATABLOB *username, DATABL
 
 	/* Compute the HMAC-MD5 hash of the above value using the NTLMv1 hash as the key, the result is the NTLMv2 hash */
 	HMAC(EVP_md5(), (void*) ntlm_hash, 16, blob.data, blob.length, (void*) hash, NULL);
+
+	datablob_free(&blob);
 }
 
 void ntlmssp_compute_lm_response(char* password, char* challenge, char* response)
@@ -515,6 +517,9 @@ void ntlmssp_compute_ntlm_v2_response(NTLMSSP *ntlmssp)
 	/* Compute SessionBaseKey, the HMAC-MD5 hash of NTProofStr using the NTLMv2 hash as the key */
 	HMAC(EVP_md5(), (void*) ntlm_v2_hash, 16,
 		(void*) nt_proof_str, 16, (void*) ntlmssp->session_base_key, NULL);
+
+	datablob_free(&ntlm_v2_temp);
+	datablob_free(&ntlm_v2_temp_chal);
 }
 
 void ntlmssp_input_negotiate_flags(STREAM s, uint32 *flags)
@@ -933,6 +938,8 @@ void ntlmssp_encrypt_message(NTLMSSP *ntlmssp, DATABLOB *msg, DATABLOB *encrypte
 	memcpy(&signature[4], (void*) checksum, 8);
 	memcpy(&signature[12], (void*) &(ntlmssp->send_seq_num), 4);
 
+	HMAC_CTX_cleanup(&hmac_ctx);
+
 	ntlmssp->send_seq_num++;
 }
 
@@ -971,6 +978,8 @@ int ntlmssp_decrypt_message(NTLMSSP *ntlmssp, DATABLOB *encrypted_msg, DATABLOB 
 		printf("signature verification failed, something nasty is going on!\n");
 		return 0;
 	}
+
+	HMAC_CTX_cleanup(&hmac_ctx);
 
 	ntlmssp->recv_seq_num++;
 	return 1;
@@ -1517,5 +1526,9 @@ void ntlmssp_free(NTLMSSP *ntlmssp)
 	ntlmssp_uninit(ntlmssp);
 
 	/* Free NTLMSSP state machine */
+	if (ntlmssp->send_rc4_seal)
+		crypto_rc4_free(ntlmssp->send_rc4_seal);
+	if (ntlmssp->recv_rc4_seal)
+		crypto_rc4_free(ntlmssp->recv_rc4_seal);
 	xfree(ntlmssp);
 }

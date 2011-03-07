@@ -423,6 +423,8 @@ iso_free(rdpIso * iso)
 	if (iso != NULL)
 	{
 		tcp_free(iso->tcp);
+		if (iso->nego != NULL)
+			nego_free(iso->nego);
 		xfree(iso);
 	}
 }
