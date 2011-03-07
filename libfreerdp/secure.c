@@ -985,7 +985,7 @@ sec_connect(rdpSec * sec, char *server, char *username, int port)
 	if(nego->selected_protocol & PROTOCOL_NLA)
 	{
 		/* TLS with NLA was successfully negotiated */
-		RD_BOOL success = 1;
+		RD_BOOL status = 1;
 		printf("TLS encryption with NLA negotiated\n");
 		sec->ctx = tls_create_context();
 		sec->ssl = tls_connect(sec->ctx, sec->mcs->iso->tcp->sock, server);
@@ -997,11 +997,19 @@ sec_connect(rdpSec * sec, char *server, char *username, int port)
 				return False;
 
 		sec->credssp = credssp_new(sec);
-		credssp_authenticate(sec->credssp);
+
+		if (credssp_authenticate(sec->credssp) < 0)
+		{
+			printf("Authentication failure, check credentials.\n"
+					"If credentials are valid, the NTLMSSP implementation may be to blame.\n");
+			credssp_free(sec->credssp);
+			return 0;
+		}
+
 		credssp_free(sec->credssp);
 
-		success = mcs_connect(sec->mcs);
-		return success;
+		status = mcs_connect(sec->mcs);
+		return status;
 	}
 	else if(nego->selected_protocol & PROTOCOL_TLS)
 	{

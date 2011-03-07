@@ -377,4 +377,6 @@ int tls_read(SSL *ssl, char* b, int length)
 				break;
 		}
 	}
+
+	return 0;
 }

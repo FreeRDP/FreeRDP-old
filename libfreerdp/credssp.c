@@ -110,7 +110,8 @@ int credssp_authenticate(rdpCredssp * credssp)
 	credssp_send(credssp, negoToken, NULL, NULL);
 
 	/* NTLMSSP CHALLENGE MESSAGE */
-	credssp_recv(credssp, negoToken, NULL, NULL);
+	if (credssp_recv(credssp, negoToken, NULL, NULL) < 0)
+		return -1;
 	ntlmssp_recv(ntlmssp, negoToken);
 
 	/* NTLMSSP AUTHENTICATE MESSAGE */
@@ -123,7 +124,8 @@ int credssp_authenticate(rdpCredssp * credssp)
 	credssp_send(credssp, negoToken, pubKeyAuth, NULL);
 
 	/* Encrypted Public Key +1 */
-	credssp_recv(credssp, negoToken, pubKeyAuth, NULL);
+	if (credssp_recv(credssp, negoToken, pubKeyAuth, NULL) < 0)
+		return -1;
 
 	if (credssp_verify_public_key(credssp, pubKeyAuth) == 0)
 	{
@@ -351,7 +353,7 @@ void credssp_send(rdpCredssp *credssp, STREAM negoToken, STREAM pubKeyAuth, STRE
 	}
 }
 
-void credssp_recv(rdpCredssp *credssp, STREAM negoToken, STREAM pubKeyAuth, STREAM authInfo)
+int credssp_recv(rdpCredssp *credssp, STREAM negoToken, STREAM pubKeyAuth, STREAM authInfo)
 {
 	TSRequest_t *ts_request = 0;
 	NegotiationToken_t *negotiation_token = 0;
@@ -364,6 +366,9 @@ void credssp_recv(rdpCredssp *credssp, STREAM negoToken, STREAM pubKeyAuth, STRE
 	recv_buffer = xmalloc(size);
 
 	bytes_read = tls_read(credssp->sec->ssl, recv_buffer, size);
+
+	if (bytes_read < 0)
+		return -1;
 
 	dec_rval = ber_decode(0, &asn_DEF_TSRequest, (void **)&ts_request, recv_buffer, bytes_read);
 
@@ -404,6 +409,7 @@ void credssp_recv(rdpCredssp *credssp, STREAM negoToken, STREAM pubKeyAuth, STRE
 	}
 
 	xfree(recv_buffer);
+	return 0;
 }
 
 void credssp_str_to_wstr(char* str, uint8* wstr, int length)
