@@ -377,6 +377,11 @@ void credssp_recv(rdpCredssp *credssp, STREAM negoToken, STREAM pubKeyAuth, STRE
 				dec_rval = ber_decode(0, &asn_DEF_NegotiationToken, (void **)&negotiation_token,
 					ts_request->negoTokens->list.array[i]->negoToken.buf,
 					ts_request->negoTokens->list.array[i]->negoToken.size);
+				if (negotiation_token)
+				{
+					asn_DEF_NegotiationToken.free_struct(&asn_DEF_NegotiationToken, negotiation_token, 0);
+					negotiation_token = 0;
+				}
 
 				negoToken->data = (unsigned char*)(ts_request->negoTokens->list.array[i]->negoToken.buf);
 				negoToken->size = ts_request->negoTokens->list.array[i]->negoToken.size;
