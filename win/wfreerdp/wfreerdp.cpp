@@ -98,7 +98,10 @@ out_args(void)
 		"\t-z: enable bulk compression\n"
 		"\t-x: performance flags (m, b or l for modem, broadband or lan)\n"
 #ifndef DISABLE_TLS
+		"\t--no-rdp: disable Standard RDP encryption\n"
 		"\t--no-tls: disable TLS encryption\n"
+		"\t--no-nla: disable network level authentication\n"
+		"\t--sec: force protocol security (rdp, tls or nla)\n"
 #endif
 		"\t--no-osb: disable off screen bitmaps, default on\n"
 		"\t--version: Print out the version and exit\n"
