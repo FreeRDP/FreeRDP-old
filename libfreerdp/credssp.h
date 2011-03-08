@@ -38,7 +38,7 @@ typedef struct rdp_credssp rdpCredssp;
 int credssp_authenticate(rdpCredssp *credssp);
 
 void credssp_send(rdpCredssp *credssp, STREAM negoToken, STREAM pubKeyAuth, STREAM authInfo);
-void credssp_recv(rdpCredssp *credssp, STREAM negoToken, STREAM pubKeyAuth, STREAM authInfo);
+int credssp_recv(rdpCredssp *credssp, STREAM negoToken, STREAM pubKeyAuth, STREAM authInfo);
 
 void credssp_encrypt_public_key(rdpCredssp *credssp, STREAM s);
 void credssp_encrypt_ts_credentials(rdpCredssp *credssp, STREAM s);

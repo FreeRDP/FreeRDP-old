@@ -92,6 +92,7 @@
 #define FILE_NON_DIRECTORY_FILE         0x00000040
 #define FILE_COMPLETE_IF_OPLOCKED       0x00000100
 #define FILE_DELETE_ON_CLOSE            0x00001000
+#define FILE_OPEN_REPARSE_POINT         0x00200000
 #define FILE_OPEN_FOR_FREE_SPACE_QUERY  0x00800000
 
 /* DR_CREATE_REQ.DesiredAccess [MS-SMB2] */
@@ -167,6 +168,8 @@
 #define RD_STATUS_SUCCESS                  0x00000000
 #define RD_STATUS_NOT_IMPLEMENTED          0x00000001
 #define RD_STATUS_PENDING                  0x00000103
+#define RD_STATUS_REPARSE                  0x00000104
+
 
 #define RD_STATUS_NO_MORE_FILES            0x80000006
 #define RD_STATUS_DEVICE_PAPER_EMPTY       0x8000000e
@@ -183,9 +186,11 @@
 #define RD_STATUS_DISK_FULL                0xc000007f
 #define RD_STATUS_FILE_IS_A_DIRECTORY      0xc00000ba
 #define RD_STATUS_NOT_SUPPORTED            0xc00000bb
+#define RD_STATUS_DUPLICATE_NAME           0xc00000bd
 #define RD_STATUS_TIMEOUT                  0xc0000102
 #define RD_STATUS_NOTIFY_ENUM_DIR          0xc000010c
 #define RD_STATUS_CANCELLED                0xc0000120
+#define RD_STATUS_NOT_A_REPARSE_POINT      0xc0000275
 
 #define RDPDR_MAX_DEVICES               0x10
 
@@ -223,6 +228,7 @@
 #define FILE_ATTRIBUTE_TEMPORARY            0x00000100
 
 /* [MS-FSCC] FSCTL Structures */
+#define FSCTL_CREATE_OR_GET_OBJECT_ID           0x900c0
 #define FSCTL_GET_REPARSE_POINT                 0x900a8
 #define FSCTL_GET_RETRIEVAL_POINTERS            0x90073
 #define FSCTL_IS_PATHNAME_VALID                 0x9002c
@@ -314,19 +320,18 @@ enum FILE_INFORMATION_CLASS
 	FileMailslotQueryInformation,
 	FileMailslotSetInformation,
 	FileCompressionInformation,
-	FileCopyOnWriteInformation,
-	FileCompletionInformation,
-	FileMoveClusterInformation,
-	FileOleClassIdInformation,
-	FileOleStateBitsInformation,
-	FileNetworkOpenInformation,
 	FileObjectIdInformation,
-	FileOleAllInformation,
-	FileOleDirectoryInformation,
-	FileContentIndexInformation,
-	FileInheritContentIndexInformation,
-	FileOleInformation,
-	FileMaximumInformation
+	FileUnknownInformation1,
+	FileMoveClusterInformation,
+	FileQuotaInformation,
+	FileReparsePointInformation,
+	FileNetworkOpenInformation,
+	FileAttributeTagInformation,
+	FileTrackingInformation,
+	FileIdBothDirectoryInformation,
+	FileIdFullDirectoryInformation,
+	FileValidDataLengthInformation,
+	FileShortNameInformation
 };
 
 enum FS_INFORMATION_CLASS
