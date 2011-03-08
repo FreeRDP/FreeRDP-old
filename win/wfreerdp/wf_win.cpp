@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <conio.h>
 #include "wf_event.h"
 #include "wf_color.h"
 #include "wf_win.h"
@@ -1003,12 +1004,45 @@ l_ui_channel_data(struct rdp_inst * inst, int chan_id, char * data, int data_siz
 	//TODO
 }
 
+/* fgets from stdin do for some reason not work and there is no getpass ... */
+static void
+getsn(char *s, int size, char bullet)
+{
+	int i;
+	for (i=0; i < size; i++)
+	{
+		if ((s[i] = _getch()) == '\r')
+			break;
+		_putch(bullet ? bullet : s[i]);
+	}
+	s[i] = 0;
+	_putch('\n');
+}
+
 static RD_BOOL
 l_ui_authenticate(struct rdp_inst * inst)
 {
-	//TODO
-	l_ui_warning(inst, "ui_authenticate: not done\n");
-	return 0;
+	printf("Please enter NLA login credential.\n");
+
+	printf("User name:");
+	if (inst->settings->username[0] == 0)
+		getsn(inst->settings->username, sizeof(inst->settings->username), 0);
+	else
+		printf("%s\n", inst->settings->username);
+
+	printf("Domain:");
+	if (inst->settings->domain[0] == 0)
+		getsn(inst->settings->domain, sizeof(inst->settings->domain), 0);
+	else
+		printf("%s\n", inst->settings->domain);
+
+	printf("Password:");
+	if (inst->settings->password[0] == 0)
+		getsn(inst->settings->password, sizeof(inst->settings->password), '*');
+	else
+		printf("%s\n", "***");
+
+	return 1;
 }
 
 static int
