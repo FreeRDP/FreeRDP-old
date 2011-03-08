@@ -298,7 +298,7 @@ static void
 process_multipatblt(rdpOrders * orders, STREAM s, MULTIPATBLT_ORDER * os, uint32 present, RD_BOOL delta)
 {
 	RD_BRUSH brush;
-	int size;
+	size_t size;
 	int index, data, next;
 	uint8 flags = 0;
 	RECTANGLE *rects;
@@ -503,7 +503,7 @@ static void
 process_multiopaquerect(rdpOrders * orders, STREAM s, MULTIOPAQUERECT_ORDER * os, uint32 present, RD_BOOL delta)
 {
 	uint32 i;
-	int size;
+	size_t size;
 	int index, data, next;
 	uint8 flags = 0;
 	RECTANGLE *rects;
@@ -747,7 +747,7 @@ process_mem3blt(rdpOrders * orders, STREAM s, MEM3BLT_ORDER * os, uint32 present
 static void
 process_polygon_sc(rdpOrders * orders, STREAM s, POLYGON_SC_ORDER* os, uint32 present, RD_BOOL delta)
 {
-	int size;
+	size_t size;
 	int index, data, next;
 	uint8 flags = 0;
 	RD_POINT *points;
@@ -833,7 +833,7 @@ process_polygon_sc(rdpOrders * orders, STREAM s, POLYGON_SC_ORDER* os, uint32 pr
 static void
 process_polygon_cb(rdpOrders * orders, STREAM s, POLYGON_CB_ORDER * os, uint32 present, RD_BOOL delta)
 {
-	int size;
+	size_t size;
 	int index, data, next;
 	uint8 flags = 0;
 	RD_POINT *points;
@@ -928,7 +928,7 @@ process_polygon_cb(rdpOrders * orders, STREAM s, POLYGON_CB_ORDER * os, uint32 p
 static void
 process_polyline(rdpOrders * orders, STREAM s, POLYLINE_ORDER * os, uint32 present, RD_BOOL delta)
 {
-	int size;
+	size_t size;
 	int index, next, data;
 	uint8 flags = 0;
 	RD_PEN pen;
@@ -1580,7 +1580,7 @@ process_fast_glyph(rdpOrders * orders, STREAM s, FAST_GLYPH_ORDER * os, uint32 p
 static void
 process_cache_bitmap_uncompressed(rdpOrders * orders, STREAM s)
 {
-	int size;
+	size_t size;
 	RD_HBITMAP bitmap;
 	uint16 cache_idx, bufsize;
 	uint8 cache_id, width, height, bpp, Bpp;
@@ -1622,7 +1622,7 @@ process_cache_bitmap_uncompressed(rdpOrders * orders, STREAM s)
 static void
 process_cache_bitmap_compressed(rdpOrders * orders, STREAM s, uint16 flags)
 {
-	int buffer_size;
+	size_t buffer_size;
 	RD_HBITMAP bitmap;
 	uint16 cache_idx, size;
 	uint8 cache_id, width, height, bpp, Bpp;
@@ -1686,7 +1686,7 @@ static void
 process_cache_bitmap_rev2(rdpOrders * orders, STREAM s, uint16 flags, RD_BOOL compressed)
 {
 	int y;
-	int size;
+	size_t size;
 	RD_HBITMAP bitmap;
 	uint8 cache_id, cache_idx_low, width, height, Bpp;
 	uint16 cache_idx, bufsize;
@@ -1773,7 +1773,7 @@ static void
 process_cache_color_table(rdpOrders * orders, STREAM s)
 {
 	int i;
-	int size;
+	size_t size;
 	RD_COLORENTRY *entry;
 	RD_PALETTE map;
 	RD_HPALETTE hmap;
