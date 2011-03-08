@@ -36,6 +36,8 @@
 LPCTSTR g_wnd_class_name = L"wfreerdp";
 HINSTANCE g_hInstance;
 HCURSOR g_default_cursor;
+volatile int g_thread_count = 0;
+HANDLE g_done_event;
 
 struct thread_data
 {
@@ -382,10 +384,9 @@ process_params(rdpSet * settings, rdpChanMan * chan_man, int argc, LPWSTR * argv
 	return 1;
 }
 
-static DWORD WINAPI
-run_wfreerdp(LPVOID lpParam)
+static int
+run_wfreerdp(struct thread_data * data)
 {
-	struct thread_data * data;
 	rdpInst * inst;
 	void * read_fds[32];
 	void * write_fds[32];
@@ -394,10 +395,12 @@ run_wfreerdp(LPVOID lpParam)
 	int index;
 	HANDLE fds[64];
 	int fds_count;
+	int gmcode;
+	int alldone;
+	MSG msg;
 
 	printf("run_wfreerdp:\n");
 	/* create an instance of the library */
-	data = (struct thread_data *) lpParam;
 	inst = freerdp_new(data->settings);
 	if (inst == NULL)
 	{
@@ -479,7 +482,7 @@ run_wfreerdp(LPVOID lpParam)
 			break;
 		}
 		/* do the wait */
-		if (WaitForMultipleObjects(fds_count, fds, FALSE, INFINITE) == WAIT_FAILED)
+		if (MsgWaitForMultipleObjects(fds_count, fds, FALSE, INFINITE, QS_ALLINPUT) == WAIT_FAILED)
 		{
 			printf("run_wfreerdp: WaitForMultipleObjects failed\n");
 			break;
@@ -494,6 +497,22 @@ run_wfreerdp(LPVOID lpParam)
 		if (freerdp_chanman_check_fds(data->chan_man, inst) != 0)
 		{
 			printf("run_wfreerdp: freerdp_chanman_check_fds failed\n");
+			break;
+		}
+		alldone = FALSE;
+		while (PeekMessage(&msg, 0, 0, 0, PM_NOREMOVE))
+		{
+			gmcode = GetMessage(&msg, 0, 0, 0);
+			if (gmcode == 0 || gmcode == -1)
+			{
+				alldone = TRUE;
+				break;
+			}
+			TranslateMessage(&msg);
+			DispatchMessage(&msg);
+		}
+		if (alldone)
+		{
 			break;
 		}
 		wf_update_window(inst);
@@ -519,6 +538,25 @@ create_console(void)
 	return 0;
 }
 
+static DWORD WINAPI
+thread_func(LPVOID lpParam)
+{
+	struct thread_data * data;
+
+	data = (struct thread_data *) lpParam;
+	data->hwnd = CreateWindowEx(0, g_wnd_class_name, L"wfreerdp",
+		WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT,
+		CW_USEDEFAULT, CW_USEDEFAULT, NULL,
+		NULL, g_hInstance, NULL);
+	run_wfreerdp(data);
+	g_thread_count--;
+	if (g_thread_count < 1)
+	{
+		SetEvent(g_done_event);
+	}
+	return NULL;
+}
+
 INT WINAPI
 WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
@@ -526,7 +564,6 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdS
 	WSADATA wsa_data;
 	struct thread_data * data;
 	int rv;
-	MSG msg;
 	LPWSTR * argv;
 	int argc;
 	int index = 1;
@@ -535,6 +572,7 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdS
 	{
 		return 1;
 	}
+	g_done_event = CreateEvent(0, 1, 0, 0);
 	create_console();
 	/*if (!freerdp_global_init())
 	{
@@ -566,34 +604,24 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdS
 	while (1)
 	{
 		data = (struct thread_data *) malloc(sizeof(struct thread_data));
+		memset(data, 0, sizeof(struct thread_data));
 		data->settings = (rdpSet *) malloc(sizeof(rdpSet));
 		data->chan_man = freerdp_chanman_new();
-		data->hwnd = NULL;
-
 		rv = process_params(data->settings, data->chan_man, argc, argv, &index);
-		if (rv == 0)
-		{
-			data->hwnd = CreateWindowEx(0, g_wnd_class_name, L"wfreerdp",
-				WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT,
-				CW_USEDEFAULT, CW_USEDEFAULT, NULL,
-				NULL, g_hInstance, NULL);
-
-			CreateThread(NULL, 0, run_wfreerdp, data, 0, NULL);
-		}
-		else
+		if (rv)
 		{
 			freerdp_chanman_free(data->chan_man);
 			free(data->settings);
 			free(data);
 			break;
 		}
+		if (CreateThread(NULL, 0, thread_func, data, 0, NULL) != 0)
+		{
+			g_thread_count++;
+		}
 	}
 
-	while(GetMessage(&msg, NULL, 0, 0))
-	{
-		TranslateMessage(&msg);
-		DispatchMessage(&msg);
-	}
+	WaitForSingleObject(g_done_event, INFINITE);
 
 	freerdp_chanman_uninit();
 	//freerdp_global_finish();

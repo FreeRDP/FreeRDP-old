@@ -36,12 +36,6 @@ wf_event_proc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 	PAINTSTRUCT ps;
 
 	ptr = GetWindowLongPtr(hWnd, GWLP_USERDATA);
-	if (ptr == -1)
-	{
-		SetWindowLongPtr(hWnd, GWLP_USERDATA, 0);
-		DestroyWindow(hWnd);
-		return 0;
-	}
 	wfi = (wfInfo *) ptr;
 	switch(Msg)
 	{

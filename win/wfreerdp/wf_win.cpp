@@ -1003,6 +1003,14 @@ l_ui_channel_data(struct rdp_inst * inst, int chan_id, char * data, int data_siz
 	//TODO
 }
 
+static RD_BOOL
+l_ui_authenticate(struct rdp_inst * inst)
+{
+	//TODO
+	l_ui_warning(inst, "ui_authenticate: not done\n");
+	return 0;
+}
+
 static int
 wf_assign_callbacks(rdpInst * inst)
 {
@@ -1049,6 +1057,7 @@ wf_assign_callbacks(rdpInst * inst)
 	inst->ui_set_surface = l_ui_set_surface;
 	inst->ui_destroy_surface = l_ui_destroy_surface;
 	inst->ui_channel_data = l_ui_channel_data;
+	inst->ui_authenticate = l_ui_authenticate;
 	return 0;
 }
 
@@ -1065,6 +1074,7 @@ wf_pre_connect(rdpInst * inst, HWND hwnd)
 	wfi->hwnd = hwnd;
 	wfi->inst = inst;
 	wfi->cursor = g_default_cursor;
+
 	SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)wfi);
 
 	return 0;
@@ -1119,9 +1129,9 @@ wf_uninit(rdpInst * inst)
 	wfInfo * wfi;
 
 	wfi = GET_WFI(inst);
-	/* Inform the main thread to destroy the window */
-	SetWindowLongPtr(wfi->hwnd, GWLP_USERDATA, -1);
+
 	CloseWindow(wfi->hwnd);
+
 	wf_bitmap_free(wfi->backstore);
 	if (wfi->colormap != 0)
 	{
