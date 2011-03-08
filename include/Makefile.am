@@ -11,5 +11,6 @@ include_HEADERS = \
 	freerdp/rdpset.h \
 	freerdp/types_ui.h \
 	freerdp/vchan.h \
+	freerdp/utils.h \
 	freerdp/dvc.h
 

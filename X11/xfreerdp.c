@@ -31,49 +31,16 @@
 #include <semaphore.h>
 #include <freerdp/freerdp.h>
 #include <freerdp/chanman.h>
+#include <freerdp/utils.h>
 #include <freerdp/kbd.h>
 #include "xf_types.h"
 #include "xf_win.h"
 #include "xf_keyboard.h"
 
-#ifdef __APPLE__
-#include <mach/mach.h>
-#include <mach/semaphore.h>
-#include <mach/task.h>
-#endif
-
 #define MAX_PLUGIN_DATA 20
 
 static sem_t g_sem;
 static volatile int g_thread_count = 0;
-
-void freerdp_sem_create(void * sem_struct, int iv)
-{
-#ifdef __APPLE__
-	semaphore_create(mach_task_self(), (semaphore_t *)sem_struct, SYNC_POLICY_FIFO, iv);
-#else
-	int pshared = 0;
-	sem_init((sem_t *)sem_struct, pshared, iv);
-#endif
-}
-
-void freerdp_sem_signal(void * sem_struct)
-{
-#ifdef __APPLE__
-	semaphore_signal(*((semaphore_t *)sem_struct));
-#else
-	sem_post((sem_t *)sem_struct);
-#endif
-}
-
-void freerdp_sem_wait(void * sem_struct)
-{
-#ifdef __APPLE__
-	semaphore_wait(*((semaphore_t *)sem_struct));
-#else
-	sem_wait((sem_t *)sem_struct);
-#endif
-}
 
 static int
 set_default_params(xfInfo * xfi)

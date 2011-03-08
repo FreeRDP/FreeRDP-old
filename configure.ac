@@ -965,6 +965,7 @@ libfreerdpkbd/Makefile
 keymaps/Makefile
 cunit/Makefile
 libfreerdpgdi/Makefile
+libfreerdputils/Makefile
 libfreerdpchanman/Makefile
 X11/Makefile
 dfb/Makefile
