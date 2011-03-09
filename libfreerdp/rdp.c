@@ -1164,7 +1164,7 @@ process_bitmap_updates(rdpRdp * rdp, STREAM s)
 		cx = right - left + 1;
 		cy = bottom - top + 1;
 
-		DEBUG("BITMAP_UPDATE(l=%d,t=%d,r=%d,b=%d,w=%d,h=%d,Bpp=%d,cmp=%d)\n",
+		DEBUG_DRAW("BITMAP_UPDATE(l=%d,t=%d,r=%d,b=%d,w=%d,h=%d,Bpp=%d,cmp=%d)\n",
 		       left, top, right, bottom, width, height, Bpp, compress);
 
 		buffer_size = width * height * Bpp;
@@ -1216,7 +1216,7 @@ process_bitmap_updates(rdpRdp * rdp, STREAM s)
 		}
 		else
 		{
-			DEBUG_RDP5("Failed to decompress data\n");
+			DEBUG_DRAW("Failed to decompress data\n");
 		}
 	}
 }
@@ -1245,7 +1245,7 @@ process_palette(rdpRdp * rdp, STREAM s)
 
 	map.colors = (RD_COLORENTRY *) rdp->buffer;
 
-	DEBUG("PALETTE(c=%d)\n", map.ncolors);
+	DEBUG_DRAW("PALETTE(c=%d)\n", map.ncolors);
 
 	for (i = 0; i < map.ncolors; i++)
 	{

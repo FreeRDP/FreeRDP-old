@@ -461,7 +461,7 @@ sec_out_client_network_data(rdpSec * sec, rdpSet * settings, STREAM s)
 {
 	int i;
 
-	DEBUG_RDP5("num_channels is %d\n", settings->num_channels);
+	DEBUG("num_channels is %d\n", settings->num_channels);
 	if (settings->num_channels > 0)
 	{
 		out_uint16_le(s, UDH_CS_NET);	/* User Data Header type */
@@ -470,7 +470,7 @@ sec_out_client_network_data(rdpSec * sec, rdpSet * settings, STREAM s)
 		out_uint32_le(s, settings->num_channels);	/* channelCount */
 		for (i = 0; i < settings->num_channels; i++)
 		{
-			DEBUG_RDP5("Requesting channel %s\n", settings->channels[i].name);
+			DEBUG("Requesting channel %s\n", settings->channels[i].name);
 			out_uint8a(s, settings->channels[i].name, 8); /* name (8 bytes) 7 characters with null terminator */
 			out_uint32_le(s, settings->channels[i].flags); /* options (4 bytes) */
 		}
@@ -624,7 +624,7 @@ sec_parse_server_security_data(rdpSec * sec, STREAM s, uint32 * encryptionMethod
 		uint16 wPublicKeyBlobType, wPublicKeyBlobLen;
 		uint16 wSignatureBlobType, wSignatureBlobLen;
 
-		DEBUG_RDP5("We're going for a Server Proprietary Certificate (no TS license)\n");
+		DEBUG("We're going for a Server Proprietary Certificate (no TS license)\n");
 		in_uint8s(s, 4);	/* dwSigAlgId must be 1 (SIGNATURE_ALG_RSA) */
 		in_uint8s(s, 4);	/* dwKeyAlgId must be 1 (KEY_EXCHANGE_ALG_RSA ) */
 
@@ -651,9 +651,9 @@ sec_parse_server_security_data(rdpSec * sec, STREAM s, uint32 * encryptionMethod
 		uint32 license_cert_len, ts_cert_len;
 		CryptoCert license_cert, ts_cert;
 
-		DEBUG_RDP5("We're going for a X.509 Certificate (TS license)\n");
+		DEBUG("We're going for a X.509 Certificate (TS license)\n");
 		in_uint32_le(s, cert_total_count);	/* Number of certificates */
-		DEBUG_RDP5("Cert chain length: %d\n", cert_total_count);
+		DEBUG("Cert chain length: %d\n", cert_total_count);
 		if (cert_total_count < 2)
 		{
 			ui_error(sec->rdp->inst, "Server didn't send enough X509 certificates\n");
@@ -666,9 +666,9 @@ sec_parse_server_security_data(rdpSec * sec, STREAM s, uint32 * encryptionMethod
 			uint32 ignorelen;
 			CryptoCert ignorecert;
 
-			DEBUG_RDP5("Ignoring cert: %d\n", cert_counter);
+			DEBUG("Ignoring cert: %d\n", cert_counter);
 			in_uint32_le(s, ignorelen);
-			DEBUG_RDP5("Ignored Certificate length is %d\n", ignorelen);
+			DEBUG("Ignored Certificate length is %d\n", ignorelen);
 			ignorecert = crypto_cert_read(s->p, ignorelen);
 			in_uint8s(s, ignorelen);
 			if (ignorecert == NULL)
@@ -677,8 +677,8 @@ sec_parse_server_security_data(rdpSec * sec, STREAM s, uint32 * encryptionMethod
 				return False;
 			}
 
-#ifdef WITH_DEBUG_RDP5
-			DEBUG_RDP5("cert #%d (ignored):\n", cert_counter);
+#ifdef WITH_DEBUG
+			DEBUG("cert #%d (ignored):\n", cert_counter);
 			crypto_cert_print_fp(stdout, ignorecert);
 #endif
 			/* TODO: Verify the certificate chain all the way from CA root to prevent MITM attacks */
@@ -686,7 +686,7 @@ sec_parse_server_security_data(rdpSec * sec, STREAM s, uint32 * encryptionMethod
 		}
 		/* The second to last certificate is the license server */
 		in_uint32_le(s, license_cert_len);
-		DEBUG_RDP5("License Server Certificate length is %d\n", license_cert_len);
+		DEBUG("License Server Certificate length is %d\n", license_cert_len);
 		license_cert = crypto_cert_read(s->p, license_cert_len);
 		in_uint8s(s, license_cert_len);
 		if (NULL == license_cert)
@@ -694,12 +694,12 @@ sec_parse_server_security_data(rdpSec * sec, STREAM s, uint32 * encryptionMethod
 			ui_error(sec->rdp->inst, "Couldn't load License Server Certificate from server\n");
 			return False;
 		}
-#ifdef WITH_DEBUG_RDP5
+#ifdef WITH_DEBUG
 		crypto_cert_print_fp(stdout, license_cert);
 #endif
 		/* The last certificate is the Terminal Server */
 		in_uint32_le(s, ts_cert_len);
-		DEBUG_RDP5("TS Certificate length is %d\n", ts_cert_len);
+		DEBUG("TS Certificate length is %d\n", ts_cert_len);
 		ts_cert = crypto_cert_read(s->p, ts_cert_len);
 		in_uint8s(s, ts_cert_len);
 		if (NULL == ts_cert)
@@ -708,7 +708,7 @@ sec_parse_server_security_data(rdpSec * sec, STREAM s, uint32 * encryptionMethod
 			ui_error(sec->rdp->inst, "Couldn't load TS Certificate from server\n");
 			return False;
 		}
-#ifdef WITH_DEBUG_RDP5
+#ifdef WITH_DEBUG
 		crypto_cert_print_fp(stdout, ts_cert);
 #endif
 		if (!crypto_cert_verify(ts_cert, license_cert))
@@ -800,7 +800,7 @@ sec_process_server_core_data(rdpSec * sec, STREAM s, uint16 length)
 		ui_error(sec->rdp->inst, "Invalid server rdp version %ul\n", server_rdp_version);
 	}
 
-	DEBUG_RDP5("Server RDP version is %d\n", sec->rdp->settings->rdp_version);
+	DEBUG("Server RDP version is %d\n", sec->rdp->settings->rdp_version);
 	if (length >= 12)
 	{
 		in_uint32_le(s, clientRequestedProtocols);

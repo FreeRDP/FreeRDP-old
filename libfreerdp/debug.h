@@ -24,10 +24,10 @@
 #define DEBUG_KBD(fmt, ...) do { } while (0)
 #endif
 
-#ifdef WITH_DEBUG_RDP5
-#define DEBUG_RDP5(fmt, ...) printf("DBG (RDP5) %s (%d): " fmt, __FUNCTION__, __LINE__, ## __VA_ARGS__)
+#ifdef WITH_DEBUG_DRAW
+#define DEBUG_DRAW(fmt, ...) printf("DBG (DRAW) %s (%d): " fmt, __FUNCTION__, __LINE__, ## __VA_ARGS__)
 #else
-#define DEBUG_RDP5(fmt, ...) do { } while (0)
+#define DEBUG_DRAW(fmt, ...) do { } while (0)
 #endif
 
 #ifdef WITH_DEBUG_SOUND

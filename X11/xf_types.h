@@ -86,7 +86,7 @@ struct xf_info
 typedef struct xf_info xfInfo;
 
 #ifdef WITH_DEBUG
-#define DEBUG(fmt, ...)	printf("DBG %s (%d): " fmt, __FUNCTION__, __LINE__, ## __VA_ARGS__)
+#define DEBUG(fmt, ...)	printf("DBG (X) %s (%d): " fmt, __FUNCTION__, __LINE__, ## __VA_ARGS__)
 #else
 #define DEBUG(fmt, ...) do { } while (0)
 #endif

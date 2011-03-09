@@ -23,7 +23,7 @@ AH_TEMPLATE(WITH_DEBUG, [Turn on debugging messages])
 AH_TEMPLATE(WITH_DEBUG_NLA, [Turn on debugging messages])
 AH_TEMPLATE(WITH_DEBUG_CHANNEL, [Turn on debugging messages])
 AH_TEMPLATE(WITH_DEBUG_KBD, [Turn on debugging messages])
-AH_TEMPLATE(WITH_DEBUG_RDP5, [Turn on debugging messages])
+AH_TEMPLATE(WITH_DEBUG_DRAW, [Turn on debugging messages])
 AH_TEMPLATE(WITH_DEBUG_SCARD, [Turn on debugging messages])
 AH_TEMPLATE(WITH_DEBUG_SERIAL, [Turn on debugging messages])
 AH_TEMPLATE(WITH_DEBUG_SOUND, [Turn on debugging messages])
@@ -794,11 +794,11 @@ AC_ARG_WITH(debug-kbd,
     ])
 
 AC_ARG_WITH(debug-rdp5,
-    [  --with-debug-rdp5       enable debugging of RDP5 code],
+    [  --with-debug-rdp5       enable debugging of drawing code],
     [
         if test $withval != "no";
         then
-            AC_DEFINE(WITH_DEBUG_RDP5,1)
+            AC_DEFINE(WITH_DEBUG_DRAW,1)
             debug_support=yes
         fi
     ])
