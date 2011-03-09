@@ -545,9 +545,14 @@ static DWORD WINAPI
 thread_func(LPVOID lpParam)
 {
 	struct thread_data * data;
+	wchar_t win_title[64];
 
 	data = (struct thread_data *) lpParam;
-	data->hwnd = CreateWindowEx(0, g_wnd_class_name, L"wfreerdp",
+	if (data->settings->tcp_port_rdp == 3389)
+		_snwprintf(win_title, sizeof(win_title) / sizeof(win_title[0]), L"%S - freerdp", data->settings->server);
+	else
+		_snwprintf(win_title, sizeof(win_title) / sizeof(win_title[0]), L"%S:%d - freerdp", data->settings->server, data->settings->tcp_port_rdp);
+	data->hwnd = CreateWindowEx(0, g_wnd_class_name, win_title,
 		WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT,
 		CW_USEDEFAULT, CW_USEDEFAULT, NULL,
 		NULL, g_hInstance, NULL);
