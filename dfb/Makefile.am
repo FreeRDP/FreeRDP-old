@@ -7,7 +7,7 @@ dfbfreerdp_SOURCES = \
 	dfb_event.c  dfb_event.h \
 	dfb_keyboard.c dfb_keyboard.h \
 	dfb_win.h dfb_win.c \
-	dfbfreerdp.c
+	dfbfreerdp.c dfbfreerdp.h
 
 dfbfreerdp_CFLAGS = \
 	-I$(top_srcdir) \

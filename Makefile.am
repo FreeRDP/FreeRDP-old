@@ -16,6 +16,7 @@ REQUIRED_SUBDIRS = \
 	channels/drdynvc/pnpdr \
 	channels/drdynvc/audin \
 	channels/cliprdr \
+	channels/rdpdbg \
 	channels/rdpdr \
 	channels/rdpdr/disk \
 	channels/rdpdr/printer \
@@ -24,6 +25,7 @@ REQUIRED_SUBDIRS = \
 
 OPTIONAL_SUBDIRS = \
 	channels/rdpsnd/alsa \
+	channels/rdpsnd/pulse \
 	tests \
 	cunit \
 	X11 \
@@ -35,7 +37,7 @@ SUBDIRS = $(REQUIRED_SUBDIRS) $(EXTRA_SUBDIRS)
 DIST_SUBDIRS = $(REQUIRED_SUBDIRS) $(OPTIONAL_SUBDIRS)
 
 EXTRA_DIST = autogen.sh build-aux indent-all.sh freerdp.spec \
-	AUTHORS ChangeLog COPYING INSTALL NEWS README
+	AUTHORS ChangeLog COPYING INSTALL NEWS README LICENSE
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = freerdp.pc

@@ -4,10 +4,12 @@
 bin_PROGRAMS = test_freerdp
 
 test_freerdp_SOURCES = \
-	test_freerdp.c \
-	test_credssp.c \
-	test_ntlmssp.c \
-	test_libfreerdpgdi.c
+	test_credssp.c test_credssp.h \
+	test_freerdp.c test_freerdp.h \
+	test_gdi_color.c test_gdi_color.h \
+	test_gdi_window.c test_gdi_window.h \
+	test_libfreerdpgdi.c test_libfreerdpgdi.h \
+	test_ntlmssp.c test_ntlmssp.h
 
 test_freerdp_CFLAGS = \
 	-I$(top_srcdir) \

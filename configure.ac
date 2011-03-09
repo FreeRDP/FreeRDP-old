@@ -971,6 +971,7 @@ X11/Makefile
 dfb/Makefile
 win/Makefile
 channels/common/Makefile
+channels/rdpdbg/Makefile
 channels/rdpsnd/Makefile
 channels/rdpsnd/alsa/Makefile
 channels/rdpsnd/pulse/Makefile

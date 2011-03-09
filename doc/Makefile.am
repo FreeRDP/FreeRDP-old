@@ -3,13 +3,6 @@ man_MANS = xfreerdp.1
 
 EXTRA_DIST = \
 	diagrams \
-	ChangeLog \
 	Doxyfile \
-	ipv6.txt \
-	licensing.txt \
-	ntlmssp.txt \
-	rdp-keyboard.odg \
-	rdp-keyboard.txt \
-	rdp-keyboard-repeat.txt \
 	xfreerdp.1
 

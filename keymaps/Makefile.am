@@ -12,6 +12,7 @@ nobase_xkb_DATA = \
 	evdev \
 	hp \
 	macintosh \
+	macosx \
 	sony \
 	xfree86 \
 	empty \
