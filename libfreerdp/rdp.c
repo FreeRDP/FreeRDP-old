@@ -545,7 +545,7 @@ rdp_send_input(rdpRdp * rdp, time_t time, uint16 message_type, uint16 device_fla
 				}
 				s = rdp_fp_init(rdp, 2);
 				out_uint8(s, fp_flags);
-				out_uint8(s, (uint8)param1);
+				out_uint8(s, (uint8)param1);	/* Scan code */
 				s_mark_end(s);
 				rdp_fp_send(rdp, s);
 				break;

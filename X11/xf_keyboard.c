@@ -73,8 +73,8 @@ xf_kb_send_key(xfInfo * xfi, int flags, uint8 keycode)
 		if (scancode == 0)
 		{
 #endif
-			printf("xf_kb_send_key: (keycode=%d keysym=0x%04X scancode=%d)\n",
-				keycode, (unsigned int)XKeycodeToKeysym(xfi->display, keycode, 0), scancode);
+			printf("xf_kb_send_key: flags=0x%04X keycode=%d (X keysym=0x%04X) as scancode=%d\n",
+				flags, keycode, (unsigned int)XKeycodeToKeysym(xfi->display, keycode, 0), scancode);
 #ifndef WITH_DEBUG_KBD
 		}
 		else
@@ -164,7 +164,7 @@ xf_kb_focus_in(xfInfo * xfi)
 
 void
 xf_kb_set_keypress(uint8 keycode, KeySym keysym)
-{	
+{
 	if (keycode >= 8)
 		pressed_keys[keycode] = keysym;
 	else
@@ -173,7 +173,7 @@ xf_kb_set_keypress(uint8 keycode, KeySym keysym)
 
 void
 xf_kb_unset_keypress(uint8 keycode)
-{	
+{
 	if (keycode >= 8)
 		pressed_keys[keycode] = NoSymbol;
 	else
