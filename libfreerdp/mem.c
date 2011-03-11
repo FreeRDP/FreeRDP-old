@@ -22,7 +22,7 @@
 #include <string.h>
 
 void *
-xmalloc(int size)
+xmalloc(size_t size)
 {
 	void * mem;
 
@@ -39,7 +39,7 @@ xmalloc(int size)
 }
 
 void *
-xrealloc(void * oldmem, int size)
+xrealloc(void * oldmem, size_t size)
 {
 	void * mem;
 

@@ -20,13 +20,13 @@
 #ifndef __STREAM_H
 #define __STREAM_H
 
+#include <stddef.h>
 #include "frdp.h"
+#include "debug.h"
 
 #if !(defined(L_ENDIAN) || defined(B_ENDIAN))
 #warning no endian defined
 #endif
-
-#include "debug.h"
 
 /* Parser state */
 struct stream
@@ -34,7 +34,7 @@ struct stream
 	unsigned char *p;	/* current position */
 	unsigned char *end;	/* end of stream, < data+size, no read or write beyond this */
 	unsigned char *data;	/* pointer to stream-related mem.h-managed data */
-	unsigned int size;	/* size of allocated data */
+	size_t size;		/* size of allocated data */
 
 	/* Saved positions for various layers */
 	unsigned char *iso_hdr;
@@ -123,7 +123,7 @@ typedef struct stream *STREAM;
 #define next_be(s,v)		do { ASSERT_AVAILABLE(s,1); v = ((v) << 8) + *((s)->p++); } while (0)
 
 int
-stream_init(struct stream * st, int size);
+stream_init(struct stream * st, size_t size);
 struct stream *
 stream_new(int size);
 int

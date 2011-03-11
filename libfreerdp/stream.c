@@ -22,7 +22,7 @@
 #include "mem.h"
 
 int
-stream_init(struct stream * st, int size)
+stream_init(struct stream * st, size_t size)
 {
   if (st == NULL)
   {

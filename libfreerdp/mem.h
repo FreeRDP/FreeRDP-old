@@ -21,10 +21,12 @@
 #ifndef __MEM1_H
 #define __MEM1_H
 
+#include <stddef.h>
+
 void *
-xmalloc(int size);
+xmalloc(size_t size);
 void *
-xrealloc(void * oldmem, int size);
+xrealloc(void * oldmem, size_t size);
 void
 xfree(void * mem);
 char *
