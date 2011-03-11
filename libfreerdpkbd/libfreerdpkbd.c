@@ -32,7 +32,7 @@ find_keyboard_layout_in_xorg_rules(char* layout, char* variant)
 	int i;
 	int j;
 
-	if(layout == NULL)
+	if((layout == NULL) || (variant == NULL))
 		return 0;
 
 	printf("xkbLayout: %s\txkbVariant: %s\n", layout, variant);
@@ -119,37 +119,52 @@ detect_keyboard_layout_from_xkb()
 	unsigned int keyboard_layout = 0;
 
 	xprop = popen("xprop -root _XKB_RULES_NAMES", "r");
+	/* _XKB_RULES_NAMES(STRING) = "evdev", "pc105", "gb", "", "lv3:ralt_switch" */
+	/* _XKB_RULES_NAMES(STRING) = "evdev", "evdev", "us,dk,gb", ",,", "grp:shift_caps_toggle" */
 
 	while(fgets(buffer, sizeof(buffer), xprop) != NULL)
 	{
 		if((pch = strstr(buffer, "_XKB_RULES_NAMES(STRING) = ")) != NULL)
 		{
-			/* "rules" */
-			pch = strchr(&buffer[27], ','); // We assume it is xorg
-			pch += 1;
+			/* Skip "rules" */
+			pch = strchr(&buffer[27], ',');
+			if (pch == NULL)
+				continue;
 
-			/* "type" */
-			pch = strchr(pch, ',');
+			/* Skip "type" */
+			pch = strchr(pch + 1, ',');
+			if (pch == NULL)
+				continue;
 
-			/* "layout" */
+			/* Parse "layout" */
 			beg = strchr(pch + 1, '"');
-			beg += 1;
-
-			end = strchr(beg, '"');
+			if (beg == NULL)
+				continue;
+			end = strchr(beg + 1, '"');
+			if (end == NULL)
+				continue;
 			*end = '\0';
+			layout = beg + 1;
 
-			layout = beg;
-			pch = strchr(layout, ',');	/* Assume first of multiple layouts */
-			*pch = '\0';
+			/* Truncate after first of multiple layouts */
+			pch = strchr(layout, ',');
+			if (pch != NULL)
+				*pch = '\0';
 
-			/* "variant" */
+			/* Parse "variant" */
 			beg = strchr(end + 1, '"');
-			beg += 1;
-
-			end = strchr(beg, '"');
+			if (beg == NULL)
+				continue;
+			end = strchr(beg + 1, '"');
+			if (end == NULL)
+				continue;
 			*end = '\0';
+			variant = beg + 1;
 
-			variant = beg;
+			/* Truncate after first of multiple variants */
+			pch = strchr(variant, ',');
+			if (pch != NULL)
+				*pch = '\0';
 		}
 	}
 	pclose(xprop);
