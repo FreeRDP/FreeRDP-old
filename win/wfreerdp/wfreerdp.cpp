@@ -660,6 +660,10 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdS
 
 	if (g_thread_count > 0)
 		WaitForSingleObject(g_done_event, INFINITE);
+	else
+		MessageBox(GetConsoleWindow(),
+			L"Failed to start wfreerdp.\n\nPlease check the debug output.",
+			L"FreeRDP Error", MB_ICONSTOP);
 
 	freerdp_chanman_uninit();
 	//freerdp_global_finish();
