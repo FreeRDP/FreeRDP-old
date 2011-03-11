@@ -26,7 +26,7 @@
 #include "locales.h"
 #include "keyboard.h"
 
-unsigned int
+static unsigned int
 find_keyboard_layout_in_xorg_rules(char* layout, char* variant)
 {
 	int i;
@@ -103,7 +103,7 @@ get_keyboard_layouts(int types)
 	return layouts;
 }
 
-unsigned int
+static unsigned int
 detect_keyboard_layout_from_xkb()
 {
 	FILE* xprop;
@@ -208,7 +208,7 @@ detect_keyboard_layout_from_xkb()
 	return keyboard_layout;
 }
 
-unsigned int
+static unsigned int
 detect_keyboard_type_from_xkb(char* xkbfile, int length)
 {
 	char* pch;
@@ -221,6 +221,8 @@ detect_keyboard_type_from_xkb(char* xkbfile, int length)
 
 	// This tells us about the current XKB configuration, if XKB is available
 	setxkbmap = popen("setxkbmap -print", "r");
+
+	xkbfile[0] = '\0';
 
 	while(fgets(buffer, sizeof(buffer), setxkbmap) != NULL)
 	{
@@ -259,7 +261,7 @@ detect_keyboard_type_from_xkb(char* xkbfile, int length)
 	return rv;
 }
 
-unsigned int
+static unsigned int
 detect_keyboard_layout_from_locale()
 {
 	int i;
@@ -347,7 +349,9 @@ detect_keyboard_layout_from_locale()
 	return 0; // Could not detect the current keyboard layout from locale
 }
 
-unsigned int
+#if defined(sun)
+
+static unsigned int
 detect_keyboard_type_and_layout_sunos(char* xkbfile, int length)
 {
 	FILE* kbd;
@@ -405,11 +409,14 @@ detect_keyboard_type_and_layout_sunos(char* xkbfile, int length)
 		}
 	}
 
+	xkbfile[0] = '\0';
 	return 0;
 }
 
-int
-load_keyboard(char* kbd)
+#endif
+
+static int
+load_xkb_keyboard(char* kbd)
 {
 	char* pch;
 	char *beg, *end;
@@ -572,7 +579,7 @@ load_keyboard(char* kbd)
 				strncpy(xkbinc, beg, end - beg);
 				xkbinc[end - beg] = '\0';
 
-				load_keyboard(xkbinc); // Load included keymap
+				load_xkb_keyboard(xkbinc); // Load included keymap
 			}
 		}
 		else if((pch = strstr(buffer, "keyboard")) != NULL)
@@ -599,7 +606,7 @@ load_keyboard(char* kbd)
 	return 1;
 }
 
-unsigned int
+static unsigned int
 detect_and_load_keyboard(unsigned int keyboardLayoutID)
 {
 	int i;
@@ -608,7 +615,6 @@ detect_and_load_keyboard(unsigned int keyboardLayoutID)
 	char* xkbfileEnd;
 
 	int keymapLoaded = 0;
-	memset(xkbfile, '\0', sizeof(xkbfile));
 
 	if (keyboardLayoutID != 0)
 		printf("keyboard layout configuration: %X\n", keyboardLayoutID);
@@ -667,7 +673,7 @@ detect_and_load_keyboard(unsigned int keyboardLayoutID)
 
 #ifdef __APPLE__
 	/* Apple X11 breaks XKB detection */
-	keymapLoaded += load_keyboard("macosx(macosx)");
+	keymapLoaded += load_xkb_keyboard("macosx(macosx)");
 #else
 	do
 	{
@@ -676,7 +682,7 @@ detect_and_load_keyboard(unsigned int keyboardLayoutID)
 		kbd[kbdlen] = '\0';
 
 		// Load keyboard map
-		keymapLoaded += load_keyboard(kbd);
+		keymapLoaded += load_xkb_keyboard(kbd);
 
 		kbd += kbdlen + 1;
 	}
@@ -724,4 +730,3 @@ freerdp_kbd_get_scancode_by_virtualkey(int vkcode)
 {
 	return virtualKeyboard[vkcode].scancode;
 }
-
