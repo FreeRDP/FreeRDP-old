@@ -1016,31 +1016,36 @@ getsn(char *s, int size, char bullet)
 		_putch(bullet ? bullet : s[i]);
 	}
 	s[i] = 0;
-	_putch('\n');
 }
 
 static RD_BOOL
 l_ui_authenticate(struct rdp_inst * inst)
 {
-	printf("Please enter NLA login credential.\n");
+	if (!AllocConsole())
+		_cputs("\n");	/* reusing debug console */
 
-	printf("User name:");
+	_cputs("Please enter NLA login credential.\n");
+
+	_cputs("User name:");
 	if (inst->settings->username[0] == 0)
 		getsn(inst->settings->username, sizeof(inst->settings->username), 0);
 	else
-		printf("%s\n", inst->settings->username);
+		_cputs(inst->settings->username);
+	_putch('\n');
 
-	printf("Domain:");
+	_cputs("Domain:");
 	if (inst->settings->domain[0] == 0)
 		getsn(inst->settings->domain, sizeof(inst->settings->domain), 0);
 	else
-		printf("%s\n", inst->settings->domain);
+		_cputs(inst->settings->domain);
+	_putch('\n');
 
-	printf("Password:");
+	_cputs("Password:");
 	if (inst->settings->password[0] == 0)
 		getsn(inst->settings->password, sizeof(inst->settings->password), '*');
 	else
-		printf("%s\n", "***");
+		_cputs("***");
+	_putch('\n');
 
 	return 1;
 }
