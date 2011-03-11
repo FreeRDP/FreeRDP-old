@@ -635,6 +635,12 @@ detect_and_load_keyboard(unsigned int keyboardLayoutID)
 		printf("detect_keyboard_layout_from_locale: %X\n", keyboardLayoutID);
 	}
 
+	if (keyboardLayoutID == 0)
+	{
+		keyboardLayoutID = 0x0409;
+		printf("using default keyboard layout: %X\n", keyboardLayoutID);
+	}
+
 	for(i = 0; i < sizeof(keyboardLayouts) / sizeof(keyboardLayout); i++)
 		if(keyboardLayouts[i].code == keyboardLayoutID)
 		{
@@ -691,12 +697,6 @@ freerdp_kbd_init(unsigned int keyboard_layout_id)
 {
 	keyboard_layout_id = detect_and_load_keyboard(keyboard_layout_id);
 	printf("freerdp_kbd_init: detect_and_load_keyboard returned %X\n", keyboard_layout_id);
-
-	if (keyboard_layout_id == 0)
-	{
-		keyboard_layout_id = 0x0409;
-		printf("freerdp_kbd_init: using default layout %X\n", keyboard_layout_id);
-	}
 
 	return keyboard_layout_id;
 }
