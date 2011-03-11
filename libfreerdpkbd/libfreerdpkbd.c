@@ -118,58 +118,6 @@ detect_keyboard_layout_from_xkb()
 	char buffer[1024];
 	unsigned int keyboard_layout = 0;
 
-	/* We start by looking for _XKB_RULES_NAMES_BACKUP which appears to be used by libxklavier */
-
-	xprop = popen("xprop -root _XKB_RULES_NAMES_BACKUP", "r");
-
-	/* Sample output for "Canadian Multilingual Standard"
-	 *
-	 * _XKB_RULES_NAMES_BACKUP(STRING) = "xorg", "pc105", "ca", "multix", ""
-	 * Where "xorg" is the set of rules
-	 * "pc105" the keyboard type
-	 * "ca" the keyboard layout
-	 * "multi" the keyboard layout variant
-	 */
-
-	while(fgets(buffer, sizeof(buffer), xprop) != NULL)
-	{
-		if((pch = strstr(buffer, "_XKB_RULES_NAMES_BACKUP(STRING) = ")) != NULL)
-		{
-			/* "rules" */
-			pch = strchr(&buffer[34], ','); // We assume it is xorg
-			pch += 1;
-
-			/* "type" */
-			pch = strchr(pch, ',');
-
-			/* "layout" */
-			beg = strchr(pch + 1, '"');
-			beg += 1;
-
-			end = strchr(beg, '"');
-			*end = '\0';
-
-			layout = beg;
-
-			/* "variant" */
-			beg = strchr(end + 1, '"');
-			beg += 1;
-
-			end = strchr(beg, '"');
-			*end = '\0';
-
-			variant = beg;
-		}
-	}
-	pclose(xprop);
-
-	keyboard_layout = find_keyboard_layout_in_xorg_rules(layout, variant);
-
-	if(keyboard_layout > 0)
-		return keyboard_layout;
-
-	/* Check _XKB_RULES_NAMES if _XKB_RULES_NAMES_BACKUP fails */
-
 	xprop = popen("xprop -root _XKB_RULES_NAMES", "r");
 
 	while(fgets(buffer, sizeof(buffer), xprop) != NULL)
@@ -191,6 +139,8 @@ detect_keyboard_layout_from_xkb()
 			*end = '\0';
 
 			layout = beg;
+			pch = strchr(layout, ',');	/* Assume first of multiple layouts */
+			*pch = '\0';
 
 			/* "variant" */
 			beg = strchr(end + 1, '"');
