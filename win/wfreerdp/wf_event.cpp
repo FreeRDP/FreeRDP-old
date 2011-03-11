@@ -23,9 +23,9 @@
 
 extern HCURSOR g_default_cursor;
 
-#define X_POS (lParam & 0xffff)
-#define Y_POS ((lParam >> 16) & 0xffff)
-#define SCANCODE ((lParam >> 16) & 0xff)
+#define X_POS(lParam) (lParam & 0xffff)
+#define Y_POS(lParam) ((lParam >> 16) & 0xffff)
+#define SCANCODE(lParam) ((lParam >> 16) & 0xff)
 
 LRESULT CALLBACK
 wf_event_proc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
@@ -61,7 +61,7 @@ wf_event_proc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 		if (wfi != NULL)
 		{
 			wfi->inst->rdp_send_input(wfi->inst, RDP_INPUT_MOUSE,
-				PTRFLAGS_DOWN | PTRFLAGS_BUTTON1, X_POS, Y_POS);
+				PTRFLAGS_DOWN | PTRFLAGS_BUTTON1, X_POS(lParam), Y_POS(lParam));
 		}
 		break;
 
@@ -69,7 +69,7 @@ wf_event_proc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 		if (wfi != NULL)
 		{
 			wfi->inst->rdp_send_input(wfi->inst, RDP_INPUT_MOUSE,
-				PTRFLAGS_BUTTON1, X_POS, Y_POS);
+				PTRFLAGS_BUTTON1, X_POS(lParam), Y_POS(lParam));
 		}
 		break;
 
@@ -77,7 +77,7 @@ wf_event_proc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 		if (wfi != NULL)
 		{
 			wfi->inst->rdp_send_input(wfi->inst, RDP_INPUT_MOUSE,
-				PTRFLAGS_DOWN | PTRFLAGS_BUTTON2, X_POS, Y_POS);
+				PTRFLAGS_DOWN | PTRFLAGS_BUTTON2, X_POS(lParam), Y_POS(lParam));
 		}
 		break;
 
@@ -85,7 +85,7 @@ wf_event_proc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 		if (wfi != NULL)
 		{
 			wfi->inst->rdp_send_input(wfi->inst, RDP_INPUT_MOUSE,
-				PTRFLAGS_BUTTON2, X_POS, Y_POS);
+				PTRFLAGS_BUTTON2, X_POS(lParam), Y_POS(lParam));
 		}
 		break;
 
@@ -93,23 +93,29 @@ wf_event_proc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 		if (wfi != NULL)
 		{
 			wfi->inst->rdp_send_input(wfi->inst, RDP_INPUT_MOUSE,
-				PTRFLAGS_MOVE, X_POS, Y_POS);
+				PTRFLAGS_MOVE, X_POS(lParam), Y_POS(lParam));
 		}
 		break;
 
 	case WM_KEYDOWN:
 		if (wfi != NULL)
 		{
+#ifdef WITH_DEBUG_KBD
+			printf("key down: lParam=0x%08X = %3d\n", lParam, SCANCODE(lParam));
+#endif
 			wfi->inst->rdp_send_input(wfi->inst, RDP_INPUT_SCANCODE,
-				RDP_KEYPRESS, SCANCODE, 0);
+				RDP_KEYPRESS, SCANCODE(lParam), 0);
 		}
 		break;
 
 	case WM_KEYUP:
 		if (wfi != NULL)
 		{
+#ifdef WITH_DEBUG_KBD
+			printf("key up:   lParam=0x%08X = %3d\n", lParam, SCANCODE(lParam));
+#endif
 			wfi->inst->rdp_send_input(wfi->inst, RDP_INPUT_SCANCODE,
-				RDP_KEYRELEASE, SCANCODE, 0);
+				RDP_KEYRELEASE, SCANCODE(lParam), 0);
 		}
 		break;
 
