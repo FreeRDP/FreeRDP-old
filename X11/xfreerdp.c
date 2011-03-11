@@ -197,7 +197,7 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 			 * Overwrite original password which could be revealed by a simple "ps aux" command.
 			 * This approach won't hide the password length, but it is better than nothing.
 			 */
-			
+
 			memset(argv[*pindex], '*', strlen(argv[*pindex]));
 		}
 		else if (strcmp("-d", argv[*pindex]) == 0)
@@ -303,7 +303,7 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 				return 1;
 			}
 			strncpy(settings->hostname, argv[*pindex], sizeof(settings->hostname) - 1);
-			settings->directory[sizeof(settings->hostname) - 1] = 0;
+			settings->hostname[sizeof(settings->hostname) - 1] = 0;
 		}
 		else if (strcmp("-o", argv[*pindex]) == 0)
 		{
@@ -724,7 +724,7 @@ main(int argc, char ** argv)
 	freerdp_chanman_init();
 
 	freerdp_sem_create(&g_sem, 0);
-	
+
 	while (1)
 	{
 		xfi = (xfInfo *) malloc(sizeof(xfInfo));
