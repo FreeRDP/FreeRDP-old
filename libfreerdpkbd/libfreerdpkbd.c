@@ -600,20 +600,25 @@ load_keyboard(char* kbd)
 }
 
 unsigned int
-detect_and_load_keyboard()
+detect_and_load_keyboard(unsigned int keyboardLayoutID)
 {
 	int i;
 	char* kbd;
 	char xkbfile[256];
 	char* xkbfileEnd;
-	unsigned int keyboardLayoutID = 0;
 
 	int keymapLoaded = 0;
 	memset(xkbfile, '\0', sizeof(xkbfile));
 
+	if (keyboardLayoutID != 0)
+		printf("keyboard layout configuration: %X\n", keyboardLayoutID);
+
 #if defined(sun)
-	keyboardLayoutID = detect_keyboard_type_and_layout_sunos(xkbfile, sizeof(xkbfile));
-	printf("detect_keyboard_type_and_layout_sunos: %X %s\n", keyboardLayoutID, xkbfile);
+	if(keyboardLayoutID == 0)
+	{
+		keyboardLayoutID = detect_keyboard_type_and_layout_sunos(xkbfile, sizeof(xkbfile));
+		printf("detect_keyboard_type_and_layout_sunos: %X %s\n", keyboardLayoutID, xkbfile);
+	}
 #endif
 
 	if(keyboardLayoutID == 0)
@@ -684,13 +689,8 @@ detect_and_load_keyboard()
 unsigned int
 freerdp_kbd_init(unsigned int keyboard_layout_id)
 {
-	if (keyboard_layout_id != 0)
-		printf("freerdp_kbd_init: configured layout %X\n", keyboard_layout_id);
-	else
-	{
-		keyboard_layout_id = detect_and_load_keyboard();
-		printf("freerdp_kbd_init: detect_and_load_keyboard returned %X\n", keyboard_layout_id);
-	}
+	keyboard_layout_id = detect_and_load_keyboard(keyboard_layout_id);
+	printf("freerdp_kbd_init: detect_and_load_keyboard returned %X\n", keyboard_layout_id);
 
 	if (keyboard_layout_id == 0)
 	{
