@@ -812,7 +812,7 @@ rdp_process_surface_commands_capset(rdpRdp * rdp, STREAM s)
 	SURFCMDS_FRAMEMARKER       0x10
 	SURFCMDS_STREAMSURFACEBITS 0x40 */
 	rdp->surface_commands &= (0x02 | 0x10 | 0x20 | 0x40);
-	printf("got surface commands 0x%8.8x\n", rdp->surface_commands);
+	//printf("got surface commands 0x%8.8x\n", rdp->surface_commands);
 	/* Reserved (4 bytes) */
 }
 
@@ -901,8 +901,8 @@ rdp_process_bitmap_codecs_capset(rdpRdp * rdp, STREAM s, int size)
 	uint8 * codec_property;
 	STREAM out_codec_s;
 
-	printf("rdp_process_bitmap_codecs_capset:\n");
-	hexdump(s->p, size);
+	//printf("rdp_process_bitmap_codecs_capset:\n");
+	//hexdump(s->p, size);
 	in_uint8(s, num_codecs);
 	for (index = 0; index < num_codecs; index++)
 	{
@@ -916,7 +916,7 @@ rdp_process_bitmap_codecs_capset(rdpRdp * rdp, STREAM s, int size)
 		{
 			if (rdp_caps_add_codec(rdp, out_codec_s) == 0)
 			{
-				printf("rdp_process_bitmap_codecs_capset: added ok\n");
+				//printf("rdp_process_bitmap_codecs_capset: added ok\n");
 				rdp->got_bitmap_codecs_caps = 1;
 			}
 			else
@@ -938,7 +938,7 @@ rdp_out_bitmap_codecs_capset(rdpRdp * rdp, STREAM s)
 	int out_bytes;
 	STREAM ls;
 
-	printf("rdp_out_bitmap_codecs_capset:\n");
+	//printf("rdp_out_bitmap_codecs_capset:\n");
 	out_count = 0;
 	header = rdp_skip_capset_header(s);
 	count_ptr = s->p;
@@ -957,7 +957,7 @@ rdp_out_bitmap_codecs_capset(rdpRdp * rdp, STREAM s)
 	}
 	*count_ptr = out_count;
 	rdp_out_capset_header(s, header, CAPSET_TYPE_BITMAP_CODECS);
-	hexdump(count_ptr, s->p - count_ptr);
+	//hexdump(count_ptr, s->p - count_ptr);
 }
 
 void
@@ -965,7 +965,7 @@ rdp_process_frame_ack_capset(rdpRdp * rdp, STREAM s)
 {
 	rdp->got_frame_ack_caps = 1;
 	in_uint32_le(s, rdp->frame_ack);
-	printf("rdp_process_frame_ack_capset: 0x%8.8x\n", rdp->frame_ack);
+	//printf("rdp_process_frame_ack_capset: 0x%8.8x\n", rdp->frame_ack);
 }
 
 void
@@ -973,7 +973,7 @@ rdp_out_frame_ack_capset(rdpRdp * rdp, STREAM s)
 {
 	capsetHeaderRef header;
 
-	printf("rdp_out_frame_ack_capset:\n");
+	//printf("rdp_out_frame_ack_capset:\n");
 	header = rdp_skip_capset_header(s);
 	out_uint32_le(s, 2); /* in flight frames */
 	rdp_out_capset_header(s, header, CAPSET_TYPE_FRAME_ACKNOWLEDGE);

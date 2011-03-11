@@ -44,7 +44,7 @@ surface_codec_cap(rdpRdp * rdp, uint8 * codec_guid, int codec_id,
 	s = 0;
 	if (memcmp(codec_guid, g_rfx_guid, 16) == 0)
 	{
-		printf("got remotefx guid\n");
+		//printf("got remotefx guid\n");
 		if (rdp->settings->rfx_flags)
 		{
 			s = stream_new(1024);
@@ -77,11 +77,11 @@ surface_codec_cap(rdpRdp * rdp, uint8 * codec_guid, int codec_id,
 	}
 	else if (memcmp(codec_guid, g_nsc_guid, 16) == 0)
 	{
-		printf("got nscodec guid\n");
+		//printf("got nscodec guid\n");
 	}
 	else
 	{
-		printf("unknown guid\n");
+		//printf("unknown guid\n");
 		hexdump(codec_guid, 16);
 	}
 	return s;
@@ -104,20 +104,19 @@ surface_cmd(rdpRdp * rdp, STREAM s)
 	int height;
 	int bitmapDataLength;
 
-	printf("surface_cmd: size %d\n", s->end - s->p);
+	//printf("surface_cmd: size %d\n", s->end - s->p);
 	//hexdump(s->p, 1024);
 	frameId = 0;
 	while (s->p < s->end)
 	{
 		in_uint16_le(s, cmdType);
-		printf("  surface_cmd: %d\n", cmdType);
+		//printf("  surface_cmd: %d\n", cmdType);
 		switch (cmdType)
 		{
 			case 4: /* CMDTYPE_FRAME_MARKER */
 				in_uint16_le(s, frameAction);
 				in_uint32_le(s, frameId);
-				printf("    surface_cmd: CMDTYPE_FRAME_MARKER %d %d\n",
-					frameAction, frameId);
+				//printf("    surface_cmd: CMDTYPE_FRAME_MARKER %d %d\n", frameAction, frameId);
 				if (frameAction == 1)
 				{
 					rdp_send_frame_ack(rdp, frameId);
@@ -135,9 +134,9 @@ surface_cmd(rdpRdp * rdp, STREAM s)
 				in_uint16_le(s, height);
 				in_uint32_le(s, bitmapDataLength);
 				in_uint8s(s, bitmapDataLength);
-				printf("    surface_cmd: CMDTYPE_STREAM_SURFACE_BITS "
-					"id %d width %d height %d bpp %d size %d\n",
-					codecID, width, height, bpp, bitmapDataLength);
+				//printf("    surface_cmd: CMDTYPE_STREAM_SURFACE_BITS "
+				//	"id %d width %d height %d bpp %d size %d\n",
+				//	codecID, width, height, bpp, bitmapDataLength);
 				break;
 		}
 	}
