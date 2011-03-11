@@ -47,6 +47,18 @@ struct thread_data
 };
 
 static int
+create_console(void)
+{
+	if (!AllocConsole())
+	{
+		return 1;
+	}
+	freopen("CONOUT$", "w", stdout);
+	printf("Debug console created.\n");
+	return 0;
+}
+
+static int
 set_default_params(rdpSet * settings)
 {
 	memset(settings, 0, sizeof(rdpSet));
@@ -104,6 +116,8 @@ out_args(void)
 		"\t--sec: force protocol security (rdp, tls or nla)\n"
 #endif
 		"\t--no-osb: disable off screen bitmaps, default on\n"
+		"\t--no-console: don't open a console window for debug output\n"
+		"\t--debug-log: write debug output to freerdp.log\n"
 		"\t--version: Print out the version and exit\n"
 		"\t-h: show this help\n";
 	printf("%s\n", help);
@@ -114,6 +128,26 @@ static int
 process_params(rdpSet * settings, rdpChanMan * chan_man, int argc, LPWSTR * argv, int * pindex)
 {
 	WCHAR * p;
+	int i;
+	char show_console = 1;
+
+	/* Early scanning of options for stdout/console handling */
+	for(i = 1; i < argc; i++)
+		if (wcscmp(L"--no-console", argv[i]) == 0)
+		{
+			show_console = 0;
+		}
+		else if (wcscmp(L"--debug-log", argv[i]) == 0)
+		{
+			freopen("freerdp.log", "w", stdout);
+			show_console = 0;
+		}
+	if (show_console && !GetConsoleWindow())
+	{
+		create_console();
+		printf("(this console window can be redirected to freerdp.log with --debug-log\n"
+				"or hidden with --no-debug)\n");
+	}
 
 	set_default_params(settings);
 
@@ -376,6 +410,11 @@ process_params(rdpSet * settings, rdpChanMan * chan_man, int argc, LPWSTR * argv
 			*pindex = *pindex + 1;
 			return 0;
 		}
+		else if ((wcscmp(L"--no-console", argv[*pindex]) == 0) ||
+				(wcscmp(L"--debug-log", argv[*pindex]) == 0))
+		{
+			/* Skip options that already has been processed */
+		}
 		else
 		{
 			wprintf(L"invalid option: %s\n", argv[*pindex]);
@@ -529,18 +568,6 @@ run_wfreerdp(struct thread_data * data)
 	return 0;
 }
 
-static int
-create_console(void)
-{
-	if (!AllocConsole())
-	{
-		return 1;
-	}
-	freopen("CONOUT$", "w", stdout);
-	printf("Debug console created.\n");
-	return 0;
-}
-
 static DWORD WINAPI
 thread_func(LPVOID lpParam)
 {
@@ -581,7 +608,9 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdS
 		return 1;
 	}
 	g_done_event = CreateEvent(0, 1, 0, 0);
+#if defined(WITH_DEBUG) || defined(_DEBUG)
 	create_console();
+#endif
 	/*if (!freerdp_global_init())
 	{
 		printf("Error initializing freerdp\n");
