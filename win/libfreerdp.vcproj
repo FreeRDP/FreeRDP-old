@@ -261,15 +261,19 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\rdp5.c"
-				>
-			</File>
-			<File
 				RelativePath="..\libfreerdp\secure.c"
 				>
 			</File>
 			<File
 				RelativePath="..\libfreerdp\ssl.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libfreerdp\stream.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libfreerdp\surface.c"
 				>
 			</File>
 			<File
@@ -436,6 +440,10 @@
 			</File>
 			<File
 				RelativePath="..\libfreerdp\stream.h"
+				>
+			</File>
+			<File
+				RelativePath="..\libfreerdp\surface.h"
 				>
 			</File>
 			<File
