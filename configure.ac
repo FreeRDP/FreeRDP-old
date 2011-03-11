@@ -985,7 +985,6 @@ channels/rdpdr/printer/Makefile
 channels/rdpdr/serial/Makefile
 channels/rdpdr/parallel/Makefile
 contrib/Makefile
-tests/Makefile
 ])
 
 AC_OUTPUT

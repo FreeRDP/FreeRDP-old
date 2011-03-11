@@ -26,7 +26,6 @@ REQUIRED_SUBDIRS = \
 OPTIONAL_SUBDIRS = \
 	channels/rdpsnd/alsa \
 	channels/rdpsnd/pulse \
-	tests \
 	cunit \
 	X11 \
 	win \
