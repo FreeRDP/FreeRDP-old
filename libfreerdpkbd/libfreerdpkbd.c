@@ -172,8 +172,6 @@ detect_keyboard_type_from_xkb(char* xkbfile, int length)
 	// This tells us about the current XKB configuration, if XKB is available
 	setxkbmap = popen("setxkbmap -print", "r");
 
-	xkbfile[0] = '\0';
-
 	while(fgets(buffer, sizeof(buffer), setxkbmap) != NULL)
 	{
 		// The line with xkb_keycodes is what interests us
@@ -359,7 +357,6 @@ detect_keyboard_type_and_layout_sunos(char* xkbfile, int length)
 		}
 	}
 
-	xkbfile[0] = '\0';
 	return 0;
 }
 
@@ -559,6 +556,8 @@ load_xkb_keyboard(char* kbd)
 static unsigned int
 detect_keyboard(unsigned int keyboardLayoutID, char *xkbfile, size_t xkbfilelength)
 {
+	xkbfile[0] = '\0';
+
 	if (keyboardLayoutID != 0)
 		printf("keyboard layout configuration: %X\n", keyboardLayoutID);
 
@@ -572,8 +571,6 @@ detect_keyboard(unsigned int keyboardLayoutID, char *xkbfile, size_t xkbfileleng
 
 	if(keyboardLayoutID == 0)
 	{
-		detect_keyboard_type_from_xkb(xkbfile, xkbfilelength);
-		printf("detect_keyboard_type_from_xkb: %s\n", xkbfile);
 		keyboardLayoutID = detect_keyboard_layout_from_xkb();
 		printf("detect_keyboard_layout_from_xkb: %X\n", keyboardLayoutID);
 	}
@@ -588,6 +585,12 @@ detect_keyboard(unsigned int keyboardLayoutID, char *xkbfile, size_t xkbfileleng
 	{
 		keyboardLayoutID = 0x0409;
 		printf("using default keyboard layout: %X\n", keyboardLayoutID);
+	}
+
+	if (xkbfile[0] == '\0')
+	{
+		detect_keyboard_type_from_xkb(xkbfile, xkbfilelength);
+		printf("detect_keyboard_type_from_xkb: %s\n", xkbfile);
 	}
 
 	return keyboardLayoutID;
