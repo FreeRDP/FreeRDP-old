@@ -607,29 +607,22 @@ load_xkb_keyboard(char* kbd)
 }
 
 static unsigned int
-detect_and_load_keyboard(unsigned int keyboardLayoutID)
+detect_keyboard(unsigned int keyboardLayoutID, char *xkbfile, size_t xkbfilelength)
 {
-	int i;
-	char* kbd;
-	char xkbfile[256];
-	char* xkbfileEnd;
-
-	int keymapLoaded = 0;
-
 	if (keyboardLayoutID != 0)
 		printf("keyboard layout configuration: %X\n", keyboardLayoutID);
 
 #if defined(sun)
 	if(keyboardLayoutID == 0)
 	{
-		keyboardLayoutID = detect_keyboard_type_and_layout_sunos(xkbfile, sizeof(xkbfile));
+		keyboardLayoutID = detect_keyboard_type_and_layout_sunos(xkbfile, xkbfilelength);
 		printf("detect_keyboard_type_and_layout_sunos: %X %s\n", keyboardLayoutID, xkbfile);
 	}
 #endif
 
 	if(keyboardLayoutID == 0)
 	{
-		detect_keyboard_type_from_xkb(xkbfile, sizeof(xkbfile));
+		detect_keyboard_type_from_xkb(xkbfile, xkbfilelength);
 		printf("detect_keyboard_type_from_xkb: %s\n", xkbfile);
 		keyboardLayoutID = detect_keyboard_layout_from_xkb();
 		printf("detect_keyboard_layout_from_xkb: %X\n", keyboardLayoutID);
@@ -647,26 +640,39 @@ detect_and_load_keyboard(unsigned int keyboardLayoutID)
 		printf("using default keyboard layout: %X\n", keyboardLayoutID);
 	}
 
+	return keyboardLayoutID;
+}
+
+static char *
+get_layout_name(unsigned int keyboardLayoutID)
+{
+	int i;
 	for(i = 0; i < sizeof(keyboardLayouts) / sizeof(keyboardLayout); i++)
 		if(keyboardLayouts[i].code == keyboardLayoutID)
 		{
-			printf("Using %s (0x%08X)\n", keyboardLayouts[i].name, keyboardLayouts[i].code);
-			break;
+			return keyboardLayouts[i].name;
 		}
 
 	for(i = 0; i < sizeof(keyboardLayoutVariants) / sizeof(keyboardLayoutVariant); i++)
 		if(keyboardLayoutVariants[i].code == keyboardLayoutID)
 		{
-			printf("Using %s (0x%08X)\n", keyboardLayoutVariants[i].name, keyboardLayoutVariants[i].code);
-			break;
+			return keyboardLayoutVariants[i].name;
 		}
 
 	for(i = 0; i < sizeof(keyboardIMEs) / sizeof(keyboardIME); i++)
 		if(keyboardIMEs[i].code == keyboardLayoutID)
 		{
-			printf("Using %s (0x%08X)\n", keyboardIMEs[i].name, keyboardIMEs[i].code);
-			break;
+			return keyboardIMEs[i].name;
 		}
+	return "unknown";
+}
+
+static void
+load_keyboard_map(char *xkbfile)
+{
+	char* kbd;
+	char* xkbfileEnd;
+	int keymapLoaded = 0;
 
 	kbd = xkbfile;
 	xkbfileEnd = xkbfile + strlen(xkbfile);
@@ -694,16 +700,18 @@ detect_and_load_keyboard(unsigned int keyboardLayoutID)
 		// No keymap was loaded, load default hard-coded keymap
 		memcpy(keycodeToVkcode, defaultKeycodeToVkcode, sizeof(keycodeToVkcode));
 	}
-
-	return keyboardLayoutID;
 }
 
 unsigned int
 freerdp_kbd_init(unsigned int keyboard_layout_id)
 {
-	keyboard_layout_id = detect_and_load_keyboard(keyboard_layout_id);
-	printf("freerdp_kbd_init: detect_and_load_keyboard returned %X\n", keyboard_layout_id);
+	char xkbfile[256];
+	keyboard_layout_id = detect_keyboard(keyboard_layout_id, xkbfile, sizeof(xkbfile));
 
+	printf("Using keyboard layout 0x%X with xkb name %s and xkbfile %s\n",
+			keyboard_layout_id, get_layout_name(keyboard_layout_id), xkbfile);
+
+	load_keyboard_map(xkbfile);
 	return keyboard_layout_id;
 }
 
