@@ -629,7 +629,8 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdS
 		}
 	}
 
-	WaitForSingleObject(g_done_event, INFINITE);
+	if (g_thread_count > 0)
+		WaitForSingleObject(g_done_event, INFINITE);
 
 	freerdp_chanman_uninit();
 	//freerdp_global_finish();
