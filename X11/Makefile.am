@@ -23,4 +23,4 @@ xfreerdp_LDADD = \
 	../libfreerdpkbd/libfreerdpkbd.la \
 	../libfreerdputils/libfreerdputils.la \
 	../libfreerdpchanman/libfreerdpchanman.la \
-	@XCURSOR_LIBS@ @X_LIBS@ @X_EXTRA_LIBS@ -lm
+	@XCURSOR_LIBS@ @X_LIBS@ @X_EXTRA_LIBS@

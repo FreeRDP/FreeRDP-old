@@ -17,7 +17,6 @@
    limitations under the License.
 */
 
-#include <math.h>
 #include <freerdp/rdpset.h>
 #include "frdp.h"
 #include "orderstypes.h"
@@ -350,7 +349,7 @@ process_multipatblt(rdpOrders * orders, STREAM s, MULTIPATBLT_ORDER * os, uint32
 	memset(rects, 0, size);
 
 	index = 0;
-	data = ceil(((double)os->nentries) / 2.0);
+	data = (os->nentries + 1) >> 1;
 	for (next = 1; (next <= os->nentries) && (next <= 45) && (data < os->datasize); next++)
 	{
 		if ((next - 1) % 2 == 0)
@@ -560,7 +559,7 @@ process_multiopaquerect(rdpOrders * orders, STREAM s, MULTIOPAQUERECT_ORDER * os
 	memset(rects, 0, size);
 
 	index = 0;
-	data = ceil(((double)os->nentries) / 2.0);
+	data = (os->nentries + 1) >> 1;
 	for (next = 1; (next <= os->nentries) && (next <= 45) && (data < os->datasize); next++)
 	{
 		if ((next - 1) % 2 == 0)
