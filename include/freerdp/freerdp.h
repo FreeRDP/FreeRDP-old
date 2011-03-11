@@ -1,5 +1,6 @@
 /*
    FreeRDP: A Remote Desktop Protocol client.
+   RDP settings
 
    Copyright (C) Jay Sorg 2009-2011
 
@@ -24,7 +25,7 @@
 #include "constants_ui.h"
 #include "rdpext.h"
 
-#define FREERDP_INTERFACE_VERSION 3
+#define FREERDP_INTERFACE_VERSION 4
 
 #if defined _WIN32 || defined __CYGWIN__
   #ifdef FREERDP_EXPORTS
@@ -78,6 +79,7 @@ struct rdp_inst
 	int (* rdp_sync_input)(rdpInst * inst, int toggle_flags);
 	int (* rdp_channel_data)(rdpInst * inst, int chan_id, char * data, int data_size);
 	void (* rdp_disconnect)(rdpInst * inst);
+	int (* rdp_send_frame_ack)(rdpInst * inst, int frame_id);
 	/* calls from library to ui */
 	void (* ui_error)(rdpInst * inst, const char * text);
 	void (* ui_warning)(rdpInst * inst, const char * text);
@@ -137,6 +139,7 @@ struct rdp_inst
 	void (* ui_channel_data)(rdpInst * inst, int chan_id, char * data, int data_size,
 		int flags, int total_size);
 	RD_BOOL (* ui_authenticate)(rdpInst * inst);
+	int (* ui_decode)(rdpInst * inst, uint8 * data, int data_size);
 };
 
 FREERDP_API rdpInst *

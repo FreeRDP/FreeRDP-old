@@ -160,5 +160,7 @@ ui_channel_data(rdpInst * inst, int chan_id, char * data, int data_size,
 		int flags, int total_size);
 RD_BOOL
 ui_authenticate(rdpInst * inst);
+int
+ui_decode(rdpInst * inst, uint8 * data, int data_size);
 
 #endif

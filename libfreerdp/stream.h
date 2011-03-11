@@ -122,4 +122,11 @@ typedef struct stream *STREAM;
 /* Shift old v value and read new LSByte */
 #define next_be(s,v)		do { ASSERT_AVAILABLE(s,1); v = ((v) << 8) + *((s)->p++); } while (0)
 
+int
+stream_init(struct stream * st, int size);
+struct stream *
+stream_new(int size);
+int
+stream_delete(struct stream * st);
+
 #endif /* __STREAM_H */

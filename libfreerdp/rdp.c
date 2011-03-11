@@ -38,6 +38,7 @@
 #include "mem.h"
 #include "debug.h"
 #include "ext.h"
+#include "surface.h"
 
 #ifdef HAVE_ICONV
 #ifdef HAVE_ICONV_H
@@ -65,6 +66,9 @@ static void
 process_redirect_pdu(rdpRdp * rdp, STREAM s);
 static RD_BOOL
 process_data_pdu(rdpRdp * rdp, STREAM s);
+static void
+process_fp(rdpRdp * rdp, STREAM s);
+
 
 /* Receive an RDP packet */
 static STREAM
@@ -90,8 +94,8 @@ rdp_recv(rdpRdp * rdp, enum RDP_PDU_TYPE * type, uint16 * source)
 		}
 		else if (sec_type == SEC_RECV_FAST_PATH)
 		{
-			/* rdp5_process should move rdp->next_packet ok */
-			rdp5_process(rdp, rdp->rdp_s);
+			/* process_fp should move rdp->next_packet ok */
+			process_fp(rdp, rdp->rdp_s);
 			return rdp->rdp_s;
 		}
 		else if (sec_type == SEC_RECV_REDIRECT)
@@ -211,6 +215,23 @@ static void
 rdp_fp_send(rdpRdp * rdp, STREAM s)
 {
 	sec_fp_send(rdp->sec, s, rdp->settings->encryption ? SEC_ENCRYPT : 0);
+}
+
+int
+rdp_send_frame_ack(rdpRdp * rdp, int frame_id)
+{
+	STREAM s;
+
+	if (rdp->send_frame_ack == 0)
+	{
+		return 0;
+	}
+	printf("send_frame_ack: frame_id %d\n", frame_id);
+	s = rdp_init_data(rdp, 4);
+	out_uint32_le(s, frame_id);
+	s_mark_end(s);
+	rdp_send_data(rdp, s, 56);
+	return 0;
 }
 
 /* Convert str from DEFAULT_CODEPAGE to WINDOWS_CODEPAGE and return buffer like xstrdup.
@@ -472,6 +493,10 @@ rdp_send_client_info(rdpRdp * rdp, uint32 flags, char *domain_name,
 		out_uint8a(s, clientDir, cbClientDir + 2);		/* clientDir */
 		rdp_out_client_timezone_info(rdp, s);			/* clientTimeZone (172 bytes) */
 		out_uint32_le(s, 0);					/* clientSessionId, should be set to zero */
+		if (rdp->settings->performanceflags == PERF_FLAG_NONE)
+		{
+			rdp->settings->performanceflags |= PERF_ENABLE_DESKTOP_COMPOSITION;
+		}
 		out_uint32_le(s, rdp->settings->performanceflags);	/* performanceFlags */
 		out_uint16_le(s, 0);					/* cbAutoReconnectLen */
 		/* autoReconnectCookie */ /* FIXME: populate this field */
@@ -789,6 +814,34 @@ rdp_send_confirm_active(rdpRdp * rdp)
 		rdp_out_rail_capset(caps);
 		rdp_out_window_capset(caps);
 	}
+	if (rdp->got_large_pointer_caps)
+	{
+		numberCapabilities++;
+		rdp_out_large_pointer_capset(rdp, caps);
+	}
+	if (rdp->got_frame_ack_caps)
+	{
+		if (rdp->settings->use_frame_ack)
+		{
+			numberCapabilities++;
+			rdp_out_frame_ack_capset(rdp, caps);
+		}
+	}
+	if (rdp->got_surface_commands_caps)
+	{
+		numberCapabilities++;
+		rdp_out_surface_commands_capset(rdp, caps);
+	}
+	if (rdp->got_multifragmentupdate_caps)
+	{
+		numberCapabilities++;
+		rdp_out_multifragmentupdate_capset(rdp, caps);
+	}
+	if (rdp->got_bitmap_codecs_caps)
+	{
+		numberCapabilities++;
+		rdp_out_bitmap_codecs_capset(rdp, caps);
+	}
 	s_mark_end(caps);
 	caplen = (int) (caps->end - caps->data);
 
@@ -934,7 +987,11 @@ rdp_process_server_caps(rdpRdp * rdp, STREAM s, uint16 length)
 				break;
 
 			case CAPSET_TYPE_BITMAP_CODECS:
-				/* TODO: utilize advertised support for NSCodec and RemoteFX Bitmap Codecs */
+				rdp_process_bitmap_codecs_capset(rdp, s, lengthCapability);
+				break;
+
+			case CAPSET_TYPE_FRAME_ACKNOWLEDGE:
+				rdp_process_frame_ack_capset(rdp, s);
 				break;
 
 			default:
@@ -1018,12 +1075,6 @@ process_color_pointer_common(rdpRdp * rdp, STREAM s, int bpp)
 	in_uint16_le(s, datalen);
 	in_uint8p(s, data, datalen);
 	in_uint8p(s, mask, masklen);
-	if ((width != 32) || (height != 32))
-	{
-		/* TODO remove this warning if non 32x32 cursors prove reliable */
-		ui_warning(rdp->inst, "process_color_pointer_common: "
-			"width %d height %d bpp %d\n", width, height, bpp);
-	}
 	x = MAX(x, 0);
 	x = MIN(x, width - 1);
 	y = MAX(y, 0);
@@ -1490,6 +1541,143 @@ process_redirect_pdu(rdpRdp * rdp, STREAM s)
 	in_uint8s(s, length - (s->p - s_start));
 }
 
+static void
+process_fp(rdpRdp * rdp, STREAM s)
+{
+	uint16 count, x, y;
+	uint8 type, ctype;
+	uint8 *next;
+	int frag_bits;
+	int comp_bits;
+	int length;
+	int skip_switch;
+	uint32 roff, rlen;
+	STREAM ns = &(rdp->mppc_dict.ns);
+	STREAM ts;
+	STREAM fd_s;
+
+	ui_begin_update(rdp->inst);
+	while (s->p < s->end)
+	{
+		skip_switch = 0;
+		in_uint8(s, type);
+		frag_bits = (type & 0x30) >> 4;
+		comp_bits = (type & 0xc0) >> 6;
+		type = type & 0xf;
+		if (comp_bits & 0x2) /* FASTPATH_OUTPUT_COMPRESSION_USED */
+		{
+			in_uint8(s, ctype);
+			in_uint16_le(s, length);
+		}
+		else
+		{
+			ctype = 0;
+			in_uint16_le(s, length);
+		}
+		rdp->next_packet = next = s->p + length;
+		if (ctype & RDP_MPPC_COMPRESSED)
+		{
+			if (mppc_expand(rdp, s->p, length, ctype, &roff, &rlen) == -1)
+				ui_error(rdp->inst, "error while decompressing packet");
+			ns->data = (uint8 *) xrealloc(ns->data, rlen);
+			memcpy(ns->data, rdp->mppc_dict.hist + roff, rlen);
+			ns->size = rlen;
+			ns->end = ns->data + ns->size;
+			ns->p = ns->data;
+			ns->rdp_hdr = ns->p;
+			length = rlen;
+			ts = ns;
+		}
+		else
+		{
+			ts = s;
+		}
+		if ((frag_bits != 0) && (type == 4) &&
+			(rdp->settings->ui_decode_flags & 2))
+		{
+			ui_decode(rdp->inst, ts->p, (int) (ts->end - ts->p));
+			skip_switch = 1;
+		}
+		else if (frag_bits != 0)
+		{
+			fd_s = rdp->fragment_data;
+			switch (frag_bits)
+			{
+				case 1: /* FASTPATH_FRAGMENT_LAST */
+					out_uint8a(fd_s, ts->p, length);
+					fd_s->end = fd_s->p;
+					fd_s->p = fd_s->data;
+					ts = fd_s;
+					break;
+				case 2: /* FASTPATH_FRAGMENT_FIRST */
+					skip_switch = 1;
+					fd_s->p = fd_s->data;
+					out_uint8a(fd_s, ts->p, length);
+					break;
+				case 3: /* FASTPATH_FRAGMENT_NEXT */
+					skip_switch = 1;
+					out_uint8a(fd_s, ts->p, length);
+					break;
+			}
+		}
+		if (skip_switch)
+		{
+			s->p = next;
+			continue;
+		}
+		switch (type)
+		{
+			case 0: /* update orders */
+				in_uint16_le(ts, count);
+				process_orders(rdp->orders, ts, count);
+				break;
+			case 1: /* update bitmap */
+				in_uint8s(ts, 2); /* part length */
+				process_bitmap_updates(rdp, ts);
+				break;
+			case 2: /* update palette */
+				in_uint8s(ts, 2); /* uint16 = 2 */
+				process_palette(rdp, ts);
+				break;
+			case 3: /* update synchronize */
+				break;
+			case 4: /* surface commands */
+				if (rdp->settings->ui_decode_flags & 3)
+				{
+					ui_decode(rdp->inst, ts->p, (int) (ts->end - ts->p));
+				}
+				else
+				{
+					surface_cmd(rdp, ts);
+				}
+				break;
+			case 5: /* null pointer */
+				ui_set_null_cursor(rdp->inst);
+				break;
+			case 6: /* default pointer */
+				break;
+			case 8: /* pointer position */
+				in_uint16_le(ts, x);
+				in_uint16_le(ts, y);
+				ui_move_pointer(rdp->inst, x, y);
+				break;
+			case 9: /* color pointer */
+				process_color_pointer_pdu(rdp, ts);
+				break;
+			case 10:  /* cached pointer */
+				process_cached_pointer_pdu(rdp, ts);
+				break;
+			case 11:
+				process_new_pointer_pdu(rdp, ts);
+				break;
+			default:
+				ui_unimpl(rdp->inst, "RDP5 opcode %d\n", type);
+		}
+		s->p = next;
+	}
+	ui_end_update(rdp->inst);
+}
+
 /* used in uiports and rdp_main_loop, processes the rdp packets waiting */
 RD_BOOL
 rdp_loop(rdpRdp * rdp, RD_BOOL * deactivated)
@@ -1651,6 +1839,8 @@ rdp_new(struct rdp_set *settings, struct rdp_inst *inst)
 void
 rdp_free(rdpRdp * rdp)
 {
+	int index;
+
 	if (rdp != NULL)
 	{
 #ifdef HAVE_ICONV
@@ -1671,6 +1861,11 @@ rdp_free(rdpRdp * rdp)
 		xfree(rdp->redirect_target_fqdn);
 		xfree(rdp->redirect_target_netbios_name);
 		xfree(rdp->redirect_target_net_addresses);
+		for (index = 0; index < MAX_BITMAP_CODECS; index++)
+		{
+			stream_delete(rdp->out_codec_caps[index]);
+		}
+		stream_delete(rdp->fragment_data);
 		xfree(rdp);
 	}
 }

@@ -1,8 +1,8 @@
 /*
    FreeRDP: A Remote Desktop Protocol client.
-   RDP Settings
+   RDP settings
 
-   Copyright (C) Jay Sorg 2009
+   Copyright (C) Jay Sorg 2009-2011
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -73,6 +73,9 @@ struct rdp_set
 	int triblt;
 	int new_cursors;
 	int bulk_compression;
+	int rfx_flags; /* 0 no remotefx */
+	int ui_decode_flags;
+	int use_frame_ack;
 	int num_channels;
 	struct rdp_chan channels[16];
 	struct rdp_ext_set extensions[16];

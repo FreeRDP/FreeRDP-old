@@ -111,6 +111,7 @@ out_args(void)
 #endif
 		"\t--plugin: load a virtual channel plugin\n"
 		"\t--no-osb: disable off screen bitmaps, default on\n"
+		"\t--rfx: ask for RemoteFX session\n"
 		"\t--version: Print out the version and exit\n"
 		"\t-h: show this help\n";
 	printf("%s\n", help);
@@ -319,6 +320,12 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 		else if (strcmp("--no-osb", argv[*pindex]) == 0)
 		{
 			settings->off_screen_bitmaps = 0;
+		}
+		else if (strcmp("--rfx", argv[*pindex]) == 0)
+		{
+			settings->rfx_flags = 1;
+			settings->ui_decode_flags = 0;
+			settings->use_frame_ack = 1;
 		}
 		else if (strcmp("-f", argv[*pindex]) == 0)
 		{

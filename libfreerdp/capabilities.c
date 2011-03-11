@@ -23,6 +23,8 @@
 #include "pstcache.h"
 #include "capabilities.h"
 #include "stream.h"
+#include "mem.h"
+#include "surface.h"
 
 typedef uint8 * capsetHeaderRef;
 
@@ -289,7 +291,7 @@ rdp_out_bitmapcache_rev2_capset(rdpRdp * rdp, STREAM s)
 	capsetHeaderRef header;
 
 	header = rdp_skip_capset_header(s);
-	out_uint16_le(s, rdp->settings->bitmap_cache_persist_enable ? 2 : 0); // CacheFlags
+	out_uint16_le(s, rdp->settings->bitmap_cache_persist_enable ? 3 : 2); // CacheFlags
 	out_uint8s(s, 1); // pad
 	out_uint8(s, 3); // numCellCaches
 
@@ -782,12 +784,12 @@ rdp_process_window_capset(rdpRdp * rdp, STREAM s)
 
 /* Output large pointer capability set */
 void
-rdp_out_large_pointer_capset(STREAM s)
+rdp_out_large_pointer_capset(rdpRdp * rdp, STREAM s)
 {
 	capsetHeaderRef header;
 
 	header = rdp_skip_capset_header(s);
-	out_uint16_le(s, LARGE_POINTER_FLAG_96x96); // largePointerSupportFlags
+	out_uint16_le(s, rdp->large_pointers); // largePointerSupportFlags
 	rdp_out_capset_header(s, header, CAPSET_TYPE_LARGE_POINTER);
 }
 
@@ -795,16 +797,22 @@ rdp_out_large_pointer_capset(STREAM s)
 void
 rdp_process_large_pointer_capset(rdpRdp * rdp, STREAM s)
 {
-	uint16 largePointerSupportFlags;
-	in_uint16_le(s, largePointerSupportFlags); // largePointerSupportFlags
+	rdp->got_large_pointer_caps = 1;
+	in_uint16_le(s, rdp->large_pointers); // largePointerSupportFlags
 }
 
 /* Process surface commands capability set */
 void
 rdp_process_surface_commands_capset(rdpRdp * rdp, STREAM s)
 {
-	uint32 cmdFlags;
-	in_uint32_le(s, cmdFlags); // cmdFlags
+	rdp->got_surface_commands_caps = 1;
+	in_uint32_le(s, rdp->surface_commands);
+	/* only support
+	SURFCMDS_SETSURFACEBITS    0x02
+	SURFCMDS_FRAMEMARKER       0x10
+	SURFCMDS_STREAMSURFACEBITS 0x40 */
+	rdp->surface_commands &= (0x02 | 0x10 | 0x20 | 0x40);
+	printf("got surface commands 0x%8.8x\n", rdp->surface_commands);
 	/* Reserved (4 bytes) */
 }
 
@@ -829,7 +837,7 @@ rdp_process_compdesk_capset(rdpRdp * rdp, STREAM s)
 
 /* Output multifragment update capability set */
 void
-rdp_out_multifragmentupdate_capset(STREAM s)
+rdp_out_multifragmentupdate_capset(rdpRdp * rdp, STREAM s)
 {
 	capsetHeaderRef header;
 
@@ -840,7 +848,7 @@ rdp_out_multifragmentupdate_capset(STREAM s)
 	* fast-path update. The size of this buffer places a cap on the
 	* size of the largest fast-path update that can be fragmented.
 	*/
-	out_uint32_le(s, 0x2000); // maxRequestSize
+	out_uint32_le(s, rdp->multifragmentupdate_request_size);
 	rdp_out_capset_header(s, header, CAPSET_TYPE_MULTIFRAGMENTUPDATE);
 }
 
@@ -848,53 +856,126 @@ rdp_out_multifragmentupdate_capset(STREAM s)
 void
 rdp_process_multifragmentupdate_capset(rdpRdp * rdp, STREAM s)
 {
-	uint32 maxRequestSize;
-	in_uint32_le(s, maxRequestSize); // maxRequestSize
+	rdp->got_multifragmentupdate_caps = 1;
+	in_uint32_le(s, rdp->multifragmentupdate_request_size);
+	rdp->fragment_data = stream_new(rdp->multifragmentupdate_request_size);
 }
 
 /* Output surface commands capability set */
 void
-rdp_out_surface_commands_capset(STREAM s)
+rdp_out_surface_commands_capset(rdpRdp * rdp, STREAM s)
 {
 	capsetHeaderRef header;
 
 	header = rdp_skip_capset_header(s);
-	out_uint32_le(s, SURFCMDS_SETSURFACEBITS); // cmdFlags
+	out_uint32_le(s, rdp->surface_commands); // cmdFlags
 	out_uint32_le(s, 0); // reserved for future use
 	rdp_out_capset_header(s, header, CAPSET_TYPE_SURFACE_COMMANDS);
 }
 
-/* Output a bitmap codec structure */
-void
-rdp_out_bitmap_codec(STREAM s)
+static int
+rdp_caps_add_codec(rdpRdp * rdp, STREAM s)
 {
-	// codecGUID (16 bytes)
-	out_uint32_le(s, 0); // codecGUID1
-	out_uint16_le(s, 0); // codecGUID2
-	out_uint16_le(s, 0); // codecGUID3
-	out_uint8(s, 0); // codecGUID4
-	out_uint8(s, 0); // codecGUID5
-	out_uint8(s, 0); // codecGUID6
-	out_uint8(s, 0); // codecGUID7
-	out_uint8(s, 0); // codecGUID8
-	out_uint8(s, 0); // codecGUID9
-	out_uint8(s, 0); // codecGUID10
-	out_uint8(s, 0); // codecGUID11
+	int index;
 
-	out_uint8(s, 0); // codecID
-	out_uint32_le(s, 0); // codecPropertiesLength
-	//out_uint8s(s, 0); // codecProperties
+	for (index = 0; index < MAX_BITMAP_CODECS; index++)
+	{
+		if (rdp->out_codec_caps[index] == NULL)
+		{
+			rdp->out_codec_caps[index] = s;
+			return 0;
+		}
+	}
+	return 1;
+}
+
+/* Process bitmap codec capability set */
+void
+rdp_process_bitmap_codecs_capset(rdpRdp * rdp, STREAM s, int size)
+{
+	int num_codecs;
+	int index;
+	int codec_id;
+	int codec_properties_size;
+	uint8 * codec_guid;
+	uint8 * codec_property;
+	STREAM out_codec_s;
+
+	printf("rdp_process_bitmap_codecs_capset:\n");
+	hexdump(s->p, size);
+	in_uint8(s, num_codecs);
+	for (index = 0; index < num_codecs; index++)
+	{
+		in_uint8p(s, codec_guid, 16);
+		in_uint8(s, codec_id);
+		in_uint16_le(s, codec_properties_size);
+		in_uint8p(s, codec_property, codec_properties_size);
+		out_codec_s = surface_codec_cap(rdp, codec_guid, codec_id,
+			codec_property, codec_properties_size);
+		if (out_codec_s != NULL)
+		{
+			if (rdp_caps_add_codec(rdp, out_codec_s) == 0)
+			{
+				printf("rdp_process_bitmap_codecs_capset: added ok\n");
+				rdp->got_bitmap_codecs_caps = 1;
+			}
+			else
+			{
+				stream_delete(out_codec_s);
+			}
+		}
+	}
 }
 
 /* Output bitmap codecs capability set */
 void
-rdp_out_bitmap_codecs_capset(STREAM s)
+rdp_out_bitmap_codecs_capset(rdpRdp * rdp, STREAM s)
+{
+	capsetHeaderRef header;
+	uint8 * count_ptr;
+	int index;
+	int out_count;
+	int out_bytes;
+	STREAM ls;
+
+	printf("rdp_out_bitmap_codecs_capset:\n");
+	out_count = 0;
+	header = rdp_skip_capset_header(s);
+	count_ptr = s->p;
+	out_uint8s(s, 1);
+	for (index = 0; index < MAX_BITMAP_CODECS; index++)
+	{
+		ls = rdp->out_codec_caps[index];
+		if (ls != NULL)
+		{
+			out_bytes = (int) (ls->end - ls->data);
+			out_uint8a(s, ls->data, out_bytes);
+			stream_delete(ls);
+			rdp->out_codec_caps[index] = NULL;
+			out_count++;
+		}
+	}
+	*count_ptr = out_count;
+	rdp_out_capset_header(s, header, CAPSET_TYPE_BITMAP_CODECS);
+	hexdump(count_ptr, s->p - count_ptr);
+}
+
+void
+rdp_process_frame_ack_capset(rdpRdp * rdp, STREAM s)
+{
+	rdp->got_frame_ack_caps = 1;
+	in_uint32_le(s, rdp->frame_ack);
+	printf("rdp_process_frame_ack_capset: 0x%8.8x\n", rdp->frame_ack);
+}
+
+void
+rdp_out_frame_ack_capset(rdpRdp * rdp, STREAM s)
 {
 	capsetHeaderRef header;
 
+	printf("rdp_out_frame_ack_capset:\n");
 	header = rdp_skip_capset_header(s);
-	out_uint8(s, 0); // bitmapCodecCount, the number of bitmap codec entries
-	// bitmapCodecArray
-	// rdp_out_bitmap_codec(s, ...);
-	rdp_out_capset_header(s, header, CAPSET_TYPE_BITMAP_CODECS);
+	out_uint32_le(s, 2); /* in flight frames */
+	rdp_out_capset_header(s, header, CAPSET_TYPE_FRAME_ACKNOWLEDGE);
+	rdp->send_frame_ack = 1;
 }
