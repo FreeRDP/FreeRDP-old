@@ -116,6 +116,14 @@ wf_event_proc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 #endif
 			wfi->inst->rdp_send_input(wfi->inst, RDP_INPUT_SCANCODE,
 				RDP_KEYRELEASE, SCANCODE(lParam), 0);
+			if (SCANCODE(lParam) == 56)
+			{
+#ifdef WITH_DEBUG_KBD
+				printf("faking key up for left ctrl = 29 for key up of AltGr = 56\n");
+#endif
+				wfi->inst->rdp_send_input(wfi->inst, RDP_INPUT_SCANCODE,
+					RDP_KEYRELEASE, 29, 0);
+			}
 		}
 		break;
 
