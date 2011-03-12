@@ -461,6 +461,15 @@ gdi_ui_desktop_restore(struct rdp_inst * inst, int offset, int x, int y, int cx,
 	DEBUG_GDI("gdi_ui_desktop_restore\n");
 }
 
+/**
+ * Create a new glyph.
+ * @param inst current instance
+ * @param width glyph width
+ * @param height glyph height
+ * @param data glyph data
+ * @return new glyph
+ */
+
 static RD_HGLYPH
 gdi_ui_create_glyph(struct rdp_inst * inst, int width, int height, uint8 * data)
 {
@@ -484,11 +493,26 @@ gdi_ui_create_glyph(struct rdp_inst * inst, int width, int height, uint8 * data)
 	return (RD_HGLYPH) gdi_bmp;
 }
 
+/**
+ * Destroy a glyph.
+ * @param inst current instance
+ * @param glyph glyph
+ */
+
 static void
 gdi_ui_destroy_glyph(struct rdp_inst * inst, RD_HGLYPH glyph)
 {
 	gdi_bitmap_free((gdi_bitmap*) glyph);
 }
+
+/**
+ * Create a new bitmap.
+ * @param inst current instance
+ * @param width bitmap width
+ * @param height bitmap height
+ * @param data bitmap data
+ * @return new bitmap
+ */
 
 static RD_HBITMAP
 gdi_ui_create_bitmap(struct rdp_inst * inst, int width, int height, uint8* data)
@@ -503,6 +527,18 @@ gdi_ui_create_bitmap(struct rdp_inst * inst, int width, int height, uint8* data)
 	return (RD_HBITMAP) gdi_bmp;
 }
 
+/**
+ * Paint a bitmap without persisting it in the bitmap cache.
+ * @param inst current instance
+ * @param x x position
+ * @param y y position
+ * @param cx delta x
+ * @param cy delta y
+ * @param width bitmap width
+ * @param height bitmap height
+ * @param data bitmap data
+ */
+
 static void
 gdi_ui_paint_bitmap(struct rdp_inst * inst, int x, int y, int cx, int cy, int width, int height, uint8 * data)
 {
@@ -516,11 +552,29 @@ gdi_ui_paint_bitmap(struct rdp_inst * inst, int x, int y, int cx, int cy, int wi
 	inst->ui_destroy_bitmap(inst, (RD_HBITMAP) gdi_bmp);
 }
 
+/**
+ * Destroy a bitmap.
+ * @param inst current instance
+ * @param bmp bitmap
+ */
+
 static void
 gdi_ui_destroy_bitmap(struct rdp_inst * inst, RD_HBITMAP bmp)
 {
 	gdi_bitmap_free((gdi_bitmap*) bmp);
 }
+
+/**
+ * Draw a line using a pen.
+ * LineTo (LINETO_ORDER) http://msdn.microsoft.com/en-us/library/cc241589/
+ * @param inst current instance
+ * @param opcode raster operation code
+ * @param startx line starting x position
+ * @param starty line starting y position
+ * @param endx line ending x position
+ * @param endy line ending y position
+ * @param pen pen
+ */
 
 static void
 gdi_ui_line(struct rdp_inst * inst, uint8 opcode, int startx, int starty, int endx, int endy, RD_PEN * pen)
@@ -548,6 +602,16 @@ gdi_ui_line(struct rdp_inst * inst, uint8 opcode, int startx, int starty, int en
 	DeleteObject((HGDIOBJ) hPen);
 }
 
+/**
+ * Draw a rectangle using a color.
+ * @param inst current instance
+ * @param x x position
+ * @param y y position
+ * @param cx delta x
+ * @param cy delta y
+ * @param color color
+ */
+
 static void
 gdi_ui_rect(struct rdp_inst * inst, int x, int y, int cx, int cy, int color)
 {
@@ -563,11 +627,35 @@ gdi_ui_rect(struct rdp_inst * inst, int x, int y, int cx, int cy, int color)
 	FillRect(gdi->drawing->hdc, &rect, hBrush);
 }
 
+/**
+ * Draw a polygon using a brush.
+ * PolygonSC (POLYGON_SC_ORDER) http://msdn.microsoft.com/en-us/library/cc241594/
+ * PolygonCB (POLYGON_CB_ORDER) http://msdn.microsoft.com/en-us/library/cc241595/
+ * @param inst current instance
+ * @param opcode raster operation code
+ * @param fillmode fill mode
+ * @param point array of points
+ * @param npoints number of points
+ * @param brush brush
+ * @param bgcolor background color
+ * @param fgcolor foreground color
+ */
+
 static void
 gdi_ui_polygon(struct rdp_inst * inst, uint8 opcode, uint8 fillmode, RD_POINT * point, int npoints, RD_BRUSH * brush, int bgcolor, int fgcolor)
 {
 	DEBUG_GDI("ui_polygon\n");
 }
+
+/**
+ * Draw a solid color polyline.
+ * Polyline (POLYLINE_ORDER) http://msdn.microsoft.com/en-us/library/cc241596/
+ * @param inst current instance
+ * @param opcode raster operation code
+ * @param points array of points
+ * @param npoints number of points
+ * @param pen pen
+ */
 
 static void
 gdi_ui_polyline(struct rdp_inst * inst, uint8 opcode, RD_POINT * points, int npoints, RD_PEN * pen)
@@ -575,11 +663,34 @@ gdi_ui_polyline(struct rdp_inst * inst, uint8 opcode, RD_POINT * points, int npo
 	DEBUG_GDI("ui_polyline\n");
 }
 
+/**
+ * Draw an ellipse using a brush.
+ * EclipseSC (ELLIPSE_SC_ORDER) http://msdn.microsoft.com/en-us/library/cc241597/
+ * EclipseCB (ELLIPSE_CB_ORDER) http://msdn.microsoft.com/en-us/library/cc241599/
+ * @param inst current instance
+ * @param opcode raster operation code
+ * @param fillmode fill mode
+ * @param x x position
+ * @param y y position
+ * @param cx delta x
+ * @param cy delta y
+ * @param brush brush
+ * @param bgcolor background color
+ * @param fgcolor foreground color
+ */
+
 static void
 gdi_ui_ellipse(struct rdp_inst * inst, uint8 opcode, uint8 fillmode, int x, int y, int cx, int cy, RD_BRUSH * brush, int bgcolor, int fgcolor)
 {
 	DEBUG_GDI("ui_ellipse\n");
 }
+
+/**
+ * Start drawing a set of glyphs.
+ * @param inst current instance
+ * @param bgcolor background color
+ * @param fgcolor foreground color
+ */
 
 static void
 gdi_ui_start_draw_glyphs(struct rdp_inst * inst, int bgcolor, int fgcolor)
@@ -588,6 +699,16 @@ gdi_ui_start_draw_glyphs(struct rdp_inst * inst, int bgcolor, int fgcolor)
 	gdi_color_convert(&(gdi->pixel), fgcolor, gdi->srcBpp, gdi->palette);
 	gdi->textColor = SetTextColor(gdi->drawing->hdc, PixelRGB(gdi->pixel));
 }
+
+/**
+ * Draw a single glyph.
+ * @param inst current instance
+ * @param x x position
+ * @param y y position
+ * @param cx delta x
+ * @param cy delta y
+ * @param glyph glyph
+ */
 
 static void
 gdi_ui_draw_glyph(struct rdp_inst * inst, int x, int y, int cx, int cy, RD_HGLYPH glyph)
@@ -599,12 +720,32 @@ gdi_ui_draw_glyph(struct rdp_inst * inst, int x, int y, int cx, int cy, RD_HGLYP
 	BitBlt(gdi->drawing->hdc, x, y, cx, cy, gdi_bmp->hdc, 0, 0, DSPDxax);
 }
 
+/**
+ * End drawing a set of glyphs.
+ * @param inst current instance
+ * @param x x position
+ * @param y y position
+ * @param cx delta x
+ * @param cy delta y
+ */
+
 static void
 gdi_ui_end_draw_glyphs(struct rdp_inst * inst, int x, int y, int cx, int cy)
 {
 	GDI *gdi = GET_GDI(inst);
 	SetTextColor(gdi->drawing->hdc, gdi->textColor);
 }
+
+/**
+ * DstBlt (DSTBLT_ORDER) primary drawing order.
+ * http://msdn.microsoft.com/en-us/library/cc241587/
+ * @param inst current instance
+ * @param opcode raster operation code
+ * @param x x position
+ * @param y y position
+ * @param cx delta x
+ * @param cy delta y
+ */
 
 static void
 gdi_ui_destblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy)
@@ -614,6 +755,20 @@ gdi_ui_destblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int c
 	DEBUG_GDI("ui_destblt: x: %d y: %d cx: %d cy: %d rop: 0x%X\n", x, y, cx, cy, rop3_code_table[opcode]);
 	BitBlt(gdi->drawing->hdc, x, y, cx, cy, NULL, 0, 0, gdi_rop3_code(opcode));
 }
+
+/**
+ * PatBlt (PATBLT_ORDER) primary drawing order.
+ * http://msdn.microsoft.com/en-us/library/cc241602/
+ * @param inst current instance
+ * @param opcode raster operation code
+ * @param x x position
+ * @param y y position
+ * @param cx delta x
+ * @param cy delta y
+ * @param brush brush
+ * @param bgcolor background color
+ * @param fgcolor foreground color
+ */
 
 static void
 gdi_ui_patblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy, RD_BRUSH * brush, int bgcolor, int fgcolor)
@@ -667,6 +822,19 @@ gdi_ui_patblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy
 	}
 }
 
+/**
+ * ScrBlt (SCRBLT_ORDER) primary drawing order.
+ * http://msdn.microsoft.com/en-us/library/cc241606/
+ * @param inst current instance
+ * @param opcode raster operation code
+ * @param x x position
+ * @param y y position
+ * @param cx delta x
+ * @param cy delta y
+ * @param srcx source x position
+ * @param srcy source y position
+ */
+
 static void
 gdi_ui_screenblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy, int srcx, int srcy)
 {
@@ -677,6 +845,20 @@ gdi_ui_screenblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int
 	
 	BitBlt(gdi->drawing->hdc, x, y, cx, cy, gdi->primary->hdc, srcx, srcy, gdi_rop3_code(opcode));
 }
+
+/**
+ * MemBlt (MEMBLT_ORDER) primary drawing order.
+ * http://msdn.microsoft.com/en-us/library/cc241608/
+ * @param inst current instance
+ * @param opcode raster operation code
+ * @param x x position
+ * @param y y position
+ * @param cx delta x
+ * @param cy delta y
+ * @param src source bitmap
+ * @param srcx source bitmap x position
+ * @param srcy source bitmap y position
+ */
 
 static void
 gdi_ui_memblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy, RD_HBITMAP src, int srcx, int srcy)
@@ -691,12 +873,37 @@ gdi_ui_memblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy
 	BitBlt(gdi->drawing->hdc, x, y, cx, cy, gdi_bmp->hdc, srcx, srcy, gdi_rop3_code(opcode));
 }
 
+/**
+ * Mem3Blt (MEM3BLT_ORDER) primary drawing order.
+ * http://msdn.microsoft.com/en-us/library/cc241588/
+ * @param inst current instance
+ * @param opcode raster operation code
+ * @param x x position
+ * @param y y position
+ * @param cx delta x
+ * @param cy delta y
+ * @param src source bitmap
+ * @param srcx source bitmap x position
+ * @param srcy source bitmap y position
+ * @param brush brush
+ * @param bgcolor background color
+ * @param fgcolor foreground color
+ */
+
 static void
 gdi_ui_mem3blt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy,
 	RD_HBITMAP src, int srcx, int srcy, RD_BRUSH * brush, int bgcolor, int fgcolor)
 {
 	DEBUG_GDI("gdi_ui_mem3blt opcode: 0x%X\n", rop3_code_table[opcode]);
 }
+
+/**
+ * Cache color table (CACHE_COLOR_TABLE_ORDER).
+ * http://msdn.microsoft.com/en-us/library/cc241617/
+ * @param inst current instance
+ * @param colors color table
+ * @return new palette created from color table
+ */
 
 static RD_HPALETTE
 gdi_ui_create_palette(struct rdp_inst * inst, RD_PALETTE * colors)
@@ -728,6 +935,12 @@ gdi_ui_create_palette(struct rdp_inst * inst, RD_PALETTE * colors)
 	return (RD_HPALETTE) palette;
 }
 
+/**
+ * Set the current palette.
+ * @param inst current instance
+ * @param palette new color palette
+ */
+
 static void
 gdi_ui_set_palette(struct rdp_inst * inst, RD_HPALETTE palette)
 {
@@ -737,6 +950,15 @@ gdi_ui_set_palette(struct rdp_inst * inst, RD_HPALETTE palette)
 	gdi->palette = (HPALETTE) palette;
 }
 
+/**
+ * Set current clipping region.
+ * @param inst current instance
+ * @param x x position
+ * @param y y position
+ * @param cx delta x
+ * @param cy delta y
+ */
+
 static void
 gdi_ui_set_clipping_region(struct rdp_inst * inst, int x, int y, int cx, int cy)
 {
@@ -744,12 +966,26 @@ gdi_ui_set_clipping_region(struct rdp_inst * inst, int x, int y, int cx, int cy)
 	SetClipRgn(gdi->drawing->hdc, x, y, cx, cy);
 }
 
+/**
+ * Reset the current clipping region.
+ * @param inst current instance
+ */
+
 static void
 gdi_ui_reset_clipping_region(struct rdp_inst * inst)
 {
 	GDI *gdi = GET_GDI(inst);
 	SetNullClipRgn(gdi->drawing->hdc);
 }
+
+/**
+ * Create new drawing surface
+ * @param inst current instance
+ * @param width surface width
+ * @param height surface height
+ * @param old_surface old drawing surface
+ * @return new drawing surface
+ */
 
 static RD_HBITMAP
 gdi_ui_create_surface(struct rdp_inst * inst, int width, int height, RD_HBITMAP old_surface)
@@ -776,6 +1012,13 @@ gdi_ui_create_surface(struct rdp_inst * inst, int width, int height, RD_HBITMAP 
 	return (RD_HBITMAP) gdi_bmp;
 }
 
+/**
+ * Switch Surface (SWITCH_SURFACE_ORDER).
+ * http://msdn.microsoft.com/en-us/library/cc241630/
+ * @param inst current instance
+ * @param surface new surface
+ */
+
 static void
 gdi_ui_switch_surface(struct rdp_inst * inst, RD_HBITMAP surface)
 {
@@ -792,6 +1035,12 @@ gdi_ui_switch_surface(struct rdp_inst * inst, RD_HBITMAP surface)
 		gdi->drawing = (gdi_bitmap*) gdi->primary;
 	}
 }
+
+/**
+ * Destroy a surface.
+ * @param inst
+ * @param surface
+ */
 
 static void
 gdi_ui_destroy_surface(struct rdp_inst * inst, RD_HBITMAP surface)
@@ -810,6 +1059,12 @@ gdi_ui_destroy_surface(struct rdp_inst * inst, RD_HBITMAP surface)
 		gdi_bitmap_free((gdi_bitmap*) surface);
 	}
 }
+
+/**
+ * Register GDI callbacks with libfreerdp.
+ * @param inst current instance
+ * @return
+ */
 
 static int
 gdi_register_callbacks(rdpInst * inst)
@@ -843,6 +1098,12 @@ gdi_register_callbacks(rdpInst * inst)
 	inst->ui_destroy_surface = gdi_ui_destroy_surface;
 	return 0;
 }
+
+/**
+ * Initialize GDI
+ * @param inst current instance
+ * @return
+ */
 
 int
 gdi_init(rdpInst * inst)
