@@ -565,8 +565,8 @@ gdi_ui_destroy_bitmap(struct rdp_inst * inst, RD_HBITMAP bmp)
 }
 
 /**
- * Draw a line using a pen.
- * LineTo (LINETO_ORDER) http://msdn.microsoft.com/en-us/library/cc241589/
+ * Draw a line using a pen.\n
+ * LineTo (LINETO_ORDER) @msdn{cc241589}
  * @param inst current instance
  * @param opcode raster operation code
  * @param startx line starting x position
@@ -628,9 +628,9 @@ gdi_ui_rect(struct rdp_inst * inst, int x, int y, int cx, int cy, int color)
 }
 
 /**
- * Draw a polygon using a brush.
- * PolygonSC (POLYGON_SC_ORDER) http://msdn.microsoft.com/en-us/library/cc241594/
- * PolygonCB (POLYGON_CB_ORDER) http://msdn.microsoft.com/en-us/library/cc241595/
+ * Draw a polygon using a brush.\n
+ * PolygonSC (POLYGON_SC_ORDER) @msdn{cc241594}\n
+ * PolygonCB (POLYGON_CB_ORDER) @msdn{cc241595}
  * @param inst current instance
  * @param opcode raster operation code
  * @param fillmode fill mode
@@ -648,8 +648,8 @@ gdi_ui_polygon(struct rdp_inst * inst, uint8 opcode, uint8 fillmode, RD_POINT * 
 }
 
 /**
- * Draw a solid color polyline.
- * Polyline (POLYLINE_ORDER) http://msdn.microsoft.com/en-us/library/cc241596/
+ * Draw a solid color polyline.\n
+ * Polyline (POLYLINE_ORDER) @msdn{cc241596}
  * @param inst current instance
  * @param opcode raster operation code
  * @param points array of points
@@ -664,9 +664,9 @@ gdi_ui_polyline(struct rdp_inst * inst, uint8 opcode, RD_POINT * points, int npo
 }
 
 /**
- * Draw an ellipse using a brush.
- * EclipseSC (ELLIPSE_SC_ORDER) http://msdn.microsoft.com/en-us/library/cc241597/
- * EclipseCB (ELLIPSE_CB_ORDER) http://msdn.microsoft.com/en-us/library/cc241599/
+ * Draw an ellipse using a brush.\n
+ * EclipseSC (ELLIPSE_SC_ORDER) @msdn{cc241597}\n
+ * EclipseCB (ELLIPSE_CB_ORDER) @msdn{cc241599}
  * @param inst current instance
  * @param opcode raster operation code
  * @param fillmode fill mode
@@ -737,8 +737,8 @@ gdi_ui_end_draw_glyphs(struct rdp_inst * inst, int x, int y, int cx, int cy)
 }
 
 /**
- * DstBlt (DSTBLT_ORDER) primary drawing order.
- * http://msdn.microsoft.com/en-us/library/cc241587/
+ * DstBlt (DSTBLT_ORDER) primary drawing order.\n
+ * @msdn{cc241587}
  * @param inst current instance
  * @param opcode raster operation code
  * @param x x position
@@ -757,8 +757,8 @@ gdi_ui_destblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int c
 }
 
 /**
- * PatBlt (PATBLT_ORDER) primary drawing order.
- * http://msdn.microsoft.com/en-us/library/cc241602/
+ * PatBlt (PATBLT_ORDER) primary drawing order.\n
+ * @msdn{cc241602}
  * @param inst current instance
  * @param opcode raster operation code
  * @param x x position
@@ -823,8 +823,8 @@ gdi_ui_patblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy
 }
 
 /**
- * ScrBlt (SCRBLT_ORDER) primary drawing order.
- * http://msdn.microsoft.com/en-us/library/cc241606/
+ * ScrBlt (SCRBLT_ORDER) primary drawing order.\n
+ * @msdn{cc241606}
  * @param inst current instance
  * @param opcode raster operation code
  * @param x x position
@@ -847,8 +847,8 @@ gdi_ui_screenblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int
 }
 
 /**
- * MemBlt (MEMBLT_ORDER) primary drawing order.
- * http://msdn.microsoft.com/en-us/library/cc241608/
+ * MemBlt (MEMBLT_ORDER) primary drawing order.\n
+ * @msdn{cc241608}
  * @param inst current instance
  * @param opcode raster operation code
  * @param x x position
@@ -874,8 +874,8 @@ gdi_ui_memblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy
 }
 
 /**
- * Mem3Blt (MEM3BLT_ORDER) primary drawing order.
- * http://msdn.microsoft.com/en-us/library/cc241588/
+ * Mem3Blt (MEM3BLT_ORDER) primary drawing order.\n
+ * @msdn{cc241588}
  * @param inst current instance
  * @param opcode raster operation code
  * @param x x position
@@ -898,8 +898,8 @@ gdi_ui_mem3blt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int c
 }
 
 /**
- * Cache color table (CACHE_COLOR_TABLE_ORDER).
- * http://msdn.microsoft.com/en-us/library/cc241617/
+ * Cache color table (CACHE_COLOR_TABLE_ORDER).\n
+ * @msdn{cc241617}
  * @param inst current instance
  * @param colors color table
  * @return new palette created from color table
@@ -1014,7 +1014,7 @@ gdi_ui_create_surface(struct rdp_inst * inst, int width, int height, RD_HBITMAP 
 
 /**
  * Switch Surface (SWITCH_SURFACE_ORDER).
- * http://msdn.microsoft.com/en-us/library/cc241630/
+ * @msdn{cc241630}
  * @param inst current instance
  * @param surface new surface
  */

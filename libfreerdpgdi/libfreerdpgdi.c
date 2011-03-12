@@ -30,8 +30,8 @@
 #include "gdi_16bpp.h"
 
 /**
- * Get the current device context (a new one is created each time).
- * http://msdn.microsoft.com/en-us/library/dd144871/
+ * Get the current device context (a new one is created each time).\n
+ * @msdn{dd144871}
  * @return current device context
  */
 
@@ -48,8 +48,8 @@ HDC GetDC()
 }
 
 /**
- * Create a new device context compatible with the given device context.
- * http://msdn.microsoft.com/en-us/library/dd183489/
+ * Create a new device context compatible with the given device context.\n
+ * @msdn{dd183489}
  * @param hdc device context
  * @return new compatible device context
  */
@@ -67,8 +67,8 @@ HDC CreateCompatibleDC(HDC hdc)
 }
 
 /**
- * Create a new bitmap with the given width, height, color format and pixel buffer.
- * http://msdn.microsoft.com/en-us/library/dd183485/
+ * Create a new bitmap with the given width, height, color format and pixel buffer.\n
+ * @msdn{dd183485}
  * @param nWidth width
  * @param nHeight height
  * @param cBitsPerPixel bits per pixel
@@ -90,8 +90,8 @@ HBITMAP CreateBitmap(int nWidth, int nHeight, int cBitsPerPixel, char* data)
 }
 
 /**
- * Create a new bitmap of the given width and height compatible with the current device context.
- * http://msdn.microsoft.com/en-us/library/dd183488/
+ * Create a new bitmap of the given width and height compatible with the current device context.\n
+ * @msdn{dd183488}
  * @param hdc device context
  * @param nWidth width
  * @param nHeight height
@@ -182,8 +182,8 @@ int CompareBitmaps(HBITMAP hBmp1, HBITMAP hBmp2)
 }
 
 /**
- * Create a new pen
- * http://msdn.microsoft.com/en-us/library/dd183509/.
+ * Create a new pen.\n
+ * @msdn{dd183509}
  * @param fnPenStyle pen style
  * @param nWidth pen width
  * @param crColor pen color
@@ -201,8 +201,8 @@ HPEN CreatePen(int fnPenStyle, int nWidth, int crColor)
 }
 
 /**
- * Create a new palette.
- * http://msdn.microsoft.com/en-us/library/dd183507/
+ * Create a new palette.\n
+ * @msdn{dd183507}
  * @param lplgpl logical palette
  * @return new palette
  */
@@ -216,8 +216,8 @@ HPALETTE CreatePalette(LOGPALETTE *lplgpl)
 }
 
 /**
- * Create a new solid brush.
- * http://msdn.microsoft.com/en-us/library/dd183518/
+ * Create a new solid brush.\n
+ * @msdn{dd183518}
  * @param crColor brush color
  * @return new brush
  */
@@ -232,8 +232,8 @@ HBRUSH CreateSolidBrush(COLORREF crColor)
 }
 
 /**
- * Create a new pattern brush.
- * http://msdn.microsoft.com/en-us/library/dd183508/
+ * Create a new pattern brush.\n
+ * @msdn{dd183508}
  * @param hbmp pattern bitmap
  * @return new brush
  */
@@ -248,8 +248,8 @@ HBRUSH CreatePatternBrush(HBITMAP hbmp)
 }
 
 /**
- * Create a region from rectangular coordinates.
- * http://msdn.microsoft.com/en-us/library/dd183514/
+ * Create a region from rectangular coordinates.\n
+ * @msdn{dd183514}
  * @param nLeftRect x1
  * @param nTopRect y1
  * @param nRightRect x2
@@ -449,8 +449,8 @@ int CopyOverlap(int x, int y, int width, int height, int srcx, int srcy)
 }
 
 /**
- * Set current foreground draw mode.
- * http://msdn.microsoft.com/en-us/library/dd145088/
+ * Set current foreground draw mode.\n
+ * @msdn{dd145088}
  * @param hdc device context
  * @param fnDrawMode draw mode
  * @return previous draw mode
@@ -463,7 +463,15 @@ int SetROP2(HDC hdc, int fnDrawMode)
 	return prevDrawMode;
 }
 
-/* http://www.cs.toronto.edu/~smalik/418/tutorial2_bresenham.pdf */
+/**
+ * Bresenham line drawing algorithm.\n
+ * http://www.cs.toronto.edu/~smalik/418/tutorial2_bresenham.pdf
+ * @param hdc device context
+ * @param x1 starting x position
+ * @param y1 starting y position
+ * @param x2 ending x position
+ * @param y2 ending y position
+ */
 
 static void
 bresenham(HDC hdc, int x1, int y1, int x2, int y2)
@@ -519,8 +527,8 @@ bresenham(HDC hdc, int x1, int y1, int x2, int y2)
 }
 
 /**
- * Draw a line from the current position to the given position.
- * http://msdn.microsoft.com/en-us/library/dd145029/
+ * Draw a line from the current position to the given position.\n
+ * @msdn{dd145029}
  * @param hdc device context
  * @param nXEnd ending x position
  * @param nYEnd ending y position
@@ -561,8 +569,8 @@ int MoveTo(HDC hdc, int X, int Y)
 }
 
 /**
- * Set the coordinates of a given rectangle.
- * http://msdn.microsoft.com/en-us/library/dd145085/
+ * Set the coordinates of a given rectangle.\n
+ * @msdn{dd145085}
  * @param rc rectangle
  * @param xLeft x1
  * @param yTop y1
@@ -633,8 +641,8 @@ int SetClipRgn(HDC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight)
 }
 
 /**
- * Get the current clipping region.
- * http://msdn.microsoft.com/en-us/library/dd144866/
+ * Get the current clipping region.\n
+ * @msdn{dd144866}
  * @param hdc device context
  * @return clipping region
  */
@@ -772,8 +780,8 @@ int ClipCoords(HDC hdc, int *x, int *y, int *w, int *h, int *srcx, int *srcy)
 }
 
 /**
- * Invalidate a given region, such that it is redrawn on the next region update.
- * http://msdn.microsoft.com/en-us/library/dd145003/
+ * Invalidate a given region, such that it is redrawn on the next region update.\n
+ * @msdn{dd145003}
  * @param hdc device context
  * @param x x1
  * @param y y1
@@ -835,8 +843,8 @@ int InvalidateRegion(HDC hdc, int x, int y, int w, int h)
 }
 
 /**
- * Compare two regions for equality.
- * http://msdn.microsoft.com/en-us/library/dd162700/
+ * Compare two regions for equality.\n
+ * @msdn{dd162700}
  * @param hSrcRgn1 first region
  * @param hSrcRgn2 second region
  * @return 1 if both regions are equal, 0 otherwise
@@ -872,8 +880,8 @@ int CopyRect(HRECT dst, HRECT src)
 }
 
 /**
- * Check if a point is inside a rectangle.
- * http://msdn.microsoft.com/en-us/library/dd162882/
+ * Check if a point is inside a rectangle.\n
+ * @msdn{dd162882}
  * @param rc rectangle
  * @param x point x position
  * @param y point y position
@@ -899,8 +907,8 @@ int PtInRect(HRECT rc, int x, int y)
 }
 
 /**
- * Get the current background color.
- * http://msdn.microsoft.com/en-us/library/dd144852/
+ * Get the current background color.\n
+ * @msdn{dd144852}
  * @param hdc device context
  * @return background color
  */
@@ -911,8 +919,8 @@ COLORREF GetBkColor(HDC hdc)
 }
 
 /**
- * Set the current background color.
- * http://msdn.microsoft.com/en-us/library/dd162964/
+ * Set the current background color.\n
+ * @msdn{dd162964}
  * @param hdc device color
  * @param crColor new background color
  * @return previous background color
@@ -926,8 +934,8 @@ COLORREF SetBkColor(HDC hdc, COLORREF crColor)
 }
 
 /**
- * Set the current text color.
- * http://msdn.microsoft.com/en-us/library/dd145093/
+ * Set the current text color.\n
+ * @msdn{dd145093}
  * @param hdc device context
  * @param crColor new text color
  * @return previous text color
@@ -941,8 +949,8 @@ COLORREF SetTextColor(HDC hdc, COLORREF crColor)
 }
 
 /**
- * Set the current background mode.
- * http://msdn.microsoft.com/en-us/library/dd162965/
+ * Set the current background mode.\n
+ * @msdn{dd162965}
  * @param hdc device context
  * @param iBkMode background mode
  * @return
@@ -959,8 +967,8 @@ int SetBkMode(HDC hdc, int iBkMode)
 }
 
 /**
- * Get pixel at the given coordinates.
- * http://msdn.microsoft.com/en-us/library/dd144909/
+ * Get pixel at the given coordinates.\n
+ * @msdn{dd144909}
  * @param hdc device context
  * @param nXPos pixel x position
  * @param nYPos pixel y position
@@ -975,8 +983,8 @@ COLORREF GetPixel(HDC hdc, int nXPos, int nYPos)
 }
 
 /**
- * Set pixel at the given coordinates.
- * http://msdn.microsoft.com/en-us/library/dd145078/
+ * Set pixel at the given coordinates.\n
+ * @msdn{dd145078}
  * @param hdc device context
  * @param X pixel x position
  * @param Y pixel y position
@@ -992,8 +1000,8 @@ COLORREF SetPixel(HDC hdc, int X, int Y, COLORREF crColor)
 }
 
 /**
- * Fill a rectangle with the given brush.
- * http://msdn.microsoft.com/en-us/library/dd162719/
+ * Fill a rectangle with the given brush.\n
+ * @msdn{dd162719}
  * @param hdc device context
  * @param rect rectangle
  * @param hbr brush
@@ -1016,8 +1024,8 @@ int FillRect(HDC hdc, HRECT rect, HBRUSH hbr)
 }
 
 /**
- * Perform a bit blit operation on the given pixel buffers.
- * http://msdn.microsoft.com/en-us/library/dd183370/
+ * Perform a bit blit operation on the given pixel buffers.\n
+ * @msdn{dd183370}
  * @param hdcDest destination device context
  * @param nXDest destination x1
  * @param nYDest destination y1
@@ -1046,8 +1054,8 @@ int BitBlt(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdc
 }
 
 /**
- * Perform a pattern blit operation on the given pixel buffer.
- * http://msdn.microsoft.com/en-us/library/dd162778/
+ * Perform a pattern blit operation on the given pixel buffer.\n
+ * @msdn{dd162778}
  * @param hdc device context
  * @param nXLeft x1
  * @param nYLeft y1
@@ -1073,8 +1081,8 @@ int PatBlt(HDC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight, int rop)
 }
 
 /**
- * Select a GDI object in the current device context.
- * http://msdn.microsoft.com/en-us/library/dd162957/
+ * Select a GDI object in the current device context.\n
+ * @msdn{dd162957}
  * @param hdc device context
  * @param hgdiobj new selected GDI object
  * @return previous selected GDI object
@@ -1119,8 +1127,8 @@ HGDIOBJ SelectObject(HDC hdc, HGDIOBJ hgdiobj)
 }
 
 /**
- * Delete a GDI object.
- * http://msdn.microsoft.com/en-us/library/dd183539/
+ * Delete a GDI object.\n
+ * @msdn{dd183539}
  * @param hgdiobj GDI object
  * @return 1 if successful, 0 otherwise
  */
@@ -1182,8 +1190,8 @@ int DeleteObject(HGDIOBJ hgdiobj)
 }
 
 /**
- * Delete device context.
- * http://msdn.microsoft.com/en-us/library/dd183533/
+ * Delete device context.\n
+ * @msdn{dd183533}
  * @param hdc device context
  * @return 1 if successful, 0 otherwise
  */
