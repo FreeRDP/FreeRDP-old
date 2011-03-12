@@ -28,6 +28,12 @@
 
 #include "nego.h"
 
+/**
+ * Negotiate protocol security and connect.
+ * @param nego
+ * @return
+ */
+
 int nego_connect(NEGO *nego)
 {
 	if (nego->state == NEGO_STATE_INITIAL)
@@ -56,6 +62,12 @@ int nego_connect(NEGO *nego)
 	return 1;
 }
 
+/**
+ * Connect TCP layer.
+ * @param nego
+ * @return
+ */
+
 int nego_tcp_connect(NEGO *nego)
 {
 	if (nego->tcp_connected == 0)
@@ -75,6 +87,12 @@ int nego_tcp_connect(NEGO *nego)
 	return 1;
 }
 
+/**
+ * Disconnect TCP layer.
+ * @param nego
+ * @return
+ */
+
 int nego_tcp_disconnect(NEGO *nego)
 {
 	if (nego->tcp_connected)
@@ -83,6 +101,11 @@ int nego_tcp_disconnect(NEGO *nego)
 	nego->tcp_connected = 0;
 	return 1;
 }
+
+/**
+ * Attempt negotiating NLA + TLS security.
+ * @param nego
+ */
 
 void nego_attempt_nla(NEGO *nego)
 {
@@ -106,6 +129,11 @@ void nego_attempt_nla(NEGO *nego)
 	}
 }
 
+/**
+ * Attempt negotiating TLS security.
+ * @param nego
+ */
+
 void nego_attempt_tls(NEGO *nego)
 {
 	uint8 code;
@@ -126,6 +154,11 @@ void nego_attempt_tls(NEGO *nego)
 	}
 }
 
+/**
+ * Attempt negotiating standard RDP security.
+ * @param nego
+ */
+
 void nego_attempt_rdp(NEGO *nego)
 {
 	uint8 code;
@@ -139,6 +172,12 @@ void nego_attempt_rdp(NEGO *nego)
 	else
 		nego->state = NEGO_STATE_FINAL;
 }
+
+/**
+ * Receive protocol security negotiation message.
+ * @param nego
+ * @param s
+ */
 
 void nego_recv(NEGO *nego, STREAM s)
 {
@@ -156,6 +195,11 @@ void nego_recv(NEGO *nego, STREAM s)
 	}
 }
 
+/**
+ * Send protocol security negotiation message.
+ * @param nego
+ */
+
 void nego_send(NEGO *nego)
 {
 	if (nego->state == NEGO_STATE_NLA)
@@ -166,7 +210,12 @@ void nego_send(NEGO *nego)
 		nego_attempt_rdp(nego);
 }
 
-/* Process Negotiation Response from Connection Confirm */
+/**
+ * Process Negotiation Response from Connection Confirm message.
+ * @param nego
+ * @param s
+ */
+
 void nego_process_negotiation_response(NEGO *nego, STREAM s)
 {
 	uint8 flags;
@@ -187,7 +236,12 @@ void nego_process_negotiation_response(NEGO *nego, STREAM s)
 	nego->state = NEGO_STATE_FINAL;
 }
 
-/* Process Negotiation Failure from Connection Confirm */
+/**
+ * Process Negotiation Failure from Connection Confirm message.
+ * @param nego
+ * @param s
+ */
+
 void nego_process_negotiation_failure(NEGO *nego, STREAM s)
 {
 	uint8 flags;
@@ -221,10 +275,14 @@ void nego_process_negotiation_failure(NEGO *nego, STREAM s)
 	}
 }
 
+/**
+ * Create a new NEGO state machine instance.
+ * @param iso
+ * @return
+ */
+
 NEGO* nego_new(struct rdp_iso * iso)
 {
-	/* Create new NEGO state machine instance */
-
 	NEGO *nego = (NEGO*) xmalloc(sizeof(NEGO));
 
 	if (nego != NULL)
@@ -237,11 +295,21 @@ NEGO* nego_new(struct rdp_iso * iso)
 	return nego;
 }
 
+/**
+ * Initialize NEGO state machine.
+ * @param nego
+ */
+
 void nego_init(NEGO *nego)
 {
 	nego->state = NEGO_STATE_INITIAL;
 	nego->requested_protocols = PROTOCOL_RDP;
 }
+
+/**
+ * Free NEGO state machine.
+ * @param nego
+ */
 
 void nego_free(NEGO *nego)
 {

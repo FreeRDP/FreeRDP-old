@@ -88,6 +88,12 @@ const char server_sign_magic[] = "session key to server-to-client signing key ma
 const char client_seal_magic[] = "session key to client-to-server sealing key magic constant";
 const char server_seal_magic[] = "session key to server-to-client sealing key magic constant";
 
+/**
+ * Set NTLMSSP username.
+ * @param ntlmssp
+ * @param username username
+ */
+
 void ntlmssp_set_username(NTLMSSP *ntlmssp, char* username)
 {
 	datablob_free(&ntlmssp->username);
@@ -99,6 +105,12 @@ void ntlmssp_set_username(NTLMSSP *ntlmssp, char* username)
 		credssp_str_to_wstr(username, ntlmssp->username.data, length);
 	}
 }
+
+/**
+ * Set NTLMSSP domain name.
+ * @param ntlmssp
+ * @param domain domain name
+ */
 
 void ntlmssp_set_domain(NTLMSSP *ntlmssp, char* domain)
 {
@@ -112,6 +124,12 @@ void ntlmssp_set_domain(NTLMSSP *ntlmssp, char* domain)
 	}
 }
 
+/**
+ * Set NTLMSSP password.
+ * @param ntlmssp
+ * @param password password
+ */
+
 void ntlmssp_set_password(NTLMSSP *ntlmssp, char* password)
 {
 	datablob_free(&ntlmssp->password);
@@ -124,6 +142,12 @@ void ntlmssp_set_password(NTLMSSP *ntlmssp, char* password)
 	}
 }
 
+/**
+ * Set NTLMSSP workstation name.
+ * @param ntlmssp
+ * @param workstation workstation name
+ */
+
 void ntlmssp_set_workstation(NTLMSSP *ntlmssp, char* workstation)
 {
 	datablob_free(&ntlmssp->workstation);
@@ -135,6 +159,12 @@ void ntlmssp_set_workstation(NTLMSSP *ntlmssp, char* workstation)
 		credssp_str_to_wstr(workstation, ntlmssp->workstation.data, length);
 	}
 }
+
+/**
+ * Set NTLMSSP target name.
+ * @param ntlmssp
+ * @param target_name target name
+ */
 
 void ntlmssp_set_target_name(NTLMSSP *ntlmssp, char* target_name)
 {
@@ -157,11 +187,22 @@ void ntlmssp_set_target_name(NTLMSSP *ntlmssp, char* target_name)
 	}
 }
 
+/**
+ * Generate client challenge (8-byte nonce).
+ * @param ntlmssp
+ */
+
 void ntlmssp_generate_client_challenge(NTLMSSP *ntlmssp)
 {
 	/* ClientChallenge in computation of LMv2 and NTLMv2 responses */
 	credssp_nonce(ntlmssp->client_challenge, 8);
 }
+
+/**
+ * Generate KeyExchangeKey (the 128-bit SessionBaseKey).\n
+ * @msdn{cc236710}
+ * @param ntlmssp
+ */
 
 void ntlmssp_generate_key_exchange_key(NTLMSSP *ntlmssp)
 {
@@ -169,21 +210,41 @@ void ntlmssp_generate_key_exchange_key(NTLMSSP *ntlmssp)
 	memcpy(ntlmssp->key_exchange_key, ntlmssp->session_base_key, 16);
 }
 
+/**
+ * Generate RandomSessionKey (16-byte nonce).
+ * @param ntlmssp
+ */
+
 void ntlmssp_generate_random_session_key(NTLMSSP *ntlmssp)
 {
 	credssp_nonce(ntlmssp->random_session_key, 16);
 }
+
+/**
+ * Generate ExportedSessionKey (the RandomSessionKey, exported)
+ * @param ntlmssp
+ */
 
 void ntlmssp_generate_exported_session_key(NTLMSSP *ntlmssp)
 {
 	memcpy(ntlmssp->exported_session_key, ntlmssp->random_session_key, 16);
 }
 
+/**
+ * Encrypt RandomSessionKey (RC4-encrypted RandomSessionKey, using KeyExchangeKey as the key).
+ * @param ntlmssp
+ */
+
 void ntlmssp_encrypt_random_session_key(NTLMSSP *ntlmssp)
 {
 	/* In NTLMv2, EncryptedRandomSessionKey is the ExportedSessionKey RC4-encrypted with the KeyExchangeKey */
 	credssp_rc4k(ntlmssp->key_exchange_key, 16, ntlmssp->random_session_key, ntlmssp->encrypted_random_session_key);
 }
+
+/**
+ * Generate timestamp for AUTHENTICATE_MESSAGE.
+ * @param ntlmssp
+ */
 
 void ntlmssp_generate_timestamp(NTLMSSP *ntlmssp)
 {
@@ -198,6 +259,14 @@ void ntlmssp_generate_timestamp(NTLMSSP *ntlmssp)
 		}
 	}
 }
+
+/**
+ * Generate signing key.\n
+ * @msdn{cc236711}
+ * @param exported_session_key ExportedSessionKey
+ * @param sign_magic Sign magic string
+ * @param signing_key Destination signing key
+ */
 
 void ntlmssp_generate_signing_key(uint8* exported_session_key, DATABLOB *sign_magic, uint8* signing_key)
 {
@@ -219,6 +288,12 @@ void ntlmssp_generate_signing_key(uint8* exported_session_key, DATABLOB *sign_ma
 	xfree(value);
 }
 
+/**
+ * Generate client signing key (ClientSigningKey).\n
+ * @msdn{cc236711}
+ * @param ntlmssp
+ */
+
 void ntlmssp_generate_client_signing_key(NTLMSSP *ntlmssp)
 {
 	DATABLOB sign_magic;
@@ -227,6 +302,12 @@ void ntlmssp_generate_client_signing_key(NTLMSSP *ntlmssp)
 	ntlmssp_generate_signing_key(ntlmssp->exported_session_key, &sign_magic, ntlmssp->client_signing_key);
 }
 
+/**
+ * Generate server signing key (ServerSigningKey).\n
+ * @msdn{cc236711}
+ * @param ntlmssp
+ */
+
 void ntlmssp_generate_server_signing_key(NTLMSSP *ntlmssp)
 {
 	DATABLOB sign_magic;
@@ -234,6 +315,14 @@ void ntlmssp_generate_server_signing_key(NTLMSSP *ntlmssp)
 	sign_magic.length = sizeof(server_sign_magic);
 	ntlmssp_generate_signing_key(ntlmssp->exported_session_key, &sign_magic, ntlmssp->server_signing_key);
 }
+
+/**
+ * Generate sealing key.\n
+ * @msdn{cc236712}
+ * @param exported_session_key ExportedSessionKey
+ * @param seal_magic Seal magic string
+ * @param sealing_key Destination sealing key
+ */
 
 void ntlmssp_generate_sealing_key(uint8* exported_session_key, DATABLOB *seal_magic, uint8* sealing_key)
 {
@@ -255,6 +344,12 @@ void ntlmssp_generate_sealing_key(uint8* exported_session_key, DATABLOB *seal_ma
 	datablob_free(&blob);
 }
 
+/**
+ * Generate client sealing key (ClientSealingKey).\n
+ * @msdn{cc236712}
+ * @param ntlmssp
+ */
+
 void ntlmssp_generate_client_sealing_key(NTLMSSP *ntlmssp)
 {
 	DATABLOB seal_magic;
@@ -262,6 +357,12 @@ void ntlmssp_generate_client_sealing_key(NTLMSSP *ntlmssp)
 	seal_magic.length = sizeof(client_seal_magic);
 	ntlmssp_generate_signing_key(ntlmssp->exported_session_key, &seal_magic, ntlmssp->client_sealing_key);
 }
+
+/**
+ * Generate server sealing key (ServerSealingKey).\n
+ * @msdn{cc236712}
+ * @param ntlmssp
+ */
 
 void ntlmssp_generate_server_sealing_key(NTLMSSP *ntlmssp)
 {
@@ -271,16 +372,35 @@ void ntlmssp_generate_server_sealing_key(NTLMSSP *ntlmssp)
 	ntlmssp_generate_signing_key(ntlmssp->exported_session_key, &seal_magic, ntlmssp->server_sealing_key);
 }
 
+/**
+ * Initialize RC4 stream cipher states for sealing.
+ * @param ntlmssp
+ */
+
 void ntlmssp_init_rc4_seal_states(NTLMSSP *ntlmssp)
 {
 	ntlmssp->send_rc4_seal = crypto_rc4_init(ntlmssp->client_sealing_key, 16);
 	ntlmssp->recv_rc4_seal = crypto_rc4_init(ntlmssp->server_sealing_key, 16);
 }
 
+/**
+ * Get bit from a byte buffer using a bit offset.
+ * @param buffer byte buffer
+ * @param bit bit offset
+ * @return bit value
+ */
+
 static int get_bit(char* buffer, int bit)
 {
 	return (buffer[(bit - (bit % 8)) / 8] >> (7 - bit % 8) & 1);
 }
+
+/**
+ * Set bit in a byte buffer using a bit offset.
+ * @param buffer byte buffer
+ * @param bit bit offset
+ * @param value bit value
+ */
 
 static void set_bit(char* buffer, int bit, int value)
 {
@@ -448,6 +568,13 @@ void ntlmssp_compute_lm_v2_response(NTLMSSP *ntlmssp)
 	memcpy(&response[16], ntlmssp->client_challenge, 8);
 }
 
+/**
+ * Compute NTLMv2 Response.\n
+ * NTLMv2_RESPONSE @msdn{cc236653}\n
+ * NTLMv2 Authentication @msdn{cc236700}
+ * @param ntlmssp
+ */
+
 void ntlmssp_compute_ntlm_v2_response(NTLMSSP *ntlmssp)
 {
 	uint8* blob;
@@ -522,6 +649,12 @@ void ntlmssp_compute_ntlm_v2_response(NTLMSSP *ntlmssp)
 	datablob_free(&ntlm_v2_temp_chal);
 }
 
+/**
+ * Input NegotiateFlags, a 4-byte bit map.
+ * @param s
+ * @param flags
+ */
+
 void ntlmssp_input_negotiate_flags(STREAM s, uint32 *flags)
 {
 	uint8* p;
@@ -546,6 +679,12 @@ void ntlmssp_input_negotiate_flags(STREAM s, uint32 *flags)
 
 	*flags = negotiateFlags;
 }
+
+/**
+ * Output NegotiateFlags, a 4-byte bit map.
+ * @param s
+ * @param flags
+ */
 
 void ntlmssp_output_negotiate_flags(STREAM s, uint32 flags)
 {
@@ -620,6 +759,12 @@ static void ntlmssp_print_negotiate_flags(uint32 flags)
 }
 #endif
 
+/**
+ * Output Restriction_Encoding.\n
+ * Restriction_Encoding @msdn{cc236647}
+ * @param ntlmssp
+ */
+
 static void ntlmssp_output_restriction_encoding(NTLMSSP *ntlmssp)
 {
 	AV_PAIR *restrictions = &ntlmssp->av_pairs->Restrictions;
@@ -650,6 +795,12 @@ static void ntlmssp_output_restriction_encoding(NTLMSSP *ntlmssp)
 	xfree(s);
 }
 
+/**
+ * Populate array of AV_PAIRs.\n
+ * AV_PAIR @msdn{cc236646}
+ * @param ntlmssp
+ */
+
 void ntlmssp_populate_av_pairs(NTLMSSP *ntlmssp)
 {
 	STREAM s;
@@ -673,6 +824,13 @@ void ntlmssp_populate_av_pairs(NTLMSSP *ntlmssp)
 	ntlmssp->target_info.data = target_info.data;
 	ntlmssp->target_info.length = target_info.length;
 }
+
+/**
+ * Input array of AV_PAIRs.\n
+ * AV_PAIR @msdn{cc236646}
+ * @param ntlmssp
+ * @param s
+ */
 
 void ntlmssp_input_av_pairs(NTLMSSP *ntlmssp, STREAM s)
 {
@@ -765,6 +923,13 @@ void ntlmssp_input_av_pairs(NTLMSSP *ntlmssp, STREAM s)
 	while(AvId != MsvAvEOL);
 }
 
+/**
+ * Output array of AV_PAIRs.\n
+ * AV_PAIR @msdn{cc236646}
+ * @param ntlmssp
+ * @param s
+ */
+
 void ntlmssp_output_av_pairs(NTLMSSP *ntlmssp, STREAM s)
 {
 	AV_PAIRS *av_pairs = ntlmssp->av_pairs;
@@ -851,6 +1016,12 @@ void ntlmssp_output_av_pairs(NTLMSSP *ntlmssp, STREAM s)
 	s_mark_end(s);
 }
 
+/**
+ * Free array of AV_PAIRs.\n
+ * AV_PAIR @msdn{cc236646}
+ * @param ntlmssp
+ */
+
 void ntlmssp_free_av_pairs(NTLMSSP *ntlmssp)
 {
 	AV_PAIRS *av_pairs = ntlmssp->av_pairs;
@@ -882,6 +1053,12 @@ void ntlmssp_free_av_pairs(NTLMSSP *ntlmssp)
 	ntlmssp->av_pairs = NULL;
 }
 
+/**
+ * Output VERSION structure.\n
+ * VERSION @msdn{cc236654}
+ * @param s
+ */
+
 static void ntlmssp_output_version(STREAM s)
 {
 	/* The following version information was observed with Windows 7 */
@@ -906,9 +1083,19 @@ void ntlmssp_compute_message_integrity_check(NTLMSSP *ntlmssp)
 	HMAC_Init_ex(&hmac_ctx, ntlmssp->exported_session_key, 16, EVP_md5(), NULL);
 	HMAC_Update(&hmac_ctx, ntlmssp->negotiate_message.data, ntlmssp->negotiate_message.length);
 	HMAC_Update(&hmac_ctx, ntlmssp->challenge_message.data, ntlmssp->challenge_message.length);
-        HMAC_Update(&hmac_ctx, ntlmssp->authenticate_message.data, ntlmssp->authenticate_message.length);
+	HMAC_Update(&hmac_ctx, ntlmssp->authenticate_message.data, ntlmssp->authenticate_message.length);
 	HMAC_Final(&hmac_ctx, ntlmssp->message_integrity_check, NULL);
 }
+
+/**
+ * Encrypt and sign message using NTLMSSP.\n
+ * GSS_WrapEx() @msdn{cc236718}\n
+ * EncryptMessage() @msdn{aa375378}
+ * @param ntlmssp
+ * @param[in] msg message to encrypt
+ * @param[out] encrypted_msg encrypted message
+ * @param[out] signature destination signature
+ */
 
 void ntlmssp_encrypt_message(NTLMSSP *ntlmssp, DATABLOB *msg, DATABLOB *encrypted_msg, uint8* signature)
 {
@@ -942,6 +1129,17 @@ void ntlmssp_encrypt_message(NTLMSSP *ntlmssp, DATABLOB *msg, DATABLOB *encrypte
 
 	ntlmssp->send_seq_num++;
 }
+
+/**
+ * Decrypt message and verify signature using NTLMSSP.\n
+ * GSS_UnwrapEx() @msdn{cc236703}\n
+ * DecryptMessage() @msdn{aa375211}
+ * @param ntlmssp
+ * @param[in] encrypted_msg encrypted message
+ * @param[out] msg decrypted message
+ * @param[in] signature signature
+ * @return
+ */
 
 int ntlmssp_decrypt_message(NTLMSSP *ntlmssp, DATABLOB *encrypted_msg, DATABLOB *msg, uint8* signature)
 {
@@ -984,6 +1182,13 @@ int ntlmssp_decrypt_message(NTLMSSP *ntlmssp, DATABLOB *encrypted_msg, DATABLOB 
 	ntlmssp->recv_seq_num++;
 	return 1;
 }
+
+/**
+ * Send NTLMSSP NEGOTIATE_MESSAGE.\n
+ * NEGOTIATE_MESSAGE @msdn{cc236641}
+ * @param ntlmssp
+ * @param s
+ */
 
 void ntlmssp_send_negotiate_message(NTLMSSP *ntlmssp, STREAM s)
 {
@@ -1060,6 +1265,13 @@ void ntlmssp_send_negotiate_message(NTLMSSP *ntlmssp, STREAM s)
 
 	ntlmssp->state = NTLMSSP_STATE_CHALLENGE;
 }
+
+/**
+ * Receive NTLMSSP CHALLENGE_MESSAGE.\n
+ * CHALLENGE_MESSAGE @msdn{cc236642}
+ * @param ntlmssp
+ * @param s
+ */
 
 void ntlmssp_recv_challenge_message(NTLMSSP *ntlmssp, STREAM s)
 {
@@ -1227,6 +1439,13 @@ void ntlmssp_recv_challenge_message(NTLMSSP *ntlmssp, STREAM s)
 
 	ntlmssp->state = NTLMSSP_STATE_AUTHENTICATE;
 }
+
+/**
+ * Send NTLMSSP AUTHENTICATE_MESSAGE.\n
+ * AUTHENTICATE_MESSAGE @msdn{cc236643}
+ * @param ntlmssp
+ * @param s
+ */
 
 void ntlmssp_send_authenticate_message(NTLMSSP *ntlmssp, STREAM s)
 {
@@ -1446,6 +1665,13 @@ void ntlmssp_send_authenticate_message(NTLMSSP *ntlmssp, STREAM s)
 	ntlmssp->state = NTLMSSP_STATE_FINAL;
 }
 
+/**
+ * Send NTLMSSP message.
+ * @param ntlmssp
+ * @param s
+ * @return
+ */
+
 int ntlmssp_send(NTLMSSP *ntlmssp, STREAM s)
 {
 	if (ntlmssp->state == NTLMSSP_STATE_INITIAL)
@@ -1458,6 +1684,13 @@ int ntlmssp_send(NTLMSSP *ntlmssp, STREAM s)
 
 	return (ntlmssp->state == NTLMSSP_STATE_FINAL) ? 0 : 1;
 }
+
+/**
+ * Receive NTLMSSP message.
+ * @param ntlmssp
+ * @param s
+ * @return
+ */
 
 int ntlmssp_recv(NTLMSSP *ntlmssp, STREAM s)
 {
@@ -1473,10 +1706,13 @@ int ntlmssp_recv(NTLMSSP *ntlmssp, STREAM s)
 	return 1;
 }
 
+/**
+ * Create new NTLMSSP state machine instance.
+ * @return
+ */
+
 NTLMSSP* ntlmssp_new()
 {
-	/* Create new NTLMSSP state machine instance */
-	
 	NTLMSSP *ntlmssp = (NTLMSSP*) xmalloc(sizeof(NTLMSSP));
 
 	if (ntlmssp != NULL)
@@ -1490,16 +1726,23 @@ NTLMSSP* ntlmssp_new()
 	return ntlmssp;
 }
 
+/**
+ * Initialize NTLMSSP state machine.
+ * @param ntlmssp
+ */
+
 void ntlmssp_init(NTLMSSP *ntlmssp)
 {
-	/* Initialize NTLMSSP state machine */
 	ntlmssp->state = NTLMSSP_STATE_INITIAL;
 }
 
+/**
+ * Finalize NTLMSSP state machine.
+ * @param ntlmssp
+ */
+
 void ntlmssp_uninit(NTLMSSP *ntlmssp)
 {
-	/* Finalize NTLMSSP state machine */
-	
 	datablob_free(&ntlmssp->username);
 	datablob_free(&ntlmssp->password);
 	datablob_free(&ntlmssp->domain);
@@ -1521,11 +1764,15 @@ void ntlmssp_uninit(NTLMSSP *ntlmssp)
 	ntlmssp->state = NTLMSSP_STATE_FINAL;
 }
 
+/**
+ * Free NTLMSSP state machine.
+ * @param ntlmssp
+ */
+
 void ntlmssp_free(NTLMSSP *ntlmssp)
 {
 	ntlmssp_uninit(ntlmssp);
 
-	/* Free NTLMSSP state machine */
 	if (ntlmssp->send_rc4_seal)
 		crypto_rc4_free(ntlmssp->send_rc4_seal);
 	if (ntlmssp->recv_rc4_seal)
