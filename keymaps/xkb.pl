@@ -20,7 +20,7 @@
 
 # Description:
 # Script to export XKB configuration files to keycode -> virtual key code keymaps that are
-# easy to use in rdesktop. This makes keymap maintenance easier to make as all bugs can
+# easy to use in FreeRDP. This makes keymap maintenance easier to make as all bugs can
 # simply be reported to the XKB Configuration Database project, and then this script can
 # be used to export newer (and fixed) version of the XKB Configuration Database.
 

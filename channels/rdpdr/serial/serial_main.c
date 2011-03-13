@@ -965,7 +965,7 @@ serial_read(IRP * irp)
 	}
 
 	/* If a timeout is set, do a blocking read, which times out after some time.
-	   It will make rdesktop less responsive, but it will improve serial performance, by not
+	   It will make FreeRDP less responsive, but it will improve serial performance, by not
 	   reading one character at a time. */
 	if (timeout == 0)
 	{

@@ -88,7 +88,7 @@
     - redirection has been re-implemented as a virtual channel plugin
     - Sound redirection has also been re-implemented as a virtual channel plugin
     - A *LOT* of added comments in the code with regards to the protocol documentation
-    - Cleanup and increased compliance with the documentation released by MS after rdesktop was created
+    - Cleanup and increased compliance with the documentation released by Microsoft
    * Improvements:
     - Support for cursors on Windows Server 2008 R2
     - Support for bitmap caching, which provides a good performance boost
