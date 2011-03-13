@@ -2,7 +2,7 @@
 REQUIRED_SUBDIRS = \
 	asn1 \
 	libfreerdp \
-	doc \
+	docs \
 	contrib \
 	include \
 	libfreerdpkbd \

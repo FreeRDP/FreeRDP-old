@@ -5,6 +5,8 @@ Makefile
 Makefile.in
 *.o
 *.la
+.project
+.cproject
 config.status
 config.guess
 config.h
@@ -33,6 +35,7 @@ autom4te.cache
 *.deps
 *.libs
 m4
+docs/api
 X11/xfreerdp
 dfb/dfbfreerdp
 /win/*.ncb
