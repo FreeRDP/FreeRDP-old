@@ -56,6 +56,11 @@ asn1_write(const void *buffer, size_t size, void *fd)
 	return 0;
 }
 
+/**
+ * Initialize NTLMSSP authentication module.
+ * @param credssp
+ */
+
 void credssp_ntlmssp_init(rdpCredssp * credssp)
 {
 	NTLMSSP *ntlmssp = credssp->ntlmssp;
@@ -87,10 +92,21 @@ void credssp_ntlmssp_init(rdpCredssp * credssp)
 	ntlmssp->ntlm_v2 = 0;
 }
 
+/**
+ * Get TLS public key.
+ * @param credssp
+ */
+
 void credssp_get_public_key(rdpCredssp * credssp)
 {	
 	tls_get_public_key(credssp->sec->ssl, &credssp->public_key);
 }
+
+/**
+ * Authenticate with server using CredSSP.
+ * @param credssp
+ * @return 1 if authentication is successful
+ */
 
 int credssp_authenticate(rdpCredssp * credssp)
 {
@@ -146,6 +162,12 @@ int credssp_authenticate(rdpCredssp * credssp)
 	return 1;
 }
 
+/**
+ * Encrypt TLS public key using CredSSP.
+ * @param credssp
+ * @param s
+ */
+
 void credssp_encrypt_public_key(rdpCredssp *credssp, STREAM s)
 {
 	uint8 signature[16];
@@ -180,6 +202,13 @@ void credssp_encrypt_public_key(rdpCredssp *credssp, STREAM s)
 	datablob_free(&encrypted_public_key);
 }
 
+/**
+ * Verify TLS public key using CredSSP.
+ * @param credssp
+ * @param s
+ * @return 1 if verification is successful, 0 otherwise
+ */
+
 int credssp_verify_public_key(rdpCredssp *credssp, STREAM s)
 {
 	uint8 *p1, *p2;
@@ -208,6 +237,12 @@ int credssp_verify_public_key(rdpCredssp *credssp, STREAM s)
 	datablob_free(&public_key);
 	return 1;
 }
+
+/**
+ * Encrypt and sign TSCredentials structure.
+ * @param credssp
+ * @param s
+ */
 
 void credssp_encrypt_ts_credentials(rdpCredssp *credssp, STREAM s)
 {
@@ -242,6 +277,11 @@ void credssp_encrypt_ts_credentials(rdpCredssp *credssp, STREAM s)
 
 	datablob_free(&encrypted_ts_credentials);
 }
+
+/**
+ * Encode TSCredentials structure.
+ * @param credssp
+ */
 
 void credssp_encode_ts_credentials(rdpCredssp *credssp)
 {
@@ -296,6 +336,14 @@ void credssp_encode_ts_credentials(rdpCredssp *credssp)
 	free(ts_credentials);
 	free(ts_password_creds);
 }
+
+/**
+ * Send CredSSP message.
+ * @param credssp
+ * @param negoToken
+ * @param pubKeyAuth
+ * @param authInfo
+ */
 
 void credssp_send(rdpCredssp *credssp, STREAM negoToken, STREAM pubKeyAuth, STREAM authInfo)
 {
@@ -352,6 +400,15 @@ void credssp_send(rdpCredssp *credssp, STREAM negoToken, STREAM pubKeyAuth, STRE
 		xfree(buffer);
 	}
 }
+
+/**
+ * Receive CredSSP message.
+ * @param credssp
+ * @param negoToken
+ * @param pubKeyAuth
+ * @param authInfo
+ * @return
+ */
 
 int credssp_recv(rdpCredssp *credssp, STREAM negoToken, STREAM pubKeyAuth, STREAM authInfo)
 {
@@ -422,6 +479,14 @@ void credssp_str_to_wstr(char* str, uint8* wstr, int length)
 	}
 }
 
+/**
+ * Encrypt the given plain text using RC4 and the given key.
+ * @param key RC4 key
+ * @param length text length
+ * @param plaintext plain text
+ * @param ciphertext cipher text
+ */
+
 void credssp_rc4k(uint8* key, int length, uint8* plaintext, uint8* ciphertext)
 {
 	CryptoRc4 rc4;
@@ -436,11 +501,22 @@ void credssp_rc4k(uint8* key, int length, uint8* plaintext, uint8* ciphertext)
 	crypto_rc4_free(rc4);
 }
 
+/**
+ * Generate a nonce (random byte buffer).
+ * @param[out] nonce destination nonce buffer
+ * @param[in] size destination nonce buffer size
+ */
+
 void credssp_nonce(uint8* nonce, int size)
 {
 	/* Generate random bytes (nonce) */
 	RAND_bytes((void*) nonce, size);
 }
+
+/**
+ * Get current time, in tenths of microseconds since midnight of January 1, 1601.
+ * @param[out] timestamp 64-bit little-endian timestamp
+ */
 
 void credssp_current_time(uint8* timestamp)
 {
@@ -452,6 +528,12 @@ void credssp_current_time(uint8* timestamp)
 
 	memcpy(timestamp, &time64, 8); /* Copy into timestamp in little-endian */
 }
+
+/**
+ * Create new CredSSP state machine.
+ * @param sec
+ * @return new CredSSP state machine.
+ */
 
 rdpCredssp *
 credssp_new(struct rdp_sec * sec)
@@ -468,6 +550,11 @@ credssp_new(struct rdp_sec * sec)
 	}
 	return self;
 }
+
+/**
+ * Free CredSSP state machine.
+ * @param credssp
+ */
 
 void
 credssp_free(rdpCredssp * credssp)

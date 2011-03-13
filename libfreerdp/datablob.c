@@ -20,11 +20,22 @@
 #include "mem.h"
 #include "datablob.h"
 
+/**
+ * Allocate memory for data blob.
+ * @param datablob datablob structure
+ * @param length memory length
+ */
+
 void datablob_alloc(DATABLOB *datablob, int length)
 {
 	datablob->data = xmalloc(length);
 	datablob->length = length;
 }
+
+/**
+ * Free memory allocated for data blob.
+ * @param datablob
+ */
 
 void datablob_free(DATABLOB *datablob)
 {
