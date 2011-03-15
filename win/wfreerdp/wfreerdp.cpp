@@ -99,7 +99,7 @@ out_args(void)
 		"\t-d: domain\n"
 		"\t-s: shell\n"
 		"\t-c: directory\n"
-		"\t-g: geometry, using format WxH, default is 1024x768\n"
+		"\t-g: geometry, using format WxH, default is 800x600\n"
 		"\t-t: alternative port number, default is 3389\n"
 		"\t-n: hostname\n"
 		"\t-o: console audio\n"
