@@ -1100,36 +1100,29 @@ wf_assign_callbacks(rdpInst * inst)
 }
 
 int
-wf_pre_connect(rdpInst * inst, HWND hwnd)
+wf_pre_connect(wfInfo * wfi, rdpInst * inst)
 {
-	wfInfo * wfi;
-
 	wf_assign_callbacks(inst);
-	wfi = (wfInfo *) malloc(sizeof(wfInfo));
 	SET_WFI(inst, wfi);
-	memset(wfi, 0, sizeof(wfInfo));
 
-	wfi->hwnd = hwnd;
 	wfi->inst = inst;
 	wfi->cursor = g_default_cursor;
 
-	SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)wfi);
+	SetWindowLongPtr(wfi->hwnd, GWLP_USERDATA, (LONG_PTR)wfi);
 
 	return 0;
 }
 
 int
-wf_post_connect(rdpInst * inst)
+wf_post_connect(wfInfo * wfi)
 {
-	wfInfo * wfi;
 	int width;
 	int height;
 	RECT rc_client, rc_wnd;
 	POINT diff;
 
-	wfi = GET_WFI(inst);
-	width = inst->settings->width;
-	height = inst->settings->height;
+	width = wfi->inst->settings->width;
+	height = wfi->inst->settings->height;
 
 	wfi->backstore = wf_bitmap_new(wfi, width, height, 0, 0, NULL);
 	BitBlt(wfi->backstore->hdc, 0, 0, width, height, NULL, 0, 0, BLACKNESS);
@@ -1147,11 +1140,8 @@ wf_post_connect(rdpInst * inst)
 }
 
 int
-wf_update_window(rdpInst * inst)
+wf_update_window(wfInfo * wfi)
 {
-	wfInfo * wfi;
-
-	wfi = GET_WFI(inst);
 	if (wfi->update_pending)
 	{
 		InvalidateRect(wfi->hwnd, &wfi->update_rect, FALSE);
@@ -1162,12 +1152,8 @@ wf_update_window(rdpInst * inst)
 }
 
 void
-wf_uninit(rdpInst * inst)
+wf_uninit(wfInfo * wfi)
 {
-	wfInfo * wfi;
-
-	wfi = GET_WFI(inst);
-
 	CloseWindow(wfi->hwnd);
 
 	wf_bitmap_free(wfi->backstore);
@@ -1175,5 +1161,4 @@ wf_uninit(rdpInst * inst)
 	{
 		free(wfi->colormap);
 	}
-	free(wfi);
 }

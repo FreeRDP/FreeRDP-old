@@ -30,6 +30,7 @@
 
 #include <freerdp/freerdp.h>
 #include <freerdp/chanman.h>
+#include "wf_types.h"
 #include "wf_event.h"
 #include "wf_win.h"
 
@@ -38,13 +39,6 @@ HINSTANCE g_hInstance;
 HCURSOR g_default_cursor;
 volatile int g_thread_count = 0;
 HANDLE g_done_event;
-
-struct thread_data
-{
-	rdpSet * settings;
-	rdpChanMan * chan_man;
-	HWND hwnd;
-};
 
 static int
 create_console(void)
@@ -59,8 +53,11 @@ create_console(void)
 }
 
 static int
-set_default_params(rdpSet * settings)
+set_default_params(wfInfo * wfi)
 {
+	rdpSet * settings;
+
+	settings = wfi->settings;
 	memset(settings, 0, sizeof(rdpSet));
 	gethostname(settings->hostname, sizeof(settings->hostname) - 1);
 	settings->width = 800;
@@ -125,8 +122,9 @@ out_args(void)
 }
 
 static int
-process_params(rdpSet * settings, rdpChanMan * chan_man, int argc, LPWSTR * argv, int * pindex)
+process_params(wfInfo * wfi, int argc, LPWSTR * argv, int * pindex)
 {
+	rdpSet * settings;
 	WCHAR * p;
 	int i;
 	char show_console = 1;
@@ -149,7 +147,8 @@ process_params(rdpSet * settings, rdpChanMan * chan_man, int argc, LPWSTR * argv
 				"or hidden with --no-debug)\n");
 	}
 
-	set_default_params(settings);
+	set_default_params(wfi);
+	settings = wfi->settings;
 
 	printf("process_params\n");
 	if (argc < *pindex + 1)
@@ -365,7 +364,7 @@ process_params(rdpSet * settings, rdpChanMan * chan_man, int argc, LPWSTR * argv
 				return 1;
 			}
 			/* TODO: Handle --data ... -- */
-			freerdp_chanman_load_plugin(chan_man, settings, argv[*pindex], NULL);
+			freerdp_chanman_load_plugin(wfi->chan_man, settings, argv[*pindex], NULL);
 		}
 		else if ((wcscmp(L"-h", argv[*pindex]) == 0) || wcscmp(L"--help", argv[*pindex]) == 0)
 		{
@@ -427,7 +426,7 @@ process_params(rdpSet * settings, rdpChanMan * chan_man, int argc, LPWSTR * argv
 }
 
 static int
-run_wfreerdp(struct thread_data * data)
+run_wfreerdp(wfInfo * wfi)
 {
 	rdpInst * inst;
 	void * read_fds[32];
@@ -443,7 +442,7 @@ run_wfreerdp(struct thread_data * data)
 
 	printf("run_wfreerdp:\n");
 	/* create an instance of the library */
-	inst = freerdp_new(data->settings);
+	inst = freerdp_new(wfi->settings);
 	if (inst == NULL)
 	{
 		printf("run_wfreerdp: freerdp_new failed\n");
@@ -462,12 +461,12 @@ run_wfreerdp(struct thread_data * data)
 	inst->settings->keyboard_layout = (int)GetKeyboardLayout(0) & 0x0000FFFF;
 	printf("keyboard_layout: 0x%08X\n", inst->settings->keyboard_layout);
 
-	if (wf_pre_connect(inst, data->hwnd) != 0)
+	if (wf_pre_connect(wfi, inst) != 0)
 	{
 		printf("run_wfreerdp: wf_pre_connect failed\n");
 		return 1;
 	}
-	if (freerdp_chanman_pre_connect(data->chan_man, inst) != 0)
+	if (freerdp_chanman_pre_connect(wfi->chan_man, inst) != 0)
 	{
 		printf("run_wfreerdp: freerdp_chanman_pre_connect failed\n");
 		return 1;
@@ -478,12 +477,12 @@ run_wfreerdp(struct thread_data * data)
 		printf("run_wfreerdp: inst->rdp_connect failed\n");
 		return 1;
 	}
-	if (freerdp_chanman_post_connect(data->chan_man, inst) != 0)
+	if (freerdp_chanman_post_connect(wfi->chan_man, inst) != 0)
 	{
 		printf("run_wfreerdp: freerdp_chanman_post_connect failed\n");
 		return 1;
 	}
-	if (wf_post_connect(inst) != 0)
+	if (wf_post_connect(wfi) != 0)
 	{
 		printf("run_wfreerdp: wf_post_connect failed\n");
 		return 1;
@@ -501,7 +500,7 @@ run_wfreerdp(struct thread_data * data)
 			break;
 		}
 		/* get channel fds */
-		if (freerdp_chanman_get_fds(data->chan_man, inst, read_fds, &read_count, write_fds, &write_count) != 0)
+		if (freerdp_chanman_get_fds(wfi->chan_man, inst, read_fds, &read_count, write_fds, &write_count) != 0)
 		{
 			printf("run_wfreerdp: freerdp_chanman_get_fds failed\n");
 			break;
@@ -536,7 +535,7 @@ run_wfreerdp(struct thread_data * data)
 			break;
 		}
 		/* check channel fds */
-		if (freerdp_chanman_check_fds(data->chan_man, inst) != 0)
+		if (freerdp_chanman_check_fds(wfi->chan_man, inst) != 0)
 		{
 			printf("run_wfreerdp: freerdp_chanman_check_fds failed\n");
 			break;
@@ -557,33 +556,33 @@ run_wfreerdp(struct thread_data * data)
 		{
 			break;
 		}
-		wf_update_window(inst);
+		wf_update_window(wfi);
 	}
 	/* cleanup */
-	freerdp_chanman_free(data->chan_man);
-	free(data->settings);
-	free(data);
-	wf_uninit(inst);
+	wf_uninit(wfi);
+	freerdp_chanman_free(wfi->chan_man);
 	freerdp_free(inst);
+	free(wfi->settings);
+	free(wfi);
 	return 0;
 }
 
 static DWORD WINAPI
 thread_func(LPVOID lpParam)
 {
-	struct thread_data * data;
+	wfInfo * wfi;
 	wchar_t win_title[64];
 
-	data = (struct thread_data *) lpParam;
-	if (data->settings->tcp_port_rdp == 3389)
-		_snwprintf(win_title, sizeof(win_title) / sizeof(win_title[0]), L"%S - freerdp", data->settings->server);
+	wfi = (wfInfo *) lpParam;
+	if (wfi->settings->tcp_port_rdp == 3389)
+		_snwprintf(win_title, sizeof(win_title) / sizeof(win_title[0]), L"%S - freerdp", wfi->settings->server);
 	else
-		_snwprintf(win_title, sizeof(win_title) / sizeof(win_title[0]), L"%S:%d - freerdp", data->settings->server, data->settings->tcp_port_rdp);
-	data->hwnd = CreateWindowEx(0, g_wnd_class_name, win_title,
+		_snwprintf(win_title, sizeof(win_title) / sizeof(win_title[0]), L"%S:%d - freerdp", wfi->settings->server, wfi->settings->tcp_port_rdp);
+	wfi->hwnd = CreateWindowEx(0, g_wnd_class_name, win_title,
 		WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT,
 		CW_USEDEFAULT, CW_USEDEFAULT, NULL,
 		NULL, g_hInstance, NULL);
-	run_wfreerdp(data);
+	run_wfreerdp(wfi);
 	g_thread_count--;
 	if (g_thread_count < 1)
 	{
@@ -597,7 +596,7 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdS
 {
 	WNDCLASSEX wnd_cls;
 	WSADATA wsa_data;
-	struct thread_data * data;
+	wfInfo * wfi;
 	int rv;
 	LPWSTR * argv;
 	int argc;
@@ -640,19 +639,19 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdS
 
 	while (1)
 	{
-		data = (struct thread_data *) malloc(sizeof(struct thread_data));
-		memset(data, 0, sizeof(struct thread_data));
-		data->settings = (rdpSet *) malloc(sizeof(rdpSet));
-		data->chan_man = freerdp_chanman_new();
-		rv = process_params(data->settings, data->chan_man, argc, argv, &index);
+		wfi = (wfInfo *) malloc(sizeof(wfInfo));
+		memset(wfi, 0, sizeof(wfInfo));
+		wfi->settings = (rdpSet *) malloc(sizeof(rdpSet));
+		wfi->chan_man = freerdp_chanman_new();
+		rv = process_params(wfi, argc, argv, &index);
 		if (rv)
 		{
-			freerdp_chanman_free(data->chan_man);
-			free(data->settings);
-			free(data);
+			freerdp_chanman_free(wfi->chan_man);
+			free(wfi->settings);
+			free(wfi);
 			break;
 		}
-		if (CreateThread(NULL, 0, thread_func, data, 0, NULL) != 0)
+		if (CreateThread(NULL, 0, thread_func, wfi, 0, NULL) != 0)
 		{
 			g_thread_count++;
 		}

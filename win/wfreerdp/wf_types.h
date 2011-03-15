@@ -22,6 +22,7 @@
 #define __WF_TYPES_H
 
 #include <windows.h>
+#include <freerdp/chanman.h>
 #include <freerdp/types_ui.h>
 
 #define SET_WFI(_inst, _wfi) (_inst)->param1 = _wfi
@@ -36,6 +37,11 @@ struct wf_bitmap
 
 struct wf_info
 {
+	/* RDP stuff */
+	rdpSet * settings;
+	rdpChanMan * chan_man;
+
+	/* Windows stuff */
 	HWND hwnd;
 	rdpInst * inst;
 	struct wf_bitmap * backstore;

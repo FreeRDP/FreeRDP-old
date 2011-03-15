@@ -20,16 +20,16 @@
 #ifndef __WF_WIN_H
 #define __WF_WIN_H
 
-#include <windows.h>
 #include <freerdp/freerdp.h>
+#include "wf_types.h"
 
 int
-wf_pre_connect(rdpInst * inst, HWND hwnd);
+wf_pre_connect(wfInfo * wfif, rdpInst * inst);
 int
-wf_post_connect(rdpInst * inst);
+wf_post_connect(wfInfo * wfi);
 int
-wf_update_window(rdpInst * inst);
+wf_update_window(wfInfo * wfi);
 void
-wf_uninit(rdpInst * inst);
+wf_uninit(wfInfo * wfi);
 
 #endif
