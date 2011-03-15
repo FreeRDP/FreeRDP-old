@@ -99,7 +99,7 @@ out_args(void)
 		"\t-d: domain\n"
 		"\t-s: shell\n"
 		"\t-c: directory\n"
-		"\t-g: geometry, using format WxH, default is 800x600\n"
+		"\t-g: geometry, using format WxH or X%, default is 800x600\n"
 		"\t-t: alternative port number, default is 3389\n"
 		"\t-n: hostname\n"
 		"\t-o: console audio\n"
@@ -239,11 +239,9 @@ process_params(wfInfo * wfi, int argc, LPWSTR * argv, int * pindex)
 			{
 				settings->height = wcstol(p + 1, &p, 10);
 			}
-			if ((settings->width < 16) || (settings->height < 16) ||
-				(settings->width > 4096) || (settings->height > 4096))
+			if (*p == '%')
 			{
-				printf("invalid dimensions\n");
-				return 1;
+				wfi->percentscreen = settings->width;
 			}
 		}
 		else if (wcscmp(L"-t", argv[*pindex]) == 0)

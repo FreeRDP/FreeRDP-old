@@ -44,6 +44,7 @@ struct wf_info
 	/* UI settings */
 	int fs_toggle;
 	int fullscreen;
+	int percentscreen;
 
 	/* Windows stuff */
 	HWND hwnd;

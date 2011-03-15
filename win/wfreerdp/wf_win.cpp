@@ -1102,13 +1102,33 @@ wf_assign_callbacks(rdpInst * inst)
 int
 wf_pre_connect(wfInfo * wfi)
 {
+	int i1;
+
 	wf_assign_callbacks(wfi->inst);
 	wfi->cursor = g_default_cursor;
+
+	if (wfi->percentscreen > 0)
+	{
+		i1 = (GetSystemMetrics(SM_CXSCREEN) * wfi->percentscreen) / 100;
+		wfi->settings->width = i1;
+		i1 = (GetSystemMetrics(SM_CYSCREEN) * wfi->percentscreen) / 100;
+		wfi->settings->height = i1;
+	}
 
 	if (wfi->fs_toggle)
 	{
 		wfi->inst->settings->width = GetSystemMetrics(SM_CXSCREEN);
 		wfi->inst->settings->height = GetSystemMetrics(SM_CYSCREEN);
+	}
+
+	i1 = wfi->settings->width;
+	i1 = (i1 + 3) & (~3);
+	wfi->settings->width = i1;
+	if ((wfi->settings->width < 64) || (wfi->settings->height < 64) ||
+		(wfi->settings->width > 4096) || (wfi->settings->height > 4096))
+	{
+		printf("wf_init: invalid dimensions %d %d\n", wfi->settings->width, wfi->settings->height);
+		return 1;
 	}
 
 	return 0;

@@ -45,9 +45,9 @@ struct xf_info
 	rdpInst * inst;
 
 	/* UI settings */
+	int fs_toggle;
 	int fullscreen;
 	int percentscreen;
-	int fs_toggle;
 	int keyboard_layout_id;
 	int decoration;
 

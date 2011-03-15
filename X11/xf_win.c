@@ -1050,6 +1050,7 @@ xf_pre_connect(xfInfo * xfi)
 	int i1;
 
 	xf_assign_callbacks(xfi->inst);
+
 	xfi->display = XOpenDisplay(NULL);
 	if (xfi->display == NULL)
 	{
@@ -1062,6 +1063,7 @@ xf_pre_connect(xfInfo * xfi)
 	xfi->depth = DefaultDepthOfScreen(xfi->screen);
 	xfi->xserver_be = (ImageByteOrder(xfi->display) == MSBFirst);
 	xf_kb_inst_init(xfi);
+
 	if (xfi->percentscreen > 0)
 	{
 		i1 = (WidthOfScreen(xfi->screen) * xfi->percentscreen) / 100;
@@ -1069,11 +1071,13 @@ xf_pre_connect(xfInfo * xfi)
 		i1 = (HeightOfScreen(xfi->screen) * xfi->percentscreen) / 100;
 		xfi->settings->height = i1;
 	}
-	if (xfi->fullscreen)
+
+	if (xfi->fs_toggle)
 	{
 		xfi->settings->width = WidthOfScreen(xfi->screen);
 		xfi->settings->height = HeightOfScreen(xfi->screen);
 	}
+
 	i1 = xfi->settings->width;
 	i1 = (i1 + 3) & (~3);
 	xfi->settings->width = i1;
@@ -1083,6 +1087,7 @@ xf_pre_connect(xfInfo * xfi)
 		printf("xf_init: invalid dimensions %d %d\n", xfi->settings->width, xfi->settings->height);
 		return 1;
 	}
+
 	return 0;
 }
 
