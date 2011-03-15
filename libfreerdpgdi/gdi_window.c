@@ -787,9 +787,16 @@ gdi_ui_patblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy
 		{
 
 		}
-		else if (brush->bd->color_code > 1) /*  > 1 bpp */
+		else
 		{
-			data = (char*) gdi_image_convert((char*) brush->bd->data, 8, 8, gdi->srcBpp, gdi->dstBpp, gdi->palette);
+			if (brush->bd->color_code > 1) /*  > 1 bpp */
+			{
+				data = (char*) gdi_image_convert((char*) brush->bd->data, 8, 8, gdi->srcBpp, gdi->dstBpp, gdi->palette);
+			}
+			else
+			{
+				data = (char*) gdi_mono_image_convert((char*) brush->bd->data, 8, 8, gdi->srcBpp, gdi->dstBpp, bgcolor, fgcolor, gdi->palette);
+			}
 			hBmp = CreateBitmap(8, 8, gdi->drawing->hdc->bitsPerPixel, data);
 
 			originalBrush = gdi->drawing->hdc->brush;
@@ -799,10 +806,6 @@ gdi_ui_patblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy
 
 			DeleteObject((HGDIOBJ) gdi->drawing->hdc->brush);
 			gdi->drawing->hdc->brush = originalBrush;
-		}
-		else
-		{
-
 		}
 	}
 	else if (brush->style == BS_SOLID)

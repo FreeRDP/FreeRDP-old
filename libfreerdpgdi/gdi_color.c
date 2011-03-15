@@ -63,9 +63,9 @@ gdi_color_convert(PIXEL *pixel, int color, int bpp, HPALETTE palette)
 char*
 gdi_image_convert(char* srcData, int width, int height, int srcBpp, int dstBpp, HPALETTE palette)
 {
-	int red;
-	int green;
-	int blue;
+	uint8 red;
+	uint8 green;
+	uint8 blue;
 	int index;
 	char *src8;
 	uint32 pixel;
@@ -100,6 +100,11 @@ gdi_image_convert(char* srcData, int width, int height, int srcBpp, int dstBpp, 
 			memcpy(dstData, srcData, width * height * 4);
 #endif
 		}
+		else if(dstBpp == 24)
+		{
+			dstData = (char*) malloc(width * height * 3);
+			memcpy(dstData, srcData, width * height * 3);
+		}
 		else if (dstBpp == 16)
 		{
 			dstData = (char*) malloc(width * height * 2);
@@ -131,10 +136,10 @@ gdi_image_convert(char* srcData, int width, int height, int srcBpp, int dstBpp, 
 		dst32 = (uint32 *) dstData;
 		for (index = width * height; index > 0; index--)
 		{
-			blue = *(src8++);
-			green = *(src8++);
 			red = *(src8++);
-			pixel = RGB24(red, green, blue);
+			green = *(src8++);
+			blue = *(src8++);
+			pixel = BGR24(red, green, blue);
 			*dst32 = pixel;
 			dst32++;
 		}
@@ -166,6 +171,7 @@ gdi_image_convert(char* srcData, int width, int height, int srcBpp, int dstBpp, 
 			pixel = *src16;
 			src16++;
 			GetRGB15(red, green, blue, pixel);
+			RGB_555_888(red, green, blue);
 			pixel = BGR24(red, green, blue);
 			*dst32 = pixel;
 			dst32++;
@@ -182,6 +188,7 @@ gdi_image_convert(char* srcData, int width, int height, int srcBpp, int dstBpp, 
 			pixel = *src16;
 			src16++;
 			GetRGB15(red, green, blue, pixel);
+			RGB_555_565(red, green, blue);
 			pixel = RGB16(red, green, blue);
 			*dst16 = pixel;
 			dst16++;
@@ -265,3 +272,144 @@ gdi_glyph_convert(int width, int height, char* data)
 	
 	return dstData;
 }
+
+
+char* gdi_mono_image_convert(char* srcData, int width, int height, int srcBpp, int dstBpp, int bgcolor, int fgcolor, HPALETTE palette)
+{
+	int index;
+	uint8* src8;
+	uint8* dst8;
+	uint16* dst16;
+	uint32* dst32;
+	char *dstData;
+	uint8 bitMask;
+	int bitIndex;
+	uint8 redBg, greenBg, blueBg;
+	uint8 redFg, greenFg, blueFg;
+
+	if(dstBpp == 8)
+	{
+		dstData = (char*) malloc(width * height);
+		src8 = (uint8*)srcData;
+		dst8 = (uint8*) dstData;
+		for(index = height; index > 0; index--)
+		{
+			// each bit encodes a pixel - the pallete index is coded in the red component
+			bitMask = *src8;
+			for(bitIndex = 7; bitIndex >= 0; bitIndex--)
+			{
+				if((bitMask >> bitIndex) & 0x01)
+				{
+					*dst8 = bgcolor;
+				}
+				else
+				{
+					*dst8 = fgcolor;
+				}
+				dst8++;
+			}
+			src8++;
+		}
+		return dstData;
+	}
+	else if(dstBpp == 15 || dstBpp == 16)
+	{
+		if(srcBpp == 15)
+		{
+			RGB15_RGB16(redBg, greenBg, blueBg, bgcolor);
+			RGB15_RGB16(redFg, greenFg, blueFg, fgcolor);
+		}
+
+		dstData = (char*) malloc(width * height * 2);
+		src8 = (uint8*)srcData;
+		dst16 = (uint16*) dstData;
+		for(index = height; index > 0; index--)
+		{
+			// each bit encodes a pixel
+			bitMask = *src8;
+			for(bitIndex = 7; bitIndex >= 0; bitIndex--)
+			{
+				if((bitMask >> bitIndex) & 0x01)
+				{
+					*dst16 = bgcolor;
+				}
+				else
+				{
+					*dst16 = fgcolor;
+				}
+				dst16++;
+			}
+			src8++;
+		}
+		return dstData;
+	}
+	else if(dstBpp == 24)
+	{
+		// get background and foreground color components
+		GetRGB(redBg, greenBg, blueBg, bgcolor);
+		GetRGB(redFg, greenFg, blueFg, fgcolor);
+
+		dstData = (char*) malloc(width * height * 3);
+		src8 = (uint8*)srcData;
+		dst8 = (uint8*) dstData;
+		for(index = height; index > 0; index--)
+		{
+			// each bit encodes a pixel
+			bitMask = *src8;
+			for(bitIndex = 7; bitIndex >= 0; bitIndex--)
+			{
+				if((bitMask >> bitIndex) & 0x01)
+				{
+					*dst8 = redBg;
+					dst8++;
+					*dst8 = greenBg;
+					dst8++;
+					*dst8 = blueBg;
+					dst8++;
+				}
+				else
+				{
+					*dst8 = redFg;
+					dst8++;
+					*dst8 = greenFg;
+					dst8++;
+					*dst8 = blueFg;
+					dst8++;
+				}
+			}
+			src8++;
+		}
+		return dstData;
+	}
+	else if(dstBpp == 32)
+	{
+		// get background and foreground color components
+		GetRGB(redBg, greenBg, blueBg, bgcolor);
+		GetRGB(redFg, greenFg, blueFg, fgcolor);
+
+		dstData = (char*) malloc(width * height * 4);
+		src8 = (uint8*)srcData;
+		dst32 = (uint32*) dstData;
+		for(index = height; index > 0; index--)
+		{
+			// each bit encodes a pixel
+			bitMask = *src8;
+			for(bitIndex = 7; bitIndex >= 0; bitIndex--)
+			{
+				if((bitMask >> bitIndex) & 0x01)
+				{
+					*dst32 = BGR32(redBg, greenBg, blueBg);
+				}
+				else
+				{
+					*dst32 = BGR32(redFg, greenFg, blueFg);
+				}
+				dst32++;
+			}
+			src8++;
+		}
+		return dstData;
+	}
+	return srcData;
+}
+

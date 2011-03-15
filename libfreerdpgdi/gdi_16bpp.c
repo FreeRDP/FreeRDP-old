@@ -29,12 +29,11 @@
 int FillRect_16bpp(HDC hdc, HRECT rect, HBRUSH hbr)
 {
 	int x, y;
-	char *dstp;
-	char r, g, b;
+	uint16 *dstp;
+	uint8 r, g, b;
 	int nXDest, nYDest;
 	int nWidth, nHeight;
 
-	uint16 *dstp16;
 	uint16 color16;
 	
 	RectToCRgn(rect, &nXDest, &nYDest, &nWidth, &nHeight);
@@ -48,15 +47,14 @@ int FillRect_16bpp(HDC hdc, HRECT rect, HBRUSH hbr)
 	
 	for (y = 0; y < nHeight; y++)
 	{
-		dstp = gdi_get_bitmap_pointer(hdc, nXDest, nYDest + y);
+		dstp = (uint16*)gdi_get_bitmap_pointer(hdc, nXDest, nYDest + y);
 
 		if (dstp != 0)
 		{
 			for (x = 0; x < nWidth; x++)
 			{
-				dstp16 = (uint16*) dstp;
-				*dstp16 = color16;
-				dstp += 2;
+				*dstp = color16;
+				dstp++;
 			}
 		}
 	}
@@ -370,7 +368,7 @@ static int BitBlt_DSPDxax_16bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth,
 	int x, y;
 	char *srcp;
 	char *dstp;
-	char r, g, b;
+	uint8 r, g, b;
 	HBITMAP hSrcBmp;
 
 	/* D = (S & P) | (~S & D)	*/
