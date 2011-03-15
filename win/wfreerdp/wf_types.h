@@ -41,8 +41,14 @@ struct wf_info
 	rdpSet * settings;
 	rdpChanMan * chan_man;
 
+	/* UI settings */
+	int fs_toggle;
+	int fullscreen;
+
 	/* Windows stuff */
 	HWND hwnd;
+	HWND hwnd_window;
+	HWND hwnd_full;
 	rdpInst * inst;
 	struct wf_bitmap * backstore;
 	struct wf_bitmap * drw;

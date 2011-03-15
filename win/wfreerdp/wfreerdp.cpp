@@ -104,6 +104,7 @@ out_args(void)
 		"\t-n: hostname\n"
 		"\t-o: console audio\n"
 		"\t-0: console session\n"
+		"\t-f: fullscreen mode\n"
 		"\t-z: enable bulk compression\n"
 		"\t-x: performance flags (m, b or l for modem, broadband or lan)\n"
 #ifndef DISABLE_TLS
@@ -281,6 +282,11 @@ process_params(wfInfo * wfi, int argc, LPWSTR * argv, int * pindex)
 		else if (wcscmp(L"--no-osb", argv[*pindex]) == 0)
 		{
 			settings->off_screen_bitmaps = 0;
+		}
+		else if (wcscmp(L"-f", argv[*pindex]) == 0)
+		{
+			wfi->fullscreen = wfi->fs_toggle = 1;
+			printf("full screen option\n");
 		}
 		else if (wcscmp(L"-x", argv[*pindex]) == 0)
 		{

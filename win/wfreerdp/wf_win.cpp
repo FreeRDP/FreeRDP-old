@@ -1104,6 +1104,13 @@ wf_pre_connect(wfInfo * wfi)
 {
 	wf_assign_callbacks(wfi->inst);
 	wfi->cursor = g_default_cursor;
+
+	if (wfi->fs_toggle)
+	{
+		wfi->inst->settings->width = GetSystemMetrics(SM_CXSCREEN);
+		wfi->inst->settings->height = GetSystemMetrics(SM_CYSCREEN);
+	}
+
 	return 0;
 }
 
@@ -1112,8 +1119,6 @@ wf_post_connect(wfInfo * wfi)
 {
 	int width;
 	int height;
-	RECT rc_client, rc_wnd;
-	POINT diff;
 	wchar_t win_title[64];
 
 	width = wfi->inst->settings->width;
@@ -1123,20 +1128,45 @@ wf_post_connect(wfInfo * wfi)
 	else
 		_snwprintf(win_title, sizeof(win_title) / sizeof(win_title[0]), L"%S:%d - freerdp", wfi->settings->server, wfi->settings->tcp_port_rdp);
 
-	wfi->hwnd = CreateWindowEx(0, g_wnd_class_name, win_title,
-		WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX,
-		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
-		NULL, NULL, g_hInstance, NULL);
-	SetWindowLongPtr(wfi->hwnd, GWLP_USERDATA, (LONG_PTR)wfi);
+	if (wfi->fullscreen)
+	{
+		if (!wfi->hwnd_full)
+		{
+			wfi->hwnd_full = CreateWindowEx(NULL, g_wnd_class_name, win_title,
+					WS_POPUP,
+					0, 0, width, height,
+					NULL, NULL, g_hInstance, NULL);
+			SetWindowLongPtr(wfi->hwnd_full, GWLP_USERDATA, (LONG_PTR)wfi);
+		}
+		wfi->hwnd = wfi->hwnd_full;
+	}
+	else
+	{
+		if (!wfi->hwnd_window)
+		{
+			RECT rc_client, rc_wnd;
+			POINT diff;
 
-	GetClientRect(wfi->hwnd, &rc_client);
-	GetWindowRect(wfi->hwnd, &rc_wnd);
-	diff.x = (rc_wnd.right - rc_wnd.left) - rc_client.right;
-	diff.y = (rc_wnd.bottom - rc_wnd.top) - rc_client.bottom;
-	MoveWindow(wfi->hwnd, rc_wnd.left, rc_wnd.top, width + diff.x, height + diff.y, FALSE);
+			wfi->hwnd_window = CreateWindowEx(NULL, g_wnd_class_name, win_title,
+					WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX,
+					CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
+					NULL, NULL, g_hInstance, NULL);
+			SetWindowLongPtr(wfi->hwnd_window, GWLP_USERDATA, (LONG_PTR)wfi);
 
-	wfi->backstore = wf_bitmap_new(wfi, width, height, 0, 0, NULL);
-	BitBlt(wfi->backstore->hdc, 0, 0, width, height, NULL, 0, 0, BLACKNESS);
+			GetClientRect(wfi->hwnd_window, &rc_client);
+			GetWindowRect(wfi->hwnd_window, &rc_wnd);
+			diff.x = (rc_wnd.right - rc_wnd.left) - rc_client.right;
+			diff.y = (rc_wnd.bottom - rc_wnd.top) - rc_client.bottom;
+			MoveWindow(wfi->hwnd_window, rc_wnd.left, rc_wnd.top, width + diff.x, height + diff.y, FALSE);
+		}
+		wfi->hwnd = wfi->hwnd_window;
+	}
+
+	if (!wfi->backstore)
+	{
+		wfi->backstore = wf_bitmap_new(wfi, width, height, 0, 0, NULL);
+		BitBlt(wfi->backstore->hdc, 0, 0, width, height, NULL, 0, 0, BLACKNESS);
+	}
 	wfi->drw = wfi->backstore;
 
 	ShowWindow(wfi->hwnd, SW_SHOWNORMAL);
@@ -1160,7 +1190,10 @@ wf_update_window(wfInfo * wfi)
 void
 wf_uninit(wfInfo * wfi)
 {
-	CloseWindow(wfi->hwnd);
+	if (wfi->hwnd_full)
+		CloseWindow(wfi->hwnd_full);
+	if (wfi->hwnd_window)
+		CloseWindow(wfi->hwnd_window);
 
 	wf_bitmap_free(wfi->backstore);
 	if (wfi->colormap != 0)
