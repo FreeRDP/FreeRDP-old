@@ -19,6 +19,7 @@
 
 #include <stdio.h>
 #include <freerdp/freerdp.h>
+#include "wf_types.h"
 #include "wf_event.h"
 
 extern HCURSOR g_default_cursor;

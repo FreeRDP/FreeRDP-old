@@ -21,32 +21,6 @@
 #define __WF_EVENT_H
 
 #include <windows.h>
-#include <freerdp/types_ui.h>
-
-#define SET_WFI(_inst, _wfi) (_inst)->param1 = _wfi
-#define GET_WFI(_inst) ((wfInfo *) ((_inst)->param1))
-
-struct wf_bitmap
-{
-	HDC hdc;
-	HBITMAP bitmap;
-	HBITMAP org_bitmap;
-};
-
-struct wf_info
-{
-	HWND hwnd;
-	rdpInst * inst;
-	struct wf_bitmap * backstore;
-	struct wf_bitmap * drw;
-	uint8 * colormap;
-	RECT update_rect;
-	int update_pending;
-	HCURSOR cursor;
-	HBRUSH brush;
-	HBRUSH org_brush;
-};
-typedef struct wf_info wfInfo;
 
 LRESULT CALLBACK
 wf_event_proc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam);
