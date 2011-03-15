@@ -67,7 +67,7 @@ gdi_image_convert(char* srcData, int width, int height, int srcBpp, int dstBpp, 
 	uint8 green;
 	uint8 blue;
 	int index;
-	char *src8;
+	uint8 *src8;
 	uint32 pixel;
 	uint16 *src16;
 	uint16 *dst16;
@@ -99,11 +99,6 @@ gdi_image_convert(char* srcData, int width, int height, int srcBpp, int dstBpp, 
 			dstData = (char*) malloc(width * height * 4);
 			memcpy(dstData, srcData, width * height * 4);
 #endif
-		}
-		else if(dstBpp == 24)
-		{
-			dstData = (char*) malloc(width * height * 3);
-			memcpy(dstData, srcData, width * height * 3);
 		}
 		else if (dstBpp == 16)
 		{
@@ -207,6 +202,7 @@ gdi_image_convert(char* srcData, int width, int height, int srcBpp, int dstBpp, 
 			red = palette->logicalPalette->entries[pixel].red;
 			green = palette->logicalPalette->entries[pixel].green;
 			blue = palette->logicalPalette->entries[pixel].blue;
+			RGB_888_565(red, green, blue);
 			pixel = RGB16(red, green, blue);
 			*dst16 = pixel;
 			dst16++;
@@ -225,6 +221,7 @@ gdi_image_convert(char* srcData, int width, int height, int srcBpp, int dstBpp, 
 			red = palette->logicalPalette->entries[pixel].red;
 			green = palette->logicalPalette->entries[pixel].green;
 			blue = palette->logicalPalette->entries[pixel].blue;
+			RGB_888_555(red, green, blue);
 			pixel = RGB15(red, green, blue);
 			*dst16 = pixel;
 			dst16++;
@@ -278,7 +275,6 @@ char* gdi_mono_image_convert(char* srcData, int width, int height, int srcBpp, i
 {
 	int index;
 	uint8* src8;
-	uint8* dst8;
 	uint16* dst16;
 	uint32* dst32;
 	char *dstData;
@@ -287,35 +283,28 @@ char* gdi_mono_image_convert(char* srcData, int width, int height, int srcBpp, i
 	uint8 redBg, greenBg, blueBg;
 	uint8 redFg, greenFg, blueFg;
 
-	if(dstBpp == 8)
+	if(dstBpp == 16)
 	{
-		dstData = (char*) malloc(width * height);
-		src8 = (uint8*)srcData;
-		dst8 = (uint8*) dstData;
-		for(index = height; index > 0; index--)
+		if(srcBpp == 8)
 		{
-			// each bit encodes a pixel - the pallete index is coded in the red component
-			bitMask = *src8;
-			for(bitIndex = 7; bitIndex >= 0; bitIndex--)
-			{
-				if((bitMask >> bitIndex) & 0x01)
-				{
-					*dst8 = bgcolor;
-				}
-				else
-				{
-					*dst8 = fgcolor;
-				}
-				dst8++;
-			}
-			src8++;
+			/* convert palette colors to 16-bit colors */
+			bgcolor &= 0xFF;
+			redBg = palette->logicalPalette->entries[bgcolor].red;
+			greenBg = palette->logicalPalette->entries[bgcolor].green;
+			blueBg = palette->logicalPalette->entries[bgcolor].blue;
+			RGB_888_565(redBg, greenBg, blueBg);
+			bgcolor = RGB16(redBg, greenBg, blueBg);
+
+			fgcolor &= 0xFF;
+			redFg = palette->logicalPalette->entries[fgcolor].red;
+			greenFg = palette->logicalPalette->entries[fgcolor].green;
+			blueFg = palette->logicalPalette->entries[fgcolor].blue;
+			RGB_888_565(redFg, greenFg, blueFg);
+			fgcolor = RGB16(redFg, greenFg, blueFg);
 		}
-		return dstData;
-	}
-	else if(dstBpp == 15 || dstBpp == 16)
-	{
 		if(srcBpp == 15)
 		{
+			/* convert 15-bit colors to 16-bit colors */
 			RGB15_RGB16(redBg, greenBg, blueBg, bgcolor);
 			RGB15_RGB16(redFg, greenFg, blueFg, fgcolor);
 		}
@@ -325,7 +314,7 @@ char* gdi_mono_image_convert(char* srcData, int width, int height, int srcBpp, i
 		dst16 = (uint16*) dstData;
 		for(index = height; index > 0; index--)
 		{
-			// each bit encodes a pixel
+			/* each bit encodes a pixel */
 			bitMask = *src8;
 			for(bitIndex = 7; bitIndex >= 0; bitIndex--)
 			{
@@ -343,47 +332,8 @@ char* gdi_mono_image_convert(char* srcData, int width, int height, int srcBpp, i
 		}
 		return dstData;
 	}
-	else if(dstBpp == 24)
-	{
-		// get background and foreground color components
-		GetRGB(redBg, greenBg, blueBg, bgcolor);
-		GetRGB(redFg, greenFg, blueFg, fgcolor);
-
-		dstData = (char*) malloc(width * height * 3);
-		src8 = (uint8*)srcData;
-		dst8 = (uint8*) dstData;
-		for(index = height; index > 0; index--)
-		{
-			// each bit encodes a pixel
-			bitMask = *src8;
-			for(bitIndex = 7; bitIndex >= 0; bitIndex--)
-			{
-				if((bitMask >> bitIndex) & 0x01)
-				{
-					*dst8 = redBg;
-					dst8++;
-					*dst8 = greenBg;
-					dst8++;
-					*dst8 = blueBg;
-					dst8++;
-				}
-				else
-				{
-					*dst8 = redFg;
-					dst8++;
-					*dst8 = greenFg;
-					dst8++;
-					*dst8 = blueFg;
-					dst8++;
-				}
-			}
-			src8++;
-		}
-		return dstData;
-	}
 	else if(dstBpp == 32)
 	{
-		// get background and foreground color components
 		GetRGB(redBg, greenBg, blueBg, bgcolor);
 		GetRGB(redFg, greenFg, blueFg, fgcolor);
 
@@ -392,7 +342,7 @@ char* gdi_mono_image_convert(char* srcData, int width, int height, int srcBpp, i
 		dst32 = (uint32*) dstData;
 		for(index = height; index > 0; index--)
 		{
-			// each bit encodes a pixel
+			/* each bit encodes a pixel */
 			bitMask = *src8;
 			for(bitIndex = 7; bitIndex >= 0; bitIndex--)
 			{
@@ -410,6 +360,9 @@ char* gdi_mono_image_convert(char* srcData, int width, int height, int srcBpp, i
 		}
 		return dstData;
 	}
+	else
+		DEBUG_GDI("conversion to %d bpp not implemented", dstBpp);
+
 	return srcData;
 }
 

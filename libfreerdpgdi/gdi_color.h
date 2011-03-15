@@ -45,7 +45,12 @@
 	_r = (_r >> 3); \
 	_g = (_g >> 2); \
 	_b = (_b >> 3);
- 
+
+#define RGB_888_555(_r, _g, _b) \
+	_r = (_r >> 3); \
+	_g = (_g >> 3); \
+	_b = (_b >> 3);
+
 /* COLORREF (RGB 24) */
 
 #ifdef USE_ALPHA
@@ -185,6 +190,11 @@
 	GetBGR16(_r, _g, _b, _p); \
  	RGB_565_888(_r, _g, _b); \
 	_p = RGB32(_r, _g, _b);
+
+#define RGB32_RGB16(_r, _g, _b, _p) \
+	GetRGB32(_r, _g, _b, _p); \
+ 	RGB_888_565(_r, _g, _b); \
+	_p = RGB16(_r, _g, _b);
 
 #define RGB15_RGB16(_r, _g, _b, _p) \
 	GetRGB15(_r, _g, _b, _p); \
