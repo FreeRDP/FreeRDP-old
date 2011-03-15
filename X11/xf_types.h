@@ -91,4 +91,10 @@ typedef struct xf_info xfInfo;
 #define DEBUG(fmt, ...) do { } while (0)
 #endif
 
+#ifdef WITH_DEBUG_KBD
+#define DEBUG_KBD(fmt, ...) printf("DBG (X-KBD) %s (%d): " fmt, __FUNCTION__, __LINE__, ## __VA_ARGS__)
+#else
+#define DEBUG_KBD(fmt, ...) do { } while (0)
+#endif
+
 #endif

@@ -62,4 +62,16 @@ struct wf_info
 };
 typedef struct wf_info wfInfo;
 
+#ifdef WITH_DEBUG
+#define DEBUG(fmt, ...)	printf("DBG (win) %s (%d): " fmt, __FUNCTION__, __LINE__, ## __VA_ARGS__)
+#else
+#define DEBUG(fmt, ...) do { } while (0)
+#endif
+
+#ifdef WITH_DEBUG_KBD
+#define DEBUG_KBD(fmt, ...) printf("DBG (win-KBD) %s (%d): " fmt, __FUNCTION__, __LINE__, ## __VA_ARGS__)
+#else
+#define DEBUG_KBD(fmt, ...) do { } while (0)
+#endif
+
 #endif

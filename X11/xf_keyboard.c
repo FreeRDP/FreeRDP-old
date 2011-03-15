@@ -36,7 +36,7 @@ void
 xf_kb_init(unsigned int keyboard_layout_id)
 {
 	xf_kb_keyboard_layout = freerdp_kbd_init(keyboard_layout_id);
-	printf("freerdp_kbd_init: %X\n", xf_kb_keyboard_layout);
+	DEBUG_KBD("freerdp_kbd_init: %X\n", xf_kb_keyboard_layout);
 }
 
 void
@@ -54,7 +54,7 @@ xf_kb_send_key(xfInfo * xfi, int flags, uint8 keycode)
 	{
 		/* This is a special key the actually sends two scancodes to the
 		   server.  It looks like Control - NumLock but with special flags. */
-		//printf("special VK_PAUSE\n");
+		//DEBUG_KBD("special VK_PAUSE\n");
 		if (flags & KBD_FLAG_UP)
 		{
 			xfi->inst->rdp_send_input(xfi->inst, RDP_INPUT_SCANCODE, 0x8200, 0x1d, 0);
