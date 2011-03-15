@@ -442,12 +442,14 @@ run_wfreerdp(wfInfo * wfi)
 
 	printf("run_wfreerdp:\n");
 	/* create an instance of the library */
-	inst = freerdp_new(wfi->settings);
+	wfi->inst = inst = freerdp_new(wfi->settings);
 	if (inst == NULL)
 	{
 		printf("run_wfreerdp: freerdp_new failed\n");
 		return 1;
 	}
+	SET_WFI(inst, wfi);
+
 	if ((inst->version != FREERDP_INTERFACE_VERSION) ||
 	    (inst->size != sizeof(rdpInst)))
 	{
@@ -461,7 +463,7 @@ run_wfreerdp(wfInfo * wfi)
 	inst->settings->keyboard_layout = (int)GetKeyboardLayout(0) & 0x0000FFFF;
 	printf("keyboard_layout: 0x%08X\n", inst->settings->keyboard_layout);
 
-	if (wf_pre_connect(wfi, inst) != 0)
+	if (wf_pre_connect(wfi) != 0)
 	{
 		printf("run_wfreerdp: wf_pre_connect failed\n");
 		return 1;
@@ -571,17 +573,8 @@ static DWORD WINAPI
 thread_func(LPVOID lpParam)
 {
 	wfInfo * wfi;
-	wchar_t win_title[64];
 
 	wfi = (wfInfo *) lpParam;
-	if (wfi->settings->tcp_port_rdp == 3389)
-		_snwprintf(win_title, sizeof(win_title) / sizeof(win_title[0]), L"%S - freerdp", wfi->settings->server);
-	else
-		_snwprintf(win_title, sizeof(win_title) / sizeof(win_title[0]), L"%S:%d - freerdp", wfi->settings->server, wfi->settings->tcp_port_rdp);
-	wfi->hwnd = CreateWindowEx(0, g_wnd_class_name, win_title,
-		WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT,
-		CW_USEDEFAULT, CW_USEDEFAULT, NULL,
-		NULL, g_hInstance, NULL);
 	run_wfreerdp(wfi);
 	g_thread_count--;
 	if (g_thread_count < 1)

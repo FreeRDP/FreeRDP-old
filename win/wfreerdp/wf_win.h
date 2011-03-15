@@ -20,11 +20,10 @@
 #ifndef __WF_WIN_H
 #define __WF_WIN_H
 
-#include <freerdp/freerdp.h>
 #include "wf_types.h"
 
 int
-wf_pre_connect(wfInfo * wfif, rdpInst * inst);
+wf_pre_connect(wfInfo * wfif);
 int
 wf_post_connect(wfInfo * wfi);
 int

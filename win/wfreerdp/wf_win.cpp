@@ -1100,16 +1100,10 @@ wf_assign_callbacks(rdpInst * inst)
 }
 
 int
-wf_pre_connect(wfInfo * wfi, rdpInst * inst)
+wf_pre_connect(wfInfo * wfi)
 {
-	wf_assign_callbacks(inst);
-	SET_WFI(inst, wfi);
-
-	wfi->inst = inst;
+	wf_assign_callbacks(wfi->inst);
 	wfi->cursor = g_default_cursor;
-
-	SetWindowLongPtr(wfi->hwnd, GWLP_USERDATA, (LONG_PTR)wfi);
-
 	return 0;
 }
 
@@ -1120,9 +1114,20 @@ wf_post_connect(wfInfo * wfi)
 	int height;
 	RECT rc_client, rc_wnd;
 	POINT diff;
+	wchar_t win_title[64];
 
 	width = wfi->inst->settings->width;
 	height = wfi->inst->settings->height;
+	if (wfi->settings->tcp_port_rdp == 3389)
+		_snwprintf(win_title, sizeof(win_title) / sizeof(win_title[0]), L"%S - freerdp", wfi->settings->server);
+	else
+		_snwprintf(win_title, sizeof(win_title) / sizeof(win_title[0]), L"%S:%d - freerdp", wfi->settings->server, wfi->settings->tcp_port_rdp);
+
+	wfi->hwnd = CreateWindowEx(0, g_wnd_class_name, win_title,
+		WS_OVERLAPPEDWINDOW,
+		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
+		NULL, NULL, g_hInstance, NULL);
+	SetWindowLongPtr(wfi->hwnd, GWLP_USERDATA, (LONG_PTR)wfi);
 
 	wfi->backstore = wf_bitmap_new(wfi, width, height, 0, 0, NULL);
 	BitBlt(wfi->backstore->hdc, 0, 0, width, height, NULL, 0, 0, BLACKNESS);
