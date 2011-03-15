@@ -1124,20 +1124,21 @@ wf_post_connect(wfInfo * wfi)
 		_snwprintf(win_title, sizeof(win_title) / sizeof(win_title[0]), L"%S:%d - freerdp", wfi->settings->server, wfi->settings->tcp_port_rdp);
 
 	wfi->hwnd = CreateWindowEx(0, g_wnd_class_name, win_title,
-		WS_OVERLAPPEDWINDOW,
+		WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX,
 		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
 		NULL, NULL, g_hInstance, NULL);
 	SetWindowLongPtr(wfi->hwnd, GWLP_USERDATA, (LONG_PTR)wfi);
-
-	wfi->backstore = wf_bitmap_new(wfi, width, height, 0, 0, NULL);
-	BitBlt(wfi->backstore->hdc, 0, 0, width, height, NULL, 0, 0, BLACKNESS);
-	wfi->drw = wfi->backstore;
 
 	GetClientRect(wfi->hwnd, &rc_client);
 	GetWindowRect(wfi->hwnd, &rc_wnd);
 	diff.x = (rc_wnd.right - rc_wnd.left) - rc_client.right;
 	diff.y = (rc_wnd.bottom - rc_wnd.top) - rc_client.bottom;
 	MoveWindow(wfi->hwnd, rc_wnd.left, rc_wnd.top, width + diff.x, height + diff.y, FALSE);
+
+	wfi->backstore = wf_bitmap_new(wfi, width, height, 0, 0, NULL);
+	BitBlt(wfi->backstore->hdc, 0, 0, width, height, NULL, 0, 0, BLACKNESS);
+	wfi->drw = wfi->backstore;
+
 	ShowWindow(wfi->hwnd, SW_SHOWNORMAL);
 	UpdateWindow(wfi->hwnd);
 
