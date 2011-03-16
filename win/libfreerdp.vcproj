@@ -205,10 +205,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\datablob.c"
-				>
-			</File>
-			<File
 				RelativePath="..\libfreerdp\ext.c"
 				>
 			</File>
@@ -226,10 +222,6 @@
 			</File>
 			<File
 				RelativePath="..\libfreerdp\mcs.c"
-				>
-			</File>
-			<File
-				RelativePath="..\libfreerdp\mem.c"
 				>
 			</File>
 			<File
@@ -359,10 +351,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\datablob.h"
-				>
-			</File>
-			<File
 				RelativePath="..\libfreerdp\debug.h"
 				>
 			</File>
@@ -392,10 +380,6 @@
 			</File>
 			<File
 				RelativePath="..\libfreerdp\mcs.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libfreerdp\mem.h"
 				>
 			</File>
 			<File
