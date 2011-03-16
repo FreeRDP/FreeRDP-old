@@ -20,6 +20,8 @@
 #ifndef __SECURE_H
 #define __SECURE_H
 
+typedef struct rdp_sec rdpSec;
+
 #include "crypto.h"
 #include "constants.h"
 
@@ -52,12 +54,10 @@ struct rdp_sec
 	struct rdp_licence * licence;
 	int tls_connected;
 #ifndef DISABLE_TLS
-	SSL *ssl;
-	SSL_CTX *ctx;
+	struct rdp_tls * tls;
 	struct rdp_credssp * credssp;
 #endif
 };
-typedef struct rdp_sec rdpSec;
 
 enum sec_recv_type
 {

@@ -152,7 +152,7 @@ tcp_send(rdpTcp * tcp, STREAM s)
 #ifndef DISABLE_TLS
 	if (tcp->iso->mcs->sec->tls_connected)
 	{
-		tls_write(tcp->iso->mcs->sec->ssl, (char*) s->data, length);
+		tls_write(tcp->iso->mcs->sec->tls, (char*) s->data, length);
 	}
 	else
 #endif
@@ -225,7 +225,7 @@ tcp_recv(rdpTcp * tcp, STREAM s, uint32 length)
 #ifndef DISABLE_TLS
 		if (tcp->iso->mcs->sec->tls_connected)
 		{
-			rcvd = tls_read(tcp->iso->mcs->sec->ssl, (char*) s->end, length);
+			rcvd = tls_read(tcp->iso->mcs->sec->tls, (char*) s->end, length);
 
 			if (rcvd < 0)
 				return NULL;

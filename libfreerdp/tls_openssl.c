@@ -35,6 +35,13 @@
 
 #include "tls.h"
 
+struct rdp_tls
+{
+	rdpSec * sec;
+	SSL_CTX * ctx;
+	SSL * ssl;
+};
+
 /* TODO: Implement SSL verify enforcement, disconnect when verify fails */
 
 /* check the identity in a certificate against a hostname */
@@ -102,7 +109,7 @@ exit:
  */
 
 static RD_BOOL
-tls_verify(SSL *connection, const char *server)
+tls_verify(rdpTls * tls, const char *server)
 {
 	/* TODO: Check for eku extension with server authentication purpose */
 
@@ -110,14 +117,14 @@ tls_verify(SSL *connection, const char *server)
 	X509 *server_cert = NULL;
 	int ret;
 
-	server_cert = SSL_get_peer_certificate(connection);
+	server_cert = SSL_get_peer_certificate(tls->ssl);
 	if (!server_cert)
 	{
 		printf("ssl_verify: failed to get the server SSL certificate\n");
 		goto exit;
 	}
 
-	ret = SSL_get_verify_result(connection);
+	ret = SSL_get_verify_result(tls->ssl);
 	if (ret != X509_V_OK)
 	{
 		printf("ssl_verify: error %d (see 'man 1 verify' for more information)\n", ret);
@@ -149,7 +156,7 @@ exit:
 }
 
 int
-tls_get_public_key(SSL *connection, DATABLOB *public_key)
+tls_get_public_key(rdpTls * tls, DATABLOB * public_key)
 {
 	int length;
 	int success = 1;
@@ -157,7 +164,7 @@ tls_get_public_key(SSL *connection, DATABLOB *public_key)
 	EVP_PKEY *pkey = NULL;
 	unsigned char *p;
 
-	cert = SSL_get_peer_certificate(connection);
+	cert = SSL_get_peer_certificate(tls->ssl);
 
 	if (!cert)
 	{
@@ -230,19 +237,24 @@ tls_printf(char *func, SSL *connection, int val)
 }
 
 /* Create TLS context */
-SSL_CTX*
-tls_create_context()
+rdpTls *
+tls_new(struct rdp_sec * sec)
 {
-	SSL_CTX* ctx;
+	rdpTls * tls;
+
+	tls = (rdpTls *) malloc(sizeof(rdpTls));
+	memset(tls, 0, sizeof(rdpTls));
+	tls->sec = sec;
 
 	SSL_load_error_strings();
 	SSL_library_init();
 
-	ctx = SSL_CTX_new(TLSv1_client_method());
+	tls->ctx = SSL_CTX_new(TLSv1_client_method());
 
-	if (ctx == NULL)
+	if (tls->ctx == NULL)
 	{
 		printf("SSL_CTX_new failed\n");
+		free(tls);
 		return NULL;
 	}
 
@@ -255,90 +267,90 @@ tls_create_context()
 	 * won't recognize it and will disconnect you after sending a TLS alert.
 	 */
 
-	SSL_CTX_set_options(ctx, SSL_OP_ALL);
+	SSL_CTX_set_options(tls->ctx, SSL_OP_ALL);
 
-	return ctx;
+	return tls;
 }
 
 void
-tls_destroy_context(SSL_CTX *ctx)
+tls_free(rdpTls * tls)
 {
-	SSL_CTX_free(ctx);
+	SSL_CTX_free(tls->ctx);
+	free(tls);
 }
 
 /* Initiate TLS handshake on socket */
-SSL*
-tls_connect(SSL_CTX *ctx, int sockfd, char *server)
+RD_BOOL
+tls_connect(rdpTls * tls, int sockfd, char *server)
 {
-	SSL *ssl;
 	int connection_status;
 
-	ssl = SSL_new(ctx);
+	tls->ssl = SSL_new(tls->ctx);
 
-	if (ssl == NULL)
+	if (tls->ssl == NULL)
 	{
 		printf("SSL_new failed\n");
-		return NULL;
+		return False;
 	}
 
-	if (SSL_set_fd(ssl, sockfd) < 1)
+	if (SSL_set_fd(tls->ssl, sockfd) < 1)
 	{
 		printf("SSL_set_fd failed\n");
-		return NULL;
+		return False;
 	}
 
 	do
 	{
 		/* SSL_WANT_READ errors are normal, just try again if it happens */
-		connection_status = SSL_connect(ssl);
+		connection_status = SSL_connect(tls->ssl);
 	}
-	while (SSL_get_error(ssl, connection_status) == SSL_ERROR_WANT_READ);
+	while (SSL_get_error(tls->ssl, connection_status) == SSL_ERROR_WANT_READ);
 
 	if (connection_status < 0)
 	{
-		if (tls_printf("SSL_connect", ssl, connection_status))
-			return NULL;
+		if (tls_printf("SSL_connect", tls->ssl, connection_status))
+			return False;
 	}
 
-	tls_verify(ssl, server);
+	tls_verify(tls, server);
 
 	printf("TLS connection established\n");
 
-	return ssl;
+	return True;
 }
 
 /* Free TLS resources */
 void
-tls_disconnect(SSL *ssl)
+tls_disconnect(rdpTls * tls)
 {
 	int ret;
 
-	if (!ssl)
+	if (!tls->ssl)
 		return;
 
 	while (True)
 	{
-		ret = SSL_shutdown(ssl);
+		ret = SSL_shutdown(tls->ssl);
 		if (ret >= 0)
 			break;
-		if (tls_printf("ssl_disconnect", ssl, ret))
+		if (tls_printf("ssl_disconnect", tls->ssl, ret))
 			break;
 	}
-	SSL_free(ssl);
-	ssl = NULL;
+	SSL_free(tls->ssl);
+	tls->ssl = NULL;
 }
 
 /* Write data over TLS connection */
-int tls_write(SSL *ssl, char* b, int length)
+int tls_write(rdpTls * tls, char* b, int length)
 {
 	int write_status;
 	int bytesWritten = 0;
 
 	while (bytesWritten < length)
 	{
-		write_status = SSL_write(ssl, b, length);
+		write_status = SSL_write(tls->ssl, b, length);
 
-		switch (SSL_get_error(ssl, write_status))
+		switch (SSL_get_error(tls->ssl, write_status))
 		{
 			case SSL_ERROR_NONE:
 				bytesWritten += write_status;
@@ -348,7 +360,7 @@ int tls_write(SSL *ssl, char* b, int length)
 				break;
 
 			default:
-				tls_printf("SSL_write", ssl, write_status);
+				tls_printf("SSL_write", tls->ssl, write_status);
 				return -1;
 				break;
 		}
@@ -357,15 +369,15 @@ int tls_write(SSL *ssl, char* b, int length)
 }
 
 /* Read data over TLS connection */
-int tls_read(SSL *ssl, char* b, int length)
+int tls_read(rdpTls * tls, char* b, int length)
 {
 	int status;
 
 	while (True)
 	{
-		status = SSL_read(ssl, b, length);
+		status = SSL_read(tls->ssl, b, length);
 
-		switch (SSL_get_error(ssl, status))
+		switch (SSL_get_error(tls->ssl, status))
 		{
 			case SSL_ERROR_NONE:
 				return status;
@@ -375,7 +387,7 @@ int tls_read(SSL *ssl, char* b, int length)
 				break;
 
 			default:
-				tls_printf("SSL_read", ssl, status);
+				tls_printf("SSL_read", tls->ssl, status);
 				return -1;
 				break;
 		}

@@ -20,30 +20,24 @@
 #ifndef __TLS_H
 #define	__TLS_H
 
-#include "tcp.h"
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include <openssl/rc4.h>
-#include <openssl/md5.h>
-#include <openssl/sha.h>
-#include <openssl/bn.h>
-#include <openssl/x509v3.h>
+typedef struct rdp_tls rdpTls;
 
+#include "tcp.h"
 #include "types.h"
 
-SSL_CTX*
-tls_create_context();
+rdpTls *
+tls_new(struct rdp_sec * sec);
 void
-tls_destroy_context(SSL_CTX *ctx);
-SSL*
-tls_connect(SSL_CTX *ctx, int sockfd, char *server);
+tls_free(rdpTls * tls);
+RD_BOOL
+tls_connect(rdpTls * tls, int sockfd, char * server);
 void
-tls_disconnect(SSL *ssl);
+tls_disconnect(rdpTls * tls);
 int
-tls_write(SSL *ssl, char* b, int length);
+tls_write(rdpTls * tls, char * b, int length);
 int
-tls_read(SSL *ssl, char* b, int length);
+tls_read(rdpTls * tls, char * b, int length);
 int
-tls_get_public_key(SSL *connection, DATABLOB *public_key);
+tls_get_public_key(rdpTls * tls, DATABLOB * public_key);
 
 #endif	// __TLS_H

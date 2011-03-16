@@ -994,8 +994,9 @@ sec_connect(rdpSec * sec, char *server, char *username, int port)
 		/* TLS with NLA was successfully negotiated */
 		RD_BOOL status = 1;
 		printf("TLS encryption with NLA negotiated\n");
-		sec->ctx = tls_create_context();
-		sec->ssl = tls_connect(sec->ctx, sec->mcs->iso->tcp->sock, server);
+		sec->tls = tls_new(sec);
+		if (!tls_connect(sec->tls, sec->mcs->iso->tcp->sock, server))
+			return False;
 		sec->tls_connected = 1;
 		sec->rdp->settings->encryption = 0;
 
@@ -1023,8 +1024,9 @@ sec_connect(rdpSec * sec, char *server, char *username, int port)
 		/* TLS without NLA was successfully negotiated */
 		RD_BOOL success;
 		printf("TLS encryption negotiated\n");
-		sec->ctx = tls_create_context();
-		sec->ssl = tls_connect(sec->ctx, sec->mcs->iso->tcp->sock, server);
+		sec->tls = tls_new(sec);
+		if (!tls_connect(sec->tls, sec->mcs->iso->tcp->sock, server))
+			return False;
 		sec->tls_connected = 1;
 		sec->rdp->settings->encryption = 0;
 		success = mcs_connect(sec->mcs);
@@ -1055,9 +1057,9 @@ sec_disconnect(rdpSec * sec)
 	mcs_disconnect(sec->mcs);
 
 #ifndef DISABLE_TLS
-	if (sec->ctx)
-		tls_destroy_context(sec->ctx);
-	sec->ctx = NULL;
+	if (sec->tls)
+		tls_free(sec->tls);
+	sec->tls = NULL;
 #endif
 
 	if (sec->rc4_decrypt_key)

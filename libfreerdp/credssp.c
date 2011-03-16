@@ -95,7 +95,7 @@ void credssp_ntlmssp_init(rdpCredssp * credssp)
 
 void credssp_get_public_key(rdpCredssp * credssp)
 {	
-	tls_get_public_key(credssp->sec->ssl, &credssp->public_key);
+	tls_get_public_key(credssp->sec->tls, &credssp->public_key);
 }
 
 /**
@@ -389,7 +389,7 @@ void credssp_send(rdpCredssp *credssp, STREAM negoToken, STREAM pubKeyAuth, STRE
 
 		if (enc_rval.encoded != -1)
 		{
-			tls_write(credssp->sec->ssl, buffer, size);
+			tls_write(credssp->sec->tls, buffer, size);
 		}
 
 		asn_DEF_TSRequest.free_struct(&asn_DEF_TSRequest, ts_request, 0);
@@ -418,7 +418,7 @@ int credssp_recv(rdpCredssp *credssp, STREAM negoToken, STREAM pubKeyAuth, STREA
 
 	recv_buffer = xmalloc(size);
 
-	bytes_read = tls_read(credssp->sec->ssl, recv_buffer, size);
+	bytes_read = tls_read(credssp->sec->tls, recv_buffer, size);
 
 	if (bytes_read < 0)
 		return -1;
