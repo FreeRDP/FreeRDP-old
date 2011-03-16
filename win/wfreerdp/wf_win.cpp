@@ -27,6 +27,7 @@
 extern LPCTSTR g_wnd_class_name;
 extern HINSTANCE g_hInstance;
 extern HCURSOR g_default_cursor;
+extern HWND g_focus_hWnd;
 
 // See http://msdn.microsoft.com/en-us/library/dd145130(VS.85).aspx
 static const DWORD rop3_code_table[] =
@@ -1189,6 +1190,7 @@ wf_post_connect(wfInfo * wfi)
 	}
 	wfi->drw = wfi->backstore;
 
+	g_focus_hWnd = wfi->hwnd;
 	ShowWindow(wfi->hwnd, SW_SHOWNORMAL);
 	UpdateWindow(wfi->hwnd);
 

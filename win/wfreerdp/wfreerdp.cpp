@@ -39,6 +39,7 @@ HINSTANCE g_hInstance;
 HCURSOR g_default_cursor;
 volatile int g_thread_count = 0;
 HANDLE g_done_event;
+HWND g_focus_hWnd;
 
 static int
 create_console(void)
@@ -581,10 +582,45 @@ thread_func(LPVOID lpParam)
 	wfi = (wfInfo *) lpParam;
 	run_wfreerdp(wfi);
 	g_thread_count--;
+	DEBUG("thread terminated - count now %d\n", g_thread_count);
 	if (g_thread_count < 1)
 	{
 		SetEvent(g_done_event);
 	}
+	return NULL;
+}
+
+static DWORD WINAPI
+kbd_thread_func(LPVOID lpParam)
+{
+	HHOOK hook_handle;
+	MSG msg;
+	BOOL bRet;
+
+	DEBUG("keyboard thread started\n");
+
+	hook_handle = SetWindowsHookEx(WH_KEYBOARD_LL, wf_ll_kbd_proc, NULL, 0);
+	if (hook_handle)
+	{
+		while( (bRet = GetMessage( &msg, NULL, 0, 0 )) != 0)
+		{
+			if (bRet == -1)
+			{
+				printf("keyboard thread error getting message\n");
+				break;
+			}
+			else
+			{
+				TranslateMessage(&msg);
+				DispatchMessage(&msg);
+			}
+		}
+		DEBUG("keyboard thread ended\n");
+		UnhookWindowsHookEx(hook_handle);
+	}
+	else
+		printf("failed to install keyboard hook\n");
+
 	return NULL;
 }
 
@@ -627,10 +663,12 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdS
 	wnd_cls.lpszClassName = g_wnd_class_name;
 	wnd_cls.hInstance     = hInstance;
 	wnd_cls.hIconSm       = LoadIcon(NULL, IDI_APPLICATION);
-
 	RegisterClassEx(&wnd_cls);
 
 	g_hInstance = hInstance;
+
+	if (!CreateThread(NULL, 0, kbd_thread_func, NULL, 0, NULL))
+		printf("error creating keyboard handler thread");
 
 	argv = CommandLineToArgvW(GetCommandLine(), &argc);
 

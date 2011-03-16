@@ -23,10 +23,51 @@
 #include "wf_event.h"
 
 extern HCURSOR g_default_cursor;
+extern HWND g_focus_hWnd;
 
 #define X_POS(lParam) (lParam & 0xffff)
 #define Y_POS(lParam) ((lParam >> 16) & 0xffff)
 #define SCANCODE(lParam) ((lParam >> 16) & 0xff)
+
+LRESULT CALLBACK
+wf_ll_kbd_proc(int nCode, WPARAM wParam, LPARAM lParam)
+{
+	HWND hWnd = g_focus_hWnd;
+	wfInfo * wfi;
+	DWORD scanCode, flags;
+
+	DEBUG_KBD("hWnd %X nCode %X\n", hWnd, nCode);
+	if (hWnd && (nCode == HC_ACTION)) {
+		switch (wParam) {
+		case WM_KEYDOWN:
+		case WM_SYSKEYDOWN:
+		case WM_KEYUP:
+		case WM_SYSKEYUP:
+			wfi = (wfInfo *) GetWindowLongPtr(hWnd, GWLP_USERDATA);
+			PKBDLLHOOKSTRUCT p = (PKBDLLHOOKSTRUCT) lParam;
+			scanCode = p->scanCode;
+			flags = p->flags;
+			DEBUG_KBD("wParam %04X scanCode %04X flags %02X vkCode %02X\n",
+					wParam, scanCode, flags, p->vkCode);
+
+			if ((scanCode == 0x36) && (flags & 1))
+			{
+				DEBUG_KBD("hack: right shift (x36) should not be extended\n");
+				flags &= ~1;
+			}
+
+			wfi->inst->rdp_send_input(wfi->inst, RDP_INPUT_SCANCODE,
+					((flags & 0x80) ? KBD_FLAG_UP : 0) |
+					((flags & 1) ? KBD_FLAG_EXT : 0),
+					scanCode, 0);
+			if (p->vkCode == VK_CAPITAL)
+				DEBUG_KBD("caps lock is processed on client side too to toggle caps lock indicator\n");
+			else
+				return 1;
+		}
+	}
+	return CallNextHookEx(NULL, nCode, wParam, lParam);
+}
 
 LRESULT CALLBACK
 wf_event_proc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
@@ -98,36 +139,6 @@ wf_event_proc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 		}
 		break;
 
-	case WM_KEYDOWN:
-		if (wfi != NULL)
-		{
-#ifdef WITH_DEBUG_KBD
-			printf("key down: lParam=0x%08X = %3d\n", lParam, SCANCODE(lParam));
-#endif
-			wfi->inst->rdp_send_input(wfi->inst, RDP_INPUT_SCANCODE,
-				RDP_KEYPRESS, SCANCODE(lParam), 0);
-		}
-		break;
-
-	case WM_KEYUP:
-		if (wfi != NULL)
-		{
-#ifdef WITH_DEBUG_KBD
-			printf("key up:   lParam=0x%08X = %3d\n", lParam, SCANCODE(lParam));
-#endif
-			wfi->inst->rdp_send_input(wfi->inst, RDP_INPUT_SCANCODE,
-				RDP_KEYRELEASE, SCANCODE(lParam), 0);
-			if (SCANCODE(lParam) == 56)
-			{
-#ifdef WITH_DEBUG_KBD
-				printf("faking key up for left ctrl = 29 for key up of AltGr = 56\n");
-#endif
-				wfi->inst->rdp_send_input(wfi->inst, RDP_INPUT_SCANCODE,
-					RDP_KEYRELEASE, 29, 0);
-			}
-		}
-		break;
-
 	case WM_SETCURSOR:
 		if (wfi != NULL)
 		{
@@ -139,10 +150,19 @@ wf_event_proc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 		}
 		break;
 
+	case WM_SETFOCUS:
+		DEBUG_KBD("getting focus %X\n", hWnd);
+		g_focus_hWnd = hWnd;
+		break;
+
+	case WM_KILLFOCUS:
+		DEBUG_KBD("loosing focus %X\n", hWnd);
+		if (g_focus_hWnd == hWnd)
+			g_focus_hWnd = NULL; // racy - but probably not in a fatal way
+		break;
+
 	default:
-		// Process the left-over messages
 		return DefWindowProc(hWnd, Msg, wParam, lParam);
 	}
-	// If something was not done, let it go
 	return 0;
 }
