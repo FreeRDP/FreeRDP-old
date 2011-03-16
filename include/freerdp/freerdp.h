@@ -140,6 +140,8 @@ struct rdp_inst
 		int flags, int total_size);
 	RD_BOOL (* ui_authenticate)(rdpInst * inst);
 	int (* ui_decode)(rdpInst * inst, uint8 * data, int data_size);
+	RD_BOOL (* ui_check_certificate)(rdpInst * inst, const char * fingerprint,
+		const char * subject, const char * issuer, RD_BOOL verified);
 };
 
 FREERDP_API rdpInst *

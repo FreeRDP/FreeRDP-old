@@ -442,6 +442,13 @@ ui_decode(rdpInst * inst, uint8 * data, int data_size)
 	return inst->ui_decode(inst, data, data_size);
 }
 
+RD_BOOL
+ui_check_certificate(rdpInst * inst, const char * fingerprint,
+		const char * subject, const char * issuer, RD_BOOL verified)
+{
+	return inst->ui_check_certificate(inst, fingerprint, subject, issuer, verified);
+}
+
 /* returns error */
 static int
 l_rdp_connect(rdpInst * inst)

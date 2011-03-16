@@ -937,6 +937,21 @@ l_ui_decode(struct rdp_inst * inst, uint8 * data, int data_size)
 	return 0;
 }
 
+RD_BOOL
+l_ui_check_certificate(rdpInst * inst, const char * fingerprint,
+	const char * subject, const char * issuer, RD_BOOL verified)
+{
+	printf("certificate details:\n");
+	printf("  Subject:\n    %s\n", subject);
+	printf("  Issued by:\n    %s\n", issuer);
+	printf("  Fingerprint:\n    %s\n",  fingerprint);
+
+	if (!verified)
+		printf("The server could not be authenticated. Connection security may be compromised!\n");
+
+	return True;
+}
+
 static int
 xf_assign_callbacks(rdpInst * inst)
 {
@@ -985,6 +1000,7 @@ xf_assign_callbacks(rdpInst * inst)
 	inst->ui_channel_data = l_ui_channel_data;
 	inst->ui_authenticate = l_ui_authenticate;
 	inst->ui_decode = l_ui_decode;
+	inst->ui_check_certificate = l_ui_check_certificate;
 	return 0;
 }
 

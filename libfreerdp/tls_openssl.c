@@ -24,6 +24,7 @@
 #include "mcs.h"
 #include "iso.h"
 #include "tcp.h"
+#include "rdp.h"
 
 #include <openssl/ssl.h>
 #include <openssl/err.h>
@@ -116,6 +117,13 @@ tls_verify(rdpTls * tls, const char *server)
 	RD_BOOL verified = False;
 	X509 *server_cert = NULL;
 	int ret;
+	unsigned char fp_buf[20];
+	unsigned int fp_len = sizeof(fp_buf);
+	unsigned int i;
+	char fingerprint[100];
+	char * p;
+	char * subject;
+	char * issuer;
 
 	server_cert = SSL_get_peer_certificate(tls->ssl);
 	if (!server_cert)
@@ -124,28 +132,29 @@ tls_verify(rdpTls * tls, const char *server)
 		goto exit;
 	}
 
-	ret = SSL_get_verify_result(tls->ssl);
-	if (ret != X509_V_OK)
+	subject = X509_NAME_oneline(X509_get_subject_name(server_cert), NULL, 0);
+	issuer = X509_NAME_oneline(X509_get_issuer_name(server_cert), NULL, 0);
+	X509_digest(server_cert, EVP_sha1(), fp_buf, &fp_len);
+	for (i = 0, p = fingerprint; i < fp_len; i++)
 	{
-		printf("ssl_verify: error %d (see 'man 1 verify' for more information)\n", ret);
-		printf("certificate details:\n  Subject:\n");
-		X509_NAME_print_ex_fp(stdout, X509_get_subject_name(server_cert), 4,
-				XN_FLAG_MULTILINE);
-		printf("\n  Issued by:\n");
-		X509_NAME_print_ex_fp(stdout, X509_get_issuer_name(server_cert), 4,
-				XN_FLAG_MULTILINE);
-		printf("\n");
-
+		snprintf(p, sizeof(fingerprint) - (p - fingerprint), "%02x", fp_buf[i]);
+		p += 2;
+		if (i < fp_len - 1)
+			*p++ = '-';
 	}
-	else
+	*p = '\0';
+
+	ret = SSL_get_verify_result(tls->ssl);
+	if (ret == X509_V_OK)
 	{
 		verified = tls_verify_peer_identity(server_cert, server);
 	}
 
-exit:
-	if (!verified)
-		printf("The server could not be authenticated. Connection security may be compromised!\n");
+	verified = ui_check_certificate(tls->sec->rdp->inst, fingerprint, subject, issuer, verified);
+	free(subject);
+	free(issuer);
 
+exit:
 	if (server_cert)
 	{
 		X509_free(server_cert);
@@ -312,7 +321,8 @@ tls_connect(rdpTls * tls, int sockfd, char *server)
 			return False;
 	}
 
-	tls_verify(tls, server);
+	if (!tls_verify(tls, server))
+		return False;
 
 	printf("TLS connection established\n");
 
