@@ -26,6 +26,16 @@
 
 /* Color Space Conversion */
  
+#define RGB_555_565(_r, _g, _b) \
+	_r = _r; \
+	_g = (_g << 1 & ~0x1) | (_g >> 4); \
+	_b = _b;
+
+#define RGB_555_888(_r, _g, _b) \
+	_r = (_r << 3 & ~0x7) | (_r >> 2); \
+	_g = (_g << 3 & ~0x7) | (_g >> 2); \
+	_b = (_b << 3 & ~0x7) | (_b >> 2);
+
 #define RGB_565_888(_r, _g, _b) \
 	_r = (_r << 3 & ~0x7) | (_r >> 2); \
 	_g = (_g << 2 & ~0x3) | (_g >> 4); \
@@ -35,7 +45,12 @@
 	_r = (_r >> 3); \
 	_g = (_g >> 2); \
 	_b = (_b >> 3);
- 
+
+#define RGB_888_555(_r, _g, _b) \
+	_r = (_r >> 3); \
+	_g = (_g >> 3); \
+	_b = (_b >> 3);
+
 /* COLORREF (RGB 24) */
 
 #ifdef USE_ALPHA
@@ -176,8 +191,20 @@
  	RGB_565_888(_r, _g, _b); \
 	_p = RGB32(_r, _g, _b);
 
+#define RGB32_RGB16(_r, _g, _b, _p) \
+	GetRGB32(_r, _g, _b, _p); \
+ 	RGB_888_565(_r, _g, _b); \
+	_p = RGB16(_r, _g, _b);
+
+#define RGB15_RGB16(_r, _g, _b, _p) \
+	GetRGB15(_r, _g, _b, _p); \
+	_g = (_g << 1 & ~0x1) | (_g >> 4); \
+	_p = RGB16(_r, _g, _b);
+
+
 void gdi_color_convert(PIXEL *pixel, int color, int bpp, HPALETTE palette);
 char* gdi_image_convert(char* srcData, int width, int height, int srcBpp, int dstBpp, HPALETTE palette);
 char* gdi_glyph_convert(int width, int height, char* data);
+char* gdi_mono_image_convert(char* srcData, int width, int height, int srcBpp, int dstBpp, int bgcolor, int fgcolor, HPALETTE palette);
 
 #endif /* __GDI_COLOR_H */
