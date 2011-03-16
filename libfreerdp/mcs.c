@@ -17,6 +17,7 @@
    limitations under the License.
 */
 
+#include <freerdp/utils.h>
 #include <freerdp/rdpset.h>
 #include "frdp.h"
 #include "iso.h"
@@ -24,7 +25,6 @@
 #include "chan.h"
 #include "secure.h"
 #include "rdp.h"
-#include "mem.h"
 #include "asn1.h"
 #include "debug.h"
 #include "tcp.h"

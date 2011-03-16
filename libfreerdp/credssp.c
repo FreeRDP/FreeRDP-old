@@ -17,6 +17,7 @@
    limitations under the License.
 */
 
+#include <freerdp/utils.h>
 #include <freerdp/rdpset.h>
 #include "frdp.h"
 #include "rdp.h"
@@ -25,7 +26,6 @@
 #include "secure.h"
 #include "stream.h"
 #include "types.h"
-#include "mem.h"
 #include "tcp.h"
 #include "mcs.h"
 #include "iso.h"
@@ -81,13 +81,9 @@ void credssp_ntlmssp_init(rdpCredssp * credssp)
 		ntlmssp_set_domain(ntlmssp, NULL);
 	}
 
-	ntlmssp_set_target_name(ntlmssp, settings->server);
-
 	ntlmssp_generate_client_challenge(ntlmssp);
 	ntlmssp_generate_random_session_key(ntlmssp);
 	ntlmssp_generate_exported_session_key(ntlmssp);
-
-	ntlmssp_set_workstation(ntlmssp, "workstation");
 	
 	ntlmssp->ntlm_v2 = 0;
 }
@@ -467,16 +463,6 @@ int credssp_recv(rdpCredssp *credssp, STREAM negoToken, STREAM pubKeyAuth, STREA
 
 	xfree(recv_buffer);
 	return 0;
-}
-
-void credssp_str_to_wstr(char* str, uint8* wstr, int length)
-{
-	int i;
-	for (i = 0; i < length; i++)
-	{
-		wstr[i * 2] = str[i];
-		wstr[i * 2 + 1] = '\0';
-	}
 }
 
 /**

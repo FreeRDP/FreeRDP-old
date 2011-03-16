@@ -17,13 +17,14 @@
    limitations under the License.
 */
 
+#include <freerdp/utils.h>
+
 #include "frdp.h"
 #include "iso.h"
 #include "mcs.h"
 #include "chan.h"
 #include "secure.h"
 #include "rdp.h"
-#include "mem.h"
 #include "asn1.h"
 
 /* Parse an ASN.1 BER header */

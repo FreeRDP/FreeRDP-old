@@ -18,11 +18,12 @@
    limitations under the License.
 */
 
+#include <freerdp/utils.h>
+
 #include "frdp.h"
 #include "cache.h"
 #include "rdp.h"
 #include "pstcache.h"
-#include "mem.h"
 #include "debug.h"
 
 #define NUM_ELEMENTS(array) (sizeof(array) / sizeof(array[0]))

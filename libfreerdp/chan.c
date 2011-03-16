@@ -17,15 +17,12 @@
    limitations under the License.
 */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <freerdp/constants_vchan.h>
+#include <freerdp/utils.h>
 #include <freerdp/rdpset.h>
+#include <freerdp/constants_vchan.h>
 #include "frdp.h"
 #include "chan.h"
 #include "mcs.h"
-#include "mem.h"
 #include "secure.h"
 #include "rdp.h"
 

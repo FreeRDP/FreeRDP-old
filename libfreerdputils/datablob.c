@@ -1,6 +1,6 @@
 /*
    FreeRDP: A Remote Desktop Protocol client.
-   DATABLOB routines
+   DATABLOB Utils
 
    Copyright 2011 Marc-Andre Moreau <marcandre.moreau@gmail.com>
 
@@ -17,8 +17,7 @@
    limitations under the License.
 */
 
-#include "mem.h"
-#include "datablob.h"
+#include <freerdp/utils.h>
 
 /**
  * Allocate memory for data blob.

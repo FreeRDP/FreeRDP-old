@@ -33,7 +33,7 @@ struct stream
 {
 	unsigned char *p;	/* current position */
 	unsigned char *end;	/* end of stream, < data+size, no read or write beyond this */
-	unsigned char *data;	/* pointer to stream-related mem.h-managed data */
+	unsigned char *data;	/* pointer to stream-related memory-managed data */
 	size_t size;		/* size of allocated data */
 
 	/* Saved positions for various layers */

@@ -17,6 +17,7 @@
    limitations under the License.
 */
 
+#include <freerdp/utils.h>
 #include <freerdp/rdpset.h>
 #include "frdp.h"
 #include "orderstypes.h"
@@ -25,7 +26,6 @@
 #include "pstcache.h"
 #include "cache.h"
 #include "bitmap.h"
-#include "mem.h"
 #include "debug.h"
 
 /* Read field indicating which parameters are present */

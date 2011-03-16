@@ -17,7 +17,7 @@
    limitations under the License.
 */
 
-#include "mem.h"
+#include <freerdp/utils.h>
 #include "types.h"
 
 #include <time.h>
@@ -100,9 +100,7 @@ void ntlmssp_set_username(NTLMSSP *ntlmssp, char* username)
 
 	if (username != NULL)
 	{
-		int length = strlen((char*) username);
-		datablob_alloc(&ntlmssp->username, length * 2);
-		credssp_str_to_wstr(username, ntlmssp->username.data, length);
+		ntlmssp->username.data = freerdp_uniconv_out(ntlmssp->uniconv, username, (size_t*) &(ntlmssp->username.length));
 	}
 }
 
@@ -118,9 +116,7 @@ void ntlmssp_set_domain(NTLMSSP *ntlmssp, char* domain)
 
 	if (domain != NULL)
 	{
-		int length = strlen((char*) domain);
-		datablob_alloc(&ntlmssp->domain, length * 2);
-		credssp_str_to_wstr(domain, ntlmssp->domain.data, length);
+		ntlmssp->domain.data = freerdp_uniconv_out(ntlmssp->uniconv, domain, (size_t*) &(ntlmssp->domain.length));
 	}
 }
 
@@ -136,54 +132,7 @@ void ntlmssp_set_password(NTLMSSP *ntlmssp, char* password)
 
 	if (password != NULL)
 	{
-		int length = strlen((char*) password);
-		datablob_alloc(&ntlmssp->password, length * 2);
-		credssp_str_to_wstr(password, ntlmssp->password.data, length);
-	}
-}
-
-/**
- * Set NTLMSSP workstation name.
- * @param ntlmssp
- * @param workstation workstation name
- */
-
-void ntlmssp_set_workstation(NTLMSSP *ntlmssp, char* workstation)
-{
-	datablob_free(&ntlmssp->workstation);
-
-	if (workstation != NULL)
-	{
-		int length = strlen((char*) workstation);
-		datablob_alloc(&ntlmssp->workstation, length * 2);
-		credssp_str_to_wstr(workstation, ntlmssp->workstation.data, length);
-	}
-}
-
-/**
- * Set NTLMSSP target name.
- * @param ntlmssp
- * @param target_name target name
- */
-
-void ntlmssp_set_target_name(NTLMSSP *ntlmssp, char* target_name)
-{
-	char service_name[8] = "TERMSRV/";
-	datablob_free(&ntlmssp->target_name);
-
-	if (target_name != NULL)
-	{
-		uint8 *p;
-		int length;
-
-		length = strlen((char*) target_name);
-		datablob_alloc(&ntlmssp->spn, length * 2 + (8 * 2));
-		p = (void*) ntlmssp->spn.data;
-
-		credssp_str_to_wstr(service_name, ntlmssp->spn.data, 8);
-
-		p = &p[16];
-		credssp_str_to_wstr(target_name, p, length);
+		ntlmssp->password.data = freerdp_uniconv_out(ntlmssp->uniconv, password, (size_t*) &(ntlmssp->password.length));
 	}
 }
 
@@ -1734,6 +1683,7 @@ NTLMSSP* ntlmssp_new()
 void ntlmssp_init(NTLMSSP *ntlmssp)
 {
 	ntlmssp->state = NTLMSSP_STATE_INITIAL;
+	ntlmssp->uniconv = freerdp_uniconv_new();
 }
 
 /**
@@ -1760,6 +1710,7 @@ void ntlmssp_uninit(NTLMSSP *ntlmssp)
 	datablob_free(&ntlmssp->nt_challenge_response);
 
 	ntlmssp_free_av_pairs(ntlmssp);
+	freerdp_uniconv_free(ntlmssp->uniconv);
 
 	ntlmssp->state = NTLMSSP_STATE_FINAL;
 }

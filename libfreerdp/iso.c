@@ -24,7 +24,7 @@
 #include "secure.h"
 #include "credssp.h"
 #include "rdp.h"
-#include "mem.h"
+#include <freerdp/utils.h>
 #include <freerdp/rdpset.h>
 
 /* TPKT from T123 - aka ISO DP 8073 */

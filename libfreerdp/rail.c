@@ -17,11 +17,11 @@
    limitations under the License.
 */
 
+#include <freerdp/utils.h>
 #include <freerdp/rdpset.h>
 #include "frdp.h"
 #include "rdp.h"
 #include "secure.h"
-#include "mem.h"
 #include "rail.h"
 
 void
@@ -42,11 +42,11 @@ rdp_send_client_execute_pdu(rdpRdp * rdp)
 	s = NULL;
 	rdp_out_rail_pdu_header(s, RDP_RAIL_ORDER_EXEC, 12);
 
-	application_name = xstrdup_out_unistr(rdp,
+	application_name = freerdp_uniconv_out(rdp->uniconv,
 			rdp->app->application_name, &application_name_len);
-	working_directory = xstrdup_out_unistr(rdp,
+	working_directory = freerdp_uniconv_out(rdp->uniconv,
 			rdp->app->working_directory, &working_directory_len);
-	arguments = xstrdup_out_unistr(rdp,
+	arguments = freerdp_uniconv_out(rdp->uniconv,
 			rdp->app->arguments, &arguments_len);
 
 	out_uint16_le(s,

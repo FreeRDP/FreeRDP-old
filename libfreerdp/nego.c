@@ -17,12 +17,9 @@
    limitations under the License.
 */
 
-#include <stdio.h>
-#include <string.h>
-
+#include <freerdp/utils.h>
 #include "frdp.h"
 #include "rdp.h"
-#include "mem.h"
 #include "tcp.h"
 #include "stream.h"
 

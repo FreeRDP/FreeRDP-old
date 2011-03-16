@@ -22,6 +22,7 @@
 #include <errno.h>
 #include <unistd.h>
 #endif
+#include <freerdp/utils.h>
 #include <freerdp/freerdp.h>
 #include "frdp.h"
 #include "iso.h"
@@ -35,7 +36,6 @@
 #include "pstcache.h"
 #include "cache.h"
 #include "bitmap.h"
-#include "mem.h"
 #include "debug.h"
 #include "ext.h"
 #include "surface.h"
@@ -234,82 +234,6 @@ rdp_send_frame_ack(rdpRdp * rdp, int frame_id)
 	return 0;
 }
 
-/* Convert str from DEFAULT_CODEPAGE to WINDOWS_CODEPAGE and return buffer like xstrdup.
- * Buffer is 0-terminated but that is not included in the returned length. */
-char*
-xstrdup_out_unistr(rdpRdp * rdp, char *str, size_t *pout_len)
-{
-	size_t ibl = strlen(str), obl = 2 * ibl; /* FIXME: worst case */
-	char *pin = str, *pout0 = xmalloc(obl + 2), *pout = pout0;
-#ifdef HAVE_ICONV
-	if (iconv(rdp->out_iconv_h, (ICONV_CONST char **) &pin, &ibl, &pout, &obl) == (size_t) - 1)
-	{
-		ui_error(rdp->inst, "xmalloc_out_unistr: iconv failure, errno %d\n", errno);
-		return NULL;
-	}
-#else
-	while ((ibl > 0) && (obl > 0))
-	{
-		if ((signed char)(*pin) < 0)
-		{
-			ui_error(rdp->inst, "xmalloc_out_unistr: wrong output conversion of char %d\n", *pin);
-		}
-		*pout++ = *pin++;
-		*pout++ = 0;
-		ibl--;
-		obl -= 2;
-	}
-#endif
-	if (ibl > 0)
-	{
-		ui_error(rdp->inst, "xmalloc_out_unistr: string not fully converted - %d chars left\n", ibl);
-	}
-	*pout_len = pout - pout0;
-	*pout++ = 0;	/* Add extra double zero termination */
-	*pout = 0;
-	return pout0;
-}
-
-/* Convert pin/in_len from WINDOWS_CODEPAGE - return like xstrdup, 0-terminated */
-char*
-xstrdup_in_unistr(rdpRdp * rdp, unsigned char* pin, size_t in_len)
-{
-	unsigned char *conv_pin = pin;
-	size_t conv_in_len = in_len;
-	char *pout = xmalloc(in_len + 1), *conv_pout = pout;
-	size_t conv_out_len = in_len;
-#ifdef HAVE_ICONV
-	if (iconv(rdp->in_iconv_h, (ICONV_CONST char **) &conv_pin, &conv_in_len, &conv_pout, &conv_out_len) == (size_t) - 1)
-	{
-		/* TODO: xrealloc if conv_out_len == 0 - it shouldn't be needed, but would allow a smaller initial alloc ... */
-		ui_error(rdp->inst, "xstrdup_in_unistr: iconv failure, errno %d\n", errno);
-		return 0;
-	}
-#else
-	while (conv_in_len >= 2)
-	{
-		if ((signed char)(*conv_pin) < 0)
-		{
-			ui_error(rdp->inst, "xstrdup_in_unistr: wrong input conversion of char %d\n", *conv_pin);
-		}
-		*conv_pout++ = *conv_pin++;
-		if ((*conv_pin) != 0)
-		{
-			ui_error(rdp->inst, "xstrdup_in_unistr: wrong input conversion skipping non-zero char %d\n", *conv_pin);
-		}
-		conv_pin++;
-		conv_in_len -= 2;
-		conv_out_len--;
-	}
-#endif
-	if (conv_in_len > 0)
-	{
-		ui_error(rdp->inst, "xstrdup_in_unistr: conversion failure - %d chars left\n", conv_in_len);
-	}
-	*conv_pout = 0;
-	return pout;
-}
-
 /* Output system time structure */
 void
 rdp_out_systemtime(STREAM s, systemTime sysTime)
@@ -380,7 +304,7 @@ rdp_out_client_timezone_info(rdpRdp * rdp, STREAM s)
 
 		out_uint32_le(s, bias);			/* bias */
 
-		p = xstrdup_out_unistr(rdp, standardName, &len);
+		p = freerdp_uniconv_out(rdp->uniconv, standardName, &len);
 		ASSERT(len <= 64 - 2);
 		out_uint8a(s, p, len + 2);
 		out_uint8s(s, 64 - len - 2);		/* standardName (64 bytes) */
@@ -389,7 +313,7 @@ rdp_out_client_timezone_info(rdpRdp * rdp, STREAM s)
 		rdp_out_systemtime(s, standardDate);	/* standardDate */
 		out_uint32_le(s, standardBias);		/* standardBias */
 
-		p = xstrdup_out_unistr(rdp, daylightName, &len);
+		p = freerdp_uniconv_out(rdp->uniconv, daylightName, &len);
 		ASSERT(len <= 64 - 2);
 		out_uint8a(s, p, len + 2);
 		out_uint8s(s, 64 - len - 2);		/* daylightName (64 bytes) */
@@ -434,12 +358,12 @@ rdp_send_client_info(rdpRdp * rdp, uint32 flags, char *domain_name,
 	if (rdp->settings->bulk_compression)
 		flags |= INFO_COMPRESSION | PACKET_COMPR_TYPE_64K;
 
-	domain = xstrdup_out_unistr(rdp, domain_name, &cbDomain);
-	userName = xstrdup_out_unistr(rdp, username, &cbUserName);
-	alternateShell = xstrdup_out_unistr(rdp, shell, &cbAlternateShell);
-	workingDir = xstrdup_out_unistr(rdp, dir, &cbWorkingDir);
-	clientAddress = xstrdup_out_unistr(rdp, tcp_get_address(rdp->sec->mcs->iso->tcp), &cbClientAddress);
-	clientDir = xstrdup_out_unistr(rdp, dll, &cbClientDir); /* client working directory OR binary name */
+	domain = freerdp_uniconv_out(rdp->uniconv, domain_name, &cbDomain);
+	userName = freerdp_uniconv_out(rdp->uniconv, username, &cbUserName);
+	alternateShell = freerdp_uniconv_out(rdp->uniconv, shell, &cbAlternateShell);
+	workingDir = freerdp_uniconv_out(rdp->uniconv, dir, &cbWorkingDir);
+	clientAddress = freerdp_uniconv_out(rdp->uniconv, tcp_get_address(rdp->sec->mcs->iso->tcp), &cbClientAddress);
+	clientDir = freerdp_uniconv_out(rdp->uniconv, dll, &cbClientDir); /* client working directory OR binary name */
 
 	length = 8 + (5 * 4) + cbDomain + cbUserName + cbPassword + cbAlternateShell + cbWorkingDir;
 
@@ -1462,7 +1386,7 @@ xstrdup_in_len32_unistr(rdpRdp * rdp, STREAM s)
 	unsigned char *p;
 	in_uint32_le(s, len);
 	in_uint8p(s, p, len);
-	return xstrdup_in_unistr(rdp, p, len);
+	return freerdp_uniconv_in(rdp->uniconv, p, len);
 }
 
 /* Process Server Redirection Packet */
@@ -1752,7 +1676,7 @@ rdp_connect(rdpRdp * rdp)
 	if (!sec_connect(rdp->sec, rdp->settings->server, rdp->settings->username, rdp->settings->tcp_port_rdp))
 		return False;
 
-	password_encoded = xstrdup_out_unistr(rdp, rdp->settings->password, &password_encoded_len);
+	password_encoded = freerdp_uniconv_out(rdp->uniconv, rdp->settings->password, &password_encoded_len);
 	rdp_send_client_info(rdp, connect_flags, rdp->settings->domain, rdp->settings->username, password_encoded, password_encoded_len, rdp->settings->shell, rdp->settings->directory);
 	xfree(password_encoded);
 
@@ -1790,7 +1714,7 @@ rdp_reconnect(rdpRdp * rdp)
 		password_len = rdp->redirect_password_len;
 	}
 	else
-		password = xstrdup_out_unistr(rdp, rdp->settings->password, &password_len);
+		password = freerdp_uniconv_out(rdp->uniconv, rdp->settings->password, &password_len);
 	rdp_send_client_info(rdp, INFO_NORMALLOGON | INFO_AUTOLOGON,
 			domain, username, password, password_len,
 			rdp->settings->shell, rdp->settings->directory);
@@ -1818,18 +1742,7 @@ rdp_new(struct rdp_set *settings, struct rdp_inst *inst)
 		self->settings = settings;
 		self->inst = inst;
 		self->current_status = 1;
-#ifdef HAVE_ICONV
-		self->in_iconv_h = iconv_open(DEFAULT_CODEPAGE, WINDOWS_CODEPAGE);
-		if (errno == EINVAL)
-		{
-			DEBUG("Error opening iconv converter to %s from %s\n", DEFAULT_CODEPAGE, WINDOWS_CODEPAGE);
-		}
-		self->out_iconv_h = iconv_open(WINDOWS_CODEPAGE, DEFAULT_CODEPAGE);
-		if (errno == EINVAL)
-		{
-			DEBUG("Error opening iconv converter to %s from %s\n", WINDOWS_CODEPAGE, DEFAULT_CODEPAGE);
-		}
-#endif
+		self->uniconv = freerdp_uniconv_new();
 		self->buffer_size = 2048;
 		self->buffer = xmalloc(self->buffer_size);
 		memset(self->buffer, 0, self->buffer_size);
@@ -1849,10 +1762,7 @@ rdp_free(rdpRdp * rdp)
 
 	if (rdp != NULL)
 	{
-#ifdef HAVE_ICONV
-		iconv_close(rdp->in_iconv_h);
-		iconv_close(rdp->out_iconv_h);
-#endif
+		freerdp_uniconv_free(rdp->uniconv);
 		cache_free(rdp->cache);
 		pcache_free(rdp->pcache);
 		orders_free(rdp->orders);

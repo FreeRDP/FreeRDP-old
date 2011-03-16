@@ -17,9 +17,9 @@
    limitations under the License.
 */
 
+#include <freerdp/utils.h>
 #include "frdp.h"
 #include "crypto.h"
-#include "mem.h"
 
 /* TODO: Merge with ssl.c */
 #include "ssl.h"

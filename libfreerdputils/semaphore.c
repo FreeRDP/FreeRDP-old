@@ -1,6 +1,6 @@
 /*
    FreeRDP: A Remote Desktop Protocol client.
-   Utility Library
+   Semaphore Utils
 
    Copyright 2011 Marc-Andre Moreau <marcandre.moreau@gmail.com>
 

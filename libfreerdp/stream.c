@@ -17,9 +17,9 @@
    limitations under the License.
 */
 
+#include <freerdp/utils.h>
 #include "frdp.h"
 #include "stream.h"
-#include "mem.h"
 
 int
 stream_init(struct stream * st, size_t size)

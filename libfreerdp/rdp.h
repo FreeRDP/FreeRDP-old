@@ -21,6 +21,7 @@
 #define __RDP_H
 
 #include <time.h>
+#include <freerdp/utils.h>
 #include <freerdp/types_ui.h>
 #include "types.h"
 
@@ -39,10 +40,7 @@ struct rdp_rdp
 	uint32 packetno;
 	STREAM rdp_s;
 	int current_status;
-#ifdef HAVE_ICONV
-	void* in_iconv_h;	/* non-thread-safe converter to DEFAULT_CODEPAGE from WINDOWS_CODEPAGE */
-	void* out_iconv_h;	/* non-thread-safe converter to WINDOWS_CODEPAGE from DEFAULT_CODEPAGE */
-#endif
+	UNICONV *uniconv;
 	RDPCOMP mppc_dict;
 	struct rdp_sec * sec;
 	struct rdp_set * settings; // RDP settings
@@ -94,10 +92,6 @@ int
 mppc_expand(rdpRdp * rdp, uint8 * data, uint32 clen, uint8 ctype, uint32 * roff, uint32 * rlen);
 void
 rdp5_process(rdpRdp * rdp, STREAM s);
-char*
-xstrdup_out_unistr(rdpRdp * rdp, char *str, size_t *pout_len);
-char*
-xstrdup_in_unistr(rdpRdp * rdp, unsigned char* pin, size_t in_len);
 void
 rdp_send_input(rdpRdp * rdp, time_t time, uint16 message_type, uint16 device_flags, uint16 param1,
 	       uint16 param2);

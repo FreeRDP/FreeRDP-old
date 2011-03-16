@@ -17,13 +17,13 @@
    limitations under the License.
 */
 
+#include <freerdp/utils.h>
 #include <freerdp/rdpset.h>
 #include "frdp.h"
 #include "rdp.h"
 #include "pstcache.h"
 #include "capabilities.h"
 #include "stream.h"
-#include "mem.h"
 #include "surface.h"
 
 typedef uint8 * capsetHeaderRef;

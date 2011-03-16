@@ -958,6 +958,7 @@ AC_CONFIG_FILES([
 Makefile
 freerdp.pc
 asn1/Makefile
+libfreerdputils/Makefile
 libfreerdp/Makefile
 docs/Makefile
 include/Makefile
@@ -965,7 +966,6 @@ libfreerdpkbd/Makefile
 keymaps/Makefile
 cunit/Makefile
 libfreerdpgdi/Makefile
-libfreerdputils/Makefile
 libfreerdpchanman/Makefile
 X11/Makefile
 dfb/Makefile

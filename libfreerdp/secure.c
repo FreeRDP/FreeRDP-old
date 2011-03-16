@@ -17,6 +17,7 @@
    limitations under the License.
 */
 
+#include <freerdp/utils.h>
 #include <freerdp/rdpset.h>
 #include "frdp.h"
 #include "mcs.h"
@@ -25,7 +26,6 @@
 #include "licence.h"
 #include "rdp.h"
 #include "iso.h"
-#include "mem.h"
 #include "debug.h"
 #include "tcp.h"
 #include "types.h"
@@ -399,7 +399,7 @@ sec_out_client_core_data(rdpSec * sec, rdpSet * settings, STREAM s)
 	out_uint32_le(s, 2600);				/* clientBuild */
 
 	/* Unicode name of client, truncated to 15 characters */
-	p = xstrdup_out_unistr(sec->rdp, settings->hostname, &len);
+	p = freerdp_uniconv_out(sec->rdp->uniconv, settings->hostname, &len);
 	if (len > 30)
 	{
 		len = 30;

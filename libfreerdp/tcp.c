@@ -29,13 +29,13 @@
 #include <fcntl.h>		/* fcntl F_GETFL F_SETFL O_NONBLOCK */
 #endif
 
+#include <freerdp/utils.h>
 #include "frdp.h"
 #include "tcp.h"
 #include "iso.h"
 #include "mcs.h"
 #include "secure.h"
 #include "rdp.h"
-#include "mem.h"
 
 #ifdef _WIN32
 #define socklen_t int

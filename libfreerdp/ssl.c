@@ -18,8 +18,8 @@
    limitations under the License.
 */
 
+#include <freerdp/utils.h>
 #include "frdp.h"
-#include "mem.h"
 #include "ssl.h"
 
 /*****************************************************************************/

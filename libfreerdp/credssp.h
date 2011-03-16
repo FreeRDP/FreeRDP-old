@@ -47,7 +47,6 @@ void credssp_encode_ts_credentials(rdpCredssp *credssp);
 
 void credssp_nonce(uint8* nonce, int size);
 void credssp_current_time(uint8* timestamp);
-void credssp_str_to_wstr(char* str, uint8* wstr, int length);
 void credssp_rc4k(uint8* key, int length, uint8* plaintext, uint8* ciphertext);
 
 rdpCredssp* credssp_new(rdpSec *sec);

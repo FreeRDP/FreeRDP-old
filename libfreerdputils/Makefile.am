@@ -6,7 +6,10 @@ libfreerdputilsdir = $(libdir)
 libfreerdputils_LTLIBRARIES = libfreerdputils.la
 
 libfreerdputils_la_SOURCES = \
-	libfreerdputils.c
+	datablob.c \
+	memory.c \
+	semaphore.c \
+	unicode.c
 
 libfreerdputils_la_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include
 

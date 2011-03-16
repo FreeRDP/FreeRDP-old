@@ -10,7 +10,6 @@ libfreerdp_la_SOURCES = \
 	bitmap.c bitmap.h \
 	cache.c cache.h \
 	capabilities.c capabilities.h \
-	datablob.c datablob.h \
 	chan.c chan.h \
 	constants.h \
 	constants_capabilities.h \
@@ -25,7 +24,6 @@ libfreerdp_la_SOURCES = \
 	iso.c iso.h \
 	licence.c licence.h \
 	mcs.c mcs.h \
-	mem.c mem.h \
 	mppc.c \
 	orders.c orders.h \
 	orderstypes.h \
@@ -71,7 +69,10 @@ libfreerdp_la_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include \
 
 libfreerdp_la_LDFLAGS =
 
-libfreerdp_la_LIBADD = ../asn1/libasn1.la @CRYPTO_LIBS@ @LIBICONV@
+libfreerdp_la_LIBADD = \
+	../asn1/libasn1.la \
+	../libfreerdputils/libfreerdputils.la \
+	@CRYPTO_LIBS@ @LIBICONV@
 
 # extra
 EXTRA_DIST =

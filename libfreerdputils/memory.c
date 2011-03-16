@@ -1,6 +1,6 @@
 /*
    FreeRDP: A Remote Desktop Protocol client.
-   Channels
+   Memory Utils
 
    Copyright (C) Jay Sorg 2009-2011
 
@@ -17,9 +17,7 @@
    limitations under the License.
 */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <freerdp/utils.h>
 
 void *
 xmalloc(size_t size)
