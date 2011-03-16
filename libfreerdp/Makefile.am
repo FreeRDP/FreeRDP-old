@@ -36,6 +36,7 @@ libfreerdp_la_SOURCES = \
 	tcp.c tcp.h \
 	nego.c nego.h \
 	types.h debug.h frdp.h \
+	errinfo.c \
 	surface.c surface.h
 
 if CRYPTO_NSS
