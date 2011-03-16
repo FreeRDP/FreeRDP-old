@@ -118,7 +118,6 @@ gdi_image_convert(char* srcData, int width, int height, int srcBpp, int dstBpp, 
 		}
 		else
 		{
-			printf("OMG HAX BPP:%d\n", dstBpp);
 			dstData = (char*) malloc(width * height * 4);
 			memcpy(dstData, srcData, width * height * 4);
 		}
