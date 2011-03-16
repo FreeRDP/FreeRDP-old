@@ -20,12 +20,17 @@
 #ifndef __LIBFREERDPUTILS_H
 #define __LIBFREERDPUTILS_H
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stddef.h>
 
 /* semaphore utils */
+
 void freerdp_sem_create(void * sem_struct, int iv);
 void freerdp_sem_signal(void * sem_struct);
 void freerdp_sem_wait(void * sem_struct);
@@ -51,8 +56,15 @@ void datablob_free(DATABLOB *datablob);
 
 /* unicode utils */
 
+#define DEFAULT_CODEPAGE	"UTF-8"
+#define WINDOWS_CODEPAGE	"UTF-16LE"
+
 #ifdef HAVE_ICONV
 #include <iconv.h>
+#endif
+
+#ifndef ICONV_CONST
+#define ICONV_CONST ""
 #endif
 
 struct _UNICONV

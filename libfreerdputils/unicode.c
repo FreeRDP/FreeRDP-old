@@ -18,6 +18,7 @@
 */
 
 #include <freerdp/utils.h>
+#include <errno.h>
 
 /* Convert pin/in_len from WINDOWS_CODEPAGE - return like xstrdup, 0-terminated */
 
@@ -32,7 +33,7 @@ char* freerdp_uniconv_in(UNICONV *uniconv, unsigned char* pin, size_t in_len)
 	if (iconv(uniconv->in_iconv_h, (ICONV_CONST char **) &conv_pin, &conv_in_len, &conv_pout, &conv_out_len) == (size_t) - 1)
 	{
 		/* TODO: xrealloc if conv_out_len == 0 - it shouldn't be needed, but would allow a smaller initial alloc ... */
-		//printf("freerdp_in_unicode: iconv failure, errno %d\n", errno);
+		printf("freerdp_uniconv_in: iconv failure\n");
 		return 0;
 	}
 #else
@@ -40,12 +41,12 @@ char* freerdp_uniconv_in(UNICONV *uniconv, unsigned char* pin, size_t in_len)
 	{
 		if ((signed char)(*conv_pin) < 0)
 		{
-			//printf("xstrdup_in_unistr: wrong input conversion of char %d\n", *conv_pin);
+			printf("freerdp_uniconv_in: wrong input conversion of char %d\n", *conv_pin);
 		}
 		*conv_pout++ = *conv_pin++;
 		if ((*conv_pin) != 0)
 		{
-			//printf("xstrdup_in_unistr: wrong input conversion skipping non-zero char %d\n", *conv_pin);
+			printf("freerdp_uniconv_in: wrong input conversion skipping non-zero char %d\n", *conv_pin);
 		}
 		conv_pin++;
 		conv_in_len -= 2;
@@ -55,7 +56,7 @@ char* freerdp_uniconv_in(UNICONV *uniconv, unsigned char* pin, size_t in_len)
 
 	if (conv_in_len > 0)
 	{
-		//printf("xstrdup_in_unistr: conversion failure - %d chars left\n", conv_in_len);
+		printf("freerdp_uniconv_in: conversion failure - %d chars left\n", (int) conv_in_len);
 	}
 
 	*conv_pout = 0;
@@ -73,6 +74,7 @@ char* freerdp_uniconv_out(UNICONV *uniconv, char *str, size_t *pout_len)
 #ifdef HAVE_ICONV
 	if (iconv(uniconv->out_iconv_h, (ICONV_CONST char **) &pin, &ibl, &pout, &obl) == (size_t) - 1)
 	{
+		printf("freerdp_uniconv_out: iconv() error\n");
 		return NULL;
 	}
 #else
@@ -91,7 +93,7 @@ char* freerdp_uniconv_out(UNICONV *uniconv, char *str, size_t *pout_len)
 
 	if (ibl > 0)
 	{
-		//printf("xmalloc_out_unistr: string not fully converted - %d chars left\n", ibl);
+		printf("freerdp_uniconv_out: string not fully converted - %d chars left\n", (int) ibl);
 	}
 
 	*pout_len = pout - pout0;
@@ -110,12 +112,12 @@ UNICONV* freerdp_uniconv_new()
 	uniconv->in_iconv_h = iconv_open(DEFAULT_CODEPAGE, WINDOWS_CODEPAGE);
 	if (errno == EINVAL)
 	{
-		//DEBUG("Error opening iconv converter to %s from %s\n", DEFAULT_CODEPAGE, WINDOWS_CODEPAGE);
+		printf("Error opening iconv converter to %s from %s\n", DEFAULT_CODEPAGE, WINDOWS_CODEPAGE);
 	}
 	uniconv->out_iconv_h = iconv_open(WINDOWS_CODEPAGE, DEFAULT_CODEPAGE);
 	if (errno == EINVAL)
 	{
-		//DEBUG("Error opening iconv converter to %s from %s\n", WINDOWS_CODEPAGE, DEFAULT_CODEPAGE);
+		printf("Error opening iconv converter to %s from %s\n", WINDOWS_CODEPAGE, DEFAULT_CODEPAGE);
 	}
 #endif
 
@@ -127,8 +129,8 @@ void freerdp_uniconv_free(UNICONV *uniconv)
 	if (uniconv != NULL)
 	{
 #ifdef HAVE_ICONV
-		iconv_close(rdp->in_iconv_h);
-		iconv_close(rdp->out_iconv_h);
+		iconv_close(uniconv->in_iconv_h);
+		iconv_close(uniconv->out_iconv_h);
 #endif
 		xfree(uniconv);
 	}

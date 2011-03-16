@@ -40,16 +40,6 @@
 #include "ext.h"
 #include "surface.h"
 
-#ifdef HAVE_ICONV
-#ifdef HAVE_ICONV_H
-#include <iconv.h>
-#endif
-
-#ifndef ICONV_CONST
-#define ICONV_CONST ""
-#endif
-#endif
-
 RD_BOOL
 rdp_global_init(void)
 {

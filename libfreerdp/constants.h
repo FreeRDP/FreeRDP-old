@@ -28,9 +28,6 @@
 #include "constants_license.h"
 #include "constants_capabilities.h"
 
-#define DEFAULT_CODEPAGE	"UTF-8"
-#define WINDOWS_CODEPAGE	"UTF-16LE"
-
 /* MCSPDU choice connect-initial, Application tag 101 */
 #define MCS_CONNECT_INITIAL	0x7f65
 /* MCSPDU choice connect-response, Application tag 102 */
