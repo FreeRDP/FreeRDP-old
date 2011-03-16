@@ -334,23 +334,26 @@ int tls_write(SSL *ssl, char* b, int length)
 	int write_status;
 	int bytesWritten = 0;
 
-	write_status = SSL_write(ssl, b, length);
-
-	switch (SSL_get_error(ssl, write_status))
+	while (bytesWritten < length)
 	{
-		case SSL_ERROR_NONE:
-			bytesWritten += write_status;
-			break;
+		write_status = SSL_write(ssl, b, length);
 
-		default:
-			tls_printf("SSL_write", ssl, write_status);
-			break;
+		switch (SSL_get_error(ssl, write_status))
+		{
+			case SSL_ERROR_NONE:
+				bytesWritten += write_status;
+				break;
+
+			case SSL_ERROR_WANT_WRITE:
+				break;
+
+			default:
+				tls_printf("SSL_write", ssl, write_status);
+				return -1;
+				break;
+		}
 	}
-
-	if (bytesWritten < length)
-		return bytesWritten += tls_write(ssl, &b[bytesWritten], length - bytesWritten);
-	else
-		return bytesWritten;
+	return bytesWritten;
 }
 
 /* Read data over TLS connection */
