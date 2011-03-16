@@ -1197,6 +1197,15 @@ wf_post_connect(wfInfo * wfi)
 	return 0;
 }
 
+void
+wf_toggle_fullscreen(wfInfo * wfi)
+{
+	ShowWindow(wfi->hwnd, SW_HIDE);
+	wfi->fullscreen = !wfi->fullscreen;
+	wf_post_connect(wfi);
+	SetForegroundWindow(wfi->hwnd);
+}
+
 int
 wf_update_window(wfInfo * wfi)
 {

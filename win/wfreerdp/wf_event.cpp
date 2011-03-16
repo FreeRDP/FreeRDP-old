@@ -21,6 +21,7 @@
 #include <freerdp/freerdp.h>
 #include "wf_types.h"
 #include "wf_event.h"
+#include "wf_win.h"
 
 extern HCURSOR g_default_cursor;
 extern HWND g_focus_hWnd;
@@ -49,6 +50,18 @@ wf_ll_kbd_proc(int nCode, WPARAM wParam, LPARAM lParam)
 			flags = p->flags;
 			DEBUG_KBD("wParam %04X scanCode %04X flags %02X vkCode %02X\n",
 					wParam, scanCode, flags, p->vkCode);
+
+			if (wfi->fs_toggle &&
+					((p->vkCode == VK_RETURN) || (p->vkCode == VK_CANCEL)) &&
+					(GetAsyncKeyState(VK_CONTROL) & 0x8000) &&
+					(GetAsyncKeyState(VK_MENU) & 0x8000))
+			{
+				if (wParam == WM_KEYDOWN)
+				{
+					wf_toggle_fullscreen(wfi);
+				}
+				return 1;
+			}
 
 			if ((scanCode == 0x36) && (flags & 1))
 			{

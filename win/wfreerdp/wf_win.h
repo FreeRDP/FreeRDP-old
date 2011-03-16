@@ -29,6 +29,8 @@ wf_post_connect(wfInfo * wfi);
 int
 wf_update_window(wfInfo * wfi);
 void
+wf_toggle_fullscreen(wfInfo * wfi);
+void
 wf_uninit(wfInfo * wfi);
 
 #endif
