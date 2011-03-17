@@ -175,3 +175,9 @@ crypto_rsa_encrypt(int len, uint8 * in, uint8 * out, uint32 modulus_size, uint8 
 	mpi_free(&ctx.N, &ctx.E, NULL);
 	rsa_free(&ctx);
 }
+
+void
+crypto_nonce(uint8 * nonce, int size)
+{
+}
+

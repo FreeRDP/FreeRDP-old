@@ -157,3 +157,9 @@ crypto_rsa_encrypt(int len, uint8 * in, uint8 * out, uint32 modulus_size, uint8 
 {
 	ssl_rsa_encrypt(out, in, len, modulus_size, modulus, exponent);
 }
+
+void
+crypto_nonce(uint8 * nonce, int size)
+{
+}
+

@@ -45,7 +45,6 @@ void credssp_encrypt_ts_credentials(rdpCredssp *credssp, STREAM s);
 int credssp_verify_public_key(rdpCredssp *credssp, STREAM s);
 void credssp_encode_ts_credentials(rdpCredssp *credssp);
 
-void credssp_nonce(uint8* nonce, int size);
 void credssp_current_time(uint8* timestamp);
 void credssp_rc4k(uint8* key, int length, uint8* plaintext, uint8* ciphertext);
 

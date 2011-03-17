@@ -293,3 +293,9 @@ crypto_rsa_encrypt(int len, uint8 * in, uint8 * out, uint32 modulus_size, uint8 
 	ASSERT(pubKey.pkcs11Slot);
 	PK11_FreeSlot(pubKey.pkcs11Slot);
 }
+
+void
+crypto_nonce(uint8 * nonce, int size)
+{
+}
+

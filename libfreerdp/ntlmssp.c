@@ -144,7 +144,7 @@ void ntlmssp_set_password(NTLMSSP *ntlmssp, char* password)
 void ntlmssp_generate_client_challenge(NTLMSSP *ntlmssp)
 {
 	/* ClientChallenge in computation of LMv2 and NTLMv2 responses */
-	credssp_nonce(ntlmssp->client_challenge, 8);
+	crypto_nonce(ntlmssp->client_challenge, 8);
 }
 
 /**
@@ -166,7 +166,7 @@ void ntlmssp_generate_key_exchange_key(NTLMSSP *ntlmssp)
 
 void ntlmssp_generate_random_session_key(NTLMSSP *ntlmssp)
 {
-	credssp_nonce(ntlmssp->random_session_key, 16);
+	crypto_nonce(ntlmssp->random_session_key, 16);
 }
 
 /**

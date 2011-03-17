@@ -28,6 +28,7 @@
 #include <openssl/sha.h>
 #include <openssl/bn.h>
 #include <openssl/x509v3.h>
+#include <openssl/rand.h>
 
 #if defined(OPENSSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER >= 0x0090800f)
 #define D2I_X509_CONST const
@@ -233,3 +234,10 @@ crypto_rsa_encrypt(int len, uint8 * in, uint8 * out, uint32 modulus_size, uint8 
 	BN_free(&mod);
 	BN_CTX_free(ctx);
 }
+
+void
+crypto_nonce(uint8 * nonce, int size)
+{
+	RAND_bytes((void*) nonce, size);
+}
+

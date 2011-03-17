@@ -257,3 +257,9 @@ crypto_rsa_encrypt(int len, uint8 * in, uint8 * out, uint32 modulus_size, uint8 
 	gcry_sexp_release(in_sexp);
 	gcry_sexp_release(publickey_sexp);
 }
+
+void
+crypto_nonce(uint8 * nonce, int size)
+{
+}
+

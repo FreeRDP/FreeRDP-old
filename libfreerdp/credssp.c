@@ -40,11 +40,6 @@
 #include "asn1/TSPasswordCreds.h"
 
 #include <time.h>
-#include <openssl/des.h>
-#include <openssl/md4.h>
-#include <openssl/hmac.h>
-#include <openssl/rand.h>
-#include <openssl/engine.h>
 
 #include "ntlmssp.h"
 #include "credssp.h"
@@ -485,18 +480,6 @@ void credssp_rc4k(uint8* key, int length, uint8* plaintext, uint8* ciphertext)
 
 	/* Free RC4 Cipher */
 	crypto_rc4_free(rc4);
-}
-
-/**
- * Generate a nonce (random byte buffer).
- * @param[out] nonce destination nonce buffer
- * @param[in] size destination nonce buffer size
- */
-
-void credssp_nonce(uint8* nonce, int size)
-{
-	/* Generate random bytes (nonce) */
-	RAND_bytes((void*) nonce, size);
 }
 
 /**
