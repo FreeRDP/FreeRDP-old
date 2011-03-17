@@ -66,7 +66,7 @@ int FillRect_16bpp(HDC hdc, HRECT rect, HBRUSH hbr)
 static int BitBlt_BLACKNESS_16bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight)
 {
 	int y;
-	char *dstp;
+	uint8 *dstp;
 
 	for (y = 0; y < nHeight; y++)
 	{
@@ -82,7 +82,7 @@ static int BitBlt_BLACKNESS_16bpp(HDC hdcDest, int nXDest, int nYDest, int nWidt
 static int BitBlt_WHITENESS_16bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight)
 {
 	int y;
-	char *dstp;
+	uint8 *dstp;
 	
 	for (y = 0; y < nHeight; y++)
 	{
@@ -98,8 +98,8 @@ static int BitBlt_WHITENESS_16bpp(HDC hdcDest, int nXDest, int nYDest, int nWidt
 static int BitBlt_SRCCOPY_16bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc)
 {
 	int y;
-	char *srcp;
-	char *dstp;
+	uint8 *srcp;
+	uint8 *dstp;
 
 	if ((hdcDest->selectedObject != hdcSrc->selectedObject) ||
 	    CopyOverlap(nXDest, nYDest, nWidth, nHeight, nXSrc, nYSrc) == 0)
@@ -167,8 +167,8 @@ static int BitBlt_SRCCOPY_16bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth,
 static int BitBlt_NOTSRCCOPY_16bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc)
 {
 	int x, y;
-	char *srcp;
-	char *dstp;
+	uint8 *srcp;
+	uint8 *dstp;
 	
 	for (y = 0; y < nHeight; y++)
 	{
@@ -196,7 +196,7 @@ static int BitBlt_NOTSRCCOPY_16bpp(HDC hdcDest, int nXDest, int nYDest, int nWid
 static int BitBlt_DSTINVERT_16bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight)
 {
 	int x, y;
-	char *dstp;
+	uint8 *dstp;
 		
 	for (y = 0; y < nHeight; y++)
 	{
@@ -221,8 +221,8 @@ static int BitBlt_DSTINVERT_16bpp(HDC hdcDest, int nXDest, int nYDest, int nWidt
 static int BitBlt_SRCERASE_16bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc)
 {
 	int x, y;
-	char *srcp;
-	char *dstp;
+	uint8 *srcp;
+	uint8 *dstp;
 		
 	for (y = 0; y < nHeight; y++)
 	{
@@ -250,8 +250,8 @@ static int BitBlt_SRCERASE_16bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth
 static int BitBlt_NOTSRCERASE_16bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc)
 {
 	int x, y;
-	char *srcp;
-	char *dstp;
+	uint8 *srcp;
+	uint8 *dstp;
 		
 	for (y = 0; y < nHeight; y++)
 	{
@@ -279,8 +279,8 @@ static int BitBlt_NOTSRCERASE_16bpp(HDC hdcDest, int nXDest, int nYDest, int nWi
 static int BitBlt_SRCINVERT_16bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc)
 {
 	int x, y;
-	char *srcp;
-	char *dstp;
+	uint8 *srcp;
+	uint8 *dstp;
 		
 	for (y = 0; y < nHeight; y++)
 	{
@@ -308,8 +308,8 @@ static int BitBlt_SRCINVERT_16bpp(HDC hdcDest, int nXDest, int nYDest, int nWidt
 static int BitBlt_SRCAND_16bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc)
 {
 	int x, y;
-	char *srcp;
-	char *dstp;
+	uint8 *srcp;
+	uint8 *dstp;
 		
 	for (y = 0; y < nHeight; y++)
 	{
@@ -337,8 +337,8 @@ static int BitBlt_SRCAND_16bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, 
 static int BitBlt_SRCPAINT_16bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc)
 {
 	int x, y;
-	char *srcp;
-	char *dstp;
+	uint8 *srcp;
+	uint8 *dstp;
 		
 	for (y = 0; y < nHeight; y++)
 	{
@@ -366,7 +366,7 @@ static int BitBlt_SRCPAINT_16bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth
 static int BitBlt_DSPDxax_16bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc)
 {	
 	int x, y;
-	char *srcp;
+	uint8 *srcp;
 	uint16 *dstp;
 	uint8 r, g, b;
 	HBITMAP hSrcBmp;
@@ -407,9 +407,9 @@ static int BitBlt_DSPDxax_16bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth,
 static int BitBlt_SPna_16bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc)
 {
 	int x, y;
-	char *srcp;
-	char *dstp;
-	char *patp;
+	uint8 *srcp;
+	uint8 *dstp;
+	uint8 *patp;
 	
 	for (y = 0; y < nHeight; y++)
 	{
@@ -441,9 +441,9 @@ static int BitBlt_SPna_16bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, in
 static int BitBlt_MERGECOPY_16bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc)
 {
 	int x, y;
-	char *srcp;
-	char *dstp;
-	char *patp;
+	uint8 *srcp;
+	uint8 *dstp;
+	uint8 *patp;
 	
 	for (y = 0; y < nHeight; y++)
 	{
@@ -475,8 +475,8 @@ static int BitBlt_MERGECOPY_16bpp(HDC hdcDest, int nXDest, int nYDest, int nWidt
 static int BitBlt_MERGEPAINT_16bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc)
 {
 	int x, y;
-	char *srcp;
-	char *dstp;
+	uint8 *srcp;
+	uint8 *dstp;
 	
 	for (y = 0; y < nHeight; y++)
 	{
@@ -504,8 +504,8 @@ static int BitBlt_MERGEPAINT_16bpp(HDC hdcDest, int nXDest, int nYDest, int nWid
 static int BitBlt_PATCOPY_16bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight)
 {
 	int x, y;
-	char *dstp;
-	char *patp;
+	uint8 *dstp;
+	uint8 *patp;
 		
 	for (y = 0; y < nHeight; y++)
 	{
@@ -534,8 +534,8 @@ static int BitBlt_PATCOPY_16bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth,
 static int BitBlt_PATINVERT_16bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight)
 {
 	int x, y;
-	char *dstp;
-	char *patp;
+	uint8 *dstp;
+	uint8 *patp;
 		
 	for (y = 0; y < nHeight; y++)
 	{
@@ -564,9 +564,9 @@ static int BitBlt_PATINVERT_16bpp(HDC hdcDest, int nXDest, int nYDest, int nWidt
 static int BitBlt_PATPAINT_16bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc)
 {
 	int x, y;
-	char *srcp;
-	char *dstp;
-	char *patp;
+	uint8 *srcp;
+	uint8 *dstp;
+	uint8 *patp;
 	
 	for (y = 0; y < nHeight; y++)
 	{

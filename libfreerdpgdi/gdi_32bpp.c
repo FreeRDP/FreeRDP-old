@@ -29,7 +29,7 @@
 int FillRect_32bpp(HDC hdc, HRECT rect, HBRUSH hbr)
 {
 	int x, y;
-	char *dstp;
+	uint8 *dstp;
 	char r, g, b;
 	int nXDest, nYDest;
 	int nWidth, nHeight;
@@ -74,7 +74,7 @@ int FillRect_32bpp(HDC hdc, HRECT rect, HBRUSH hbr)
 static int BitBlt_BLACKNESS_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight)
 {
 	int y;
-	char *dstp;
+	uint8 *dstp;
 
 #ifdef USE_ALPHA
 	int x;
@@ -116,7 +116,7 @@ static int BitBlt_BLACKNESS_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidt
 static int BitBlt_WHITENESS_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight)
 {
 	int y;
-	char *dstp;
+	uint8 *dstp;
 	
 	for (y = 0; y < nHeight; y++)
 	{
@@ -132,8 +132,8 @@ static int BitBlt_WHITENESS_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidt
 static int BitBlt_SRCCOPY_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc)
 {
 	int y;
-	char *srcp;
-	char *dstp;
+	uint8 *srcp;
+	uint8 *dstp;
 
 	if ((hdcDest->selectedObject != hdcSrc->selectedObject) ||
 	    CopyOverlap(nXDest, nYDest, nWidth, nHeight, nXSrc, nYSrc) == 0)
@@ -201,8 +201,8 @@ static int BitBlt_SRCCOPY_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth,
 static int BitBlt_NOTSRCCOPY_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc)
 {
 	int x, y;
-	char *srcp;
-	char *dstp;
+	uint8 *srcp;
+	uint8 *dstp;
 	
 	for (y = 0; y < nHeight; y++)
 	{
@@ -234,7 +234,7 @@ static int BitBlt_NOTSRCCOPY_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWid
 static int BitBlt_DSTINVERT_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight)
 {
 	int x, y;
-	char *dstp;
+	uint8 *dstp;
 		
 	for (y = 0; y < nHeight; y++)
 	{
@@ -262,8 +262,8 @@ static int BitBlt_DSTINVERT_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidt
 static int BitBlt_SRCERASE_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc)
 {
 	int x, y;
-	char *srcp;
-	char *dstp;
+	uint8 *srcp;
+	uint8 *dstp;
 		
 	for (y = 0; y < nHeight; y++)
 	{
@@ -295,8 +295,8 @@ static int BitBlt_SRCERASE_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth
 static int BitBlt_NOTSRCERASE_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc)
 {
 	int x, y;
-	char *srcp;
-	char *dstp;
+	uint8 *srcp;
+	uint8 *dstp;
 		
 	for (y = 0; y < nHeight; y++)
 	{
@@ -328,8 +328,8 @@ static int BitBlt_NOTSRCERASE_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWi
 static int BitBlt_SRCINVERT_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc)
 {
 	int x, y;
-	char *srcp;
-	char *dstp;
+	uint8 *srcp;
+	uint8 *dstp;
 		
 	for (y = 0; y < nHeight; y++)
 	{
@@ -361,8 +361,8 @@ static int BitBlt_SRCINVERT_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidt
 static int BitBlt_SRCAND_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc)
 {
 	int x, y;
-	char *srcp;
-	char *dstp;
+	uint8 *srcp;
+	uint8 *dstp;
 		
 	for (y = 0; y < nHeight; y++)
 	{
@@ -394,8 +394,8 @@ static int BitBlt_SRCAND_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, 
 static int BitBlt_SRCPAINT_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc)
 {
 	int x, y;
-	char *srcp;
-	char *dstp;
+	uint8 *srcp;
+	uint8 *dstp;
 		
 	for (y = 0; y < nHeight; y++)
 	{
@@ -427,7 +427,7 @@ static int BitBlt_SRCPAINT_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth
 static int BitBlt_DSPDxax_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc)
 {	
 	int x, y;
-	char *srcp;
+	uint8 *srcp;
 	uint32 *dstp;
 	HBITMAP hSrcBmp;
 
@@ -464,9 +464,9 @@ static int BitBlt_DSPDxax_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth,
 static int BitBlt_SPna_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc)
 {
 	int x, y;
-	char *srcp;
-	char *dstp;
-	char *patp;
+	uint8 *srcp;
+	uint8 *dstp;
+	uint8 *patp;
 	
 	for (y = 0; y < nHeight; y++)
 	{
@@ -502,9 +502,9 @@ static int BitBlt_SPna_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, in
 static int BitBlt_MERGECOPY_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc)
 {
 	int x, y;
-	char *srcp;
-	char *dstp;
-	char *patp;
+	uint8 *srcp;
+	uint8 *dstp;
+	uint8 *patp;
 	
 	for (y = 0; y < nHeight; y++)
 	{
@@ -540,8 +540,8 @@ static int BitBlt_MERGECOPY_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidt
 static int BitBlt_MERGEPAINT_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc)
 {
 	int x, y;
-	char *srcp;
-	char *dstp;
+	uint8 *srcp;
+	uint8 *dstp;
 	
 	for (y = 0; y < nHeight; y++)
 	{
@@ -573,8 +573,8 @@ static int BitBlt_MERGEPAINT_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWid
 static int BitBlt_PATCOPY_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight)
 {
 	int x, y;
-	char *dstp;
-	char *patp;
+	uint8 *dstp;
+	uint8 *patp;
 		
 	for (y = 0; y < nHeight; y++)
 	{
@@ -606,8 +606,8 @@ static int BitBlt_PATCOPY_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth,
 static int BitBlt_PATINVERT_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight)
 {
 	int x, y;
-	char *dstp;
-	char *patp;
+	uint8 *dstp;
+	uint8 *patp;
 		
 	for (y = 0; y < nHeight; y++)
 	{
@@ -639,9 +639,9 @@ static int BitBlt_PATINVERT_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidt
 static int BitBlt_PATPAINT_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc)
 {
 	int x, y;
-	char *srcp;
-	char *dstp;
-	char *patp;
+	uint8 *srcp;
+	uint8 *dstp;
+	uint8 *patp;
 	
 	for (y = 0; y < nHeight; y++)
 	{
