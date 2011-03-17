@@ -20,7 +20,7 @@ Libraries used (Ubuntu package names - may not apply to all environments)
 Using git-master source
 --------------------------------------------------
 1. Install autogen, automake, and gettext.
-2. "git clone git://freerdp.git.sourceforge.net/gitroot/freerdp/freerdp"
+2. "git clone git://github.com/FreeRDP/FreeRDP.git"
 3. "cd freerdp"
 4. "sh autogen.sh"
 
@@ -49,3 +49,4 @@ Examples of using xfreerdp
   xfreerdp --plugin cliprdr -g 900x600 (server)
 * Comport redirection & clipboard access
   xfreerdp --plugin cliprdr --plugin rdpdr --data serial:COM1:/dev/ttyUSB0 -- -g 900x600 (server)
+
