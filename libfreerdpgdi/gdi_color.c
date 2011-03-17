@@ -127,7 +127,7 @@ gdi_image_convert(char* srcData, int width, int height, int srcBpp, int dstBpp, 
 	if ((srcBpp == 24) && (dstBpp == 32))
 	{
 		dstData = (char*) malloc(width * height * 4);
-		src8 = srcData;
+		src8 = (uint8*)srcData;
 		dst32 = (uint32 *) dstData;
 		for (index = width * height; index > 0; index--)
 		{
@@ -193,7 +193,7 @@ gdi_image_convert(char* srcData, int width, int height, int srcBpp, int dstBpp, 
 	else if ((srcBpp == 8) && (dstBpp == 16))
 	{
 		dstData = (char *) malloc(width * height * 2);
-		src8 = srcData;
+		src8 = (uint8*)srcData;
 		dst16 = (uint16 *) dstData;
 		for (index = width * height; index > 0; index--)
 		{
@@ -212,7 +212,7 @@ gdi_image_convert(char* srcData, int width, int height, int srcBpp, int dstBpp, 
 	else if ((srcBpp == 8) && (dstBpp == 15))
 	{
 		dstData = (char*) malloc(width * height * 2);
-		src8 = srcData;
+		src8 = (uint8*)srcData;
 		dst16 = (uint16 *) dstData;
 		for (index = width * height; index > 0; index--)
 		{
