@@ -25,17 +25,18 @@
 #include <alsa/asoundlib.h>
 #include "drdynvc_types.h"
 #include "wait_obj.h"
-#include "audin_main.h"
+#include "audin_types.h"
 
 struct alsa_device_data
 {
+	char device_name[32];
 	uint32 frames_per_packet;
 	uint32 rrate;
 	snd_pcm_format_t format;
 	int num_channels;
 	int bytes_per_channel;
 
-	wave_in_receive_func receive_func;
+	audin_receive_func receive_func;
 	void * user_data;
 
 	struct wait_obj * term_event;
@@ -142,35 +143,17 @@ audin_alsa_thread_func(void * arg)
 	return NULL;
 }
 
-void *
-wave_in_new(void)
-{
-	struct alsa_device_data * alsa_data;
-
-	alsa_data = (struct alsa_device_data *) malloc(sizeof(struct alsa_device_data));
-	memset(alsa_data, 0, sizeof(struct alsa_device_data));
-
-	alsa_data->frames_per_packet = 128;
-	alsa_data->rrate = 22050;
-	alsa_data->format = SND_PCM_FORMAT_S16_LE;
-	alsa_data->num_channels = 2;
-	alsa_data->bytes_per_channel = 2;
-	alsa_data->term_event = wait_obj_new("freerdpaudinterm");
-
-	return alsa_data;
-}
-
 void
-wave_in_free(void * device_data)
+audin_alsa_free(audinDevicePlugin * devplugin)
 {
-	struct alsa_device_data * alsa_data = (struct alsa_device_data *) device_data;
+	struct alsa_device_data * alsa_data = (struct alsa_device_data *) devplugin->device_data;
 
 	wait_obj_free(alsa_data->term_event);
 	free(alsa_data);
 }
 
 int
-wave_in_format_supported(void * device_data, char * snd_format, int size)
+audin_alsa_format_supported(audinDevicePlugin * devplugin, char * snd_format, int size)
 {
 	int nChannels;
 	int wBitsPerSample;
@@ -183,7 +166,7 @@ wave_in_format_supported(void * device_data, char * snd_format, int size)
 	nSamplesPerSec = GET_UINT32(snd_format, 4);
 	wBitsPerSample = GET_UINT16(snd_format, 14);
 	cbSize = GET_UINT16(snd_format, 16);
-	LLOGLN(10, ("wave_in_format_supported: size=%d wFormatTag=%d nChannels=%d nSamplesPerSec=%d wBitsPerSample=%d cbSize=%d",
+	LLOGLN(10, ("audin_alsa_format_supported: size=%d wFormatTag=%d nChannels=%d nSamplesPerSec=%d wBitsPerSample=%d cbSize=%d",
 		size, wFormatTag, nChannels, nSamplesPerSec, wBitsPerSample, cbSize));
 	if (cbSize == 0 &&
 		(nSamplesPerSec == 22050 || nSamplesPerSec == 44100) &&
@@ -191,16 +174,16 @@ wave_in_format_supported(void * device_data, char * snd_format, int size)
 		(nChannels == 1 || nChannels == 2) &&
 		wFormatTag == 1) /* WAVE_FORMAT_PCM */
 	{
-		LLOGLN(0, ("wave_in_format_supported: ok."));
+		LLOGLN(0, ("audin_alsa_format_supported: ok."));
 		return 1;
 	}
 	return 0;
 }
 
 int
-wave_in_set_format(void * device_data, uint32 FramesPerPacket, char * snd_format, int size)
+audin_alsa_set_format(audinDevicePlugin * devplugin, uint32 FramesPerPacket, char * snd_format, int size)
 {
-	struct alsa_device_data * alsa_data = (struct alsa_device_data *) device_data;
+	struct alsa_device_data * alsa_data = (struct alsa_device_data *) devplugin->device_data;
 	int nChannels;
 	int wBitsPerSample;
 	int nSamplesPerSec;
@@ -208,7 +191,7 @@ wave_in_set_format(void * device_data, uint32 FramesPerPacket, char * snd_format
 	nChannels = GET_UINT16(snd_format, 2);
 	nSamplesPerSec = GET_UINT32(snd_format, 4);
 	wBitsPerSample = GET_UINT16(snd_format, 14);
-	LLOGLN(0, ("wave_in_set_format: nChannels %d "
+	LLOGLN(0, ("audin_alsa_set_format: nChannels %d "
 		"nSamplesPerSec %d wBitsPerSample %d",
 		nChannels, nSamplesPerSec, wBitsPerSample));
 
@@ -233,29 +216,29 @@ wave_in_set_format(void * device_data, uint32 FramesPerPacket, char * snd_format
 }
 
 int
-wave_in_open(void * device_data, wave_in_receive_func receive_func, void * user_data)
+audin_alsa_open(audinDevicePlugin * devplugin, audin_receive_func receive_func, void * user_data)
 {
-	struct alsa_device_data * alsa_data = (struct alsa_device_data *) device_data;
+	struct alsa_device_data * alsa_data = (struct alsa_device_data *) devplugin->device_data;
 	pthread_t thread;
 
-	LLOGLN(10, ("wave_in_open:"));
+	LLOGLN(10, ("audin_alsa_open:"));
 	alsa_data->receive_func = receive_func;
 	alsa_data->user_data = user_data;
 
 	alsa_data->thread_status = 1;
-	pthread_create(&thread, 0, audin_alsa_thread_func, device_data);
+	pthread_create(&thread, 0, audin_alsa_thread_func, alsa_data);
 	pthread_detach(thread);
 
 	return 0;
 }
 
 int
-wave_in_close(void * device_data)
+audin_alsa_close(audinDevicePlugin * devplugin)
 {
-	struct alsa_device_data * alsa_data = (struct alsa_device_data *) device_data;
+	struct alsa_device_data * alsa_data = (struct alsa_device_data *) devplugin->device_data;
 	int index;
 
-	LLOGLN(10, ("wave_in_close:"));
+	LLOGLN(10, ("audin_alsa_close:"));
 	wait_obj_set(alsa_data->term_event);
 	index = 0;
 	while ((alsa_data->thread_status > 0) && (index < 100))
@@ -266,6 +249,61 @@ wave_in_close(void * device_data)
 	wait_obj_clear(alsa_data->term_event);
 	alsa_data->receive_func = NULL;
 	alsa_data->user_data = NULL;
+	return 0;
+}
+
+int
+FreeRDPAudinDeviceEntry(PFREERDP_AUDIN_DEVICE_ENTRY_POINTS pEntryPoints)
+{
+	audinDevicePlugin * devplugin;
+	struct alsa_device_data * alsa_data;
+	RD_PLUGIN_DATA * data;
+	int i;
+
+	devplugin = pEntryPoints->pRegisterAudinDevice(pEntryPoints->plugin);
+	if (devplugin == NULL)
+	{
+		LLOGLN(0, ("audin_alsa: unable to register device."));
+		return 1;
+	}
+
+	devplugin->open = audin_alsa_open;
+	devplugin->format_supported = audin_alsa_format_supported;
+	devplugin->set_format = audin_alsa_set_format;
+	devplugin->close = audin_alsa_close;
+	devplugin->free = audin_alsa_free;
+
+	alsa_data = (struct alsa_device_data *) malloc(sizeof(struct alsa_device_data));
+	memset(alsa_data, 0, sizeof(struct alsa_device_data));
+
+	data = (RD_PLUGIN_DATA *) pEntryPoints->data;
+	if (data && strcmp(data->data[0], "audin") == 0 && strcmp(data->data[1], "alsa") == 0)
+	{
+		for (i = 2; i < 4 && data->data[i]; i++)
+		{
+			if (i > 2)
+			{
+				strncat(alsa_data->device_name, ":",
+					sizeof(alsa_data->device_name) - strlen(alsa_data->device_name));
+			}
+			strncat(alsa_data->device_name, (char*)data->data[i],
+				sizeof(alsa_data->device_name) - strlen(alsa_data->device_name));
+		}
+	}
+	if (alsa_data->device_name[0] == '\0')
+	{
+		strcpy(alsa_data->device_name, "default");
+	}
+	alsa_data->frames_per_packet = 128;
+	alsa_data->rrate = 22050;
+	alsa_data->format = SND_PCM_FORMAT_S16_LE;
+	alsa_data->num_channels = 2;
+	alsa_data->bytes_per_channel = 2;
+	alsa_data->term_event = wait_obj_new("freerdpaudinterm");
+	devplugin->device_data = alsa_data;
+
+	LLOGLN(0, ("audin_alsa: alsa device '%s' registered.", alsa_data->device_name));
+
 	return 0;
 }
 

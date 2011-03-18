@@ -229,12 +229,9 @@ int main(int argc, char **argv)
 #
 # sound
 #
-AM_CONDITIONAL(RDPSND_ALSA, false)
-
 PKG_CHECK_MODULES(ALSA, alsa, [
 	HAVE_ALSA=1
 	alsa="yes"
-	AM_CONDITIONAL(RDPSND_ALSA, true)
 ], [
 	HAVE_ALSA=0
 	alsa="no"
@@ -896,14 +893,14 @@ esac
 EXTRA_SUBDIRS=""
 
 #
-# rdpsnd_alsa
+# ALSA
 #
 if test x"$HAVE_ALSA" = "x1"; then
-	EXTRA_SUBDIRS="$EXTRA_SUBDIRS channels/rdpsnd/alsa"
+	EXTRA_SUBDIRS="$EXTRA_SUBDIRS channels/rdpsnd/alsa channels/drdynvc/audin/alsa"
 fi
 
 #
-# rdpsnd_pulse
+# PulseAudio
 #
 if test x"$HAVE_PULSE" = "x1"; then
 	EXTRA_SUBDIRS="$EXTRA_SUBDIRS channels/rdpsnd/pulse"
@@ -978,6 +975,7 @@ channels/rdpsnd/pulse/Makefile
 channels/drdynvc/Makefile
 channels/drdynvc/pnpdr/Makefile
 channels/drdynvc/audin/Makefile
+channels/drdynvc/audin/alsa/Makefile
 channels/cliprdr/Makefile
 channels/rdpdr/Makefile
 channels/rdpdr/disk/Makefile
