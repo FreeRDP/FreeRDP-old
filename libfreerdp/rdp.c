@@ -1459,25 +1459,25 @@ process_redirect_pdu(rdpRdp * rdp, STREAM s)
 static void
 process_fp(rdpRdp * rdp, STREAM s)
 {
-	int numberOrders;
 	int x;
 	int y;
+	int numberOrders;
 	int type;
 	int ctype;
 	int frag_bits;
 	int comp_bits;
 	int length;
-	int skip_switch;
-	uint8 *next;
-	uint32 roff, rlen;
-	STREAM ns = &(rdp->mppc_dict.ns);
+	int size;
+	uint8 * next;
+	uint32 roff;
+	uint32 rlen;
+	STREAM ns;
 	STREAM ts;
 	STREAM fd_s;
 
 	ui_begin_update(rdp->inst);
-	while (s->p < s->end)
+	for ( ; s->p < s->end; s->p = next)
 	{
-		skip_switch = 0;
 		in_uint8(s, type);
 		frag_bits = (type & 0x30) >> 4;
 		comp_bits = (type & 0xc0) >> 6;
@@ -1495,8 +1495,12 @@ process_fp(rdpRdp * rdp, STREAM s)
 		rdp->next_packet = next = s->p + length;
 		if (ctype & RDP_MPPC_COMPRESSED)
 		{
+			ns = &(rdp->mppc_dict.ns);
 			if (mppc_expand(rdp, s->p, length, ctype, &roff, &rlen) == -1)
+			{
 				ui_error(rdp->inst, "error while decompressing packet");
+				continue;
+			}
 			ns->data = (uint8 *) xrealloc(ns->data, rlen);
 			memcpy(ns->data, rdp->mppc_dict.hist + roff, rlen);
 			ns->size = rlen;
@@ -1510,14 +1514,18 @@ process_fp(rdpRdp * rdp, STREAM s)
 		{
 			ts = s;
 		}
-		if ((frag_bits != 0) && (type == 4) &&
-			(rdp->settings->ui_decode_flags & 2))
+		if (frag_bits != 0)
 		{
-			ui_decode(rdp->inst, ts->p, (int) (ts->end - ts->p));
-			skip_switch = 1;
-		}
-		else if (frag_bits != 0)
-		{
+			if ((type == FASTPATH_UPDATETYPE_SURFCMDS) &&
+				(rdp->settings->ui_decode_flags & 2))
+			{
+				/* ui supports fragmented decoding */
+				size = (int) (ts->end - ts->p);
+				if (ui_decode(rdp->inst, ts->p, size) == 0)
+				{
+					continue;
+				}
+			}
 			fd_s = rdp->fragment_data;
 			switch (frag_bits)
 			{
@@ -1528,20 +1536,13 @@ process_fp(rdpRdp * rdp, STREAM s)
 					ts = fd_s;
 					break;
 				case FASTPATH_FRAGMENT_FIRST:
-					skip_switch = 1;
 					fd_s->p = fd_s->data;
 					out_uint8a(fd_s, ts->p, length);
-					break;
+					continue;
 				case FASTPATH_FRAGMENT_NEXT:
-					skip_switch = 1;
 					out_uint8a(fd_s, ts->p, length);
-					break;
+					continue;
 			}
-		}
-		if (skip_switch)
-		{
-			s->p = next;
-			continue;
 		}
 		switch (type)
 		{
@@ -1562,8 +1563,8 @@ process_fp(rdpRdp * rdp, STREAM s)
 			case FASTPATH_UPDATETYPE_SURFCMDS:
 				if (rdp->settings->ui_decode_flags & 3)
 				{
-					length = (int) (ts->end - ts->p);
-					if (ui_decode(rdp->inst, ts->p, length) == 0)
+					size = (int) (ts->end - ts->p);
+					if (ui_decode(rdp->inst, ts->p, size) == 0)
 					{
 						break;
 					}
@@ -1593,7 +1594,6 @@ process_fp(rdpRdp * rdp, STREAM s)
 				ui_unimpl(rdp->inst, "fastpath opcode %d\n", type);
 				break;
 		}
-		s->p = next;
 	}
 	ui_end_update(rdp->inst);
 }
