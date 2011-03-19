@@ -179,14 +179,20 @@ int
 DVCPluginEntry(IDRDYNVC_ENTRY_POINTS * pEntryPoints)
 {
 	PNPDR_PLUGIN * pnpdr;
+	int ret = 0;
 
-	pnpdr = (PNPDR_PLUGIN *) malloc(sizeof(PNPDR_PLUGIN));
-	memset(pnpdr, 0, sizeof(PNPDR_PLUGIN));
+	pnpdr = (PNPDR_PLUGIN *) pEntryPoints->GetPlugin(pEntryPoints, "pnpdr");
+	if (pnpdr == NULL)
+	{
+		pnpdr = (PNPDR_PLUGIN *) malloc(sizeof(PNPDR_PLUGIN));
+		memset(pnpdr, 0, sizeof(PNPDR_PLUGIN));
 
-	pnpdr->iface.Initialize = pnpdr_plugin_initialize;
-	pnpdr->iface.Connected = NULL;
-	pnpdr->iface.Disconnected = NULL;
-	pnpdr->iface.Terminated = pnpdr_plugin_terminated;
-	return pEntryPoints->RegisterPlugin(pEntryPoints, (IWTSPlugin *) pnpdr);
+		pnpdr->iface.Initialize = pnpdr_plugin_initialize;
+		pnpdr->iface.Connected = NULL;
+		pnpdr->iface.Disconnected = NULL;
+		pnpdr->iface.Terminated = pnpdr_plugin_terminated;
+		ret = pEntryPoints->RegisterPlugin(pEntryPoints, "pnpdr", (IWTSPlugin *) pnpdr);
+	}
+	return ret;
 }
 

@@ -78,6 +78,11 @@ struct _AUDIN_PLUGIN
 
 	AUDIN_LISTENER_CALLBACK * listener_callback;
 
+	/* Parsed plugin data */
+	int fixed_format;
+	int fixed_rate;
+	int fixed_channel;	
+
 	/* Device plugin */
 	audinDevicePlugin * device_plugin;
 };
@@ -155,9 +160,15 @@ audin_process_formats(IWTSVirtualChannelCallback * pChannelCallback,
 	/* remainder is sndFormats (variable) */
 	ldata = data + 8;
 	out_format_count = 0;
-	for (i = 0; i < NumFormats; i++)
+	for (i = 0; i < NumFormats; i++, ldata += size)
 	{
 		size = 18 + GET_UINT16(ldata, 16);
+		if (audin->fixed_format > 0 && audin->fixed_format != GET_UINT16(ldata, 0))
+			continue;
+		if (audin->fixed_channel > 0 && audin->fixed_channel != GET_UINT16(ldata, 2))
+			continue;
+		if (audin->fixed_rate > 0 && audin->fixed_rate != GET_UINT32(ldata, 4))
+			continue;
 		if (audin->device_plugin &&
 			audin->device_plugin->format_supported(audin->device_plugin, ldata, size))
 		{
@@ -169,7 +180,6 @@ audin_process_formats(IWTSVirtualChannelCallback * pChannelCallback,
 			lout_formats += size;
 			out_format_count++;
 		}
-		ldata += size;
 	}
 	callback->formats_count = out_format_count;
 
@@ -479,47 +489,89 @@ audin_load_device_plugin(IWTSPlugin * pPlugin, const char * name, RD_PLUGIN_DATA
 	return 0;
 }
 
+static int
+audin_process_plugin_data(IWTSPlugin * pPlugin, RD_PLUGIN_DATA * data)
+{
+	AUDIN_PLUGIN * audin = (AUDIN_PLUGIN *) pPlugin;
+	RD_PLUGIN_DATA default_data[3] = { { 0 }, { 0 }, { 0 } };
+	int ret;
+
+	if (data->data[0] && strcmp((char*)data->data[0], "audin") == 0)
+	{
+		if (data->data[1] && strcmp((char*)data->data[1], "format") == 0)
+		{
+			audin->fixed_format = atoi(data->data[2]);
+			return 0;
+		}
+		else if (data->data[1] && strcmp((char*)data->data[1], "rate") == 0)
+		{
+			audin->fixed_rate = atoi(data->data[2]);
+			return 0;
+		}
+		else if (data->data[1] && strcmp((char*)data->data[1], "channel") == 0)
+		{
+			audin->fixed_channel = atoi(data->data[2]);
+			return 0;
+		}
+		else if (data->data[1] && ((char*)data->data[1])[0])
+		{
+			return audin_load_device_plugin(pPlugin, (char*)data->data[1], data);
+		}
+		else
+		{
+			default_data[0].size = sizeof(RD_PLUGIN_DATA);
+			default_data[0].data[0] = "audin";
+			default_data[0].data[1] = "pulse";
+			default_data[0].data[2] = "";
+			ret = audin_load_device_plugin(pPlugin, "pulse", default_data);
+			if (ret)
+			{
+				if (audin->device_plugin)
+				{
+					free(audin->device_plugin);
+					audin->device_plugin = NULL;
+				}
+				default_data[0].size = sizeof(RD_PLUGIN_DATA);
+				default_data[0].data[0] = "audin";
+				default_data[0].data[1] = "alsa";
+				default_data[0].data[2] = "default";
+				ret = audin_load_device_plugin(pPlugin, "alsa", default_data);
+			}
+			return ret;
+		}
+	}
+	return 0;
+}
+
 int
 DVCPluginEntry(IDRDYNVC_ENTRY_POINTS * pEntryPoints)
 {
 	AUDIN_PLUGIN * audin;
-	RD_PLUGIN_DATA default_data[3] = { { 0 }, { 0 }, { 0 } };
-	int ret;
+	int ret = 0;
 
-	audin = (AUDIN_PLUGIN *) malloc(sizeof(AUDIN_PLUGIN));
-	memset(audin, 0, sizeof(AUDIN_PLUGIN));
-
-	audin->iface.Initialize = audin_plugin_initialize;
-	audin->iface.Connected = NULL;
-	audin->iface.Disconnected = NULL;
-	audin->iface.Terminated = audin_plugin_terminated;
-
-	if (audin->device_plugin == NULL)
+	audin = (AUDIN_PLUGIN *) pEntryPoints->GetPlugin(pEntryPoints, "audin");
+	if (audin == NULL)
 	{
-		default_data[0].size = sizeof(RD_PLUGIN_DATA);
-		default_data[0].data[0] = "audin";
-		default_data[0].data[1] = "pulse";
-		default_data[0].data[2] = "";
-		ret = audin_load_device_plugin((IWTSPlugin *) audin, "pulse", default_data);
-		if (ret)
-		{
-			if (audin->device_plugin)
-			{
-				free(audin->device_plugin);
-				audin->device_plugin = NULL;
-			}
-			default_data[0].size = sizeof(RD_PLUGIN_DATA);
-			default_data[0].data[0] = "audin";
-			default_data[0].data[1] = "alsa";
-			default_data[0].data[2] = "default";
-			ret = audin_load_device_plugin((IWTSPlugin *) audin, "alsa", default_data);
-		}
+		audin = (AUDIN_PLUGIN *) malloc(sizeof(AUDIN_PLUGIN));
+		memset(audin, 0, sizeof(AUDIN_PLUGIN));
+
+		audin->iface.Initialize = audin_plugin_initialize;
+		audin->iface.Connected = NULL;
+		audin->iface.Disconnected = NULL;
+		audin->iface.Terminated = audin_plugin_terminated;
+		ret = pEntryPoints->RegisterPlugin(pEntryPoints, "audin", (IWTSPlugin *) audin);
+	}
+
+	if (ret == 0)
+	{
+		audin_process_plugin_data((IWTSPlugin *) audin,
+			pEntryPoints->GetPluginData(pEntryPoints));
 	}
 	if (audin->device_plugin == NULL)
 	{
 		LLOGLN(0, ("audin: no sound device."));
 	}
 
-	return pEntryPoints->RegisterPlugin(pEntryPoints, (IWTSPlugin *) audin);
+	return ret;
 }
 
