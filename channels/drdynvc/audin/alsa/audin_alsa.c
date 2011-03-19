@@ -303,7 +303,7 @@ audin_alsa_set_format(audinDevicePlugin * devplugin, uint32 FramesPerPacket, cha
 	{
 		alsa_data->frames_per_packet = FramesPerPacket;
 	}
-	LLOGLN(0, ("rdpsnd_alsa_set_format: wFormatTag=%d nChannels=%d "
+	LLOGLN(0, ("audin_alsa_set_format: wFormatTag=%d nChannels=%d "
 		"nSamplesPerSec=%d wBitsPerSample=%d nBlockAlign=%d FramesPerPacket=%d",
 		wFormatTag, nChannels, nSamplesPerSec, wBitsPerSample, nBlockAlign,
 		alsa_data->frames_per_packet));
@@ -334,7 +334,7 @@ audin_alsa_set_format(audinDevicePlugin * devplugin, uint32 FramesPerPacket, cha
 			bs = (nBlockAlign - 4 * nChannels) * 4;
 			alsa_data->frames_per_packet = (alsa_data->frames_per_packet * nChannels * 2 /
 				bs + 1) * bs / (nChannels * 2);
-			LLOGLN(0, ("rdpsnd_alsa_set_format: aligned FramesPerPacket=%d",
+			LLOGLN(0, ("audin_alsa_set_format: aligned FramesPerPacket=%d",
 				alsa_data->frames_per_packet));
 			break;
 	}
