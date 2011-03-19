@@ -7,6 +7,7 @@ audin_LTLIBRARIES = audin.la
 
 audin_la_SOURCES = \
 	audin_types.h \
+	audin_dsp.c audin_dsp.h \
 	audin_main.c
 
 audin_la_CFLAGS = -I$(top_srcdir)/include -I$(srcdir)/../../common \

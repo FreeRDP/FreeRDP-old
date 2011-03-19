@@ -34,14 +34,30 @@ struct audin_device_plugin
 	void * device_data;
 };
 
+struct audin_dsp_adpcm
+{
+	sint16 last_sample[2];
+	sint16 last_step[2];
+};
+typedef struct audin_dsp_adpcm audinDspAdpcm;
+
 #define AUDIN_DEVICE_EXPORT_FUNC_NAME "FreeRDPAudinDeviceEntry"
 
 typedef audinDevicePlugin * (* PREGISTERAUDINDEVICE)(IWTSPlugin * plugin);
+
+typedef uint8 * (* PAUDINDSPRESAMPLE)(uint8 * src, int bytes_per_sample, \
+	uint32 schan, uint32 srate, int sframes, \
+	uint32 rchan, uint32 rrate, int * prframes);
+
+typedef uint8 * (* PAUDINDSPENCODEIMAADPCM)(audinDspAdpcm * adpcm, \
+	uint8 * src, int size, int channels, int block_size, int * out_size);
 
 struct _FREERDP_AUDIN_DEVICE_ENTRY_POINTS
 {
 	IWTSPlugin * plugin;
 	PREGISTERAUDINDEVICE pRegisterAudinDevice;
+	PAUDINDSPRESAMPLE pResample;
+	PAUDINDSPENCODEIMAADPCM pEncodeImaAdpcm;
 	void * data;
 };
 typedef struct _FREERDP_AUDIN_DEVICE_ENTRY_POINTS FREERDP_AUDIN_DEVICE_ENTRY_POINTS;

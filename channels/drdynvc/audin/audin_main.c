@@ -22,6 +22,7 @@
 #include <string.h>
 #include "drdynvc_types.h"
 #include "audin_types.h"
+#include "audin_dsp.h"
 
 #ifdef _WIN32
 #define DLOPEN(f) LoadLibraryA(f)
@@ -479,6 +480,8 @@ audin_load_device_plugin(IWTSPlugin * pPlugin, const char * name, RD_PLUGIN_DATA
 
 	entryPoints.plugin = pPlugin;
 	entryPoints.pRegisterAudinDevice = audin_register_device_plugin;
+	entryPoints.pResample = audin_dsp_resample;
+	entryPoints.pEncodeImaAdpcm = audin_dsp_encode_ima_adpcm;
 	entryPoints.data = data;
 	if (entry(&entryPoints) != 0)
 	{
