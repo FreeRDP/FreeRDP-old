@@ -27,6 +27,7 @@
 struct pulse_device_data
 {
 	char device_name[32];
+	uint32 frames_per_packet;
 	pa_threaded_mainloop *mainloop;
 	pa_context *context;
 	pa_sample_spec sample_spec;
@@ -218,6 +219,7 @@ audin_pulse_set_format(audinDevicePlugin * devplugin, uint32 FramesPerPacket, ch
 	int nSamplesPerSec;
 	int wFormatTag;
 	int nBlockAlign;
+	int bs;
 
 	pulse_data = (struct pulse_device_data *) devplugin->device_data;
 	if (!pulse_data->context)
@@ -227,9 +229,14 @@ audin_pulse_set_format(audinDevicePlugin * devplugin, uint32 FramesPerPacket, ch
 	nSamplesPerSec = GET_UINT32(snd_format, 4);
 	nBlockAlign = GET_UINT16(snd_format, 12);
 	wBitsPerSample = GET_UINT16(snd_format, 14);
+	if (FramesPerPacket > 0)
+	{
+		pulse_data->frames_per_packet = FramesPerPacket;
+	}
 	LLOGLN(0, ("audin_pulse_set_format: wFormatTag=%d nChannels=%d "
-		"nSamplesPerSec=%d wBitsPerSample=%d nBlockAlign=%d",
-		wFormatTag, nChannels, nSamplesPerSec, wBitsPerSample, nBlockAlign));
+		"nSamplesPerSec=%d wBitsPerSample=%d nBlockAlign=%d FramesPerPacket=%d",
+		wFormatTag, nChannels, nSamplesPerSec, wBitsPerSample, nBlockAlign,
+		pulse_data->frames_per_packet));
 
 	sample_spec.rate = nSamplesPerSec;
 	sample_spec.channels = nChannels;
@@ -257,6 +264,11 @@ audin_pulse_set_format(audinDevicePlugin * devplugin, uint32 FramesPerPacket, ch
 
 		case 0x11: /* IMA ADPCM */
 			sample_spec.format = PA_SAMPLE_S16LE;
+			bs = (nBlockAlign - 4 * nChannels) * 4;
+			pulse_data->frames_per_packet = (pulse_data->frames_per_packet * nChannels * 2 /
+				bs + 1) * bs / (nChannels * 2);
+			LLOGLN(0, ("audin_pulse_set_format: aligned FramesPerPacket=%d",
+				pulse_data->frames_per_packet));
 			break;
 	}
 
@@ -267,27 +279,142 @@ audin_pulse_set_format(audinDevicePlugin * devplugin, uint32 FramesPerPacket, ch
 	return 0;
 }
 
-int
-audin_pulse_open(audinDevicePlugin * devplugin, audin_receive_func receive_func, void * user_data)
+static void
+audin_pulse_stream_state_callback(pa_stream * stream, void * userdata)
 {
-	struct pulse_device_data * pulse_data = (struct pulse_device_data *) devplugin->device_data;
+	audinDevicePlugin * devplugin;
+	struct pulse_device_data * pulse_data;
+	pa_stream_state_t state;
 
-	LLOGLN(10, ("audin_pulse_open:"));
-	pulse_data->receive_func = receive_func;
-	pulse_data->user_data = user_data;
+	devplugin = (audinDevicePlugin *) userdata;
+	pulse_data = (struct pulse_device_data *) devplugin->device_data;
+	state = pa_stream_get_state(stream);
+	switch (state)
+	{
+		case PA_STREAM_READY:
+			LLOGLN(10, ("audin_pulse_stream_state_callback: PA_STREAM_READY"));
+			pa_threaded_mainloop_signal (pulse_data->mainloop, 0);
+			break;
 
-	return 0;
+		case PA_STREAM_FAILED:
+		case PA_STREAM_TERMINATED:
+			LLOGLN(10, ("audin_pulse_stream_state_callback: state %d", (int)state));
+			pa_threaded_mainloop_signal (pulse_data->mainloop, 0);
+			break;
+
+		default:
+			LLOGLN(10, ("audin_pulse_stream_state_callback: state %d", (int)state));
+			break;
+	}
 }
+
+static void
+audin_pulse_stream_request_callback(pa_stream * stream, size_t length, void * userdata)
+{
+	audinDevicePlugin * devplugin;
+	struct pulse_device_data * pulse_data;
+	const void * data;
+
+	devplugin = (audinDevicePlugin *) userdata;
+	pulse_data = (struct pulse_device_data *) devplugin->device_data;
+	LLOGLN(0, ("audin_pulse_stream_request_callback: length %d", length));
+
+	pa_stream_peek(stream, &data, &length);
+	pa_stream_drop(stream);
+}
+
 
 int
 audin_pulse_close(audinDevicePlugin * devplugin)
 {
-	struct pulse_device_data * pulse_data = (struct pulse_device_data *) devplugin->device_data;
+	struct pulse_device_data * pulse_data;
 
-	LLOGLN(10, ("audin_pulse_close:"));
+	pulse_data = (struct pulse_device_data *) devplugin->device_data;
+	if (!pulse_data->context || !pulse_data->stream)
+		return 1;
+	LLOGLN(0, ("audin_pulse_close:"));
+	pa_threaded_mainloop_lock(pulse_data->mainloop);
+	pa_stream_disconnect(pulse_data->stream);
+	pa_stream_unref(pulse_data->stream);
+	pulse_data->stream = NULL;
+	pa_threaded_mainloop_unlock(pulse_data->mainloop);
+
 	pulse_data->receive_func = NULL;
 	pulse_data->user_data = NULL;
 	return 0;
+}
+
+int
+audin_pulse_open(audinDevicePlugin * devplugin, audin_receive_func receive_func, void * user_data)
+{
+	struct pulse_device_data * pulse_data;
+	pa_stream_state_t state;
+	pa_buffer_attr buffer_attr = { 0 };
+
+	pulse_data = (struct pulse_device_data *) devplugin->device_data;
+	if (!pulse_data->context)
+		return 1;
+	if (!pulse_data->sample_spec.rate || pulse_data->stream)
+		return 0;
+	LLOGLN(10, ("audin_pulse_open:"));
+
+	pulse_data->receive_func = receive_func;
+	pulse_data->user_data = user_data;
+
+	pa_threaded_mainloop_lock(pulse_data->mainloop);
+	pulse_data->stream = pa_stream_new(pulse_data->context, "freerdp_audin",
+		&pulse_data->sample_spec, NULL);
+	if (!pulse_data->stream)
+	{
+		pa_threaded_mainloop_unlock(pulse_data->mainloop);
+		LLOGLN(0, ("audin_pulse_open: pa_stream_new failed (%d)",
+			pa_context_errno(pulse_data->context)));
+		return 1;
+	}
+	pa_stream_set_state_callback(pulse_data->stream,
+		audin_pulse_stream_state_callback, devplugin);
+	pa_stream_set_read_callback(pulse_data->stream,
+		audin_pulse_stream_request_callback, devplugin);
+	buffer_attr.maxlength = (uint32_t) -1;
+	buffer_attr.tlength = (uint32_t) -1;//pa_usec_to_bytes(2000000, &pulse_data->sample_spec);
+	buffer_attr.prebuf = (uint32_t) -1;
+	buffer_attr.minreq = (uint32_t) -1;
+	buffer_attr.fragsize = (uint32_t) -1;
+	if (pa_stream_connect_record(pulse_data->stream,
+		pulse_data->device_name[0] ? pulse_data->device_name : NULL,
+		&buffer_attr, 0) < 0)
+	{
+		pa_threaded_mainloop_unlock(pulse_data->mainloop);
+		LLOGLN(0, ("audin_pulse_open: pa_stream_connect_playback failed (%d)",
+			pa_context_errno(pulse_data->context)));
+		return 1;
+	}
+
+	for (;;)
+	{
+		state = pa_stream_get_state(pulse_data->stream);
+		if (state == PA_STREAM_READY)
+			break;
+        if (!PA_STREAM_IS_GOOD(state))
+		{
+			LLOGLN(0, ("audin_pulse_open: bad stream state (%d)",
+				pa_context_errno(pulse_data->context)));
+			break;
+		}
+		pa_threaded_mainloop_wait(pulse_data->mainloop);
+	}
+	pa_threaded_mainloop_unlock(pulse_data->mainloop);
+	if (state == PA_STREAM_READY)
+	{
+		memset(&pulse_data->adpcm, 0, sizeof(audinDspAdpcm));
+		LLOGLN(0, ("audin_pulse_open: connected"));
+		return 0;
+	}
+	else
+	{
+		audin_pulse_close(devplugin);
+		return 1;
+	}
 }
 
 int
