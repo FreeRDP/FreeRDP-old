@@ -36,6 +36,7 @@ struct pulse_device_data
 	int block_size;
 	audinDspAdpcm adpcm;
 
+	int bytes_per_frame;
 	char * buffer;
 	int buffer_frames;
 
@@ -314,12 +315,56 @@ audin_pulse_stream_request_callback(pa_stream * stream, size_t length, void * us
 	audinDevicePlugin * devplugin;
 	struct pulse_device_data * pulse_data;
 	const void * data;
+	const char * src;
+	int frames;
+	int cframes;
+	char * encoded_data;
+	int encoded_size;
+	int ret;
 
 	devplugin = (audinDevicePlugin *) userdata;
 	pulse_data = (struct pulse_device_data *) devplugin->device_data;
-	LLOGLN(0, ("audin_pulse_stream_request_callback: length %d", length));
 
 	pa_stream_peek(stream, &data, &length);
+	frames = length / pulse_data->bytes_per_frame;
+	LLOGLN(10, ("audin_pulse_stream_request_callback: length %d frames %d", length, frames));
+
+	src = (const char *) data;
+	while (frames > 0)
+	{
+		cframes = pulse_data->frames_per_packet - pulse_data->buffer_frames;
+		if (cframes > frames)
+			cframes = frames;
+		memcpy(pulse_data->buffer + pulse_data->buffer_frames * pulse_data->bytes_per_frame,
+			src, cframes * pulse_data->bytes_per_frame);
+		pulse_data->buffer_frames += cframes;
+		if (pulse_data->buffer_frames >= pulse_data->frames_per_packet)
+		{
+			if (pulse_data->format == 0x11)
+			{
+				encoded_data = (char *) pulse_data->pEncodeImaAdpcm(&pulse_data->adpcm,
+					(uint8 *) pulse_data->buffer, pulse_data->buffer_frames * pulse_data->bytes_per_frame,
+					pulse_data->sample_spec.channels, pulse_data->block_size, &encoded_size);
+				LLOGLN(10, ("audin_pulse_stream_request_callback: encoded %d to %d",
+					pulse_data->buffer_frames * pulse_data->bytes_per_frame, encoded_size));
+			}
+			else
+			{
+				encoded_data = pulse_data->buffer;
+				encoded_size = pulse_data->buffer_frames * pulse_data->bytes_per_frame;
+			}
+
+			ret = pulse_data->receive_func(encoded_data, encoded_size, pulse_data->user_data);
+			pulse_data->buffer_frames = 0;
+			if (encoded_data != pulse_data->buffer)
+				free(encoded_data);
+			if (ret)
+				break;
+		}
+		src += cframes * pulse_data->bytes_per_frame;
+		frames -= cframes;
+	}
+
 	pa_stream_drop(stream);
 }
 
@@ -341,6 +386,12 @@ audin_pulse_close(audinDevicePlugin * devplugin)
 
 	pulse_data->receive_func = NULL;
 	pulse_data->user_data = NULL;
+	if (pulse_data->buffer)
+	{
+		free(pulse_data->buffer);
+		pulse_data->buffer = NULL;
+		pulse_data->buffer_frames = 0;
+	}
 	return 0;
 }
 
@@ -371,18 +422,20 @@ audin_pulse_open(audinDevicePlugin * devplugin, audin_receive_func receive_func,
 			pa_context_errno(pulse_data->context)));
 		return 1;
 	}
+	pulse_data->bytes_per_frame = pa_frame_size(&pulse_data->sample_spec);
 	pa_stream_set_state_callback(pulse_data->stream,
 		audin_pulse_stream_state_callback, devplugin);
 	pa_stream_set_read_callback(pulse_data->stream,
 		audin_pulse_stream_request_callback, devplugin);
 	buffer_attr.maxlength = (uint32_t) -1;
-	buffer_attr.tlength = (uint32_t) -1;//pa_usec_to_bytes(2000000, &pulse_data->sample_spec);
+	buffer_attr.tlength = (uint32_t) -1;
 	buffer_attr.prebuf = (uint32_t) -1;
 	buffer_attr.minreq = (uint32_t) -1;
-	buffer_attr.fragsize = (uint32_t) -1;
+	/* 500ms latency */
+	buffer_attr.fragsize = pa_usec_to_bytes(500000, &pulse_data->sample_spec);
 	if (pa_stream_connect_record(pulse_data->stream,
 		pulse_data->device_name[0] ? pulse_data->device_name : NULL,
-		&buffer_attr, 0) < 0)
+		&buffer_attr, PA_STREAM_ADJUST_LATENCY) < 0)
 	{
 		pa_threaded_mainloop_unlock(pulse_data->mainloop);
 		LLOGLN(0, ("audin_pulse_open: pa_stream_connect_playback failed (%d)",
@@ -407,6 +460,8 @@ audin_pulse_open(audinDevicePlugin * devplugin, audin_receive_func receive_func,
 	if (state == PA_STREAM_READY)
 	{
 		memset(&pulse_data->adpcm, 0, sizeof(audinDspAdpcm));
+		pulse_data->buffer = malloc(pulse_data->bytes_per_frame * pulse_data->frames_per_packet);
+		pulse_data->buffer_frames = 0;
 		LLOGLN(0, ("audin_pulse_open: connected"));
 		return 0;
 	}
