@@ -977,6 +977,7 @@ channels/rdpsnd/alsa/Makefile
 channels/rdpsnd/pulse/Makefile
 channels/drdynvc/Makefile
 channels/drdynvc/pnpdr/Makefile
+channels/drdynvc/tsmf/Makefile
 channels/drdynvc/audin/Makefile
 channels/cliprdr/Makefile
 channels/rdpdr/Makefile

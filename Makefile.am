@@ -14,6 +14,7 @@ REQUIRED_SUBDIRS = \
 	channels/rdpsnd \
 	channels/drdynvc \
 	channels/drdynvc/pnpdr \
+	channels/drdynvc/tsmf \
 	channels/drdynvc/audin \
 	channels/cliprdr \
 	channels/rdpdbg \
