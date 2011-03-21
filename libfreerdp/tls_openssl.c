@@ -93,9 +93,6 @@ tls_new(void)
 	tls = (rdpTls *) malloc(sizeof(rdpTls));
 	memset(tls, 0, sizeof(rdpTls));
 
-	SSL_load_error_strings();
-	SSL_library_init();
-
 	tls->ctx = SSL_CTX_new(TLSv1_client_method());
 
 	if (tls->ctx == NULL)

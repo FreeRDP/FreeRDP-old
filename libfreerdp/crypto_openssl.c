@@ -25,6 +25,8 @@
 RD_BOOL
 crypto_global_init(void)
 {
+	SSL_load_error_strings();
+	SSL_library_init();
 	return True;
 }
 

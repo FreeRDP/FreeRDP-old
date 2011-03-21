@@ -35,16 +35,23 @@
 #include "credssp.h"
 #endif
 
+static RD_BOOL sec_global_initialized = False;
+
 RD_BOOL
 sec_global_init(void)
 {
-	return crypto_global_init();
+	if (!sec_global_initialized)
+	{
+		sec_global_initialized = crypto_global_init();
+	}
+	return sec_global_initialized;
 }
 
 void
 sec_global_finish(void)
 {
 	crypto_global_finish();
+	sec_global_initialized = False;
 }
 
 /* these are read only */
