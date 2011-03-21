@@ -47,7 +47,7 @@ libfreerdp_la_SOURCES += crypto_gnutls.c
 endif
 
 if CRYPTO_OPENSSL
-libfreerdp_la_SOURCES += crypto_openssl.c tls_openssl.c
+libfreerdp_la_SOURCES += crypto_openssl.c crypto_openssl.h tls_openssl.c
 endif
 
 if CRYPTO_POLARSSL

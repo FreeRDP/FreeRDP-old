@@ -63,11 +63,21 @@ void
 crypto_cert_free(CryptoCert cert);
 RD_BOOL
 crypto_cert_verify(CryptoCert server_cert, CryptoCert cacert);
+RD_BOOL
+crypto_cert_verify_peer_identity(CryptoCert cert, const char * peer);
 int
 crypto_cert_print_fp(FILE * fp, CryptoCert cert);
 int
 crypto_cert_get_pub_exp_mod(CryptoCert cert, uint32 * key_len,
 		uint8 * exponent, uint32 exp_len, uint8 * modulus, uint32 mod_len);
+char *
+crypto_cert_get_subject(CryptoCert cert);
+char *
+crypto_cert_get_issuer(CryptoCert cert);
+char *
+crypto_cert_get_fingerprint(CryptoCert cert);
+int
+crypto_cert_get_public_key(CryptoCert cert, DATABLOB * public_key);
 
 void
 crypto_rsa_encrypt(int len, uint8 * in, uint8 * out, uint32 modulus_size, uint8 * modulus, uint8 * exponent);

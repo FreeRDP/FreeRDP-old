@@ -972,6 +972,54 @@ sec_recv(rdpSec * sec, secRecvType * type)
 	return NULL;
 }
 
+#ifndef DISABLE_TLS
+
+/* verify SSL/TLS connection integrity. 2 checks are carried out. First make sure that the
+ * certificate is assigned to the server we're connected to, and second make sure that the
+ * certificate is signed by a trusted certification authority
+ */
+
+static RD_BOOL
+sec_verify_tls(rdpSec * sec, const char * server)
+{
+	RD_BOOL verified = False;
+	CryptoCert cert;
+	char * fingerprint;
+	char * subject;
+	char * issuer;
+
+	cert = tls_get_certificate(sec->tls);
+	if (!cert)
+	{
+		goto exit;
+	}
+
+	subject = crypto_cert_get_subject(cert);
+	issuer = crypto_cert_get_issuer(cert);
+	fingerprint = crypto_cert_get_fingerprint(cert);
+
+	verified = tls_verify(sec->tls, server);
+	if (verified)
+	{
+		verified = crypto_cert_verify_peer_identity(cert, server);
+	}
+	verified = ui_check_certificate(sec->rdp->inst, fingerprint, subject, issuer, verified);
+
+	free(subject);
+	free(issuer);
+	free(fingerprint);
+
+exit:
+	if (cert)
+	{
+		crypto_cert_free(cert);
+		cert = NULL;
+	}
+
+	return verified;
+}
+#endif
+
 /* Establish a secure connection */
 RD_BOOL
 sec_connect(rdpSec * sec, char *server, char *username, int port)
@@ -994,8 +1042,10 @@ sec_connect(rdpSec * sec, char *server, char *username, int port)
 		/* TLS with NLA was successfully negotiated */
 		RD_BOOL status = 1;
 		printf("TLS encryption with NLA negotiated\n");
-		sec->tls = tls_new(sec);
-		if (!tls_connect(sec->tls, sec->mcs->iso->tcp->sock, server))
+		sec->tls = tls_new();
+		if (!tls_connect(sec->tls, sec->mcs->iso->tcp->sock))
+			return False;
+		if (!sec_verify_tls(sec, server))
 			return False;
 		sec->tls_connected = 1;
 		sec->rdp->settings->encryption = 0;
@@ -1024,8 +1074,10 @@ sec_connect(rdpSec * sec, char *server, char *username, int port)
 		/* TLS without NLA was successfully negotiated */
 		RD_BOOL success;
 		printf("TLS encryption negotiated\n");
-		sec->tls = tls_new(sec);
-		if (!tls_connect(sec->tls, sec->mcs->iso->tcp->sock, server))
+		sec->tls = tls_new();
+		if (!tls_connect(sec->tls, sec->mcs->iso->tcp->sock))
+			return False;
+		if (!sec_verify_tls(sec, server))
 			return False;
 		sec->tls_connected = 1;
 		sec->rdp->settings->encryption = 0;

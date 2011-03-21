@@ -1,6 +1,6 @@
 /*
    FreeRDP: A Remote Desktop Protocol client.
-   Transport Layer Security (TLS) encryption
+   OpenSSL Cryptographic Abstraction Layer
 
    Copyright 2010 Marc-Andre Moreau <marcandre.moreau@gmail.com>
 
@@ -17,31 +17,43 @@
    limitations under the License.
 */
 
-#ifndef __TLS_H
-#define	__TLS_H
+#ifndef __CRYPTO_OPENSSL_H
+#define __CRYPTO_OPENSSL_H
 
-typedef struct rdp_tls rdpTls;
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include <openssl/rc4.h>
+#include <openssl/md5.h>
+#include <openssl/sha.h>
+#include <openssl/bn.h>
+#include <openssl/x509v3.h>
+#include <openssl/rand.h>
 
-#include "tcp.h"
-#include "types.h"
-#include "crypto.h"
+#if defined(OPENSSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER >= 0x0090800f)
+#define D2I_X509_CONST const
+#else
+#define D2I_X509_CONST
+#endif
 
-rdpTls *
-tls_new(void);
-void
-tls_free(rdpTls * tls);
-RD_BOOL
-tls_connect(rdpTls * tls, int sockfd);
-RD_BOOL
-tls_verify(rdpTls * tls, const char * server);
-void
-tls_disconnect(rdpTls * tls);
-int
-tls_write(rdpTls * tls, char * b, int length);
-int
-tls_read(rdpTls * tls, char * b, int length);
-CryptoCert
-tls_get_certificate(rdpTls * tls);
+struct crypto_sha1_struct
+{
+	SHA_CTX sha_ctx;
+};
 
-#endif	// __TLS_H
+struct crypto_md5_struct
+{
+	MD5_CTX md5_ctx;
+};
+
+struct crypto_rc4_struct
+{
+	RC4_KEY rc4_key;
+};
+
+struct crypto_cert_struct
+{
+	X509 * px509;
+};
+
+#endif
 

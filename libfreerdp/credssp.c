@@ -88,9 +88,21 @@ void credssp_ntlmssp_init(rdpCredssp * credssp)
  * @param credssp
  */
 
-void credssp_get_public_key(rdpCredssp * credssp)
-{	
-	tls_get_public_key(credssp->sec->tls, &credssp->public_key);
+int credssp_get_public_key(rdpCredssp * credssp)
+{
+	CryptoCert cert;
+	int ret;
+
+	cert = tls_get_certificate(credssp->sec->tls);
+	if (cert == NULL)
+	{
+		printf("credssp_get_public_key: tls_get_certificate failed to return the server certificate.\n");
+		return 0;
+	}
+	ret = crypto_cert_get_public_key(cert, &credssp->public_key);
+	crypto_cert_free(cert);
+
+	return ret;
 }
 
 /**
@@ -108,7 +120,8 @@ int credssp_authenticate(rdpCredssp * credssp)
 	uint8* negoTokenBuffer = (uint8*) xmalloc(2048);
 
 	credssp_ntlmssp_init(credssp);
-	credssp_get_public_key(credssp);
+	if (credssp_get_public_key(credssp) == 0)
+		return 0;
 
 	/* NTLMSSP NEGOTIATE MESSAGE */
 	negoToken->p = negoToken->data = negoTokenBuffer;

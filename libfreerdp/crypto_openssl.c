@@ -20,21 +20,7 @@
 #include <freerdp/utils.h>
 #include "frdp.h"
 #include "crypto.h"
-
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include <openssl/rc4.h>
-#include <openssl/md5.h>
-#include <openssl/sha.h>
-#include <openssl/bn.h>
-#include <openssl/x509v3.h>
-#include <openssl/rand.h>
-
-#if defined(OPENSSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER >= 0x0090800f)
-#define D2I_X509_CONST const
-#else
-#define D2I_X509_CONST
-#endif
+#include "crypto_openssl.h"
 
 RD_BOOL
 crypto_global_init(void)
@@ -46,11 +32,6 @@ void
 crypto_global_finish(void)
 {
 }
-
-struct crypto_sha1_struct
-{
-	SHA_CTX sha_ctx;
-};
 
 CryptoSha1
 crypto_sha1_init(void)
@@ -73,11 +54,6 @@ crypto_sha1_final(CryptoSha1 sha1, uint8 * out_data)
 	xfree(sha1);
 }
 
-struct crypto_md5_struct
-{
-	MD5_CTX md5_ctx;
-};
-
 CryptoMd5
 crypto_md5_init(void)
 {
@@ -99,11 +75,6 @@ crypto_md5_final(CryptoMd5 md5, uint8 * out_data)
 	xfree(md5);
 }
 
-struct crypto_rc4_struct
-{
-	RC4_KEY rc4_key;
-};
-
 CryptoRc4
 crypto_rc4_init(uint8 * key, uint32 len)
 {
@@ -123,11 +94,6 @@ crypto_rc4_free(CryptoRc4 rc4)
 {
 	xfree(rc4);
 }
-
-struct crypto_cert_struct
-{
-	X509 * px509;
-};
 
 CryptoCert
 crypto_cert_read(uint8 * data, uint32 len)
@@ -149,6 +115,66 @@ RD_BOOL
 crypto_cert_verify(CryptoCert server_cert, CryptoCert cacert)
 {
 	/* FIXME: do the actual verification */
+	return True;
+}
+
+/* check the identity in a certificate against a hostname */
+RD_BOOL
+crypto_cert_verify_peer_identity(CryptoCert cert, const char * peer)
+{
+	X509_NAME *subject_name = NULL;
+	X509_NAME_ENTRY *entry = NULL;
+	ASN1_STRING *asn1str = NULL;
+	//GENERAL_NAMES *subjectAltNames = NULL;
+	unsigned char *ustr = NULL;
+	char *str = NULL;
+	int i, len;
+
+#if 0
+	/* Check cert for subjectAltName extensions */
+	/* things to check: ipv4/ipv6 address, hostname in normal form and in DC= form */
+	i = -1;
+	for (;;)
+	{
+		subjectAltNames = X509_get_ext_d2i(cert->px509, NID_subject_alt_name, NULL, NULL);
+		if (ext == NULL)
+			break;
+	}n
+
+	/* Check against ip address of server */
+#endif
+	/* Check commonName */
+	subject_name = X509_get_subject_name(cert->px509);
+	if (!subject_name)
+	{
+		printf("crypto_cert_verify_peer_identity: failed to get subject name\n");
+		goto exit;
+	}
+
+	/* try to find a common name that matches the peer hostname */
+	/* TODO: cn migth also be in DC=www,DC=redhat,DC=com format? */
+	i = -1;
+	for (;;)
+	{
+		entry = NULL;
+		i = X509_NAME_get_index_by_NID(subject_name, NID_commonName, i);
+		if (i == -1)
+			break;
+		entry = X509_NAME_get_entry(subject_name, i);
+		asn1str = X509_NAME_ENTRY_get_data(entry);
+		len = ASN1_STRING_to_UTF8(&ustr, asn1str);
+		str = (char *)ustr;
+		if (strcmp(str, peer) == 0)
+			break;	/* found a match */
+	}
+
+	if (!entry)
+	{
+		printf("crypto_cert_verify_peer_identity: certificate belongs to %s, "
+			"but connection is to %s\n", str ? str : "unknown id", peer);
+		return False;
+	}
+exit:
 	return True;
 }
 
@@ -206,6 +232,77 @@ crypto_cert_get_pub_exp_mod(CryptoCert cert, uint32 * key_len,
 	EVP_PKEY_free(epk);
 
 	return 0;
+}
+
+char *
+crypto_cert_get_subject(CryptoCert cert)
+{
+	return X509_NAME_oneline(X509_get_subject_name(cert->px509), NULL, 0);
+}
+
+char *
+crypto_cert_get_issuer(CryptoCert cert)
+{
+	return X509_NAME_oneline(X509_get_issuer_name(cert->px509), NULL, 0);
+}
+
+char *
+crypto_cert_get_fingerprint(CryptoCert cert)
+{
+	unsigned char fp_buf[20];
+	unsigned int fp_len = sizeof(fp_buf);
+	int i;
+	char * fingerprint;
+	char * p;
+
+	X509_digest(cert->px509, EVP_sha1(), fp_buf, &fp_len);
+	fingerprint = malloc(fp_len * 3);
+	for (i = 0, p = fingerprint; i < fp_len; i++)
+	{
+		sprintf(p, "%02x", fp_buf[i]);
+		p += 2;
+		if (i < fp_len - 1)
+			*p++ = ':';
+	}
+	*p = '\0';
+
+	return fingerprint;
+}
+
+int
+crypto_cert_get_public_key(CryptoCert cert, DATABLOB * public_key)
+{
+	int length;
+	int success = 1;
+	EVP_PKEY *pkey = NULL;
+	unsigned char *p;
+
+	pkey = X509_get_pubkey(cert->px509);
+	if (!pkey)
+	{
+		printf("crypto_cert_get_public_key: X509_get_pubkey() failed\n");
+		success = 0;
+		goto exit;
+	}
+
+	length = i2d_PublicKey(pkey, NULL);
+
+	if (length < 1)
+	{
+		printf("crypto_cert_get_public_key: i2d_PublicKey() failed\n");
+		success = 0;
+		goto exit;
+	}
+
+	datablob_alloc(public_key, length);
+	p = (unsigned char*) public_key->data;
+	i2d_PublicKey(pkey, &p);
+
+exit:
+	if (pkey)
+		EVP_PKEY_free(pkey);
+
+	return success;
 }
 
 void
