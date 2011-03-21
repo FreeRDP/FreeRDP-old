@@ -1007,6 +1007,7 @@ channels/rdpsnd/alsa/Makefile
 channels/rdpsnd/pulse/Makefile
 channels/drdynvc/Makefile
 channels/drdynvc/pnpdr/Makefile
+channels/drdynvc/tsmf/Makefile
 channels/drdynvc/audin/Makefile
 channels/drdynvc/audin/alsa/Makefile
 channels/drdynvc/audin/pulse/Makefile
