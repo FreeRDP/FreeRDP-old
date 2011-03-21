@@ -451,7 +451,8 @@ static int BitBlt_DSPDxax_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth,
 		{
 			for (x = 0; x < nWidth; x++)
 			{
-				*dstp = (*srcp & hdcDest->textColor) | (~(*srcp) & *dstp);
+				/* we need the char* cast here so that 0xFF becomes 0xFFFFFFFF and not 0x000000FF */
+				*dstp = (*((char*)srcp) & hdcDest->textColor) | (~(*((char*)srcp)) & *dstp);
 				dstp++;
 				srcp++;
 			}
