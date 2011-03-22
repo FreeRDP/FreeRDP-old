@@ -82,6 +82,7 @@ set_default_params(wfInfo * wfi)
 	settings->tls_security = 1;
 	settings->nla_security = 1;
 #endif
+	wfi->fullscreen = wfi->fs_toggle = 0;
 	return 0;
 }
 
