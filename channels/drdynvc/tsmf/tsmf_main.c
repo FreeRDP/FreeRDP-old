@@ -262,14 +262,20 @@ int
 DVCPluginEntry(IDRDYNVC_ENTRY_POINTS * pEntryPoints)
 {
 	TSMF_PLUGIN * tsmf;
+	int ret = 0;
 
-	tsmf = (TSMF_PLUGIN *) malloc(sizeof(TSMF_PLUGIN));
-	memset(tsmf, 0, sizeof(TSMF_PLUGIN));
+	tsmf = (TSMF_PLUGIN *) pEntryPoints->GetPlugin(pEntryPoints, "tsmf");
+	if (tsmf == NULL)
+	{
+		tsmf = (TSMF_PLUGIN *) malloc(sizeof(TSMF_PLUGIN));
+		memset(tsmf, 0, sizeof(TSMF_PLUGIN));
 
-	tsmf->iface.Initialize = tsmf_plugin_initialize;
-	tsmf->iface.Connected = NULL;
-	tsmf->iface.Disconnected = NULL;
-	tsmf->iface.Terminated = tsmf_plugin_terminated;
-	return pEntryPoints->RegisterPlugin(pEntryPoints, (IWTSPlugin *) tsmf);
+		tsmf->iface.Initialize = tsmf_plugin_initialize;
+		tsmf->iface.Connected = NULL;
+		tsmf->iface.Disconnected = NULL;
+		tsmf->iface.Terminated = tsmf_plugin_terminated;
+		ret = pEntryPoints->RegisterPlugin(pEntryPoints, "tsmf", (IWTSPlugin *) tsmf);
+	}
+	return ret;
 }
 
