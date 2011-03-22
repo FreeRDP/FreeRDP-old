@@ -20,45 +20,38 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "drdynvc_types.h"
 #include "tsmf_constants.h"
+#include "tsmf_types.h"
 
-typedef struct _TSMF_LISTENER_CALLBACK TSMF_LISTENER_CALLBACK;
-struct _TSMF_LISTENER_CALLBACK
+static int
+tsmf_process_capability_request(IWTSVirtualChannelCallback * pChannelCallback)
 {
-	IWTSListenerCallback iface;
+	TSMF_CHANNEL_CALLBACK * callback = (TSMF_CHANNEL_CALLBACK *) pChannelCallback;
+	uint32 CapabilityValue;
 
-	IWTSPlugin * plugin;
-	IWTSVirtualChannelManager * channel_mgr;
-};
+	CapabilityValue = GET_UINT32(callback->input_buffer, 0);
+	LLOGLN(0, ("tsmf_process_capability_request: server CapabilityValue %d", CapabilityValue));
 
-typedef struct _TSMF_CHANNEL_CALLBACK TSMF_CHANNEL_CALLBACK;
-struct _TSMF_CHANNEL_CALLBACK
-{
-	IWTSVirtualChannelCallback iface;
+	callback->output_buffer_size = 8;
+	callback->output_buffer = malloc(8);
+	SET_UINT32(callback->output_buffer, 0, 1); /* CapabilityValue */
+	SET_UINT32(callback->output_buffer, 4, 0); /* Result */
 
-	IWTSPlugin * plugin;
-	IWTSVirtualChannelManager * channel_mgr;
-	IWTSVirtualChannel * channel;
-};
-
-typedef struct _TSMF_PLUGIN TSMF_PLUGIN;
-struct _TSMF_PLUGIN
-{
-	IWTSPlugin iface;
-
-	TSMF_LISTENER_CALLBACK * listener_callback;
-};
+	return 0;
+}
 
 static int
 tsmf_on_data_received(IWTSVirtualChannelCallback * pChannelCallback,
 	uint32 cbSize,
 	char * pBuffer)
 {
+	TSMF_CHANNEL_CALLBACK * callback = (TSMF_CHANNEL_CALLBACK *) pChannelCallback;
 	uint32 InterfaceId;
 	uint32 MessageId;
 	uint32 FunctionId;
 	int error = 0;
+	uint32 out_size;
+	char * out_data;
 
 	/* 2.2.1 Shared Message Header (SHARED_MSG_HEADER) */
 	if (cbSize < 12)
@@ -71,6 +64,61 @@ tsmf_on_data_received(IWTSVirtualChannelCallback * pChannelCallback,
 	FunctionId = GET_UINT32(pBuffer, 8);
 	LLOGLN(0, ("tsmf_on_data_received: cbSize=%d InterfaceId=0x%X MessageId=0x%X FunctionId=0x%X",
 		cbSize, InterfaceId, MessageId, FunctionId));
+
+	callback->input_buffer = pBuffer + 12;
+	callback->input_buffer_size = cbSize - 12;
+	callback->output_buffer = NULL;
+	callback->output_buffer_size = 0;
+
+	switch (InterfaceId)
+	{
+		case TSMF_INTERFACE_CAPABILITIES | STREAM_ID_NONE:
+
+			switch (FunctionId)
+			{
+				case RIM_EXCHANGE_CAPABILITY_REQUEST:
+					error = tsmf_process_capability_request(pChannelCallback);
+					break;
+
+				default:
+					break;
+			}
+			break;
+
+		default:
+			break;
+	}
+
+	callback->input_buffer = NULL;
+	callback->input_buffer_size = 0;
+
+	if (error == 0)
+	{
+		/* Response packet does not have FunctionId */
+		out_size = 8 + callback->output_buffer_size;
+		out_data = (char *) malloc(out_size);
+		memset(out_data, 0, out_size);
+		SET_UINT32(out_data, 0, InterfaceId);
+		SET_UINT32(out_data, 4, MessageId);
+		if (callback->output_buffer_size > 0)
+			memcpy(out_data + 8, callback->output_buffer, callback->output_buffer_size);
+
+		LLOGLN(0, ("tsmf_on_data_received: response size %d", out_size));
+		error = callback->channel->Write(callback->channel, out_size, out_data, NULL);
+		if (error)
+		{
+			LLOGLN(0, ("tsmf_on_data_received: response error %d", error));
+		}
+
+		free(out_data);
+		if (callback->output_buffer_size > 0)
+		{
+			free(callback->output_buffer);
+			callback->output_buffer = NULL;
+			callback->output_buffer_size = 0;
+		}
+	}
+
 	return error;
 }
 
