@@ -65,9 +65,6 @@ struct drdynvc_plugin
 	int PriorityCharge3;
 
 	IWTSVirtualChannelManager * channel_mgr;
-	char * dvc_data;
-	uint32 dvc_data_pos;
-	uint32 dvc_data_size;
 };
 
 #if LOG_LEVEL > 10
@@ -335,34 +332,8 @@ static int
 process_DATA(drdynvcPlugin * plugin, uint32 ChannelId,
 	char * data, int data_size)
 {
-	int error = 0;
-
-	if (plugin->dvc_data)
-	{
-		/* Fragmented data */
-		if (plugin->dvc_data_pos + (uint32) data_size > plugin->dvc_data_size)
-		{
-			LLOGLN(0, ("process_DATA: data exceeding declared length!"));
-			free(plugin->dvc_data);
-			plugin->dvc_data = NULL;
-			return 1;
-		}
-		memcpy(plugin->dvc_data + plugin->dvc_data_pos, data, data_size);
-		plugin->dvc_data_pos += (uint32) data_size;
-		if (plugin->dvc_data_pos >= plugin->dvc_data_size)
-		{
-			error = dvcman_receive_channel_data(plugin->channel_mgr,
-				ChannelId, plugin->dvc_data, plugin->dvc_data_size);
-			free(plugin->dvc_data);
-			plugin->dvc_data = NULL;
-		}
-	}
-	else
-	{
-		error = dvcman_receive_channel_data(plugin->channel_mgr,
-			ChannelId, data, (uint32) data_size);
-	}
-	return error;
+	return dvcman_receive_channel_data(plugin->channel_mgr,
+		ChannelId, data, (uint32) data_size);
 }
 
 static int
@@ -372,20 +343,20 @@ process_DATA_FIRST_PDU(drdynvcPlugin * plugin, int Sp, int cbChId,
 	int pos;
 	uint32 ChannelId;
 	uint32 Length;
+	int error;
 
 	pos = 1;
 	ChannelId = get_variable_uint(cbChId, data, &pos);
 	Length = get_variable_uint(Sp, data, &pos);
 	LLOGLN(10, ("process_DATA_FIRST_PDU: ChannelId=%d Length=%d", ChannelId, Length));
 
-	if (plugin->dvc_data)
-		free(plugin->dvc_data);
-	plugin->dvc_data = (char *) malloc(Length);
-	memset(plugin->dvc_data, 0, Length);
-	plugin->dvc_data_pos = 0;
-	plugin->dvc_data_size = Length;
+	error = dvcman_receive_channel_data_first(plugin->channel_mgr,
+		ChannelId, Length);
+	if (error)
+		return error;
 
-	return process_DATA(plugin, ChannelId, data + pos, data_size - pos);
+	return dvcman_receive_channel_data(plugin->channel_mgr,
+		ChannelId, data + pos, (uint32) data_size - pos);
 }
 
 static int
@@ -650,11 +621,6 @@ InitEventProcessTerminated(void * pInitHandle)
 	}
 
 	dvcman_free(plugin->channel_mgr);
-	if (plugin->dvc_data)
-	{
-		free(plugin->dvc_data);
-		plugin->dvc_data = NULL;
-	}
 
 	chan_plugin_uninit((rdpChanPlugin *) plugin);
 	free(plugin);
