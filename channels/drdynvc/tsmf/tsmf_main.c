@@ -41,6 +41,60 @@ tsmf_process_interface_capability_request(IWTSVirtualChannelCallback * pChannelC
 }
 
 static int
+tsmf_process_channel_params(IWTSVirtualChannelCallback * pChannelCallback)
+{
+	TSMF_CHANNEL_CALLBACK * callback = (TSMF_CHANNEL_CALLBACK *) pChannelCallback;
+	/* TODO: store the information */
+
+	callback->output_pending = 1;
+	return 0;
+}
+
+static int
+tsmf_process_capability_request(IWTSVirtualChannelCallback * pChannelCallback)
+{
+	TSMF_CHANNEL_CALLBACK * callback = (TSMF_CHANNEL_CALLBACK *) pChannelCallback;
+	char * p;
+	uint32 numHostCapabilities;
+	uint32 i;
+	uint32 CapabilityType;
+	uint32 cbCapabilityLength;
+	uint32 v;
+
+	callback->output_buffer_size = callback->input_buffer_size + 4;
+	callback->output_buffer = malloc(callback->output_buffer_size);
+	memcpy(callback->output_buffer, callback->input_buffer, callback->input_buffer_size);
+	SET_UINT32(callback->output_buffer, callback->input_buffer_size, 0); /* Result */
+
+	numHostCapabilities = GET_UINT32(callback->output_buffer, 0);
+	p = callback->output_buffer + 4;
+	for (i = 0; i < numHostCapabilities; i++)
+	{
+		CapabilityType = GET_UINT32(p, 0);
+		cbCapabilityLength = GET_UINT32(p, 4);
+		switch (CapabilityType)
+		{
+			case 1: /* Protocol version request */
+				v = GET_UINT32(p, 8);
+				LLOGLN(0, ("tsmf_process_capability_request: server protocol version %d", v));
+				break;
+			case 2: /* Supported platform */
+				v = GET_UINT32(p, 8);
+				LLOGLN(0, ("tsmf_process_capability_request: server supported platform %d", v));
+				/* Claim that we support both MF and DShow platforms. */
+				SET_UINT32(p, 8, MMREDIR_CAPABILITY_PLATFORM_MF | MMREDIR_CAPABILITY_PLATFORM_DSHOW);
+				break;
+			default:
+				LLOGLN(0, ("tsmf_process_capability_request: unknown capability type %d", CapabilityType));
+				break;
+		}
+		p += 8 + cbCapabilityLength;
+	}
+	callback->output_interface_id = TSMF_INTERFACE_DEFAULT | STREAM_ID_STUB;
+	return 0;
+}
+
+static int
 tsmf_on_data_received(IWTSVirtualChannelCallback * pChannelCallback,
 	uint32 cbSize,
 	char * pBuffer)
@@ -70,6 +124,7 @@ tsmf_on_data_received(IWTSVirtualChannelCallback * pChannelCallback,
 	callback->output_buffer = NULL;
 	callback->output_buffer_size = 0;
 	callback->output_pending = 0;
+	callback->output_interface_id = InterfaceId;
 
 	switch (InterfaceId)
 	{
@@ -79,6 +134,23 @@ tsmf_on_data_received(IWTSVirtualChannelCallback * pChannelCallback,
 			{
 				case RIM_EXCHANGE_CAPABILITY_REQUEST:
 					error = tsmf_process_interface_capability_request(pChannelCallback);
+					break;
+
+				default:
+					break;
+			}
+			break;
+
+		case TSMF_INTERFACE_DEFAULT | STREAM_ID_PROXY:
+
+			switch (FunctionId)
+			{
+				case SET_CHANNEL_PARAMS:
+					error = tsmf_process_channel_params(pChannelCallback);
+					break;
+
+				case EXCHANGE_CAPABILITIES_REQ:
+					error = tsmf_process_capability_request(pChannelCallback);
 					break;
 
 				default:
@@ -126,7 +198,7 @@ tsmf_on_data_received(IWTSVirtualChannelCallback * pChannelCallback,
 		out_size = 8 + callback->output_buffer_size;
 		out_data = (char *) malloc(out_size);
 		memset(out_data, 0, out_size);
-		SET_UINT32(out_data, 0, InterfaceId);
+		SET_UINT32(out_data, 0, callback->output_interface_id);
 		SET_UINT32(out_data, 4, MessageId);
 		if (callback->output_buffer_size > 0)
 			memcpy(out_data + 8, callback->output_buffer, callback->output_buffer_size);
