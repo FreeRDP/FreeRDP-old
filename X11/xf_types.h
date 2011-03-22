@@ -77,7 +77,6 @@ struct xf_info
 	GC gc_default;
 	Cursor null_cursor;
 	struct xf_km km[256];
-	int pause_key;
 	int tab_key;
 	XModifierKeymap * mod_map;
 	RD_BOOL focused;

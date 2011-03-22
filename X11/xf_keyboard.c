@@ -50,44 +50,25 @@ xf_kb_send_key(xfInfo * xfi, int flags, uint8 keycode)
 {
 	int scancode;
 
-	if (keycode == xfi->pause_key)
+	scancode = freerdp_kbd_get_scancode_by_keycode(keycode, &flags);
+#ifndef WITH_DEBUG_KBD
+	if (scancode == 0)
 	{
-		/* This is a special key the actually sends two scancodes to the
-		   server.  It looks like Control - NumLock but with special flags. */
-		//DEBUG_KBD("special VK_PAUSE\n");
-		if (flags & KBD_FLAG_UP)
-		{
-			xfi->inst->rdp_send_input(xfi->inst, RDP_INPUT_SCANCODE, 0x8200, 0x1d, 0);
-			xfi->inst->rdp_send_input(xfi->inst, RDP_INPUT_SCANCODE, 0x8000, 0x45, 0);
-		}
-		else
-		{
-			xfi->inst->rdp_send_input(xfi->inst, RDP_INPUT_SCANCODE, 0x0200, 0x1d, 0);
-			xfi->inst->rdp_send_input(xfi->inst, RDP_INPUT_SCANCODE, 0x0000, 0x45, 0);
-		}
+#endif
+		printf("xf_kb_send_key: flags=0x%04X keycode=%d (X keysym=0x%04X) as scancode=%d\n",
+			flags, keycode, (unsigned int)XKeycodeToKeysym(xfi->display, keycode, 0), scancode);
+#ifndef WITH_DEBUG_KBD
 	}
 	else
+#endif
 	{
-		scancode = freerdp_kbd_get_scancode_by_keycode(keycode, &flags);
-#ifndef WITH_DEBUG_KBD
-		if (scancode == 0)
-		{
-#endif
-			printf("xf_kb_send_key: flags=0x%04X keycode=%d (X keysym=0x%04X) as scancode=%d\n",
-				flags, keycode, (unsigned int)XKeycodeToKeysym(xfi->display, keycode, 0), scancode);
-#ifndef WITH_DEBUG_KBD
-		}
-		else
-#endif
-		{
-			xfi->inst->rdp_send_input(xfi->inst, RDP_INPUT_SCANCODE, flags, scancode, 0);
+		xfi->inst->rdp_send_input(xfi->inst, RDP_INPUT_SCANCODE, flags, scancode, 0);
 
-			if ((scancode == 0x3A) && (flags & KBD_FLAG_UP)) /* caps lock was released */
-			{
-				/* caps lock state haven't necessarily been toggled locally - better set remote state explicitly */
-				DEBUG_KBD("sending extra caps lock synchronization\n");
-				xfi->inst->rdp_sync_input(xfi->inst, xf_kb_get_toggle_keys_state(xfi));
-			}
+		if ((scancode == 0x3A) && (flags & KBD_FLAG_UP)) /* caps lock was released */
+		{
+			/* caps lock state haven't necessarily been toggled locally - better set remote state explicitly */
+			DEBUG_KBD("sending extra caps lock synchronization\n");
+			xfi->inst->rdp_sync_input(xfi->inst, xf_kb_get_toggle_keys_state(xfi));
 		}
 	}
 }
