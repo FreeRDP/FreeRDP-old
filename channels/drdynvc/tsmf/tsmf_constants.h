@@ -47,7 +47,7 @@
 #define ON_SAMPLE                           0x00000103
 #define SET_VIDEO_WINDOW                    0x00000104
 #define ON_NEW_PRESENTATION                 0x00000105
-#define SHUTDOWN_PRESENTATION REQ           0x00000106
+#define SHUTDOWN_PRESENTATION_REQ           0x00000106
 #define SET_TOPOLOGY_REQ                    0x00000107
 #define CHECK_FORMAT_SUPPORT_REQ            0x00000108
 #define ON_PLAYBACK_STARTED                 0x00000109

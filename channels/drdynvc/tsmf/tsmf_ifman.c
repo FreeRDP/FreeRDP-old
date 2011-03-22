@@ -25,12 +25,12 @@
 #include "tsmf_ifman.h"
 
 int
-tsmf_ifman_process_interface_capability_request(TSMF_IFMAN * ifman)
+tsmf_ifman_rim_exchange_capability_request(TSMF_IFMAN * ifman)
 {
 	uint32 CapabilityValue;
 
 	CapabilityValue = GET_UINT32(ifman->input_buffer, 0);
-	LLOGLN(0, ("tsmf_ifman_process_capability_request: server CapabilityValue %d", CapabilityValue));
+	LLOGLN(0, ("tsmf_ifman_rim_exchange_capability_request: server CapabilityValue %d", CapabilityValue));
 
 	ifman->output_buffer_size = 8;
 	ifman->output_buffer = malloc(8);
@@ -41,14 +41,15 @@ tsmf_ifman_process_interface_capability_request(TSMF_IFMAN * ifman)
 }
 
 int
-tsmf_ifman_process_channel_params(TSMF_IFMAN * ifman)
+tsmf_ifman_set_channel_params(TSMF_IFMAN * ifman)
 {
+	LLOGLN(0, ("tsmf_ifman_set_channel_params:"));
 	ifman->output_pending = 1;
 	return 0;
 }
 
 int
-tsmf_ifman_process_capability_request(TSMF_IFMAN * ifman)
+tsmf_ifman_exchange_capability_request(TSMF_IFMAN * ifman)
 {
 	char * p;
 	uint32 numHostCapabilities;
@@ -72,16 +73,16 @@ tsmf_ifman_process_capability_request(TSMF_IFMAN * ifman)
 		{
 			case 1: /* Protocol version request */
 				v = GET_UINT32(p, 8);
-				LLOGLN(0, ("tsmf_ifman_process_capability_request: server protocol version %d", v));
+				LLOGLN(0, ("tsmf_ifman_exchange_capability_request: server protocol version %d", v));
 				break;
 			case 2: /* Supported platform */
 				v = GET_UINT32(p, 8);
-				LLOGLN(0, ("tsmf_ifman_process_capability_request: server supported platform %d", v));
+				LLOGLN(0, ("tsmf_ifman_exchange_capability_request: server supported platform %d", v));
 				/* Claim that we support both MF and DShow platforms. */
 				SET_UINT32(p, 8, MMREDIR_CAPABILITY_PLATFORM_MF | MMREDIR_CAPABILITY_PLATFORM_DSHOW);
 				break;
 			default:
-				LLOGLN(0, ("tsmf_ifman_process_capability_request: unknown capability type %d", CapabilityType));
+				LLOGLN(0, ("tsmf_ifman_exchange_capability_request: unknown capability type %d", CapabilityType));
 				break;
 		}
 		p += 8 + cbCapabilityLength;
@@ -91,7 +92,7 @@ tsmf_ifman_process_capability_request(TSMF_IFMAN * ifman)
 }
 
 int
-tsmf_ifman_process_format_support_request(TSMF_IFMAN * ifman)
+tsmf_ifman_check_format_support_request(TSMF_IFMAN * ifman)
 {
 	uint32 PlatformCookie;
 	uint32 numMediaType;
@@ -100,7 +101,7 @@ tsmf_ifman_process_format_support_request(TSMF_IFMAN * ifman)
 	/* NoRolloverFlags (4 bytes) ignored */
 	numMediaType = GET_UINT32(ifman->input_buffer, 8);
 
-	LLOGLN(0, ("tsmf_ifman_process_format_support_request: PlatformCookie %d numMediaType %d",
+	LLOGLN(0, ("tsmf_ifman_check_format_support_request: PlatformCookie %d numMediaType %d",
 		PlatformCookie, numMediaType));
 
 	/* TODO: check the actual supported format */
@@ -113,6 +114,101 @@ tsmf_ifman_process_format_support_request(TSMF_IFMAN * ifman)
 
 	ifman->output_interface_id = TSMF_INTERFACE_DEFAULT | STREAM_ID_STUB;
 
+	return 0;
+}
+
+int
+tsmf_ifman_on_new_presentation(TSMF_IFMAN * ifman)
+{
+	LLOGLN(0, ("tsmf_ifman_on_new_presentation:"));
+	ifman->output_pending = 1;
+	return 0;
+}
+
+int
+tsmf_ifman_add_stream(TSMF_IFMAN * ifman)
+{
+	LLOGLN(0, ("tsmf_ifman_add_stream:"));
+	ifman->output_pending = 1;
+	return 0;
+}
+
+int
+tsmf_ifman_set_topology_request(TSMF_IFMAN * ifman)
+{
+	LLOGLN(0, ("tsmf_ifman_set_topology_request:"));
+	ifman->output_buffer_size = 8;
+	ifman->output_buffer = malloc(8);
+	SET_UINT32(ifman->output_buffer, 0, 1); /* TopologyReady */
+	SET_UINT32(ifman->output_buffer, 4, 0); /* Result */
+	ifman->output_interface_id = TSMF_INTERFACE_DEFAULT | STREAM_ID_STUB;
+	return 0;
+}
+
+int
+tsmf_ifman_remove_stream(TSMF_IFMAN * ifman)
+{
+	LLOGLN(0, ("tsmf_ifman_remove_stream:"));
+	ifman->output_pending = 1;
+	return 0;
+}
+
+int
+tsmf_ifman_shutdown_presentation(TSMF_IFMAN * ifman)
+{
+	LLOGLN(0, ("tsmf_ifman_shutdown_presentation:"));
+	ifman->output_buffer_size = 4;
+	ifman->output_buffer = malloc(4);
+	SET_UINT32(ifman->output_buffer, 0, 0); /* Result */
+	ifman->output_interface_id = TSMF_INTERFACE_DEFAULT | STREAM_ID_STUB;
+	return 0;
+}
+
+int
+tsmf_ifman_on_stream_volume(TSMF_IFMAN * ifman)
+{
+	LLOGLN(0, ("tsmf_ifman_on_stream_volume:"));
+	ifman->output_pending = 1;
+	return 0;
+}
+
+int
+tsmf_ifman_on_channel_volume(TSMF_IFMAN * ifman)
+{
+	LLOGLN(0, ("tsmf_ifman_on_channel_volume:"));
+	ifman->output_pending = 1;
+	return 0;
+}
+
+int
+tsmf_ifman_set_video_window(TSMF_IFMAN * ifman)
+{
+	LLOGLN(0, ("tsmf_ifman_set_video_window:"));
+	ifman->output_pending = 1;
+	return 0;
+}
+
+int
+tsmf_ifman_update_geometry_info(TSMF_IFMAN * ifman)
+{
+	LLOGLN(0, ("tsmf_ifman_update_geometry_info:"));
+	ifman->output_pending = 1;
+	return 0;
+}
+
+int
+tsmf_ifman_notify_preroll(TSMF_IFMAN * ifman)
+{
+	LLOGLN(0, ("tsmf_ifman_notify_preroll:"));
+	ifman->output_pending = 1;
+	return 0;
+}
+
+int
+tsmf_ifman_on_sample(TSMF_IFMAN * ifman)
+{
+	LLOGLN(0, ("tsmf_ifman_on_sample:"));
+	ifman->output_pending = 1;
 	return 0;
 }
 
