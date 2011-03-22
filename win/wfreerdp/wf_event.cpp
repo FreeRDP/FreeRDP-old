@@ -54,7 +54,7 @@ wf_ll_kbd_proc(int nCode, WPARAM wParam, LPARAM lParam)
 			if (wfi->fs_toggle &&
 					((p->vkCode == VK_RETURN) || (p->vkCode == VK_CANCEL)) &&
 					(GetAsyncKeyState(VK_CONTROL) & 0x8000) &&
-					(GetAsyncKeyState(VK_MENU) & 0x8000))
+					(GetAsyncKeyState(VK_MENU) & 0x8000)) // could also use flags & LLKHF_ALTDOWN
 			{
 				if (wParam == WM_KEYDOWN)
 				{
@@ -63,15 +63,15 @@ wf_ll_kbd_proc(int nCode, WPARAM wParam, LPARAM lParam)
 				return 1;
 			}
 
-			if ((scanCode == 0x36) && (flags & 1))
+			if ((scanCode == 0x36) && (flags & LLKHF_EXTENDED))
 			{
 				DEBUG_KBD("hack: right shift (x36) should not be extended\n");
 				flags &= ~1;
 			}
 
 			wfi->inst->rdp_send_input(wfi->inst, RDP_INPUT_SCANCODE,
-					((flags & 0x80) ? KBD_FLAG_UP : 0) |
-					((flags & 1) ? KBD_FLAG_EXT : 0),
+					((flags & LLKHF_UP) ? KBD_FLAG_UP : 0) |
+					((flags & LLKHF_EXTENDED) ? KBD_FLAG_EXT : 0),
 					scanCode, 0);
 			if (p->vkCode == VK_CAPITAL)
 				DEBUG_KBD("caps lock is processed on client side too to toggle caps lock indicator\n");

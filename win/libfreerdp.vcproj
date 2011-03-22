@@ -273,7 +273,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\tls.c"
+				RelativePath="..\libfreerdp\tls_openssl.c"
 				>
 			</File>
 		</Filter>
@@ -348,6 +348,10 @@
 			</File>
 			<File
 				RelativePath="..\libfreerdp\crypto.h"
+				>
+			</File>
+			<File
+				RelativePath="..\libfreerdp\crypto_openssl.h"
 				>
 			</File>
 			<File

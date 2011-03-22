@@ -33,6 +33,7 @@ struct _DVCMAN
 
 	drdynvcPlugin * drdynvc;
 
+	const char * plugin_names[MAX_PLUGINS];
 	IWTSPlugin * plugins[MAX_PLUGINS];
 	int num_plugins;
 
@@ -60,6 +61,7 @@ struct _DVCMAN_ENTRY_POINTS
 	IDRDYNVC_ENTRY_POINTS iface;
 
 	DVCMAN * dvcman;
+	RD_PLUGIN_DATA * plugin_data;
 };
 
 typedef struct _DVCMAN_CHANNEL DVCMAN_CHANNEL;
@@ -120,13 +122,14 @@ dvcman_create_listener(IWTSVirtualChannelManager * pChannelMgr,
 
 static int
 dvcman_register_plugin(IDRDYNVC_ENTRY_POINTS * pEntryPoints,
-	IWTSPlugin * pPlugin)
+	const char * name, IWTSPlugin * pPlugin)
 {
 	DVCMAN * dvcman = ((DVCMAN_ENTRY_POINTS *)pEntryPoints)->dvcman;
 
 	if (dvcman->num_plugins < MAX_PLUGINS)
 	{
 		LLOGLN(0, ("dvcman_register_plugin: %d", dvcman->num_plugins));
+		dvcman->plugin_names[dvcman->num_plugins] = name;
 		dvcman->plugins[dvcman->num_plugins++] = pPlugin;
 		return 0;
 	}
@@ -135,6 +138,30 @@ dvcman_register_plugin(IDRDYNVC_ENTRY_POINTS * pEntryPoints,
 		LLOGLN(0, ("dvcman_register_plugin: Maximum DVC plugin number reached."));
 		return 1;
 	}
+}
+
+IWTSPlugin *
+dvcman_get_plugin(IDRDYNVC_ENTRY_POINTS * pEntryPoints,
+	const char * name)
+{
+	DVCMAN * dvcman = ((DVCMAN_ENTRY_POINTS *)pEntryPoints)->dvcman;
+	int i;
+
+	for (i = 0; i < dvcman->num_plugins; i++)
+	{
+		if (dvcman->plugin_names[i] == name ||
+			strcmp(dvcman->plugin_names[i], name) == 0)
+		{
+			return dvcman->plugins[i];
+		}
+	}
+	return NULL;
+}
+
+RD_PLUGIN_DATA *
+dvcman_get_plugin_data(IDRDYNVC_ENTRY_POINTS * pEntryPoints)
+{
+	return ((DVCMAN_ENTRY_POINTS *)pEntryPoints)->plugin_data;
 }
 
 IWTSVirtualChannelManager *
@@ -155,8 +182,9 @@ dvcman_new(drdynvcPlugin * plugin)
 }
 
 int
-dvcman_load_plugin(IWTSVirtualChannelManager * pChannelMgr, char* filename)
+dvcman_load_plugin(IWTSVirtualChannelManager * pChannelMgr, RD_PLUGIN_DATA * data)
 {
+	char * filename = (char *) data->data[0];
 	DVCMAN_ENTRY_POINTS entryPoints;
 	void* dl;
 	char* fn;
@@ -178,7 +206,10 @@ dvcman_load_plugin(IWTSVirtualChannelManager * pChannelMgr, char* filename)
 	if(pDVCPluginEntry != NULL)
 	{
 		entryPoints.iface.RegisterPlugin = dvcman_register_plugin;
+		entryPoints.iface.GetPlugin = dvcman_get_plugin;
+		entryPoints.iface.GetPluginData = dvcman_get_plugin_data;
 		entryPoints.dvcman = (DVCMAN *) pChannelMgr;
+		entryPoints.plugin_data = data;
 		pDVCPluginEntry((IDRDYNVC_ENTRY_POINTS *) &entryPoints);
 		LLOGLN(0, ("loaded DVC plugin: %s", fn));
 	}

@@ -134,7 +134,10 @@ typedef struct _IDRDYNVC_ENTRY_POINTS IDRDYNVC_ENTRY_POINTS;
 struct _IDRDYNVC_ENTRY_POINTS
 {
 	int (*RegisterPlugin) (IDRDYNVC_ENTRY_POINTS * pEntryPoints,
-		IWTSPlugin * pPlugin);
+		const char * name, IWTSPlugin * pPlugin);
+	IWTSPlugin * (*GetPlugin) (IDRDYNVC_ENTRY_POINTS * pEntryPoints,
+		const char * name);
+	RD_PLUGIN_DATA * (*GetPluginData) (IDRDYNVC_ENTRY_POINTS * pEntryPoints);
 };
 
 typedef int (*PDVC_PLUGIN_ENTRY) (IDRDYNVC_ENTRY_POINTS *);

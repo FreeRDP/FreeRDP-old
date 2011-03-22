@@ -26,7 +26,7 @@
 IWTSVirtualChannelManager *
 dvcman_new(drdynvcPlugin * plugin);
 int
-dvcman_load_plugin(IWTSVirtualChannelManager * pChannelMgr, char* filename);
+dvcman_load_plugin(IWTSVirtualChannelManager * pChannelMgr, RD_PLUGIN_DATA * data);
 void
 dvcman_free(IWTSVirtualChannelManager * pChannelMgr);
 int

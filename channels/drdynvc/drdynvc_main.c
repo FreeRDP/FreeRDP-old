@@ -680,7 +680,7 @@ VirtualChannelEntry(PCHANNEL_ENTRY_POINTS pEntryPoints)
 		data = (RD_PLUGIN_DATA *) (((PCHANNEL_ENTRY_POINTS_EX)pEntryPoints)->pExtendedData);
 		while (data && data->size > 0)
 		{
-			dvcman_load_plugin(plugin->channel_mgr, (char*)data->data[0]);
+			dvcman_load_plugin(plugin->channel_mgr, data);
 			data = (RD_PLUGIN_DATA *) (((void *) data) + data->size);
 		}
 	}

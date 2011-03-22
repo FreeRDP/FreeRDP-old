@@ -253,7 +253,7 @@ crypto_cert_get_fingerprint(CryptoCert cert)
 {
 	unsigned char fp_buf[20];
 	unsigned int fp_len = sizeof(fp_buf);
-	int i;
+	unsigned int i;
 	char * fingerprint;
 	char * p;
 
