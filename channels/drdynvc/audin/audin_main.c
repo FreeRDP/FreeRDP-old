@@ -21,7 +21,23 @@
 #include <stdlib.h>
 #include <string.h>
 #include "drdynvc_types.h"
-#include "audin_main.h"
+#include "audin_types.h"
+#include "audin_dsp.h"
+
+#ifdef _WIN32
+#define DLOPEN(f) LoadLibraryA(f)
+#define DLSYM(f, n) GetProcAddress(f, n)
+#define DLCLOSE(f) FreeLibrary(f)
+#define PATH_SEPARATOR '\\'
+#define PLUGIN_EXT "dll"
+#else
+#include <dlfcn.h>
+#define DLOPEN(f) dlopen(f, RTLD_LOCAL | RTLD_LAZY)
+#define DLSYM(f, n) dlsym(f, n)
+#define DLCLOSE(f) dlclose(f)
+#define PATH_SEPARATOR '/'
+#define PLUGIN_EXT "so"
+#endif
 
 #define MSG_SNDIN_VERSION       0x01
 #define MSG_SNDIN_FORMATS       0x02
@@ -49,8 +65,6 @@ struct _AUDIN_CHANNEL_CALLBACK
 	IWTSVirtualChannelManager * channel_mgr;
 	IWTSVirtualChannel * channel;
 
-	/* Hardware-specific data */
-	void * device_data;
 	/* The supported format list sent back to the server, which needs to
 	   be stored as reference when the server sends the format index in
 	   Open PDU and Format Change PDU */
@@ -64,6 +78,14 @@ struct _AUDIN_PLUGIN
 	IWTSPlugin iface;
 
 	AUDIN_LISTENER_CALLBACK * listener_callback;
+
+	/* Parsed plugin data */
+	int fixed_format;
+	int fixed_rate;
+	int fixed_channel;	
+
+	/* Device plugin */
+	audinDevicePlugin * device_plugin;
 };
 
 static int
@@ -105,6 +127,7 @@ audin_process_formats(IWTSVirtualChannelCallback * pChannelCallback,
 	char * data, uint32 data_size)
 {
 	AUDIN_CHANNEL_CALLBACK * callback = (AUDIN_CHANNEL_CALLBACK *) pChannelCallback;
+	AUDIN_PLUGIN * audin = (AUDIN_PLUGIN *) callback->plugin;
 	uint32 NumFormats;
 	uint32 i;
 	int size;
@@ -116,6 +139,8 @@ audin_process_formats(IWTSVirtualChannelCallback * pChannelCallback,
 	int error;
 
 	NumFormats = GET_UINT32(data, 0);
+	LLOGLN(10, ("audin_process_formats: NumFormats %d",
+		NumFormats));
 	if ((NumFormats < 1) || (NumFormats > 1000))
 	{
 		LLOGLN(0, ("audin_process_formats: bad NumFormats %d",
@@ -136,10 +161,17 @@ audin_process_formats(IWTSVirtualChannelCallback * pChannelCallback,
 	/* remainder is sndFormats (variable) */
 	ldata = data + 8;
 	out_format_count = 0;
-	for (i = 0; i < NumFormats; i++)
+	for (i = 0; i < NumFormats; i++, ldata += size)
 	{
 		size = 18 + GET_UINT16(ldata, 16);
-		if (wave_in_format_supported(callback->device_data, ldata, size))
+		if (audin->fixed_format > 0 && audin->fixed_format != GET_UINT16(ldata, 0))
+			continue;
+		if (audin->fixed_channel > 0 && audin->fixed_channel != GET_UINT16(ldata, 2))
+			continue;
+		if (audin->fixed_rate > 0 && audin->fixed_rate != GET_UINT32(ldata, 4))
+			continue;
+		if (audin->device_plugin &&
+			audin->device_plugin->format_supported(audin->device_plugin, ldata, size))
 		{
 			/* Store the agreed format in the corresponding index */
 			callback->formats_data[out_format_count] = (char *) malloc(size);
@@ -149,7 +181,6 @@ audin_process_formats(IWTSVirtualChannelCallback * pChannelCallback,
 			lout_formats += size;
 			out_format_count++;
 		}
-		ldata += size;
 	}
 	callback->formats_count = out_format_count;
 
@@ -214,11 +245,12 @@ audin_process_open(IWTSVirtualChannelCallback * pChannelCallback,
 	char * data, uint32 data_size)
 {
 	AUDIN_CHANNEL_CALLBACK * callback = (AUDIN_CHANNEL_CALLBACK *) pChannelCallback;
+	AUDIN_PLUGIN * audin = (AUDIN_PLUGIN *) callback->plugin;
 	uint32 FramesPerPacket;
 	uint32 initialFormat;
 	char * format;
 	int size;
-	int result;
+	int result = 0;
 
 	FramesPerPacket = GET_UINT32(data, 0);
 	initialFormat = GET_UINT32(data, 4);
@@ -232,9 +264,13 @@ audin_process_open(IWTSVirtualChannelCallback * pChannelCallback,
 	}
 	format = callback->formats_data[initialFormat];
 	size = 18 + GET_UINT16(format, 16);
-	wave_in_set_format(callback->device_data, FramesPerPacket, format, size);
-	result = wave_in_open(callback->device_data,
-		audin_receive_wave_data, callback);
+	if (audin->device_plugin)
+	{
+		audin->device_plugin->set_format(audin->device_plugin,
+			FramesPerPacket, format, size);
+		result = audin->device_plugin->open(audin->device_plugin,
+			audin_receive_wave_data, callback);
+	}
 
 	if (result == 0)
 	{
@@ -250,6 +286,7 @@ audin_process_format_change(IWTSVirtualChannelCallback * pChannelCallback,
 	char * data, uint32 data_size)
 {
 	AUDIN_CHANNEL_CALLBACK * callback = (AUDIN_CHANNEL_CALLBACK *) pChannelCallback;
+	AUDIN_PLUGIN * audin = (AUDIN_PLUGIN *) callback->plugin;
 	uint32 NewFormat;
 	char * format;
 	int size;
@@ -264,15 +301,20 @@ audin_process_format_change(IWTSVirtualChannelCallback * pChannelCallback,
 		return 1;
 	}
 
-	wave_in_close(callback->device_data);
+	if (audin->device_plugin)
+		audin->device_plugin->close(audin->device_plugin);
 
 	format = callback->formats_data[NewFormat];
 	size = 18 + GET_UINT16(format, 16);
-	wave_in_set_format(callback->device_data, 0, format, size);
+	
+	if (audin->device_plugin)
+		audin->device_plugin->set_format(audin->device_plugin, 0, format, size);
+
 	audin_send_format_change_pdu(pChannelCallback, NewFormat);
 
-	wave_in_open(callback->device_data,
-		audin_receive_wave_data, callback);
+	if (audin->device_plugin)
+		audin->device_plugin->open(audin->device_plugin,
+			audin_receive_wave_data, callback);
 
 	return 0;
 }
@@ -311,11 +353,12 @@ static int
 audin_on_close(IWTSVirtualChannelCallback * pChannelCallback)
 {
 	AUDIN_CHANNEL_CALLBACK * callback = (AUDIN_CHANNEL_CALLBACK *) pChannelCallback;
+	AUDIN_PLUGIN * audin = (AUDIN_PLUGIN *) callback->plugin;
 	int i;
 
 	LLOGLN(10, ("audin_on_close:"));
-	wave_in_close(callback->device_data);
-	wave_in_free(callback->device_data);
+	if (audin->device_plugin)
+		audin->device_plugin->close(audin->device_plugin);
 	if (callback->formats_data)
 	{
 		for (i = 0; i < callback->formats_count; i++)
@@ -347,7 +390,6 @@ audin_on_new_channel_connection(IWTSListenerCallback * pListenerCallback,
 	callback->plugin = listener_callback->plugin;
 	callback->channel_mgr = listener_callback->channel_mgr;
 	callback->channel = pChannel;
-	callback->device_data = wave_in_new();
 
 	*ppCallback = (IWTSVirtualChannelCallback *) callback;
 	return 0;
@@ -375,9 +417,132 @@ audin_plugin_terminated(IWTSPlugin * pPlugin)
 	AUDIN_PLUGIN * audin = (AUDIN_PLUGIN *) pPlugin;
 
 	LLOGLN(10, ("audin_plugin_terminated:"));
+	if (audin->device_plugin)
+	{
+		audin->device_plugin->close(audin->device_plugin);
+		audin->device_plugin->free(audin->device_plugin);
+		audin->device_plugin = NULL;
+	}
 	if (audin->listener_callback)
 		free(audin->listener_callback);
 	free(audin);
+	return 0;
+}
+
+static audinDevicePlugin *
+audin_register_device_plugin(IWTSPlugin * pPlugin)
+{
+	AUDIN_PLUGIN * audin = (AUDIN_PLUGIN *) pPlugin;
+	audinDevicePlugin * devplugin;
+
+	if (audin->device_plugin)
+	{
+		LLOGLN(0, ("audin_register_device_plugin: existing device, abort."));
+		return NULL;
+	}
+
+	devplugin = (audinDevicePlugin *) malloc(sizeof(audinDevicePlugin));
+	memset(devplugin, 0, sizeof(audinDevicePlugin));
+	audin->device_plugin = devplugin;
+	return devplugin;
+}
+
+static int
+audin_load_device_plugin(IWTSPlugin * pPlugin, const char * name, RD_PLUGIN_DATA * data)
+{
+	FREERDP_AUDIN_DEVICE_ENTRY_POINTS entryPoints;
+	char path[256];
+	void * han;
+	PFREERDP_AUDIN_DEVICE_ENTRY entry;
+
+	if (strchr(name, PATH_SEPARATOR) == NULL)
+	{
+		snprintf(path, sizeof(path), PLUGIN_PATH "/audin_%s." PLUGIN_EXT, name);
+	}
+	else
+	{
+		snprintf(path, sizeof(path), "%s", name);
+	}
+	han = DLOPEN(path);
+	LLOGLN(0, ("audin_load_device_plugin: %s", path));
+	if (han == NULL)
+	{
+		LLOGLN(0, ("audin_load_device_plugin: failed to load %s", path));
+		return 1;
+	}
+	entry = (PFREERDP_AUDIN_DEVICE_ENTRY) DLSYM(han, AUDIN_DEVICE_EXPORT_FUNC_NAME);
+	if (entry == NULL)
+	{
+		DLCLOSE(han);
+		LLOGLN(0, ("audin_load_device_plugin: failed to find export function in %s", path));
+		return 1;
+	}
+
+	entryPoints.plugin = pPlugin;
+	entryPoints.pRegisterAudinDevice = audin_register_device_plugin;
+	entryPoints.pResample = audin_dsp_resample;
+	entryPoints.pEncodeImaAdpcm = audin_dsp_encode_ima_adpcm;
+	entryPoints.data = data;
+	if (entry(&entryPoints) != 0)
+	{
+		DLCLOSE(han);
+		LLOGLN(0, ("audin_load_device_plugin: %s entry returns error.", path));
+		return 1;
+	}
+	return 0;
+}
+
+static int
+audin_process_plugin_data(IWTSPlugin * pPlugin, RD_PLUGIN_DATA * data)
+{
+	AUDIN_PLUGIN * audin = (AUDIN_PLUGIN *) pPlugin;
+	RD_PLUGIN_DATA default_data[3] = { { 0 }, { 0 }, { 0 } };
+	int ret;
+
+	if (data->data[0] && strcmp((char*)data->data[0], "audin") == 0)
+	{
+		if (data->data[1] && strcmp((char*)data->data[1], "format") == 0)
+		{
+			audin->fixed_format = atoi(data->data[2]);
+			return 0;
+		}
+		else if (data->data[1] && strcmp((char*)data->data[1], "rate") == 0)
+		{
+			audin->fixed_rate = atoi(data->data[2]);
+			return 0;
+		}
+		else if (data->data[1] && strcmp((char*)data->data[1], "channel") == 0)
+		{
+			audin->fixed_channel = atoi(data->data[2]);
+			return 0;
+		}
+		else if (data->data[1] && ((char*)data->data[1])[0])
+		{
+			return audin_load_device_plugin(pPlugin, (char*)data->data[1], data);
+		}
+		else
+		{
+			default_data[0].size = sizeof(RD_PLUGIN_DATA);
+			default_data[0].data[0] = "audin";
+			default_data[0].data[1] = "pulse";
+			default_data[0].data[2] = "";
+			ret = audin_load_device_plugin(pPlugin, "pulse", default_data);
+			if (ret)
+			{
+				if (audin->device_plugin)
+				{
+					free(audin->device_plugin);
+					audin->device_plugin = NULL;
+				}
+				default_data[0].size = sizeof(RD_PLUGIN_DATA);
+				default_data[0].data[0] = "audin";
+				default_data[0].data[1] = "alsa";
+				default_data[0].data[2] = "default";
+				ret = audin_load_device_plugin(pPlugin, "alsa", default_data);
+			}
+			return ret;
+		}
+	}
 	return 0;
 }
 
@@ -385,14 +550,31 @@ int
 DVCPluginEntry(IDRDYNVC_ENTRY_POINTS * pEntryPoints)
 {
 	AUDIN_PLUGIN * audin;
+	int ret = 0;
 
-	audin = (AUDIN_PLUGIN *) malloc(sizeof(AUDIN_PLUGIN));
-	memset(audin, 0, sizeof(AUDIN_PLUGIN));
+	audin = (AUDIN_PLUGIN *) pEntryPoints->GetPlugin(pEntryPoints, "audin");
+	if (audin == NULL)
+	{
+		audin = (AUDIN_PLUGIN *) malloc(sizeof(AUDIN_PLUGIN));
+		memset(audin, 0, sizeof(AUDIN_PLUGIN));
 
-	audin->iface.Initialize = audin_plugin_initialize;
-	audin->iface.Connected = NULL;
-	audin->iface.Disconnected = NULL;
-	audin->iface.Terminated = audin_plugin_terminated;
-	return pEntryPoints->RegisterPlugin(pEntryPoints, (IWTSPlugin *) audin);
+		audin->iface.Initialize = audin_plugin_initialize;
+		audin->iface.Connected = NULL;
+		audin->iface.Disconnected = NULL;
+		audin->iface.Terminated = audin_plugin_terminated;
+		ret = pEntryPoints->RegisterPlugin(pEntryPoints, "audin", (IWTSPlugin *) audin);
+	}
+
+	if (ret == 0)
+	{
+		audin_process_plugin_data((IWTSPlugin *) audin,
+			pEntryPoints->GetPluginData(pEntryPoints));
+	}
+	if (audin->device_plugin == NULL)
+	{
+		LLOGLN(0, ("audin: no sound device."));
+	}
+
+	return ret;
 }
 

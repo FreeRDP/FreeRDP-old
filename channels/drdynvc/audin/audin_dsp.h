@@ -1,6 +1,6 @@
 /*
    FreeRDP: A Remote Desktop Protocol client.
-   Audio Input Reirection Virtual Channel
+   Digital Sound Processing
 
    Copyright 2010-2011 Vic Lee
 
@@ -17,24 +17,17 @@
    limitations under the License.
 */
 
-#ifndef __AUDIN_MAIN_H
-#define __AUDIN_MAIN_H
+#ifndef __AUDIN_DSP_H
+#define __AUDIN_DSP_H
 
-#include <freerdp/types_ui.h>
+uint8 *
+audin_dsp_resample(uint8 * src, int bytes_per_sample,
+	uint32 schan, uint32 srate, int sframes,
+	uint32 rchan, uint32 rrate, int * prframes);
 
-typedef int (*wave_in_receive_func) (char * wave_data, int size, void * user_data);
-
-void *
-wave_in_new(void);
-void
-wave_in_free(void * device_data);
-int
-wave_in_format_supported(void * device_data, char * snd_format, int size);
-int
-wave_in_set_format(void * device_data, uint32 FramesPerPacket, char * snd_format, int size);
-int
-wave_in_open(void * device_data, wave_in_receive_func receive_func, void * user_data);
-int
-wave_in_close(void * device_data);
+uint8 *
+audin_dsp_encode_ima_adpcm(audinDspAdpcm * adpcm,
+	uint8 * src, int size, int channels, int block_size, int * out_size);
 
 #endif
+
