@@ -36,5 +36,7 @@ dvcman_create_channel(IWTSVirtualChannelManager * pChannelMgr, uint32 ChannelId,
 int
 dvcman_close_channel(IWTSVirtualChannelManager * pChannelMgr, uint32 ChannelId);
 int
+dvcman_receive_channel_data_first(IWTSVirtualChannelManager * pChannelMgr, uint32 ChannelId, uint32 length);
+int
 dvcman_receive_channel_data(IWTSVirtualChannelManager * pChannelMgr, uint32 ChannelId, char * data, uint32 data_size);
 #endif

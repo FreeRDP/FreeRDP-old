@@ -71,6 +71,10 @@ struct _DVCMAN_CHANNEL
 	DVCMAN_CHANNEL * next;
 	uint32 channel_id;
 	IWTSVirtualChannelCallback * channel_callback;
+
+	char * dvc_data;
+	uint32 dvc_data_pos;
+	uint32 dvc_data_size;
 };
 
 static int
@@ -347,6 +351,11 @@ dvcman_close_channel(IWTSVirtualChannelManager * pChannelMgr, uint32 ChannelId)
 		LLOGLN(0, ("dvcman_close_channel: ChannelId %d not found!", ChannelId));
 		return 1;
 	}
+	if (channel->dvc_data)
+	{
+		free(channel->dvc_data);
+		channel->dvc_data = NULL;
+	}
 	LLOGLN(0, ("dvcman_close_channel: channel %d closed", ChannelId));
 	ichannel = (IWTSVirtualChannel *) channel;
 	ichannel->Close(ichannel);
@@ -354,7 +363,7 @@ dvcman_close_channel(IWTSVirtualChannelManager * pChannelMgr, uint32 ChannelId)
 }
 
 int
-dvcman_receive_channel_data(IWTSVirtualChannelManager * pChannelMgr, uint32 ChannelId, char * data, uint32 data_size)
+dvcman_receive_channel_data_first(IWTSVirtualChannelManager * pChannelMgr, uint32 ChannelId, uint32 length)
 {
 	DVCMAN_CHANNEL * channel;
 
@@ -364,8 +373,55 @@ dvcman_receive_channel_data(IWTSVirtualChannelManager * pChannelMgr, uint32 Chan
 		LLOGLN(0, ("dvcman_receive_channel_data: ChannelId %d not found!", ChannelId));
 		return 1;
 	}
-	channel->channel_callback->OnDataReceived(channel->channel_callback,
-		data_size, data);
+	if (channel->dvc_data)
+		free(channel->dvc_data);
+	channel->dvc_data = (char *) malloc(length);
+	memset(channel->dvc_data, 0, length);
+	channel->dvc_data_pos = 0;
+	channel->dvc_data_size = length;
+
 	return 0;
+}
+
+int
+dvcman_receive_channel_data(IWTSVirtualChannelManager * pChannelMgr, uint32 ChannelId, char * data, uint32 data_size)
+{
+	DVCMAN_CHANNEL * channel;
+	int error = 0;
+
+	channel = dvcman_find_channel_by_id(pChannelMgr, ChannelId);
+	if (channel == NULL)
+	{
+		LLOGLN(0, ("dvcman_receive_channel_data: ChannelId %d not found!", ChannelId));
+		return 1;
+	}
+
+	if (channel->dvc_data)
+	{
+		/* Fragmented data */
+		if (channel->dvc_data_pos + (uint32) data_size > channel->dvc_data_size)
+		{
+			LLOGLN(0, ("dvcman_receive_channel_data: data exceeding declared length!"));
+			free(channel->dvc_data);
+			channel->dvc_data = NULL;
+			return 1;
+		}
+		memcpy(channel->dvc_data + channel->dvc_data_pos, data, data_size);
+		channel->dvc_data_pos += (uint32) data_size;
+		if (channel->dvc_data_pos >= channel->dvc_data_size)
+		{
+			error = channel->channel_callback->OnDataReceived(channel->channel_callback,
+				channel->dvc_data_size, channel->dvc_data);
+			free(channel->dvc_data);
+			channel->dvc_data = NULL;
+		}
+	}
+	else
+	{
+		error = channel->channel_callback->OnDataReceived(channel->channel_callback,
+			data_size, data);
+	}
+
+	return error;
 }
 
