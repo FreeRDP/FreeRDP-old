@@ -49,12 +49,6 @@
 extern "C" {
 #endif
 
-#ifdef _WIN32
-#define CHR TCHAR
-#else
-#define CHR char
-#endif
-
 typedef struct rdp_chan_man rdpChanMan;
 
 FREERDP_CHANMAN_API int
@@ -67,7 +61,7 @@ FREERDP_CHANMAN_API void
 freerdp_chanman_free(rdpChanMan * chan_man);
 FREERDP_CHANMAN_API int
 freerdp_chanman_load_plugin(rdpChanMan * chan_man, rdpSet * settings,
-	const CHR * filename, void * data);
+	const char * filename, void * data);
 FREERDP_CHANMAN_API int
 freerdp_chanman_pre_connect(rdpChanMan * chan_man, rdpInst * inst);
 FREERDP_CHANMAN_API int
