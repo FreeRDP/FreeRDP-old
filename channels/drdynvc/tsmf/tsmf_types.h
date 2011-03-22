@@ -45,6 +45,7 @@ struct _TSMF_CHANNEL_CALLBACK
 	char * output_buffer;
 	uint32 output_buffer_size;
 	int output_pending;
+	uint32 output_interface_id;
 };
 
 typedef struct _TSMF_PLUGIN TSMF_PLUGIN;
