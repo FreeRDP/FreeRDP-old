@@ -43,9 +43,6 @@ tsmf_process_interface_capability_request(IWTSVirtualChannelCallback * pChannelC
 static int
 tsmf_process_channel_params(IWTSVirtualChannelCallback * pChannelCallback)
 {
-	TSMF_CHANNEL_CALLBACK * callback = (TSMF_CHANNEL_CALLBACK *) pChannelCallback;
-	/* TODO: store the information */
-
 	callback->output_pending = 1;
 	return 0;
 }
@@ -91,6 +88,33 @@ tsmf_process_capability_request(IWTSVirtualChannelCallback * pChannelCallback)
 		p += 8 + cbCapabilityLength;
 	}
 	callback->output_interface_id = TSMF_INTERFACE_DEFAULT | STREAM_ID_STUB;
+	return 0;
+}
+
+static int
+tsmf_process_format_support_request(IWTSVirtualChannelCallback * pChannelCallback)
+{
+	TSMF_CHANNEL_CALLBACK * callback = (TSMF_CHANNEL_CALLBACK *) pChannelCallback;
+	uint32 PlatformCookie;
+	uint32 numMediaType;
+
+	PlatformCookie = GET_UINT32(callback->input_buffer, 0);
+	/* NoRolloverFlags (4 bytes) ignored */
+	numMediaType = GET_UINT32(callback->input_buffer, 8);
+
+	LLOGLN(0, ("tsmf_process_format_support_request: PlatformCookie %d numMediaType %d",
+		PlatformCookie, numMediaType));
+
+	/* TODO: check the actual supported format */
+
+	callback->output_buffer_size = 12;
+	callback->output_buffer = malloc(12);
+	SET_UINT32(callback->output_buffer, 0, 1); /* FormatSupported */
+	SET_UINT32(callback->output_buffer, 4, PlatformCookie);
+	SET_UINT32(callback->output_buffer, 8, 0); /* Result */
+
+	callback->output_interface_id = TSMF_INTERFACE_DEFAULT | STREAM_ID_STUB;
+
 	return 0;
 }
 
@@ -151,6 +175,10 @@ tsmf_on_data_received(IWTSVirtualChannelCallback * pChannelCallback,
 
 				case EXCHANGE_CAPABILITIES_REQ:
 					error = tsmf_process_capability_request(pChannelCallback);
+					break;
+
+				case CHECK_FORMAT_SUPPORT_REQ:
+					error = tsmf_process_format_support_request(pChannelCallback);
 					break;
 
 				default:
