@@ -47,7 +47,7 @@ tsmf_on_data_received(IWTSVirtualChannelCallback * pChannelCallback,
 	InterfaceId = GET_UINT32(pBuffer, 0);
 	MessageId = GET_UINT32(pBuffer, 4);
 	FunctionId = GET_UINT32(pBuffer, 8);
-	LLOGLN(0, ("tsmf_on_data_received: cbSize=%d InterfaceId=0x%X MessageId=0x%X FunctionId=0x%X",
+	LLOGLN(10, ("tsmf_on_data_received: cbSize=%d InterfaceId=0x%X MessageId=0x%X FunctionId=0x%X",
 		cbSize, InterfaceId, MessageId, FunctionId));
 
 	ifman.input_buffer = pBuffer + 12;
@@ -64,7 +64,7 @@ tsmf_on_data_received(IWTSVirtualChannelCallback * pChannelCallback,
 			switch (FunctionId)
 			{
 				case RIM_EXCHANGE_CAPABILITY_REQUEST:
-					error = tsmf_ifman_process_interface_capability_request(&ifman);
+					error = tsmf_ifman_rim_exchange_capability_request(&ifman);
 					break;
 
 				default:
@@ -77,15 +77,59 @@ tsmf_on_data_received(IWTSVirtualChannelCallback * pChannelCallback,
 			switch (FunctionId)
 			{
 				case SET_CHANNEL_PARAMS:
-					error = tsmf_ifman_process_channel_params(&ifman);
+					error = tsmf_ifman_set_channel_params(&ifman);
 					break;
 
 				case EXCHANGE_CAPABILITIES_REQ:
-					error = tsmf_ifman_process_capability_request(&ifman);
+					error = tsmf_ifman_exchange_capability_request(&ifman);
 					break;
 
 				case CHECK_FORMAT_SUPPORT_REQ:
-					error = tsmf_ifman_process_format_support_request(&ifman);
+					error = tsmf_ifman_check_format_support_request(&ifman);
+					break;
+
+				case ON_NEW_PRESENTATION:
+					error = tsmf_ifman_on_new_presentation(&ifman);
+					break;
+
+				case ADD_STREAM:
+					error = tsmf_ifman_add_stream(&ifman);
+					break;
+
+				case SET_TOPOLOGY_REQ:
+					error = tsmf_ifman_set_topology_request(&ifman);
+					break;
+
+				case REMOVE_STREAM:
+					error = tsmf_ifman_remove_stream(&ifman);
+					break;
+
+				case SHUTDOWN_PRESENTATION_REQ:
+					error = tsmf_ifman_shutdown_presentation(&ifman);
+					break;
+
+				case ON_STREAM_VOLUME:
+					error = tsmf_ifman_on_stream_volume(&ifman);
+					break;
+
+				case ON_CHANNEL_VOLUME:
+					error = tsmf_ifman_on_channel_volume(&ifman);
+					break;
+
+				case SET_VIDEO_WINDOW:
+					error = tsmf_ifman_set_video_window(&ifman);
+					break;
+
+				case UPDATE_GEOMETRY_INFO:
+					error = tsmf_ifman_update_geometry_info(&ifman);
+					break;
+
+				case NOTIFY_PREROLL:
+					error = tsmf_ifman_notify_preroll(&ifman);
+					break;
+
+				case ON_SAMPLE:
+					error = tsmf_ifman_on_sample(&ifman);
 					break;
 
 				default:
@@ -138,7 +182,7 @@ tsmf_on_data_received(IWTSVirtualChannelCallback * pChannelCallback,
 		if (ifman.output_buffer_size > 0)
 			memcpy(out_data + 8, ifman.output_buffer, ifman.output_buffer_size);
 
-		LLOGLN(0, ("tsmf_on_data_received: response size %d", out_size));
+		LLOGLN(10, ("tsmf_on_data_received: response size %d", out_size));
 		error = callback->channel->Write(callback->channel, out_size, out_data, NULL);
 		if (error)
 		{
@@ -160,7 +204,7 @@ tsmf_on_data_received(IWTSVirtualChannelCallback * pChannelCallback,
 static int
 tsmf_on_close(IWTSVirtualChannelCallback * pChannelCallback)
 {
-	LLOGLN(0, ("tsmf_on_close:"));
+	LLOGLN(10, ("tsmf_on_close:"));
 	free(pChannelCallback);
 	return 0;
 }
@@ -175,7 +219,7 @@ tsmf_on_new_channel_connection(IWTSListenerCallback * pListenerCallback,
 	TSMF_LISTENER_CALLBACK * listener_callback = (TSMF_LISTENER_CALLBACK *) pListenerCallback;
 	TSMF_CHANNEL_CALLBACK * callback;
 
-	LLOGLN(0, ("tsmf_on_new_channel_connection:"));
+	LLOGLN(10, ("tsmf_on_new_channel_connection:"));
 	callback = (TSMF_CHANNEL_CALLBACK *) malloc(sizeof(TSMF_CHANNEL_CALLBACK));
 	callback->iface.OnDataReceived = tsmf_on_data_received;
 	callback->iface.OnClose = tsmf_on_close;
@@ -191,7 +235,7 @@ tsmf_plugin_initialize(IWTSPlugin * pPlugin, IWTSVirtualChannelManager * pChanne
 {
 	TSMF_PLUGIN * tsmf = (TSMF_PLUGIN *) pPlugin;
 
-	LLOGLN(0, ("tsmf_plugin_initialize:"));
+	LLOGLN(10, ("tsmf_plugin_initialize:"));
 	tsmf->listener_callback = (TSMF_LISTENER_CALLBACK *) malloc(sizeof(TSMF_LISTENER_CALLBACK));
 	memset(tsmf->listener_callback, 0, sizeof(TSMF_LISTENER_CALLBACK));
 
@@ -207,7 +251,7 @@ tsmf_plugin_terminated(IWTSPlugin * pPlugin)
 {
 	TSMF_PLUGIN * tsmf = (TSMF_PLUGIN *) pPlugin;
 
-	LLOGLN(0, ("tsmf_plugin_terminated:"));
+	LLOGLN(10, ("tsmf_plugin_terminated:"));
 	if (tsmf->listener_callback)
 		free(tsmf->listener_callback);
 	free(tsmf);

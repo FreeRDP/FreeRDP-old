@@ -32,13 +32,35 @@ struct _TSMF_IFMAN
 };
 
 int
-tsmf_ifman_process_interface_capability_request(TSMF_IFMAN * ifman);
+tsmf_ifman_rim_exchange_capability_request(TSMF_IFMAN * ifman);
 int
-tsmf_ifman_process_channel_params(TSMF_IFMAN * ifman);
+tsmf_ifman_set_channel_params(TSMF_IFMAN * ifman);
 int
-tsmf_ifman_process_capability_request(TSMF_IFMAN * ifman);
+tsmf_ifman_exchange_capability_request(TSMF_IFMAN * ifman);
 int
-tsmf_ifman_process_format_support_request(TSMF_IFMAN * ifman);
+tsmf_ifman_check_format_support_request(TSMF_IFMAN * ifman);
+int
+tsmf_ifman_on_new_presentation(TSMF_IFMAN * ifman);
+int
+tsmf_ifman_add_stream(TSMF_IFMAN * ifman);
+int
+tsmf_ifman_set_topology_request(TSMF_IFMAN * ifman);
+int
+tsmf_ifman_remove_stream(TSMF_IFMAN * ifman);
+int
+tsmf_ifman_shutdown_presentation(TSMF_IFMAN * ifman);
+int
+tsmf_ifman_on_stream_volume(TSMF_IFMAN * ifman);
+int
+tsmf_ifman_on_channel_volume(TSMF_IFMAN * ifman);
+int
+tsmf_ifman_set_video_window(TSMF_IFMAN * ifman);
+int
+tsmf_ifman_update_geometry_info(TSMF_IFMAN * ifman);
+int
+tsmf_ifman_notify_preroll(TSMF_IFMAN * ifman);
+int
+tsmf_ifman_on_sample(TSMF_IFMAN * ifman);
 
 #endif
 
