@@ -22,101 +22,7 @@
 #include <string.h>
 #include "tsmf_constants.h"
 #include "tsmf_types.h"
-
-static int
-tsmf_process_interface_capability_request(IWTSVirtualChannelCallback * pChannelCallback)
-{
-	TSMF_CHANNEL_CALLBACK * callback = (TSMF_CHANNEL_CALLBACK *) pChannelCallback;
-	uint32 CapabilityValue;
-
-	CapabilityValue = GET_UINT32(callback->input_buffer, 0);
-	LLOGLN(0, ("tsmf_process_capability_request: server CapabilityValue %d", CapabilityValue));
-
-	callback->output_buffer_size = 8;
-	callback->output_buffer = malloc(8);
-	SET_UINT32(callback->output_buffer, 0, 1); /* CapabilityValue */
-	SET_UINT32(callback->output_buffer, 4, 0); /* Result */
-
-	return 0;
-}
-
-static int
-tsmf_process_channel_params(IWTSVirtualChannelCallback * pChannelCallback)
-{
-	callback->output_pending = 1;
-	return 0;
-}
-
-static int
-tsmf_process_capability_request(IWTSVirtualChannelCallback * pChannelCallback)
-{
-	TSMF_CHANNEL_CALLBACK * callback = (TSMF_CHANNEL_CALLBACK *) pChannelCallback;
-	char * p;
-	uint32 numHostCapabilities;
-	uint32 i;
-	uint32 CapabilityType;
-	uint32 cbCapabilityLength;
-	uint32 v;
-
-	callback->output_buffer_size = callback->input_buffer_size + 4;
-	callback->output_buffer = malloc(callback->output_buffer_size);
-	memcpy(callback->output_buffer, callback->input_buffer, callback->input_buffer_size);
-	SET_UINT32(callback->output_buffer, callback->input_buffer_size, 0); /* Result */
-
-	numHostCapabilities = GET_UINT32(callback->output_buffer, 0);
-	p = callback->output_buffer + 4;
-	for (i = 0; i < numHostCapabilities; i++)
-	{
-		CapabilityType = GET_UINT32(p, 0);
-		cbCapabilityLength = GET_UINT32(p, 4);
-		switch (CapabilityType)
-		{
-			case 1: /* Protocol version request */
-				v = GET_UINT32(p, 8);
-				LLOGLN(0, ("tsmf_process_capability_request: server protocol version %d", v));
-				break;
-			case 2: /* Supported platform */
-				v = GET_UINT32(p, 8);
-				LLOGLN(0, ("tsmf_process_capability_request: server supported platform %d", v));
-				/* Claim that we support both MF and DShow platforms. */
-				SET_UINT32(p, 8, MMREDIR_CAPABILITY_PLATFORM_MF | MMREDIR_CAPABILITY_PLATFORM_DSHOW);
-				break;
-			default:
-				LLOGLN(0, ("tsmf_process_capability_request: unknown capability type %d", CapabilityType));
-				break;
-		}
-		p += 8 + cbCapabilityLength;
-	}
-	callback->output_interface_id = TSMF_INTERFACE_DEFAULT | STREAM_ID_STUB;
-	return 0;
-}
-
-static int
-tsmf_process_format_support_request(IWTSVirtualChannelCallback * pChannelCallback)
-{
-	TSMF_CHANNEL_CALLBACK * callback = (TSMF_CHANNEL_CALLBACK *) pChannelCallback;
-	uint32 PlatformCookie;
-	uint32 numMediaType;
-
-	PlatformCookie = GET_UINT32(callback->input_buffer, 0);
-	/* NoRolloverFlags (4 bytes) ignored */
-	numMediaType = GET_UINT32(callback->input_buffer, 8);
-
-	LLOGLN(0, ("tsmf_process_format_support_request: PlatformCookie %d numMediaType %d",
-		PlatformCookie, numMediaType));
-
-	/* TODO: check the actual supported format */
-
-	callback->output_buffer_size = 12;
-	callback->output_buffer = malloc(12);
-	SET_UINT32(callback->output_buffer, 0, 1); /* FormatSupported */
-	SET_UINT32(callback->output_buffer, 4, PlatformCookie);
-	SET_UINT32(callback->output_buffer, 8, 0); /* Result */
-
-	callback->output_interface_id = TSMF_INTERFACE_DEFAULT | STREAM_ID_STUB;
-
-	return 0;
-}
+#include "tsmf_ifman.h"
 
 static int
 tsmf_on_data_received(IWTSVirtualChannelCallback * pChannelCallback,
@@ -124,6 +30,7 @@ tsmf_on_data_received(IWTSVirtualChannelCallback * pChannelCallback,
 	char * pBuffer)
 {
 	TSMF_CHANNEL_CALLBACK * callback = (TSMF_CHANNEL_CALLBACK *) pChannelCallback;
+	TSMF_IFMAN ifman = { 0 };
 	uint32 InterfaceId;
 	uint32 MessageId;
 	uint32 FunctionId;
@@ -143,12 +50,12 @@ tsmf_on_data_received(IWTSVirtualChannelCallback * pChannelCallback,
 	LLOGLN(0, ("tsmf_on_data_received: cbSize=%d InterfaceId=0x%X MessageId=0x%X FunctionId=0x%X",
 		cbSize, InterfaceId, MessageId, FunctionId));
 
-	callback->input_buffer = pBuffer + 12;
-	callback->input_buffer_size = cbSize - 12;
-	callback->output_buffer = NULL;
-	callback->output_buffer_size = 0;
-	callback->output_pending = 0;
-	callback->output_interface_id = InterfaceId;
+	ifman.input_buffer = pBuffer + 12;
+	ifman.input_buffer_size = cbSize - 12;
+	ifman.output_buffer = NULL;
+	ifman.output_buffer_size = 0;
+	ifman.output_pending = 0;
+	ifman.output_interface_id = InterfaceId;
 
 	switch (InterfaceId)
 	{
@@ -157,7 +64,7 @@ tsmf_on_data_received(IWTSVirtualChannelCallback * pChannelCallback,
 			switch (FunctionId)
 			{
 				case RIM_EXCHANGE_CAPABILITY_REQUEST:
-					error = tsmf_process_interface_capability_request(pChannelCallback);
+					error = tsmf_ifman_process_interface_capability_request(&ifman);
 					break;
 
 				default:
@@ -170,15 +77,15 @@ tsmf_on_data_received(IWTSVirtualChannelCallback * pChannelCallback,
 			switch (FunctionId)
 			{
 				case SET_CHANNEL_PARAMS:
-					error = tsmf_process_channel_params(pChannelCallback);
+					error = tsmf_ifman_process_channel_params(&ifman);
 					break;
 
 				case EXCHANGE_CAPABILITIES_REQ:
-					error = tsmf_process_capability_request(pChannelCallback);
+					error = tsmf_ifman_process_capability_request(&ifman);
 					break;
 
 				case CHECK_FORMAT_SUPPORT_REQ:
-					error = tsmf_process_format_support_request(pChannelCallback);
+					error = tsmf_ifman_process_format_support_request(&ifman);
 					break;
 
 				default:
@@ -190,8 +97,8 @@ tsmf_on_data_received(IWTSVirtualChannelCallback * pChannelCallback,
 			break;
 	}
 
-	callback->input_buffer = NULL;
-	callback->input_buffer_size = 0;
+	ifman.input_buffer = NULL;
+	ifman.input_buffer_size = 0;
 
 	if (error == -1)
 	{
@@ -201,7 +108,7 @@ tsmf_on_data_received(IWTSVirtualChannelCallback * pChannelCallback,
 				/* [MS-RDPEXPS] 2.2.2.2 Interface Release (IFACE_RELEASE)
 				   This message does not require a reply. */
 				error = 0;
-				callback->output_pending = 1;
+				ifman.output_pending = 1;
 				break;
 
 			case RIMCALL_QUERYINTERFACE:
@@ -220,16 +127,16 @@ tsmf_on_data_received(IWTSVirtualChannelCallback * pChannelCallback,
 		error = 0;
 	}
 
-	if (error == 0 && !callback->output_pending)
+	if (error == 0 && !ifman.output_pending)
 	{
 		/* Response packet does not have FunctionId */
-		out_size = 8 + callback->output_buffer_size;
+		out_size = 8 + ifman.output_buffer_size;
 		out_data = (char *) malloc(out_size);
 		memset(out_data, 0, out_size);
-		SET_UINT32(out_data, 0, callback->output_interface_id);
+		SET_UINT32(out_data, 0, ifman.output_interface_id);
 		SET_UINT32(out_data, 4, MessageId);
-		if (callback->output_buffer_size > 0)
-			memcpy(out_data + 8, callback->output_buffer, callback->output_buffer_size);
+		if (ifman.output_buffer_size > 0)
+			memcpy(out_data + 8, ifman.output_buffer, ifman.output_buffer_size);
 
 		LLOGLN(0, ("tsmf_on_data_received: response size %d", out_size));
 		error = callback->channel->Write(callback->channel, out_size, out_data, NULL);
@@ -239,11 +146,11 @@ tsmf_on_data_received(IWTSVirtualChannelCallback * pChannelCallback,
 		}
 
 		free(out_data);
-		if (callback->output_buffer_size > 0)
+		if (ifman.output_buffer_size > 0)
 		{
-			free(callback->output_buffer);
-			callback->output_buffer = NULL;
-			callback->output_buffer_size = 0;
+			free(ifman.output_buffer);
+			ifman.output_buffer = NULL;
+			ifman.output_buffer_size = 0;
 		}
 	}
 
