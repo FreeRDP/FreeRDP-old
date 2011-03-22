@@ -24,7 +24,7 @@
 #include "tsmf_types.h"
 
 static int
-tsmf_process_capability_request(IWTSVirtualChannelCallback * pChannelCallback)
+tsmf_process_interface_capability_request(IWTSVirtualChannelCallback * pChannelCallback)
 {
 	TSMF_CHANNEL_CALLBACK * callback = (TSMF_CHANNEL_CALLBACK *) pChannelCallback;
 	uint32 CapabilityValue;
@@ -49,7 +49,7 @@ tsmf_on_data_received(IWTSVirtualChannelCallback * pChannelCallback,
 	uint32 InterfaceId;
 	uint32 MessageId;
 	uint32 FunctionId;
-	int error = 0;
+	int error = -1;
 	uint32 out_size;
 	char * out_data;
 
@@ -69,6 +69,7 @@ tsmf_on_data_received(IWTSVirtualChannelCallback * pChannelCallback,
 	callback->input_buffer_size = cbSize - 12;
 	callback->output_buffer = NULL;
 	callback->output_buffer_size = 0;
+	callback->output_pending = 0;
 
 	switch (InterfaceId)
 	{
@@ -77,7 +78,7 @@ tsmf_on_data_received(IWTSVirtualChannelCallback * pChannelCallback,
 			switch (FunctionId)
 			{
 				case RIM_EXCHANGE_CAPABILITY_REQUEST:
-					error = tsmf_process_capability_request(pChannelCallback);
+					error = tsmf_process_interface_capability_request(pChannelCallback);
 					break;
 
 				default:
@@ -92,7 +93,34 @@ tsmf_on_data_received(IWTSVirtualChannelCallback * pChannelCallback,
 	callback->input_buffer = NULL;
 	callback->input_buffer_size = 0;
 
-	if (error == 0)
+	if (error == -1)
+	{
+		switch (FunctionId)
+		{
+			case RIMCALL_RELEASE:
+				/* [MS-RDPEXPS] 2.2.2.2 Interface Release (IFACE_RELEASE)
+				   This message does not require a reply. */
+				error = 0;
+				callback->output_pending = 1;
+				break;
+
+			case RIMCALL_QUERYINTERFACE:
+				/* [MS-RDPEXPS] 2.2.2.1.2 Query Interface Response (QI_RSP)
+				   This message is not supported in this channel. */
+				error = 0;
+				break;
+		}
+
+		if (error == -1)
+		{
+			LLOGLN(0, ("tsmf_on_data_received: InterfaceId 0x%X FunctionId 0x%X not processed.",
+				InterfaceId, FunctionId));
+			/* When a request is not implemented we return empty response indicating error */
+		}
+		error = 0;
+	}
+
+	if (error == 0 && !callback->output_pending)
 	{
 		/* Response packet does not have FunctionId */
 		out_size = 8 + callback->output_buffer_size;
