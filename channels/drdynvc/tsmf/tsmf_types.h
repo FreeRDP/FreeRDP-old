@@ -39,13 +39,6 @@ struct _TSMF_CHANNEL_CALLBACK
 	IWTSPlugin * plugin;
 	IWTSVirtualChannelManager * channel_mgr;
 	IWTSVirtualChannel * channel;
-
-	char * input_buffer;
-	uint32 input_buffer_size;
-	char * output_buffer;
-	uint32 output_buffer_size;
-	int output_pending;
-	uint32 output_interface_id;
 };
 
 typedef struct _TSMF_PLUGIN TSMF_PLUGIN;
