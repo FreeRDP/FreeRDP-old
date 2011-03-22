@@ -47,12 +47,12 @@
 #define SEMAPHORE_WAIT(s) WaitForSingleObject(s, INFINITE)
 #define SEMAPHORE_POST(s) ReleaseSemaphore(s, 1, NULL)
 #define SEMAPHORE_DESTROY(s) CloseHandle(s)
+#define CHR TCHAR
 #define DLOPEN(f) LoadLibrary(f)
 #define DLSYM(f, n) GetProcAddress(f, n)
 #define DLCLOSE(f) FreeLibrary(f)
 #define PATH_SEPARATOR L'\\'
 #define PLUGIN_EXT L"dll"
-#define STRCHR wcschr
 #else
 #include <dlfcn.h>
 #include <semaphore.h>
@@ -69,12 +69,12 @@
 #define SEMAPHORE_WAIT(s) sem_wait(&s)
 #define SEMAPHORE_POST(s) sem_post(&s)
 #define SEMAPHORE_DESTROY(s) sem_destroy(&s)
+#define CHR char
 #define DLOPEN(f) dlopen(f, RTLD_LOCAL | RTLD_LAZY)
 #define DLSYM(f, n) dlsym(f, n)
 #define DLCLOSE(f) dlclose(f)
 #define PATH_SEPARATOR '/'
 #define PLUGIN_EXT "so"
-#define STRCHR strchr
 #endif
 #include <freerdp/freerdp.h>
 #include <freerdp/chanman.h>
@@ -665,7 +665,7 @@ freerdp_chanman_free(rdpChanMan * chan_man)
    called only from main thread */
 int
 freerdp_chanman_load_plugin(rdpChanMan * chan_man, rdpSet * settings,
-	const CHR * filename, void * data)
+	const char * filename, void * data)
 {
 	struct lib_data * lib;
 	CHANNEL_ENTRY_POINTS_EX ep;
@@ -679,20 +679,24 @@ freerdp_chanman_load_plugin(rdpChanMan * chan_man, rdpSet * settings,
 		return 1;
 	}
 	lib = chan_man->libs + chan_man->num_libs;
-	if (STRCHR(filename, PATH_SEPARATOR) == NULL)
+	if (strchr(filename, PATH_SEPARATOR) == NULL)
 	{
 #ifdef _WIN32
-		swprintf(path, sizeof(path), L"./%s." PLUGIN_EXT, filename);
+		swprintf(path, sizeof(path), L"./%S." PLUGIN_EXT, filename);
 #else
 		snprintf(path, sizeof(path), PLUGIN_PATH "/%s." PLUGIN_EXT, filename);
 #endif
-		lib->han = DLOPEN(path);
-		printf("freerdp_chanman_load_plugin: %s\n", path);
 	}
 	else
 	{
-		lib->han = DLOPEN(filename);
+#ifdef _WIN32
+		swprintf(path, sizeof(path), L"%S", filename);
+#else
+		strncpy(path, filename, sizeof(path));
+#endif
 	}
+	lib->han = DLOPEN(path);
+	printf("freerdp_chanman_load_plugin: %s\n", path);
 	if (lib->han == 0)
 	{
 		printf("freerdp_chanman_load_plugin: failed to load library\n");
