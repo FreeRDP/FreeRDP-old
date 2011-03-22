@@ -81,6 +81,13 @@ xf_kb_send_key(xfInfo * xfi, int flags, uint8 keycode)
 #endif
 		{
 			xfi->inst->rdp_send_input(xfi->inst, RDP_INPUT_SCANCODE, flags, scancode, 0);
+
+			if ((scancode == 0x3A) && (flags & KBD_FLAG_UP)) /* caps lock was released */
+			{
+				/* caps lock state haven't necessarily been toggled locally - better set remote state explicitly */
+				DEBUG_KBD("sending extra caps lock synchronization\n");
+				xfi->inst->rdp_sync_input(xfi->inst, xf_kb_get_toggle_keys_state(xfi));
+			}
 		}
 	}
 }
