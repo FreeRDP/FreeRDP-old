@@ -23,6 +23,9 @@
 typedef struct _TSMF_IFMAN TSMF_IFMAN;
 struct _TSMF_IFMAN
 {
+	char presentation_id[16];
+	uint32 stream_id;
+
 	char * input_buffer;
 	uint32 input_buffer_size;
 	char * output_buffer;
@@ -33,8 +36,6 @@ struct _TSMF_IFMAN
 
 int
 tsmf_ifman_rim_exchange_capability_request(TSMF_IFMAN * ifman);
-int
-tsmf_ifman_set_channel_params(TSMF_IFMAN * ifman);
 int
 tsmf_ifman_exchange_capability_request(TSMF_IFMAN * ifman);
 int

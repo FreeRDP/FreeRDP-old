@@ -22,6 +22,7 @@
 #include <string.h>
 #include "tsmf_constants.h"
 #include "tsmf_types.h"
+#include "tsmf_media.h"
 #include "tsmf_ifman.h"
 
 int
@@ -37,14 +38,6 @@ tsmf_ifman_rim_exchange_capability_request(TSMF_IFMAN * ifman)
 	SET_UINT32(ifman->output_buffer, 0, 1); /* CapabilityValue */
 	SET_UINT32(ifman->output_buffer, 4, 0); /* Result */
 
-	return 0;
-}
-
-int
-tsmf_ifman_set_channel_params(TSMF_IFMAN * ifman)
-{
-	LLOGLN(0, ("tsmf_ifman_set_channel_params:"));
-	ifman->output_pending = 1;
 	return 0;
 }
 
@@ -120,17 +113,35 @@ tsmf_ifman_check_format_support_request(TSMF_IFMAN * ifman)
 int
 tsmf_ifman_on_new_presentation(TSMF_IFMAN * ifman)
 {
+	TSMF_PRESENTATION * presentation;
+	int error = 0;
+
 	LLOGLN(0, ("tsmf_ifman_on_new_presentation:"));
+	presentation = tsmf_presentation_new(ifman->input_buffer);
+	if (presentation == NULL)
+		error = 1;
 	ifman->output_pending = 1;
-	return 0;
+	return error;
 }
 
 int
 tsmf_ifman_add_stream(TSMF_IFMAN * ifman)
 {
+	TSMF_PRESENTATION * presentation;
+	uint32 StreamId;
+	int error = 0;
+
 	LLOGLN(0, ("tsmf_ifman_add_stream:"));
+	presentation = tsmf_presentation_find_by_id(ifman->input_buffer);
+	if (presentation == NULL)
+		error = 1;
+	else
+	{
+		StreamId = GET_UINT32(ifman->input_buffer, 16);
+		tsmf_stream_new(presentation, StreamId);
+	}
 	ifman->output_pending = 1;
-	return 0;
+	return error;
 }
 
 int
@@ -148,15 +159,37 @@ tsmf_ifman_set_topology_request(TSMF_IFMAN * ifman)
 int
 tsmf_ifman_remove_stream(TSMF_IFMAN * ifman)
 {
+	TSMF_PRESENTATION * presentation;
+	TSMF_STREAM * stream;
+	uint32 StreamId;
+	int error = 0;
+
 	LLOGLN(0, ("tsmf_ifman_remove_stream:"));
+	presentation = tsmf_presentation_find_by_id(ifman->input_buffer);
+	if (presentation == NULL)
+		error = 1;
+	else
+	{
+		StreamId = GET_UINT32(ifman->input_buffer, 16);
+		stream = tsmf_stream_find_by_id(presentation, StreamId);
+		if (stream)
+			tsmf_stream_free(stream);
+		else
+			error = 1;
+	}
 	ifman->output_pending = 1;
-	return 0;
+	return error;
 }
 
 int
 tsmf_ifman_shutdown_presentation(TSMF_IFMAN * ifman)
 {
+	TSMF_PRESENTATION * presentation;
+
 	LLOGLN(0, ("tsmf_ifman_shutdown_presentation:"));
+	presentation = tsmf_presentation_find_by_id(ifman->input_buffer);
+	if (presentation)
+		tsmf_presentation_free(presentation);
 	ifman->output_buffer_size = 4;
 	ifman->output_buffer = malloc(4);
 	SET_UINT32(ifman->output_buffer, 0, 0); /* Result */
