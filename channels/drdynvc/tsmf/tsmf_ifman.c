@@ -197,6 +197,14 @@ tsmf_ifman_update_geometry_info(TSMF_IFMAN * ifman)
 }
 
 int
+tsmf_ifman_set_allocator(TSMF_IFMAN * ifman)
+{
+	LLOGLN(0, ("tsmf_ifman_set_allocator:"));
+	ifman->output_pending = 1;
+	return 0;
+}
+
+int
 tsmf_ifman_notify_preroll(TSMF_IFMAN * ifman)
 {
 	LLOGLN(0, ("tsmf_ifman_notify_preroll:"));
@@ -207,8 +215,117 @@ tsmf_ifman_notify_preroll(TSMF_IFMAN * ifman)
 int
 tsmf_ifman_on_sample(TSMF_IFMAN * ifman)
 {
-	LLOGLN(0, ("tsmf_ifman_on_sample:"));
+	uint32 StreamId;
+	uint64 ThrottleDuration;
+	uint32 cbData;
+
+	StreamId = GET_UINT32(ifman->input_buffer, 16);
+	ThrottleDuration = GET_UINT64(ifman->input_buffer, 40);
+	cbData = GET_UINT32(ifman->input_buffer, 56);
+	
+	LLOGLN(0, ("tsmf_ifman_on_sample: StreamId %d ThrottleDuration %llu cbData %d",
+		StreamId, ThrottleDuration, cbData));
+
+	ifman->output_buffer_size = 24;
+	ifman->output_buffer = malloc(24);
+	SET_UINT32(ifman->output_buffer, 0, PLAYBACK_ACK); /* FunctionId */
+	SET_UINT32(ifman->output_buffer, 4, StreamId); /* StreamId */
+	SET_UINT64(ifman->output_buffer, 8, ThrottleDuration); /* DataDuration */
+	SET_UINT64(ifman->output_buffer, 16, cbData); /* cbData */
+	ifman->output_interface_id = TSMF_INTERFACE_CLIENT_NOTIFICATIONS | STREAM_ID_PROXY;
+
+	return 0;
+}
+
+int
+tsmf_ifman_on_flush(TSMF_IFMAN * ifman)
+{
+	LLOGLN(0, ("tsmf_ifman_on_flush:"));
 	ifman->output_pending = 1;
+	return 0;
+}
+
+int
+tsmf_ifman_on_end_of_stream(TSMF_IFMAN * ifman)
+{
+	uint32 StreamId;
+
+	StreamId = GET_UINT32(ifman->input_buffer, 16);
+
+	LLOGLN(0, ("tsmf_ifman_on_end_of_stream: StreamId %d", StreamId));
+
+	ifman->output_buffer_size = 16;
+	ifman->output_buffer = malloc(16);
+	SET_UINT32(ifman->output_buffer, 0, CLIENT_EVENT_NOTIFICATION); /* FunctionId */
+	SET_UINT32(ifman->output_buffer, 4, StreamId); /* StreamId */
+	SET_UINT32(ifman->output_buffer, 8, TSMM_CLIENT_EVENT_ENDOFSTREAM); /* EventId */
+	SET_UINT32(ifman->output_buffer, 12, 0); /* cbData */
+	ifman->output_interface_id = TSMF_INTERFACE_CLIENT_NOTIFICATIONS | STREAM_ID_PROXY;
+
+	return 0;
+}
+
+int
+tsmf_ifman_on_playback_started(TSMF_IFMAN * ifman)
+{
+	LLOGLN(0, ("tsmf_ifman_on_playback_started:"));
+
+	ifman->output_buffer_size = 16;
+	ifman->output_buffer = malloc(16);
+	SET_UINT32(ifman->output_buffer, 0, CLIENT_EVENT_NOTIFICATION); /* FunctionId */
+	SET_UINT32(ifman->output_buffer, 4, 0); /* StreamId */
+	SET_UINT32(ifman->output_buffer, 8, TSMM_CLIENT_EVENT_START_COMPLETED); /* EventId */
+	SET_UINT32(ifman->output_buffer, 12, 0); /* cbData */
+	ifman->output_interface_id = TSMF_INTERFACE_CLIENT_NOTIFICATIONS | STREAM_ID_PROXY;
+
+	return 0;
+}
+
+int
+tsmf_ifman_on_playback_paused(TSMF_IFMAN * ifman)
+{
+	LLOGLN(0, ("tsmf_ifman_on_playback_paused:"));
+	ifman->output_pending = 1;
+	return 0;
+}
+
+int
+tsmf_ifman_on_playback_restarted(TSMF_IFMAN * ifman)
+{
+	LLOGLN(0, ("tsmf_ifman_on_playback_restarted:"));
+	ifman->output_pending = 1;
+	return 0;
+}
+
+int
+tsmf_ifman_on_playback_stopped(TSMF_IFMAN * ifman)
+{
+	LLOGLN(0, ("tsmf_ifman_on_playback_stopped:"));
+
+	ifman->output_buffer_size = 16;
+	ifman->output_buffer = malloc(16);
+	SET_UINT32(ifman->output_buffer, 0, CLIENT_EVENT_NOTIFICATION); /* FunctionId */
+	SET_UINT32(ifman->output_buffer, 4, 0); /* StreamId */
+	SET_UINT32(ifman->output_buffer, 8, TSMM_CLIENT_EVENT_STOP_COMPLETED); /* EventId */
+	SET_UINT32(ifman->output_buffer, 12, 0); /* cbData */
+	ifman->output_interface_id = TSMF_INTERFACE_CLIENT_NOTIFICATIONS | STREAM_ID_PROXY;
+
+	return 0;
+}
+
+int
+tsmf_ifman_on_playback_rate_changed(TSMF_IFMAN * ifman)
+{
+	LLOGLN(0, ("tsmf_ifman_on_playback_rate_changed:"));
+
+	ifman->output_buffer_size = 16;
+	ifman->output_buffer = malloc(16);
+	SET_UINT32(ifman->output_buffer, 0, CLIENT_EVENT_NOTIFICATION); /* FunctionId */
+	SET_UINT32(ifman->output_buffer, 4, 0); /* StreamId */
+	SET_UINT32(ifman->output_buffer, 8, TSMM_CLIENT_EVENT_MONITORCHANGED); /* EventId */
+	SET_UINT32(ifman->output_buffer, 12, 0); /* cbData */
+	ifman->output_interface_id = TSMF_INTERFACE_CLIENT_NOTIFICATIONS | STREAM_ID_PROXY;
+
 	return 0;
 }
 
