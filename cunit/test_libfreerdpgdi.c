@@ -484,13 +484,13 @@ void test_CreateBitmap(void)
 	int bpp;
 	int width;
 	int height;
-	char* data;
+	uint8* data;
 	HBITMAP hBitmap;
 	
 	bpp = 32;
 	width = 32;
 	height = 16;
-	data = (char*) malloc(width * height * 4);
+	data = (uint8*) malloc(width * height * 4);
 	hBitmap = CreateBitmap(width, height, bpp, data);
 
 	CU_ASSERT(hBitmap->objectType == GDIOBJ_BITMAP);
@@ -804,7 +804,7 @@ void dump_bitmap(char* p, int w, int h)
 
 void test_BitBlt_32bpp(void)
 {
-	char* data;
+	uint8* data;
 	HDC hdcSrc;
 	HDC hdcDst;
 	HBRUSH hBrush;
@@ -840,64 +840,64 @@ void test_BitBlt_32bpp(void)
 	hdcDst->bytesPerPixel = bytesPerPixel;
 	hdcDst->bitsPerPixel = bitsPerPixel;
 	
-	data = (char*) gdi_image_convert((char*) bmp_SRC, 16, 16, 16, bitsPerPixel, NULL);
+	data = (uint8*) gdi_image_convert((uint8*) bmp_SRC, 16, 16, 16, bitsPerPixel, NULL);
 	hBmpSrc = CreateBitmap(16, 16, bitsPerPixel, data);
 
-	data = (char*) gdi_image_convert((char*) bmp_DST, 16, 16, 16, bitsPerPixel, NULL);
+	data = (uint8*) gdi_image_convert((uint8*) bmp_DST, 16, 16, 16, bitsPerPixel, NULL);
 	hBmpDst = CreateBitmap(16, 16, bitsPerPixel, data);
 
-	data = (char*) gdi_image_convert((char*) bmp_DST, 16, 16, 16, bitsPerPixel, NULL);
+	data = (uint8*) gdi_image_convert((uint8*) bmp_DST, 16, 16, 16, bitsPerPixel, NULL);
 	hBmpDstOriginal = CreateBitmap(16, 16, bitsPerPixel, data);
 
-	data = (char*) gdi_image_convert((char*) bmp_PAT, 8, 8, 16, bitsPerPixel, NULL);
+	data = (uint8*) gdi_image_convert((uint8*) bmp_PAT, 8, 8, 16, bitsPerPixel, NULL);
 	hBmpPat = CreateBitmap(8, 8, bitsPerPixel, data);
 
-	data = (char*) gdi_image_convert((char*) bmp_SRCCOPY, 16, 16, 16, bitsPerPixel, NULL);
+	data = (uint8*) gdi_image_convert((uint8*) bmp_SRCCOPY, 16, 16, 16, bitsPerPixel, NULL);
 	hBmp_SRCCOPY = CreateBitmap(16, 16, bitsPerPixel, data);
 	
-	data = (char*) gdi_image_convert((char*) bmp_SPna, 16, 16, 16, bitsPerPixel, NULL);
+	data = (uint8*) gdi_image_convert((uint8*) bmp_SPna, 16, 16, 16, bitsPerPixel, NULL);
 	hBmp_SPna = CreateBitmap(16, 16, bitsPerPixel, data);
 	
-	data = (char*) gdi_image_convert((char*) bmp_BLACKNESS, 16, 16, 16, bitsPerPixel, NULL);
+	data = (uint8*) gdi_image_convert((uint8*) bmp_BLACKNESS, 16, 16, 16, bitsPerPixel, NULL);
 	hBmp_BLACKNESS = CreateBitmap(16, 16, bitsPerPixel, data);
 
-	data = (char*) gdi_image_convert((char*) bmp_WHITENESS, 16, 16, 16, bitsPerPixel, NULL);
+	data = (uint8*) gdi_image_convert((uint8*) bmp_WHITENESS, 16, 16, 16, bitsPerPixel, NULL);
 	hBmp_WHITENESS = CreateBitmap(16, 16, bitsPerPixel, data);
 
-	data = (char*) gdi_image_convert((char*) bmp_SRCAND, 16, 16, 16, bitsPerPixel, NULL);
+	data = (uint8*) gdi_image_convert((uint8*) bmp_SRCAND, 16, 16, 16, bitsPerPixel, NULL);
 	hBmp_SRCAND = CreateBitmap(16, 16, bitsPerPixel, data);
 
-	data = (char*) gdi_image_convert((char*) bmp_SRCPAINT, 16, 16, 16, bitsPerPixel, NULL);
+	data = (uint8*) gdi_image_convert((uint8*) bmp_SRCPAINT, 16, 16, 16, bitsPerPixel, NULL);
 	hBmp_SRCPAINT = CreateBitmap(16, 16, bitsPerPixel, data);
 
-	data = (char*) gdi_image_convert((char*) bmp_SRCINVERT, 16, 16, 16, bitsPerPixel, NULL);
+	data = (uint8*) gdi_image_convert((uint8*) bmp_SRCINVERT, 16, 16, 16, bitsPerPixel, NULL);
 	hBmp_SRCINVERT = CreateBitmap(16, 16, bitsPerPixel, data);
 
-	data = (char*) gdi_image_convert((char*) bmp_SRCERASE, 16, 16, 16, bitsPerPixel, NULL);
+	data = (uint8*) gdi_image_convert((uint8*) bmp_SRCERASE, 16, 16, 16, bitsPerPixel, NULL);
 	hBmp_SRCERASE = CreateBitmap(16, 16, bitsPerPixel, data);
 
-	data = (char*) gdi_image_convert((char*) bmp_NOTSRCCOPY, 16, 16, 16, bitsPerPixel, NULL);
+	data = (uint8*) gdi_image_convert((uint8*) bmp_NOTSRCCOPY, 16, 16, 16, bitsPerPixel, NULL);
 	hBmp_NOTSRCCOPY = CreateBitmap(16, 16, bitsPerPixel, data);
 
-	data = (char*) gdi_image_convert((char*) bmp_NOTSRCERASE, 16, 16, 16, bitsPerPixel, NULL);
+	data = (uint8*) gdi_image_convert((uint8*) bmp_NOTSRCERASE, 16, 16, 16, bitsPerPixel, NULL);
 	hBmp_NOTSRCERASE = CreateBitmap(16, 16, bitsPerPixel, data);
 
-	data = (char*) gdi_image_convert((char*) bmp_DSTINVERT, 16, 16, 16, bitsPerPixel, NULL);
+	data = (uint8*) gdi_image_convert((uint8*) bmp_DSTINVERT, 16, 16, 16, bitsPerPixel, NULL);
 	hBmp_DSTINVERT = CreateBitmap(16, 16, bitsPerPixel, data);
 
-	data = (char*) gdi_image_convert((char*) bmp_MERGECOPY, 16, 16, 16, bitsPerPixel, NULL);
+	data = (uint8*) gdi_image_convert((uint8*) bmp_MERGECOPY, 16, 16, 16, bitsPerPixel, NULL);
 	hBmp_MERGECOPY = CreateBitmap(16, 16, bitsPerPixel, data);
 
-	data = (char*) gdi_image_convert((char*) bmp_MERGEPAINT, 16, 16, 16, bitsPerPixel, NULL);
+	data = (uint8*) gdi_image_convert((uint8*) bmp_MERGEPAINT, 16, 16, 16, bitsPerPixel, NULL);
 	hBmp_MERGEPAINT = CreateBitmap(16, 16, bitsPerPixel, data);
 
-	data = (char*) gdi_image_convert((char*) bmp_PATCOPY, 16, 16, 16, bitsPerPixel, NULL);
+	data = (uint8*) gdi_image_convert((uint8*) bmp_PATCOPY, 16, 16, 16, bitsPerPixel, NULL);
 	hBmp_PATCOPY = CreateBitmap(16, 16, bitsPerPixel, data);
 
-	data = (char*) gdi_image_convert((char*) bmp_PATPAINT, 16, 16, 16, bitsPerPixel, NULL);
+	data = (uint8*) gdi_image_convert((uint8*) bmp_PATPAINT, 16, 16, 16, bitsPerPixel, NULL);
 	hBmp_PATPAINT = CreateBitmap(16, 16, bitsPerPixel, data);
 
-	data = (char*) gdi_image_convert((char*) bmp_PATINVERT, 16, 16, 16, bitsPerPixel, NULL);
+	data = (uint8*) gdi_image_convert((uint8*) bmp_PATINVERT, 16, 16, 16, bitsPerPixel, NULL);
 	hBmp_PATINVERT = CreateBitmap(16, 16, bitsPerPixel, data);
 	
 	SelectObject(hdcSrc, (HGDIOBJ) hBmpSrc);
@@ -1049,7 +1049,7 @@ void test_BitBlt_32bpp(void)
 
 void test_BitBlt_16bpp(void)
 {
-	char* data;
+	uint8* data;
 	HDC hdcSrc;
 	HDC hdcDst;
 	HBRUSH hBrush;
@@ -1085,64 +1085,64 @@ void test_BitBlt_16bpp(void)
 	hdcDst->bytesPerPixel = bytesPerPixel;
 	hdcDst->bitsPerPixel = bitsPerPixel;
 	
-	data = (char*) gdi_image_convert((char*) bmp_SRC, 16, 16, 16, bitsPerPixel, NULL);
+	data = (uint8*) gdi_image_convert((uint8*) bmp_SRC, 16, 16, 16, bitsPerPixel, NULL);
 	hBmpSrc = CreateBitmap(16, 16, bitsPerPixel, data);
 
-	data = (char*) gdi_image_convert((char*) bmp_DST, 16, 16, 16, bitsPerPixel, NULL);
+	data = (uint8*) gdi_image_convert((uint8*) bmp_DST, 16, 16, 16, bitsPerPixel, NULL);
 	hBmpDst = CreateBitmap(16, 16, bitsPerPixel, data);
 
-	data = (char*) gdi_image_convert((char*) bmp_DST, 16, 16, 16, bitsPerPixel, NULL);
+	data = (uint8*) gdi_image_convert((uint8*) bmp_DST, 16, 16, 16, bitsPerPixel, NULL);
 	hBmpDstOriginal = CreateBitmap(16, 16, bitsPerPixel, data);
 
-	data = (char*) gdi_image_convert((char*) bmp_PAT, 8, 8, 16, bitsPerPixel, NULL);
+	data = (uint8*) gdi_image_convert((uint8*) bmp_PAT, 8, 8, 16, bitsPerPixel, NULL);
 	hBmpPat = CreateBitmap(8, 8, bitsPerPixel, data);
 
-	data = (char*) gdi_image_convert((char*) bmp_SRCCOPY, 16, 16, 16, bitsPerPixel, NULL);
+	data = (uint8*) gdi_image_convert((uint8*) bmp_SRCCOPY, 16, 16, 16, bitsPerPixel, NULL);
 	hBmp_SRCCOPY = CreateBitmap(16, 16, bitsPerPixel, data);
 	
-	data = (char*) gdi_image_convert((char*) bmp_SPna, 16, 16, 16, bitsPerPixel, NULL);
+	data = (uint8*) gdi_image_convert((uint8*) bmp_SPna, 16, 16, 16, bitsPerPixel, NULL);
 	hBmp_SPna = CreateBitmap(16, 16, bitsPerPixel, data);
 	
-	data = (char*) gdi_image_convert((char*) bmp_BLACKNESS, 16, 16, 16, bitsPerPixel, NULL);
+	data = (uint8*) gdi_image_convert((uint8*) bmp_BLACKNESS, 16, 16, 16, bitsPerPixel, NULL);
 	hBmp_BLACKNESS = CreateBitmap(16, 16, bitsPerPixel, data);
 
-	data = (char*) gdi_image_convert((char*) bmp_WHITENESS, 16, 16, 16, bitsPerPixel, NULL);
+	data = (uint8*) gdi_image_convert((uint8*) bmp_WHITENESS, 16, 16, 16, bitsPerPixel, NULL);
 	hBmp_WHITENESS = CreateBitmap(16, 16, bitsPerPixel, data);
 
-	data = (char*) gdi_image_convert((char*) bmp_SRCAND, 16, 16, 16, bitsPerPixel, NULL);
+	data = (uint8*) gdi_image_convert((uint8*) bmp_SRCAND, 16, 16, 16, bitsPerPixel, NULL);
 	hBmp_SRCAND = CreateBitmap(16, 16, bitsPerPixel, data);
 
-	data = (char*) gdi_image_convert((char*) bmp_SRCPAINT, 16, 16, 16, bitsPerPixel, NULL);
+	data = (uint8*) gdi_image_convert((uint8*) bmp_SRCPAINT, 16, 16, 16, bitsPerPixel, NULL);
 	hBmp_SRCPAINT = CreateBitmap(16, 16, bitsPerPixel, data);
 
-	data = (char*) gdi_image_convert((char*) bmp_SRCINVERT, 16, 16, 16, bitsPerPixel, NULL);
+	data = (uint8*) gdi_image_convert((uint8*) bmp_SRCINVERT, 16, 16, 16, bitsPerPixel, NULL);
 	hBmp_SRCINVERT = CreateBitmap(16, 16, bitsPerPixel, data);
 
-	data = (char*) gdi_image_convert((char*) bmp_SRCERASE, 16, 16, 16, bitsPerPixel, NULL);
+	data = (uint8*) gdi_image_convert((uint8*) bmp_SRCERASE, 16, 16, 16, bitsPerPixel, NULL);
 	hBmp_SRCERASE = CreateBitmap(16, 16, bitsPerPixel, data);
 
-	data = (char*) gdi_image_convert((char*) bmp_NOTSRCCOPY, 16, 16, 16, bitsPerPixel, NULL);
+	data = (uint8*) gdi_image_convert((uint8*) bmp_NOTSRCCOPY, 16, 16, 16, bitsPerPixel, NULL);
 	hBmp_NOTSRCCOPY = CreateBitmap(16, 16, bitsPerPixel, data);
 
-	data = (char*) gdi_image_convert((char*) bmp_NOTSRCERASE, 16, 16, 16, bitsPerPixel, NULL);
+	data = (uint8*) gdi_image_convert((uint8*) bmp_NOTSRCERASE, 16, 16, 16, bitsPerPixel, NULL);
 	hBmp_NOTSRCERASE = CreateBitmap(16, 16, bitsPerPixel, data);
 
-	data = (char*) gdi_image_convert((char*) bmp_DSTINVERT, 16, 16, 16, bitsPerPixel, NULL);
+	data = (uint8*) gdi_image_convert((uint8*) bmp_DSTINVERT, 16, 16, 16, bitsPerPixel, NULL);
 	hBmp_DSTINVERT = CreateBitmap(16, 16, bitsPerPixel, data);
 
-	data = (char*) gdi_image_convert((char*) bmp_MERGECOPY, 16, 16, 16, bitsPerPixel, NULL);
+	data = (uint8*) gdi_image_convert((uint8*) bmp_MERGECOPY, 16, 16, 16, bitsPerPixel, NULL);
 	hBmp_MERGECOPY = CreateBitmap(16, 16, bitsPerPixel, data);
 
-	data = (char*) gdi_image_convert((char*) bmp_MERGEPAINT, 16, 16, 16, bitsPerPixel, NULL);
+	data = (uint8*) gdi_image_convert((uint8*) bmp_MERGEPAINT, 16, 16, 16, bitsPerPixel, NULL);
 	hBmp_MERGEPAINT = CreateBitmap(16, 16, bitsPerPixel, data);
 
-	data = (char*) gdi_image_convert((char*) bmp_PATCOPY, 16, 16, 16, bitsPerPixel, NULL);
+	data = (uint8*) gdi_image_convert((uint8*) bmp_PATCOPY, 16, 16, 16, bitsPerPixel, NULL);
 	hBmp_PATCOPY = CreateBitmap(16, 16, bitsPerPixel, data);
 
-	data = (char*) gdi_image_convert((char*) bmp_PATPAINT, 16, 16, 16, bitsPerPixel, NULL);
+	data = (uint8*) gdi_image_convert((uint8*) bmp_PATPAINT, 16, 16, 16, bitsPerPixel, NULL);
 	hBmp_PATPAINT = CreateBitmap(16, 16, bitsPerPixel, data);
 
-	data = (char*) gdi_image_convert((char*) bmp_PATINVERT, 16, 16, 16, bitsPerPixel, NULL);
+	data = (uint8*) gdi_image_convert((uint8*) bmp_PATINVERT, 16, 16, 16, bitsPerPixel, NULL);
 	hBmp_PATINVERT = CreateBitmap(16, 16, bitsPerPixel, data);
 	
 	SelectObject(hdcSrc, (HGDIOBJ) hBmpSrc);
