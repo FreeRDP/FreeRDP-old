@@ -44,7 +44,7 @@ struct _GDI
 	HDC hdc;
 	gdi_bitmap *primary;
 	gdi_bitmap *drawing;
-	char* primary_buffer;
+	uint8* primary_buffer;
 	COLORREF textColor;
 	HPALETTE palette;
 	PIXEL pixel;
@@ -52,11 +52,11 @@ struct _GDI
 typedef struct _GDI GDI;
 
 unsigned int gdi_rop3_code(unsigned char code);
-void gdi_copy_mem(char *d, char *s, int n);
-void gdi_copy_memb(char *d, char *s, int n);
-char* gdi_get_bitmap_pointer(HDC hdcBmp, int x, int y);
-char* gdi_get_brush_pointer(HDC hdcBrush, int x, int y);
-int gdi_is_mono_pixel_set(char* data, int x, int y, int width);
+void gdi_copy_mem(uint8 *d, uint8 *s, int n);
+void gdi_copy_memb(uint8 *d, uint8 *s, int n);
+uint8* gdi_get_bitmap_pointer(HDC hdcBmp, int x, int y);
+uint8* gdi_get_brush_pointer(HDC hdcBrush, int x, int y);
+int gdi_is_mono_pixel_set(uint8* data, int x, int y, int width);
 int gdi_init(rdpInst * inst);
 
 #endif /* __GDI_WINDOW_H */

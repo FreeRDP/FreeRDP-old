@@ -203,8 +203,8 @@
 
 
 void gdi_color_convert(PIXEL *pixel, int color, int bpp, HPALETTE palette);
-char* gdi_image_convert(char* srcData, int width, int height, int srcBpp, int dstBpp, HPALETTE palette);
-char* gdi_glyph_convert(int width, int height, char* data);
-char* gdi_mono_image_convert(char* srcData, int width, int height, int srcBpp, int dstBpp, int bgcolor, int fgcolor, HPALETTE palette);
+uint8* gdi_image_convert(uint8* srcData, int width, int height, int srcBpp, int dstBpp, HPALETTE palette);
+uint8* gdi_glyph_convert(int width, int height, uint8* data);
+uint8* gdi_mono_image_convert(uint8* srcData, int width, int height, int srcBpp, int dstBpp, int bgcolor, int fgcolor, HPALETTE palette);
 
 #endif /* __GDI_COLOR_H */

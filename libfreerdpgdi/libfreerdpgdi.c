@@ -76,7 +76,7 @@ HDC CreateCompatibleDC(HDC hdc)
  * @return new bitmap
  */
 
-HBITMAP CreateBitmap(int nWidth, int nHeight, int cBitsPerPixel, char* data)
+HBITMAP CreateBitmap(int nWidth, int nHeight, int cBitsPerPixel, uint8* data)
 {
 	HBITMAP hBitmap = (HBITMAP) malloc(sizeof(BITMAP));
 	hBitmap->objectType = GDIOBJ_BITMAP;
@@ -85,7 +85,7 @@ HBITMAP CreateBitmap(int nWidth, int nHeight, int cBitsPerPixel, char* data)
 	hBitmap->scanline = nWidth * hBitmap->bytesPerPixel;
 	hBitmap->width = nWidth;
 	hBitmap->height = nHeight;
-	hBitmap->data = (char*) data;
+	hBitmap->data = data;
 	return hBitmap;
 }
 
@@ -121,7 +121,7 @@ HBITMAP CreateCompatibleBitmap(HDC hdc, int nWidth, int nHeight)
 int CompareBitmaps(HBITMAP hBmp1, HBITMAP hBmp2)
 {
 	int x, y;
-	char *p1, *p2;
+	uint8 *p1, *p2;
 	
 	if (hBmp1->bitsPerPixel == hBmp2->bitsPerPixel)
 	{
