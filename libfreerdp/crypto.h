@@ -21,6 +21,7 @@
 #define __CRYPTO_H
 
 #include <stdio.h>
+#include <freerdp/utils.h>
 #include <freerdp/types_ui.h>
 
 RD_BOOL

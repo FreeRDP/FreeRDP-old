@@ -16,6 +16,8 @@ libfreerdpgdi_la_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include
 
 libfreerdpgdi_la_LDFLAGS =
 
+libfreerdpgdi_la_LIBDADD =
+
 # extra
 EXTRA_DIST =
 
