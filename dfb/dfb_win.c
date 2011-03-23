@@ -23,6 +23,7 @@
 #include <unistd.h>
 #include <directfb.h>
 #include <freerdp/chanman.h>
+#include <freerdp/types_ui.h>
 #include "libfreerdpgdi.h"
 #include "dfbfreerdp.h"
 #include "dfb_win.h"
@@ -132,6 +133,71 @@ l_ui_move_pointer(struct rdp_inst * inst, int x, int y)
 static void
 l_ui_channel_data(struct rdp_inst * inst, int chan_id, char * data, int data_size, int flags, int total_size)
 {
+	freerdp_chanman_data(inst, chan_id, data, data_size, flags, total_size);
+}
+
+static RD_BOOL
+l_ui_authenticate(struct rdp_inst * inst)
+{
+	char * pass;
+	int l;
+
+	printf("Please enter credentials for network level authentication.\n");
+
+	printf("User name:");
+	if (inst->settings->username[0] == 0)
+	{
+		if (fgets(inst->settings->username, sizeof(inst->settings->username), stdin) == NULL)
+		{
+		}
+		l = strlen(inst->settings->username);
+		if (l > 0 && inst->settings->username[l - 1] == '\n')
+			inst->settings->username[l - 1] = 0;
+	}
+	else
+		printf("%s\n", inst->settings->username);
+
+	printf("Domain:");
+	if (inst->settings->domain[0] == 0)
+	{
+		if (fgets(inst->settings->domain, sizeof(inst->settings->domain), stdin) == NULL)
+		{
+		}
+		l = strlen(inst->settings->domain);
+		if (l > 0 && inst->settings->domain[l - 1] == '\n')
+			inst->settings->domain[l - 1] = 0;
+	}
+	else
+		printf("%s\n", inst->settings->domain);
+
+	if (!inst->settings->password[0])
+	{
+		pass = getpass("Password:");
+		strncpy(inst->settings->password, pass, sizeof(inst->settings->password) - 1);
+	}
+	return 1;
+}
+
+static int
+l_ui_decode(struct rdp_inst * inst, uint8 * data, int data_size)
+{
+	printf("l_ui_decode: size %d\n", data_size);
+	return 0;
+}
+
+RD_BOOL
+l_ui_check_certificate(rdpInst * inst, const char * fingerprint,
+	const char * subject, const char * issuer, RD_BOOL verified)
+{
+	printf("certificate details:\n");
+	printf("  Subject:\n    %s\n", subject);
+	printf("  Issued by:\n    %s\n", issuer);
+	printf("  Fingerprint:\n    %s\n",  fingerprint);
+
+	if (!verified)
+		printf("The server could not be authenticated. Connection security may be compromised!\n");
+
+	return 1;
 }
 
 static int
@@ -154,6 +220,9 @@ dfb_register_callbacks(rdpInst * inst)
 	inst->ui_set_default_cursor = l_ui_set_default_cursor;
 	inst->ui_move_pointer = l_ui_move_pointer;	
 	inst->ui_channel_data = l_ui_channel_data;
+	inst->ui_authenticate = l_ui_authenticate;
+	inst->ui_decode = l_ui_decode;
+	inst->ui_check_certificate = l_ui_check_certificate;
 	return 0;
 }
 
