@@ -124,12 +124,44 @@ tsmf_on_data_received(IWTSVirtualChannelCallback * pChannelCallback,
 					error = tsmf_ifman_update_geometry_info(&ifman);
 					break;
 
+				case SET_ALLOCATOR:
+					error = tsmf_ifman_set_allocator(&ifman);
+					break;
+
 				case NOTIFY_PREROLL:
 					error = tsmf_ifman_notify_preroll(&ifman);
 					break;
 
 				case ON_SAMPLE:
 					error = tsmf_ifman_on_sample(&ifman);
+					break;
+
+				case ON_FLUSH:
+					error = tsmf_ifman_on_flush(&ifman);
+					break;
+
+				case ON_END_OF_STREAM:
+					error = tsmf_ifman_on_end_of_stream(&ifman);
+					break;
+
+				case ON_PLAYBACK_STARTED:
+					error = tsmf_ifman_on_playback_started(&ifman);
+					break;
+
+				case ON_PLAYBACK_PAUSED:
+					error = tsmf_ifman_on_playback_paused(&ifman);
+					break;
+
+				case ON_PLAYBACK_RESTARTED:
+					error = tsmf_ifman_on_playback_restarted(&ifman);
+					break;
+
+				case ON_PLAYBACK_STOPPED:
+					error = tsmf_ifman_on_playback_stopped(&ifman);
+					break;
+
+				case ON_PLAYBACK_RATE_CHANGED:
+					error = tsmf_ifman_on_playback_rate_changed(&ifman);
 					break;
 
 				default:
