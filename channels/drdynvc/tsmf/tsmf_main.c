@@ -30,7 +30,7 @@ tsmf_on_data_received(IWTSVirtualChannelCallback * pChannelCallback,
 	char * pBuffer)
 {
 	TSMF_CHANNEL_CALLBACK * callback = (TSMF_CHANNEL_CALLBACK *) pChannelCallback;
-	TSMF_IFMAN ifman = { 0 };
+	TSMF_IFMAN ifman;
 	uint32 InterfaceId;
 	uint32 MessageId;
 	uint32 FunctionId;
@@ -50,6 +50,9 @@ tsmf_on_data_received(IWTSVirtualChannelCallback * pChannelCallback,
 	LLOGLN(10, ("tsmf_on_data_received: cbSize=%d InterfaceId=0x%X MessageId=0x%X FunctionId=0x%X",
 		cbSize, InterfaceId, MessageId, FunctionId));
 
+	memset(&ifman, 0, sizeof(TSMF_IFMAN));
+	memcpy(ifman.presentation_id, callback->presentation_id, 16);
+	ifman.stream_id = callback->stream_id;
 	ifman.input_buffer = pBuffer + 12;
 	ifman.input_buffer_size = cbSize - 12;
 	ifman.output_buffer = NULL;
@@ -77,7 +80,11 @@ tsmf_on_data_received(IWTSVirtualChannelCallback * pChannelCallback,
 			switch (FunctionId)
 			{
 				case SET_CHANNEL_PARAMS:
-					error = tsmf_ifman_set_channel_params(&ifman);
+					memcpy(callback->presentation_id, ifman.input_buffer, 16);
+					callback->stream_id = GET_UINT32(ifman.input_buffer, 16);
+					LLOGLN(10, ("tsmf_on_data_received: SET_CHANNEL_PARAMS StreamId=%d", callback->stream_id));
+					ifman.output_pending = 1;
+					error = 0;
 					break;
 
 				case EXCHANGE_CAPABILITIES_REQ:

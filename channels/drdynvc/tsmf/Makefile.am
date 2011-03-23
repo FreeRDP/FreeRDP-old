@@ -9,6 +9,7 @@ tsmf_la_SOURCES = \
 	tsmf_constants.h \
 	tsmf_types.h \
 	tsmf_ifman.c tsmf_ifman.h \
+	tsmf_media.c tsmf_media.h \
 	tsmf_main.c
 
 tsmf_la_CFLAGS = -I$(top_srcdir)/include -I$(srcdir)/../../common \

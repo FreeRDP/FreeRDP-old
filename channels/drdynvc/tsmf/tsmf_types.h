@@ -39,6 +39,9 @@ struct _TSMF_CHANNEL_CALLBACK
 	IWTSPlugin * plugin;
 	IWTSVirtualChannelManager * channel_mgr;
 	IWTSVirtualChannel * channel;
+
+	char presentation_id[16];
+	uint32 stream_id;
 };
 
 typedef struct _TSMF_PLUGIN TSMF_PLUGIN;
