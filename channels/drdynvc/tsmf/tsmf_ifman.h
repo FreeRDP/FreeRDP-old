@@ -23,8 +23,10 @@
 typedef struct _TSMF_IFMAN TSMF_IFMAN;
 struct _TSMF_IFMAN
 {
+	IWTSVirtualChannelCallback * channel_callback;
 	uint8 presentation_id[16];
 	uint32 stream_id;
+	uint32 message_id;
 
 	uint8 * input_buffer;
 	uint32 input_buffer_size;

@@ -20,8 +20,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "drdynvc_types.h"
 #include "tsmf_constants.h"
-#include "tsmf_types.h"
 #include "tsmf_media.h"
 #include "tsmf_ifman.h"
 
@@ -248,25 +248,37 @@ tsmf_ifman_notify_preroll(TSMF_IFMAN * ifman)
 int
 tsmf_ifman_on_sample(TSMF_IFMAN * ifman)
 {
+	TSMF_PRESENTATION * presentation;
+	TSMF_STREAM * stream;
 	uint32 StreamId;
+	uint64 SampleEndTime;
 	uint64 ThrottleDuration;
 	uint32 cbData;
 
 	StreamId = GET_UINT32(ifman->input_buffer, 16);
+	SampleEndTime = GET_UINT64(ifman->input_buffer, 32);
 	ThrottleDuration = GET_UINT64(ifman->input_buffer, 40);
 	cbData = GET_UINT32(ifman->input_buffer, 56);
 	
-	LLOGLN(0, ("tsmf_ifman_on_sample: StreamId %d ThrottleDuration %llu cbData %d",
-		StreamId, ThrottleDuration, cbData));
+	LLOGLN(0, ("tsmf_ifman_on_sample: StreamId %d ThrottleDuration %d cbData %d",
+		StreamId, (int)ThrottleDuration, cbData));
 
-	ifman->output_buffer_size = 24;
-	ifman->output_buffer = malloc(24);
-	SET_UINT32(ifman->output_buffer, 0, PLAYBACK_ACK); /* FunctionId */
-	SET_UINT32(ifman->output_buffer, 4, StreamId); /* StreamId */
-	SET_UINT64(ifman->output_buffer, 8, ThrottleDuration); /* DataDuration */
-	SET_UINT64(ifman->output_buffer, 16, cbData); /* cbData */
-	ifman->output_interface_id = TSMF_INTERFACE_CLIENT_NOTIFICATIONS | STREAM_ID_PROXY;
+	presentation = tsmf_presentation_find_by_id(ifman->presentation_id);
+	if (presentation == NULL)
+	{
+		LLOGLN(10, ("tsmf_ifman_on_sample: unknown presentation id"));
+		return 1;
+	}
+	stream = tsmf_stream_find_by_id(presentation, StreamId);
+	if (stream == NULL)
+	{
+		LLOGLN(10, ("tsmf_ifman_on_sample: unknown stream id"));
+		return 1;
+	}
+	tsmf_stream_push_sample(stream, ifman->channel_callback,
+		ifman->message_id, SampleEndTime, ThrottleDuration, cbData, ifman->input_buffer + 64);
 
+	ifman->output_pending = 1;
 	return 0;
 }
 
