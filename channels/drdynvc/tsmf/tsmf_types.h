@@ -23,34 +23,10 @@
 #include "drdynvc_types.h"
 
 typedef struct _TSMF_LISTENER_CALLBACK TSMF_LISTENER_CALLBACK;
-struct _TSMF_LISTENER_CALLBACK
-{
-	IWTSListenerCallback iface;
-
-	IWTSPlugin * plugin;
-	IWTSVirtualChannelManager * channel_mgr;
-};
 
 typedef struct _TSMF_CHANNEL_CALLBACK TSMF_CHANNEL_CALLBACK;
-struct _TSMF_CHANNEL_CALLBACK
-{
-	IWTSVirtualChannelCallback iface;
-
-	IWTSPlugin * plugin;
-	IWTSVirtualChannelManager * channel_mgr;
-	IWTSVirtualChannel * channel;
-
-	char presentation_id[16];
-	uint32 stream_id;
-};
 
 typedef struct _TSMF_PLUGIN TSMF_PLUGIN;
-struct _TSMF_PLUGIN
-{
-	IWTSPlugin iface;
-
-	TSMF_LISTENER_CALLBACK * listener_callback;
-};
 
 #endif
 

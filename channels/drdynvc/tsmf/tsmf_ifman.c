@@ -44,7 +44,7 @@ tsmf_ifman_rim_exchange_capability_request(TSMF_IFMAN * ifman)
 int
 tsmf_ifman_exchange_capability_request(TSMF_IFMAN * ifman)
 {
-	char * p;
+	uint8 * p;
 	uint32 numHostCapabilities;
 	uint32 i;
 	uint32 CapabilityType;

@@ -26,7 +26,7 @@
 
 struct _TSMF_PRESENTATION
 {
-	char presentation_id[GUID_SIZE];
+	uint8 presentation_id[GUID_SIZE];
 
 	TSMF_STREAM * stream_list_head;
 	TSMF_STREAM * stream_list_tail;
@@ -37,7 +37,7 @@ struct _TSMF_PRESENTATION
 
 struct _TSMF_STREAM
 {
-	unsigned int stream_id;
+	uint32 stream_id;
 
 	TSMF_PRESENTATION * presentation;
 
@@ -49,7 +49,7 @@ static TSMF_PRESENTATION * presentation_list_head = NULL;
 static TSMF_PRESENTATION * presentation_list_tail = NULL;
 
 TSMF_PRESENTATION *
-tsmf_presentation_new (const char * guid)
+tsmf_presentation_new (const uint8 * guid)
 {
 	TSMF_PRESENTATION * presentation;
 
@@ -81,7 +81,7 @@ tsmf_presentation_new (const char * guid)
 }
 
 TSMF_PRESENTATION *
-tsmf_presentation_find_by_id (const char * guid)
+tsmf_presentation_find_by_id (const uint8 * guid)
 {
 	TSMF_PRESENTATION * presentation;
 
@@ -113,7 +113,7 @@ tsmf_presentation_free (TSMF_PRESENTATION * presentation)
 }
 
 TSMF_STREAM *
-tsmf_stream_new (TSMF_PRESENTATION * presentation, unsigned int stream_id)
+tsmf_stream_new (TSMF_PRESENTATION * presentation, uint32 stream_id)
 {
 	TSMF_STREAM * stream;
 
@@ -146,7 +146,7 @@ tsmf_stream_new (TSMF_PRESENTATION * presentation, unsigned int stream_id)
 }
 
 TSMF_STREAM *
-tsmf_stream_find_by_id (TSMF_PRESENTATION * presentation, unsigned int stream_id)
+tsmf_stream_find_by_id (TSMF_PRESENTATION * presentation, uint32 stream_id)
 {
 	TSMF_STREAM * stream;
 
