@@ -23,12 +23,12 @@
 typedef struct _TSMF_IFMAN TSMF_IFMAN;
 struct _TSMF_IFMAN
 {
-	char presentation_id[16];
+	uint8 presentation_id[16];
 	uint32 stream_id;
 
-	char * input_buffer;
+	uint8 * input_buffer;
 	uint32 input_buffer_size;
-	char * output_buffer;
+	uint8 * output_buffer;
 	uint32 output_buffer_size;
 	int output_pending;
 	uint32 output_interface_id;

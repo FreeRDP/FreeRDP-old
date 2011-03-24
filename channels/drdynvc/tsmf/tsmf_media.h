@@ -25,21 +25,23 @@
 #ifndef __TSMF_MEDIA_H
 #define __TSMF_MEDIA_H
 
+#include <freerdp/types_ui.h>
+
 typedef struct _TSMF_PRESENTATION TSMF_PRESENTATION;
 
 typedef struct _TSMF_STREAM TSMF_STREAM;
 
 TSMF_PRESENTATION *
-tsmf_presentation_new (const char * guid);
+tsmf_presentation_new (const uint8 * guid);
 TSMF_PRESENTATION *
-tsmf_presentation_find_by_id (const char * guid);
+tsmf_presentation_find_by_id (const uint8 * guid);
 void
 tsmf_presentation_free (TSMF_PRESENTATION * presentation);
 
 TSMF_STREAM *
-tsmf_stream_new (TSMF_PRESENTATION * presentation, unsigned int stream_id);
+tsmf_stream_new (TSMF_PRESENTATION * presentation, uint32 stream_id);
 TSMF_STREAM *
-tsmf_stream_find_by_id (TSMF_PRESENTATION * presentation, unsigned int stream_id);
+tsmf_stream_find_by_id (TSMF_PRESENTATION * presentation, uint32 stream_id);
 void
 tsmf_stream_free (TSMF_STREAM * stream);
 

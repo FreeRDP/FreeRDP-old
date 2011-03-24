@@ -24,6 +24,33 @@
 #include "tsmf_types.h"
 #include "tsmf_ifman.h"
 
+struct _TSMF_LISTENER_CALLBACK
+{
+	IWTSListenerCallback iface;
+
+	IWTSPlugin * plugin;
+	IWTSVirtualChannelManager * channel_mgr;
+};
+
+struct _TSMF_CHANNEL_CALLBACK
+{
+	IWTSVirtualChannelCallback iface;
+
+	IWTSPlugin * plugin;
+	IWTSVirtualChannelManager * channel_mgr;
+	IWTSVirtualChannel * channel;
+
+	uint8 presentation_id[16];
+	uint32 stream_id;
+};
+
+struct _TSMF_PLUGIN
+{
+	IWTSPlugin iface;
+
+	TSMF_LISTENER_CALLBACK * listener_callback;
+};
+
 static int
 tsmf_on_data_received(IWTSVirtualChannelCallback * pChannelCallback,
 	uint32 cbSize,
@@ -53,7 +80,7 @@ tsmf_on_data_received(IWTSVirtualChannelCallback * pChannelCallback,
 	memset(&ifman, 0, sizeof(TSMF_IFMAN));
 	memcpy(ifman.presentation_id, callback->presentation_id, 16);
 	ifman.stream_id = callback->stream_id;
-	ifman.input_buffer = pBuffer + 12;
+	ifman.input_buffer = (uint8 *) (pBuffer + 12);
 	ifman.input_buffer_size = cbSize - 12;
 	ifman.output_buffer = NULL;
 	ifman.output_buffer_size = 0;
