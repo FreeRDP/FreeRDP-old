@@ -20,6 +20,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "drdynvc_types.h"
+#include "tsmf_main.h"
 #include "tsmf_media.h"
 
 #define GUID_SIZE 16
@@ -41,8 +43,23 @@ struct _TSMF_STREAM
 
 	TSMF_PRESENTATION * presentation;
 
+	TSMF_SAMPLE * sample_queue_head;
+	TSMF_SAMPLE * sample_queue_tail;
+
 	TSMF_STREAM * next;
 	TSMF_STREAM * prev;
+};
+
+struct _TSMF_SAMPLE
+{
+	uint32 sample_id;
+	uint64 end_time;
+	uint64 duration;
+	uint32 data_size;
+	uint8 * data;
+
+	TSMF_SAMPLE * next;
+	TSMF_SAMPLE * prev;
 };
 
 static TSMF_PRESENTATION * presentation_list_head = NULL;
@@ -174,5 +191,12 @@ tsmf_stream_free (TSMF_STREAM * stream)
 		stream->next->prev = stream->prev;
 
 	free(stream);
+}
+
+void
+tsmf_stream_push_sample(TSMF_STREAM * stream, IWTSVirtualChannelCallback * pChannelCallback,
+	uint64 sample_id, uint64 end_time, uint64 duration, uint32 size, uint8 * data)
+{
+	tsmf_playback_ack(pChannelCallback, sample_id, duration, size);
 }
 

@@ -25,11 +25,11 @@
 #ifndef __TSMF_MEDIA_H
 #define __TSMF_MEDIA_H
 
-#include <freerdp/types_ui.h>
-
 typedef struct _TSMF_PRESENTATION TSMF_PRESENTATION;
 
 typedef struct _TSMF_STREAM TSMF_STREAM;
+
+typedef struct _TSMF_SAMPLE TSMF_SAMPLE;
 
 TSMF_PRESENTATION *
 tsmf_presentation_new (const uint8 * guid);
@@ -44,6 +44,10 @@ TSMF_STREAM *
 tsmf_stream_find_by_id (TSMF_PRESENTATION * presentation, uint32 stream_id);
 void
 tsmf_stream_free (TSMF_STREAM * stream);
+
+void
+tsmf_stream_push_sample(TSMF_STREAM * stream, IWTSVirtualChannelCallback * pChannelCallback,
+	uint64 sample_id, uint64 end_time, uint64 duration, uint32 size, uint8 * data);
 
 #endif
 

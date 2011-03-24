@@ -17,16 +17,12 @@
    limitations under the License.
 */
 
-#ifndef __TSMF_TYPES_H
-#define __TSMF_TYPES_H
+#ifndef __TSMF_MAIN_H
+#define __TSMF_MAIN_H
 
-#include "drdynvc_types.h"
-
-typedef struct _TSMF_LISTENER_CALLBACK TSMF_LISTENER_CALLBACK;
-
-typedef struct _TSMF_CHANNEL_CALLBACK TSMF_CHANNEL_CALLBACK;
-
-typedef struct _TSMF_PLUGIN TSMF_PLUGIN;
+void
+tsmf_playback_ack(IWTSVirtualChannelCallback * pChannelCallback,
+	uint32 message_id, uint64 duration, uint32 data_size);
 
 #endif
 

@@ -20,9 +20,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "drdynvc_types.h"
 #include "tsmf_constants.h"
-#include "tsmf_types.h"
 #include "tsmf_ifman.h"
+#include "tsmf_main.h"
+
+typedef struct _TSMF_LISTENER_CALLBACK TSMF_LISTENER_CALLBACK;
+
+typedef struct _TSMF_CHANNEL_CALLBACK TSMF_CHANNEL_CALLBACK;
+
+typedef struct _TSMF_PLUGIN TSMF_PLUGIN;
 
 struct _TSMF_LISTENER_CALLBACK
 {
@@ -51,6 +58,32 @@ struct _TSMF_PLUGIN
 	TSMF_LISTENER_CALLBACK * listener_callback;
 };
 
+void
+tsmf_playback_ack(IWTSVirtualChannelCallback * pChannelCallback,
+	uint32 message_id, uint64 duration, uint32 data_size)
+{
+	TSMF_CHANNEL_CALLBACK * callback = (TSMF_CHANNEL_CALLBACK *) pChannelCallback;
+	uint32 out_size;
+	char * out_data;
+	int error;
+
+	out_size = 32;
+	out_data = (char *) malloc(out_size);
+	SET_UINT32(out_data, 0, TSMF_INTERFACE_CLIENT_NOTIFICATIONS | STREAM_ID_PROXY);
+	SET_UINT32(out_data, 4, message_id);
+	SET_UINT32(out_data, 8, PLAYBACK_ACK); /* FunctionId */
+	SET_UINT32(out_data, 12, callback->stream_id); /* StreamId */
+	SET_UINT64(out_data, 16, duration); /* DataDuration */
+	SET_UINT64(out_data, 24, data_size); /* cbData */
+	
+	LLOGLN(10, ("tsmf_playback_ack: response size %d", out_size));
+	error = callback->channel->Write(callback->channel, out_size, out_data, NULL);
+	if (error)
+	{
+		LLOGLN(0, ("tsmf_playback_ack: response error %d", error));
+	}
+}
+
 static int
 tsmf_on_data_received(IWTSVirtualChannelCallback * pChannelCallback,
 	uint32 cbSize,
@@ -78,8 +111,10 @@ tsmf_on_data_received(IWTSVirtualChannelCallback * pChannelCallback,
 		cbSize, InterfaceId, MessageId, FunctionId));
 
 	memset(&ifman, 0, sizeof(TSMF_IFMAN));
+	ifman.channel_callback = pChannelCallback;
 	memcpy(ifman.presentation_id, callback->presentation_id, 16);
 	ifman.stream_id = callback->stream_id;
+	ifman.message_id = MessageId;
 	ifman.input_buffer = (uint8 *) (pBuffer + 12);
 	ifman.input_buffer_size = cbSize - 12;
 	ifman.output_buffer = NULL;
