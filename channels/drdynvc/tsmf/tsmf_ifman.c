@@ -260,8 +260,8 @@ tsmf_ifman_on_sample(TSMF_IFMAN * ifman)
 	ThrottleDuration = GET_UINT64(ifman->input_buffer, 40);
 	cbData = GET_UINT32(ifman->input_buffer, 56);
 	
-	LLOGLN(0, ("tsmf_ifman_on_sample: StreamId %d ThrottleDuration %d cbData %d",
-		StreamId, (int)ThrottleDuration, cbData));
+	LLOGLN(0, ("tsmf_ifman_on_sample: MessageId %d StreamId %d SampleEndTime %d ThrottleDuration %d cbData %d",
+		ifman->message_id, StreamId, (int)SampleEndTime, (int)ThrottleDuration, cbData));
 
 	presentation = tsmf_presentation_find_by_id(ifman->presentation_id);
 	if (presentation == NULL)
@@ -313,7 +313,15 @@ tsmf_ifman_on_end_of_stream(TSMF_IFMAN * ifman)
 int
 tsmf_ifman_on_playback_started(TSMF_IFMAN * ifman)
 {
+	TSMF_PRESENTATION * presentation;
+
 	LLOGLN(0, ("tsmf_ifman_on_playback_started:"));
+
+	presentation = tsmf_presentation_find_by_id(ifman->input_buffer);
+	if (presentation)
+		tsmf_presentation_start(presentation);
+	else
+		LLOGLN(0, ("tsmf_ifman_on_playback_started: unknown presentation id"));
 
 	ifman->output_buffer_size = 16;
 	ifman->output_buffer = malloc(16);
@@ -345,7 +353,15 @@ tsmf_ifman_on_playback_restarted(TSMF_IFMAN * ifman)
 int
 tsmf_ifman_on_playback_stopped(TSMF_IFMAN * ifman)
 {
+	TSMF_PRESENTATION * presentation;
+
 	LLOGLN(0, ("tsmf_ifman_on_playback_stopped:"));
+
+	presentation = tsmf_presentation_find_by_id(ifman->input_buffer);
+	if (presentation)
+		tsmf_presentation_stop(presentation);
+	else
+		LLOGLN(0, ("tsmf_ifman_on_playback_stopped: unknown presentation id"));
 
 	ifman->output_buffer_size = 16;
 	ifman->output_buffer = malloc(16);
