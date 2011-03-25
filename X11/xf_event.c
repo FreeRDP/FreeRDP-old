@@ -172,7 +172,7 @@ xf_handle_event_KeyPress(xfInfo * xfi, XEvent * xevent)
 	if (xfi->fs_toggle && xf_kb_handle_special_keys(xfi, keysym))
 		return 0;
 
-	xf_kb_send_key(xfi, RDP_KEYPRESS, xevent->xkey.keycode);
+	xf_kb_send_key(xfi, False, xevent->xkey.keycode);
 	return 0;
 }
 
@@ -204,7 +204,7 @@ xf_handle_event_KeyRelease(xfInfo * xfi, XEvent * xevent)
 		return 0;
 	}
 	xf_kb_unset_keypress(xevent->xkey.keycode);
-	xf_kb_send_key(xfi, RDP_KEYRELEASE, xevent->xkey.keycode);
+	xf_kb_send_key(xfi, True, xevent->xkey.keycode);
 	return 0;
 }
 

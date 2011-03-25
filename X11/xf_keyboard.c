@@ -46,26 +46,27 @@ xf_kb_inst_init(xfInfo * xfi)
 };
 
 void
-xf_kb_send_key(xfInfo * xfi, int flags, uint8 keycode)
+xf_kb_send_key(xfInfo * xfi, RD_BOOL up, uint8 keycode)
 {
-	int scancode, rdpflags;
+	uint8 scancode;
+	int rdpflags;
 
-	rdpflags = flags;
+	rdpflags = up ? RDP_KEYRELEASE : RDP_KEYPRESS;
 	scancode = freerdp_kbd_get_scancode_by_keycode(keycode, &rdpflags);
 	if (scancode == 0)
 	{
-		printf("xf_kb_send_key: unknown key flags=0x%04X keycode=%d (X keysym=0x%04X)\n",
-			flags, keycode, (unsigned int)XKeycodeToKeysym(xfi->display, keycode, 0));
+		printf("xf_kb_send_key: unknown key %s keycode=%d (X keysym=0x%04X)\n",
+			up ? "up" : "down", keycode, (unsigned int)XKeycodeToKeysym(xfi->display, keycode, 0));
 	}
 	else
 	{
-		DEBUG_KBD("flags=0x%04X keycode=%d (X keysym=0x%04X) as flags=%04X scancode=%d\n",
-			flags, keycode, (unsigned int)XKeycodeToKeysym(xfi->display, keycode, 0),
+		DEBUG_KBD("%s keycode=%d (X keysym=0x%04X) as flags=%04X scancode=%d\n",
+			up ? "up" : "down", keycode, (unsigned int)XKeycodeToKeysym(xfi->display, keycode, 0),
 			rdpflags, scancode);
 
 		xfi->inst->rdp_send_input(xfi->inst, RDP_INPUT_SCANCODE, rdpflags, scancode, 0);
 
-		if ((scancode == 0x3A) && (flags & KBD_FLAG_UP)) /* caps lock was released */
+		if ((scancode == 0x3A) && up) /* caps lock was released */
 		{
 			/* caps lock state haven't necessarily been toggled locally - better set remote state explicitly */
 			DEBUG_KBD("sending extra caps lock synchronization\n");

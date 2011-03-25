@@ -28,7 +28,7 @@ xf_kb_init(unsigned int keyboard_layout_id);
 void
 xf_kb_inst_init(xfInfo * xfi);
 void
-xf_kb_send_key(xfInfo * xfi, int flags, uint8 keycode);
+xf_kb_send_key(xfInfo * xfi, RD_BOOL up, uint8 keycode);
 int
 xf_kb_get_toggle_keys_state(xfInfo * xfi);
 void
