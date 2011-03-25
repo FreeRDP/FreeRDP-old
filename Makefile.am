@@ -29,6 +29,7 @@ OPTIONAL_SUBDIRS = \
 	channels/rdpsnd/pulse \
 	channels/drdynvc/audin/alsa \
 	channels/drdynvc/audin/pulse \
+	channels/drdynvc/tsmf/copy \
 	cunit \
 	X11 \
 	win \
