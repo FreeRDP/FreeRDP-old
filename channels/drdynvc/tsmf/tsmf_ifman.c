@@ -276,7 +276,7 @@ tsmf_ifman_on_sample(TSMF_IFMAN * ifman)
 		return 1;
 	}
 	tsmf_stream_push_sample(stream, ifman->channel_callback,
-		ifman->message_id, SampleEndTime, ThrottleDuration, cbData, ifman->input_buffer + 64);
+		ifman->message_id, SampleEndTime, ThrottleDuration, cbData, ifman->input_buffer + 60);
 
 	ifman->output_pending = 1;
 	return 0;
@@ -293,9 +293,14 @@ tsmf_ifman_on_flush(TSMF_IFMAN * ifman)
 int
 tsmf_ifman_on_end_of_stream(TSMF_IFMAN * ifman)
 {
+	TSMF_PRESENTATION * presentation;
+	TSMF_STREAM * stream;
 	uint32 StreamId;
 
+	presentation = tsmf_presentation_find_by_id(ifman->input_buffer);
 	StreamId = GET_UINT32(ifman->input_buffer, 16);
+	stream = tsmf_stream_find_by_id(presentation, StreamId);
+	tsmf_stream_end(stream);
 
 	LLOGLN(0, ("tsmf_ifman_on_end_of_stream: StreamId %d", StreamId));
 
