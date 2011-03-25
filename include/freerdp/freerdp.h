@@ -74,8 +74,8 @@ struct rdp_inst
 	int (* rdp_get_fds)(rdpInst * inst, void ** read_fds, int * read_count,
 		void ** write_fds, int * write_count);
 	int (* rdp_check_fds)(rdpInst * inst);
-	int (* rdp_send_input)(rdpInst * inst, int message_type, int device_flags,
-		int param1, int param2);
+	int (* rdp_send_input_scancode)(rdpInst * inst, RD_BOOL up, RD_BOOL extended, uint8 keyCode);
+	int (* rdp_send_input_mouse)(rdpInst * inst, uint16 pointerFlags, uint16 xPos, uint16 yPos);
 	int (* rdp_sync_input)(rdpInst * inst, int toggle_flags);
 	int (* rdp_channel_data)(rdpInst * inst, int chan_id, char * data, int data_size);
 	void (* rdp_disconnect)(rdpInst * inst);

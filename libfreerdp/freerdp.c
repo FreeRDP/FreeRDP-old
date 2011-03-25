@@ -518,12 +518,20 @@ l_rdp_check_fds(rdpInst * inst)
 }
 
 static int
-l_rdp_send_input(rdpInst * inst, int message_type, int device_flags,
-	int param1, int param2)
+l_rdp_send_input_scancode(rdpInst * inst, RD_BOOL up, RD_BOOL extended, uint8 keyCode)
 {
 	rdpRdp * rdp;
 	rdp = RDP_FROM_INST(inst);
-	rdp_send_input(rdp, time(NULL), message_type, device_flags, param1, param2);
+	rdp_send_input_scancode(rdp, time(NULL), up, extended, keyCode);
+	return 0;
+}
+
+static int
+l_rdp_send_input_mouse(rdpInst * inst, uint16 pointerFlags, uint16 xPos, uint16 yPos)
+{
+	rdpRdp * rdp;
+	rdp = RDP_FROM_INST(inst);
+	rdp_send_input_mouse(rdp, time(NULL), pointerFlags, xPos, yPos);
 	return 0;
 }
 
@@ -589,7 +597,8 @@ freerdp_new(rdpSet * settings)
 	inst->rdp_connect = l_rdp_connect;
 	inst->rdp_get_fds = l_rdp_get_fds;
 	inst->rdp_check_fds = l_rdp_check_fds;
-	inst->rdp_send_input = l_rdp_send_input;
+	inst->rdp_send_input_scancode = l_rdp_send_input_scancode;
+	inst->rdp_send_input_mouse = l_rdp_send_input_mouse;
 	inst->rdp_sync_input = l_rdp_sync_input;
 	inst->rdp_channel_data = l_rdp_channel_data;
 	inst->rdp_disconnect = l_rdp_disconnect;

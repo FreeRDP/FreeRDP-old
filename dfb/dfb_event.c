@@ -82,7 +82,7 @@ dfb_process_event(rdpInst * inst, DFBEvent * event)
 					device_flags = PTRFLAGS_DOWN | PTRFLAGS_BUTTON3;
 
 				if (device_flags != 0)
-					inst->rdp_send_input(inst, RDP_INPUT_MOUSE, device_flags, cursor_x, cursor_y);
+					inst->rdp_send_input_mouse(inst, device_flags, cursor_x, cursor_y);
 
 				break;
 
@@ -96,7 +96,7 @@ dfb_process_event(rdpInst * inst, DFBEvent * event)
 					device_flags = PTRFLAGS_BUTTON3;
 
 				if (device_flags != 0)
-					inst->rdp_send_input(inst, RDP_INPUT_MOUSE, device_flags, cursor_x, cursor_y);
+					inst->rdp_send_input_mouse(inst, device_flags, cursor_x, cursor_y);
 
 				break;
 

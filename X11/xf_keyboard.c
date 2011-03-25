@@ -63,9 +63,7 @@ xf_kb_send_key(xfInfo * xfi, RD_BOOL up, uint8 keycode)
 			up ? "up" : "down", keycode, (unsigned int)XKeycodeToKeysym(xfi->display, keycode, 0),
 			!!extended, scancode);
 
-		xfi->inst->rdp_send_input(xfi->inst, RDP_INPUT_SCANCODE,
-				(up ? RDP_KEYRELEASE : RDP_KEYPRESS) | (extended ? KBD_FLAG_EXT : 0),
-				scancode, 0);
+		xfi->inst->rdp_send_input_scancode(xfi->inst, up, extended, scancode);
 
 		if ((scancode == 0x3A) && up) /* caps lock was released */
 		{
@@ -145,7 +143,7 @@ xf_kb_focus_in(xfInfo * xfi)
 	int flags;
 
 	/* on focus in send a tab up like mstsc.exe */
-	xfi->inst->rdp_send_input(xfi->inst, RDP_INPUT_SCANCODE, KBD_FLAG_UP, 15, 0);
+	xfi->inst->rdp_send_input_scancode(xfi->inst, True, False, 15);
 
 	/* sync num, caps, scroll, kana lock */
 	flags = xf_kb_get_toggle_keys_state(xfi);
