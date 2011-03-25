@@ -23,6 +23,7 @@
 #include <pthread.h>
 #include <unistd.h>
 #include "drdynvc_types.h"
+#include "tsmf_decoder.h"
 #include "tsmf_main.h"
 #include "tsmf_media.h"
 
@@ -54,6 +55,8 @@ struct _TSMF_STREAM
 	uint32 stream_id;
 
 	TSMF_PRESENTATION * presentation;
+
+	ITSMFDecoder * decoder;
 
 	int eos;
 
@@ -108,7 +111,8 @@ tsmf_sample_ack(TSMF_SAMPLE * sample)
 static void
 tsmf_sample_free(TSMF_SAMPLE * sample)
 {
-	free(sample->data);
+	if (sample->data)
+		free(sample->data);
 	free(sample);
 }
 
@@ -328,6 +332,12 @@ tsmf_stream_find_by_id(TSMF_PRESENTATION * presentation, uint32 stream_id)
 }
 
 void
+tsmf_stream_set_format(TSMF_STREAM * stream, const char * name, const uint8 * pMediaType)
+{
+	stream->decoder = tsmf_load_decoder(name, pMediaType);
+}
+
+void
 tsmf_stream_flush(TSMF_STREAM * stream)
 {
 	TSMF_PRESENTATION * presentation = stream->presentation;
@@ -374,6 +384,9 @@ tsmf_stream_free(TSMF_STREAM * stream)
 
 	pthread_mutex_unlock(presentation->mutex);
 
+	if (stream->decoder)
+		stream->decoder->Free(stream->decoder);
+
 	free(stream);
 }
 
@@ -391,12 +404,11 @@ tsmf_stream_push_sample(TSMF_STREAM * stream, IWTSVirtualChannelCallback * pChan
 	sample->start_time = start_time;
 	sample->end_time = end_time;
 	sample->duration = duration;
-	sample->data_size = data_size;
-	sample->data = malloc(data_size);
-	memcpy(sample->data, data, data_size);
-
 	sample->stream = stream;
 	sample->channel_callback = pChannelCallback;
+
+	if (stream->decoder)
+		stream->decoder->Decode(stream->decoder, data, data_size, &sample->data, &sample->data_size);
 
 	pthread_mutex_lock(presentation->mutex);
 

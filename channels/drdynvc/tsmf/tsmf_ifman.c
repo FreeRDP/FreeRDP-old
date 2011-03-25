@@ -128,6 +128,7 @@ int
 tsmf_ifman_add_stream(TSMF_IFMAN * ifman)
 {
 	TSMF_PRESENTATION * presentation;
+	TSMF_STREAM * stream;
 	uint32 StreamId;
 	int error = 0;
 
@@ -138,7 +139,8 @@ tsmf_ifman_add_stream(TSMF_IFMAN * ifman)
 	else
 	{
 		StreamId = GET_UINT32(ifman->input_buffer, 16);
-		tsmf_stream_new(presentation, StreamId);
+		stream = tsmf_stream_new(presentation, StreamId);
+		tsmf_stream_set_format(stream, ifman->decoder_name, ifman->input_buffer + 24);
 	}
 	ifman->output_pending = 1;
 	return error;

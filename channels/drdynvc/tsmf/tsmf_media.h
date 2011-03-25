@@ -47,6 +47,8 @@ tsmf_stream_new(TSMF_PRESENTATION * presentation, uint32 stream_id);
 TSMF_STREAM *
 tsmf_stream_find_by_id(TSMF_PRESENTATION * presentation, uint32 stream_id);
 void
+tsmf_stream_set_format(TSMF_STREAM * stream, const char * name, const uint8 * pMediaType);
+void
 tsmf_stream_flush(TSMF_STREAM * stream);
 void
 tsmf_stream_end(TSMF_STREAM * stream);
