@@ -141,11 +141,10 @@ void
 xf_kb_focus_in(xfInfo * xfi)
 {
 	int flags;
-	int scancode;
 
 	/* on focus in send a tab up like mstsc.exe */
-	scancode = freerdp_kbd_get_scancode_by_virtualkey(xfi->tab_key);
-	xfi->inst->rdp_send_input(xfi->inst, RDP_INPUT_SCANCODE, KBD_FLAG_UP, scancode, 0);
+	xfi->inst->rdp_send_input(xfi->inst, RDP_INPUT_SCANCODE, KBD_FLAG_UP, 15, 0);
+
 	/* sync num, caps, scroll, kana lock */
 	flags = xf_kb_get_toggle_keys_state(xfi);
 	xfi->inst->rdp_sync_input(xfi->inst, flags);
