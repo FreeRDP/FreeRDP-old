@@ -35,7 +35,7 @@ find_keyboard_layout_in_xorg_rules(char* layout, char* variant)
 	if((layout == NULL) || (variant == NULL))
 		return 0;
 
-	printf("xkbLayout: %s\txkbVariant: %s\n", layout, variant);
+	DEBUG_KBD("xkbLayout: %s\txkbVariant: %s\n", layout, variant);
 
 	for (i = 0; i < sizeof(xkbLayouts) / sizeof(xkbLayout); i++)
 	{
@@ -276,7 +276,7 @@ detect_keyboard_layout_from_locale()
 			break;
 	}
 
-	printf("Found locale : %s_%s\n", locales[i].language, locales[i].country);
+	DEBUG_KBD("Found locale : %s_%s\n", locales[i].language, locales[i].country);
 
 	for(j = 0; j < sizeof(defaultKeyboardLayouts) / sizeof(localeAndKeyboardLayout); j++)
 	{
@@ -399,7 +399,7 @@ load_xkb_keyboard(char* kbd)
 
 	beg = kbd;
 
-	printf("Loading keymap %s\n", kbd);
+	DEBUG_KBD("Loading keymap %s\n", kbd);
 
 	// Extract file name and keymap name
 	if((end = strrchr(kbd, '(')) != NULL)
@@ -468,7 +468,7 @@ load_xkb_keyboard(char* kbd)
 		}
 	}
 
-	printf("xkbfilepath: %s\n", xkbfilepath);
+	DEBUG_KBD("xkbfilepath: %s\n", xkbfilepath);
 
 	while(fgets(buffer, sizeof(buffer), fp) != NULL)
 	{
@@ -574,38 +574,38 @@ detect_keyboard(unsigned int keyboardLayoutID, char *xkbfile, size_t xkbfileleng
 	xkbfile[0] = '\0';
 
 	if (keyboardLayoutID != 0)
-		printf("keyboard layout configuration: %X\n", keyboardLayoutID);
+		DEBUG_KBD("keyboard layout configuration: %X\n", keyboardLayoutID);
 
 #if defined(sun)
 	if(keyboardLayoutID == 0)
 	{
 		keyboardLayoutID = detect_keyboard_type_and_layout_sunos(xkbfile, xkbfilelength);
-		printf("detect_keyboard_type_and_layout_sunos: %X %s\n", keyboardLayoutID, xkbfile);
+		DEBUG_KBD("detect_keyboard_type_and_layout_sunos: %X %s\n", keyboardLayoutID, xkbfile);
 	}
 #endif
 
 	if(keyboardLayoutID == 0)
 	{
 		keyboardLayoutID = detect_keyboard_layout_from_xkb();
-		printf("detect_keyboard_layout_from_xkb: %X\n", keyboardLayoutID);
+		DEBUG_KBD("detect_keyboard_layout_from_xkb: %X\n", keyboardLayoutID);
 	}
 
 	if(keyboardLayoutID == 0)
 	{
 		keyboardLayoutID = detect_keyboard_layout_from_locale();
-		printf("detect_keyboard_layout_from_locale: %X\n", keyboardLayoutID);
+		DEBUG_KBD("detect_keyboard_layout_from_locale: %X\n", keyboardLayoutID);
 	}
 
 	if (keyboardLayoutID == 0)
 	{
 		keyboardLayoutID = 0x0409;
-		printf("using default keyboard layout: %X\n", keyboardLayoutID);
+		DEBUG_KBD("using default keyboard layout: %X\n", keyboardLayoutID);
 	}
 
 	if (xkbfile[0] == '\0')
 	{
 		detect_keyboard_type_from_xkb(xkbfile, xkbfilelength);
-		printf("detect_keyboard_type_from_xkb: %s\n", xkbfile);
+		DEBUG_KBD("detect_keyboard_type_from_xkb: %s\n", xkbfile);
 	}
 
 	return keyboardLayoutID;

@@ -80,6 +80,16 @@
 #include <freerdp/chanman.h>
 #include <freerdp/vchan.h>
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#ifdef WITH_DEBUG
+#define DEBUG(fmt, ...)	printf("DBG %s (%d): " fmt, __FUNCTION__, __LINE__, ## __VA_ARGS__)
+#else
+#define DEBUG(fmt, ...) do { } while (0)
+#endif
+
 /* The current channel manager reference passes from VirtualChannelEntry to
    VirtualChannelInit for the pInitHandle. */
 static rdpChanMan * g_init_chan_man;
@@ -293,7 +303,7 @@ MyVirtualChannelInit(void ** ppInitHandle, PCHANNEL_DEF pChannel,
 	chan_man = g_init_chan_man;
 	*ppInitHandle = chan_man;
 
-	printf("MyVirtualChannelInit:\n");
+	DEBUG("MyVirtualChannelInit:\n");
 	if (!chan_man->can_call_init)
 	{
 		printf("MyVirtualChannelInit: error not in entry\n");
@@ -373,7 +383,7 @@ MyVirtualChannelOpen(void * pInitHandle, uint32 * pOpenHandle,
 	int index;
 	struct chan_data * lchan;
 
-	printf("MyVirtualChannelOpen:\n");
+	DEBUG("MyVirtualChannelOpen:\n");
 	chan_man = (rdpChanMan *) pInitHandle;
 	if (pOpenHandle == 0)
 	{
@@ -672,7 +682,7 @@ freerdp_chanman_load_plugin(rdpChanMan * chan_man, rdpSet * settings,
 	int ok;
 	CHR path[255];
 
-	printf("freerdp_chanman_load_plugin: filename %s\n", filename);
+	DEBUG("input filename %s\n", filename);
 	if (chan_man->num_libs + 1 >= CHANNEL_MAX_COUNT)
 	{
 		printf("freerdp_chanman_load_plugin: too many channels\n");
@@ -695,8 +705,8 @@ freerdp_chanman_load_plugin(rdpChanMan * chan_man, rdpSet * settings,
 		strncpy(path, filename, sizeof(path));
 #endif
 	}
+	printf("freerdp_chanman_load_plugin %s: %s\n", filename, path);
 	lib->han = DLOPEN(path);
-	printf("freerdp_chanman_load_plugin: %s\n", path);
 	if (lib->han == 0)
 	{
 		printf("freerdp_chanman_load_plugin: failed to load library\n");
@@ -750,7 +760,7 @@ freerdp_chanman_pre_connect(rdpChanMan * chan_man, rdpInst * inst)
 	CHANNEL_DEF lchannel_def;
 	void * dummy;
 
-	printf("freerdp_chanman_pre_connect:\n");
+	DEBUG("freerdp_chanman_pre_connect:\n");
 	chan_man->inst = inst;
 
 	/* If rdpsnd is registered but not rdpdr, it's necessary to register a fake
@@ -772,7 +782,7 @@ freerdp_chanman_pre_connect(rdpChanMan * chan_man, rdpInst * inst)
 		MUTEX_UNLOCK(g_mutex_init);
 		chan_man->can_call_init = 0;
 		chan_man->settings = 0;
-		printf("freerdp_chanman_pre_connect: registered fake rdpdr for rdpsnd.\n");
+		DEBUG("freerdp_chanman_pre_connect: registered fake rdpdr for rdpsnd.\n");
 	}
 
 	for (index = 0; index < chan_man->num_libs; index++)
@@ -801,7 +811,7 @@ freerdp_chanman_post_connect(rdpChanMan * chan_man, rdpInst * inst)
 	chan_man->is_connected = 1;
 	server_name = inst->settings->server;
 	server_name_len = strlen(server_name);
-	printf("freerdp_chanman_post_connect: server name [%s] chan_man->num_libs [%d]\n",
+	DEBUG("freerdp_chanman_post_connect: server name [%s] chan_man->num_libs [%d]\n",
 		server_name, chan_man->num_libs);
 	for (index = 0; index < chan_man->num_libs; index++)
 	{
@@ -946,4 +956,3 @@ freerdp_chanman_close(rdpChanMan * chan_man, rdpInst * inst)
 		}
 	}
 }
-

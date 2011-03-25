@@ -255,7 +255,7 @@ xf_handle_event_ClientMessage(xfInfo * xfi, XEvent * xevent)
 	if ((xevent->xclient.message_type == protocol_atom)
 	    && ((Atom) xevent->xclient.data.l[0] == kill_atom))
 	{
-		printf("xf_handle_event: ClientMessage user quit received\n");
+		DEBUG("ClientMessage user quit received\n");
 		return 1;
 	}
 

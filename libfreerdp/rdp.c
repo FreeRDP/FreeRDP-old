@@ -1264,7 +1264,7 @@ static void
 process_set_error_info_pdu(STREAM s, struct rdp_inst *inst)
 {
 	in_uint32_le(s, inst->disc_reason); /* Note: reason 0 is _not_ an error */
-	printf("Received Set Error Information PDU with reason %x\n", inst->disc_reason);
+	DEBUG("Received Set Error Information PDU with reason %x\n", inst->disc_reason);
 }
 
 /* Process Data PDU */

@@ -227,7 +227,7 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 				exit(XF_EXIT_WRONG_PARAM);
 			}
 			sscanf(argv[*pindex], "%X", &(xfi->keyboard_layout_id));
-			printf("keyboard layout ID: %X\n", xfi->keyboard_layout_id);
+			DEBUG("keyboard layout ID: %X\n", xfi->keyboard_layout_id);
 		}
 		else if (strcmp("--kbd-list", argv[*pindex]) == 0)
 		{
@@ -584,8 +584,8 @@ run_xfreerdp(xfInfo * xfi)
 		printf("run_xfreerdp: freerdp_chanman_pre_connect failed\n");
 		return XF_EXIT_CONN_FAILED;
 	}
+	printf("keyboard_layout: 0x%X\n", inst->settings->keyboard_layout);
 	/* call connect */
-	printf("keyboard_layout: %X\n", inst->settings->keyboard_layout);
 	if (inst->rdp_connect(inst) != 0)
 	{
 		printf("run_xfreerdp: inst->rdp_connect failed\n");
@@ -672,7 +672,8 @@ run_xfreerdp(xfInfo * xfi)
 		/* check x fds */
 		if (xf_check_fds(xfi) != 0)
 		{
-			printf("run_xfreerdp: xf_check_fds failed\n");
+			/* xfreerdp is usually terminated by this failing because the X windows has been closed */
+			DEBUG("xf_check_fds failed\n");
 			break;
 		}
 		/* check channel fds */
@@ -776,7 +777,7 @@ main(int argc, char ** argv)
 		}
 
 		xf_kb_init(xfi->keyboard_layout_id);
-		printf("starting thread %d to %s:%d\n", g_thread_count,
+		DEBUG("starting thread %d to %s:%d\n", g_thread_count,
 			xfi->settings->server, xfi->settings->tcp_port_rdp);
 		if (pthread_create(&thread, 0, thread_func, xfi) == 0)
 		{
@@ -786,9 +787,9 @@ main(int argc, char ** argv)
 
 	if (g_thread_count > 0)
 	{
-		printf("main thread, waiting for all threads to exit\n");
+		DEBUG("main thread, waiting for all threads to exit\n");
 		freerdp_sem_wait(&g_sem);
-		printf("main thread, all threads did exit\n");
+		DEBUG("main thread, all threads did exit\n");
 	}
 
 	freerdp_chanman_uninit();

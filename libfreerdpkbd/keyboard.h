@@ -24,6 +24,8 @@
 
 #include <stddef.h>
 
+#include "config.h"
+
 /* Mouse buttons */
 
 #define VK_LBUTTON	0x01 // Left mouse button
@@ -2024,5 +2026,11 @@ SunOSKeyboard SunOSKeyboards[] =
 	{ 6,   3,    "sun(type6)",               KBD_CANADIAN_MULTILINGUAL_STANDARD	}, //  Canada_Bi6_usb
 	{ 6,   272,  "sun(type6)",               KBD_PORTUGUESE_BRAZILIAN_ABNT		}  //  Brazil6_usb
 };
+
+#ifdef WITH_DEBUG_KBD
+#define DEBUG_KBD(fmt, ...) printf("DBG (KBD) %s (%d): " fmt, __FUNCTION__, __LINE__, ## __VA_ARGS__)
+#else
+#define DEBUG_KBD(fmt, ...) do { } while (0)
+#endif
 
 #endif // __KEYBOARD_H
