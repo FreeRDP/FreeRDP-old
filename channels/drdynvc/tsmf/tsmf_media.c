@@ -67,6 +67,7 @@ struct _TSMF_STREAM
 struct _TSMF_SAMPLE
 {
 	uint32 sample_id;
+	uint64 start_time;
 	uint64 end_time;
 	uint64 duration;
 	uint32 data_size;
@@ -139,7 +140,7 @@ tsmf_presentation_pop_sample(TSMF_PRESENTATION * presentation)
 	      there's a stream pending for receiving sample. If so, we bypasss it and wait.
 	*/
 	if (earliest_stream && (!has_pending_stream || presentation->playback_time == 0 ||
-		presentation->playback_time >= earliest_stream->sample_queue_head->end_time))
+		presentation->playback_time >= earliest_stream->sample_queue_head->start_time))
 	{
 		sample = tsmf_stream_pop_sample(earliest_stream);
 		presentation->playback_time = sample->end_time;
@@ -378,7 +379,7 @@ tsmf_stream_free(TSMF_STREAM * stream)
 
 void
 tsmf_stream_push_sample(TSMF_STREAM * stream, IWTSVirtualChannelCallback * pChannelCallback,
-	uint32 sample_id, uint64 end_time, uint64 duration, uint32 data_size, uint8 * data)
+	uint32 sample_id, uint64 start_time, uint64 end_time, uint64 duration, uint32 data_size, uint8 * data)
 {
 	TSMF_PRESENTATION * presentation = stream->presentation;
 	TSMF_SAMPLE * sample;
@@ -387,6 +388,7 @@ tsmf_stream_push_sample(TSMF_STREAM * stream, IWTSVirtualChannelCallback * pChan
 	memset(sample, 0, sizeof(TSMF_SAMPLE));
 
 	sample->sample_id = sample_id;
+	sample->start_time = start_time;
 	sample->end_time = end_time;
 	sample->duration = duration;
 	sample->data_size = data_size;
