@@ -245,6 +245,14 @@ PKG_CHECK_MODULES(PULSE, libpulse, [
 	pulse="no"
 ])
 
+PKG_CHECK_MODULES(FFMPEG, [libavcodec libavformat], [
+	HAVE_FFMPEG=1
+	ffmpeg="yes"
+], [
+	HAVE_FFMPEG=0
+	ffmpeg="no"
+])
+
 #
 # printer
 #
@@ -907,6 +915,13 @@ if test x"$HAVE_PULSE" = "x1"; then
 fi
 
 #
+# FFmpeg
+#
+if test x"$HAVE_FFMPEG" = "x1"; then
+	EXTRA_SUBDIRS="$EXTRA_SUBDIRS channels/drdynvc/tsmf/copy"
+fi
+
+#
 # CUnit
 #
 cunit="no"
@@ -975,6 +990,7 @@ channels/rdpsnd/pulse/Makefile
 channels/drdynvc/Makefile
 channels/drdynvc/pnpdr/Makefile
 channels/drdynvc/tsmf/Makefile
+channels/drdynvc/tsmf/copy/Makefile
 channels/drdynvc/audin/Makefile
 channels/drdynvc/audin/alsa/Makefile
 channels/drdynvc/audin/pulse/Makefile
@@ -1000,6 +1016,7 @@ else
 fi
 echo "ALSA         : $alsa"
 echo "PulseAudio   : $pulse"
+echo "FFmpeg       : $ffmpeg"
 echo "Printer      : $printer"
 echo "CUnit        : $cunit"
 echo "X11          : $x11"
