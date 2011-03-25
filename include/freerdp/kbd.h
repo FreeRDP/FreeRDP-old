@@ -36,9 +36,9 @@ rdpKeyboardLayout *
 freerdp_kbd_get_layouts(int types);
 unsigned int
 freerdp_kbd_init(unsigned int keyboard_layout_id);
-int
-freerdp_kbd_get_scancode_by_keycode(uint8 keycode, int * flags);
-int
-freerdp_kbd_get_scancode_by_virtualkey(int vkcode);
+uint8
+freerdp_kbd_get_scancode_by_keycode(uint8 keycode, RD_BOOL * extended);
+uint8
+freerdp_kbd_get_scancode_by_virtualkey(int vkcode, RD_BOOL * extended);
 
 #endif // __FREERDP_KBD_H

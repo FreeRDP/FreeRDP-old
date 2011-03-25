@@ -350,7 +350,7 @@ unsigned char keycodeToVkcode[256] =
 typedef struct _virtualKey
 {
 	// Scan code
-	int scancode;
+	unsigned char scancode;
 
 	// Flags
 	int flags;

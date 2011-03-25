@@ -689,20 +689,21 @@ freerdp_kbd_get_layouts(int types)
 	return get_keyboard_layouts(types);
 }
 
-int
-freerdp_kbd_get_scancode_by_keycode(uint8 keycode, int * flags)
+uint8
+freerdp_kbd_get_scancode_by_keycode(uint8 keycode, RD_BOOL * extended)
 {
 	int vkcode;
 	int scancode;
 
 	vkcode = keycodeToVkcode[keycode];
 	scancode = virtualKeyboard[vkcode].scancode;
-	*flags |= virtualKeyboard[vkcode].flags;
+	*extended = virtualKeyboard[vkcode].flags == KBD_EXT;
 	return scancode;
 }
 
-int
-freerdp_kbd_get_scancode_by_virtualkey(int vkcode)
+uint8
+freerdp_kbd_get_scancode_by_virtualkey(int vkcode, RD_BOOL * extended)
 {
+	*extended = virtualKeyboard[vkcode].flags == KBD_EXT;
 	return virtualKeyboard[vkcode].scancode;
 }
