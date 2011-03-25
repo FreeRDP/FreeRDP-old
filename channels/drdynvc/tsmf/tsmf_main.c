@@ -56,6 +56,8 @@ struct _TSMF_PLUGIN
 	IWTSPlugin iface;
 
 	TSMF_LISTENER_CALLBACK * listener_callback;
+
+	const char * decoder_name;
 };
 
 void
@@ -113,6 +115,7 @@ tsmf_on_data_received(IWTSVirtualChannelCallback * pChannelCallback,
 
 	memset(&ifman, 0, sizeof(TSMF_IFMAN));
 	ifman.channel_callback = pChannelCallback;
+	ifman.decoder_name = ((TSMF_PLUGIN *) callback->plugin)->decoder_name;
 	memcpy(ifman.presentation_id, callback->presentation_id, 16);
 	ifman.stream_id = callback->stream_id;
 	ifman.message_id = MessageId;
@@ -360,6 +363,22 @@ tsmf_plugin_terminated(IWTSPlugin * pPlugin)
 	return 0;
 }
 
+static int
+tsmf_process_plugin_data(IWTSPlugin * pPlugin, RD_PLUGIN_DATA * data)
+{
+	TSMF_PLUGIN * tsmf = (TSMF_PLUGIN *) pPlugin;
+
+	if (data->data[0] && strcmp((char*)data->data[0], "tsmf") == 0)
+	{
+		if (data->data[1] && strcmp((char*)data->data[1], "decoder") == 0)
+		{
+			tsmf->decoder_name = data->data[2];
+			return 0;
+		}
+	}
+	return 0;
+}
+
 int
 DVCPluginEntry(IDRDYNVC_ENTRY_POINTS * pEntryPoints)
 {
@@ -377,6 +396,11 @@ DVCPluginEntry(IDRDYNVC_ENTRY_POINTS * pEntryPoints)
 		tsmf->iface.Disconnected = NULL;
 		tsmf->iface.Terminated = tsmf_plugin_terminated;
 		ret = pEntryPoints->RegisterPlugin(pEntryPoints, "tsmf", (IWTSPlugin *) tsmf);
+	}
+	if (ret == 0)
+	{
+		tsmf_process_plugin_data((IWTSPlugin *) tsmf,
+			pEntryPoints->GetPluginData(pEntryPoints));
 	}
 	return ret;
 }
