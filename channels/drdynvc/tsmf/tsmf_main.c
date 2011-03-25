@@ -82,6 +82,7 @@ tsmf_playback_ack(IWTSVirtualChannelCallback * pChannelCallback,
 	{
 		LLOGLN(0, ("tsmf_playback_ack: response error %d", error));
 	}
+	free(out_data);
 }
 
 static int
