@@ -251,17 +251,19 @@ tsmf_ifman_on_sample(TSMF_IFMAN * ifman)
 	TSMF_PRESENTATION * presentation;
 	TSMF_STREAM * stream;
 	uint32 StreamId;
+	uint64 SampleStartTime;
 	uint64 SampleEndTime;
 	uint64 ThrottleDuration;
 	uint32 cbData;
 
 	StreamId = GET_UINT32(ifman->input_buffer, 16);
+	SampleStartTime = GET_UINT64(ifman->input_buffer, 24);
 	SampleEndTime = GET_UINT64(ifman->input_buffer, 32);
 	ThrottleDuration = GET_UINT64(ifman->input_buffer, 40);
 	cbData = GET_UINT32(ifman->input_buffer, 56);
 	
-	LLOGLN(0, ("tsmf_ifman_on_sample: MessageId %d StreamId %d SampleEndTime %d ThrottleDuration %d cbData %d",
-		ifman->message_id, StreamId, (int)SampleEndTime, (int)ThrottleDuration, cbData));
+	LLOGLN(0, ("tsmf_ifman_on_sample: MessageId %d StreamId %d SampleStartTime %d SampleEndTime %d ThrottleDuration %d cbData %d",
+		ifman->message_id, StreamId, (int)SampleStartTime, (int)SampleEndTime, (int)ThrottleDuration, cbData));
 
 	presentation = tsmf_presentation_find_by_id(ifman->presentation_id);
 	if (presentation == NULL)
@@ -276,7 +278,7 @@ tsmf_ifman_on_sample(TSMF_IFMAN * ifman)
 		return 1;
 	}
 	tsmf_stream_push_sample(stream, ifman->channel_callback,
-		ifman->message_id, SampleEndTime, ThrottleDuration, cbData, ifman->input_buffer + 60);
+		ifman->message_id, SampleStartTime, SampleEndTime, ThrottleDuration, cbData, ifman->input_buffer + 60);
 
 	ifman->output_pending = 1;
 	return 0;
