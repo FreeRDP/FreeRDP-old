@@ -268,13 +268,13 @@ tsmf_ifman_on_sample(TSMF_IFMAN * ifman)
 	presentation = tsmf_presentation_find_by_id(ifman->presentation_id);
 	if (presentation == NULL)
 	{
-		LLOGLN(10, ("tsmf_ifman_on_sample: unknown presentation id"));
+		LLOGLN(0, ("tsmf_ifman_on_sample: unknown presentation id"));
 		return 1;
 	}
 	stream = tsmf_stream_find_by_id(presentation, StreamId);
 	if (stream == NULL)
 	{
-		LLOGLN(10, ("tsmf_ifman_on_sample: unknown stream id"));
+		LLOGLN(0, ("tsmf_ifman_on_sample: unknown stream id"));
 		return 1;
 	}
 	tsmf_stream_push_sample(stream, ifman->channel_callback,
@@ -287,7 +287,28 @@ tsmf_ifman_on_sample(TSMF_IFMAN * ifman)
 int
 tsmf_ifman_on_flush(TSMF_IFMAN * ifman)
 {
-	LLOGLN(0, ("tsmf_ifman_on_flush:"));
+	TSMF_PRESENTATION * presentation;
+	TSMF_STREAM * stream;
+	uint32 StreamId;
+
+	StreamId = GET_UINT32(ifman->input_buffer, 16);
+	LLOGLN(0, ("tsmf_ifman_on_flush: StreamId %d", StreamId));
+
+	presentation = tsmf_presentation_find_by_id(ifman->presentation_id);
+	if (presentation == NULL)
+	{
+		LLOGLN(0, ("tsmf_ifman_on_sample: unknown presentation id"));
+		return 1;
+	}
+	stream = tsmf_stream_find_by_id(presentation, StreamId);
+	if (stream == NULL)
+	{
+		LLOGLN(0, ("tsmf_ifman_on_sample: unknown stream id"));
+		return 1;
+	}
+
+	tsmf_stream_flush(stream);
+
 	ifman->output_pending = 1;
 	return 0;
 }
