@@ -40,6 +40,8 @@ struct _TSMF_PRESENTATION
 	int thread_status;
 	int thread_exit;
 
+	uint64 playback_time;
+
 	TSMF_STREAM * stream_list_head;
 	TSMF_STREAM * stream_list_tail;
 
@@ -52,6 +54,8 @@ struct _TSMF_STREAM
 	uint32 stream_id;
 
 	TSMF_PRESENTATION * presentation;
+
+	int eos;
 
 	TSMF_SAMPLE * sample_queue_head;
 	TSMF_SAMPLE * sample_queue_tail;
@@ -114,20 +118,31 @@ tsmf_presentation_pop_sample(TSMF_PRESENTATION * presentation)
 	TSMF_STREAM * stream;
 	TSMF_STREAM * earliest_stream = NULL;
 	TSMF_SAMPLE * sample = NULL;
+	int has_pending_stream = 0;
 
 	pthread_mutex_lock(presentation->mutex);
 
 	for (stream = presentation->stream_list_head; stream; stream = stream->next)
 	{
+		if (!stream->sample_queue_head && !stream->eos)
+			has_pending_stream = 1;
 		if (stream->sample_queue_head && (!earliest_stream ||
 			earliest_stream->sample_queue_head->end_time > stream->sample_queue_head->end_time))
 		{
 			earliest_stream = stream;
 		}
 	}
-	if (earliest_stream)
+	/* Ensure multiple streams are interleaved.
+	   1. If all streams has samples available, we just consume the earliest one
+	   2. If the earliest sample with end_time <= current playback time, we consume it
+	   3. If the earliest sample with end_time > current playback time, we check if
+	      there's a stream pending for receiving sample. If so, we bypasss it and wait.
+	*/
+	if (earliest_stream && (!has_pending_stream || presentation->playback_time == 0 ||
+		presentation->playback_time >= earliest_stream->sample_queue_head->end_time))
 	{
 		sample = tsmf_stream_pop_sample(earliest_stream);
+		presentation->playback_time = sample->end_time;
 	}
 	pthread_mutex_unlock(presentation->mutex);
 
@@ -221,6 +236,7 @@ tsmf_presentation_start(TSMF_PRESENTATION * presentation)
 	{
 		presentation->thread_status = 1;
 		presentation->thread_exit = 0;
+		presentation->playback_time = 0;
 		pthread_create(&thread, 0, tsmf_presentation_playback_func, presentation);
 		pthread_detach(thread);
 	}
@@ -323,6 +339,12 @@ tsmf_stream_flush(TSMF_STREAM * stream)
 		tsmf_sample_free(sample);
 	}
 	pthread_mutex_unlock(presentation->mutex);
+}
+
+void
+tsmf_stream_end(TSMF_STREAM * stream)
+{
+	stream->eos = 1;
 }
 
 void

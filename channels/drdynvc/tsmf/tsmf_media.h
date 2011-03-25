@@ -49,6 +49,8 @@ tsmf_stream_find_by_id(TSMF_PRESENTATION * presentation, uint32 stream_id);
 void
 tsmf_stream_flush(TSMF_STREAM * stream);
 void
+tsmf_stream_end(TSMF_STREAM * stream);
+void
 tsmf_stream_free(TSMF_STREAM * stream);
 
 void
