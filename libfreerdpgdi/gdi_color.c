@@ -72,7 +72,7 @@ gdi_image_convert(uint8* srcData, int width, int height, int srcBpp, int dstBpp,
 	uint16 *dst16;
 	uint32 *dst32;
 	uint8 *dstData;
-	
+
 	if (srcBpp == dstBpp)
 	{
 		if (dstBpp == 32)
@@ -117,7 +117,7 @@ gdi_image_convert(uint8* srcData, int width, int height, int srcBpp, int dstBpp,
 		}
 		else
 		{
-			dstData = (char*) malloc(width * height * 4);
+			dstData = (uint8*) malloc(width * height * 4);
 			memcpy(dstData, srcData, width * height * 4);
 		}
 		return dstData;
@@ -235,8 +235,8 @@ gdi_glyph_convert(int width, int height, uint8* data)
 	uint8 *dstp;
 	uint8 *dstData;
 	int scanline;
-	
-	/* 
+
+	/*
 	 * converts a 1-bit-per-pixel glyph to a one-byte-per-pixel glyph:
 	 * this approach uses a little more memory, but provides faster
 	 * means of accessing individual pixels in blitting operations
@@ -246,11 +246,11 @@ gdi_glyph_convert(int width, int height, uint8* data)
 	dstData = (uint8*) malloc(width * height);
 	memset(dstData, 0, width * height);
 	dstp = dstData;
-	
+
 	for (y = 0; y < height; y++)
 	{
 		srcp = data + (y * scanline);
-		
+
 		for (x = 0; x < width; x++)
 		{
 			if ((*srcp & (0x80 >> (x % 8))) != 0)
@@ -261,7 +261,7 @@ gdi_glyph_convert(int width, int height, uint8* data)
 				srcp++;
 		}
 	}
-	
+
 	return dstData;
 }
 
