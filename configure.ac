@@ -913,9 +913,12 @@ cunit="no"
 AC_ARG_WITH([cunit],
 	[AS_HELP_STRING([--with-cunit], [Build CUnit])],
 	[
-		AC_CHECK_HEADER(CUnit/Basic.h, [], [AC_MSG_ERROR(CUnit development header not found)])
-		cunit="yes"
-		EXTRA_SUBDIRS="$EXTRA_SUBDIRS cunit"
+		if test $withval != "no"; 
+		then 
+			AC_CHECK_HEADER(CUnit/Basic.h, [], [AC_MSG_ERROR(CUnit development header not found)])
+			cunit="yes"
+			EXTRA_SUBDIRS="$EXTRA_SUBDIRS cunit"
+		fi
 	]
 )
 
@@ -941,12 +944,12 @@ dfb="no"
 AC_ARG_WITH([dfb],
 	[AS_HELP_STRING([--with-dfb], [Build DirectFB UI])],
 	[
-		# Put dependency check here
-		EXTRA_SUBDIRS="$EXTRA_SUBDIRS dfb"
-		
-		# DirectFB
-		PKG_CHECK_MODULES(DFB, [directfb >= 1.0.0])
-		dfb="yes"
+		if test $withval != "no"; 
+		then 
+			EXTRA_SUBDIRS="$EXTRA_SUBDIRS dfb"
+			PKG_CHECK_MODULES(DFB, [directfb >= 1.0.0])
+			dfb="yes"
+		fi
 	])
 
 AC_SUBST(EXTRA_SUBDIRS)
