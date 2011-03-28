@@ -453,6 +453,7 @@ ui_check_certificate(rdpInst * inst, const char * fingerprint,
 static int
 l_rdp_connect(rdpInst * inst)
 {
+    printf("l_rdp_connect\n");
 	rdpRdp * rdp;
 	int index;
 
@@ -535,6 +536,16 @@ l_rdp_send_input_mouse(rdpInst * inst, uint16 pointerFlags, uint16 xPos, uint16 
 	return 0;
 }
 
+// ADD:
+static int
+l_rdp_unicode_input(rdpInst * inst, uint16 character)
+{
+	rdpRdp * rdp;
+	rdp = RDP_FROM_INST(inst);
+	rdp_unicode_input(rdp, time(NULL), character);
+	return 0;
+}
+
 static int
 l_rdp_sync_input(rdpInst * inst, int toggle_flags)
 {
@@ -599,6 +610,7 @@ freerdp_new(rdpSet * settings)
 	inst->rdp_check_fds = l_rdp_check_fds;
 	inst->rdp_send_input_scancode = l_rdp_send_input_scancode;
 	inst->rdp_send_input_mouse = l_rdp_send_input_mouse;
+	inst->rdp_unicode_input = l_rdp_unicode_input;
 	inst->rdp_sync_input = l_rdp_sync_input;
 	inst->rdp_channel_data = l_rdp_channel_data;
 	inst->rdp_disconnect = l_rdp_disconnect;
