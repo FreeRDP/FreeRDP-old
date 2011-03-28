@@ -453,7 +453,6 @@ ui_check_certificate(rdpInst * inst, const char * fingerprint,
 static int
 l_rdp_connect(rdpInst * inst)
 {
-    printf("l_rdp_connect\n");
 	rdpRdp * rdp;
 	int index;
 
@@ -536,7 +535,6 @@ l_rdp_send_input_mouse(rdpInst * inst, uint16 pointerFlags, uint16 xPos, uint16 
 	return 0;
 }
 
-// ADD:
 static int
 l_rdp_unicode_input(rdpInst * inst, uint16 character)
 {
