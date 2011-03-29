@@ -85,6 +85,28 @@ struct _TSMF_SAMPLE
 static TSMF_PRESENTATION * presentation_list_head = NULL;
 static TSMF_PRESENTATION * presentation_list_tail = NULL;
 
+static void
+tsmf_print_guid(const uint8 * guid)
+{
+	int i;
+
+	for (i = 3; i >= 0; i--)
+		LLOG(0, ("%02X", guid[i]));
+	LLOG(0, ("-"));
+	for (i = 5; i >= 4; i--)
+		LLOG(0, ("%02X", guid[i]));
+	LLOG(0, ("-"));
+	for (i = 7; i >= 6; i--)
+		LLOG(0, ("%02X", guid[i]));
+	LLOG(0, ("-"));
+	for (i = 8; i < 16; i++)
+	{
+		LLOG(0, ("%02X", guid[i]));
+		if (i == 9)
+			LLOG(0, ("-"));
+	}
+}
+
 static TSMF_SAMPLE *
 tsmf_stream_pop_sample(TSMF_STREAM * stream)
 {
@@ -334,6 +356,18 @@ tsmf_stream_find_by_id(TSMF_PRESENTATION * presentation, uint32 stream_id)
 void
 tsmf_stream_set_format(TSMF_STREAM * stream, const char * name, const uint8 * pMediaType)
 {
+	LLOG(0, ("MajorType:  "));
+	tsmf_print_guid(pMediaType);
+	LLOG(0, ("\n"));
+
+	LLOG(0, ("SubType:    "));
+	tsmf_print_guid(pMediaType + 16);
+	LLOG(0, ("\n"));
+
+	LLOG(0, ("FormatType: "));
+	tsmf_print_guid(pMediaType + 44);
+	LLOG(0, ("\n"));
+
 	stream->decoder = tsmf_load_decoder(name, pMediaType);
 }
 
