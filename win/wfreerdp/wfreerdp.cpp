@@ -597,7 +597,7 @@ kbd_thread_func(LPVOID lpParam)
 
 	DEBUG("keyboard thread started\n");
 
-	hook_handle = SetWindowsHookEx(WH_KEYBOARD_LL, wf_ll_kbd_proc, NULL, 0);
+	hook_handle = SetWindowsHookEx(WH_KEYBOARD_LL, wf_ll_kbd_proc, g_hInstance, 0);
 	if (hook_handle)
 	{
 		while( (bRet = GetMessage( &msg, NULL, 0, 0 )) != 0)
