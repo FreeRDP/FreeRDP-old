@@ -290,6 +290,37 @@ static const DWORD rop3_code_table[] =
 	0x00FF0062  // 1
 };
 
+/* @msdn{cc241582} vs @msdn{dd145088} */
+static const uint8 g_rop2_map[] = {
+	R2_BLACK,       /* 0 */
+	R2_NOTMERGEPEN, /* DPon */
+	R2_MASKNOTPEN,  /* DPna */
+	R2_NOTCOPYPEN,  /* Pn */
+	R2_MASKPENNOT,  /* PDna */
+	R2_NOT,         /* Dn */
+	R2_XORPEN,      /* DPx */
+	R2_NOTMASKPEN,  /* DPan */
+	R2_MASKPEN,     /* DPa */
+	R2_NOTXORPEN,   /* DPxn */
+	R2_NOP,         /* D */
+	R2_MERGENOTPEN, /* DPno */
+	R2_COPYPEN,     /* P */
+	R2_MERGEPENNOT, /* PDno */
+	R2_MERGEPEN,    /* PDo */
+	R2_WHITE,       /* 1 */
+};
+
+static int
+wf_set_rop2(HDC hdc, int rop2)
+{
+	if ((rop2 < 0x01) || (rop2 > 0x10))
+	{
+		printf("wf_set_rop2: unknown rop2 %x\n", rop2);
+		return 0;
+	}
+	return SetROP2(hdc, g_rop2_map[rop2 - 1]);
+}
+
 static void
 wf_invalidate_region(wfInfo * wfi, int x1, int y1, int x2, int y2)
 {
@@ -554,12 +585,12 @@ l_ui_line(struct rdp_inst * inst, uint8 opcode, int startx, int starty, int endx
 	//printf("ui_line opcode %d startx %d starty %d endx %d endy %d\n", opcode, startx, starty, endx, endy);
 	color = wf_color_convert(wfi, pen->color, inst->settings->server_depth);
 	hpen = CreatePen(pen->style, pen->width, color);
-	org_rop2 = SetROP2(wfi->drw->hdc, opcode + 1);
+	org_rop2 = wf_set_rop2(wfi->drw->hdc, opcode);
 	org_hpen = (HPEN)SelectObject(wfi->drw->hdc, hpen);
 	MoveToEx(wfi->drw->hdc, startx, starty, NULL);
 	LineTo(wfi->drw->hdc, endx, endy);
 	SelectObject(wfi->drw->hdc, org_hpen);
-	SetROP2 (wfi->drw->hdc, org_rop2);
+	wf_set_rop2(wfi->drw->hdc, org_rop2);
 	DeleteObject(hpen);
 	if (wfi->drw == wfi->backstore)
 	{
@@ -613,7 +644,7 @@ l_ui_polyline(struct rdp_inst * inst, uint8 opcode, RD_POINT * points, int npoin
 	//printf("ui_polyline opcode %d npoints %d\n", opcode, npoints);
 	color = wf_color_convert(wfi, pen->color, inst->settings->server_depth);
 	hpen = CreatePen(pen->style, pen->width, color);
-	org_rop2 = SetROP2(wfi->drw->hdc, opcode + 1);
+	org_rop2 = wf_set_rop2(wfi->drw->hdc, opcode);
 	org_hpen = (HPEN)SelectObject(wfi->drw->hdc, hpen);
 	if (npoints > 0)
 	{
@@ -639,7 +670,7 @@ l_ui_polyline(struct rdp_inst * inst, uint8 opcode, RD_POINT * points, int npoin
 		Polyline(wfi->drw->hdc, ps, npoints);
 	}
 	SelectObject(wfi->drw->hdc, org_hpen);
-	SetROP2 (wfi->drw->hdc, org_rop2);
+	wf_set_rop2(wfi->drw->hdc, org_rop2);
 	DeleteObject(hpen);
 }
 

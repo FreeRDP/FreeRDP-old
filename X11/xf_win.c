@@ -59,7 +59,8 @@ static uint8 g_hatch_patterns[] = {
 	0x81, 0x42, 0x24, 0x18, 0x18, 0x24, 0x42, 0x81  /* 5 - bsDiagCross */
 };
 
-static uint8 g_rop2_map[] = {
+/* @msdn{cc241582} */
+static const uint8 g_rop2_map[] = {
 	GXclear,        /* 0 */
 	GXnor,          /* DPon */
 	GXandInverted,  /* DPna */
@@ -83,7 +84,7 @@ xf_set_rop2(xfInfo * xfi, int rop2)
 {
 	if ((rop2 < 0x01) || (rop2 > 0x10))
 	{
-		printf("xf_set_rop2: unknonw rop2 %x\n", rop2);
+		printf("xf_set_rop2: unknown rop2 %x\n", rop2);
 		return 0;
 	}
 	XSetFunction(xfi->display, xfi->gc, g_rop2_map[rop2 - 1]);
@@ -374,6 +375,7 @@ l_ui_polyline(struct rdp_inst * inst, uint8 opcode, RD_POINT * points, int npoin
 	//DEBUG("ui_polyline:\n");
 	xfi = GET_XFI(inst);
 	color = xf_color_convert(xfi, inst->settings, pen->color);
+	DEBUG("opcode %d npoints %d color %d %d\n", opcode, npoints, color, pen->color);
 	xf_set_rop2(xfi, opcode);
 	XSetFillStyle(xfi->display, xfi->gc, FillSolid);
 	XSetForeground(xfi->display, xfi->gc, color);
@@ -667,6 +669,8 @@ l_ui_destroy_cursor(struct rdp_inst * inst, RD_HCURSOR cursor)
 	XFreeCursor(xfi->display, (Cursor) cursor);
 }
 
+#ifdef USE_XCURSOR
+
 static int
 convert_a(int owidth, int oheight, void * odata, int iwidth, int iheight, void * idata)
 {
@@ -698,8 +702,6 @@ convert_a(int owidth, int oheight, void * odata, int iwidth, int iheight, void *
 	}
 	return 0;
 }
-
-#ifdef USE_XCURSOR
 
 static RD_HCURSOR
 l_ui_create_cursor(struct rdp_inst * inst, uint32 x, uint32 y,
