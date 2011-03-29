@@ -517,12 +517,6 @@ l_ui_create_bitmap(struct rdp_inst * inst, int width, int height, uint8 * data)
 }
 
 static void
-l_ui_destroy_bitmap(struct rdp_inst * inst, RD_HBITMAP bmp)
-{
-	wf_bitmap_free((struct wf_bitmap *) bmp);
-}
-
-static void
 l_ui_paint_bitmap(struct rdp_inst * inst, int x, int y, int cx, int cy, int width,
 	int height, uint8 * data)
 {
@@ -535,6 +529,12 @@ l_ui_paint_bitmap(struct rdp_inst * inst, int x, int y, int cx, int cy, int widt
 	BitBlt(wfi->backstore->hdc, x, y, cx, cy, bm->hdc, 0, 0, SRCCOPY);
 	wf_bitmap_free(bm);
 	wf_invalidate_region(wfi, x, y, x + cx, y + cy);
+}
+
+static void
+l_ui_destroy_bitmap(struct rdp_inst * inst, RD_HBITMAP bmp)
+{
+	wf_bitmap_free((struct wf_bitmap *) bmp);
 }
 
 static void
@@ -1051,6 +1051,28 @@ l_ui_authenticate(struct rdp_inst * inst)
 }
 
 static int
+l_ui_decode(struct rdp_inst * inst, uint8 * data, int data_size)
+{
+	printf("l_ui_decode: size %d\n", data_size);
+	return 0;
+}
+
+RD_BOOL
+l_ui_check_certificate(rdpInst * inst, const char * fingerprint,
+	const char * subject, const char * issuer, RD_BOOL verified)
+{
+	printf("certificate details:\n");
+	printf("  Subject:\n    %s\n", subject);
+	printf("  Issued by:\n    %s\n", issuer);
+	printf("  Fingerprint:\n    %s\n",  fingerprint);
+
+	if (!verified)
+		printf("The server could not be authenticated. Connection security may be compromised!\n");
+
+	return TRUE;
+}
+
+static int
 wf_assign_callbacks(rdpInst * inst)
 {
 	inst->ui_error = l_ui_error;
@@ -1097,6 +1119,8 @@ wf_assign_callbacks(rdpInst * inst)
 	inst->ui_destroy_surface = l_ui_destroy_surface;
 	inst->ui_channel_data = l_ui_channel_data;
 	inst->ui_authenticate = l_ui_authenticate;
+	inst->ui_decode = l_ui_decode;
+	inst->ui_check_certificate = l_ui_check_certificate;
 	return 0;
 }
 
@@ -1198,6 +1222,21 @@ wf_post_connect(wfInfo * wfi)
 }
 
 void
+wf_uninit(wfInfo * wfi)
+{
+	if (wfi->hwnd_full)
+		CloseWindow(wfi->hwnd_full);
+	if (wfi->hwnd_window)
+		CloseWindow(wfi->hwnd_window);
+
+	wf_bitmap_free(wfi->backstore);
+	if (wfi->colormap != 0)
+	{
+		free(wfi->colormap);
+	}
+}
+
+void
 wf_toggle_fullscreen(wfInfo * wfi)
 {
 	ShowWindow(wfi->hwnd, SW_HIDE);
@@ -1216,19 +1255,4 @@ wf_update_window(wfInfo * wfi)
 		return 1;
 	}
 	return 0;
-}
-
-void
-wf_uninit(wfInfo * wfi)
-{
-	if (wfi->hwnd_full)
-		CloseWindow(wfi->hwnd_full);
-	if (wfi->hwnd_window)
-		CloseWindow(wfi->hwnd_window);
-
-	wf_bitmap_free(wfi->backstore);
-	if (wfi->colormap != 0)
-	{
-		free(wfi->colormap);
-	}
 }
