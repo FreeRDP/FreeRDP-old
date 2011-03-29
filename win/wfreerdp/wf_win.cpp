@@ -528,7 +528,10 @@ l_ui_paint_bitmap(struct rdp_inst * inst, int x, int y, int cx, int cy, int widt
 	bm = (struct wf_bitmap *) l_ui_create_bitmap(inst, width, height, data);
 	BitBlt(wfi->backstore->hdc, x, y, cx, cy, bm->hdc, 0, 0, SRCCOPY);
 	wf_bitmap_free(bm);
-	wf_invalidate_region(wfi, x, y, x + cx, y + cy);
+	if (wfi->drw == wfi->backstore)
+	{
+		wf_invalidate_region(wfi, x, y, x + cx, y + cy);
+	}
 }
 
 static void
@@ -560,7 +563,7 @@ l_ui_line(struct rdp_inst * inst, uint8 opcode, int startx, int starty, int endx
 	DeleteObject(hpen);
 	if (wfi->drw == wfi->backstore)
 	{
-		wf_invalidate_region(wfi, min(startx, endx), min(starty, endy), max(startx, endx), max(starty, endy));
+		wf_invalidate_region(wfi, min(startx, endx), min(starty, endy), max(startx, endx) + 1, max(starty, endy) + 1);
 	}
 }
 
