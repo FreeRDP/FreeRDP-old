@@ -568,7 +568,7 @@ rdp_sync_input(rdpRdp * rdp, time_t time, uint32 toggle_keys_state)
 
 /* Send a single unicode character input event */
 void
-rdp_unicode_input(rdpRdp * rdp, time_t time, uint16 unicode_character)
+rdp_send_input_unicode(rdpRdp * rdp, time_t time, uint16 unicode_character)
 {
 	STREAM s;
 	int fp_flags;

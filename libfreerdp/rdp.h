@@ -101,7 +101,7 @@ rdp_send_frame_ack(rdpRdp * rdp, int frame_id);
 void
 rdp_sync_input(rdpRdp * rdp, time_t time, uint32 toggle_keys_state);
 void
-rdp_unicode_input(rdpRdp * rdp, time_t time, uint16 unicode_character);
+rdp_send_input_unicode(rdpRdp * rdp, time_t time, uint16 unicode_character);
 void
 rdp_send_client_window_status(rdpRdp * rdp, int status);
 void

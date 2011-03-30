@@ -527,6 +527,15 @@ l_rdp_send_input_scancode(rdpInst * inst, RD_BOOL up, RD_BOOL extended, uint8 ke
 }
 
 static int
+l_rdp_send_input_unicode(rdpInst * inst, uint8 character)
+{
+	rdpRdp * rdp;
+	rdp = RDP_FROM_INST(inst);
+	rdp_send_input_unicode(rdp, time(NULL), character);
+	return 0;
+}
+
+static int
 l_rdp_send_input_mouse(rdpInst * inst, uint16 pointerFlags, uint16 xPos, uint16 yPos)
 {
 	rdpRdp * rdp;
@@ -598,6 +607,7 @@ freerdp_new(rdpSet * settings)
 	inst->rdp_get_fds = l_rdp_get_fds;
 	inst->rdp_check_fds = l_rdp_check_fds;
 	inst->rdp_send_input_scancode = l_rdp_send_input_scancode;
+	inst->rdp_send_input_unicode = l_rdp_send_input_unicode;
 	inst->rdp_send_input_mouse = l_rdp_send_input_mouse;
 	inst->rdp_sync_input = l_rdp_sync_input;
 	inst->rdp_channel_data = l_rdp_channel_data;
