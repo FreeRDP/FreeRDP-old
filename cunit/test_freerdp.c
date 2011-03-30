@@ -13,7 +13,8 @@ int main(int argc, char* argv[])
 		return CU_get_error();
 
 	//add_credssp_suite();
-	add_ntlmssp_suite();
+	//add_ntlmssp_suite();
+	add_libfreerdpgdi_suite();
 
 	CU_basic_set_mode(CU_BRM_VERBOSE);
 	CU_basic_run_tests();
