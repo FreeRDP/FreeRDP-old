@@ -29,8 +29,13 @@
 #include "layouts_xkb.h"
 #include "keyboard.h"
 
-/* Global mapping from X keycodes to Microsoft Windows Virtual Key Codes */
-KeycodeToVkcode keycodeToVkcode;
+/* The actual mapping from X keycodes to RDP keycodes,
+   initialized from xkb keycodes or similar.
+   Used directly by freerdp_kbd_get_scancode_by_keycode.
+   The mapping is a global variable, but it only depends on which keycodes
+   the X servers keyboard driver uses and is thus very static. */
+
+RdpKeycodes x_keycode_to_rdp_keycode;
 
 static unsigned int
 detect_keyboard(unsigned int keyboardLayoutID, char *xkbfile, size_t xkbfilelength)
@@ -79,12 +84,24 @@ unsigned int
 freerdp_kbd_init(unsigned int keyboard_layout_id)
 {
 	char xkbfile[256];
+	KeycodeToVkcode keycodeToVkcode;
+	int keycode;
+
 	keyboard_layout_id = detect_keyboard(keyboard_layout_id, xkbfile, sizeof(xkbfile));
 
 	printf("Using keyboard layout 0x%X with xkb name %s and xkbfile %s\n",
 			keyboard_layout_id, get_layout_name(keyboard_layout_id), xkbfile);
 
 	load_keyboard_map(keycodeToVkcode, xkbfile);
+
+	for (keycode=0; keycode<256; keycode++)
+	{
+		int vkcode;
+		vkcode = keycodeToVkcode[keycode];
+		x_keycode_to_rdp_keycode[keycode].keycode = virtualKeyboard[vkcode].scancode;
+		x_keycode_to_rdp_keycode[keycode].extended = virtualKeyboard[vkcode].flags == KBD_EXT;
+	}
+
 	return keyboard_layout_id;
 }
 
@@ -97,13 +114,8 @@ freerdp_kbd_get_layouts(int types)
 uint8
 freerdp_kbd_get_scancode_by_keycode(uint8 keycode, RD_BOOL * extended)
 {
-	int vkcode;
-	int scancode;
-
-	vkcode = keycodeToVkcode[keycode];
-	scancode = virtualKeyboard[vkcode].scancode;
-	*extended = virtualKeyboard[vkcode].flags == KBD_EXT;
-	return scancode;
+	*extended = x_keycode_to_rdp_keycode[keycode].extended;
+	return x_keycode_to_rdp_keycode[keycode].keycode;
 }
 
 uint8

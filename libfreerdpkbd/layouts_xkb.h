@@ -22,6 +22,12 @@
 
 typedef unsigned char KeycodeToVkcode[256];
 
+typedef struct
+{
+	unsigned char extended;
+	unsigned char keycode;
+} RdpKeycodeRec, RdpKeycodes[256];
+
 unsigned int
 detect_keyboard_layout_from_xkb();
 
