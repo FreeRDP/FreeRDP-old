@@ -33,7 +33,10 @@ typedef struct _TS_AM_MEDIA_TYPE
 	{
 		uint32 Numerator;
 		uint32 Denominator;
-	} FramesPerSecond;
+	} SamplesPerSecond;
+	uint32 Channels;
+	uint32 BitsPerSample;
+	uint32 BlockAlign;
 	const uint8 * ExtraData;
 	uint32 ExtraDataSize;
 } TS_AM_MEDIA_TYPE;
