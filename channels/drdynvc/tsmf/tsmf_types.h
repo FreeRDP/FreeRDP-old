@@ -25,8 +25,17 @@ typedef struct _TS_AM_MEDIA_TYPE
 	int MajorType;
 	int SubType;
 	int FormatType;
-	uint32 cbFormat;
-	const uint8 * pbFormat;
+
+	uint32 Width;
+	uint32 Height;	
+	uint32 BitRate;
+	struct
+	{
+		uint32 Numerator;
+		uint32 Denominator;
+	} FramesPerSecond;
+	const uint8 * ExtraData;
+	uint32 ExtraDataSize;
 } TS_AM_MEDIA_TYPE;
 
 #endif
