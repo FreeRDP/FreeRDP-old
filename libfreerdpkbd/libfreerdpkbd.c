@@ -38,6 +38,8 @@
 
 RdpKeycodes x_keycode_to_rdp_keycode;
 
+#ifndef WITH_XKBFILE
+
 static unsigned int
 detect_keyboard(void *dpy, unsigned int keyboardLayoutID, char *xkbfile, size_t xkbfilelength)
 {
@@ -51,14 +53,6 @@ detect_keyboard(void *dpy, unsigned int keyboardLayoutID, char *xkbfile, size_t 
 	{
 		keyboardLayoutID = detect_keyboard_type_and_layout_sunos(xkbfile, xkbfilelength);
 		DEBUG_KBD("detect_keyboard_type_and_layout_sunos: %X %s\n", keyboardLayoutID, xkbfile);
-	}
-#endif
-
-#ifdef WITH_XKBFILE
-	if(keyboardLayoutID == 0)
-	{
-		keyboardLayoutID = detect_keyboard_layout_from_xkb(dpy);
-		DEBUG_KBD("detect_keyboard_layout_from_xkb: %X\n", keyboardLayoutID);
 	}
 #endif
 
@@ -77,14 +71,13 @@ detect_keyboard(void *dpy, unsigned int keyboardLayoutID, char *xkbfile, size_t 
 	if (xkbfile[0] == '\0')
 	{
 		strncpy(xkbfile, "base", xkbfilelength);
-#ifdef WITH_XKBFILE
-		detect_keyboard_type_from_xkb(dpy, xkbfile, xkbfilelength);
-#endif
-		DEBUG_KBD("detect_keyboard_type_from_xkb: %s\n", xkbfile);
+		DEBUG_KBD("using default keyboard layout: %s\n", xkbfile);
 	}
 
 	return keyboardLayoutID;
 }
+
+#endif
 
 /* Initialize global keyboard mapping and return the suggested server side layout.
    dpy must be a X Display* or NULL. */
@@ -97,7 +90,13 @@ freerdp_kbd_init(void *dpy, unsigned int keyboard_layout_id)
 		printf("Error initializing xkb\n");
 		return 0;
 	}
-#endif
+	if (!keyboard_layout_id)
+	{
+		keyboard_layout_id = detect_keyboard_layout_from_xkb(dpy);
+		DEBUG_KBD("detect_keyboard_layout_from_xkb: %X\n", keyboard_layout_id);
+	}
+	init_keycodes_from_xkb(dpy, x_keycode_to_rdp_keycode);
+#else
 	char xkbfile[256];
 	KeycodeToVkcode keycodeToVkcode;
 	int keycode;
@@ -113,8 +112,9 @@ freerdp_kbd_init(void *dpy, unsigned int keyboard_layout_id)
 		int vkcode;
 		vkcode = keycodeToVkcode[keycode];
 		x_keycode_to_rdp_keycode[keycode].keycode = virtualKeyboard[vkcode].scancode;
-		x_keycode_to_rdp_keycode[keycode].extended = virtualKeyboard[vkcode].flags == KBD_EXT;
+		x_keycode_to_rdp_keycode[keycode].extended = virtualKeyboard[vkcode].extended;
 	}
+#endif
 
 	return keyboard_layout_id;
 }
@@ -128,6 +128,8 @@ freerdp_kbd_get_layouts(int types)
 uint8
 freerdp_kbd_get_scancode_by_keycode(uint8 keycode, RD_BOOL * extended)
 {
+	DEBUG_KBD("%2x %4s -> %d/%d\n", keycode, x_keycode_to_rdp_keycode[keycode].keyname,
+			x_keycode_to_rdp_keycode[keycode].extended, x_keycode_to_rdp_keycode[keycode].keycode);
 	*extended = x_keycode_to_rdp_keycode[keycode].extended;
 	return x_keycode_to_rdp_keycode[keycode].keycode;
 }
@@ -135,6 +137,6 @@ freerdp_kbd_get_scancode_by_keycode(uint8 keycode, RD_BOOL * extended)
 uint8
 freerdp_kbd_get_scancode_by_virtualkey(int vkcode, RD_BOOL * extended)
 {
-	*extended = virtualKeyboard[vkcode].flags == KBD_EXT;
+	*extended = virtualKeyboard[vkcode].extended;
 	return virtualKeyboard[vkcode].scancode;
 }

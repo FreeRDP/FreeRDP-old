@@ -20,13 +20,20 @@
 #ifndef __LAYOUTS_XKB_H
 #define __LAYOUTS_XKB_H
 
+#include "config.h"
+
 typedef unsigned char KeycodeToVkcode[256];
 
 typedef struct
 {
 	unsigned char extended;
 	unsigned char keycode;
+#ifdef WITH_DEBUG_KBD
+	char *keyname;
+#endif
 } RdpKeycodeRec, RdpKeycodes[256];
+
+#ifdef WITH_XKBFILE
 
 int
 init_xkb(void *dpy);
@@ -34,13 +41,14 @@ init_xkb(void *dpy);
 unsigned int
 detect_keyboard_layout_from_xkb(void *dpy);
 
-unsigned int
-detect_keyboard_type_from_xkb(void *dpy, char* xkbfile, int length);
-
 int
 init_keycodes_from_xkb(void *dpy, RdpKeycodes x_keycode_to_rdp_keycode);
 
+#else
+
 void
 load_keyboard_map(KeycodeToVkcode keycodeToVkcode, char *xkbfile);
+
+#endif
 
 #endif
