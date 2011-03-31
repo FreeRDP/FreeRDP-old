@@ -23,6 +23,7 @@
 
 #include <freerdp/freerdp.h>
 #include <freerdp/kbd.h>
+#include "debug.h"
 #include "locales.h"
 #include "keyboard.h"
 

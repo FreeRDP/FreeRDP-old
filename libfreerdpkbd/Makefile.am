@@ -6,6 +6,7 @@ libfreerdpkbddir = $(libdir)
 libfreerdpkbd_LTLIBRARIES = libfreerdpkbd.la
 
 libfreerdpkbd_la_SOURCES = \
+	debug.h \
 	keyboard.h \
 	locales.h \
 	libfreerdpkbd.c
