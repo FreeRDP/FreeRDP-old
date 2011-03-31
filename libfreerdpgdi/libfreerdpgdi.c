@@ -28,6 +28,7 @@
 #include "gdi_window.h"
 #include "gdi_32bpp.h"
 #include "gdi_16bpp.h"
+#include "gdi_8bpp.h"
 
 /**
  * Get the current device context (a new one is created each time).\n
@@ -130,8 +131,9 @@ int CompareBitmaps(HBITMAP hBmp1, HBITMAP hBmp2)
 	{
 		p1 = hBmp1->data;
 		p2 = hBmp2->data;
+		int bpp = hBmp1->bitsPerPixel;
 
-		if (hBmp1->bitsPerPixel == 32)
+		if (bpp == 32)
 		{
 			for (y = 0; y < minh; y++)
 			{
@@ -154,7 +156,7 @@ int CompareBitmaps(HBITMAP hBmp1, HBITMAP hBmp2)
 				}
 			}
 		}
-		else if (hBmp1->bitsPerPixel == 16)
+		else if (bpp == 16)
 		{
 			for (y = 0; y < minh; y++)
 			{
@@ -165,6 +167,19 @@ int CompareBitmaps(HBITMAP hBmp1, HBITMAP hBmp2)
 					p1++;
 					p2++;
 				
+					if (*p1 != *p2)
+						return 0;
+					p1++;
+					p2++;
+				}
+			}
+		}
+		else if (bpp == 8)
+		{
+			for (y = 0; y < minh; y++)
+			{
+				for (x = 0; x < minw; x++)
+				{
 					if (*p1 != *p2)
 						return 0;
 					p1++;
@@ -1083,6 +1098,9 @@ int FillRect(HDC hdc, HRECT rect, HBRUSH hbr)
 		case 16:
 			return FillRect_16bpp(hdc, rect, hbr);
 			
+		case 8:
+			return FillRect_8bpp(hdc, rect, hbr);
+
 		default:
 			return 0;
 	}
@@ -1113,6 +1131,9 @@ int BitBlt(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdc
 		case 16:
 			return BitBlt_16bpp(hdcDest, nXDest, nYDest, nWidth, nHeight, hdcSrc, nXSrc, nYSrc, rop);
 			
+		case 8:
+			return BitBlt_8bpp(hdcDest, nXDest, nYDest, nWidth, nHeight, hdcSrc, nXSrc, nYSrc, rop);
+
 		default:
 			return 0;
 	}
@@ -1139,6 +1160,9 @@ int PatBlt(HDC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight, int rop)
 
 		case 16:
 			return PatBlt_16bpp(hdc, nXLeft, nYLeft, nWidth, nHeight, rop);
+
+		case 8:
+			return PatBlt_8bpp(hdc, nXLeft, nYLeft, nWidth, nHeight, rop);
 
 		default:
 			return 0;

@@ -269,7 +269,16 @@ dfb_post_connect(rdpInst * inst)
 	dfbi->dsc.caps = DSCAPS_SYSTEMONLY;
 	dfbi->dsc.width = gdi->width;
 	dfbi->dsc.height = gdi->height;
-	dfbi->dsc.pixelformat = (gdi->dstBpp == 32) ? DSPF_AiRGB : DSPF_RGB16;
+
+	if (gdi->dstBpp == 32 || gdi->dstBpp == 24)
+		dfbi->dsc.pixelformat = DSPF_AiRGB;
+	else if (gdi->dstBpp == 16 || gdi->dstBpp == 15)
+		dfbi->dsc.pixelformat = DSPF_RGB16;
+	else if (gdi->dstBpp == 8)
+		dfbi->dsc.pixelformat = DSPF_RGB332;
+	else
+		dfbi->dsc.pixelformat = DSPF_AiRGB;
+
 	dfbi->dsc.preallocated[0].data = gdi->primary_buffer;
 	dfbi->dsc.preallocated[0].pitch = gdi->width * gdi->bytesPerPixel;
 	dfbi->dfb->CreateSurface(dfbi->dfb, &(dfbi->dsc), &(dfbi->surface));
