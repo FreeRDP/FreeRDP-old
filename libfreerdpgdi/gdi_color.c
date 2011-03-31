@@ -68,6 +68,7 @@ gdi_image_convert(uint8* srcData, int width, int height, int srcBpp, int dstBpp,
 	uint8 blue;
 	int index;
 	uint32 pixel;
+	uint8 *src8;
 	uint16 *src16;
 	uint16 *dst16;
 	uint32 *dst32;
@@ -220,6 +221,24 @@ gdi_image_convert(uint8* srcData, int width, int height, int srcBpp, int dstBpp,
 			pixel = RGB15(red, green, blue);
 			*dst16 = pixel;
 			dst16++;
+		}
+		return dstData;
+	}
+	else if ((srcBpp == 8) && (dstBpp == 32))
+	{
+		dstData = (uint8*) malloc(width * height * 4);
+		src8 = (uint8*) srcData;
+		dst32 = (uint32*) dstData;
+		for (index = width * height; index > 0; index--)
+		{
+			pixel = *src8;
+			src8++;
+			red = palette->logicalPalette->entries[pixel].red;
+			green = palette->logicalPalette->entries[pixel].green;
+			blue = palette->logicalPalette->entries[pixel].blue;
+			pixel = BGR32(red, green, blue);
+			*dst32 = pixel;
+			dst32++;
 		}
 		return dstData;
 	}

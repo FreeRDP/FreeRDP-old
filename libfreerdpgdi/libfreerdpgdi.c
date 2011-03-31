@@ -122,20 +122,20 @@ int CompareBitmaps(HBITMAP hBmp1, HBITMAP hBmp2)
 {
 	int x, y;
 	uint8 *p1, *p2;
-	
+
+	int minw = (hBmp1->width < hBmp2->width) ? hBmp1->width : hBmp2->width;
+	int minh = (hBmp1->height < hBmp2->height) ? hBmp1->height : hBmp2->height;
+
 	if (hBmp1->bitsPerPixel == hBmp2->bitsPerPixel)
 	{
-		if (hBmp1->width != hBmp2->width || hBmp1->height != hBmp2->height)
-			return 0;
-
 		p1 = hBmp1->data;
 		p2 = hBmp2->data;
 
-		if (hBmp1->bytesPerPixel == 32)
+		if (hBmp1->bitsPerPixel == 32)
 		{
-			for (y = 0; y < hBmp1->height; y++)
+			for (y = 0; y < minh; y++)
 			{
-				for (x = 0; x < hBmp1->width; x++)
+				for (x = 0; x < minw; x++)
 				{
 					if (*p1 != *p2)
 						return 0;
@@ -154,11 +154,11 @@ int CompareBitmaps(HBITMAP hBmp1, HBITMAP hBmp2)
 				}
 			}
 		}
-		else if (hBmp1->bytesPerPixel == 16)
+		else if (hBmp1->bitsPerPixel == 16)
 		{
-			for (y = 0; y < hBmp1->height; y++)
+			for (y = 0; y < minh; y++)
 			{
-				for (x = 0; x < hBmp1->width; x++)
+				for (x = 0; x < minw; x++)
 				{
 					if (*p1 != *p2)
 						return 0;
