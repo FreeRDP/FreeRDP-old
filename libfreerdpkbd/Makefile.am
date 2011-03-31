@@ -8,6 +8,7 @@ libfreerdpkbd_LTLIBRARIES = libfreerdpkbd.la
 libfreerdpkbd_la_SOURCES = \
 	debug.h \
 	keyboard.h \
+	layout_ids.c layout_ids.h \
 	locales.h \
 	libfreerdpkbd.c
 

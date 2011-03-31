@@ -25,6 +25,7 @@
 #include <freerdp/kbd.h>
 #include "debug.h"
 #include "locales.h"
+#include "layout_ids.h"
 #include "keyboard.h"
 
 static unsigned int
@@ -55,53 +56,6 @@ find_keyboard_layout_in_xorg_rules(char* layout, char* variant)
 	}
 
 	return 0;
-}
-
-static rdpKeyboardLayout *
-get_keyboard_layouts(int types)
-{
-	rdpKeyboardLayout * layouts;
-	int num;
-	int len;
-	int i;
-
-	num = 0;
-	layouts = (rdpKeyboardLayout *) malloc((num + 1) * sizeof(rdpKeyboardLayout));
-
-	if ((types & RDP_KEYBOARD_LAYOUT_TYPE_STANDARD) != 0)
-	{
-		len = sizeof(keyboardLayouts) / sizeof(keyboardLayout);
-		layouts = (rdpKeyboardLayout *) realloc(layouts, (num + len + 1) * sizeof(rdpKeyboardLayout));
-		for (i = 0; i < len; i++, num++)
-		{
-			layouts[num].code = keyboardLayouts[i].code;
-			strcpy(layouts[num].name, keyboardLayouts[i].name);
-		}
-	}
-	if ((types & RDP_KEYBOARD_LAYOUT_TYPE_VARIANT) != 0)
-	{
-		len = sizeof(keyboardLayoutVariants) / sizeof(keyboardLayoutVariant);
-		layouts = (rdpKeyboardLayout *) realloc(layouts, (num + len + 1) * sizeof(rdpKeyboardLayout));
-		for (i = 0; i < len; i++, num++)
-		{
-			layouts[num].code = keyboardLayoutVariants[i].code;
-			strcpy(layouts[num].name, keyboardLayoutVariants[i].name);
-		}
-	}
-	if ((types & RDP_KEYBOARD_LAYOUT_TYPE_IME) != 0)
-	{
-		len = sizeof(keyboardIMEs) / sizeof(keyboardIME);
-		layouts = (rdpKeyboardLayout *) realloc(layouts, (num + len + 1) * sizeof(rdpKeyboardLayout));
-		for (i = 0; i < len; i++, num++)
-		{
-			layouts[num].code = keyboardIMEs[i].code;
-			strcpy(layouts[num].name, keyboardIMEs[i].name);
-		}
-	}
-
-	memset(&layouts[num], 0, sizeof(rdpKeyboardLayout));
-
-	return layouts;
 }
 
 static unsigned int
@@ -610,30 +564,6 @@ detect_keyboard(unsigned int keyboardLayoutID, char *xkbfile, size_t xkbfileleng
 	}
 
 	return keyboardLayoutID;
-}
-
-static char *
-get_layout_name(unsigned int keyboardLayoutID)
-{
-	int i;
-	for(i = 0; i < sizeof(keyboardLayouts) / sizeof(keyboardLayout); i++)
-		if(keyboardLayouts[i].code == keyboardLayoutID)
-		{
-			return keyboardLayouts[i].name;
-		}
-
-	for(i = 0; i < sizeof(keyboardLayoutVariants) / sizeof(keyboardLayoutVariant); i++)
-		if(keyboardLayoutVariants[i].code == keyboardLayoutID)
-		{
-			return keyboardLayoutVariants[i].name;
-		}
-
-	for(i = 0; i < sizeof(keyboardIMEs) / sizeof(keyboardIME); i++)
-		if(keyboardIMEs[i].code == keyboardLayoutID)
-		{
-			return keyboardIMEs[i].name;
-		}
-	return "unknown";
 }
 
 static void
