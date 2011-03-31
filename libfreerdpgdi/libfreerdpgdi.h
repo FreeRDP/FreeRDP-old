@@ -243,6 +243,8 @@ int CopyOverlap(int x, int y, int width, int height, int srcx, int srcy);
 int SetROP2(HDC hdc, int fnDrawMode);
 int LineTo(HDC hdc, int nXEnd, int nYEnd);
 int MoveTo(HDC hdc, int X, int Y);
+HPALETTE CreateSystemPalette();
+HPALETTE GetSystemPalette();
 int SetRect(HRECT rc, int xLeft, int yTop, int xRight, int yBottom);
 int SetRgn(HRGN hRgn, int nXLeft, int nYLeft, int nWidth, int nHeight);
 int SetRectRgn(HRGN hRgn, int nLeftRect, int nTopRect, int nRightRect, int nBottomRect);

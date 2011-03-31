@@ -568,6 +568,71 @@ int MoveTo(HDC hdc, int X, int Y)
 	return 1;
 }
 
+static HPALETTE hSystemPalette = NULL;
+
+static const PALETTEENTRY default_system_palette[20] =
+{
+	/* First 10 entries */
+	{ 0x00, 0x00, 0x00 },
+	{ 0x80, 0x00, 0x00 },
+	{ 0x00, 0x80, 0x00 },
+	{ 0x80, 0x80, 0x00 },
+	{ 0x00, 0x00, 0x80 },
+	{ 0x80, 0x00, 0x80 },
+	{ 0x00, 0x80, 0x80 },
+	{ 0xC0, 0xC0, 0xC0 },
+	{ 0xC0, 0xDC, 0xC0 },
+	{ 0xA6, 0xCA, 0xF0 },
+
+	/* Last 10 entries */
+	{ 0xFF, 0xFB, 0xF0 },
+	{ 0xA0, 0xA0, 0xA4 },
+	{ 0x80, 0x80, 0x80 },
+	{ 0xFF, 0x00, 0x00 },
+	{ 0x00, 0xFF, 0x00 },
+	{ 0xFF, 0xFF, 0x00 },
+	{ 0x00, 0x00, 0xFF },
+	{ 0xFF, 0x00, 0xFF },
+	{ 0x00, 0xFF, 0xFF },
+	{ 0xFF, 0xFF, 0xFF }
+};
+
+/**
+ * Create system palette\n
+ * @return system palette
+ */
+
+HPALETTE CreateSystemPalette()
+{
+	HPALETTE hPalette;
+	LOGPALETTE *logicalPalette;
+
+	logicalPalette = (LOGPALETTE*) malloc(sizeof(LOGPALETTE));
+	logicalPalette->count = 256;
+	logicalPalette->entries = (PALETTEENTRY*) malloc(sizeof(PALETTEENTRY) * 256);
+	memset(logicalPalette->entries, 0, sizeof(PALETTEENTRY) * 256);
+
+	memcpy(&logicalPalette->entries[0], &default_system_palette[0], 10 * sizeof(PALETTEENTRY));
+	memcpy(&logicalPalette->entries[256 - 10], &default_system_palette[10], 10 * sizeof(PALETTEENTRY));
+
+	hPalette = CreatePalette(logicalPalette);
+
+	return hPalette;
+}
+
+/**
+ * Get system palette\n
+ * @return system palette
+ */
+
+HPALETTE GetSystemPalette()
+{
+	if (hSystemPalette == NULL)
+		hSystemPalette = CreateSystemPalette();
+
+	return hSystemPalette;
+}
+
 /**
  * Set the coordinates of a given rectangle.\n
  * @msdn{dd145085}

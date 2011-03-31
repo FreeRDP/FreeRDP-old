@@ -772,36 +772,6 @@ void test_FillRect(void)
 	DeleteObject((HGDIOBJ) hBitmap);
 }
 
-void dump_bitmap(char* p, int w, int h)
-{
-	int x, y, v;
-
-	printf("\n");
-	for (y = 0; y < h; y++)
-	{
-		for (x = 0; x < w; x++)
-		{
-			v = (int) (unsigned char) *p;
-			printf("%02X ", v);
-			p++;
-			
-			v = (int) (unsigned char) *p;
-			printf("%02X ", v);
-			p++;
-			
-			v = (int) (unsigned char) *p;
-			printf("%02X ", v);
-			p++;
-			
-			v = (int) (unsigned char) *p;
-			printf("%02X, ", v);
-			p++;
-		}
-		printf("\n");
-	}
-	printf("\n");
-}
-
 void test_BitBlt_32bpp(void)
 {
 	uint8* data;
@@ -829,7 +799,6 @@ void test_BitBlt_32bpp(void)
 	HBITMAP hBmp_PATINVERT;
 	HBITMAP hBmpDstOriginal;
 	HPALETTE hPalette;
-	LOGPALETTE *logicalPalette;
 
 	int bytesPerPixel = 4;
 	int bitsPerPixel = 32;
@@ -841,21 +810,8 @@ void test_BitBlt_32bpp(void)
 	hdcDst = GetDC();
 	hdcDst->bytesPerPixel = bytesPerPixel;
 	hdcDst->bitsPerPixel = bitsPerPixel;
-	
-	logicalPalette = (LOGPALETTE*) malloc(sizeof(LOGPALETTE));
-	logicalPalette->count = 256;
-	logicalPalette->entries = (PALETTEENTRY*) malloc(sizeof(PALETTEENTRY) * 256);
-	memset(logicalPalette->entries, 0, sizeof(PALETTEENTRY) * 256);
 
-	logicalPalette->entries[0].red = 0;
-	logicalPalette->entries[0].green = 0;
-	logicalPalette->entries[0].blue = 0;
-
-	logicalPalette->entries[0xFF].red = 0xFF;
-	logicalPalette->entries[0xFF].green = 0xFF;
-	logicalPalette->entries[0xFF].blue = 0xFF;
-
-	hPalette = CreatePalette(logicalPalette);
+	hPalette = GetSystemPalette();
 
 	data = (uint8*) gdi_image_convert((uint8*) bmp_SRC, 16, 16, 8, bitsPerPixel, hPalette);
 	hBmpSrc = CreateBitmap(16, 16, bitsPerPixel, data);
@@ -1091,7 +1047,6 @@ void test_BitBlt_16bpp(void)
 	HBITMAP hBmp_PATINVERT;
 	HBITMAP hBmpDstOriginal;
 	HPALETTE hPalette;
-	LOGPALETTE *logicalPalette;
 
 	int bytesPerPixel = 2;
 	int bitsPerPixel = 16;
@@ -1103,21 +1058,8 @@ void test_BitBlt_16bpp(void)
 	hdcDst = GetDC();
 	hdcDst->bytesPerPixel = bytesPerPixel;
 	hdcDst->bitsPerPixel = bitsPerPixel;
-	
-	logicalPalette = (LOGPALETTE*) malloc(sizeof(LOGPALETTE));
-	logicalPalette->count = 256;
-	logicalPalette->entries = (PALETTEENTRY*) malloc(sizeof(PALETTEENTRY) * 256);
-	memset(logicalPalette->entries, 0, sizeof(PALETTEENTRY) * 256);
 
-	logicalPalette->entries[0].red = 0;
-	logicalPalette->entries[0].green = 0;
-	logicalPalette->entries[0].blue = 0;
-
-	logicalPalette->entries[0xFF].red = 0xFF;
-	logicalPalette->entries[0xFF].green = 0xFF;
-	logicalPalette->entries[0xFF].blue = 0xFF;
-
-	hPalette = CreatePalette(logicalPalette);
+	hPalette = GetSystemPalette();
 
 	data = (uint8*) gdi_image_convert((uint8*) bmp_SRC, 16, 16, 8, bitsPerPixel, hPalette);
 	hBmpSrc = CreateBitmap(16, 16, bitsPerPixel, data);
