@@ -584,6 +584,8 @@ run_xfreerdp(xfInfo * xfi)
 		printf("run_xfreerdp: freerdp_chanman_pre_connect failed\n");
 		return XF_EXIT_CONN_FAILED;
 	}
+	xf_kb_init(xfi->display, xfi->keyboard_layout_id);
+	xf_kb_inst_init(xfi);
 	printf("keyboard_layout: 0x%X\n", inst->settings->keyboard_layout);
 	/* call connect */
 	if (inst->rdp_connect(inst) != 0)
@@ -776,7 +778,6 @@ main(int argc, char ** argv)
 			break;
 		}
 
-		xf_kb_init(xfi->keyboard_layout_id);
 		DEBUG("starting thread %d to %s:%d\n", g_thread_count,
 			xfi->settings->server, xfi->settings->tcp_port_rdp);
 		if (pthread_create(&thread, 0, thread_func, xfi) == 0)

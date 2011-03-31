@@ -17,7 +17,7 @@ libfreerdpkbd_la_SOURCES = \
 libfreerdpkbd_la_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include \
 	-DKEYMAP_PATH=\"$(KEYMAP_PATH)\"
 
-libfreerdpkbd_la_LDFLAGS =
+libfreerdpkbd_la_LDFLAGS = @XKBFILE_LIBS@
 
 # extra
 EXTRA_DIST =

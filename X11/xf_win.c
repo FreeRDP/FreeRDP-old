@@ -1080,7 +1080,6 @@ xf_pre_connect(xfInfo * xfi)
 	xfi->screen = ScreenOfDisplay(xfi->display, xfi->screen_num);
 	xfi->depth = DefaultDepthOfScreen(xfi->screen);
 	xfi->xserver_be = (ImageByteOrder(xfi->display) == MSBFirst);
-	xf_kb_inst_init(xfi);
 
 	if (xfi->percentscreen > 0)
 	{

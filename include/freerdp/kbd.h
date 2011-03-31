@@ -35,7 +35,7 @@ typedef struct rdp_keyboard_layout
 rdpKeyboardLayout *
 freerdp_kbd_get_layouts(int types);
 unsigned int
-freerdp_kbd_init(unsigned int keyboard_layout_id);
+freerdp_kbd_init(void *dpy, unsigned int keyboard_layout_id);
 uint8
 freerdp_kbd_get_scancode_by_keycode(uint8 keycode, RD_BOOL * extended);
 uint8

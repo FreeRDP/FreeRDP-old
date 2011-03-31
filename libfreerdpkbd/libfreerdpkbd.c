@@ -23,6 +23,7 @@
 
 #include <freerdp/freerdp.h>
 #include <freerdp/kbd.h>
+#include "config.h"
 #include "debug.h"
 #include "locales.h"
 #include "layout_ids.h"
@@ -38,7 +39,7 @@
 RdpKeycodes x_keycode_to_rdp_keycode;
 
 static unsigned int
-detect_keyboard(unsigned int keyboardLayoutID, char *xkbfile, size_t xkbfilelength)
+detect_keyboard(void *dpy, unsigned int keyboardLayoutID, char *xkbfile, size_t xkbfilelength)
 {
 	xkbfile[0] = '\0';
 
@@ -53,11 +54,13 @@ detect_keyboard(unsigned int keyboardLayoutID, char *xkbfile, size_t xkbfileleng
 	}
 #endif
 
+#ifdef WITH_XKBFILE
 	if(keyboardLayoutID == 0)
 	{
-		keyboardLayoutID = detect_keyboard_layout_from_xkb();
+		keyboardLayoutID = detect_keyboard_layout_from_xkb(dpy);
 		DEBUG_KBD("detect_keyboard_layout_from_xkb: %X\n", keyboardLayoutID);
 	}
+#endif
 
 	if(keyboardLayoutID == 0)
 	{
@@ -73,22 +76,33 @@ detect_keyboard(unsigned int keyboardLayoutID, char *xkbfile, size_t xkbfileleng
 
 	if (xkbfile[0] == '\0')
 	{
-		detect_keyboard_type_from_xkb(xkbfile, xkbfilelength);
+		strncpy(xkbfile, "base", xkbfilelength);
+#ifdef WITH_XKBFILE
+		detect_keyboard_type_from_xkb(dpy, xkbfile, xkbfilelength);
+#endif
 		DEBUG_KBD("detect_keyboard_type_from_xkb: %s\n", xkbfile);
 	}
 
 	return keyboardLayoutID;
 }
 
+/* Initialize global keyboard mapping and return the suggested server side layout.
+   dpy must be a X Display* or NULL. */
 unsigned int
-freerdp_kbd_init(unsigned int keyboard_layout_id)
+freerdp_kbd_init(void *dpy, unsigned int keyboard_layout_id)
 {
+#ifdef WITH_XKBFILE
+	if (!init_xkb(dpy))
+	{
+		printf("Error initializing xkb\n");
+		return 0;
+	}
+#endif
 	char xkbfile[256];
 	KeycodeToVkcode keycodeToVkcode;
 	int keycode;
 
-	keyboard_layout_id = detect_keyboard(keyboard_layout_id, xkbfile, sizeof(xkbfile));
-
+	keyboard_layout_id = detect_keyboard(dpy, keyboard_layout_id, xkbfile, sizeof(xkbfile));
 	printf("Using keyboard layout 0x%X with xkb name %s and xkbfile %s\n",
 			keyboard_layout_id, get_layout_name(keyboard_layout_id), xkbfile);
 

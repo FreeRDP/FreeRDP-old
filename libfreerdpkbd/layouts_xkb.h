@@ -28,11 +28,17 @@ typedef struct
 	unsigned char keycode;
 } RdpKeycodeRec, RdpKeycodes[256];
 
-unsigned int
-detect_keyboard_layout_from_xkb();
+int
+init_xkb(void *dpy);
 
 unsigned int
-detect_keyboard_type_from_xkb(char* xkbfile, int length);
+detect_keyboard_layout_from_xkb(void *dpy);
+
+unsigned int
+detect_keyboard_type_from_xkb(void *dpy, char* xkbfile, int length);
+
+int
+init_keycodes_from_xkb(void *dpy, RdpKeycodes x_keycode_to_rdp_keycode);
 
 void
 load_keyboard_map(KeycodeToVkcode keycodeToVkcode, char *xkbfile);

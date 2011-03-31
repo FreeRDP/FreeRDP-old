@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "config.h"
 #include "debug.h"
 #include "layouts_xkb.h"
 #include "x_layout_id_table.h"
@@ -47,126 +48,87 @@ static const KeycodeToVkcode defaultKeycodeToVkcode =
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
-unsigned int
-detect_keyboard_layout_from_xkb()
+#ifdef WITH_XKBFILE
+
+#include <X11/XKBlib.h>
+#include <X11/extensions/XKBfile.h>
+#include <X11/extensions/XKBrules.h>
+
+int
+init_xkb(void *dpy)
 {
-	FILE* xprop;
+	return XkbQueryExtension(dpy, NULL, NULL, NULL, NULL, NULL);
+}
 
-	char* pch;
-	char* beg;
-	char* end;
-
-	char* layout = NULL;
-	char* variant = NULL;
-
-	char buffer[1024];
-	unsigned int keyboard_layout = 0;
-
-	xprop = popen("xprop -root _XKB_RULES_NAMES", "r");
-	/* _XKB_RULES_NAMES(STRING) = "evdev", "pc105", "gb", "", "lv3:ralt_switch" */
-	/* _XKB_RULES_NAMES(STRING) = "evdev", "evdev", "us,dk,gb", ",,", "grp:shift_caps_toggle" */
-
-	while(fgets(buffer, sizeof(buffer), xprop) != NULL)
-	{
-		if((pch = strstr(buffer, "_XKB_RULES_NAMES(STRING) = ")) != NULL)
-		{
-			/* Skip "rules" */
-			pch = strchr(&buffer[27], ',');
-			if (pch == NULL)
-				continue;
-
-			/* Skip "type" */
-			pch = strchr(pch + 1, ',');
-			if (pch == NULL)
-				continue;
-
-			/* Parse "layout" */
-			beg = strchr(pch + 1, '"');
-			if (beg == NULL)
-				continue;
-			end = strchr(beg + 1, '"');
-			if (end == NULL)
-				continue;
-			*end = '\0';
-			layout = beg + 1;
-
-			/* Truncate after first of multiple layouts */
-			pch = strchr(layout, ',');
-			if (pch != NULL)
-				*pch = '\0';
-
-			/* Parse "variant" */
-			beg = strchr(end + 1, '"');
-			if (beg == NULL)
-				continue;
-			end = strchr(beg + 1, '"');
-			if (end == NULL)
-				continue;
-			*end = '\0';
-			variant = beg + 1;
-
-			/* Truncate after first of multiple variants */
-			pch = strchr(variant, ',');
-			if (pch != NULL)
-				*pch = '\0';
-		}
+/* return substring starting after nth comma, ending at following comma */
+static char *
+comma_substring(char *s, int n)
+{
+	char *p;
+	while (n--) {
+		if (!(p = strchr(s, ',')))
+			break;
+		s = p + 1;
 	}
-	pclose(xprop);
+	if ((p = strchr(s, ',')) != NULL)
+		*p = 0;
+	return s;
+}
 
-	keyboard_layout = find_keyboard_layout_in_xorg_rules(layout, variant);
+unsigned int
+detect_keyboard_layout_from_xkb(void *dpy)
+{
+	char *layout, *variant;
+	unsigned int keyboard_layout = 0, group = 0;
+	XkbRF_VarDefsRec rules_names;
+	XKeyboardState coreKbdState;
+	XkbStateRec state;
+
+	DEBUG_KBD(" display: %p\n", dpy);
+	if (dpy && XkbRF_GetNamesProp(dpy, NULL, &rules_names))
+	{
+		DEBUG_KBD(" layouts: %s\n", rules_names.layout);
+		DEBUG_KBD(" variants: %s\n", rules_names.variant);
+
+		XGetKeyboardControl(dpy, &coreKbdState);
+		if (XkbGetState(dpy, XkbUseCoreKbd, &state) == Success)
+			group = state.group;
+		DEBUG_KBD("group: %d\n",state.group);
+
+		layout = comma_substring(rules_names.layout, group);
+		variant = comma_substring(rules_names.variant, group);
+
+		DEBUG_KBD(" layout: %s\n", layout);
+		DEBUG_KBD(" variant: %s\n", variant);
+
+		keyboard_layout = find_keyboard_layout_in_xorg_rules(layout, variant);
+
+		free(rules_names.model);
+		free(rules_names.layout);
+		free(rules_names.variant);
+		free(rules_names.options);
+	}
+
 	return keyboard_layout;
 }
 
 unsigned int
-detect_keyboard_type_from_xkb(char* xkbfile, int length)
+detect_keyboard_type_from_xkb(void *dpy, char* xkbfile, int length)
 {
-	char* pch;
-	char* beg;
-	char* end;
-	char buffer[1024];
-	unsigned int rv = 0;
+	XkbDescPtr xkb;
 
-	FILE* setxkbmap;
-
-	// This tells us about the current XKB configuration, if XKB is available
-	setxkbmap = popen("setxkbmap -print", "r");
-
-	while(fgets(buffer, sizeof(buffer), setxkbmap) != NULL)
+	if (dpy && (xkb = XkbGetMap(dpy, 0, XkbUseCoreKbd)))
 	{
-		// The line with xkb_keycodes is what interests us
-		pch = strstr(buffer, "xkb_keycodes");
-
-		if(pch != NULL)
-		{
-			pch = strstr(pch, "include");
-			if(pch != NULL)
-			{
-				// Check " " delimiter presence
-				if((beg = strchr(pch, '"')) == NULL)
-					break;
-				else
-					beg++;
-
-				if((pch = strchr(beg + 1, '"')) == NULL)
-					break;
-
-				end = strcspn(beg + 1, "\"") + beg + 1;
-				*end = '\0';
-
-				strncpy(xkbfile, beg, length);
-
-				rv = 1;
-				break;
-			}
-		}
+		if (XkbGetNames(dpy, XkbKeyTypesMask, xkb) == Success)
+			strncpy(xkbfile, XkbAtomText(dpy, xkb->names->keycodes, XkbMessage), length);
+		XkbFreeKeyboard(xkb, 0, 1);
 	}
 
-	if (xkbfile[0] == '\0')
-		strcpy(xkbfile, "base");
-
-	pclose(setxkbmap);
-	return rv;
+	DEBUG_KBD("XkbGetNames keycodes: %s\n", xkbfile);
+	return 1;
 }
+
+#endif
 
 static int
 load_xkb_keyboard(KeycodeToVkcode map, char* kbd)
