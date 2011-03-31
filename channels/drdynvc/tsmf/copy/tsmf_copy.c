@@ -93,57 +93,25 @@ tsmf_copy_init_context(ITSMFDecoder * decoder)
 }
 
 static int
-tsmf_copy_init_video_stream_default(ITSMFDecoder * decoder, const TS_AM_MEDIA_TYPE * media_type)
-{
-	TSMFCopyDecoder * copy_decoder = (TSMFCopyDecoder *) decoder;
-	uint64 AvgTimePerFrame;
-
-	/* VIDEOINFOHEADER.rcSource, RECT(LONG left, LONG top, LONG right, LONG bottom) */
-	copy_decoder->codec->width = GET_UINT32(media_type->pbFormat, 8);
-	copy_decoder->codec->height = GET_UINT32(media_type->pbFormat, 12);
-	/* VIDEOINFOHEADER.dwBitRate */
-	copy_decoder->codec->bit_rate = GET_UINT32(media_type->pbFormat, 32);
-	/* VIDEOINFOHEADER.AvgTimePerFrame */
-	AvgTimePerFrame = GET_UINT64(media_type->pbFormat, 40);
-	if (AvgTimePerFrame)
-		copy_decoder->codec->time_base.den = (int)(10000000LL / AvgTimePerFrame);
-	else
-		copy_decoder->codec->time_base.den = 30;
-	copy_decoder->codec->time_base.num = 1;
-
-	copy_decoder->codec->gop_size = 12;
-	copy_decoder->codec->pix_fmt = PIX_FMT_YUV420P;
-
-	return 0;
-}
-
-static int
-tsmf_copy_init_video_stream_MFVideoFormat(ITSMFDecoder * decoder, const TS_AM_MEDIA_TYPE * media_type)
-{
-	/* http://msdn.microsoft.com/en-us/library/aa473808.aspx */
-	tsmf_copy_init_video_stream_default(decoder, media_type);
-
-	return 0;
-}
-
-static int
 tsmf_copy_init_video_stream(ITSMFDecoder * decoder, const TS_AM_MEDIA_TYPE * media_type)
 {
 	TSMFCopyDecoder * copy_decoder = (TSMFCopyDecoder *) decoder;
 
-	switch (media_type->FormatType)
-	{
-		case TSMF_FORMAT_TYPE_MFVIDEOFORMAT:
-			tsmf_copy_init_video_stream_MFVideoFormat(decoder, media_type);
-			break;
-		default:
-			tsmf_copy_init_video_stream_default(decoder, media_type);
-			break;
-	}
+	copy_decoder->codec->width = media_type->Width;
+	copy_decoder->codec->height = media_type->Height;
+	copy_decoder->codec->bit_rate = media_type->BitRate;
+	copy_decoder->codec->time_base.den = media_type->FramesPerSecond.Numerator;
+	copy_decoder->codec->time_base.num = media_type->FramesPerSecond.Denominator;
 
-	LLOGLN(0, ("tsmf_copy_init_video_stream: width %d height %d bit_rate %d frame_rate %d",
-		copy_decoder->codec->width, copy_decoder->codec->height, copy_decoder->codec->bit_rate,
-		copy_decoder->codec->time_base.den));
+	copy_decoder->codec->gop_size = 12;
+	copy_decoder->codec->pix_fmt = PIX_FMT_YUV420P;
+
+	if (media_type->ExtraData)
+	{
+		copy_decoder->codec->extradata_size = media_type->ExtraDataSize;
+		copy_decoder->codec->extradata = malloc(copy_decoder->codec->extradata_size);
+		memcpy(copy_decoder->codec->extradata, media_type->ExtraData, media_type->ExtraDataSize);
+	}
 
 	if (copy_decoder->format->flags & AVFMT_GLOBALHEADER)
 		copy_decoder->codec->flags |= CODEC_FLAG_GLOBAL_HEADER;
@@ -282,6 +250,11 @@ tsmf_copy_free(ITSMFDecoder * decoder)
 	if (copy_decoder->prepared)
 	{
 		av_write_trailer(copy_decoder->format_context);
+	}
+	if (copy_decoder->codec)
+	{
+		if (copy_decoder->codec->extradata)
+			free(copy_decoder->codec->extradata);
 	}
 	if (copy_decoder->stream)
 	{

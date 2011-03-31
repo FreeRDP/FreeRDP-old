@@ -415,6 +415,7 @@ void
 tsmf_stream_set_format(TSMF_STREAM * stream, const char * name, const uint8 * pMediaType)
 {
 	TS_AM_MEDIA_TYPE mediatype;
+	uint32 cbFormat;
 	int i;
 
 	memset(&mediatype, 0, sizeof(TS_AM_MEDIA_TYPE));
@@ -449,17 +450,59 @@ tsmf_stream_set_format(TSMF_STREAM * stream, const char * name, const uint8 * pM
 	mediatype.FormatType = tsmf_format_type_map[i].type;
 	LLOGLN(0, (" (%s)", tsmf_format_type_map[i].name));
 
-	mediatype.cbFormat = GET_UINT32(pMediaType, 60);
-	mediatype.pbFormat = pMediaType + 64;
-	LLOGLN(0, ("tsmf_stream_set_format: cbFormat %d", mediatype.cbFormat));
+	cbFormat = GET_UINT32(pMediaType, 60);
+	LLOGLN(0, ("tsmf_stream_set_format: cbFormat %d", cbFormat));
 
-	for (i = 0; i < mediatype.cbFormat; i++)
+	for (i = 0; i < cbFormat; i++)
 	{
-		LLOG(0, ("%02X ", mediatype.pbFormat[i]));
+		LLOG(0, ("%02X ", pMediaType[64 + i]));
 		if (i % 16 == 15)
 			LLOG(0, ("\n"));
 	}
 	LLOG(0, ("\n"));
+
+	switch (mediatype.FormatType)
+	{
+		case TSMF_FORMAT_TYPE_MFVIDEOFORMAT:
+			/* http://msdn.microsoft.com/en-us/library/aa473808.aspx */
+
+			/* MFVIDEOFORMAT.videoInfo.dwWidth */
+			mediatype.Width = GET_UINT32(pMediaType, 64 + 8);
+			/* MFVIDEOFORMAT.videoInfo.dwHeight */
+			mediatype.Height = GET_UINT32(pMediaType, 64 + 12);
+			/* MFVIDEOFORMAT.compressedInfo.AvgBitrate */
+			mediatype.BitRate = GET_UINT32(pMediaType, 64 + 136);
+			/* MFVIDEOFORMAT.videoInfo.FramesPerSecond */
+			mediatype.FramesPerSecond.Numerator = GET_UINT32(pMediaType, 64 + 48);
+			mediatype.FramesPerSecond.Denominator = GET_UINT32(pMediaType, 64 + 52);
+
+			if (cbFormat > 176)
+			{
+				mediatype.ExtraDataSize = cbFormat - 176;
+				mediatype.ExtraData = pMediaType + 64 + 176;
+			}
+			break;
+
+		default:
+			/* VIDEOINFOHEADER.rcSource, RECT(LONG left, LONG top, LONG right, LONG bottom) */
+			mediatype.Width = GET_UINT32(pMediaType, 64 + 8);
+			mediatype.Height = GET_UINT32(pMediaType, 64 + 12);
+			/* VIDEOINFOHEADER.dwBitRate */
+			mediatype.BitRate = GET_UINT32(pMediaType, 64 + 32);
+			/* VIDEOINFOHEADER.AvgTimePerFrame */
+			mediatype.FramesPerSecond.Numerator = (int)(10000000LL / GET_UINT64(pMediaType, 64 + 40));
+			mediatype.FramesPerSecond.Denominator = 1;
+			break;
+	}
+
+	if (mediatype.FramesPerSecond.Numerator == 0)
+		mediatype.FramesPerSecond.Numerator = 1;
+	if (mediatype.FramesPerSecond.Denominator == 0)
+		mediatype.FramesPerSecond.Denominator = 1;
+
+	LLOGLN(0, ("tsmf_stream_set_format: width %d height %d bit_rate %d frame_rate %f",
+		mediatype.Width, mediatype.Height, mediatype.BitRate,
+		(double)mediatype.FramesPerSecond.Numerator / (double)mediatype.FramesPerSecond.Denominator));
 
 	stream->decoder = tsmf_load_decoder(name, &mediatype);
 }
