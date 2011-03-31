@@ -21,13 +21,14 @@
 #define __TSMF_DECODER_H
 
 #include "drdynvc_types.h"
+#include "tsmf_types.h"
 
 typedef struct _ITSMFDecoder ITSMFDecoder;
 
 struct _ITSMFDecoder
 {
 	/* Set the decoder format. Return 0 if supported. */
-	int (*SetFormat) (ITSMFDecoder * decoder, const uint8 * pMediaType);
+	int (*SetFormat) (ITSMFDecoder * decoder, const TS_AM_MEDIA_TYPE * media_type);
 	/* Decode a sample. */
 	int (*Decode) (ITSMFDecoder * decoder, const uint8 * data, uint32 data_size, uint8 ** decoded_data, uint32 * decoded_size);
 	/* Free the decoder */
@@ -38,7 +39,7 @@ struct _ITSMFDecoder
 typedef ITSMFDecoder * (*TSMF_DECODER_ENTRY) (void);
 
 ITSMFDecoder *
-tsmf_load_decoder(const char * name, const uint8 * pMediaType);
+tsmf_load_decoder(const char * name, const TS_AM_MEDIA_TYPE * media_type);
 
 #endif
 

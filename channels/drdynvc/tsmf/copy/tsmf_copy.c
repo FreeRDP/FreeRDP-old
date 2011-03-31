@@ -21,57 +21,20 @@
 #include <stdlib.h>
 #include <string.h>
 #include <libavformat/avformat.h>
+#include "tsmf_constants.h"
 #include "tsmf_decoder.h"
 
-typedef struct _FFmpegSubTypeMap
-{
-	uint8 guid[16];
-	const char * name;
-	enum CodecID codec_id;
-} FFmpegSubTypeMap;
+/* Compatibility with older FFmpeg */
+#if LIBAVFORMAT_VERSION_MAJOR < 52
+#define av_guess_format guess_format
+#endif
 
-typedef struct _FFmpegMajorTypeMap
-{
-	uint8 guid[16];
-	const char * name;
-	int media_type;
-	const FFmpegSubTypeMap * sub_type_map;
-} FFmpegMajorTypeMap;
+#if LIBAVUTIL_VERSION_MAJOR < 50
+#define AVMEDIA_TYPE_VIDEO 0
+#define AVMEDIA_TYPE_AUDIO 1
+#endif
 
-static const FFmpegSubTypeMap ffmpeg_video_sub_type_map[] =
-{
-	/* 31435657-0000-0010-8000-00AA00389B71 */
-	{
-		{ 0x57, 0x56, 0x43, 0x31, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71 },
-		"MEDIASUBTYPE_WVC1",
-		CODEC_ID_VC1
-	},
-
-	{
-		{ 0 },
-		NULL,
-		0
-	}
-
-};
-
-static const FFmpegMajorTypeMap ffmpeg_majortype_map[] =
-{
-	/* 73646976-0000-0010-8000-00AA00389B71 */
-	{
-		{ 0x76, 0x69, 0x64, 0x73, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71 },
-		"MEDIATYPE_Video",
-		0, /* AVMEDIA_TYPE_VIDEO */
-		ffmpeg_video_sub_type_map
-	},
-
-	{
-		{ 0 },
-		NULL,
-		0,
-		NULL
-	}
-};
+static int tsmf_copy_id_seq = 0;
 
 typedef struct _TSMFCopyDecoder
 {
@@ -79,47 +42,216 @@ typedef struct _TSMFCopyDecoder
 
 	int media_type;
 	enum CodecID codec_id;
+	const char * format_name;
+	AVOutputFormat * format;
+	AVFormatContext * format_context;
+	AVStream * stream;
+	AVCodecContext * codec;
+	int prepared;
 } TSMFCopyDecoder;
 
 static int
-tsmf_copy_set_format(ITSMFDecoder * decoder, const uint8 * pMediaType)
+tsmf_copy_init_context(ITSMFDecoder * decoder)
 {
 	TSMFCopyDecoder * copy_decoder = (TSMFCopyDecoder *) decoder;
-	const FFmpegMajorTypeMap * majortype = NULL;
-	const FFmpegSubTypeMap * subtype = NULL;
-	int i;
 
-	for (i = 0; ffmpeg_majortype_map[i].name; i++)
+	copy_decoder->format = av_guess_format("matroska", NULL, NULL);
+	if (copy_decoder->format)
 	{
-		if (memcmp(ffmpeg_majortype_map[i].guid, pMediaType, 16) == 0)
+		copy_decoder->format_name = "mkv";
+	}
+	else
+	{
+		LLOGLN(0, ("tsmf_copy_init_context: Matroska is not supported. Try mp4."));
+		copy_decoder->format = av_guess_format("mp4", NULL, NULL);
+		if (copy_decoder->format)
 		{
-			majortype = &ffmpeg_majortype_map[i];
-			break;
+			copy_decoder->format_name = "mp4";
+		}
+		else
+		{
+			LLOGLN(0, ("tsmf_copy_init_context: av_guess_format failed."));
+			return 1;
 		}
 	}
-	if (majortype == NULL)
+
+	copy_decoder->format_context = avformat_alloc_context();
+	if (!copy_decoder->format_context)
 	{
-		LLOGLN(0, ("tsmf_copy_set_format: unsupported major type"));
+		LLOGLN(0, ("tsmf_copy_init_context: avformat_alloc_context failed."));
+		return 1;
+	}
+	copy_decoder->format_context->oformat = copy_decoder->format;
+
+	copy_decoder->format->video_codec = copy_decoder->codec_id;
+
+	snprintf(copy_decoder->format_context->filename,
+		sizeof(copy_decoder->format_context->filename),
+		"/tmp/FreeRDP_%d.%s", tsmf_copy_id_seq++, copy_decoder->format_name);
+
+	return 0;
+}
+
+static int
+tsmf_copy_init_video_stream_default(ITSMFDecoder * decoder, const TS_AM_MEDIA_TYPE * media_type)
+{
+	TSMFCopyDecoder * copy_decoder = (TSMFCopyDecoder *) decoder;
+	uint64 AvgTimePerFrame;
+
+	/* VIDEOINFOHEADER.rcSource, RECT(LONG left, LONG top, LONG right, LONG bottom) */
+	copy_decoder->codec->width = GET_UINT32(media_type->pbFormat, 8);
+	copy_decoder->codec->height = GET_UINT32(media_type->pbFormat, 12);
+	/* VIDEOINFOHEADER.dwBitRate */
+	copy_decoder->codec->bit_rate = GET_UINT32(media_type->pbFormat, 32);
+	/* VIDEOINFOHEADER.AvgTimePerFrame */
+	AvgTimePerFrame = GET_UINT64(media_type->pbFormat, 40);
+	if (AvgTimePerFrame)
+		copy_decoder->codec->time_base.den = (int)(10000000LL / AvgTimePerFrame);
+	else
+		copy_decoder->codec->time_base.den = 30;
+	copy_decoder->codec->time_base.num = 1;
+
+	copy_decoder->codec->gop_size = 12;
+	copy_decoder->codec->pix_fmt = PIX_FMT_YUV420P;
+
+	return 0;
+}
+
+static int
+tsmf_copy_init_video_stream_MFVideoFormat(ITSMFDecoder * decoder, const TS_AM_MEDIA_TYPE * media_type)
+{
+	/* http://msdn.microsoft.com/en-us/library/aa473808.aspx */
+	tsmf_copy_init_video_stream_default(decoder, media_type);
+
+	return 0;
+}
+
+static int
+tsmf_copy_init_video_stream(ITSMFDecoder * decoder, const TS_AM_MEDIA_TYPE * media_type)
+{
+	TSMFCopyDecoder * copy_decoder = (TSMFCopyDecoder *) decoder;
+
+	switch (media_type->FormatType)
+	{
+		case TSMF_FORMAT_TYPE_MFVIDEOFORMAT:
+			tsmf_copy_init_video_stream_MFVideoFormat(decoder, media_type);
+			break;
+		default:
+			tsmf_copy_init_video_stream_default(decoder, media_type);
+			break;
+	}
+
+	LLOGLN(0, ("tsmf_copy_init_video_stream: width %d height %d bit_rate %d frame_rate %d",
+		copy_decoder->codec->width, copy_decoder->codec->height, copy_decoder->codec->bit_rate,
+		copy_decoder->codec->time_base.den));
+
+	if (copy_decoder->format->flags & AVFMT_GLOBALHEADER)
+		copy_decoder->codec->flags |= CODEC_FLAG_GLOBAL_HEADER;
+
+	return 0;
+}
+
+static int
+tsmf_copy_init_audio_stream(ITSMFDecoder * decoder, const TS_AM_MEDIA_TYPE * media_type)
+{
+	return 0;
+}
+
+static int
+tsmf_copy_init_stream(ITSMFDecoder * decoder, const TS_AM_MEDIA_TYPE * media_type)
+{
+	TSMFCopyDecoder * copy_decoder = (TSMFCopyDecoder *) decoder;
+
+	copy_decoder->stream = av_new_stream(copy_decoder->format_context, 0);
+	if (!copy_decoder->stream)
+	{
+		LLOGLN(0, ("tsmf_copy_init_stream: av_new_stream failed."));
 		return 1;
 	}
 
-	for (i = 0; majortype->sub_type_map[i].name; i++)
+	copy_decoder->codec = copy_decoder->stream->codec;
+	copy_decoder->codec->codec_id = copy_decoder->codec_id;
+	copy_decoder->codec->codec_type = copy_decoder->media_type;
+
+	if (copy_decoder->media_type == AVMEDIA_TYPE_VIDEO)
 	{
-		if (memcmp(majortype->sub_type_map[i].guid, pMediaType + 16, 16) == 0)
-		{
-			subtype = &majortype->sub_type_map[i];
-			break;
-		}
+		if (tsmf_copy_init_video_stream(decoder, media_type))
+			return 1;
 	}
-	if (subtype == NULL)
+	else if (copy_decoder->media_type == AVMEDIA_TYPE_AUDIO)
 	{
-		LLOGLN(0, ("tsmf_copy_set_format: unsupported major type"));
+		if (tsmf_copy_init_audio_stream(decoder, media_type))
+			return 1;
+	}
+
+	return 0;
+}
+
+static int
+tsmf_copy_prepare(ITSMFDecoder * decoder)
+{
+	TSMFCopyDecoder * copy_decoder = (TSMFCopyDecoder *) decoder;
+	URLContext * h;
+
+	if (av_set_parameters(copy_decoder->format_context, NULL) < 0)
+	{
+		LLOGLN(0, ("tsmf_copy_prepare: av_set_parameters failed."));
 		return 1;
 	}
 
-	LLOGLN(0, ("tsmf_copy_set_format: %s / %s", majortype->name, subtype->name));
-	copy_decoder->media_type = majortype->media_type;
-	copy_decoder->codec_id = subtype->codec_id;
+	if (url_open(&h, copy_decoder->format_context->filename, URL_WRONLY) < 0)
+	{
+		LLOGLN(0, ("tsmf_copy_prepare: url_open failed to open file %s.",
+			copy_decoder->format_context->filename));
+		return 1;
+	}
+	if (url_fdopen(&copy_decoder->format_context->pb, h) < 0)
+	{
+		url_close(h);
+		LLOGLN(0, ("tsmf_copy_prepare: url_fdopen failed to open file %s.",
+			copy_decoder->format_context->filename));
+		return 1;
+	}
+
+	av_write_header(copy_decoder->format_context);
+
+	copy_decoder->prepared = 1;
+
+	return 0;
+}
+
+static int
+tsmf_copy_set_format(ITSMFDecoder * decoder, const TS_AM_MEDIA_TYPE * media_type)
+{
+	TSMFCopyDecoder * copy_decoder = (TSMFCopyDecoder *) decoder;
+
+	switch (media_type->MajorType)
+	{
+		case TSMF_MAJOR_TYPE_VIDEO:
+			copy_decoder->media_type = AVMEDIA_TYPE_VIDEO;
+			break;
+		case TSMF_MAJOR_TYPE_AUDIO:
+			copy_decoder->media_type = AVMEDIA_TYPE_AUDIO;
+			break;
+		default:
+			return 1;
+	}
+	switch (media_type->SubType)
+	{
+		case TSMF_SUB_TYPE_WVC1:
+			copy_decoder->codec_id = CODEC_ID_VC1;
+			break;
+		default:
+			copy_decoder->codec_id = CODEC_ID_NONE;
+			break;
+	}
+
+	if (tsmf_copy_init_context(decoder))
+		return 1;
+	if (tsmf_copy_init_stream(decoder, media_type))
+		return 1;
+	if (tsmf_copy_prepare(decoder))
+		return 1;
 
 	return 0;
 }
@@ -127,15 +259,44 @@ tsmf_copy_set_format(ITSMFDecoder * decoder, const uint8 * pMediaType)
 static int
 tsmf_copy_decode(ITSMFDecoder * decoder, const uint8 * data, uint32 data_size, uint8 ** decoded_data, uint32 * decoded_size)
 {
-	*decoded_data = malloc(data_size);
-	memcpy(*decoded_data, data, data_size);
-	*decoded_size = data_size;
-	return 0;
+	TSMFCopyDecoder * copy_decoder = (TSMFCopyDecoder *) decoder;
+	AVPacket pkt;
+
+	*decoded_data = NULL;
+	*decoded_size = 0;
+
+	av_init_packet(&pkt);
+	pkt.flags |= PKT_FLAG_KEY;
+	pkt.stream_index = 0;
+	pkt.data = (uint8_t *) data;
+	pkt.size = data_size;
+
+	return av_interleaved_write_frame(copy_decoder->format_context, &pkt);
 }
 
 static void
 tsmf_copy_free(ITSMFDecoder * decoder)
 {
+	TSMFCopyDecoder * copy_decoder = (TSMFCopyDecoder *) decoder;
+
+	if (copy_decoder->prepared)
+	{
+		av_write_trailer(copy_decoder->format_context);
+	}
+	if (copy_decoder->stream)
+	{
+		av_free(copy_decoder->stream);
+	}
+	if (copy_decoder->format_context)
+	{
+		if (copy_decoder->format_context->pb)
+		{
+			url_close(copy_decoder->format_context->pb->opaque);
+			av_free(copy_decoder->format_context->pb->buffer);
+			av_free(copy_decoder->format_context->pb);
+		}	
+		av_free(copy_decoder->format_context);
+	}
 	free(decoder);
 }
 
@@ -144,8 +305,11 @@ TSMFDecoderEntry(void)
 {
 	TSMFCopyDecoder * decoder;
 
+	av_register_all();
+
 	decoder = malloc(sizeof(TSMFCopyDecoder));
 	memset(decoder, 0, sizeof(TSMFCopyDecoder));
+
 	decoder->iface.SetFormat = tsmf_copy_set_format;
 	decoder->iface.Decode = tsmf_copy_decode;
 	decoder->iface.Free = tsmf_copy_free;

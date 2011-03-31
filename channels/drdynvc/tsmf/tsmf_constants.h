@@ -75,5 +75,18 @@
 #define TSMM_CLIENT_EVENT_START_COMPLETED   0x00C9
 #define TSMM_CLIENT_EVENT_MONITORCHANGED    0x012C
 
+/* MajorType */
+#define TSMF_MAJOR_TYPE_UNKNOWN             0
+#define TSMF_MAJOR_TYPE_VIDEO               1
+#define TSMF_MAJOR_TYPE_AUDIO               2
+
+/* SubType */
+#define TSMF_SUB_TYPE_UNKNOWN               0
+#define TSMF_SUB_TYPE_WVC1                  1
+
+/* FormatType */
+#define TSMF_FORMAT_TYPE_DEFAULT            0
+#define TSMF_FORMAT_TYPE_MFVIDEOFORMAT      1
+
 #endif
 

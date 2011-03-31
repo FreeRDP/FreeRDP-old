@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "drdynvc_types.h"
+#include "tsmf_types.h"
 #include "tsmf_constants.h"
 #include "tsmf_decoder.h"
 
@@ -40,7 +41,7 @@
 #endif
 
 static ITSMFDecoder *
-tsmf_load_decoder_by_name(const char * name, const uint8 * pMediaType)
+tsmf_load_decoder_by_name(const char * name, const TS_AM_MEDIA_TYPE * media_type)
 {
 	ITSMFDecoder * decoder;
 	char path[256];
@@ -76,7 +77,7 @@ tsmf_load_decoder_by_name(const char * name, const uint8 * pMediaType)
 		LLOGLN(0, ("tsmf_load_decoder_by_name: failed to call export function in %s", path));
 		return NULL;
 	}
-	if (decoder->SetFormat(decoder, pMediaType) != 0)
+	if (decoder->SetFormat(decoder, media_type) != 0)
 	{
 		decoder->Free(decoder);
 		decoder = NULL;
@@ -85,17 +86,17 @@ tsmf_load_decoder_by_name(const char * name, const uint8 * pMediaType)
 }
 
 ITSMFDecoder *
-tsmf_load_decoder(const char * name, const uint8 * pMediaType)
+tsmf_load_decoder(const char * name, const TS_AM_MEDIA_TYPE * media_type)
 {
 	ITSMFDecoder * decoder;
 
 	if (name)
 	{
-		decoder = tsmf_load_decoder_by_name(name, pMediaType);
+		decoder = tsmf_load_decoder_by_name(name, media_type);
 	}
 	else
 	{
-		decoder = tsmf_load_decoder_by_name("ffmpeg", pMediaType);
+		decoder = tsmf_load_decoder_by_name("ffmpeg", media_type);
 	}
 
 	return decoder;
