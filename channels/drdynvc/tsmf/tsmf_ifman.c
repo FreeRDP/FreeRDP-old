@@ -264,7 +264,7 @@ tsmf_ifman_on_sample(TSMF_IFMAN * ifman)
 	ThrottleDuration = GET_UINT64(ifman->input_buffer, 40);
 	cbData = GET_UINT32(ifman->input_buffer, 56);
 	
-	LLOGLN(0, ("tsmf_ifman_on_sample: MessageId %d StreamId %d SampleStartTime %d SampleEndTime %d ThrottleDuration %d cbData %d",
+	LLOGLN(10, ("tsmf_ifman_on_sample: MessageId %d StreamId %d SampleStartTime %d SampleEndTime %d ThrottleDuration %d cbData %d",
 		ifman->message_id, StreamId, (int)SampleStartTime, (int)SampleEndTime, (int)ThrottleDuration, cbData));
 
 	presentation = tsmf_presentation_find_by_id(ifman->presentation_id);
