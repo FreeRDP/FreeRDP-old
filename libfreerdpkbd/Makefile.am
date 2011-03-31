@@ -10,6 +10,7 @@ libfreerdpkbd_la_SOURCES = \
 	keyboard.h \
 	layout_ids.c layout_ids.h \
 	locales.c locales.h \
+	x_layout_id_table.c x_layout_id_table.h \
 	libfreerdpkbd.c
 
 libfreerdpkbd_la_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include \

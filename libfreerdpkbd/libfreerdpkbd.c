@@ -26,37 +26,8 @@
 #include "debug.h"
 #include "locales.h"
 #include "layout_ids.h"
+#include "x_layout_id_table.h"
 #include "keyboard.h"
-
-static unsigned int
-find_keyboard_layout_in_xorg_rules(char* layout, char* variant)
-{
-	int i;
-	int j;
-
-	if((layout == NULL) || (variant == NULL))
-		return 0;
-
-	DEBUG_KBD("xkbLayout: %s\txkbVariant: %s\n", layout, variant);
-
-	for (i = 0; i < sizeof(xkbLayouts) / sizeof(xkbLayout); i++)
-	{
-		if (strcmp(xkbLayouts[i].layout, layout) == 0)
-		{
-			for (j = 0; xkbLayouts[i].variants[j].variant != NULL && strlen(xkbLayouts[i].variants[j].variant) > 0; j++)
-			{
-				if (strcmp(xkbLayouts[i].variants[j].variant, variant) == 0)
-				{
-					return xkbLayouts[i].variants[j].keyboardLayoutID;
-				}
-			}
-
-			return xkbLayouts[i].keyboardLayoutID;
-		}
-	}
-
-	return 0;
-}
 
 static unsigned int
 detect_keyboard_layout_from_xkb()
@@ -178,71 +149,6 @@ detect_keyboard_type_from_xkb(char* xkbfile, int length)
 	pclose(setxkbmap);
 	return rv;
 }
-
-#if defined(sun)
-
-static unsigned int
-detect_keyboard_type_and_layout_sunos(char* xkbfile, int length)
-{
-	FILE* kbd;
-
-	int i;
-	int type = 0;
-	int layout = 0;
-
-	char* pch;
-	char* beg;
-	char* end;
-
-	char buffer[1024];
-
-	/*
-		Sample output for "kbd -t -l" :
-
-		USB keyboard
-		type=6
-		layout=3 (0x03)
-		delay(ms)=500
-		rate(ms)=40
-	*/
-
-	kbd = popen("kbd -t -l", "r");
-
-	while(fgets(buffer, sizeof(buffer), kbd) != NULL)
-	{
-		if((pch = strstr(buffer, "type=")) != NULL)
-		{
-			beg = pch + sizeof("type=") - 1;
-			end = strchr(beg, '\n');
-			end[0] = '\0';
-			type = atoi(beg);
-		}
-		else if((pch = strstr(buffer, "layout=")) != NULL)
-		{
-			beg = pch + sizeof("layout=") - 1;
-			end = strchr(beg, ' ');
-			end[0] = '\0';
-			layout = atoi(beg);
-		}
-	}
-	pclose(kbd);
-
-	for(i = 0; i < sizeof(SunOSKeyboards) / sizeof(SunOSKeyboard); i++)
-	{
-		if(SunOSKeyboards[i].type == type)
-		{
-			if(SunOSKeyboards[i].layout == layout)
-			{
-				strncpy(xkbfile, SunOSKeyboards[i].xkbType, length);
-				return SunOSKeyboards[i].keyboardLayoutID;
-			}
-		}
-	}
-
-	return 0;
-}
-
-#endif
 
 static int
 load_xkb_keyboard(char* kbd)
