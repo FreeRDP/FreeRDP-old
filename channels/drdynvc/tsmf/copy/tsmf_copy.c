@@ -100,21 +100,11 @@ tsmf_copy_init_video_stream(ITSMFDecoder * decoder, const TS_AM_MEDIA_TYPE * med
 	copy_decoder->codec->width = media_type->Width;
 	copy_decoder->codec->height = media_type->Height;
 	copy_decoder->codec->bit_rate = media_type->BitRate;
-	copy_decoder->codec->time_base.den = media_type->FramesPerSecond.Numerator;
-	copy_decoder->codec->time_base.num = media_type->FramesPerSecond.Denominator;
+	copy_decoder->codec->time_base.den = media_type->SamplesPerSecond.Numerator;
+	copy_decoder->codec->time_base.num = media_type->SamplesPerSecond.Denominator;
 
 	copy_decoder->codec->gop_size = 12;
 	copy_decoder->codec->pix_fmt = PIX_FMT_YUV420P;
-
-	if (media_type->ExtraData)
-	{
-		copy_decoder->codec->extradata_size = media_type->ExtraDataSize;
-		copy_decoder->codec->extradata = malloc(copy_decoder->codec->extradata_size);
-		memcpy(copy_decoder->codec->extradata, media_type->ExtraData, media_type->ExtraDataSize);
-	}
-
-	if (copy_decoder->format->flags & AVFMT_GLOBALHEADER)
-		copy_decoder->codec->flags |= CODEC_FLAG_GLOBAL_HEADER;
 
 	return 0;
 }
@@ -122,6 +112,26 @@ tsmf_copy_init_video_stream(ITSMFDecoder * decoder, const TS_AM_MEDIA_TYPE * med
 static int
 tsmf_copy_init_audio_stream(ITSMFDecoder * decoder, const TS_AM_MEDIA_TYPE * media_type)
 {
+	TSMFCopyDecoder * copy_decoder = (TSMFCopyDecoder *) decoder;
+
+	copy_decoder->codec->sample_rate = media_type->SamplesPerSecond.Numerator;
+	copy_decoder->codec->bit_rate = media_type->BitRate;
+	copy_decoder->codec->channels = media_type->Channels;
+	copy_decoder->codec->block_align = media_type->BlockAlign;
+
+	switch (media_type->BitsPerSample)
+	{
+		case 8:
+			copy_decoder->codec->sample_fmt = SAMPLE_FMT_U8;
+			break;
+		case 16:
+			copy_decoder->codec->sample_fmt = SAMPLE_FMT_S16;
+			break;
+		case 32:
+			copy_decoder->codec->sample_fmt = SAMPLE_FMT_S32;
+			break;
+	}
+
 	return 0;
 }
 
@@ -151,6 +161,16 @@ tsmf_copy_init_stream(ITSMFDecoder * decoder, const TS_AM_MEDIA_TYPE * media_typ
 		if (tsmf_copy_init_audio_stream(decoder, media_type))
 			return 1;
 	}
+
+	if (media_type->ExtraData)
+	{
+		copy_decoder->codec->extradata_size = media_type->ExtraDataSize;
+		copy_decoder->codec->extradata = malloc(copy_decoder->codec->extradata_size);
+		memcpy(copy_decoder->codec->extradata, media_type->ExtraData, media_type->ExtraDataSize);
+	}
+
+	if (copy_decoder->format->flags & AVFMT_GLOBALHEADER)
+		copy_decoder->codec->flags |= CODEC_FLAG_GLOBAL_HEADER;
 
 	return 0;
 }
@@ -209,9 +229,14 @@ tsmf_copy_set_format(ITSMFDecoder * decoder, const TS_AM_MEDIA_TYPE * media_type
 		case TSMF_SUB_TYPE_WVC1:
 			copy_decoder->codec_id = CODEC_ID_VC1;
 			break;
-		default:
-			copy_decoder->codec_id = CODEC_ID_NONE;
+		case TSMF_SUB_TYPE_WMA2:
+			copy_decoder->codec_id = CODEC_ID_WMAV2;
 			break;
+		case TSMF_SUB_TYPE_WMA9:
+			copy_decoder->codec_id = CODEC_ID_WMAPRO;
+			break;
+		default:
+			return 1;
 	}
 
 	if (tsmf_copy_init_context(decoder))

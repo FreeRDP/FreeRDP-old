@@ -47,6 +47,13 @@ static const TSMFMediaTypeMap tsmf_major_type_map[] =
 		TSMF_MAJOR_TYPE_VIDEO
 	},
 
+	/* 73647561-0000-0010-8000-00AA00389B71 */
+	{
+		{ 0x61, 0x75, 0x64, 0x73, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71 },
+		"MEDIATYPE_Audio",
+		TSMF_MAJOR_TYPE_AUDIO
+	},
+
 	{
 		{ 0 },
 		"Unknown",
@@ -61,6 +68,20 @@ static const TSMFMediaTypeMap tsmf_sub_type_map[] =
 		{ 0x57, 0x56, 0x43, 0x31, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71 },
 		"MEDIASUBTYPE_WVC1",
 		TSMF_SUB_TYPE_WVC1
+	},
+
+	/* 00000161-0000-0010-8000-00AA00389B71 */
+	{
+		{ 0x61, 0x01, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71 },
+		"WMMEDIASUBTYPE_WMAudioV2", /* V7, V8 has the same GUID */
+		TSMF_SUB_TYPE_WMA2
+	},
+
+	/* 00000162-0000-0010-8000-00AA00389B71 */
+	{
+		{ 0x62, 0x01, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71 },
+		"WMMEDIASUBTYPE_WMAudioV9",
+		TSMF_SUB_TYPE_WMA9
 	},
 
 	{
@@ -78,6 +99,13 @@ static const TSMFMediaTypeMap tsmf_format_type_map[] =
 		{ 0x2D, 0xAB, 0xD4, 0xAE, 0x26, 0x73, 0xCB, 0x43, 0x94, 0x64, 0xC8, 0x79, 0xCA, 0xB9, 0xC4, 0x3D },
 		"FORMAT_MFVideoFormat",
 		TSMF_FORMAT_TYPE_MFVIDEOFORMAT
+	},
+
+	/* 05589F81-C356-11CE-BF01-00AA0055595A */
+	{
+		{ 0x81, 0x9F, 0x58, 0x05, 0x56, 0xC3, 0xCE, 0x11, 0xBF, 0x01, 0x00, 0xAA, 0x00, 0x55, 0x59, 0x5A },
+		"FORMAT_WaveFormatEx",
+		TSMF_FORMAT_TYPE_WAVEFORMATEX
 	},
 
 	{
@@ -473,8 +501,8 @@ tsmf_stream_set_format(TSMF_STREAM * stream, const char * name, const uint8 * pM
 			/* MFVIDEOFORMAT.compressedInfo.AvgBitrate */
 			mediatype.BitRate = GET_UINT32(pMediaType, 64 + 136);
 			/* MFVIDEOFORMAT.videoInfo.FramesPerSecond */
-			mediatype.FramesPerSecond.Numerator = GET_UINT32(pMediaType, 64 + 48);
-			mediatype.FramesPerSecond.Denominator = GET_UINT32(pMediaType, 64 + 52);
+			mediatype.SamplesPerSecond.Numerator = GET_UINT32(pMediaType, 64 + 48);
+			mediatype.SamplesPerSecond.Denominator = GET_UINT32(pMediaType, 64 + 52);
 
 			if (cbFormat > 176)
 			{
@@ -483,26 +511,54 @@ tsmf_stream_set_format(TSMF_STREAM * stream, const char * name, const uint8 * pM
 			}
 			break;
 
+		case TSMF_FORMAT_TYPE_WAVEFORMATEX:
+			/* http://msdn.microsoft.com/en-us/library/dd757720.aspx */
+
+			mediatype.Channels = GET_UINT16(pMediaType, 64 + 2);
+			mediatype.SamplesPerSecond.Numerator = GET_UINT32(pMediaType, 64 + 4);
+			mediatype.SamplesPerSecond.Denominator = 1;
+			mediatype.BitRate = GET_UINT32(pMediaType, 64 + 8) * 8;
+			mediatype.BlockAlign = GET_UINT16(pMediaType, 64 + 12);
+			mediatype.BitsPerSample = GET_UINT16(pMediaType, 64 + 14);
+			mediatype.ExtraDataSize = GET_UINT16(pMediaType, 64 + 16);
+			if (mediatype.ExtraDataSize > 0)
+				mediatype.ExtraData = pMediaType + 64 + 18;
+			
+			break;
+
 		default:
-			/* VIDEOINFOHEADER.rcSource, RECT(LONG left, LONG top, LONG right, LONG bottom) */
-			mediatype.Width = GET_UINT32(pMediaType, 64 + 8);
-			mediatype.Height = GET_UINT32(pMediaType, 64 + 12);
-			/* VIDEOINFOHEADER.dwBitRate */
-			mediatype.BitRate = GET_UINT32(pMediaType, 64 + 32);
-			/* VIDEOINFOHEADER.AvgTimePerFrame */
-			mediatype.FramesPerSecond.Numerator = (int)(10000000LL / GET_UINT64(pMediaType, 64 + 40));
-			mediatype.FramesPerSecond.Denominator = 1;
+			if (mediatype.MajorType == TSMF_MAJOR_TYPE_VIDEO)
+			{
+				/* VIDEOINFOHEADER.rcSource, RECT(LONG left, LONG top, LONG right, LONG bottom) */
+				mediatype.Width = GET_UINT32(pMediaType, 64 + 8);
+				mediatype.Height = GET_UINT32(pMediaType, 64 + 12);
+				/* VIDEOINFOHEADER.dwBitRate */
+				mediatype.BitRate = GET_UINT32(pMediaType, 64 + 32);
+				/* VIDEOINFOHEADER.AvgTimePerFrame */
+				mediatype.SamplesPerSecond.Numerator = (int)(10000000LL / GET_UINT64(pMediaType, 64 + 40));
+				mediatype.SamplesPerSecond.Denominator = 1;
+			}
 			break;
 	}
 
-	if (mediatype.FramesPerSecond.Numerator == 0)
-		mediatype.FramesPerSecond.Numerator = 1;
-	if (mediatype.FramesPerSecond.Denominator == 0)
-		mediatype.FramesPerSecond.Denominator = 1;
+	if (mediatype.SamplesPerSecond.Numerator == 0)
+		mediatype.SamplesPerSecond.Numerator = 1;
+	if (mediatype.SamplesPerSecond.Denominator == 0)
+		mediatype.SamplesPerSecond.Denominator = 1;
 
-	LLOGLN(0, ("tsmf_stream_set_format: width %d height %d bit_rate %d frame_rate %f",
-		mediatype.Width, mediatype.Height, mediatype.BitRate,
-		(double)mediatype.FramesPerSecond.Numerator / (double)mediatype.FramesPerSecond.Denominator));
+	if (mediatype.MajorType == TSMF_MAJOR_TYPE_VIDEO)
+	{
+		LLOGLN(0, ("tsmf_stream_set_format: video width %d height %d bit_rate %d frame_rate %f codec_data %d",
+			mediatype.Width, mediatype.Height, mediatype.BitRate,
+			(double)mediatype.SamplesPerSecond.Numerator / (double)mediatype.SamplesPerSecond.Denominator,
+			mediatype.ExtraDataSize));
+	}
+	else if (mediatype.MajorType == TSMF_MAJOR_TYPE_AUDIO)
+	{
+		LLOGLN(0, ("tsmf_stream_set_format: audio channel %d sample_rate %d bits_per_sample %d codec_data %d",
+			mediatype.Channels, mediatype.SamplesPerSecond.Numerator, mediatype.BitsPerSample,
+			mediatype.ExtraDataSize));
+	}
 
 	stream->decoder = tsmf_load_decoder(name, &mediatype);
 }

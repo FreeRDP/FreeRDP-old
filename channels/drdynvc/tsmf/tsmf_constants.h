@@ -95,10 +95,13 @@
 /* SubType */
 #define TSMF_SUB_TYPE_UNKNOWN               0
 #define TSMF_SUB_TYPE_WVC1                  1
+#define TSMF_SUB_TYPE_WMA2                  2
+#define TSMF_SUB_TYPE_WMA9                  3
 
 /* FormatType */
 #define TSMF_FORMAT_TYPE_DEFAULT            0
 #define TSMF_FORMAT_TYPE_MFVIDEOFORMAT      1
+#define TSMF_FORMAT_TYPE_WAVEFORMATEX       2
 
 #endif
 
