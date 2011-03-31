@@ -29,6 +29,9 @@
 #include "x_layout_id_table.h"
 #include "keyboard.h"
 
+/* Global mapping from X keycodes to Microsoft Windows Virtual Key Codes */
+KeycodeToVkcode keycodeToVkcode;
+
 static unsigned int
 detect_keyboard_layout_from_xkb()
 {
@@ -391,6 +394,7 @@ load_keyboard_map(char *xkbfile)
 	char* xkbfileEnd;
 	int keymapLoaded = 0;
 
+	memset(keycodeToVkcode, 0, sizeof(keycodeToVkcode));
 	kbd = xkbfile;
 	xkbfileEnd = xkbfile + strlen(xkbfile);
 
