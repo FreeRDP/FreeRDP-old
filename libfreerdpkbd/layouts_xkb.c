@@ -44,12 +44,14 @@ static char *
 comma_substring(char *s, int n)
 {
 	char *p;
-	while (n--) {
+	if (!s)
+		return "";
+	while (n-- > 0) {
 		if (!(p = strchr(s, ',')))
 			break;
 		s = p + 1;
 	}
-	if ((p = strchr(s, ',')) != NULL)
+	if ((p = strchr(s, ',')))
 		*p = 0;
 	return s;
 }
@@ -63,22 +65,22 @@ detect_keyboard_layout_from_xkb(void *dpy)
 	XKeyboardState coreKbdState;
 	XkbStateRec state;
 
-	DEBUG_KBD(" display: %p\n", dpy);
+	DEBUG_KBD("display: %p\n", dpy);
 	if (dpy && XkbRF_GetNamesProp(dpy, NULL, &rules_names))
 	{
-		DEBUG_KBD(" layouts: %s\n", rules_names.layout);
-		DEBUG_KBD(" variants: %s\n", rules_names.variant);
+		DEBUG_KBD("layouts: %s\n", rules_names.layout);
+		DEBUG_KBD("variants: %s\n", rules_names.variant);
 
 		XGetKeyboardControl(dpy, &coreKbdState);
 		if (XkbGetState(dpy, XkbUseCoreKbd, &state) == Success)
 			group = state.group;
-		DEBUG_KBD("group: %d\n",state.group);
+		DEBUG_KBD("group: %d\n", state.group);
 
 		layout = comma_substring(rules_names.layout, group);
 		variant = comma_substring(rules_names.variant, group);
 
-		DEBUG_KBD(" layout: %s\n", layout);
-		DEBUG_KBD(" variant: %s\n", variant);
+		DEBUG_KBD("layout: %s\n", layout);
+		DEBUG_KBD("variant: %s\n", variant);
 
 		keyboard_layout = find_keyboard_layout_in_xorg_rules(layout, variant);
 
