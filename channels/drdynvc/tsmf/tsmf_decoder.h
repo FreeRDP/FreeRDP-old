@@ -30,7 +30,8 @@ struct _ITSMFDecoder
 	/* Set the decoder format. Return 0 if supported. */
 	int (*SetFormat) (ITSMFDecoder * decoder, const TS_AM_MEDIA_TYPE * media_type);
 	/* Decode a sample. */
-	int (*Decode) (ITSMFDecoder * decoder, const uint8 * data, uint32 data_size, uint8 ** decoded_data, uint32 * decoded_size);
+	int (*Decode) (ITSMFDecoder * decoder, const uint8 * data, uint32 data_size, uint32 extensions,
+		uint8 ** decoded_data, uint32 * decoded_size);
 	/* Free the decoder */
 	void (*Free) (ITSMFDecoder * decoder);
 };

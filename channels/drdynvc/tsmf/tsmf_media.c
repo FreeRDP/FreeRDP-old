@@ -562,7 +562,8 @@ tsmf_stream_free(TSMF_STREAM * stream)
 
 void
 tsmf_stream_push_sample(TSMF_STREAM * stream, IWTSVirtualChannelCallback * pChannelCallback,
-	uint32 sample_id, uint64 start_time, uint64 end_time, uint64 duration, uint32 data_size, uint8 * data)
+	uint32 sample_id, uint64 start_time, uint64 end_time, uint64 duration, uint32 extensions,
+	uint32 data_size, uint8 * data)
 {
 	TSMF_PRESENTATION * presentation = stream->presentation;
 	TSMF_SAMPLE * sample;
@@ -578,7 +579,7 @@ tsmf_stream_push_sample(TSMF_STREAM * stream, IWTSVirtualChannelCallback * pChan
 	sample->channel_callback = pChannelCallback;
 
 	if (stream->decoder)
-		stream->decoder->Decode(stream->decoder, data, data_size, &sample->data, &sample->data_size);
+		stream->decoder->Decode(stream->decoder, data, data_size, extensions, &sample->data, &sample->data_size);
 
 	pthread_mutex_lock(presentation->mutex);
 

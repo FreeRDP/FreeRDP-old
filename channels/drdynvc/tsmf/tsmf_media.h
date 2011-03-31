@@ -57,7 +57,8 @@ tsmf_stream_free(TSMF_STREAM * stream);
 
 void
 tsmf_stream_push_sample(TSMF_STREAM * stream, IWTSVirtualChannelCallback * pChannelCallback,
-	uint32 sample_id, uint64 start_time, uint64 end_time, uint64 duration, uint32 data_size, uint8 * data);
+	uint32 sample_id, uint64 start_time, uint64 end_time, uint64 duration, uint32 extensions,
+	uint32 data_size, uint8 * data);
 
 #endif
 
