@@ -361,7 +361,128 @@ static void
 l_ui_polygon(struct rdp_inst * inst, uint8 opcode, uint8 fillmode, RD_POINT * point,
 	int npoints, RD_BRUSH * brush, int bgcolor, int fgcolor)
 {
-	printf("ui_polygon:\n");
+	uint8 style, i, ipattern[8];
+	Pixmap fill;
+	xfInfo * xfi;
+
+	xfi = GET_XFI(inst);
+	xf_set_rop2(xfi, opcode);
+	style = brush ? brush->style : 0;
+
+	fgcolor = xf_color_convert(xfi, inst->settings, fgcolor);
+	bgcolor = xf_color_convert(xfi, inst->settings, bgcolor);
+
+	switch (fillmode)
+	{
+		case 1: /* alternate */
+			XSetFillRule(xfi->display, xfi->gc, EvenOddRule);
+			break;
+		case 2: /* winding */
+			XSetFillRule(xfi->display, xfi->gc, WindingRule);
+			break;
+		default:
+			printf("fill mode %d\n", fillmode);
+	}
+
+	switch (style)
+	{
+		case 0:	/* Solid */
+			XSetFillStyle(xfi->display, xfi->gc, FillSolid);
+			XSetForeground(xfi->display, xfi->gc, fgcolor);
+			XFillPolygon(xfi->display, xfi->drw, xfi->gc,
+				(XPoint *) point, npoints, Complex, CoordModePrevious);
+			if (xfi->drw == xfi->backstore)
+			{
+				XFillPolygon(xfi->display, xfi->wnd, xfi->gc,
+					(XPoint *) point, npoints, Complex, CoordModePrevious);
+			}
+			break;
+
+		case 2:	/* Hatch */
+			fill = (Pixmap) l_ui_create_glyph(inst, 8, 8,
+							g_hatch_patterns + brush->pattern[0] * 8);
+			XSetForeground(xfi->display, xfi->gc, fgcolor);
+			XSetBackground(xfi->display, xfi->gc, bgcolor);
+			XSetFillStyle(xfi->display, xfi->gc, FillOpaqueStippled);
+			XSetStipple(xfi->display, xfi->gc, fill);
+			XSetTSOrigin(xfi->display, xfi->gc, brush->xorigin, brush->yorigin);
+			XFillPolygon(xfi->display, xfi->drw, xfi->gc,
+				(XPoint *) point, npoints, Complex, CoordModePrevious);
+			if (xfi->drw == xfi->backstore)
+			{
+				XFillPolygon(xfi->display, xfi->wnd, xfi->gc,
+					(XPoint *) point, npoints, Complex, CoordModePrevious);
+			}
+			XSetFillStyle(xfi->display, xfi->gc, FillSolid);
+			XSetTSOrigin(xfi->display, xfi->gc, 0, 0);
+			l_ui_destroy_glyph(inst, (RD_HGLYPH) fill);
+			break;
+
+		case 3:	/* Pattern */
+			if (brush->bd == 0)	/* rdp4 brush */
+			{
+				for (i = 0; i != 8; i++)
+					ipattern[7 - i] = brush->pattern[i];
+				fill = (Pixmap) l_ui_create_glyph(inst, 8, 8, ipattern);
+				XSetForeground(xfi->display, xfi->gc, fgcolor);
+				XSetBackground(xfi->display, xfi->gc, bgcolor);
+				XSetFillStyle(xfi->display, xfi->gc, FillOpaqueStippled);
+				XSetStipple(xfi->display, xfi->gc, fill);
+				XSetTSOrigin(xfi->display, xfi->gc, brush->xorigin, brush->yorigin);
+				XFillPolygon(xfi->display, xfi->drw, xfi->gc,
+					(XPoint *) point, npoints, Complex, CoordModePrevious);
+				if (xfi->drw == xfi->backstore)
+				{
+					XFillPolygon(xfi->display, xfi->wnd, xfi->gc,
+						(XPoint *) point, npoints, Complex, CoordModePrevious);
+				}
+				XSetFillStyle(xfi->display, xfi->gc, FillSolid);
+				XSetTSOrigin(xfi->display, xfi->gc, 0, 0);
+				l_ui_destroy_glyph(inst, (RD_HGLYPH) fill);
+			}
+			else if (brush->bd->color_code > 1)	/* > 1 bpp */
+			{
+				fill = (Pixmap) l_ui_create_bitmap(inst, 8, 8, brush->bd->data);
+				XSetFillStyle(xfi->display, xfi->gc, FillTiled);
+				XSetTile(xfi->display, xfi->gc, fill);
+				XSetTSOrigin(xfi->display, xfi->gc, brush->xorigin, brush->yorigin);
+				XFillPolygon(xfi->display, xfi->drw, xfi->gc,
+					(XPoint *) point, npoints, Complex, CoordModePrevious);
+				if (xfi->drw == xfi->backstore)
+				{
+					XFillPolygon(xfi->display, xfi->wnd, xfi->gc,
+						(XPoint *) point, npoints, Complex, CoordModePrevious);
+				}
+				XSetFillStyle(xfi->display, xfi->gc, FillSolid);
+				XSetTSOrigin(xfi->display, xfi->gc, 0, 0);
+				l_ui_destroy_bitmap(inst, (RD_HBITMAP) fill);
+			}
+			else
+			{
+				fill = (Pixmap) l_ui_create_glyph(inst, 8, 8, brush->bd->data);
+				XSetForeground(xfi->display, xfi->gc, fgcolor);
+				XSetBackground(xfi->display, xfi->gc, bgcolor);
+				XSetFillStyle(xfi->display, xfi->gc, FillOpaqueStippled);
+				XSetStipple(xfi->display, xfi->gc, fill);
+				XSetTSOrigin(xfi->display, xfi->gc, brush->xorigin, brush->yorigin);
+				XFillPolygon(xfi->display, xfi->drw, xfi->gc,
+					(XPoint *) point, npoints, Complex, CoordModePrevious);
+				if (xfi->drw == xfi->backstore)
+				{
+					XFillPolygon(xfi->display, xfi->wnd, xfi->gc,
+						(XPoint *) point, npoints, Complex, CoordModePrevious);
+				}
+				XSetFillStyle(xfi->display, xfi->gc, FillSolid);
+				XSetTSOrigin(xfi->display, xfi->gc, 0, 0);
+				l_ui_destroy_glyph(inst, (RD_HGLYPH) fill);
+			}
+			break;
+
+		default:
+			printf("brush %d\n", brush->style);
+	}
+
+	XSetFunction(xfi->display, xfi->gc, GXcopy);
 }
 
 static void

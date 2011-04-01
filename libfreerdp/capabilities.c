@@ -212,8 +212,8 @@ void rdp_out_order_capset(rdpRdp * rdp, STREAM s)
 	orderSupport[NEG_POLYGON_CB_INDEX] = (rdp->settings->polygon_ellipse_orders ? 1 : 0);
 	orderSupport[NEG_POLYLINE_INDEX] = 1;
 	orderSupport[NEG_FAST_GLYPH_INDEX] = 1;
-	orderSupport[NEG_ELLIPSE_SC_INDEX] = (rdp->settings->polygon_ellipse_orders ? 1 : 0);
-	orderSupport[NEG_ELLIPSE_CB_INDEX] = (rdp->settings->polygon_ellipse_orders ? 1 : 0);
+/*	orderSupport[NEG_ELLIPSE_SC_INDEX] = (rdp->settings->polygon_ellipse_orders ? 1 : 0);*/
+/*	orderSupport[NEG_ELLIPSE_CB_INDEX] = (rdp->settings->polygon_ellipse_orders ? 1 : 0);*/
 	orderSupport[NEG_INDEX_INDEX] = 1;
 
 	out_uint8s(s, 16); /* terminalDescriptor, ignored and should be set to zero */
