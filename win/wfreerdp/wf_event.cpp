@@ -28,14 +28,14 @@ extern HWND g_focus_hWnd;
 
 #define X_POS(lParam) (lParam & 0xffff)
 #define Y_POS(lParam) ((lParam >> 16) & 0xffff)
-#define SCANCODE(lParam) ((lParam >> 16) & 0xff)
 
 LRESULT CALLBACK
 wf_ll_kbd_proc(int nCode, WPARAM wParam, LPARAM lParam)
 {
 	HWND hWnd = g_focus_hWnd;
 	wfInfo * wfi;
-	DWORD scanCode, flags;
+	uint8 scanCode;
+	DWORD flags;
 
 	DEBUG_KBD("hWnd %X nCode %X\n", hWnd, nCode);
 	if (hWnd && (nCode == HC_ACTION)) {
@@ -46,7 +46,7 @@ wf_ll_kbd_proc(int nCode, WPARAM wParam, LPARAM lParam)
 		case WM_SYSKEYUP:
 			wfi = (wfInfo *) GetWindowLongPtr(hWnd, GWLP_USERDATA);
 			PKBDLLHOOKSTRUCT p = (PKBDLLHOOKSTRUCT) lParam;
-			scanCode = p->scanCode;
+			scanCode = (uint8)p->scanCode;
 			flags = p->flags;
 			DEBUG_KBD("wParam %04X scanCode %04X flags %02X vkCode %02X\n",
 					wParam, scanCode, flags, p->vkCode);
@@ -66,13 +66,10 @@ wf_ll_kbd_proc(int nCode, WPARAM wParam, LPARAM lParam)
 			if ((scanCode == 0x36) && (flags & LLKHF_EXTENDED))
 			{
 				DEBUG_KBD("hack: right shift (x36) should not be extended\n");
-				flags &= ~1;
+				flags &= ~LLKHF_EXTENDED;
 			}
 
-			wfi->inst->rdp_send_input(wfi->inst, RDP_INPUT_SCANCODE,
-					((flags & LLKHF_UP) ? KBD_FLAG_UP : 0) |
-					((flags & LLKHF_EXTENDED) ? KBD_FLAG_EXT : 0),
-					scanCode, 0);
+			wfi->inst->rdp_send_input_scancode(wfi->inst, flags & LLKHF_UP, flags & LLKHF_EXTENDED, scanCode);
 			if (p->vkCode == VK_CAPITAL)
 				DEBUG_KBD("caps lock is processed on client side too to toggle caps lock indicator\n");
 			else
@@ -115,7 +112,7 @@ wf_event_proc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 	case WM_LBUTTONDOWN:
 		if (wfi != NULL)
 		{
-			wfi->inst->rdp_send_input(wfi->inst, RDP_INPUT_MOUSE,
+			wfi->inst->rdp_send_input_mouse(wfi->inst,
 				PTRFLAGS_DOWN | PTRFLAGS_BUTTON1, X_POS(lParam), Y_POS(lParam));
 		}
 		break;
@@ -123,7 +120,7 @@ wf_event_proc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 	case WM_LBUTTONUP:
 		if (wfi != NULL)
 		{
-			wfi->inst->rdp_send_input(wfi->inst, RDP_INPUT_MOUSE,
+			wfi->inst->rdp_send_input_mouse(wfi->inst,
 				PTRFLAGS_BUTTON1, X_POS(lParam), Y_POS(lParam));
 		}
 		break;
@@ -131,7 +128,7 @@ wf_event_proc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 	case WM_RBUTTONDOWN:
 		if (wfi != NULL)
 		{
-			wfi->inst->rdp_send_input(wfi->inst, RDP_INPUT_MOUSE,
+			wfi->inst->rdp_send_input_mouse(wfi->inst,
 				PTRFLAGS_DOWN | PTRFLAGS_BUTTON2, X_POS(lParam), Y_POS(lParam));
 		}
 		break;
@@ -139,7 +136,7 @@ wf_event_proc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 	case WM_RBUTTONUP:
 		if (wfi != NULL)
 		{
-			wfi->inst->rdp_send_input(wfi->inst, RDP_INPUT_MOUSE,
+			wfi->inst->rdp_send_input_mouse(wfi->inst,
 				PTRFLAGS_BUTTON2, X_POS(lParam), Y_POS(lParam));
 		}
 		break;
@@ -147,7 +144,7 @@ wf_event_proc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 	case WM_MOUSEMOVE:
 		if (wfi != NULL)
 		{
-			wfi->inst->rdp_send_input(wfi->inst, RDP_INPUT_MOUSE,
+			wfi->inst->rdp_send_input_mouse(wfi->inst,
 				PTRFLAGS_MOVE, X_POS(lParam), Y_POS(lParam));
 		}
 		break;

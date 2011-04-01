@@ -41,5 +41,6 @@ void test_PtInRect(void);
 void test_FillRect(void);
 void test_BitBlt_32bpp(void);
 void test_BitBlt_16bpp(void);
+void test_BitBlt_8bpp(void);
 void test_ClipCoords(void);
 void test_InvalidateRegion(void);

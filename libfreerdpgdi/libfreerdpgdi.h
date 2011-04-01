@@ -146,7 +146,7 @@ struct _BITMAP
 	unsigned int width;
 	unsigned int height;
 	unsigned int scanline;
-	char* data;
+	uint8* data;
 };
 typedef struct _BITMAP BITMAP;
 typedef BITMAP* HBITMAP;
@@ -222,7 +222,7 @@ typedef DC* HDC;
 
 HDC GetDC();
 HDC CreateCompatibleDC(HDC hdc);
-HBITMAP CreateBitmap(int nWidth, int nHeight, int cBitsPerPixel, char* data);
+HBITMAP CreateBitmap(int nWidth, int nHeight, int cBitsPerPixel, uint8* data);
 HBITMAP CreateCompatibleBitmap(HDC hdc, int nWidth, int nHeight);
 int CompareBitmaps(HBITMAP hBmp1, HBITMAP hBmp2);
 HPEN CreatePen(int fnPenStyle, int nWidth, int crColor);
@@ -243,6 +243,8 @@ int CopyOverlap(int x, int y, int width, int height, int srcx, int srcy);
 int SetROP2(HDC hdc, int fnDrawMode);
 int LineTo(HDC hdc, int nXEnd, int nYEnd);
 int MoveTo(HDC hdc, int X, int Y);
+HPALETTE CreateSystemPalette();
+HPALETTE GetSystemPalette();
 int SetRect(HRECT rc, int xLeft, int yTop, int xRight, int yBottom);
 int SetRgn(HRGN hRgn, int nXLeft, int nYLeft, int nWidth, int nHeight);
 int SetRectRgn(HRGN hRgn, int nLeftRect, int nTopRect, int nRightRect, int nBottomRect);

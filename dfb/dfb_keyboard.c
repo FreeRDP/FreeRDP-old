@@ -24,16 +24,17 @@
 #include <freerdp/freerdp.h>
 #include <freerdp/kbd.h>
 #include "dfb_event.h"
+#include "dfb_keyboard.h"
 
 unsigned char keymap[256];
-	
+
 void
 dfb_kb_init(void)
 {
 	memset(keymap, 0, sizeof(keymap));
 
 	/* Map DirectFB keycodes to Virtual Key Codes */
-	
+
 	keymap[DIKI_A - DIKI_UNKNOWN] = VK_KEY_A;
 	keymap[DIKI_B - DIKI_UNKNOWN] = VK_KEY_B;
 	keymap[DIKI_C - DIKI_UNKNOWN] = VK_KEY_C;
@@ -71,7 +72,7 @@ dfb_kb_init(void)
 	keymap[DIKI_7 - DIKI_UNKNOWN] = VK_KEY_7;
 	keymap[DIKI_8 - DIKI_UNKNOWN] = VK_KEY_8;
 	keymap[DIKI_9 - DIKI_UNKNOWN] = VK_KEY_9;
-	
+
 	keymap[DIKI_F1 - DIKI_UNKNOWN] = VK_F1;
 	keymap[DIKI_F2 - DIKI_UNKNOWN] = VK_F2;
 	keymap[DIKI_F3 - DIKI_UNKNOWN] = VK_F3;
@@ -124,10 +125,11 @@ dfb_kb_init(void)
 }
 
 void
-dfb_kb_send_key(rdpInst * inst, int flags, uint8 keycode)
+dfb_kb_send_key(rdpInst * inst, RD_BOOL up, uint8 keycode)
 {
-	int scancode = freerdp_kbd_get_scancode_by_virtualkey(keymap[keycode]);
-	inst->rdp_send_input(inst, RDP_INPUT_SCANCODE, flags, scancode, 0);
+	RD_BOOL extended;
+	uint8 scancode = freerdp_kbd_get_scancode_by_virtualkey(keymap[keycode], &extended);
+	inst->rdp_send_input_scancode(inst, up, extended, scancode);
 }
 
 int

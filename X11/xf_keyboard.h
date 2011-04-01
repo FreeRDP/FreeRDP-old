@@ -20,15 +20,17 @@
 #ifndef __XF_KEYBOARD_H
 #define __XF_KEYBOARD_H
 
+#include <X11/Xlib.h>
+
 #include <freerdp/freerdp.h>
 #include "xf_types.h"
 
 void
-xf_kb_init(unsigned int keyboard_layout_id);
+xf_kb_init(Display *dpy, unsigned int keyboard_layout_id);
 void
 xf_kb_inst_init(xfInfo * xfi);
 void
-xf_kb_send_key(xfInfo * xfi, int flags, uint8 keycode);
+xf_kb_send_key(xfInfo * xfi, RD_BOOL up, uint8 keycode);
 int
 xf_kb_get_toggle_keys_state(xfInfo * xfi);
 void

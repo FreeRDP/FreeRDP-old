@@ -93,14 +93,15 @@ mppc_expand(rdpRdp * rdp, uint8 * data, uint32 clen, uint8 ctype, uint32 * roff,
 void
 rdp5_process(rdpRdp * rdp, STREAM s);
 void
-rdp_send_input(rdpRdp * rdp, time_t time, uint16 message_type, uint16 device_flags, uint16 param1,
-	       uint16 param2);
+rdp_send_input_scancode(rdpRdp * rdp, time_t time, RD_BOOL up, RD_BOOL extended, uint8 keyCode);
+void
+rdp_send_input_mouse(rdpRdp * rdp, time_t time, uint16 pointerFlags, uint16 xPos, uint16 yPos);
 int
 rdp_send_frame_ack(rdpRdp * rdp, int frame_id);
 void
 rdp_sync_input(rdpRdp * rdp, time_t time, uint32 toggle_keys_state);
 void
-rdp_unicode_input(rdpRdp * rdp, time_t time, uint16 unicode_character);
+rdp_send_input_unicode(rdpRdp * rdp, time_t time, uint16 unicode_character);
 void
 rdp_send_client_window_status(rdpRdp * rdp, int status);
 void

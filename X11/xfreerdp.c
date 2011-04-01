@@ -33,6 +33,7 @@
 #include <freerdp/chanman.h>
 #include <freerdp/utils.h>
 #include <freerdp/kbd.h>
+#include <freerdp/errinfo.h>
 #include "xf_types.h"
 #include "xf_win.h"
 #include "xf_keyboard.h"
@@ -41,6 +42,12 @@
 
 static sem_t g_sem;
 static volatile int g_thread_count = 0;
+
+/* RDP disconnect reason */
+static uint32 g_disconnect_reason;
+
+/* generic ui error found before starting RDP communication */
+static uint8 g_error_code = 0;
 
 static int
 set_default_params(xfInfo * xfi)
@@ -166,7 +173,7 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 			if (*pindex == argc)
 			{
 				printf("missing server depth\n");
-				return 1;
+				exit(XF_EXIT_WRONG_PARAM);
 			}
 			settings->server_depth = atoi(argv[*pindex]);
 		}
@@ -176,7 +183,7 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 			if (*pindex == argc)
 			{
 				printf("missing username\n");
-				return 1;
+				exit(XF_EXIT_WRONG_PARAM);
 			}
 			strncpy(settings->username, argv[*pindex], sizeof(settings->username) - 1);
 			settings->username[sizeof(settings->username) - 1] = 0;
@@ -187,7 +194,7 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 			if (*pindex == argc)
 			{
 				printf("missing password\n");
-				return 1;
+				exit(XF_EXIT_WRONG_PARAM);
 			}
 			strncpy(settings->password, argv[*pindex], sizeof(settings->password) - 1);
 			settings->password[sizeof(settings->password) - 1] = 0;
@@ -206,7 +213,7 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 			if (*pindex == argc)
 			{
 				printf("missing domain\n");
-				return 1;
+				exit(XF_EXIT_WRONG_PARAM);
 			}
 			strncpy(settings->domain, argv[*pindex], sizeof(settings->domain) - 1);
 			settings->domain[sizeof(settings->domain) - 1] = 0;
@@ -217,10 +224,10 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 			if (*pindex == argc)
 			{
 				printf("missing keyboard layout ID\n");
-				return 1;
+				exit(XF_EXIT_WRONG_PARAM);
 			}
 			sscanf(argv[*pindex], "%X", &(xfi->keyboard_layout_id));
-			printf("keyboard layout ID: %X\n", xfi->keyboard_layout_id);
+			DEBUG("keyboard layout ID: %X\n", xfi->keyboard_layout_id);
 		}
 		else if (strcmp("--kbd-list", argv[*pindex]) == 0)
 		{
@@ -250,7 +257,7 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 			if (*pindex == argc)
 			{
 				printf("missing shell\n");
-				return 1;
+				exit(XF_EXIT_WRONG_PARAM);
 			}
 			strncpy(settings->shell, argv[*pindex], sizeof(settings->shell) - 1);
 			settings->shell[sizeof(settings->shell) - 1] = 0;
@@ -261,7 +268,7 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 			if (*pindex == argc)
 			{
 				printf("missing directory\n");
-				return 1;
+				exit(XF_EXIT_WRONG_PARAM);
 			}
 			strncpy(settings->directory, argv[*pindex], sizeof(settings->directory) - 1);
 			settings->directory[sizeof(settings->directory) - 1] = 0;
@@ -272,7 +279,7 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 			if (*pindex == argc)
 			{
 				printf("missing width\n");
-				return 1;
+				exit(XF_EXIT_WRONG_PARAM);
 			}
 			settings->width = strtol(argv[*pindex], &p, 10);
 			if (*p == 'x')
@@ -290,7 +297,7 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 			if (*pindex == argc)
 			{
 				printf("missing port number\n");
-				return 1;
+				exit(XF_EXIT_WRONG_PARAM);
 			}
 			settings->tcp_port_rdp = atoi(argv[*pindex]);
 		}
@@ -300,7 +307,7 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 			if (*pindex == argc)
 			{
 				printf("missing hostname\n");
-				return 1;
+				exit(XF_EXIT_WRONG_PARAM);
 			}
 			strncpy(settings->hostname, argv[*pindex], sizeof(settings->hostname) - 1);
 			settings->hostname[sizeof(settings->hostname) - 1] = 0;
@@ -342,7 +349,7 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 			if (*pindex == argc)
 			{
 				printf("missing performance flag\n");
-				return 1;
+				exit(XF_EXIT_WRONG_PARAM);
 			}
 			if (strncmp("m", argv[*pindex], 1) == 0) /* modem */
 			{
@@ -367,13 +374,13 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 
 			if (*pindex == argc) {
 				printf("missing XID\n");
-				return 1;
+				exit(XF_EXIT_WRONG_PARAM);
 			}
 
 			xfi->embed = strtoul(argv[*pindex], NULL, 16);
 			if (!xfi->embed) {
 				printf("bad XID\n");
-				return 1;
+				exit(XF_EXIT_WRONG_PARAM);
 			}
 		}
 #ifndef DISABLE_TLS
@@ -395,7 +402,7 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 			if (*pindex == argc)
 			{
 				printf("missing protocol security\n");
-				return 1;
+				exit(XF_EXIT_WRONG_PARAM);
 			}
 			if (strncmp("rdp", argv[*pindex], 1) == 0) /* Standard RDP */
 			{
@@ -418,7 +425,7 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 			else
 			{
 				printf("unknown protocol security\n");
-				return 1;
+				exit(XF_EXIT_WRONG_PARAM);
 			}
 		}
 #endif
@@ -428,7 +435,7 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 			if (*pindex == argc)
 			{
 				printf("missing plugin name\n");
-				return 1;
+				exit(XF_EXIT_WRONG_PARAM);
 			}
 			index = *pindex;
 			memset(plugin_data, 0, sizeof(plugin_data));
@@ -458,12 +465,12 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 			if (*pindex == argc)
 			{
 				printf("missing extension name\n");
-				return 1;
+				exit(XF_EXIT_WRONG_PARAM);
 			}
 			if (num_extensions >= sizeof(settings->extensions) / sizeof(struct rdp_ext_set))
 			{
 				printf("maximum extensions reached\n");
-				return 1;
+				exit(XF_EXIT_WRONG_PARAM);
 			}
 			index = *pindex;
 			snprintf(settings->extensions[num_extensions].name,
@@ -527,12 +534,12 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 		else
 		{
 			printf("invalid option: %s\n", argv[*pindex]);
-			return 1;
+			exit(XF_EXIT_WRONG_PARAM);
 		}
 		*pindex = *pindex + 1;
 	}
 	printf("missing server name\n");
-	return 1;
+	exit(XF_EXIT_WRONG_PARAM);
 }
 
 static int
@@ -554,7 +561,7 @@ run_xfreerdp(xfInfo * xfi)
 	if (inst == NULL)
 	{
 		printf("run_xfreerdp: freerdp_new failed\n");
-		return 1;
+		return XF_EXIT_MEMORY;
 	}
 	if ((inst->version != FREERDP_INTERFACE_VERSION) ||
 	    (inst->size != sizeof(rdpInst)))
@@ -563,37 +570,40 @@ run_xfreerdp(xfInfo * xfi)
 		       "match expecting v %d s %d got v %d s %d\n",
 		       FREERDP_INTERFACE_VERSION, (int)sizeof(rdpInst),
 		       inst->version, inst->size);
-		return 1;
+		return XF_EXIT_PROTOCOL;
 	}
 	xfi->inst = inst;
 	SET_XFI(inst, xfi);
 	if (xf_pre_connect(xfi) != 0)
 	{
 		printf("run_xfreerdp: xf_pre_connect failed\n");
-		return 1;
+		return XF_EXIT_CONN_FAILED;
 	}
 	if (freerdp_chanman_pre_connect(xfi->chan_man, inst) != 0)
 	{
 		printf("run_xfreerdp: freerdp_chanman_pre_connect failed\n");
-		return 1;
+		return XF_EXIT_CONN_FAILED;
 	}
+	xf_kb_init(xfi->display, xfi->keyboard_layout_id);
+	xf_kb_inst_init(xfi);
+	printf("keyboard_layout: 0x%X\n", inst->settings->keyboard_layout);
 	/* call connect */
-	printf("keyboard_layout: %X\n", inst->settings->keyboard_layout);
 	if (inst->rdp_connect(inst) != 0)
 	{
 		printf("run_xfreerdp: inst->rdp_connect failed\n");
-		return 1;
+		return XF_EXIT_CONN_FAILED;
 	}
 	if (freerdp_chanman_post_connect(xfi->chan_man, inst) != 0)
 	{
 		printf("run_xfreerdp: freerdp_chanman_post_connect failed\n");
-		return 1;
+		return XF_EXIT_CONN_FAILED;
 	}
 	if (xf_post_connect(xfi) != 0)
 	{
 		printf("run_xfreerdp: xf_post_connect failed\n");
-		return 1;
+		return XF_EXIT_CONN_FAILED;
 	}
+
 	/* program main loop */
 	while (1)
 	{
@@ -664,7 +674,8 @@ run_xfreerdp(xfInfo * xfi)
 		/* check x fds */
 		if (xf_check_fds(xfi) != 0)
 		{
-			printf("run_xfreerdp: xf_check_fds failed\n");
+			/* xfreerdp is usually terminated by this failing because the X windows has been closed */
+			DEBUG("xf_check_fds failed\n");
 			break;
 		}
 		/* check channel fds */
@@ -674,6 +685,9 @@ run_xfreerdp(xfInfo * xfi)
 			break;
 		}
 	}
+
+	g_disconnect_reason = inst->disc_reason;
+
 	/* cleanup */
 	freerdp_chanman_close(xfi->chan_man, inst);
 	inst->rdp_disconnect(inst);
@@ -682,13 +696,36 @@ run_xfreerdp(xfInfo * xfi)
 	return 0;
 }
 
+/* maches an error info PDU set to the XF_EXIT_CODE */
+static uint8
+exit_code_from_disconnect_reason(uint32 reason)
+{
+	if (reason == 0)
+		return XF_EXIT_SUCCESS;
+
+	/* Licence error set */
+	else if (reason >= ERRINFO_LICENSE_INTERNAL &&
+		reason <= ERRINFO_LICENSE_NO_REMOTE_CONNECTIONS)
+		reason -= ERRINFO_LICENSE_INTERNAL + XF_EXIT_LICENSE_INTERNAL;
+
+	/* RDP protocol error set */
+	else if (reason >= 0x10c9 && reason <= 0x1193)
+		reason = XF_EXIT_RDP;
+
+	/* There's no need to test protocol-independent codes: they match */
+	else if (!(reason <= ERRINFO_RPC_INITIATED_DISCONNECT_BYUSER))
+		reason = XF_EXIT_UNKNOWN;
+
+	return reason;
+}
+
 static void *
 thread_func(void * arg)
 {
 	xfInfo * xfi;
 
 	xfi = (xfInfo *) arg;
-	run_xfreerdp(xfi);
+	g_error_code = run_xfreerdp(xfi);
 	free(xfi->settings);
 	freerdp_chanman_free(xfi->chan_man);
 	free(xfi);
@@ -709,6 +746,7 @@ main(int argc, char ** argv)
 	xfInfo * xfi;
 	pthread_t thread;
 	int index = 1;
+	char reason_msg[ERRINFO_BUFFER_SIZE];
 
 	setlocale(LC_CTYPE, "");
 	if (argc == 1)
@@ -740,8 +778,7 @@ main(int argc, char ** argv)
 			break;
 		}
 
-		xf_kb_init(xfi->keyboard_layout_id);
-		printf("starting thread %d to %s:%d\n", g_thread_count,
+		DEBUG("starting thread %d to %s:%d\n", g_thread_count,
 			xfi->settings->server, xfi->settings->tcp_port_rdp);
 		if (pthread_create(&thread, 0, thread_func, xfi) == 0)
 		{
@@ -751,12 +788,21 @@ main(int argc, char ** argv)
 
 	if (g_thread_count > 0)
 	{
-		printf("main thread, waiting for all threads to exit\n");
+		DEBUG("main thread, waiting for all threads to exit\n");
 		freerdp_sem_wait(&g_sem);
-		printf("main thread, all threads did exit\n");
+		DEBUG("main thread, all threads did exit\n");
 	}
 
 	freerdp_chanman_uninit();
 	freerdp_global_finish();
-	return 0;
+
+	if (g_error_code)
+		return g_error_code;
+	else if (g_disconnect_reason)
+	{
+		printf("disconnect: %s\n",
+			freerdp_str_disconnect_reason(g_disconnect_reason, reason_msg, ERRINFO_BUFFER_SIZE));
+	}
+
+	return exit_code_from_disconnect_reason(g_disconnect_reason);
 }

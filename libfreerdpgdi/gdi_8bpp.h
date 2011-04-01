@@ -1,6 +1,6 @@
 /*
    FreeRDP: A Remote Desktop Protocol client.
-   DirectFB UI Keyboard Handling
+   8bpp Internal Buffer Routines
 
    Copyright 2010 Marc-Andre Moreau <marcandre.moreau@gmail.com>
 
@@ -17,18 +17,11 @@
    limitations under the License.
 */
 
-#ifndef __DFB_KEYBOARD_H
-#define __DFB_KEYBOARD_H
-
 #include <freerdp/freerdp.h>
+#include "libfreerdpgdi.h"
+#include "gdi_color.h"
 
-void
-dfb_kb_init(void);
-void
-dfb_kb_send_key(rdpInst * inst, RD_BOOL up, uint8 keycode);
-int
-dfb_kb_get_toggle_keys_state(rdpInst * inst);
-void
-dfb_kb_focus_in(rdpInst * inst);
+int FillRect_8bpp(HDC hdc, HRECT rect, HBRUSH hbr);
+int BitBlt_8bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc, int rop);
+int PatBlt_8bpp(HDC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight, int rop);
 
-#endif /* __DFB_KEYBOARD_H */

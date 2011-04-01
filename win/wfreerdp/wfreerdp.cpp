@@ -153,7 +153,7 @@ process_params(wfInfo * wfi, int argc, char ** argv, int * pindex)
 	set_default_params(wfi);
 	settings = wfi->settings;
 
-	printf("process_params\n");
+	DEBUG("process_params\n");
 	if (argc < *pindex + 1)
 	{
 		if (*pindex == 1)
@@ -286,7 +286,7 @@ process_params(wfInfo * wfi, int argc, char ** argv, int * pindex)
 		else if (strcmp("-f", argv[*pindex]) == 0)
 		{
 			wfi->fullscreen = wfi->fs_toggle = 1;
-			printf("full screen option\n");
+			DEBUG("full screen option\n");
 		}
 		else if (strcmp("-x", argv[*pindex]) == 0)
 		{
@@ -443,7 +443,7 @@ run_wfreerdp(wfInfo * wfi)
 	int alldone;
 	MSG msg;
 
-	printf("run_wfreerdp:\n");
+	DEBUG("run_wfreerdp:\n");
 	/* create an instance of the library */
 	wfi->inst = inst = freerdp_new(wfi->settings);
 	if (inst == NULL)
@@ -464,7 +464,7 @@ run_wfreerdp(wfInfo * wfi)
 	}
 
 	inst->settings->keyboard_layout = (int)GetKeyboardLayout(0) & 0x0000FFFF;
-	printf("keyboard_layout: 0x%08X\n", inst->settings->keyboard_layout);
+	printf("keyboard_layout: 0x%X\n", inst->settings->keyboard_layout);
 
 	if (wf_pre_connect(wfi) != 0)
 	{
@@ -597,7 +597,7 @@ kbd_thread_func(LPVOID lpParam)
 
 	DEBUG("keyboard thread started\n");
 
-	hook_handle = SetWindowsHookEx(WH_KEYBOARD_LL, wf_ll_kbd_proc, NULL, 0);
+	hook_handle = SetWindowsHookEx(WH_KEYBOARD_LL, wf_ll_kbd_proc, g_hInstance, 0);
 	if (hook_handle)
 	{
 		while( (bRet = GetMessage( &msg, NULL, 0, 0 )) != 0)

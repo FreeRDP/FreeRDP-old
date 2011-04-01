@@ -18,6 +18,7 @@ AH_TEMPLATE(HAVE_LIBSAMPLERATE, [Define if you have libsamplerate])
 AH_TEMPLATE(IPv6, [IPv6])
 AH_TEMPLATE(NEED_ALIGN, [Alignment])
 AH_TEMPLATE(DISABLE_TLS, [Disable TLS encryption])
+AH_TEMPLATE(WITH_XKBFILE, [Use xkbfile for keyboard handling])
 AH_TEMPLATE(WITH_SCARD, [Define if smartcard is enabled])
 AH_TEMPLATE(WITH_DEBUG, [Turn on debugging messages])
 AH_TEMPLATE(WITH_DEBUG_NLA, [Turn on debugging messages])
@@ -928,9 +929,12 @@ cunit="no"
 AC_ARG_WITH([cunit],
 	[AS_HELP_STRING([--with-cunit], [Build CUnit])],
 	[
-		AC_CHECK_HEADER(CUnit/Basic.h, [], [AC_MSG_ERROR(CUnit development header not found)])
-		cunit="yes"
-		EXTRA_SUBDIRS="$EXTRA_SUBDIRS cunit"
+		if test $withval != "no"; 
+		then 
+			AC_CHECK_HEADER(CUnit/Basic.h, [], [AC_MSG_ERROR(CUnit development header not found)])
+			cunit="yes"
+			EXTRA_SUBDIRS="$EXTRA_SUBDIRS cunit"
+		fi
 	]
 )
 
@@ -950,18 +954,37 @@ else
 fi
 
 #
+# xkbfile
+#
+AC_ARG_WITH([xkbfile],
+	[AS_HELP_STRING([--with-xkbfile], [use xkbfile for keyboard detection])])
+xkbfile=no
+AS_IF([test "x$with_xkbfile" != xno], [
+	PKG_CHECK_MODULES(XKBFILE, [xkbfile], [
+		xkbfile=yes
+		AC_DEFINE(WITH_XKBFILE,1)
+		AC_SUBST(XKBFILE_CFLAGS)
+		AC_SUBST(XKBFILE_LIBS)
+	], [
+		if test "x$with_xkbfile" == xyes; then
+			AC_MSG_ERROR([xkbfile development headers not found])
+		fi
+	])
+])
+
+#
 # DirectFB (optionally built when --with-dfb specified)
 #
 dfb="no"
 AC_ARG_WITH([dfb],
 	[AS_HELP_STRING([--with-dfb], [Build DirectFB UI])],
 	[
-		# Put dependency check here
-		EXTRA_SUBDIRS="$EXTRA_SUBDIRS dfb"
-		
-		# DirectFB
-		PKG_CHECK_MODULES(DFB, [directfb >= 1.0.0])
-		dfb="yes"
+		if test $withval != "no"; 
+		then 
+			EXTRA_SUBDIRS="$EXTRA_SUBDIRS dfb"
+			PKG_CHECK_MODULES(DFB, [directfb >= 1.0.0])
+			dfb="yes"
+		fi
 	])
 
 AC_SUBST(EXTRA_SUBDIRS)
@@ -1020,4 +1043,5 @@ echo "FFmpeg       : $ffmpeg"
 echo "Printer      : $printer"
 echo "CUnit        : $cunit"
 echo "X11          : $x11"
+echo "xkbfile      : $xkbfile"
 echo "DirectFB     : $dfb"

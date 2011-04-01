@@ -60,14 +60,9 @@ xf_handle_event_VisibilityNotify(xfInfo * xfi, XEvent * xevent)
 static int
 xf_handle_event_MotionNotify(xfInfo * xfi, XEvent * xevent)
 {
-	int x;
-	int y;
-
 	if (xevent->xmotion.window == xfi->wnd)
 	{
-		x = xevent->xmotion.x;
-		y = xevent->xmotion.y;
-		xfi->inst->rdp_send_input(xfi->inst, RDP_INPUT_MOUSE, PTRFLAGS_MOVE, x, y);
+		xfi->inst->rdp_send_input_mouse(xfi->inst, PTRFLAGS_MOVE, xevent->xmotion.x, xevent->xmotion.y);
 	}
 
 	if (xfi->fullscreen)
@@ -79,43 +74,30 @@ xf_handle_event_MotionNotify(xfInfo * xfi, XEvent * xevent)
 static int
 xf_handle_event_ButtonPress(xfInfo * xfi, XEvent * xevent)
 {
-	int device_flags;
-	int param1;
-	int param2;
-
 	if (xevent->xbutton.window == xfi->wnd)
 	{
-		device_flags = 0;
-		param1 = 0;
-		param2 = 0;
 		switch (xevent->xbutton.button)
 		{
 			case 1:
-				device_flags = PTRFLAGS_DOWN | PTRFLAGS_BUTTON1;
-				param1 = xevent->xbutton.x;
-				param2 = xevent->xbutton.y;
+				xfi->inst->rdp_send_input_mouse(xfi->inst, PTRFLAGS_DOWN | PTRFLAGS_BUTTON1,
+						xevent->xbutton.x, xevent->xbutton.y);
 				break;
 			case 2:
-				device_flags = PTRFLAGS_DOWN | PTRFLAGS_BUTTON3;
-				param1 = xevent->xbutton.x;
-				param2 = xevent->xbutton.y;
+				xfi->inst->rdp_send_input_mouse(xfi->inst, PTRFLAGS_DOWN | PTRFLAGS_BUTTON3,
+						xevent->xbutton.x, xevent->xbutton.y);
 				break;
 			case 3:
-				device_flags = PTRFLAGS_DOWN | PTRFLAGS_BUTTON2;
-				param1 = xevent->xbutton.x;
-				param2 = xevent->xbutton.y;
+				xfi->inst->rdp_send_input_mouse(xfi->inst, PTRFLAGS_DOWN | PTRFLAGS_BUTTON2,
+						xevent->xbutton.x, xevent->xbutton.y);
 				break;
 			case 4:
-				device_flags = PTRFLAGS_WHEEL | 0x0078;
+				xfi->inst->rdp_send_input_mouse(xfi->inst, PTRFLAGS_WHEEL | 0x0078,
+						0, 0);
 				break;
 			case 5:
-				device_flags = PTRFLAGS_WHEEL | PTRFLAGS_WHEEL_NEGATIVE | 0x0088;
+				xfi->inst->rdp_send_input_mouse(xfi->inst, PTRFLAGS_WHEEL | PTRFLAGS_WHEEL_NEGATIVE | 0x0088,
+						0, 0);
 				break;
-		}
-		if (device_flags != 0)
-		{
-			xfi->inst->rdp_send_input(xfi->inst, RDP_INPUT_MOUSE, device_flags,
-				param1, param2);
 		}
 	}
 	return 0;
@@ -124,37 +106,22 @@ xf_handle_event_ButtonPress(xfInfo * xfi, XEvent * xevent)
 static int
 xf_handle_event_ButtonRelease(xfInfo * xfi, XEvent * xevent)
 {
-	int device_flags;
-	int param1;
-	int param2;
-
 	if (xevent->xbutton.window == xfi->wnd)
 	{
-		device_flags = 0;
-		param1 = 0;
-		param2 = 0;
 		switch (xevent->xbutton.button)
 		{
 			case 1:
-				device_flags = PTRFLAGS_BUTTON1;
-				param1 = xevent->xbutton.x;
-				param2 = xevent->xbutton.y;
+				xfi->inst->rdp_send_input_mouse(xfi->inst, PTRFLAGS_BUTTON1,
+						xevent->xbutton.x, xevent->xbutton.y);
 				break;
 			case 2:
-				device_flags = PTRFLAGS_BUTTON3;
-				param1 = xevent->xbutton.x;
-				param2 = xevent->xbutton.y;
+				xfi->inst->rdp_send_input_mouse(xfi->inst, PTRFLAGS_BUTTON3,
+						xevent->xbutton.x, xevent->xbutton.y);
 				break;
 			case 3:
-				device_flags = PTRFLAGS_BUTTON2;
-				param1 = xevent->xbutton.x;
-				param2 = xevent->xbutton.y;
+				xfi->inst->rdp_send_input_mouse(xfi->inst, PTRFLAGS_BUTTON2,
+						xevent->xbutton.x, xevent->xbutton.y);
 				break;
-		}
-		if (device_flags != 0)
-		{
-			xfi->inst->rdp_send_input(xfi->inst, RDP_INPUT_MOUSE, device_flags,
-				param1, param2);
 		}
 	}
 	return 0;
@@ -172,7 +139,7 @@ xf_handle_event_KeyPress(xfInfo * xfi, XEvent * xevent)
 	if (xfi->fs_toggle && xf_kb_handle_special_keys(xfi, keysym))
 		return 0;
 
-	xf_kb_send_key(xfi, RDP_KEYPRESS, xevent->xkey.keycode);
+	xf_kb_send_key(xfi, False, xevent->xkey.keycode);
 	return 0;
 }
 
@@ -204,7 +171,7 @@ xf_handle_event_KeyRelease(xfInfo * xfi, XEvent * xevent)
 		return 0;
 	}
 	xf_kb_unset_keypress(xevent->xkey.keycode);
-	xf_kb_send_key(xfi, RDP_KEYRELEASE, xevent->xkey.keycode);
+	xf_kb_send_key(xfi, True, xevent->xkey.keycode);
 	return 0;
 }
 
@@ -255,7 +222,7 @@ xf_handle_event_ClientMessage(xfInfo * xfi, XEvent * xevent)
 	if ((xevent->xclient.message_type == protocol_atom)
 	    && ((Atom) xevent->xclient.data.l[0] == kill_atom))
 	{
-		printf("xf_handle_event: ClientMessage user quit received\n");
+		DEBUG("ClientMessage user quit received\n");
 		return 1;
 	}
 

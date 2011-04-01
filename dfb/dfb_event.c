@@ -37,7 +37,7 @@ dfb_process_event(rdpInst * inst, DFBEvent * event)
 
 	cursor_x = gdi->cursor_x;
 	cursor_y = gdi->cursor_y;
-	
+
 	if (event->clazz == DFEC_INPUT)
 	{
 		device_flags = 0;
@@ -67,9 +67,9 @@ dfb_process_event(rdpInst * inst, DFBEvent * event)
 
 				if (cursor_y > (gdi->height - 1))
 					cursor_y = gdi->height - 1;
-				
+
 				inst->ui_move_pointer(inst, cursor_x, cursor_y);
-				
+
 				break;
 
 			case DIET_BUTTONPRESS:
@@ -82,8 +82,8 @@ dfb_process_event(rdpInst * inst, DFBEvent * event)
 					device_flags = PTRFLAGS_DOWN | PTRFLAGS_BUTTON3;
 
 				if (device_flags != 0)
-					inst->rdp_send_input(inst, RDP_INPUT_MOUSE, device_flags, cursor_x, cursor_y);
-				
+					inst->rdp_send_input_mouse(inst, device_flags, cursor_x, cursor_y);
+
 				break;
 
 			case DIET_BUTTONRELEASE:
@@ -96,18 +96,18 @@ dfb_process_event(rdpInst * inst, DFBEvent * event)
 					device_flags = PTRFLAGS_BUTTON3;
 
 				if (device_flags != 0)
-					inst->rdp_send_input(inst, RDP_INPUT_MOUSE, device_flags, cursor_x, cursor_y);
-				
+					inst->rdp_send_input_mouse(inst, device_flags, cursor_x, cursor_y);
+
 				break;
-				
+
 			case DIET_KEYPRESS:
 				keycode = input_event->key_id - DIKI_UNKNOWN;
-				dfb_kb_send_key(inst, RDP_KEYPRESS, keycode);
+				dfb_kb_send_key(inst, 0, keycode);
 				break;
 
 			case DIET_KEYRELEASE:
 				keycode = input_event->key_id - DIKI_UNKNOWN;
-				dfb_kb_send_key(inst, RDP_KEYRELEASE, keycode);
+				dfb_kb_send_key(inst, 1, keycode);
 				break;
 
 			case DIET_UNKNOWN:

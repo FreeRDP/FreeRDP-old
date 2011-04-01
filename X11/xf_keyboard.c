@@ -33,9 +33,9 @@ static int xf_kb_keyboard_layout = 0;
 static RD_BOOL pressed_keys[256] = { False };
 
 void
-xf_kb_init(unsigned int keyboard_layout_id)
+xf_kb_init(Display *dpy, unsigned int keyboard_layout_id)
 {
-	xf_kb_keyboard_layout = freerdp_kbd_init(keyboard_layout_id);
+	xf_kb_keyboard_layout = freerdp_kbd_init(dpy, keyboard_layout_id);
 	DEBUG_KBD("freerdp_kbd_init: %X\n", xf_kb_keyboard_layout);
 }
 
@@ -46,48 +46,30 @@ xf_kb_inst_init(xfInfo * xfi)
 };
 
 void
-xf_kb_send_key(xfInfo * xfi, int flags, uint8 keycode)
+xf_kb_send_key(xfInfo * xfi, RD_BOOL up, uint8 keycode)
 {
-	int scancode;
+	uint8 scancode;
+	RD_BOOL extended;
 
-	if (keycode == xfi->pause_key)
+	scancode = freerdp_kbd_get_scancode_by_keycode(keycode, &extended);
+	if (scancode == 0)
 	{
-		/* This is a special key the actually sends two scancodes to the
-		   server.  It looks like Control - NumLock but with special flags. */
-		//DEBUG_KBD("special VK_PAUSE\n");
-		if (flags & KBD_FLAG_UP)
-		{
-			xfi->inst->rdp_send_input(xfi->inst, RDP_INPUT_SCANCODE, 0x8200, 0x1d, 0);
-			xfi->inst->rdp_send_input(xfi->inst, RDP_INPUT_SCANCODE, 0x8000, 0x45, 0);
-		}
-		else
-		{
-			xfi->inst->rdp_send_input(xfi->inst, RDP_INPUT_SCANCODE, 0x0200, 0x1d, 0);
-			xfi->inst->rdp_send_input(xfi->inst, RDP_INPUT_SCANCODE, 0x0000, 0x45, 0);
-		}
+		printf("xf_kb_send_key: unknown key %s keycode=%d (X keysym=0x%04X)\n",
+			up ? "up" : "down", keycode, (unsigned int)XKeycodeToKeysym(xfi->display, keycode, 0));
 	}
 	else
 	{
-		scancode = freerdp_kbd_get_scancode_by_keycode(keycode, &flags);
-#ifndef WITH_DEBUG_KBD
-		if (scancode == 0)
-		{
-#endif
-			printf("xf_kb_send_key: flags=0x%04X keycode=%d (X keysym=0x%04X) as scancode=%d\n",
-				flags, keycode, (unsigned int)XKeycodeToKeysym(xfi->display, keycode, 0), scancode);
-#ifndef WITH_DEBUG_KBD
-		}
-		else
-#endif
-		{
-			xfi->inst->rdp_send_input(xfi->inst, RDP_INPUT_SCANCODE, flags, scancode, 0);
+		DEBUG_KBD("%s keycode=%d (X keysym=0x%04X) as extended=%d scancode=%d\n",
+			up ? "up" : "down", keycode, (unsigned int)XKeycodeToKeysym(xfi->display, keycode, 0),
+			!!extended, scancode);
 
-			if ((scancode == 0x3A) && (flags & KBD_FLAG_UP)) /* caps lock was released */
-			{
-				/* caps lock state haven't necessarily been toggled locally - better set remote state explicitly */
-				DEBUG_KBD("sending extra caps lock synchronization\n");
-				xfi->inst->rdp_sync_input(xfi->inst, xf_kb_get_toggle_keys_state(xfi));
-			}
+		xfi->inst->rdp_send_input_scancode(xfi->inst, up, extended, scancode);
+
+		if ((scancode == 0x3A) && up) /* caps lock was released */
+		{
+			/* caps lock state haven't necessarily been toggled locally - better set remote state explicitly */
+			DEBUG_KBD("sending extra caps lock synchronization\n");
+			xfi->inst->rdp_sync_input(xfi->inst, xf_kb_get_toggle_keys_state(xfi));
 		}
 	}
 }
@@ -159,11 +141,10 @@ void
 xf_kb_focus_in(xfInfo * xfi)
 {
 	int flags;
-	int scancode;
 
 	/* on focus in send a tab up like mstsc.exe */
-	scancode = freerdp_kbd_get_scancode_by_virtualkey(xfi->tab_key);
-	xfi->inst->rdp_send_input(xfi->inst, RDP_INPUT_SCANCODE, KBD_FLAG_UP, scancode, 0);
+	xfi->inst->rdp_send_input_scancode(xfi->inst, True, False, 15);
+
 	/* sync num, caps, scroll, kana lock */
 	flags = xf_kb_get_toggle_keys_state(xfi);
 	xfi->inst->rdp_sync_input(xfi->inst, flags);

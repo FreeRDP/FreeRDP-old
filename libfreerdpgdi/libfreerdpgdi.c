@@ -28,6 +28,7 @@
 #include "gdi_window.h"
 #include "gdi_32bpp.h"
 #include "gdi_16bpp.h"
+#include "gdi_8bpp.h"
 
 /**
  * Get the current device context (a new one is created each time).\n
@@ -76,7 +77,7 @@ HDC CreateCompatibleDC(HDC hdc)
  * @return new bitmap
  */
 
-HBITMAP CreateBitmap(int nWidth, int nHeight, int cBitsPerPixel, char* data)
+HBITMAP CreateBitmap(int nWidth, int nHeight, int cBitsPerPixel, uint8* data)
 {
 	HBITMAP hBitmap = (HBITMAP) malloc(sizeof(BITMAP));
 	hBitmap->objectType = GDIOBJ_BITMAP;
@@ -85,7 +86,7 @@ HBITMAP CreateBitmap(int nWidth, int nHeight, int cBitsPerPixel, char* data)
 	hBitmap->scanline = nWidth * hBitmap->bytesPerPixel;
 	hBitmap->width = nWidth;
 	hBitmap->height = nHeight;
-	hBitmap->data = (char*) data;
+	hBitmap->data = data;
 	return hBitmap;
 }
 
@@ -121,21 +122,22 @@ HBITMAP CreateCompatibleBitmap(HDC hdc, int nWidth, int nHeight)
 int CompareBitmaps(HBITMAP hBmp1, HBITMAP hBmp2)
 {
 	int x, y;
-	char *p1, *p2;
-	
+	uint8 *p1, *p2;
+
+	int minw = (hBmp1->width < hBmp2->width) ? hBmp1->width : hBmp2->width;
+	int minh = (hBmp1->height < hBmp2->height) ? hBmp1->height : hBmp2->height;
+
 	if (hBmp1->bitsPerPixel == hBmp2->bitsPerPixel)
 	{
-		if (hBmp1->width != hBmp2->width || hBmp1->height != hBmp2->height)
-			return 0;
-
 		p1 = hBmp1->data;
 		p2 = hBmp2->data;
+		int bpp = hBmp1->bitsPerPixel;
 
-		if (hBmp1->bytesPerPixel == 32)
+		if (bpp == 32)
 		{
-			for (y = 0; y < hBmp1->height; y++)
+			for (y = 0; y < minh; y++)
 			{
-				for (x = 0; x < hBmp1->width; x++)
+				for (x = 0; x < minw; x++)
 				{
 					if (*p1 != *p2)
 						return 0;
@@ -154,17 +156,30 @@ int CompareBitmaps(HBITMAP hBmp1, HBITMAP hBmp2)
 				}
 			}
 		}
-		else if (hBmp1->bytesPerPixel == 16)
+		else if (bpp == 16)
 		{
-			for (y = 0; y < hBmp1->height; y++)
+			for (y = 0; y < minh; y++)
 			{
-				for (x = 0; x < hBmp1->width; x++)
+				for (x = 0; x < minw; x++)
 				{
 					if (*p1 != *p2)
 						return 0;
 					p1++;
 					p2++;
 				
+					if (*p1 != *p2)
+						return 0;
+					p1++;
+					p2++;
+				}
+			}
+		}
+		else if (bpp == 8)
+		{
+			for (y = 0; y < minh; y++)
+			{
+				for (x = 0; x < minw; x++)
+				{
 					if (*p1 != *p2)
 						return 0;
 					p1++;
@@ -566,6 +581,71 @@ int MoveTo(HDC hdc, int X, int Y)
 	hdc->pen->posX = X;
 	hdc->pen->posY = Y;
 	return 1;
+}
+
+static HPALETTE hSystemPalette = NULL;
+
+static const PALETTEENTRY default_system_palette[20] =
+{
+	/* First 10 entries */
+	{ 0x00, 0x00, 0x00 },
+	{ 0x80, 0x00, 0x00 },
+	{ 0x00, 0x80, 0x00 },
+	{ 0x80, 0x80, 0x00 },
+	{ 0x00, 0x00, 0x80 },
+	{ 0x80, 0x00, 0x80 },
+	{ 0x00, 0x80, 0x80 },
+	{ 0xC0, 0xC0, 0xC0 },
+	{ 0xC0, 0xDC, 0xC0 },
+	{ 0xA6, 0xCA, 0xF0 },
+
+	/* Last 10 entries */
+	{ 0xFF, 0xFB, 0xF0 },
+	{ 0xA0, 0xA0, 0xA4 },
+	{ 0x80, 0x80, 0x80 },
+	{ 0xFF, 0x00, 0x00 },
+	{ 0x00, 0xFF, 0x00 },
+	{ 0xFF, 0xFF, 0x00 },
+	{ 0x00, 0x00, 0xFF },
+	{ 0xFF, 0x00, 0xFF },
+	{ 0x00, 0xFF, 0xFF },
+	{ 0xFF, 0xFF, 0xFF }
+};
+
+/**
+ * Create system palette\n
+ * @return system palette
+ */
+
+HPALETTE CreateSystemPalette()
+{
+	HPALETTE hPalette;
+	LOGPALETTE *logicalPalette;
+
+	logicalPalette = (LOGPALETTE*) malloc(sizeof(LOGPALETTE));
+	logicalPalette->count = 256;
+	logicalPalette->entries = (PALETTEENTRY*) malloc(sizeof(PALETTEENTRY) * 256);
+	memset(logicalPalette->entries, 0, sizeof(PALETTEENTRY) * 256);
+
+	memcpy(&logicalPalette->entries[0], &default_system_palette[0], 10 * sizeof(PALETTEENTRY));
+	memcpy(&logicalPalette->entries[256 - 10], &default_system_palette[10], 10 * sizeof(PALETTEENTRY));
+
+	hPalette = CreatePalette(logicalPalette);
+
+	return hPalette;
+}
+
+/**
+ * Get system palette\n
+ * @return system palette
+ */
+
+HPALETTE GetSystemPalette()
+{
+	if (hSystemPalette == NULL)
+		hSystemPalette = CreateSystemPalette();
+
+	return hSystemPalette;
 }
 
 /**
@@ -1018,6 +1098,9 @@ int FillRect(HDC hdc, HRECT rect, HBRUSH hbr)
 		case 16:
 			return FillRect_16bpp(hdc, rect, hbr);
 			
+		case 8:
+			return FillRect_8bpp(hdc, rect, hbr);
+
 		default:
 			return 0;
 	}
@@ -1048,6 +1131,9 @@ int BitBlt(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdc
 		case 16:
 			return BitBlt_16bpp(hdcDest, nXDest, nYDest, nWidth, nHeight, hdcSrc, nXSrc, nYSrc, rop);
 			
+		case 8:
+			return BitBlt_8bpp(hdcDest, nXDest, nYDest, nWidth, nHeight, hdcSrc, nXSrc, nYSrc, rop);
+
 		default:
 			return 0;
 	}
@@ -1074,6 +1160,9 @@ int PatBlt(HDC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight, int rop)
 
 		case 16:
 			return PatBlt_16bpp(hdc, nXLeft, nYLeft, nWidth, nHeight, rop);
+
+		case 8:
+			return PatBlt_8bpp(hdc, nXLeft, nYLeft, nWidth, nHeight, rop);
 
 		default:
 			return 0;

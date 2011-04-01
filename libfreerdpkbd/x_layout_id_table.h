@@ -1,8 +1,8 @@
 /*
    FreeRDP: A Remote Desktop Protocol client.
-   DirectFB UI Keyboard Handling
+   XKB-based Keyboard Mapping to Microsoft Keyboard System
 
-   Copyright 2010 Marc-Andre Moreau <marcandre.moreau@gmail.com>
+   Copyright 2009 Marc-Andre Moreau <marcandre.moreau@gmail.com>
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -17,18 +17,17 @@
    limitations under the License.
 */
 
-#ifndef __DFB_KEYBOARD_H
-#define __DFB_KEYBOARD_H
+/* Hardcoded mapping from xkb layout names and variants to RDP layout ids */
 
-#include <freerdp/freerdp.h>
+#ifndef __LAYOUTS_X_H
+#define __LAYOUTS_X_H
 
-void
-dfb_kb_init(void);
-void
-dfb_kb_send_key(rdpInst * inst, RD_BOOL up, uint8 keycode);
-int
-dfb_kb_get_toggle_keys_state(rdpInst * inst);
-void
-dfb_kb_focus_in(rdpInst * inst);
+unsigned int
+find_keyboard_layout_in_xorg_rules(char* layout, char* variant);
 
-#endif /* __DFB_KEYBOARD_H */
+#if defined(sun)
+unsigned int
+detect_keyboard_type_and_layout_sunos(char* xkbfile, int length);
+#endif
+
+#endif

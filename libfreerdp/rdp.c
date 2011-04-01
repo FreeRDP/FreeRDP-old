@@ -460,64 +460,73 @@ rdp_send_synchronize(rdpRdp * rdp)
 	rdp_send_data(rdp, s, RDP_DATA_PDU_SYNCHRONIZE);
 }
 
-/* Send a single input event */
+/* Send a single keyboard input event, slowpath @msdn{cc240583} or fastpath @msdn{cc240591}.
+ * keyCode is similar to a scancode but different. */
 void
-rdp_send_input(rdpRdp * rdp, time_t time, uint16 message_type, uint16 device_flags, uint16 param1, uint16 param2)
+rdp_send_input_scancode(rdpRdp * rdp, time_t time, RD_BOOL up, RD_BOOL extended, uint8 keyCode)
 {
 	STREAM s;
-	int fp_flags;
 
 	if (rdp->use_input_fast_path)
 	{
-		switch (message_type)
-		{
-			case RDP_INPUT_SCANCODE:
-				fp_flags = 0 << 5; /* FASTPATH_INPUT_EVENT_SCANCODE */
-				if (device_flags & KBD_FLAG_UP)
-				{
-					fp_flags |= 1; /* FASTPATH_INPUT_KBDFLAGS_RELEASE */
-				}
-				if (device_flags & KBD_FLAG_EXT)
-				{
-					fp_flags |= 2; /* FASTPATH_INPUT_KBDFLAGS_EXTENDED */
-				}
-				s = rdp_fp_init(rdp, 2);
-				out_uint8(s, fp_flags);
-				out_uint8(s, (uint8)param1);	/* Scan code */
-				s_mark_end(s);
-				rdp_fp_send(rdp, s);
-				break;
-			case RDP_INPUT_MOUSE:
-				fp_flags = 1 << 5; /* FASTPATH_INPUT_EVENT_MOUSE */
-				s = rdp_fp_init(rdp, 7);
-				out_uint8(s, fp_flags);
-				out_uint16_le(s, device_flags);
-				out_uint16_le(s, param1);
-				out_uint16_le(s, param2);
-				s_mark_end(s);
-				rdp_fp_send(rdp, s);
-				break;
-			case RDP_INPUT_MOUSEX:
-				fp_flags = 2 << 5; /* FASTPATH_INPUT_EVENT_MOUSEX */
-				ui_unimpl(rdp->inst, "rdp_send_input: TS_FP_INPUT_EVENT "
-					"FASTPATH_INPUT_EVENT_MOUSEX\n");
-				break;
-			default:
-				ui_unimpl(rdp->inst, "rdp_send_input: TS_FP_INPUT_EVENT %x\n",
-					message_type);
-				break;
-		}
+		/* @msdn{cc240592} */
+		uint8 fp_flags = FASTPATH_INPUT_EVENT_SCANCODE << 5 |
+				(up ? FASTPATH_INPUT_KBDFLAGS_RELEASE : 0) |
+				(extended ? FASTPATH_INPUT_KBDFLAGS_EXTENDED : 0);
+		s = rdp_fp_init(rdp, 2);
+		out_uint8(s, fp_flags);
+		out_uint8(s, keyCode);
+		s_mark_end(s);
+		rdp_fp_send(rdp, s);
 	}
 	else
 	{
+		/* @msdn{cc240584} */
+		uint16 keyboardFlags =
+				(up ? KBDFLAGS_DOWN | KBDFLAGS_RELEASE : 0) |
+				(extended ? KBDFLAGS_EXTENDED : 0);
 		s = rdp_init_data(rdp, 16);
 		out_uint16_le(s, 1); /* number of events */
 		out_uint16_le(s, 0); /* pad */
 		out_uint32_le(s, (uint32)time);
-		out_uint16_le(s, message_type);
-		out_uint16_le(s, device_flags);
-		out_uint16_le(s, param1);
-		out_uint16_le(s, param2);
+		out_uint16_le(s, RDP_INPUT_EVENT_SCANCODE);
+		out_uint16_le(s, keyboardFlags);
+		out_uint16_le(s, keyCode);
+		out_uint16_le(s, 0); /* pad */
+		s_mark_end(s);
+		rdp_send_data(rdp, s, RDP_DATA_PDU_INPUT);
+	}
+}
+
+/* Send a single mouse input event, slowpath or fastpath */
+void
+rdp_send_input_mouse(rdpRdp * rdp, time_t time, uint16 pointerFlags, uint16 xPos, uint16 yPos)
+{
+	STREAM s;
+
+	if (rdp->use_input_fast_path)
+	{
+		/* @msdn{cc240594} */
+		int fp_flags = FASTPATH_INPUT_EVENT_MOUSE << 5;
+		s = rdp_fp_init(rdp, 7);
+		out_uint8(s, fp_flags);
+		out_uint16_le(s, pointerFlags);
+		out_uint16_le(s, xPos);
+		out_uint16_le(s, yPos);
+		s_mark_end(s);
+		rdp_fp_send(rdp, s);
+	}
+	else
+	{
+		/* @msdn{cc240586} */
+		s = rdp_init_data(rdp, 16);
+		out_uint16_le(s, 1); /* number of events */
+		out_uint16_le(s, 0); /* pad */
+		out_uint32_le(s, (uint32)time);
+		out_uint16_le(s, RDP_INPUT_EVENT_MOUSE);
+		out_uint16_le(s, pointerFlags);
+		out_uint16_le(s, xPos);
+		out_uint16_le(s, yPos);
 		s_mark_end(s);
 		rdp_send_data(rdp, s, RDP_DATA_PDU_INPUT);
 	}
@@ -549,7 +558,7 @@ rdp_sync_input(rdpRdp * rdp, time_t time, uint32 toggle_keys_state)
 		out_uint16_le(s, 1); /* number of events */
 		out_uint16_le(s, 0); /* pad */
 		out_uint32_le(s, (uint32)time); /* eventTime */
-		out_uint16_le(s, RDP_INPUT_SYNC); /* messageType */
+		out_uint16_le(s, RDP_INPUT_EVENT_SYNC); /* messageType */
 		out_uint16_le(s, 0); /* pad */
 		out_uint32_le(s, toggle_keys_state); /* toggleFlags */
 		s_mark_end(s);
@@ -559,7 +568,7 @@ rdp_sync_input(rdpRdp * rdp, time_t time, uint32 toggle_keys_state)
 
 /* Send a single unicode character input event */
 void
-rdp_unicode_input(rdpRdp * rdp, time_t time, uint16 unicode_character)
+rdp_send_input_unicode(rdpRdp * rdp, time_t time, uint16 unicode_character)
 {
 	STREAM s;
 	int fp_flags;
@@ -579,7 +588,7 @@ rdp_unicode_input(rdpRdp * rdp, time_t time, uint16 unicode_character)
 		out_uint16_le(s, 1); /* number of events */
 		out_uint16_le(s, 0); /* pad */
 		out_uint32_le(s, (uint32)time); /* eventTime */
-		out_uint16_le(s, RDP_INPUT_UNICODE); /* messageType */
+		out_uint16_le(s, RDP_INPUT_EVENT_UNICODE); /* messageType */
 		out_uint16_le(s, 0); /* pad */
 		out_uint16_le(s, unicode_character); /* Unicode character */
 		out_uint16_le(s, 0); /* pad */
@@ -1264,7 +1273,7 @@ static void
 process_set_error_info_pdu(STREAM s, struct rdp_inst *inst)
 {
 	in_uint32_le(s, inst->disc_reason); /* Note: reason 0 is _not_ an error */
-	printf("Received Set Error Information PDU with reason %x\n", inst->disc_reason);
+	DEBUG("Received Set Error Information PDU with reason %x\n", inst->disc_reason);
 }
 
 /* Process Data PDU */

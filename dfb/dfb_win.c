@@ -23,6 +23,7 @@
 #include <unistd.h>
 #include <directfb.h>
 #include <freerdp/chanman.h>
+#include <freerdp/types_ui.h>
 #include "libfreerdpgdi.h"
 #include "dfbfreerdp.h"
 #include "dfb_win.h"
@@ -58,15 +59,15 @@ l_ui_end_update(struct rdp_inst * inst)
 {
 	dfbInfo *dfbi = GET_DFBI(inst);
 	GDI *gdi = GET_GDI(inst);
-	
+
 	if (gdi->primary->hdc->hwnd->invalid->null)
 		return;
-	
+
 	dfbi->update_rect.x = gdi->primary->hdc->hwnd->invalid->x;
 	dfbi->update_rect.y = gdi->primary->hdc->hwnd->invalid->y;
 	dfbi->update_rect.w = gdi->primary->hdc->hwnd->invalid->w;
 	dfbi->update_rect.h = gdi->primary->hdc->hwnd->invalid->h;
-	
+
 	dfbi->primary->Blit(dfbi->primary, dfbi->surface, &(dfbi->update_rect), dfbi->update_rect.x, dfbi->update_rect.y);
 }
 
@@ -125,13 +126,78 @@ l_ui_move_pointer(struct rdp_inst * inst, int x, int y)
 
 	gdi->cursor_x = x;
 	gdi->cursor_y = y;
-	
-	inst->rdp_send_input(inst, RDP_INPUT_MOUSE, PTRFLAGS_MOVE, x, y);
+
+	inst->rdp_send_input_mouse(inst, PTRFLAGS_MOVE, x, y);
 }
 
 static void
 l_ui_channel_data(struct rdp_inst * inst, int chan_id, char * data, int data_size, int flags, int total_size)
 {
+	freerdp_chanman_data(inst, chan_id, data, data_size, flags, total_size);
+}
+
+static RD_BOOL
+l_ui_authenticate(struct rdp_inst * inst)
+{
+	char * pass;
+	int l;
+
+	printf("Please enter credentials for network level authentication.\n");
+
+	printf("User name:");
+	if (inst->settings->username[0] == 0)
+	{
+		if (fgets(inst->settings->username, sizeof(inst->settings->username), stdin) == NULL)
+		{
+		}
+		l = strlen(inst->settings->username);
+		if (l > 0 && inst->settings->username[l - 1] == '\n')
+			inst->settings->username[l - 1] = 0;
+	}
+	else
+		printf("%s\n", inst->settings->username);
+
+	printf("Domain:");
+	if (inst->settings->domain[0] == 0)
+	{
+		if (fgets(inst->settings->domain, sizeof(inst->settings->domain), stdin) == NULL)
+		{
+		}
+		l = strlen(inst->settings->domain);
+		if (l > 0 && inst->settings->domain[l - 1] == '\n')
+			inst->settings->domain[l - 1] = 0;
+	}
+	else
+		printf("%s\n", inst->settings->domain);
+
+	if (!inst->settings->password[0])
+	{
+		pass = getpass("Password:");
+		strncpy(inst->settings->password, pass, sizeof(inst->settings->password) - 1);
+	}
+	return 1;
+}
+
+static int
+l_ui_decode(struct rdp_inst * inst, uint8 * data, int data_size)
+{
+	printf("l_ui_decode: size %d\n", data_size);
+	return 0;
+}
+
+RD_BOOL
+l_ui_check_certificate(rdpInst * inst, const char * fingerprint,
+	const char * subject, const char * issuer, RD_BOOL verified)
+{
+	printf("certificate details:\n");
+	printf("  Subject:\n    %s\n", subject);
+	printf("  Issued by:\n    %s\n", issuer);
+	printf("  Fingerprint:\n    %s\n",  fingerprint);
+
+	if (!verified)
+		printf("The server could not be authenticated. Connection security may be compromised!\n");
+
+	return 1;
 }
 
 static int
@@ -152,8 +218,11 @@ dfb_register_callbacks(rdpInst * inst)
 	inst->ui_create_cursor = l_ui_create_cursor;
 	inst->ui_set_null_cursor = l_ui_set_null_cursor;
 	inst->ui_set_default_cursor = l_ui_set_default_cursor;
-	inst->ui_move_pointer = l_ui_move_pointer;	
+	inst->ui_move_pointer = l_ui_move_pointer;
 	inst->ui_channel_data = l_ui_channel_data;
+	inst->ui_authenticate = l_ui_authenticate;
+	inst->ui_decode = l_ui_decode;
+	inst->ui_check_certificate = l_ui_check_certificate;
 	return 0;
 }
 
@@ -182,7 +251,7 @@ dfb_post_connect(rdpInst * inst)
 
 	gdi_init(inst);
 	gdi = GET_GDI(inst);
-	
+
 	dfbi->err = DirectFBCreate(&(dfbi->dfb));
 
 	dfbi->dsc.flags = DSDESC_CAPS;
@@ -192,7 +261,7 @@ dfb_post_connect(rdpInst * inst)
 	dfbi->dfb->SetVideoMode(dfbi->dfb, gdi->width, gdi->height, gdi->dstBpp);
 	dfbi->dfb->CreateInputEventBuffer(dfbi->dfb, DICAPS_ALL, DFB_TRUE, &(dfbi->event_buffer));
 	dfbi->event_buffer->CreateFileDescriptor(dfbi->event_buffer, &(dfbi->read_fds));
-	
+
 	dfbi->dfb->GetDisplayLayer(dfbi->dfb, 0, &(dfbi->layer));
 	dfbi->layer->EnableCursor(dfbi->layer, 1);
 
@@ -200,11 +269,20 @@ dfb_post_connect(rdpInst * inst)
 	dfbi->dsc.caps = DSCAPS_SYSTEMONLY;
 	dfbi->dsc.width = gdi->width;
 	dfbi->dsc.height = gdi->height;
-	dfbi->dsc.pixelformat = (gdi->dstBpp == 32) ? DSPF_AiRGB : DSPF_RGB16;
+
+	if (gdi->dstBpp == 32 || gdi->dstBpp == 24)
+		dfbi->dsc.pixelformat = DSPF_AiRGB;
+	else if (gdi->dstBpp == 16 || gdi->dstBpp == 15)
+		dfbi->dsc.pixelformat = DSPF_RGB16;
+	else if (gdi->dstBpp == 8)
+		dfbi->dsc.pixelformat = DSPF_RGB332;
+	else
+		dfbi->dsc.pixelformat = DSPF_AiRGB;
+
 	dfbi->dsc.preallocated[0].data = gdi->primary_buffer;
 	dfbi->dsc.preallocated[0].pitch = gdi->width * gdi->bytesPerPixel;
 	dfbi->dfb->CreateSurface(dfbi->dfb, &(dfbi->dsc), &(dfbi->surface));
-	
+
 	return 0;
 }
 
@@ -224,7 +302,7 @@ dfb_get_fds(rdpInst * inst, void ** read_fds, int * read_count, void ** write_fd
 
 	read_fds[*read_count] = (void *)(long)(dfbi->read_fds);
 	(*read_count)++;
-	
+
 	return 0;
 }
 
@@ -235,7 +313,7 @@ dfb_check_fds(rdpInst * inst, fd_set *set)
 
 	if (!FD_ISSET(dfbi->read_fds, set))
 		return 0;
-	
+
 	if (read(dfbi->read_fds, &(dfbi->event), sizeof(dfbi->event)) > 0)
 		dfb_process_event(inst, &(dfbi->event));
 

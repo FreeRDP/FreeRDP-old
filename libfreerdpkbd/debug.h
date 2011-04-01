@@ -1,8 +1,8 @@
 /*
    FreeRDP: A Remote Desktop Protocol client.
-   DirectFB UI Keyboard Handling
+   Microsoft Locale Definitions and Conversion Tables
 
-   Copyright 2010 Marc-Andre Moreau <marcandre.moreau@gmail.com>
+   Copyright 2009 Marc-Andre Moreau <marcandre.moreau@gmail.com>
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -17,18 +17,15 @@
    limitations under the License.
 */
 
-#ifndef __DFB_KEYBOARD_H
-#define __DFB_KEYBOARD_H
+#ifndef __DEBUG_H
+#define __DEBUG_H
 
-#include <freerdp/freerdp.h>
+#include "config.h"
 
-void
-dfb_kb_init(void);
-void
-dfb_kb_send_key(rdpInst * inst, RD_BOOL up, uint8 keycode);
-int
-dfb_kb_get_toggle_keys_state(rdpInst * inst);
-void
-dfb_kb_focus_in(rdpInst * inst);
+#ifdef WITH_DEBUG_KBD
+#define DEBUG_KBD(fmt, ...) printf("DBG (KBD) %s (%d): " fmt, __FUNCTION__, __LINE__, ## __VA_ARGS__)
+#else
+#define DEBUG_KBD(fmt, ...) do { } while (0)
+#endif
 
-#endif /* __DFB_KEYBOARD_H */
+#endif

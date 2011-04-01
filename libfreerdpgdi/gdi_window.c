@@ -297,7 +297,7 @@ gdi_rop3_code(unsigned char code)
 }
 
 void
-gdi_copy_mem(char * d, char * s, int n)
+gdi_copy_mem(uint8 * d, uint8 * s, int n)
 {
 	while (n & (~7))
 	{
@@ -319,7 +319,7 @@ gdi_copy_mem(char * d, char * s, int n)
 }
 
 void
-gdi_copy_memb(char * d, char * s, int n)
+gdi_copy_memb(uint8 * d, uint8 * s, int n)
 {
 	d = (d + n) - 1;
 	s = (s + n) - 1;
@@ -344,10 +344,10 @@ gdi_copy_memb(char * d, char * s, int n)
 	}
 }
 
-char*
+uint8*
 gdi_get_bitmap_pointer(HDC hdcBmp, int x, int y)
 {
-	char * p;
+	uint8 * p;
 	HBITMAP hBmp = (HBITMAP) hdcBmp->selectedObject;
 	
 	if (x >= 0 && x < hBmp->width && y >= 0 && y < hBmp->height)
@@ -362,10 +362,10 @@ gdi_get_bitmap_pointer(HDC hdcBmp, int x, int y)
 	}
 }
 
-char*
+uint8*
 gdi_get_brush_pointer(HDC hdcBrush, int x, int y)
 {
-	char * p;
+	uint8 * p;
 
 	if (hdcBrush->brush != NULL)
 	{
@@ -383,12 +383,12 @@ gdi_get_brush_pointer(HDC hdcBrush, int x, int y)
 		}
 	}
 
-	p = (char*) &(hdcBrush->textColor);
+	p = (uint8*) &(hdcBrush->textColor);
 	return p;
 }
 
 int
-gdi_is_mono_pixel_set(char* data, int x, int y, int width)
+gdi_is_mono_pixel_set(uint8* data, int x, int y, int width)
 {
 	int byte;
 	int shift;
@@ -401,19 +401,19 @@ gdi_is_mono_pixel_set(char* data, int x, int y, int width)
 }
 
 HBITMAP
-gdi_create_bitmap(GDI* gdi, int width, int height, int bpp, int reverse, char* data)
+gdi_create_bitmap(GDI* gdi, int width, int height, int bpp, int reverse, uint8* data)
 {
-	char* bmpData;
+	uint8* bmpData;
 	HBITMAP bitmap;
 	
-	bmpData = (char*) gdi_image_convert(data, width, height, gdi->srcBpp, bpp, gdi->palette);
+	bmpData = gdi_image_convert(data, width, height, gdi->srcBpp, bpp, gdi->palette);
 	bitmap = CreateBitmap(width, height, gdi->dstBpp, bmpData);
 	
 	return bitmap;
 }
 
 gdi_bitmap*
-gdi_bitmap_new(GDI *gdi, int width, int height, int bpp, int reverse, char* data)
+gdi_bitmap_new(GDI *gdi, int width, int height, int bpp, int reverse, uint8* data)
 {
 	gdi_bitmap *gdi_bmp;
 	
@@ -473,7 +473,7 @@ gdi_ui_desktop_restore(struct rdp_inst * inst, int offset, int x, int y, int cx,
 static RD_HGLYPH
 gdi_ui_create_glyph(struct rdp_inst * inst, int width, int height, uint8 * data)
 {
-	char* glyph;
+	uint8* glyph;
 	gdi_bitmap *gdi_bmp;
 
 	//DEBUG_GDI("gdi_ui_create_glyph: width:%d height:%d\n", width, height);
@@ -483,7 +483,7 @@ gdi_ui_create_glyph(struct rdp_inst * inst, int width, int height, uint8 * data)
 	gdi_bmp->hdc = GetDC();
 	gdi_bmp->hdc->bytesPerPixel = 1;
 	gdi_bmp->hdc->bitsPerPixel = 1;
-	glyph = gdi_glyph_convert(width, height, (char*) data);
+	glyph = gdi_glyph_convert(width, height, data);
 	gdi_bmp->bitmap = CreateBitmap(width, height, 1, glyph);
 	gdi_bmp->bitmap->bytesPerPixel = 1;
 	gdi_bmp->bitmap->bitsPerPixel = 1;
@@ -522,7 +522,7 @@ gdi_ui_create_bitmap(struct rdp_inst * inst, int width, int height, uint8* data)
 
 	//DEBUG_GDI("gdi_ui_create_bitmap: width:%d height:%d\n", width, height);
 
-	gdi_bmp = gdi_bitmap_new(gdi, width, height, gdi->dstBpp, 1, (char*) data);
+	gdi_bmp = gdi_bitmap_new(gdi, width, height, gdi->dstBpp, 1, data);
 	
 	return (RD_HBITMAP) gdi_bmp;
 }
@@ -779,7 +779,7 @@ gdi_ui_patblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy
 	
 	if (brush->style == BS_PATTERN)
 	{
-		char* data;
+		uint8* data;
 		HBITMAP hBmp;
 		HBRUSH originalBrush;
 
@@ -791,11 +791,11 @@ gdi_ui_patblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy
 		{
 			if (brush->bd->color_code > 1) /*  > 1 bpp */
 			{
-				data = (char*) gdi_image_convert((char*) brush->bd->data, 8, 8, gdi->srcBpp, gdi->dstBpp, gdi->palette);
+				data = gdi_image_convert(brush->bd->data, 8, 8, gdi->srcBpp, gdi->dstBpp, gdi->palette);
 			}
 			else
 			{
-				data = (char*) gdi_mono_image_convert((char*) brush->bd->data, 8, 8, gdi->srcBpp, gdi->dstBpp, bgcolor, fgcolor, gdi->palette);
+				data = gdi_mono_image_convert(brush->bd->data, 8, 8, gdi->srcBpp, gdi->dstBpp, bgcolor, fgcolor, gdi->palette);
 			}
 			hBmp = CreateBitmap(8, 8, gdi->drawing->hdc->bitsPerPixel, data);
 

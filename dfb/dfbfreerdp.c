@@ -566,7 +566,14 @@ main(int argc, char ** argv)
 	int index = 1;
 
 	setlocale(LC_CTYPE, "");
+
+	if (!freerdp_global_init())
+	{
+		printf("Error initializing freerdp\n");
+		return 1;
+	}
 	freerdp_chanman_init();
+
 	dfb_init(&argc, &argv);
 	dfb_kb_init();
 
@@ -598,6 +605,8 @@ main(int argc, char ** argv)
 	}
 
 	freerdp_chanman_uninit();
+	freerdp_global_finish();
+
 	return 0;
 }
 
