@@ -40,6 +40,8 @@ tsmf_presentation_start(TSMF_PRESENTATION * presentation);
 void
 tsmf_presentation_stop(TSMF_PRESENTATION * presentation);
 void
+tsmf_presentation_set_size(TSMF_PRESENTATION * presentation, uint32 width, uint32 height);
+void
 tsmf_presentation_free(TSMF_PRESENTATION * presentation);
 
 TSMF_STREAM *
@@ -52,6 +54,8 @@ void
 tsmf_stream_flush(TSMF_STREAM * stream);
 void
 tsmf_stream_end(TSMF_STREAM * stream);
+void
+tsmf_stream_set_size(TSMF_STREAM * stream, uint32 width, uint32 height);
 void
 tsmf_stream_free(TSMF_STREAM * stream);
 

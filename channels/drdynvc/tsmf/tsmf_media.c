@@ -151,6 +151,9 @@ struct _TSMF_STREAM
 
 	TSMF_STREAM * next;
 	TSMF_STREAM * prev;
+
+	uint32 width;
+	uint32 height;
 };
 
 struct _TSMF_SAMPLE
@@ -366,6 +369,21 @@ tsmf_presentation_stop(TSMF_PRESENTATION * presentation)
 }
 
 void
+tsmf_presentation_set_size(TSMF_PRESENTATION * presentation, uint32 width, uint32 height)
+{
+	TSMF_STREAM * stream;
+
+	pthread_mutex_lock(presentation->mutex);
+
+	for (stream = presentation->stream_list_head; stream; stream = stream->next)
+	{
+		tsmf_stream_set_size(stream, width, height);
+	}
+
+	pthread_mutex_unlock(presentation->mutex);
+}
+
+void
 tsmf_presentation_free(TSMF_PRESENTATION * presentation)
 {
 	tsmf_presentation_stop(presentation);
@@ -560,6 +578,8 @@ tsmf_stream_set_format(TSMF_STREAM * stream, const char * name, const uint8 * pM
 			mediatype.ExtraDataSize));
 	}
 
+	stream->width = mediatype.Width;
+	stream->height = mediatype.Height;
 	stream->decoder = tsmf_load_decoder(name, &mediatype);
 }
 
@@ -582,6 +602,19 @@ void
 tsmf_stream_end(TSMF_STREAM * stream)
 {
 	stream->eos = 1;
+}
+
+void
+tsmf_stream_set_size(TSMF_STREAM * stream, uint32 width, uint32 height)
+{
+	if (stream->decoder && stream->decoder->SetSize)
+	{
+		if (stream->decoder->SetSize(stream->decoder, width, height) == 0)
+		{
+			stream->width= width;
+			stream->height = height;
+		}
+	}
 }
 
 void

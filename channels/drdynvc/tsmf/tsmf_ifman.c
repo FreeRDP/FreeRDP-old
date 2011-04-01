@@ -226,7 +226,29 @@ tsmf_ifman_set_video_window(TSMF_IFMAN * ifman)
 int
 tsmf_ifman_update_geometry_info(TSMF_IFMAN * ifman)
 {
-	LLOGLN(0, ("tsmf_ifman_update_geometry_info:"));
+	TSMF_PRESENTATION * presentation;
+	uint32 numGeometryInfo;
+	uint32 Left;
+	uint32 Top;
+	uint32 Width;
+	uint32 Height;
+	int error = 0;
+
+	numGeometryInfo = GET_UINT32(ifman->input_buffer, 16);
+	Width = GET_UINT32(ifman->input_buffer, 20 + 12);
+	Height = GET_UINT32(ifman->input_buffer, 20 + 16);
+	Left = GET_UINT32(ifman->input_buffer, 20 + 20);
+	Top = GET_UINT32(ifman->input_buffer, 20 + 24);
+	LLOGLN(0, ("tsmf_ifman_update_geometry_info: numGeometryInfo %d Width %d Height %d Left %d Top %d",
+		numGeometryInfo, Width, Height, Left, Top));
+
+	presentation = tsmf_presentation_find_by_id(ifman->input_buffer);
+	if (presentation == NULL)
+		error = 1;
+	else
+	{
+		tsmf_presentation_set_size(presentation, Width, Height);
+	}
 	ifman->output_pending = 1;
 	return 0;
 }
