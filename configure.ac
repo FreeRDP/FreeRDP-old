@@ -247,7 +247,7 @@ PKG_CHECK_MODULES(PULSE, libpulse, [
 	pulse="no"
 ])
 
-PKG_CHECK_MODULES(FFMPEG, [libavcodec libavformat], [
+PKG_CHECK_MODULES(FFMPEG, [libavcodec libavformat libswscale], [
 	HAVE_FFMPEG=1
 	ffmpeg="yes"
 ], [
@@ -929,7 +929,7 @@ fi
 # FFmpeg
 #
 if test x"$HAVE_FFMPEG" = "x1"; then
-	EXTRA_SUBDIRS="$EXTRA_SUBDIRS channels/drdynvc/tsmf/copy"
+	EXTRA_SUBDIRS="$EXTRA_SUBDIRS channels/drdynvc/tsmf/copy channels/drdynvc/tsmf/ffmpeg"
 fi
 
 #
@@ -1024,6 +1024,7 @@ channels/drdynvc/Makefile
 channels/drdynvc/pnpdr/Makefile
 channels/drdynvc/tsmf/Makefile
 channels/drdynvc/tsmf/copy/Makefile
+channels/drdynvc/tsmf/ffmpeg/Makefile
 channels/drdynvc/audin/Makefile
 channels/drdynvc/audin/alsa/Makefile
 channels/drdynvc/audin/pulse/Makefile
