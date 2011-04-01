@@ -33,6 +33,31 @@ static int xf_kb_keyboard_layout = 0;
 static RD_BOOL pressed_keys[256] = { False };
 
 void
+xf_kb_set_keypress(uint8 keycode, KeySym keysym)
+{
+	if (keycode >= 8)
+		pressed_keys[keycode] = keysym;
+	else
+		return;
+}
+
+void
+xf_kb_unset_keypress(uint8 keycode)
+{
+	if (keycode >= 8)
+		pressed_keys[keycode] = NoSymbol;
+	else
+		return;
+}
+
+static RD_BOOL
+xf_kb_key_pressed(xfInfo * xfi, KeySym keysym)
+{
+	KeyCode keycode = XKeysymToKeycode(xfi->display, keysym);
+	return pressed_keys[keycode] == keysym;
+}
+
+void
 xf_kb_init(Display *dpy, unsigned int keyboard_layout_id)
 {
 	xf_kb_keyboard_layout = freerdp_kbd_init(dpy, keyboard_layout_id);
@@ -148,31 +173,6 @@ xf_kb_focus_in(xfInfo * xfi)
 	/* sync num, caps, scroll, kana lock */
 	flags = xf_kb_get_toggle_keys_state(xfi);
 	xfi->inst->rdp_sync_input(xfi->inst, flags);
-}
-
-void
-xf_kb_set_keypress(uint8 keycode, KeySym keysym)
-{
-	if (keycode >= 8)
-		pressed_keys[keycode] = keysym;
-	else
-		return;
-}
-
-void
-xf_kb_unset_keypress(uint8 keycode)
-{
-	if (keycode >= 8)
-		pressed_keys[keycode] = NoSymbol;
-	else
-		return;
-}
-
-static RD_BOOL
-xf_kb_key_pressed(xfInfo * xfi, KeySym keysym)
-{
-	KeyCode keycode = XKeysymToKeycode(xfi->display, keysym);
-	return pressed_keys[keycode] == keysym;
 }
 
 RD_BOOL
