@@ -185,7 +185,6 @@ load_xkb_keyboard(KeycodeToVkcode map, char* kbd)
 
 	beg = kbd;
 
-	DEBUG_KBD("Loading keymap %s\n", kbd);
 
 	// Extract file name and keymap name
 	if((end = strrchr(kbd, '(')) != NULL)
@@ -208,6 +207,7 @@ load_xkb_keyboard(KeycodeToVkcode map, char* kbd)
 
 	// Get path to file relative to freerdp's directory
 	snprintf(xkbfilepath, sizeof(xkbfilepath), "keymaps/%s", xkbfile);
+	DEBUG_KBD("Loading keymap %s, first trying %s\n", kbd, xkbfilepath);
 
 	// Open the file for reading only
 	// It can happen that the same file is opened twice at the same time
@@ -246,6 +246,7 @@ load_xkb_keyboard(KeycodeToVkcode map, char* kbd)
 						if((fp = fopen(xkbfilepath, "r")) == NULL)
 						{
 							// Error: Could not find keymap
+							DEBUG_KBD("keymaps for %s not found\n", xkbfile);
 							return 0;
 						}
 					}
@@ -384,9 +385,11 @@ load_keyboard_map(KeycodeToVkcode keycodeToVkcode, char *xkbfile)
 	while (kbd < xkbfileEnd);
 #endif
 
+	DEBUG_KBD("loaded %d keymaps\n", keymapLoaded);
 	if(keymapLoaded <= 0)
 	{
 		// No keymap was loaded, load default hard-coded keymap
+		DEBUG_KBD("using default keymap\n");
 		memcpy(keycodeToVkcode, defaultKeycodeToVkcode, sizeof(keycodeToVkcode));
 	}
 }

@@ -37,7 +37,7 @@ wf_ll_kbd_proc(int nCode, WPARAM wParam, LPARAM lParam)
 	uint8 scanCode;
 	DWORD flags;
 
-	DEBUG_KBD("hWnd %X nCode %X\n", hWnd, nCode);
+	DEBUG_KBD("Low-level keyboard hook, hWnd %X nCode %X wParam %X\n", hWnd, nCode, wParam);
 	if (hWnd && (nCode == HC_ACTION)) {
 		switch (wParam) {
 		case WM_KEYDOWN:
@@ -48,8 +48,8 @@ wf_ll_kbd_proc(int nCode, WPARAM wParam, LPARAM lParam)
 			PKBDLLHOOKSTRUCT p = (PKBDLLHOOKSTRUCT) lParam;
 			scanCode = (uint8)p->scanCode;
 			flags = p->flags;
-			DEBUG_KBD("wParam %04X scanCode %04X flags %02X vkCode %02X\n",
-					wParam, scanCode, flags, p->vkCode);
+			DEBUG_KBD("keydown %d scanCode %04X flags %02X vkCode %02X\n",
+					wParam == WM_KEYDOWN, scanCode, flags, p->vkCode);
 
 			if (wfi->fs_toggle &&
 					((p->vkCode == VK_RETURN) || (p->vkCode == VK_CANCEL)) &&

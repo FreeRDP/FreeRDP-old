@@ -111,8 +111,14 @@ freerdp_kbd_init(void *dpy, unsigned int keyboard_layout_id)
 	{
 		int vkcode;
 		vkcode = keycodeToVkcode[keycode];
+		DEBUG_KBD("X key code %3d VK %3d %-19s-> RDP keycode %d/%d\n",
+				keycode, vkcode, virtualKeyboard[vkcode].name,
+				virtualKeyboard[vkcode].extended, virtualKeyboard[vkcode].scancode);
 		x_keycode_to_rdp_keycode[keycode].keycode = virtualKeyboard[vkcode].scancode;
 		x_keycode_to_rdp_keycode[keycode].extended = virtualKeyboard[vkcode].extended;
+#ifdef WITH_DEBUG_KBD
+		x_keycode_to_rdp_keycode[keycode].keyname = virtualKeyboard[vkcode].name;
+#endif
 	}
 #endif
 
