@@ -321,7 +321,7 @@ typedef struct _virtualKey
 	char *x_keyname;
 } virtualKey;
 
-static const virtualKey virtualKeyboard[256 + 3] =
+static const virtualKey virtualKeyboard[256 + 2] =
 {
 	{ 0x00, 0, ""                    , NULL   },
 	{ 0x00, 0, "VK_LBUTTON"          , NULL   },
@@ -342,7 +342,7 @@ static const virtualKey virtualKeyboard[256 + 3] =
 	{ 0x2A, 0, "VK_SHIFT"            , "LFSH" },
 	{ 0x00, 0, "VK_CONTROL"          , NULL   },
 	{ 0x38, 0, "VK_MENU"             , "LALT" },
-	{ 0x45, 0, "VK_PAUSE"            , NULL   },
+	{ 0x46, 1, "VK_PAUSE"            , "PAUS" },
 	{ 0x3A, 0, "VK_CAPITAL"          , "CAPS" },
 	{ 0x00, 0, "VK_KANA / VK_HANGUL" , NULL   },
 	{ 0x00, 0, ""                    , NULL   },
@@ -582,7 +582,6 @@ static const virtualKey virtualKeyboard[256 + 3] =
 	/* end of 256 VK entries */
 	{ 0x54, 0, ""                    , "LVL3" },
 	{ 0x1C, 1, ""                    , "KPEN" },
-	{ 0x45, 1, ""                    , "PAUS" },
 };
 
 #endif // __KEYBOARD_H

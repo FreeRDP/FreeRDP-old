@@ -71,6 +71,22 @@ wf_ll_kbd_proc(int nCode, WPARAM wParam, LPARAM lParam)
 					DEBUG_KBD("hack: NumLock (x45) should not be extended\n");
 					flags &= ~LLKHF_EXTENDED;
 				}
+				else
+				{
+					/* Windows sends Pause as if it was a RDP NumLock (handled above).
+					 * It must however be sent as a one-shot Ctrl+NumLock */
+					if (wParam == WM_KEYDOWN)
+					{
+						DEBUG_KBD("Pause, sent as Ctrl+NumLock\n");
+						wfi->inst->rdp_send_input_scancode(wfi->inst, 0, 0, 0x1D); /* Ctrl down */
+						wfi->inst->rdp_send_input_scancode(wfi->inst, 0, 0, 0x45); /* NumLock down */
+						wfi->inst->rdp_send_input_scancode(wfi->inst, 1, 0, 0x1D); /* Ctrl up */
+						wfi->inst->rdp_send_input_scancode(wfi->inst, 1, 0, 0x45); /* NumLock up */
+					}
+					else
+						DEBUG_KBD("Pause up\n");
+					return 1;
+				}
 			}
 
 			if ((scanCode == 0x36) && (flags & LLKHF_EXTENDED))
