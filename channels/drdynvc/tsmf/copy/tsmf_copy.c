@@ -46,7 +46,7 @@ typedef struct _TSMFCopyDecoder
 	AVOutputFormat * format;
 	AVFormatContext * format_context;
 	AVStream * stream;
-	AVCodecContext * codec;
+	AVCodecContext * codec_context;
 	int prepared;
 } TSMFCopyDecoder;
 
@@ -97,14 +97,14 @@ tsmf_copy_init_video_stream(ITSMFDecoder * decoder, const TS_AM_MEDIA_TYPE * med
 {
 	TSMFCopyDecoder * copy_decoder = (TSMFCopyDecoder *) decoder;
 
-	copy_decoder->codec->width = media_type->Width;
-	copy_decoder->codec->height = media_type->Height;
-	copy_decoder->codec->bit_rate = media_type->BitRate;
-	copy_decoder->codec->time_base.den = media_type->SamplesPerSecond.Numerator;
-	copy_decoder->codec->time_base.num = media_type->SamplesPerSecond.Denominator;
+	copy_decoder->codec_context->width = media_type->Width;
+	copy_decoder->codec_context->height = media_type->Height;
+	copy_decoder->codec_context->bit_rate = media_type->BitRate;
+	copy_decoder->codec_context->time_base.den = media_type->SamplesPerSecond.Numerator;
+	copy_decoder->codec_context->time_base.num = media_type->SamplesPerSecond.Denominator;
 
-	copy_decoder->codec->gop_size = 12;
-	copy_decoder->codec->pix_fmt = PIX_FMT_YUV420P;
+	copy_decoder->codec_context->gop_size = 12;
+	copy_decoder->codec_context->pix_fmt = PIX_FMT_YUV420P;
 
 	return 0;
 }
@@ -114,21 +114,21 @@ tsmf_copy_init_audio_stream(ITSMFDecoder * decoder, const TS_AM_MEDIA_TYPE * med
 {
 	TSMFCopyDecoder * copy_decoder = (TSMFCopyDecoder *) decoder;
 
-	copy_decoder->codec->sample_rate = media_type->SamplesPerSecond.Numerator;
-	copy_decoder->codec->bit_rate = media_type->BitRate;
-	copy_decoder->codec->channels = media_type->Channels;
-	copy_decoder->codec->block_align = media_type->BlockAlign;
+	copy_decoder->codec_context->sample_rate = media_type->SamplesPerSecond.Numerator;
+	copy_decoder->codec_context->bit_rate = media_type->BitRate;
+	copy_decoder->codec_context->channels = media_type->Channels;
+	copy_decoder->codec_context->block_align = media_type->BlockAlign;
 
 	switch (media_type->BitsPerSample)
 	{
 		case 8:
-			copy_decoder->codec->sample_fmt = SAMPLE_FMT_U8;
+			copy_decoder->codec_context->sample_fmt = SAMPLE_FMT_U8;
 			break;
 		case 16:
-			copy_decoder->codec->sample_fmt = SAMPLE_FMT_S16;
+			copy_decoder->codec_context->sample_fmt = SAMPLE_FMT_S16;
 			break;
 		case 32:
-			copy_decoder->codec->sample_fmt = SAMPLE_FMT_S32;
+			copy_decoder->codec_context->sample_fmt = SAMPLE_FMT_S32;
 			break;
 	}
 
@@ -147,9 +147,9 @@ tsmf_copy_init_stream(ITSMFDecoder * decoder, const TS_AM_MEDIA_TYPE * media_typ
 		return 1;
 	}
 
-	copy_decoder->codec = copy_decoder->stream->codec;
-	copy_decoder->codec->codec_id = copy_decoder->codec_id;
-	copy_decoder->codec->codec_type = copy_decoder->media_type;
+	copy_decoder->codec_context = copy_decoder->stream->codec;
+	copy_decoder->codec_context->codec_id = copy_decoder->codec_id;
+	copy_decoder->codec_context->codec_type = copy_decoder->media_type;
 
 	if (copy_decoder->media_type == AVMEDIA_TYPE_VIDEO)
 	{
@@ -164,13 +164,13 @@ tsmf_copy_init_stream(ITSMFDecoder * decoder, const TS_AM_MEDIA_TYPE * media_typ
 
 	if (media_type->ExtraData)
 	{
-		copy_decoder->codec->extradata_size = media_type->ExtraDataSize;
-		copy_decoder->codec->extradata = malloc(copy_decoder->codec->extradata_size);
-		memcpy(copy_decoder->codec->extradata, media_type->ExtraData, media_type->ExtraDataSize);
+		copy_decoder->codec_context->extradata_size = media_type->ExtraDataSize;
+		copy_decoder->codec_context->extradata = malloc(copy_decoder->codec_context->extradata_size);
+		memcpy(copy_decoder->codec_context->extradata, media_type->ExtraData, media_type->ExtraDataSize);
 	}
 
 	if (copy_decoder->format->flags & AVFMT_GLOBALHEADER)
-		copy_decoder->codec->flags |= CODEC_FLAG_GLOBAL_HEADER;
+		copy_decoder->codec_context->flags |= CODEC_FLAG_GLOBAL_HEADER;
 
 	return 0;
 }
@@ -278,10 +278,10 @@ tsmf_copy_free(ITSMFDecoder * decoder)
 	{
 		av_write_trailer(copy_decoder->format_context);
 	}
-	if (copy_decoder->codec)
+	if (copy_decoder->codec_context)
 	{
-		if (copy_decoder->codec->extradata)
-			free(copy_decoder->codec->extradata);
+		if (copy_decoder->codec_context->extradata)
+			free(copy_decoder->codec_context->extradata);
 	}
 	if (copy_decoder->stream)
 	{
