@@ -63,6 +63,16 @@ wf_ll_kbd_proc(int nCode, WPARAM wParam, LPARAM lParam)
 				return 1;
 			}
 
+			if (scanCode == 0x45) /* NumLock-ish */
+			{
+				if (flags & LLKHF_EXTENDED)
+				{
+					/* Windows sends NumLock as extended - rdp doesn't */
+					DEBUG_KBD("hack: NumLock (x45) should not be extended\n");
+					flags &= ~LLKHF_EXTENDED;
+				}
+			}
+
 			if ((scanCode == 0x36) && (flags & LLKHF_EXTENDED))
 			{
 				DEBUG_KBD("hack: right shift (x36) should not be extended\n");
