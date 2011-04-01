@@ -39,6 +39,7 @@ typedef struct _TSMFFFmpegDecoder
 	enum CodecID codec_id;
 	AVCodecContext * codec_context;
 	AVCodec * codec;
+	AVFrame * frame;
 	int prepared;
 } TSMFFFmpegDecoder;
 
@@ -70,6 +71,8 @@ tsmf_ffmpeg_init_video_stream(ITSMFDecoder * decoder, const TS_AM_MEDIA_TYPE * m
 
 	mdecoder->codec_context->gop_size = 12;
 	mdecoder->codec_context->pix_fmt = PIX_FMT_YUV420P;
+
+	mdecoder->frame = avcodec_alloc_frame();
 
 	return 0;
 }
@@ -197,13 +200,65 @@ tsmf_ffmpeg_set_format(ITSMFDecoder * decoder, const TS_AM_MEDIA_TYPE * media_ty
 }
 
 static int
-tsmf_ffmpeg_decode(ITSMFDecoder * decoder, const uint8 * data, uint32 data_size, uint32 extensions,
+tsmf_ffmpeg_decode_video(ITSMFDecoder * decoder, const uint8 * data, uint32 data_size, uint32 extensions,
 	uint8 ** decoded_data, uint32 * decoded_size)
 {
+	TSMFFFmpegDecoder * mdecoder = (TSMFFFmpegDecoder *) decoder;
+	int decoded;
+	int len;
+	int ret = 0;
+
+	*decoded_data = NULL;
+	*decoded_size = 0;
+
+	len = avcodec_decode_video(mdecoder->codec_context, mdecoder->frame, &decoded, data, data_size);
+	if (len < 0)
+	{
+		LLOGLN(0, ("tsmf_ffmpeg_decode_video: avcodec_decode_video failed (%d)", len));
+		ret = 1;
+	}
+	else if (!decoded)
+	{
+		LLOGLN(0, ("tsmf_ffmpeg_decode_video: data_size %d, no frame is decoded.", data_size));
+		ret = 1;
+	}
+	else
+	{
+		LLOGLN(0, ("tsmf_ffmpeg_decode_video: linesize[0] %d linesize[1] %d linesize[2] %d linesize[3] %d",
+			mdecoder->frame->linesize[0], mdecoder->frame->linesize[1],
+			mdecoder->frame->linesize[2], mdecoder->frame->linesize[3]));
+	}
+
+	return ret;
+}
+
+static int
+tsmf_ffmpeg_decode_audio(ITSMFDecoder * decoder, const uint8 * data, uint32 data_size, uint32 extensions,
+	uint8 ** decoded_data, uint32 * decoded_size)
+{
+	LLOGLN(0, ("tsmf_ffmpeg_decode_audio: data_size %d", data_size));
 	*decoded_data = NULL;
 	*decoded_size = 0;
 
 	return 0;
+}
+
+static int
+tsmf_ffmpeg_decode(ITSMFDecoder * decoder, const uint8 * data, uint32 data_size, uint32 extensions,
+	uint8 ** decoded_data, uint32 * decoded_size)
+{
+	TSMFFFmpegDecoder * mdecoder = (TSMFFFmpegDecoder *) decoder;
+
+	switch (mdecoder->media_type)
+	{
+		case AVMEDIA_TYPE_VIDEO:
+			return tsmf_ffmpeg_decode_video(decoder, data, data_size, extensions, decoded_data, decoded_size);
+		case AVMEDIA_TYPE_AUDIO:
+			return tsmf_ffmpeg_decode_audio(decoder, data, data_size, extensions, decoded_data, decoded_size);
+		default:
+			LLOGLN(0, ("tsmf_ffmpeg_decode: unknown media type."));
+			return 1;
+	}
 }
 
 static void
@@ -211,6 +266,10 @@ tsmf_ffmpeg_free(ITSMFDecoder * decoder)
 {
 	TSMFFFmpegDecoder * mdecoder = (TSMFFFmpegDecoder *) decoder;
 
+	if (mdecoder->frame)
+	{
+		av_free(mdecoder->frame);
+	}
 	if (mdecoder->codec_context)
 	{
 		if (mdecoder->prepared)
