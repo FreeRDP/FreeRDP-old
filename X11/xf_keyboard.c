@@ -33,6 +33,31 @@ static int xf_kb_keyboard_layout = 0;
 static RD_BOOL pressed_keys[256] = { False };
 
 void
+xf_kb_set_keypress(uint8 keycode, KeySym keysym)
+{
+	if (keycode >= 8)
+		pressed_keys[keycode] = keysym;
+	else
+		return;
+}
+
+void
+xf_kb_unset_keypress(uint8 keycode)
+{
+	if (keycode >= 8)
+		pressed_keys[keycode] = NoSymbol;
+	else
+		return;
+}
+
+static RD_BOOL
+xf_kb_key_pressed(xfInfo * xfi, KeySym keysym)
+{
+	KeyCode keycode = XKeysymToKeycode(xfi->display, keysym);
+	return pressed_keys[keycode] == keysym;
+}
+
+void
 xf_kb_init(Display *dpy, unsigned int keyboard_layout_id)
 {
 	xf_kb_keyboard_layout = freerdp_kbd_init(dpy, keyboard_layout_id);
@@ -56,6 +81,23 @@ xf_kb_send_key(xfInfo * xfi, RD_BOOL up, uint8 keycode)
 	{
 		printf("xf_kb_send_key: unknown key %s keycode=%d (X keysym=0x%04X)\n",
 			up ? "up" : "down", keycode, (unsigned int)XKeycodeToKeysym(xfi->display, keycode, 0));
+	}
+	else if ((scancode == 0x46) && extended &&
+			!xf_kb_key_pressed(xfi, XK_Control_L) && !xf_kb_key_pressed(xfi, XK_Control_R))
+	{
+		/* Pause without Ctrl has to be sent as Ctrl + NumLock. */
+		if (!up)
+		{
+			DEBUG_KBD("down keycode=%d (X keysym=0x%04X) is Pause down, sent as Ctrl+NumLock sequence\n",
+				keycode, (unsigned int)XKeycodeToKeysym(xfi->display, keycode, 0));
+			xfi->inst->rdp_send_input_scancode(xfi->inst, 0, 0, 0x1D); /* Ctrl down */
+			xfi->inst->rdp_send_input_scancode(xfi->inst, 0, 0, 0x45); /* NumLock down */
+			xfi->inst->rdp_send_input_scancode(xfi->inst, 1, 0, 0x1D); /* Ctrl up */
+			xfi->inst->rdp_send_input_scancode(xfi->inst, 1, 0, 0x45); /* NumLock up */
+		}
+		else
+			DEBUG_KBD("up keycode=%d (X keysym=0x%04X) is Pause up\n",
+				keycode, (unsigned int)XKeycodeToKeysym(xfi->display, keycode, 0));
 	}
 	else
 	{
@@ -148,31 +190,6 @@ xf_kb_focus_in(xfInfo * xfi)
 	/* sync num, caps, scroll, kana lock */
 	flags = xf_kb_get_toggle_keys_state(xfi);
 	xfi->inst->rdp_sync_input(xfi->inst, flags);
-}
-
-void
-xf_kb_set_keypress(uint8 keycode, KeySym keysym)
-{
-	if (keycode >= 8)
-		pressed_keys[keycode] = keysym;
-	else
-		return;
-}
-
-void
-xf_kb_unset_keypress(uint8 keycode)
-{
-	if (keycode >= 8)
-		pressed_keys[keycode] = NoSymbol;
-	else
-		return;
-}
-
-static RD_BOOL
-xf_kb_key_pressed(xfInfo * xfi, KeySym keysym)
-{
-	KeyCode keycode = XKeysymToKeycode(xfi->display, keysym);
-	return pressed_keys[keycode] == keysym;
 }
 
 RD_BOOL
