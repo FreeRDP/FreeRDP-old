@@ -246,7 +246,20 @@ tsmf_ffmpeg_decode_video(ITSMFDecoder * decoder, const uint8 * data, uint32 data
 	int len;
 	int ret = 0;
 
+#if LIBAVCODEC_VERSION_MAJOR < 52
 	len = avcodec_decode_video(mdecoder->codec_context, mdecoder->frame, &decoded, data, data_size);
+#else
+	{
+		AVPacket pkt;
+		av_init_packet(&pkt);
+		pkt.data = (uint8 *) data;
+		pkt.size = data_size;
+		if (extensions & TSMM_SAMPLE_EXT_CLEANPOINT)
+			pkt.flags |= AV_PKT_FLAG_KEY;
+		len = avcodec_decode_video2(mdecoder->codec_context, mdecoder->frame, &decoded, &pkt);
+	}
+#endif
+
 	if (len < 0)
 	{
 		LLOGLN(0, ("tsmf_ffmpeg_decode_video: avcodec_decode_video failed (%d)", len));

@@ -34,6 +34,10 @@
 #define AVMEDIA_TYPE_AUDIO 1
 #endif
 
+#if LIBAVCODEC_VERSION_MAJOR < 52
+#define AV_PKT_FLAG_KEY PKT_FLAG_KEY
+#endif
+
 static int tsmf_copy_id_seq = 0;
 
 typedef struct _TSMFCopyDecoder
@@ -257,7 +261,7 @@ tsmf_copy_decode(ITSMFDecoder * decoder, const uint8 * data, uint32 data_size, u
 
 	av_init_packet(&pkt);
 	if (extensions & TSMM_SAMPLE_EXT_CLEANPOINT)
-		pkt.flags |= PKT_FLAG_KEY;
+		pkt.flags |= AV_PKT_FLAG_KEY;
 	pkt.stream_index = 0;
 	pkt.data = (uint8_t *) data;
 	pkt.size = data_size;
