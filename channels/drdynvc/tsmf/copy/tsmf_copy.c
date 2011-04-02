@@ -250,14 +250,10 @@ tsmf_copy_set_format(ITSMFDecoder * decoder, const TS_AM_MEDIA_TYPE * media_type
 }
 
 static int
-tsmf_copy_decode(ITSMFDecoder * decoder, const uint8 * data, uint32 data_size, uint32 extensions,
-	uint8 ** decoded_data, uint32 * decoded_size)
+tsmf_copy_decode(ITSMFDecoder * decoder, const uint8 * data, uint32 data_size, uint32 extensions)
 {
 	TSMFCopyDecoder * copy_decoder = (TSMFCopyDecoder *) decoder;
 	AVPacket pkt;
-
-	*decoded_data = NULL;
-	*decoded_size = 0;
 
 	av_init_packet(&pkt);
 	if (extensions & TSMM_SAMPLE_EXT_CLEANPOINT)
