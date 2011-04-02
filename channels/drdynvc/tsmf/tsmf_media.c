@@ -167,7 +167,6 @@ struct _TSMF_SAMPLE
 	uint64 duration;
 	uint32 data_size;
 	uint8 * data;
-	uint32 rowstride;
 
 	TSMF_STREAM * stream;
 	IWTSVirtualChannelCallback * channel_callback;
@@ -324,8 +323,8 @@ tsmf_presentation_find_by_id(const uint8 * guid)
 static void
 tsmf_sample_playback_video(TSMF_SAMPLE * sample)
 {
-	LLOGLN(10, ("tsmf_presentation_playback_video_sample: MessageId %d EndTime %d consumed.",
-		sample->sample_id, (int)sample->end_time));
+	LLOGLN(10, ("tsmf_presentation_playback_video_sample: MessageId %d EndTime %d data_size %d consumed.",
+		sample->sample_id, (int)sample->end_time, sample->data_size));
 
 #if 0
 	if (sample->data)
@@ -337,7 +336,6 @@ tsmf_sample_playback_video(TSMF_SAMPLE * sample)
 		FILE * fp;
 		if ((frame_id % 30) == 0)
 		{
-			LLOGLN(0, ("size %d rowstride %d", sample->data_size, sample->rowstride));
 			snprintf(buf, sizeof(buf), "/tmp/FreeRDP_Frame_%d.ppm", frame_id);
 			fp = fopen(buf, "wb");
 			fwrite("P5\n", 1, 3, fp);
