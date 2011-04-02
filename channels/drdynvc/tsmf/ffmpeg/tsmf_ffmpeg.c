@@ -69,9 +69,6 @@ tsmf_ffmpeg_init_video_stream(ITSMFDecoder * decoder, const TS_AM_MEDIA_TYPE * m
 	mdecoder->codec_context->time_base.den = media_type->SamplesPerSecond.Numerator;
 	mdecoder->codec_context->time_base.num = media_type->SamplesPerSecond.Denominator;
 
-	mdecoder->codec_context->gop_size = 12;
-	mdecoder->codec_context->pix_fmt = PIX_FMT_YUV420P;
-
 	mdecoder->frame = avcodec_alloc_frame();
 
 	return 0;
