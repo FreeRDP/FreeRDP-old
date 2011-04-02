@@ -134,6 +134,9 @@ struct _TSMF_PRESENTATION
 
 	TSMF_PRESENTATION * next;
 	TSMF_PRESENTATION * prev;
+
+	uint32 output_width;
+	uint32 output_height;
 };
 
 struct _TSMF_STREAM
@@ -146,15 +149,14 @@ struct _TSMF_STREAM
 
 	int major_type;
 	int eos;
+	uint32 width;
+	uint32 height;
 
 	TSMF_SAMPLE * sample_queue_head;
 	TSMF_SAMPLE * sample_queue_tail;
 
 	TSMF_STREAM * next;
 	TSMF_STREAM * prev;
-
-	uint32 width;
-	uint32 height;
 };
 
 struct _TSMF_SAMPLE
@@ -320,7 +322,7 @@ tsmf_presentation_find_by_id(const uint8 * guid)
 }
 
 static void
-tsmf_presentation_playback_video_sample(TSMF_SAMPLE * sample)
+tsmf_sample_playback_video(TSMF_SAMPLE * sample)
 {
 	LLOGLN(10, ("tsmf_presentation_playback_video_sample: MessageId %d EndTime %d consumed.",
 		sample->sample_id, (int)sample->end_time));
@@ -328,22 +330,21 @@ tsmf_presentation_playback_video_sample(TSMF_SAMPLE * sample)
 #if 0
 	if (sample->data)
 	{
-		/* Dump a .ppm image for every 30 frames */
+		/* Dump a .ppm image for every 30 frames. Assuming the frame is in YUV format, we
+		   extract the Y values to create a grayscale image. */
 		static int frame_id = 0;
 		char buf[100];
 		FILE * fp;
-		int i;
 		if ((frame_id % 30) == 0)
 		{
 			LLOGLN(0, ("size %d rowstride %d", sample->data_size, sample->rowstride));
 			snprintf(buf, sizeof(buf), "/tmp/FreeRDP_Frame_%d.ppm", frame_id);
 			fp = fopen(buf, "wb");
-			fwrite("P6\n", 1, 3, fp);
+			fwrite("P5\n", 1, 3, fp);
 			snprintf(buf, sizeof(buf), "%d %d\n", sample->stream->width, sample->stream->height);
 			fwrite(buf, 1, strlen(buf), fp);
 			fwrite("255\n", 1, 4, fp);
-			for (i = 0; i < sample->stream->height; i++)
-				fwrite(sample->data + i * sample->rowstride, 1, 3 * sample->stream->width, fp);
+			fwrite(sample->data, 1, sample->stream->width * sample->stream->height, fp);
 			fflush(fp);
 			fclose(fp);
 		}
@@ -353,22 +354,22 @@ tsmf_presentation_playback_video_sample(TSMF_SAMPLE * sample)
 }
 
 static void
-tsmf_presentation_playback_audio_sample(TSMF_SAMPLE * sample)
+tsmf_sample_playback_audio(TSMF_SAMPLE * sample)
 {
 	LLOGLN(10, ("tsmf_presentation_playback_audio_sample: MessageId %d EndTime %d consumed.",
 		sample->sample_id, (int)sample->end_time));
 }
 
 static void
-tsmf_presentation_playback_sample(TSMF_SAMPLE * sample)
+tsmf_sample_playback(TSMF_SAMPLE * sample)
 {
 	switch (sample->stream->major_type)
 	{
 		case TSMF_MAJOR_TYPE_VIDEO:
-			tsmf_presentation_playback_video_sample(sample);
+			tsmf_sample_playback_video(sample);
 			break;
 		case TSMF_MAJOR_TYPE_AUDIO:
-			tsmf_presentation_playback_audio_sample(sample);
+			tsmf_sample_playback_audio(sample);
 			break;
 	}
 }
@@ -385,7 +386,7 @@ tsmf_presentation_playback_func(void * arg)
 		sample = tsmf_presentation_pop_sample(presentation);
 		if (sample)
 		{
-			tsmf_presentation_playback_sample(sample);
+			tsmf_sample_playback(sample);
 			tsmf_sample_free(sample);
 		}
 		else
@@ -426,16 +427,8 @@ tsmf_presentation_stop(TSMF_PRESENTATION * presentation)
 void
 tsmf_presentation_set_size(TSMF_PRESENTATION * presentation, uint32 width, uint32 height)
 {
-	TSMF_STREAM * stream;
-
-	pthread_mutex_lock(presentation->mutex);
-
-	for (stream = presentation->stream_list_head; stream; stream = stream->next)
-	{
-		tsmf_stream_set_size(stream, width, height);
-	}
-
-	pthread_mutex_unlock(presentation->mutex);
+	presentation->output_width = width;
+	presentation->output_height = height;
 }
 
 void
@@ -661,19 +654,6 @@ tsmf_stream_end(TSMF_STREAM * stream)
 }
 
 void
-tsmf_stream_set_size(TSMF_STREAM * stream, uint32 width, uint32 height)
-{
-	if (stream->decoder && stream->decoder->SetSize)
-	{
-		if (stream->decoder->SetSize(stream->decoder, width, height) == 0)
-		{
-			stream->width= width;
-			stream->height = height;
-		}
-	}
-}
-
-void
 tsmf_stream_free(TSMF_STREAM * stream)
 {
 	TSMF_PRESENTATION * presentation = stream->presentation;
@@ -712,7 +692,6 @@ tsmf_stream_push_sample(TSMF_STREAM * stream, IWTSVirtualChannelCallback * pChan
 {
 	TSMF_PRESENTATION * presentation = stream->presentation;
 	TSMF_SAMPLE * sample;
-	const uint8 * decoded_data;
 	int ret = 1;
 
 	if (stream->decoder)
@@ -732,15 +711,8 @@ tsmf_stream_push_sample(TSMF_STREAM * stream, IWTSVirtualChannelCallback * pChan
 
 	if (stream->decoder->GetDecodedData)
 	{
-		decoded_data = stream->decoder->GetDecodedData(stream->decoder, &sample->data_size);
-		if (decoded_data)
-		{
-			sample->data = malloc(sample->data_size);
-			memcpy(sample->data, decoded_data, sample->data_size);
-		}
+		sample->data = stream->decoder->GetDecodedData(stream->decoder, &sample->data_size);
 	}
-	if (stream->decoder->GetRowstride)
-		sample->rowstride = stream->decoder->GetRowstride(stream->decoder);
 
 	pthread_mutex_lock(presentation->mutex);
 

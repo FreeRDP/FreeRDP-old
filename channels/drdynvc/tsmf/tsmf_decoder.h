@@ -29,14 +29,12 @@ struct _ITSMFDecoder
 {
 	/* Set the decoder format. Return 0 if supported. */
 	int (*SetFormat) (ITSMFDecoder * decoder, const TS_AM_MEDIA_TYPE * media_type);
-	/* Set the target output size. */
-	int (*SetSize) (ITSMFDecoder * decoder, uint32 width, uint32 height);
 	/* Decode a sample. */
 	int (*Decode) (ITSMFDecoder * decoder, const uint8 * data, uint32 data_size, uint32 extensions);
 	/* Get the decoded data */
-	const uint8 * (*GetDecodedData) (ITSMFDecoder * decoder, uint32 * size);
+	uint8 * (*GetDecodedData) (ITSMFDecoder * decoder, uint32 * size);
 	/* Get the rowstride of decoded video frame */
-	uint32 (*GetRowstride) (ITSMFDecoder * decoder);
+	uint32 (*GetDecodedFormat) (ITSMFDecoder * decoder);
 	/* Free the decoder */
 	void (*Free) (ITSMFDecoder * decoder);
 };
