@@ -40,13 +40,7 @@ typedef struct _TSMFFFmpegDecoder
 	AVCodecContext * codec_context;
 	AVCodec * codec;
 	AVFrame * frame;
-	AVFrame * output_frame;
-	uint8 * output_buffer;
-	struct SwsContext * sws_context;
 	int prepared;
-
-	uint32 width;
-	uint32 height;
 } TSMFFFmpegDecoder;
 
 static int
@@ -61,39 +55,6 @@ tsmf_ffmpeg_init_context(ITSMFDecoder * decoder)
 		return 1;
 	}
 
-	return 0;
-}
-
-static int
-tsmf_ffmpeg_init_video_frame_buffer(ITSMFDecoder * decoder)
-{
-	TSMFFFmpegDecoder * mdecoder = (TSMFFFmpegDecoder *) decoder;
-	int size;
-
-	if (mdecoder->output_frame)
-		av_free(mdecoder->output_frame);
-	if (mdecoder->output_buffer)
-		free(mdecoder->output_buffer);
-	mdecoder->output_frame = avcodec_alloc_frame();
-	size = avpicture_get_size(PIX_FMT_RGB24, mdecoder->width, mdecoder->height);
-	mdecoder->output_buffer = malloc(size);
-	avpicture_fill((AVPicture *) mdecoder->output_frame, mdecoder->output_buffer,
-		PIX_FMT_RGB24, mdecoder->width, mdecoder->height);
-
-	return 0;
-}
-
-static int
-tsmf_ffmpeg_set_size(ITSMFDecoder * decoder, uint32 width, uint32 height)
-{
-	TSMFFFmpegDecoder * mdecoder = (TSMFFFmpegDecoder *) decoder;
-
-	if (width > 0 && height > 0 && (!mdecoder->output_frame || mdecoder->width != width || mdecoder->height != height))
-	{
-		mdecoder->width = width;
-		mdecoder->height = height;
-		return tsmf_ffmpeg_init_video_frame_buffer(decoder);
-	}
 	return 0;
 }
 
@@ -275,27 +236,6 @@ tsmf_ffmpeg_decode_video(ITSMFDecoder * decoder, const uint8 * data, uint32 data
 		LLOGLN(10, ("tsmf_ffmpeg_decode_video: linesize[0] %d linesize[1] %d linesize[2] %d linesize[3] %d",
 			mdecoder->frame->linesize[0], mdecoder->frame->linesize[1],
 			mdecoder->frame->linesize[2], mdecoder->frame->linesize[3]));
-
-		if (!mdecoder->output_frame)
-			tsmf_ffmpeg_init_video_frame_buffer(decoder);
-		mdecoder->sws_context = sws_getCachedContext(
-			mdecoder->sws_context,
-			mdecoder->codec_context->width,
-			mdecoder->codec_context->height,
-			mdecoder->codec_context->pix_fmt,
-			mdecoder->width,
-			mdecoder->height,
-			PIX_FMT_RGB24,
-			SWS_BILINEAR,
-			NULL, NULL, NULL);
-		sws_scale(mdecoder->sws_context,
-			(const uint8_t**) mdecoder->frame->data, mdecoder->frame->linesize,
-			0, mdecoder->codec_context->height,
-			mdecoder->output_frame->data, mdecoder->output_frame->linesize);
-
-		LLOGLN(10, ("tsmf_ffmpeg_decode_video: output linesize[0] %d linesize[1] %d linesize[2] %d linesize[3] %d",
-			mdecoder->output_frame->linesize[0], mdecoder->output_frame->linesize[1],
-			mdecoder->output_frame->linesize[2], mdecoder->output_frame->linesize[3]));
 	}
 
 	return ret;
@@ -326,33 +266,47 @@ tsmf_ffmpeg_decode(ITSMFDecoder * decoder, const uint8 * data, uint32 data_size,
 	}
 }
 
-const uint8 *
+uint8 *
 tsmf_ffmpeg_get_decoded_data(ITSMFDecoder * decoder, uint32 * size)
 {
 	TSMFFFmpegDecoder * mdecoder = (TSMFFFmpegDecoder *) decoder;
+	int i;
+	uint32 s = 0;
+	uint32 l;
+	uint8 * buf = NULL;
+	uint8 * p;
 
-	if (mdecoder->output_frame)
+	if (mdecoder->media_type == AVMEDIA_TYPE_VIDEO && mdecoder->frame)
 	{
-		/* Output frame should be in RGB format, so we just use linesize[0] and data[0] */
-		*size = mdecoder->output_frame->linesize[0] * mdecoder->height;
-		return mdecoder->output_frame->data[0];
+		for (i = 0; i < 4; i++)
+			s += mdecoder->frame->linesize[i] * mdecoder->codec_context->height;
+
+		if (s > 0)
+		{
+			buf = malloc(s);
+			p = buf;
+			for (i = 0; i < 4; i++)
+			{
+				if (mdecoder->frame->data[i] && mdecoder->frame->linesize[i])
+				{
+					l = mdecoder->frame->linesize[i] * mdecoder->codec_context->height;
+					memcpy(p, mdecoder->frame->data[i], l);
+					p += l;
+				}
+			}
+		}
 	}
-	else
-	{
-		*size = 0;
-		return NULL;
-	}
+
+	*size = s;
+	return buf;
 }
 
 uint32
-tsmf_ffmpeg_get_rowstride(ITSMFDecoder * decoder)
+tsmf_ffmpeg_get_decoded_format(ITSMFDecoder * decoder)
 {
 	TSMFFFmpegDecoder * mdecoder = (TSMFFFmpegDecoder *) decoder;
 
-	if (mdecoder->output_frame)
-		return mdecoder->output_frame->linesize[0];
-	else
-		return 0;
+	return mdecoder->codec_context->pix_fmt;
 }
 
 static void
@@ -362,12 +316,6 @@ tsmf_ffmpeg_free(ITSMFDecoder * decoder)
 
 	if (mdecoder->frame)
 		av_free(mdecoder->frame);
-	if (mdecoder->output_frame)
-		av_free(mdecoder->output_frame);
-	if (mdecoder->output_buffer)
-		free(mdecoder->output_buffer);
-	if (mdecoder->sws_context)
-		sws_freeContext(mdecoder->sws_context);
 	if (mdecoder->codec_context)
 	{
 		if (mdecoder->prepared)
@@ -391,10 +339,9 @@ TSMFDecoderEntry(void)
 	memset(decoder, 0, sizeof(TSMFFFmpegDecoder));
 
 	decoder->iface.SetFormat = tsmf_ffmpeg_set_format;
-	decoder->iface.SetSize = tsmf_ffmpeg_set_size;
 	decoder->iface.Decode = tsmf_ffmpeg_decode;
 	decoder->iface.GetDecodedData = tsmf_ffmpeg_get_decoded_data;
-	decoder->iface.GetRowstride = tsmf_ffmpeg_get_rowstride;
+	decoder->iface.GetDecodedFormat = tsmf_ffmpeg_get_decoded_format;
 	decoder->iface.Free = tsmf_ffmpeg_free;
 
 	return (ITSMFDecoder *) decoder;

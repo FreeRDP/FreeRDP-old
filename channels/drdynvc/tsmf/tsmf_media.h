@@ -55,8 +55,6 @@ tsmf_stream_flush(TSMF_STREAM * stream);
 void
 tsmf_stream_end(TSMF_STREAM * stream);
 void
-tsmf_stream_set_size(TSMF_STREAM * stream, uint32 width, uint32 height);
-void
 tsmf_stream_free(TSMF_STREAM * stream);
 
 void
