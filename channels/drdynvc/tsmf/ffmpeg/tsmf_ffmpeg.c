@@ -334,7 +334,7 @@ tsmf_ffmpeg_get_decoded_data(ITSMFDecoder * decoder, uint32 * size)
 	if (mdecoder->output_frame)
 	{
 		/* Output frame should be in RGB format, so we just use linesize[0] and data[0] */
-		*size = mdecoder->output_frame->linesize[0] * mdecoder->codec_context->height;
+		*size = mdecoder->output_frame->linesize[0] * mdecoder->height;
 		return mdecoder->output_frame->data[0];
 	}
 	else
