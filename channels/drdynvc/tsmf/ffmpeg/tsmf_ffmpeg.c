@@ -259,7 +259,7 @@ tsmf_ffmpeg_decode_video(ITSMFDecoder * decoder, const uint8 * data, uint32 data
 	}
 	else
 	{
-		LLOGLN(0, ("tsmf_ffmpeg_decode_video: linesize[0] %d linesize[1] %d linesize[2] %d linesize[3] %d",
+		LLOGLN(10, ("tsmf_ffmpeg_decode_video: linesize[0] %d linesize[1] %d linesize[2] %d linesize[3] %d",
 			mdecoder->frame->linesize[0], mdecoder->frame->linesize[1],
 			mdecoder->frame->linesize[2], mdecoder->frame->linesize[3]));
 
@@ -280,7 +280,7 @@ tsmf_ffmpeg_decode_video(ITSMFDecoder * decoder, const uint8 * data, uint32 data
 			0, mdecoder->codec_context->height,
 			mdecoder->output_frame->data, mdecoder->output_frame->linesize);
 
-		LLOGLN(0, ("tsmf_ffmpeg_decode_video: output linesize[0] %d linesize[1] %d linesize[2] %d linesize[3] %d",
+		LLOGLN(10, ("tsmf_ffmpeg_decode_video: output linesize[0] %d linesize[1] %d linesize[2] %d linesize[3] %d",
 			mdecoder->output_frame->linesize[0], mdecoder->output_frame->linesize[1],
 			mdecoder->output_frame->linesize[2], mdecoder->output_frame->linesize[3]));
 	}
@@ -311,6 +311,35 @@ tsmf_ffmpeg_decode(ITSMFDecoder * decoder, const uint8 * data, uint32 data_size,
 			LLOGLN(0, ("tsmf_ffmpeg_decode: unknown media type."));
 			return 1;
 	}
+}
+
+const uint8 *
+tsmf_ffmpeg_get_decoded_data(ITSMFDecoder * decoder, uint32 * size)
+{
+	TSMFFFmpegDecoder * mdecoder = (TSMFFFmpegDecoder *) decoder;
+
+	if (mdecoder->output_frame)
+	{
+		/* Output frame should be in RGB format, so we just use linesize[0] and data[0] */
+		*size = mdecoder->output_frame->linesize[0] * mdecoder->codec_context->height;
+		return mdecoder->output_frame->data[0];
+	}
+	else
+	{
+		*size = 0;
+		return NULL;
+	}
+}
+
+uint32
+tsmf_ffmpeg_get_rowstride(ITSMFDecoder * decoder)
+{
+	TSMFFFmpegDecoder * mdecoder = (TSMFFFmpegDecoder *) decoder;
+
+	if (mdecoder->output_frame)
+		return mdecoder->output_frame->linesize[0];
+	else
+		return 0;
 }
 
 static void
@@ -351,6 +380,8 @@ TSMFDecoderEntry(void)
 	decoder->iface.SetFormat = tsmf_ffmpeg_set_format;
 	decoder->iface.SetSize = tsmf_ffmpeg_set_size;
 	decoder->iface.Decode = tsmf_ffmpeg_decode;
+	decoder->iface.GetDecodedData = tsmf_ffmpeg_get_decoded_data;
+	decoder->iface.GetRowstride = tsmf_ffmpeg_get_rowstride;
 	decoder->iface.Free = tsmf_ffmpeg_free;
 
 	return (ITSMFDecoder *) decoder;
