@@ -668,7 +668,7 @@ tsmf_stream_push_sample(TSMF_STREAM * stream, IWTSVirtualChannelCallback * pChan
 	sample->channel_callback = pChannelCallback;
 
 	if (stream->decoder)
-		stream->decoder->Decode(stream->decoder, data, data_size, extensions, &sample->data, &sample->data_size);
+		stream->decoder->Decode(stream->decoder, data, data_size, extensions);
 
 	pthread_mutex_lock(presentation->mutex);
 

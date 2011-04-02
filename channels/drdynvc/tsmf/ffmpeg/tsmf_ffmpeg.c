@@ -239,16 +239,12 @@ tsmf_ffmpeg_set_format(ITSMFDecoder * decoder, const TS_AM_MEDIA_TYPE * media_ty
 }
 
 static int
-tsmf_ffmpeg_decode_video(ITSMFDecoder * decoder, const uint8 * data, uint32 data_size, uint32 extensions,
-	uint8 ** decoded_data, uint32 * decoded_size)
+tsmf_ffmpeg_decode_video(ITSMFDecoder * decoder, const uint8 * data, uint32 data_size, uint32 extensions)
 {
 	TSMFFFmpegDecoder * mdecoder = (TSMFFFmpegDecoder *) decoder;
 	int decoded;
 	int len;
 	int ret = 0;
-
-	*decoded_data = NULL;
-	*decoded_size = 0;
 
 	len = avcodec_decode_video(mdecoder->codec_context, mdecoder->frame, &decoded, data, data_size);
 	if (len < 0)
@@ -293,28 +289,24 @@ tsmf_ffmpeg_decode_video(ITSMFDecoder * decoder, const uint8 * data, uint32 data
 }
 
 static int
-tsmf_ffmpeg_decode_audio(ITSMFDecoder * decoder, const uint8 * data, uint32 data_size, uint32 extensions,
-	uint8 ** decoded_data, uint32 * decoded_size)
+tsmf_ffmpeg_decode_audio(ITSMFDecoder * decoder, const uint8 * data, uint32 data_size, uint32 extensions)
 {
 	LLOGLN(0, ("tsmf_ffmpeg_decode_audio: data_size %d", data_size));
-	*decoded_data = NULL;
-	*decoded_size = 0;
 
 	return 0;
 }
 
 static int
-tsmf_ffmpeg_decode(ITSMFDecoder * decoder, const uint8 * data, uint32 data_size, uint32 extensions,
-	uint8 ** decoded_data, uint32 * decoded_size)
+tsmf_ffmpeg_decode(ITSMFDecoder * decoder, const uint8 * data, uint32 data_size, uint32 extensions)
 {
 	TSMFFFmpegDecoder * mdecoder = (TSMFFFmpegDecoder *) decoder;
 
 	switch (mdecoder->media_type)
 	{
 		case AVMEDIA_TYPE_VIDEO:
-			return tsmf_ffmpeg_decode_video(decoder, data, data_size, extensions, decoded_data, decoded_size);
+			return tsmf_ffmpeg_decode_video(decoder, data, data_size, extensions);
 		case AVMEDIA_TYPE_AUDIO:
-			return tsmf_ffmpeg_decode_audio(decoder, data, data_size, extensions, decoded_data, decoded_size);
+			return tsmf_ffmpeg_decode_audio(decoder, data, data_size, extensions);
 		default:
 			LLOGLN(0, ("tsmf_ffmpeg_decode: unknown media type."));
 			return 1;
