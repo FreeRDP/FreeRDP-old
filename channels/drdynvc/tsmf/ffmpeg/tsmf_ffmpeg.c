@@ -41,6 +41,9 @@ typedef struct _TSMFFFmpegDecoder
 	AVCodec * codec;
 	AVFrame * frame;
 	int prepared;
+
+	uint8 * decoded_data;
+	uint32 decoded_size;
 } TSMFFFmpegDecoder;
 
 static int
@@ -203,6 +206,7 @@ tsmf_ffmpeg_decode_video(ITSMFDecoder * decoder, const uint8 * data, uint32 data
 	int decoded;
 	int len;
 	int ret = 0;
+	AVFrame * frame;
 
 #if LIBAVCODEC_VERSION_MAJOR < 52
 	len = avcodec_decode_video(mdecoder->codec_context, mdecoder->frame, &decoded, data, data_size);
@@ -233,6 +237,20 @@ tsmf_ffmpeg_decode_video(ITSMFDecoder * decoder, const uint8 * data, uint32 data
 		LLOGLN(10, ("tsmf_ffmpeg_decode_video: linesize[0] %d linesize[1] %d linesize[2] %d linesize[3] %d",
 			mdecoder->frame->linesize[0], mdecoder->frame->linesize[1],
 			mdecoder->frame->linesize[2], mdecoder->frame->linesize[3]));
+
+		mdecoder->decoded_size = avpicture_get_size(mdecoder->codec_context->pix_fmt,
+			mdecoder->codec_context->width, mdecoder->codec_context->height);
+		mdecoder->decoded_data = malloc(mdecoder->decoded_size);
+		frame = avcodec_alloc_frame();
+		avpicture_fill((AVPicture *) frame, mdecoder->decoded_data,
+			mdecoder->codec_context->pix_fmt,
+			mdecoder->codec_context->width, mdecoder->codec_context->height);
+
+		av_picture_copy((AVPicture *) frame, (AVPicture *) mdecoder->frame,
+			mdecoder->codec_context->pix_fmt,
+			mdecoder->codec_context->width, mdecoder->codec_context->height);
+
+		av_free(frame);
 	}
 
 	return ret;
@@ -251,6 +269,13 @@ tsmf_ffmpeg_decode(ITSMFDecoder * decoder, const uint8 * data, uint32 data_size,
 {
 	TSMFFFmpegDecoder * mdecoder = (TSMFFFmpegDecoder *) decoder;
 
+	if (mdecoder->decoded_data)
+	{
+		free(mdecoder->decoded_data);
+		mdecoder->decoded_data = NULL;
+	}
+	mdecoder->decoded_size = 0;
+
 	switch (mdecoder->media_type)
 	{
 		case AVMEDIA_TYPE_VIDEO:
@@ -267,34 +292,12 @@ uint8 *
 tsmf_ffmpeg_get_decoded_data(ITSMFDecoder * decoder, uint32 * size)
 {
 	TSMFFFmpegDecoder * mdecoder = (TSMFFFmpegDecoder *) decoder;
-	int i;
-	uint32 s = 0;
-	uint32 l;
-	uint8 * buf = NULL;
-	uint8 * p;
+	uint8 * buf;
 
-	if (mdecoder->media_type == AVMEDIA_TYPE_VIDEO && mdecoder->frame)
-	{
-		for (i = 0; i < 4; i++)
-			s += mdecoder->frame->linesize[i] * mdecoder->codec_context->height;
-
-		if (s > 0)
-		{
-			buf = malloc(s);
-			p = buf;
-			for (i = 0; i < 4; i++)
-			{
-				if (mdecoder->frame->data[i] && mdecoder->frame->linesize[i])
-				{
-					l = mdecoder->frame->linesize[i] * mdecoder->codec_context->height;
-					memcpy(p, mdecoder->frame->data[i], l);
-					p += l;
-				}
-			}
-		}
-	}
-
-	*size = s;
+	*size = mdecoder->decoded_size;
+	buf = mdecoder->decoded_data;
+	mdecoder->decoded_data = NULL;
+	mdecoder->decoded_size = 0;
 	return buf;
 }
 
@@ -313,6 +316,8 @@ tsmf_ffmpeg_free(ITSMFDecoder * decoder)
 
 	if (mdecoder->frame)
 		av_free(mdecoder->frame);
+	if (mdecoder->decoded_data)
+		free(mdecoder->decoded_data);
 	if (mdecoder->codec_context)
 	{
 		if (mdecoder->prepared)
