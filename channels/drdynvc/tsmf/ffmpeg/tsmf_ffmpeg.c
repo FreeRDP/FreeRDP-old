@@ -44,6 +44,7 @@ typedef struct _TSMFFFmpegDecoder
 
 	uint8 * decoded_data;
 	uint32 decoded_size;
+	uint32 decoded_size_max;
 } TSMFFFmpegDecoder;
 
 static int
@@ -87,18 +88,9 @@ tsmf_ffmpeg_init_audio_stream(ITSMFDecoder * decoder, const TS_AM_MEDIA_TYPE * m
 	mdecoder->codec_context->channels = media_type->Channels;
 	mdecoder->codec_context->block_align = media_type->BlockAlign;
 
-	switch (media_type->BitsPerSample)
-	{
-		case 8:
-			mdecoder->codec_context->sample_fmt = SAMPLE_FMT_U8;
-			break;
-		case 16:
-			mdecoder->codec_context->sample_fmt = SAMPLE_FMT_S16;
-			break;
-		case 32:
-			mdecoder->codec_context->sample_fmt = SAMPLE_FMT_S32;
-			break;
-	}
+	/* FFmpeg's float_to_int16_interleave_sse2 would crash at least in WMA decoder.
+	   We disable sse2 to workaround it, however this should be further investigated. */
+	mdecoder->codec_context->dsp_mask = FF_MM_SSE2 | FF_MM_MMX2;
 
 	return 0;
 }
@@ -259,7 +251,68 @@ tsmf_ffmpeg_decode_video(ITSMFDecoder * decoder, const uint8 * data, uint32 data
 static int
 tsmf_ffmpeg_decode_audio(ITSMFDecoder * decoder, const uint8 * data, uint32 data_size, uint32 extensions)
 {
-	LLOGLN(0, ("tsmf_ffmpeg_decode_audio: data_size %d", data_size));
+	TSMFFFmpegDecoder * mdecoder = (TSMFFFmpegDecoder *) decoder;
+	int len;
+	int frame_size;
+	uint32 src_size;
+	uint8 * pad_data;
+	uint8 * src;
+	uint8 * dst;
+
+	if (mdecoder->decoded_size_max == 0)
+		mdecoder->decoded_size_max = AVCODEC_MAX_AUDIO_FRAME_SIZE;
+	mdecoder->decoded_data = malloc(mdecoder->decoded_size_max);
+	dst = mdecoder->decoded_data;
+	pad_data = malloc(data_size + FF_INPUT_BUFFER_PADDING_SIZE);
+	memcpy(pad_data, data, data_size);
+	memset(pad_data + data_size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
+	src = pad_data;
+	src_size = data_size;
+
+	while (src_size > 0)
+	{
+		/* Ensure enough space for decoding */
+		if (mdecoder->decoded_size_max - mdecoder->decoded_size < AVCODEC_MAX_AUDIO_FRAME_SIZE)
+		{
+			mdecoder->decoded_size_max *= 2;
+			mdecoder->decoded_data = realloc(mdecoder->decoded_data, mdecoder->decoded_size_max);
+			dst = mdecoder->decoded_data + mdecoder->decoded_size;
+		}
+		frame_size = mdecoder->decoded_size_max - mdecoder->decoded_size;
+#if LIBAVCODEC_VERSION_MAJOR < 52
+		len = avcodec_decode_audio2(mdecoder->codec_context,
+			(int16_t *) dst, &frame_size,
+			src, src_size);
+#else
+		{
+			AVPacket pkt;
+			av_init_packet(&pkt);
+			pkt.data = src;
+			pkt.size = src_size;
+			len = avcodec_decode_audio3(mdecoder->codec_context,
+				(int16_t *) dst, &frame_size, &pkt);
+		}
+#endif
+		if (len <= 0 || frame_size <= 0)
+		{
+			LLOGLN(0, ("tsmf_ffmpeg_decode_audio: erro decoding"));
+			break;
+		}
+		src += len;
+		src_size -= len;
+		mdecoder->decoded_size += frame_size;
+		dst += frame_size;
+	}
+
+	if (mdecoder->decoded_size == 0)
+	{
+		free(mdecoder->decoded_data);
+		mdecoder->decoded_data = NULL;
+	}
+	free(pad_data);
+
+	LLOGLN(10, ("tsmf_ffmpeg_decode_audio: data_size %d decoded_size %d",
+		data_size, mdecoder->decoded_size));
 
 	return 0;
 }
@@ -329,13 +382,19 @@ tsmf_ffmpeg_free(ITSMFDecoder * decoder)
 	free(decoder);
 }
 
+static int initialized = 0;
+
 ITSMFDecoder *
 TSMFDecoderEntry(void)
 {
 	TSMFFFmpegDecoder * decoder;
 
-	avcodec_init();
-	avcodec_register_all();
+	if (!initialized)
+	{
+		avcodec_init();
+		avcodec_register_all();
+		initialized = 1;
+	}
 
 	decoder = malloc(sizeof(TSMFFFmpegDecoder));
 	memset(decoder, 0, sizeof(TSMFFFmpegDecoder));
