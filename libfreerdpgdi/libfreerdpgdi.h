@@ -186,6 +186,14 @@ struct _PALETTE
 typedef struct _PALETTE PALETTE;
 typedef PALETTE* HPALETTE;
 
+struct _POINT
+{
+	unsigned int x;
+	unsigned int y;
+};
+typedef struct _POINT POINT;
+typedef POINT* HPOINT;
+
 struct _BRUSH
 {
 	unsigned char objectType;
@@ -242,7 +250,7 @@ void CRgnToCRect(int x, int y, int w, int h, int *left, int *top, int *right, in
 int CopyOverlap(int x, int y, int width, int height, int srcx, int srcy);
 int SetROP2(HDC hdc, int fnDrawMode);
 int LineTo(HDC hdc, int nXEnd, int nYEnd);
-int MoveTo(HDC hdc, int X, int Y);
+int MoveToEx(HDC hdc, int X, int Y, HPOINT lpPoint);
 HPALETTE CreateSystemPalette();
 HPALETTE GetSystemPalette();
 int SetRect(HRECT rc, int xLeft, int yTop, int xRight, int yBottom);
