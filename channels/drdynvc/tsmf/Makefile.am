@@ -11,6 +11,7 @@ tsmf_la_SOURCES = \
 	tsmf_ifman.c tsmf_ifman.h \
 	tsmf_media.c tsmf_media.h \
 	tsmf_decoder.c tsmf_decoder.h \
+	tsmf_audio.c tsmf_audio.h \
 	tsmf_main.c tsmf_main.h
 
 tsmf_la_CFLAGS = -I$(top_srcdir)/include -I$(srcdir)/../../common \

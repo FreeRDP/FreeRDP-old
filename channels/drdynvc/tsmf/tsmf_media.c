@@ -26,6 +26,7 @@
 #include "tsmf_constants.h"
 #include "tsmf_types.h"
 #include "tsmf_decoder.h"
+#include "tsmf_audio.h"
 #include "tsmf_main.h"
 #include "tsmf_media.h"
 
@@ -128,6 +129,13 @@ struct _TSMF_PRESENTATION
 	int thread_exit;
 
 	uint64 playback_time;
+
+	ITSMFAudioDevice * audio;
+	const char * audio_name;
+	const char * audio_device;
+	uint32 sample_rate;
+	uint32 channels;
+	uint32 bits_per_sample;
 
 	TSMF_STREAM * stream_list_head;
 	TSMF_STREAM * stream_list_tail;
@@ -356,6 +364,14 @@ tsmf_sample_playback_audio(TSMF_SAMPLE * sample)
 {
 	LLOGLN(10, ("tsmf_presentation_playback_audio_sample: MessageId %d EndTime %d consumed.",
 		sample->sample_id, (int)sample->end_time));
+
+	if (sample->stream->presentation->audio && sample->data)
+	{
+		sample->stream->presentation->audio->Play(sample->stream->presentation->audio,
+			sample->data, sample->data_size);
+		sample->data = NULL;
+		sample->data_size = 0;
+	}
 }
 
 static void
@@ -379,6 +395,17 @@ tsmf_presentation_playback_func(void * arg)
 	TSMF_SAMPLE * sample;
 
 	LLOGLN(0, ("tsmf_presentation_playback_func: in"));
+	if (presentation->sample_rate && presentation->channels && presentation->bits_per_sample)
+	{
+		presentation->audio = tsmf_load_audio_device(
+			presentation->audio_name && presentation->audio_name[0] ? presentation->audio_name : NULL,
+			presentation->audio_device && presentation->audio_device[0] ? presentation->audio_device : NULL);
+		if (presentation->audio)
+		{
+			presentation->audio->SetFormat(presentation->audio,
+				presentation->sample_rate, presentation->channels, presentation->bits_per_sample);
+		}
+	}
 	while (!presentation->thread_exit)
 	{
 		sample = tsmf_presentation_pop_sample(presentation);
@@ -391,6 +418,11 @@ tsmf_presentation_playback_func(void * arg)
 		{
 			usleep(10000);
 		}
+	}
+	if (presentation->audio)
+	{
+		presentation->audio->Free(presentation->audio);
+		presentation->audio = NULL;
 	}
 	LLOGLN(0, ("tsmf_presentation_playback_func: out"));
 	presentation->thread_status = 0;
@@ -427,6 +459,13 @@ tsmf_presentation_set_size(TSMF_PRESENTATION * presentation, uint32 width, uint3
 {
 	presentation->output_width = width;
 	presentation->output_height = height;
+}
+
+void
+tsmf_presentation_set_audio_device(TSMF_PRESENTATION * presentation, const char * name, const char * device)
+{
+	presentation->audio_name = name;
+	presentation->audio_device = device;
 }
 
 void
@@ -622,6 +661,9 @@ tsmf_stream_set_format(TSMF_STREAM * stream, const char * name, const uint8 * pM
 		LLOGLN(0, ("tsmf_stream_set_format: audio channel %d sample_rate %d bits_per_sample %d codec_data %d",
 			mediatype.Channels, mediatype.SamplesPerSecond.Numerator, mediatype.BitsPerSample,
 			mediatype.ExtraDataSize));
+		stream->presentation->sample_rate = mediatype.SamplesPerSecond.Numerator;
+		stream->presentation->channels = mediatype.Channels;
+		stream->presentation->bits_per_sample = mediatype.BitsPerSample;
 	}
 
 	stream->major_type = mediatype.MajorType;

@@ -58,6 +58,8 @@ struct _TSMF_PLUGIN
 	TSMF_LISTENER_CALLBACK * listener_callback;
 
 	const char * decoder_name;
+	const char * audio_name;
+	const char * audio_device;
 };
 
 void
@@ -116,6 +118,8 @@ tsmf_on_data_received(IWTSVirtualChannelCallback * pChannelCallback,
 	memset(&ifman, 0, sizeof(TSMF_IFMAN));
 	ifman.channel_callback = pChannelCallback;
 	ifman.decoder_name = ((TSMF_PLUGIN *) callback->plugin)->decoder_name;
+	ifman.audio_name = ((TSMF_PLUGIN *) callback->plugin)->audio_name;
+	ifman.audio_device = ((TSMF_PLUGIN *) callback->plugin)->audio_device;
 	memcpy(ifman.presentation_id, callback->presentation_id, 16);
 	ifman.stream_id = callback->stream_id;
 	ifman.message_id = MessageId;
@@ -373,6 +377,12 @@ tsmf_process_plugin_data(IWTSPlugin * pPlugin, RD_PLUGIN_DATA * data)
 		if (data->data[1] && strcmp((char*)data->data[1], "decoder") == 0)
 		{
 			tsmf->decoder_name = data->data[2];
+			return 0;
+		}
+		else if (data->data[1] && strcmp((char*)data->data[1], "audio") == 0)
+		{
+			tsmf->audio_name = data->data[2];
+			tsmf->audio_device = data->data[3];
 			return 0;
 		}
 	}
