@@ -238,7 +238,7 @@ tsmf_sample_free(TSMF_SAMPLE * sample)
 	free(sample);
 }
 
-/* Pop a sample from the stream with smallest end_time */
+/* Pop a sample from the stream with smallest start_time */
 static TSMF_SAMPLE *
 tsmf_presentation_pop_sample(TSMF_PRESENTATION * presentation)
 {
@@ -254,29 +254,34 @@ tsmf_presentation_pop_sample(TSMF_PRESENTATION * presentation)
 		if (!stream->sample_queue_head && !stream->eos)
 			has_pending_stream = 1;
 		if (stream->sample_queue_head && (!earliest_stream ||
-			earliest_stream->sample_queue_head->end_time > stream->sample_queue_head->end_time))
+			earliest_stream->sample_queue_head->start_time > stream->sample_queue_head->start_time))
 		{
 			earliest_stream = stream;
 		}
 	}
 	/* Ensure multiple streams are interleaved.
 	   1. If all streams has samples available, we just consume the earliest one
-	   2. If the earliest sample with end_time <= current playback time, we consume it
-	   3. If the earliest sample with end_time > current playback time, we check if
+	   2. If the earliest sample with start_time <= current playback time, we consume it
+	   3. If the earliest sample with start_time > current playback time, we check if
 	      there's a stream pending for receiving sample. If so, we bypasss it and wait.
 	*/
 	if (earliest_stream && (!has_pending_stream || presentation->playback_time == 0 ||
 		presentation->playback_time >= earliest_stream->sample_queue_head->start_time))
 	{
 		sample = tsmf_stream_pop_sample(earliest_stream);
-		presentation->playback_time = sample->end_time;
 	}
-	pthread_mutex_unlock(presentation->mutex);
-
-	if (sample)
+	/* However if the sample is audio, we will let the audio device to decide whether
+	   to cache it ahead of time, to ensure smoother audio playback. */
+	else if (earliest_stream && earliest_stream->major_type == TSMF_MAJOR_TYPE_AUDIO)
 	{
-		tsmf_sample_ack(sample);
+		if (!presentation->audio || !presentation->audio->IsBusy(presentation->audio))
+		{
+			sample = tsmf_stream_pop_sample(earliest_stream);
+		}
 	}
+	if (sample && sample->end_time > presentation->playback_time)
+		presentation->playback_time = sample->end_time;
+	pthread_mutex_unlock(presentation->mutex);
 
 	return sample;
 }
@@ -412,6 +417,7 @@ tsmf_presentation_playback_func(void * arg)
 		if (sample)
 		{
 			tsmf_sample_playback(sample);
+			tsmf_sample_ack(sample);
 			tsmf_sample_free(sample);
 		}
 		else

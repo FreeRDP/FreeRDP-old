@@ -30,6 +30,8 @@ struct _ITSMFAudioDevice
 	int (*Open) (ITSMFAudioDevice * audio, const char * device);
 	/* Set the audio data format. */
 	int (*SetFormat) (ITSMFAudioDevice * audio, uint32 sample_rate, uint32 channels, uint32 bits_per_sample);
+	/* Whether the audio cache is too busy to accept more samples. */
+	int (*IsBusy) (ITSMFAudioDevice * audio);
 	/* Play audio data. */
 	int (*Play) (ITSMFAudioDevice * audio, uint8 * data, uint32 data_size);
 	/* Free the audio device */

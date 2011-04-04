@@ -53,6 +53,7 @@ typedef struct _TSMFALSAAudioDevice
 
 	TSMFAudioData * audio_data_head;
 	TSMFAudioData * audio_data_tail;
+	int audio_data_length;
 } TSMFALSAAudioDevice;
 
 static uint8 *
@@ -219,6 +220,7 @@ tsmf_alsa_thread_func(void * arg)
 				if (alsa->audio_data_head == NULL)
 					alsa->audio_data_tail = NULL;
 				audio_data->next = NULL;
+				alsa->audio_data_length--;
 			}
 			pthread_mutex_unlock(alsa->mutex);
 
@@ -326,6 +328,14 @@ tsmf_alsa_set_format(ITSMFAudioDevice * audio, uint32 sample_rate, uint32 channe
 }
 
 static int
+tsmf_alsa_is_busy(ITSMFAudioDevice * audio)
+{
+	TSMFALSAAudioDevice * alsa = (TSMFALSAAudioDevice *) audio;
+
+	return alsa->audio_data_length > 10 ? 1 : 0;
+}
+
+static int
 tsmf_alsa_play(ITSMFAudioDevice * audio, uint8 * data, uint32 data_size)
 {
 	TSMFALSAAudioDevice * alsa = (TSMFALSAAudioDevice *) audio;
@@ -347,6 +357,7 @@ tsmf_alsa_play(ITSMFAudioDevice * audio, uint8 * data, uint32 data_size)
 		alsa->audio_data_tail->next = audio_data;
 		alsa->audio_data_tail = audio_data;
 	}
+	alsa->audio_data_length++;
 	pthread_mutex_unlock(alsa->mutex);
 
 	wait_obj_set(alsa->data_event);
@@ -387,6 +398,7 @@ TSMFAudioDeviceEntry(void)
 
 	alsa->iface.Open = tsmf_alsa_open;
 	alsa->iface.SetFormat = tsmf_alsa_set_format;
+	alsa->iface.IsBusy = tsmf_alsa_is_busy;
 	alsa->iface.Play = tsmf_alsa_play;
 	alsa->iface.Free = tsmf_alsa_free;
 
