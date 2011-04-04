@@ -685,6 +685,8 @@ tsmf_stream_flush(TSMF_STREAM * stream)
 		tsmf_sample_free(sample);
 	}
 	pthread_mutex_unlock(presentation->mutex);
+
+	stream->eos = 0;
 }
 
 void
