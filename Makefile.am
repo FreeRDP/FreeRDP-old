@@ -31,6 +31,7 @@ OPTIONAL_SUBDIRS = \
 	channels/drdynvc/audin/pulse \
 	channels/drdynvc/tsmf/copy \
 	channels/drdynvc/tsmf/ffmpeg \
+	channels/drdynvc/tsmf/alsa \
 	cunit \
 	X11 \
 	win \
