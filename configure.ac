@@ -922,7 +922,7 @@ fi
 # PulseAudio
 #
 if test x"$HAVE_PULSE" = "x1"; then
-	EXTRA_SUBDIRS="$EXTRA_SUBDIRS channels/rdpsnd/pulse channels/drdynvc/audin/pulse"
+	EXTRA_SUBDIRS="$EXTRA_SUBDIRS channels/rdpsnd/pulse channels/drdynvc/audin/pulse channels/drdynvc/tsmf/pulse"
 fi
 
 #
@@ -1026,6 +1026,7 @@ channels/drdynvc/tsmf/Makefile
 channels/drdynvc/tsmf/copy/Makefile
 channels/drdynvc/tsmf/ffmpeg/Makefile
 channels/drdynvc/tsmf/alsa/Makefile
+channels/drdynvc/tsmf/pulse/Makefile
 channels/drdynvc/audin/Makefile
 channels/drdynvc/audin/alsa/Makefile
 channels/drdynvc/audin/pulse/Makefile
