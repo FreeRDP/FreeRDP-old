@@ -240,7 +240,7 @@ tsmf_ifman_update_geometry_info(TSMF_IFMAN * ifman)
 	Height = GET_UINT32(ifman->input_buffer, 20 + 16);
 	Left = GET_UINT32(ifman->input_buffer, 20 + 20);
 	Top = GET_UINT32(ifman->input_buffer, 20 + 24);
-	LLOGLN(0, ("tsmf_ifman_update_geometry_info: numGeometryInfo %d Width %d Height %d Left %d Top %d",
+	LLOGLN(10, ("tsmf_ifman_update_geometry_info: numGeometryInfo %d Width %d Height %d Left %d Top %d",
 		numGeometryInfo, Width, Height, Left, Top));
 
 	presentation = tsmf_presentation_find_by_id(ifman->input_buffer);
