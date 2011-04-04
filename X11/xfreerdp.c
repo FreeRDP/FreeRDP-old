@@ -450,9 +450,12 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 					for (j = 0, p = argv[*pindex]; j < 4 && p != NULL; j++)
 					{
 						plugin_data[i].data[j] = p;
-						p = strchr(plugin_data[i].data[j], ':');
-						if (p != NULL)
-							*p++ = 0;
+						if (j < 3)
+						{
+							p = strchr(plugin_data[i].data[j], ':');
+							if (p != NULL)
+								*p++ = 0;
+						}
 					}
 					*pindex = *pindex + 1;
 					i++;

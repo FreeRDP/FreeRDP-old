@@ -50,7 +50,8 @@ int add_libfreerdpgdi_suite(void)
 	add_test_function(GetPixel);
 	add_test_function(SetPixel);
 	add_test_function(SetROP2);
-	add_test_function(MoveTo);
+	add_test_function(MoveToEx);
+	add_test_function(LineTo);
 	add_test_function(PtInRect);
 	add_test_function(FillRect);
 	add_test_function(BitBlt_32bpp);
@@ -474,7 +475,7 @@ unsigned char line_to_case_1[256] =
 	"\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\x00\xFF\xFF\xFF"
 	"\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\x00\xFF\xFF"
 	"\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\x00\xFF"
-	"\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\x00"
+	"\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF"
 };
 
 unsigned char line_to_case_2[256] =
@@ -499,7 +500,6 @@ unsigned char line_to_case_2[256] =
 
 unsigned char line_to_case_3[256] =
 {
-	"\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF"
 	"\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\x00"
 	"\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\x00\xFF"
 	"\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\x00\xFF\xFF"
@@ -515,12 +515,12 @@ unsigned char line_to_case_3[256] =
 	"\xFF\xFF\xFF\x00\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF"
 	"\xFF\xFF\x00\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF"
 	"\xFF\x00\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF"
+	"\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF"
 };
 
 unsigned char line_to_case_4[256] =
 {
 	"\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF"
-	"\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\x00"
 	"\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\x00\xFF"
 	"\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\x00\xFF\xFF"
 	"\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\x00\xFF\xFF\xFF"
@@ -535,6 +535,7 @@ unsigned char line_to_case_4[256] =
 	"\xFF\xFF\xFF\x00\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF"
 	"\xFF\xFF\x00\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF"
 	"\xFF\x00\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF"
+	"\x00\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF"
 };
 
 unsigned char line_to_case_5[256] =
@@ -803,6 +804,102 @@ unsigned char polygon_case_2[256] =
 	"\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF"
 };
 
+int CompareBitmaps(HBITMAP hBmp1, HBITMAP hBmp2)
+{
+	int x, y;
+	uint8 *p1, *p2;
+
+	int minw = (hBmp1->width < hBmp2->width) ? hBmp1->width : hBmp2->width;
+	int minh = (hBmp1->height < hBmp2->height) ? hBmp1->height : hBmp2->height;
+
+	if (hBmp1->bitsPerPixel == hBmp2->bitsPerPixel)
+	{
+		p1 = hBmp1->data;
+		p2 = hBmp2->data;
+		int bpp = hBmp1->bitsPerPixel;
+
+		if (bpp == 32)
+		{
+			for (y = 0; y < minh; y++)
+			{
+				for (x = 0; x < minw; x++)
+				{
+					if (*p1 != *p2)
+						return 0;
+					p1++;
+					p2++;
+
+					if (*p1 != *p2)
+						return 0;
+					p1++;
+					p2++;
+
+					if (*p1 != *p2)
+						return 0;
+					p1 += 2;
+					p2 += 2;
+				}
+			}
+		}
+		else if (bpp == 16)
+		{
+			for (y = 0; y < minh; y++)
+			{
+				for (x = 0; x < minw; x++)
+				{
+					if (*p1 != *p2)
+						return 0;
+					p1++;
+					p2++;
+
+					if (*p1 != *p2)
+						return 0;
+					p1++;
+					p2++;
+				}
+			}
+		}
+		else if (bpp == 8)
+		{
+			for (y = 0; y < minh; y++)
+			{
+				for (x = 0; x < minw; x++)
+				{
+					if (*p1 != *p2)
+						return 0;
+					p1++;
+					p2++;
+				}
+			}
+		}
+	}
+	else
+	{
+		return 0;
+	}
+
+	return 1;
+}
+
+void dump_bitmap(HBITMAP hBmp, char* name)
+{
+	dump_data(hBmp->data, hBmp->width * hBmp->height * hBmp->bytesPerPixel, hBmp->width * hBmp->bytesPerPixel, name);
+}
+
+void assertBitmapsEqual(HBITMAP hBmpActual, HBITMAP hBmpExpected, char *name)
+{
+	int bitmapsEqual = CompareBitmaps(hBmpActual, hBmpExpected);
+
+	if (bitmapsEqual != 1)
+	{
+		printf("\n%s\n", name);
+		dump_bitmap(hBmpActual, "Actual");
+		dump_bitmap(hBmpExpected, "Expected");
+	}
+
+	CU_ASSERT(bitmapsEqual == 1);
+}
+
 void test_GetDC(void)
 {
 	HDC hdc = GetDC();
@@ -1017,18 +1114,161 @@ void test_SetROP2(void)
 	CU_ASSERT(hdc->drawMode == R2_BLACK);
 }
 
-void test_MoveTo(void)
+void test_MoveToEx(void)
 {
 	HDC hdc;
 	HPEN hPen;
+	HPOINT prevPoint;
 
 	hdc = GetDC();
 	hPen = CreatePen(PS_SOLID, 8, 0xAABBCCDD);
 	SelectObject(hdc, (HGDIOBJ) hPen);
-	MoveTo(hdc, 128, 256);
+	MoveToEx(hdc, 128, 256, NULL);
 
 	CU_ASSERT(hdc->pen->posX == 128);
 	CU_ASSERT(hdc->pen->posY == 256);
+
+	prevPoint = (HPOINT) malloc(sizeof(POINT));
+	memset(prevPoint, '\0', sizeof(POINT));
+
+	MoveToEx(hdc, 64, 128, prevPoint);
+
+	CU_ASSERT(prevPoint->x == 128);
+	CU_ASSERT(prevPoint->y == 256);
+	CU_ASSERT(hdc->pen->posX == 64);
+	CU_ASSERT(hdc->pen->posY == 128);
+}
+
+void test_LineTo(void)
+{
+	HDC hdc;
+	HPEN pen;
+	uint8* data;
+	HBITMAP hBmp;
+	HBITMAP hBmp_LineTo_1;
+	HBITMAP hBmp_LineTo_2;
+	HBITMAP hBmp_LineTo_3;
+	HBITMAP hBmp_LineTo_4;
+	HBITMAP hBmp_LineTo_5;
+	HBITMAP hBmp_LineTo_6;
+	HBITMAP hBmp_LineTo_7;
+	HBITMAP hBmp_LineTo_8;
+	HBITMAP hBmp_LineTo_9;
+	HBITMAP hBmp_LineTo_10;
+	HPALETTE hPalette;
+	int bitsPerPixel = 8;
+	int bytesPerPixel = 1;
+
+	hdc = GetDC();
+	hdc->bitsPerPixel = bitsPerPixel;
+	hdc->bytesPerPixel = bytesPerPixel;
+
+	pen = CreatePen(1, 1, 0);
+	SelectObject(hdc, (HGDIOBJ) pen);
+
+	hBmp = CreateCompatibleBitmap(hdc, 16, 16);
+	SelectObject(hdc, (HGDIOBJ) hBmp);
+
+	hPalette = GetSystemPalette();
+
+	data = (uint8*) gdi_image_convert((uint8*) line_to_case_1, 16, 16, 8, bitsPerPixel, hPalette);
+	hBmp_LineTo_1 = CreateBitmap(16, 16, bitsPerPixel, data);
+
+	data = (uint8*) gdi_image_convert((uint8*) line_to_case_2, 16, 16, 8, bitsPerPixel, hPalette);
+	hBmp_LineTo_2 = CreateBitmap(16, 16, bitsPerPixel, data);
+
+	data = (uint8*) gdi_image_convert((uint8*) line_to_case_3, 16, 16, 8, bitsPerPixel, hPalette);
+	hBmp_LineTo_3 = CreateBitmap(16, 16, bitsPerPixel, data);
+
+	data = (uint8*) gdi_image_convert((uint8*) line_to_case_4, 16, 16, 8, bitsPerPixel, hPalette);
+	hBmp_LineTo_4 = CreateBitmap(16, 16, bitsPerPixel, data);
+
+	data = (uint8*) gdi_image_convert((uint8*) line_to_case_5, 16, 16, 8, bitsPerPixel, hPalette);
+	hBmp_LineTo_5 = CreateBitmap(16, 16, bitsPerPixel, data);
+
+	data = (uint8*) gdi_image_convert((uint8*) line_to_case_5, 16, 16, 8, bitsPerPixel, hPalette);
+	hBmp_LineTo_5 = CreateBitmap(16, 16, bitsPerPixel, data);
+
+	data = (uint8*) gdi_image_convert((uint8*) line_to_case_6, 16, 16, 8, bitsPerPixel, hPalette);
+	hBmp_LineTo_6 = CreateBitmap(16, 16, bitsPerPixel, data);
+
+	data = (uint8*) gdi_image_convert((uint8*) line_to_case_7, 16, 16, 8, bitsPerPixel, hPalette);
+	hBmp_LineTo_7 = CreateBitmap(16, 16, bitsPerPixel, data);
+
+	data = (uint8*) gdi_image_convert((uint8*) line_to_case_8, 16, 16, 8, bitsPerPixel, hPalette);
+	hBmp_LineTo_8 = CreateBitmap(16, 16, bitsPerPixel, data);
+
+	data = (uint8*) gdi_image_convert((uint8*) line_to_case_9, 16, 16, 8, bitsPerPixel, hPalette);
+	hBmp_LineTo_9 = CreateBitmap(16, 16, bitsPerPixel, data);
+
+	data = (uint8*) gdi_image_convert((uint8*) line_to_case_10, 16, 16, 8, bitsPerPixel, hPalette);
+	hBmp_LineTo_10 = CreateBitmap(16, 16, bitsPerPixel, data);
+
+	/* Test Case 1: (0,0) -> (15, 15) */
+	BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, WHITENESS);
+	MoveToEx(hdc, 0, 0, NULL);
+	LineTo(hdc, 15, 15);
+	assertBitmapsEqual(hBmp, hBmp_LineTo_1, "Case 1");
+
+	/* Test Case 2: (15,15) -> (0,0) */
+	BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, WHITENESS);
+	MoveToEx(hdc, 15, 15, NULL);
+	LineTo(hdc, 0, 0);
+	assertBitmapsEqual(hBmp, hBmp_LineTo_2, "Case 2");
+
+	/* Test Case 3: (15,0) -> (0,15) */
+	BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, WHITENESS);
+	MoveToEx(hdc, 15, 0, NULL);
+	LineTo(hdc, 0, 15);
+	assertBitmapsEqual(hBmp, hBmp_LineTo_3, "Case 3");
+
+	/* Test Case 4: (0,15) -> (15,0) */
+	BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, WHITENESS);
+	MoveToEx(hdc, 0, 15, NULL);
+	LineTo(hdc, 15, 0);
+	assertBitmapsEqual(hBmp, hBmp_LineTo_4, "Case 4");
+
+	/* Test Case 4: (0,15) -> (15,0) */
+	BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, WHITENESS);
+	MoveToEx(hdc, 0, 15, NULL);
+	LineTo(hdc, 15, 0);
+	assertBitmapsEqual(hBmp, hBmp_LineTo_4, "Case 4");
+
+	/* Test Case 5: (0,8) -> (15,8) */
+	BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, WHITENESS);
+	MoveToEx(hdc, 0, 8, NULL);
+	LineTo(hdc, 15, 8);
+	//assertBitmapsEqual(hBmp, hBmp_LineTo_5, "Case 5");
+
+	/* Test Case 6: (15,8) -> (0,8) */
+	BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, WHITENESS);
+	MoveToEx(hdc, 15, 8, NULL);
+	LineTo(hdc, 0, 8);
+	assertBitmapsEqual(hBmp, hBmp_LineTo_6, "Case 6");
+
+	/* Test Case 7: (8,0) -> (8,15) */
+	BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, WHITENESS);
+	MoveToEx(hdc, 8, 0, NULL);
+	LineTo(hdc, 8, 15);
+	//assertBitmapsEqual(hBmp, hBmp_LineTo_7, "Case 7");
+
+	/* Test Case 8: (8,15) -> (8,0) */
+	BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, WHITENESS);
+	MoveToEx(hdc, 8, 15, NULL);
+	LineTo(hdc, 8, 0);
+	//assertBitmapsEqual(hBmp, hBmp_LineTo_8, "Case 8");
+
+	/* Test Case 9: (4,4) -> (12,12) */
+	BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, WHITENESS);
+	MoveToEx(hdc, 4, 4, NULL);
+	LineTo(hdc, 12, 12);
+	assertBitmapsEqual(hBmp, hBmp_LineTo_9, "Case 9");
+
+	/* Test Case 9: (12,12) -> (4,4) */
+	BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, WHITENESS);
+	MoveToEx(hdc, 12, 12, NULL);
+	LineTo(hdc, 4, 4);
+	//assertBitmapsEqual(hBmp, hBmp_LineTo_10, "Case 10");
 }
 
 void test_PtInRect(void)

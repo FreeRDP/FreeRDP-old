@@ -31,6 +31,54 @@
 #include "gdi_8bpp.h"
 
 /**
+ * Get pixel at the given coordinates.\n
+ * @msdn{dd144909}
+ * @param hdc device context
+ * @param nXPos pixel x position
+ * @param nYPos pixel y position
+ * @return pixel color
+ */
+
+COLORREF GetPixel(HDC hdc, int nXPos, int nYPos)
+{
+	HBITMAP hBmp = (HBITMAP) hdc->selectedObject;
+	COLORREF* colorp = (COLORREF*)&(hBmp->data[(nYPos * hBmp->width * hdc->bytesPerPixel) + nXPos * hdc->bytesPerPixel]);
+	return (COLORREF) *colorp;
+}
+
+/**
+ * Set pixel at the given coordinates.\n
+ * @msdn{dd145078}
+ * @param hdc device context
+ * @param X pixel x position
+ * @param Y pixel y position
+ * @param crColor new pixel color
+ * @return
+ */
+
+COLORREF SetPixel(HDC hdc, int X, int Y, COLORREF crColor)
+{
+	HBITMAP hBmp = (HBITMAP) hdc->selectedObject;
+	*((COLORREF*)&(hBmp->data[(Y * hBmp->width * hdc->bytesPerPixel) + X * hdc->bytesPerPixel])) = crColor;
+	return 0;
+}
+
+void SetPixel_8bpp(HBITMAP hBmp, int X, int Y, uint8 pixel)
+{
+	*((uint8*)&(hBmp->data[(Y * hBmp->width) + X])) = pixel;
+}
+
+void SetPixel_16bpp(HBITMAP hBmp, int X, int Y, uint16 pixel)
+{
+	*((uint16*)&(hBmp->data[(Y * hBmp->width * 2) + X * 2])) = pixel;
+}
+
+void SetPixel_32bpp(HBITMAP hBmp, int X, int Y, uint32 pixel)
+{
+	*((uint32*)&(hBmp->data[(Y * hBmp->width * 4) + X * 4])) = pixel;
+}
+
+/**
  * Get the current device context (a new one is created each time).\n
  * @msdn{dd144871}
  * @return current device context
@@ -110,90 +158,6 @@ HBITMAP CreateCompatibleBitmap(HDC hdc, int nWidth, int nHeight)
 	hBitmap->data = malloc(nWidth * nHeight * hBitmap->bytesPerPixel);
 	hBitmap->scanline = nWidth * hBitmap->bytesPerPixel;
 	return hBitmap;
-}
-
-/**
- * Compare two bitmaps for equality.
- * @param hBmp1 first bitmap
- * @param hBmp2 second bitmap
- * @return 1 if both bitmaps are equal, 0 otherwise
- */
-
-int CompareBitmaps(HBITMAP hBmp1, HBITMAP hBmp2)
-{
-	int x, y;
-	uint8 *p1, *p2;
-
-	int minw = (hBmp1->width < hBmp2->width) ? hBmp1->width : hBmp2->width;
-	int minh = (hBmp1->height < hBmp2->height) ? hBmp1->height : hBmp2->height;
-
-	if (hBmp1->bitsPerPixel == hBmp2->bitsPerPixel)
-	{
-		p1 = hBmp1->data;
-		p2 = hBmp2->data;
-		int bpp = hBmp1->bitsPerPixel;
-
-		if (bpp == 32)
-		{
-			for (y = 0; y < minh; y++)
-			{
-				for (x = 0; x < minw; x++)
-				{
-					if (*p1 != *p2)
-						return 0;
-					p1++;
-					p2++;
-				
-					if (*p1 != *p2)
-						return 0;
-					p1++;
-					p2++;
-
-					if (*p1 != *p2)
-						return 0;
-					p1 += 2;
-					p2 += 2;
-				}
-			}
-		}
-		else if (bpp == 16)
-		{
-			for (y = 0; y < minh; y++)
-			{
-				for (x = 0; x < minw; x++)
-				{
-					if (*p1 != *p2)
-						return 0;
-					p1++;
-					p2++;
-				
-					if (*p1 != *p2)
-						return 0;
-					p1++;
-					p2++;
-				}
-			}
-		}
-		else if (bpp == 8)
-		{
-			for (y = 0; y < minh; y++)
-			{
-				for (x = 0; x < minw; x++)
-				{
-					if (*p1 != *p2)
-						return 0;
-					p1++;
-					p2++;
-				}
-			}
-		}
-	}
-	else
-	{
-		return 0;
-	}
-
-	return 1;
 }
 
 /**
@@ -489,17 +453,19 @@ int SetROP2(HDC hdc, int fnDrawMode)
  */
 
 static void
-bresenham(HDC hdc, int x1, int y1, int x2, int y2)
+LineTo_Bresenham(HDC hdc, int x1, int y1, int x2, int y2, int reverse)
 {
 	int slope;
 	int dx, dy;
 	int d, x, y;
+	HBITMAP hBmp;
 	int incE, incNE;
+	int endX, endY;
 
 	/* reverse lines where x1 > x2 */
 	if (x1 > x2)
 	{
-		bresenham(hdc, x2, y2, x1, y1);
+		LineTo_Bresenham(hdc, x2, y2, x1, y1, 1);
 		return;
 	}
 
@@ -517,26 +483,82 @@ bresenham(HDC hdc, int x1, int y1, int x2, int y2)
 		slope = 1;
 	}
 
-	/* bresenham constants */
+	/* Bresenham constants */
 	incE = 2 * dy;
 	incNE = 2 * dy - 2 * dx;
 	d = 2 * dy - dx;
 	y = y1;
 
+	endX = (reverse == 0) ? x2 : x1;
+	endY = (reverse == 0) ? y2 : y1;
+
 	/* Blit */
-	for (x = x1; x <= x2; x++)
+
+	hBmp = (HBITMAP) hdc->selectedObject;
+	if (hdc->bitsPerPixel == 32)
 	{
-		/* TODO: apply correct binary raster operation */
-		SetPixel(hdc, x, y, hdc->pen->color);
-		
-		if (d <= 0)
+		uint32 pixel = (uint32) hdc->pen->color;
+		for (x = x1; x <= x2; x++)
 		{
-			d += incE;
+			if (!(x == endX && y == endY))
+			{
+				/* TODO: apply correct binary raster operation */
+				SetPixel_32bpp(hBmp, x, y, pixel);
+			}
+
+			if (d <= 0)
+			{
+				d += incE;
+			}
+			else
+			{
+				d += incNE;
+				y += slope;
+			}
 		}
-		else
+	}
+	else if (hdc->bitsPerPixel == 16)
+	{
+		uint16 pixel = 0;
+		for (x = x1; x <= x2; x++)
 		{
-			d += incNE;
-			y += slope;
+			if (!(x == endX && y == endY))
+			{
+				/* TODO: apply correct binary raster operation */
+				SetPixel_16bpp(hBmp, x, y, pixel);
+			}
+
+			if (d <= 0)
+			{
+				d += incE;
+			}
+			else
+			{
+				d += incNE;
+				y += slope;
+			}
+		}
+	}
+	else if (hdc->bitsPerPixel == 8)
+	{
+		uint8 pixel = 0;
+		for (x = x1; x <= x2; x++)
+		{
+			if (!(x == endX && y == endY))
+			{
+				/* TODO: apply correct binary raster operation */
+				SetPixel_8bpp(hBmp, x, y, pixel);
+			}
+
+			if (d <= 0)
+			{
+				d += incE;
+			}
+			else
+			{
+				d += incNE;
+				y += slope;
+			}
 		}
 	}
 }
@@ -551,10 +573,7 @@ bresenham(HDC hdc, int x1, int y1, int x2, int y2)
  */
 
 int LineTo(HDC hdc, int nXEnd, int nYEnd)
-{	
-	printf("LineTo: posX:%d posY:%d nXEnd:%d nYEnd:%d\n",
-	       hdc->pen->posX, hdc->pen->posY, nXEnd, nYEnd);
-
+{
 	/*
 	 * According to this MSDN article, LineTo uses a modified version of Bresenham:
 	 * http://msdn.microsoft.com/en-us/library/dd145027/
@@ -562,9 +581,8 @@ int LineTo(HDC hdc, int nXEnd, int nYEnd)
 	 * However, since I couldn't find the specifications of this modified algorithm,
 	 * we're going to use the original Bresenham line drawing algorithm for now
 	 */
-
-	bresenham(hdc, hdc->pen->posX, hdc->pen->posY, nXEnd, nYEnd);
 	
+	LineTo_Bresenham(hdc, hdc->pen->posX, hdc->pen->posY, nXEnd, nYEnd, 0);
 	return 1;
 }
 
@@ -576,10 +594,17 @@ int LineTo(HDC hdc, int nXEnd, int nYEnd)
  * @return 1 if successful, 0 otherwise
  */
 
-int MoveTo(HDC hdc, int X, int Y)
+int MoveToEx(HDC hdc, int X, int Y, HPOINT lpPoint)
 {
+	if (lpPoint != NULL)
+	{
+		lpPoint->x = hdc->pen->posX;
+		lpPoint->y = hdc->pen->posY;
+	}
+
 	hdc->pen->posX = X;
 	hdc->pen->posY = Y;
+
 	return 1;
 }
 
@@ -1043,39 +1068,6 @@ int SetBkMode(HDC hdc, int iBkMode)
 	else
 		hdc->bkMode = OPAQUE;
 	
-	return 0;
-}
-
-/**
- * Get pixel at the given coordinates.\n
- * @msdn{dd144909}
- * @param hdc device context
- * @param nXPos pixel x position
- * @param nYPos pixel y position
- * @return pixel color
- */
-
-COLORREF GetPixel(HDC hdc, int nXPos, int nYPos)
-{
-	HBITMAP hBmp = (HBITMAP) hdc->selectedObject;
-	COLORREF* colorp = (COLORREF*)&(hBmp->data[(nYPos * hBmp->width * hdc->bytesPerPixel) + nXPos * hdc->bytesPerPixel]);
-	return (COLORREF) *colorp;
-}
-
-/**
- * Set pixel at the given coordinates.\n
- * @msdn{dd145078}
- * @param hdc device context
- * @param X pixel x position
- * @param Y pixel y position
- * @param crColor new pixel color
- * @return
- */
-
-COLORREF SetPixel(HDC hdc, int X, int Y, COLORREF crColor)
-{
-	HBITMAP hBmp = (HBITMAP) hdc->selectedObject;
-	*((COLORREF*)&(hBmp->data[(Y * hBmp->width * hdc->bytesPerPixel) + X * hdc->bytesPerPixel])) = crColor;
 	return 0;
 }
 

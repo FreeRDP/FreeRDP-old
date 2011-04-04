@@ -596,7 +596,7 @@ gdi_ui_line(struct rdp_inst * inst, uint8 opcode, int startx, int starty, int en
 	SelectObject(gdi->drawing->hdc, (HGDIOBJ) hPen);
 	SetROP2(gdi->drawing->hdc, opcode + 1);
 
-	MoveTo(gdi->drawing->hdc, startx, starty);
+	MoveToEx(gdi->drawing->hdc, startx, starty, NULL);
 	LineTo(gdi->drawing->hdc, endx, endy);
 	
 	DeleteObject((HGDIOBJ) hPen);
