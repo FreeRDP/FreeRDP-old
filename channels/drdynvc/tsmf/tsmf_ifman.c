@@ -120,6 +120,7 @@ tsmf_ifman_on_new_presentation(TSMF_IFMAN * ifman)
 	presentation = tsmf_presentation_new(ifman->input_buffer);
 	if (presentation == NULL)
 		error = 1;
+	tsmf_presentation_set_audio_device(presentation, ifman->audio_name, ifman->audio_device);
 	ifman->output_pending = 1;
 	return error;
 }

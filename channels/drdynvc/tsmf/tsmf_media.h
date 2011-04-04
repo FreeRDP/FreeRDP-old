@@ -42,6 +42,8 @@ tsmf_presentation_stop(TSMF_PRESENTATION * presentation);
 void
 tsmf_presentation_set_size(TSMF_PRESENTATION * presentation, uint32 width, uint32 height);
 void
+tsmf_presentation_set_audio_device(TSMF_PRESENTATION * presentation, const char * name, const char * device);
+void
 tsmf_presentation_free(TSMF_PRESENTATION * presentation);
 
 TSMF_STREAM *

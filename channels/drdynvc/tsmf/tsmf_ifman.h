@@ -25,6 +25,8 @@ struct _TSMF_IFMAN
 {
 	IWTSVirtualChannelCallback * channel_callback;
 	const char * decoder_name;
+	const char * audio_name;
+	const char * audio_device;
 	uint8 presentation_id[16];
 	uint32 stream_id;
 	uint32 message_id;
