@@ -378,6 +378,12 @@ tsmf_alsa_free(ITSMFAudioDevice * audio)
 	wait_obj_free(alsa->term_event);
 	wait_obj_free(alsa->data_event);
 
+	while (alsa->audio_data_head)
+	{
+		free(alsa->audio_data_head->data);
+		free(alsa->audio_data_head);
+		alsa->audio_data_head = alsa->audio_data_head->next;
+	}
 	if (alsa->out_handle)
 	{
 		snd_pcm_drain(alsa->out_handle);
