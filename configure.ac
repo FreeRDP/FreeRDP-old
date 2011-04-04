@@ -905,7 +905,7 @@ EXTRA_SUBDIRS=""
 # ALSA
 #
 if test x"$HAVE_ALSA" = "x1"; then
-	EXTRA_SUBDIRS="$EXTRA_SUBDIRS channels/rdpsnd/alsa channels/drdynvc/audin/alsa"
+	EXTRA_SUBDIRS="$EXTRA_SUBDIRS channels/rdpsnd/alsa channels/drdynvc/audin/alsa channels/drdynvc/tsmf/alsa"
 fi
 
 #
@@ -1015,6 +1015,7 @@ channels/drdynvc/pnpdr/Makefile
 channels/drdynvc/tsmf/Makefile
 channels/drdynvc/tsmf/copy/Makefile
 channels/drdynvc/tsmf/ffmpeg/Makefile
+channels/drdynvc/tsmf/alsa/Makefile
 channels/drdynvc/audin/Makefile
 channels/drdynvc/audin/alsa/Makefile
 channels/drdynvc/audin/pulse/Makefile
