@@ -44,6 +44,8 @@ tsmf_presentation_set_size(TSMF_PRESENTATION * presentation, uint32 width, uint3
 void
 tsmf_presentation_set_audio_device(TSMF_PRESENTATION * presentation, const char * name, const char * device);
 void
+tsmf_presentation_flush(TSMF_PRESENTATION * presentation);
+void
 tsmf_presentation_free(TSMF_PRESENTATION * presentation);
 
 TSMF_STREAM *
@@ -52,8 +54,6 @@ TSMF_STREAM *
 tsmf_stream_find_by_id(TSMF_PRESENTATION * presentation, uint32 stream_id);
 void
 tsmf_stream_set_format(TSMF_STREAM * stream, const char * name, const uint8 * pMediaType);
-void
-tsmf_stream_flush(TSMF_STREAM * stream);
 void
 tsmf_stream_end(TSMF_STREAM * stream);
 void

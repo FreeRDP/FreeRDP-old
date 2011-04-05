@@ -318,7 +318,6 @@ int
 tsmf_ifman_on_flush(TSMF_IFMAN * ifman)
 {
 	TSMF_PRESENTATION * presentation;
-	TSMF_STREAM * stream;
 	uint32 StreamId;
 
 	StreamId = GET_UINT32(ifman->input_buffer, 16);
@@ -330,14 +329,8 @@ tsmf_ifman_on_flush(TSMF_IFMAN * ifman)
 		LLOGLN(0, ("tsmf_ifman_on_sample: unknown presentation id"));
 		return 1;
 	}
-	stream = tsmf_stream_find_by_id(presentation, StreamId);
-	if (stream == NULL)
-	{
-		LLOGLN(0, ("tsmf_ifman_on_sample: unknown stream id"));
-		return 1;
-	}
 
-	tsmf_stream_flush(stream);
+	tsmf_presentation_flush(presentation);
 
 	ifman->output_pending = 1;
 	return 0;

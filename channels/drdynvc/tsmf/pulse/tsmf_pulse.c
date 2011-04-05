@@ -354,13 +354,12 @@ tsmf_pulse_set_format(ITSMFAudioDevice * audio, uint32 sample_rate, uint32 chann
 }
 
 static int
-tsmf_pulse_is_busy(ITSMFAudioDevice * audio)
+tsmf_pulse_get_queue_length(ITSMFAudioDevice * audio)
 {
 	TSMFPulseAudioDevice * pulse = (TSMFPulseAudioDevice *) audio;
 
-	return pulse->audio_data_length > 10 ? 1 : 0;
+	return pulse->audio_data_length;
 }
-
 
 static int
 tsmf_pulse_play(ITSMFAudioDevice * audio, uint8 * data, uint32 data_size)
@@ -394,14 +393,23 @@ tsmf_pulse_play(ITSMFAudioDevice * audio, uint8 * data, uint32 data_size)
 	return 0;
 }
 
-static int
-tsmf_pulse_drain(ITSMFAudioDevice * audio)
+static void
+tsmf_pulse_flush(ITSMFAudioDevice * audio)
 {
 	TSMFPulseAudioDevice * pulse = (TSMFPulseAudioDevice *) audio;
+	TSMFAudioData * audio_data;
 
-	while (pulse->mainloop && pulse->audio_data_head)
-		usleep(100 * 1000);
-	return 0;
+	pa_threaded_mainloop_lock(pulse->mainloop);
+	while (pulse->audio_data_head)
+	{
+		audio_data = pulse->audio_data_head;
+		pulse->audio_data_head = audio_data->next;
+		free(audio_data->data);
+		free(audio_data);
+	}
+	pulse->audio_data_tail = NULL;
+	pulse->audio_data_length = 0;
+	pa_threaded_mainloop_unlock(pulse->mainloop);
 }
 
 static void
@@ -447,9 +455,9 @@ TSMFAudioDeviceEntry(void)
 
 	pulse->iface.Open = tsmf_pulse_open;
 	pulse->iface.SetFormat = tsmf_pulse_set_format;
-	pulse->iface.IsBusy = tsmf_pulse_is_busy;
+	pulse->iface.GetQueueLength = tsmf_pulse_get_queue_length;
 	pulse->iface.Play = tsmf_pulse_play;
-	pulse->iface.Drain = tsmf_pulse_drain;
+	pulse->iface.Flush = tsmf_pulse_flush;
 	pulse->iface.Free = tsmf_pulse_free;
 
 	return (ITSMFAudioDevice *) pulse;
