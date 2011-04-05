@@ -399,7 +399,7 @@ tsmf_presentation_playback_func(void * arg)
 	TSMF_PRESENTATION * presentation = (TSMF_PRESENTATION *) arg;
 	TSMF_SAMPLE * sample;
 
-	LLOGLN(0, ("tsmf_presentation_playback_func: in"));
+	LLOGLN(10, ("tsmf_presentation_playback_func: in"));
 	if (presentation->sample_rate && presentation->channels && presentation->bits_per_sample)
 	{
 		presentation->audio = tsmf_load_audio_device(
@@ -430,7 +430,7 @@ tsmf_presentation_playback_func(void * arg)
 		presentation->audio->Free(presentation->audio);
 		presentation->audio = NULL;
 	}
-	LLOGLN(0, ("tsmf_presentation_playback_func: out"));
+	LLOGLN(10, ("tsmf_presentation_playback_func: out"));
 	presentation->thread_status = 0;
 	return NULL;
 }
