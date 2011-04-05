@@ -389,6 +389,7 @@ static void
 tsmf_alsa_free(ITSMFAudioDevice * audio)
 {
 	TSMFALSAAudioDevice * alsa = (TSMFALSAAudioDevice *) audio;
+	TSMFAudioData * audio_data;
 
 	LLOGLN(10, ("tsmf_alsa_free:"));
 
@@ -400,9 +401,10 @@ tsmf_alsa_free(ITSMFAudioDevice * audio)
 
 	while (alsa->audio_data_head)
 	{
-		free(alsa->audio_data_head->data);
-		free(alsa->audio_data_head);
-		alsa->audio_data_head = alsa->audio_data_head->next;
+		audio_data = alsa->audio_data_head;
+		alsa->audio_data_head = audio_data->next;
+		free(audio_data->data);
+		free(audio_data);
 	}
 	if (alsa->out_handle)
 	{

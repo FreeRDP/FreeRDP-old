@@ -419,6 +419,7 @@ static void
 tsmf_pulse_free(ITSMFAudioDevice * audio)
 {
 	TSMFPulseAudioDevice * pulse = (TSMFPulseAudioDevice *) audio;
+	TSMFAudioData * audio_data;
 
 	LLOGLN(0, ("tsmf_pulse_free:"));
 
@@ -440,9 +441,10 @@ tsmf_pulse_free(ITSMFAudioDevice * audio)
 	}
 	while (pulse->audio_data_head)
 	{
-		free(pulse->audio_data_head->data);
-		free(pulse->audio_data_head);
-		pulse->audio_data_head = pulse->audio_data_head->next;
+		audio_data = pulse->audio_data_head;
+		pulse->audio_data_head = audio_data->next;
+		free(audio_data->data);
+		free(audio_data);
 	}
 
 	free(pulse);
