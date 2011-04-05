@@ -85,6 +85,13 @@ static const TSMFMediaTypeMap tsmf_sub_type_map[] =
 		TSMF_SUB_TYPE_WMA9
 	},
 
+	/* 00000055-0000-0010-8000-00AA00389B71 */
+	{
+		{ 0x55, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71 },
+		"WMMEDIASUBTYPE_MP3",
+		TSMF_SUB_TYPE_MP3
+	},
+
 	{
 		{ 0 },
 		"Unknown",
@@ -670,6 +677,8 @@ tsmf_stream_set_format(TSMF_STREAM * stream, const char * name, const uint8 * pM
 		stream->presentation->sample_rate = mediatype.SamplesPerSecond.Numerator;
 		stream->presentation->channels = mediatype.Channels;
 		stream->presentation->bits_per_sample = mediatype.BitsPerSample;
+		if (stream->presentation->bits_per_sample == 0)
+			stream->presentation->bits_per_sample = 16;
 	}
 
 	stream->major_type = mediatype.MajorType;

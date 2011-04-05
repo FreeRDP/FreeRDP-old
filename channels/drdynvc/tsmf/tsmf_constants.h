@@ -97,6 +97,7 @@
 #define TSMF_SUB_TYPE_WVC1                  1
 #define TSMF_SUB_TYPE_WMA2                  2
 #define TSMF_SUB_TYPE_WMA9                  3
+#define TSMF_SUB_TYPE_MP3                   4
 
 /* FormatType */
 #define TSMF_FORMAT_TYPE_DEFAULT            0
