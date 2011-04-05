@@ -278,7 +278,7 @@ tsmf_presentation_pop_sample(TSMF_PRESENTATION * presentation)
 	{
 		if (earliest_stream->major_type == TSMF_MAJOR_TYPE_AUDIO)
 		{
-			if (!presentation->audio || !presentation->audio->IsBusy(presentation->audio))
+			if (!presentation->audio || presentation->audio->GetQueueLength(presentation->audio) < 10)
 			{
 				sample = tsmf_stream_pop_sample(earliest_stream);
 			}
@@ -401,6 +401,9 @@ tsmf_sample_playback(TSMF_SAMPLE * sample)
 			tsmf_sample_playback_audio(sample);
 			break;
 	}
+
+	tsmf_sample_ack(sample);
+	tsmf_sample_free(sample);
 }
 
 static void *
@@ -425,20 +428,20 @@ tsmf_presentation_playback_func(void * arg)
 	{
 		sample = tsmf_presentation_pop_sample(presentation);
 		if (sample)
-		{
 			tsmf_sample_playback(sample);
-			tsmf_sample_ack(sample);
-			tsmf_sample_free(sample);
-		}
 		else
-		{
 			usleep(10000);
-		}
+	}
+	if (presentation->eos)
+	{
+		while ((sample = tsmf_presentation_pop_sample(presentation)) != NULL)
+			tsmf_sample_playback(sample);
+		if (presentation->audio)
+			while (presentation->audio->GetQueueLength(presentation->audio) > 0)
+				usleep(10000);
 	}
 	if (presentation->audio)
 	{
-		if (presentation->eos)
-			presentation->audio->Drain(presentation->audio);
 		presentation->audio->Free(presentation->audio);
 		presentation->audio = NULL;
 	}
@@ -484,6 +487,36 @@ tsmf_presentation_set_audio_device(TSMF_PRESENTATION * presentation, const char 
 {
 	presentation->audio_name = name;
 	presentation->audio_device = device;
+}
+
+static void
+tsmf_stream_flush(TSMF_STREAM * stream)
+{
+	TSMF_SAMPLE * sample;
+
+	while (stream->sample_queue_head)
+	{
+		sample = tsmf_stream_pop_sample(stream);
+		tsmf_sample_free(sample);
+	}
+
+	stream->eos = 0;
+}
+
+void
+tsmf_presentation_flush(TSMF_PRESENTATION * presentation)
+{
+	TSMF_STREAM * stream;
+
+	pthread_mutex_lock(presentation->mutex);
+	for (stream = presentation->stream_list_head; stream; stream = stream->next)
+		tsmf_stream_flush(stream);
+	pthread_mutex_unlock(presentation->mutex);
+
+	if (presentation->audio)
+		presentation->audio->Flush(presentation->audio);
+
+	presentation->eos = 0;
 }
 
 void
@@ -690,24 +723,6 @@ tsmf_stream_set_format(TSMF_STREAM * stream, const char * name, const uint8 * pM
 	stream->width = mediatype.Width;
 	stream->height = mediatype.Height;
 	stream->decoder = tsmf_load_decoder(name, &mediatype);
-}
-
-void
-tsmf_stream_flush(TSMF_STREAM * stream)
-{
-	TSMF_PRESENTATION * presentation = stream->presentation;
-	TSMF_SAMPLE * sample;
-
-	pthread_mutex_lock(presentation->mutex);
-	while (stream->sample_queue_head)
-	{
-		sample = tsmf_stream_pop_sample(stream);
-		tsmf_sample_free(sample);
-	}
-	pthread_mutex_unlock(presentation->mutex);
-
-	stream->eos = 0;
-	presentation->eos = 0;
 }
 
 void

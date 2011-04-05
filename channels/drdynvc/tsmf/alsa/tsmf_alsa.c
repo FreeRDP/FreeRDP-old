@@ -224,7 +224,8 @@ tsmf_alsa_thread_func(void * arg)
 			}
 			pthread_mutex_unlock(alsa->mutex);
 
-			tsmf_alsa_thread_process_audio_data(alsa, audio_data);
+			if (audio_data)
+				tsmf_alsa_thread_process_audio_data(alsa, audio_data);
 		}
 	}
 
@@ -328,11 +329,11 @@ tsmf_alsa_set_format(ITSMFAudioDevice * audio, uint32 sample_rate, uint32 channe
 }
 
 static int
-tsmf_alsa_is_busy(ITSMFAudioDevice * audio)
+tsmf_alsa_get_queue_length(ITSMFAudioDevice * audio)
 {
 	TSMFALSAAudioDevice * alsa = (TSMFALSAAudioDevice *) audio;
 
-	return alsa->audio_data_length > 10 ? 1 : 0;
+	return alsa->audio_data_length;
 }
 
 static int
@@ -365,14 +366,23 @@ tsmf_alsa_play(ITSMFAudioDevice * audio, uint8 * data, uint32 data_size)
 	return 0;
 }
 
-static int
-tsmf_alsa_drain(ITSMFAudioDevice * audio)
+static void
+tsmf_alsa_flush(ITSMFAudioDevice * audio)
 {
 	TSMFALSAAudioDevice * alsa = (TSMFALSAAudioDevice *) audio;
+	TSMFAudioData * audio_data;
 
-	while (alsa->thread_status > 0 && alsa->audio_data_head)
-		usleep(100 * 1000);
-	return 0;
+	pthread_mutex_lock(alsa->mutex);
+	while (alsa->audio_data_head)
+	{
+		audio_data = alsa->audio_data_head;
+		alsa->audio_data_head = audio_data->next;
+		free(audio_data->data);
+		free(audio_data);
+	}
+	alsa->audio_data_tail = NULL;
+	alsa->audio_data_length = 0;
+	pthread_mutex_unlock(alsa->mutex);
 }
 
 static void
@@ -414,9 +424,9 @@ TSMFAudioDeviceEntry(void)
 
 	alsa->iface.Open = tsmf_alsa_open;
 	alsa->iface.SetFormat = tsmf_alsa_set_format;
-	alsa->iface.IsBusy = tsmf_alsa_is_busy;
+	alsa->iface.GetQueueLength = tsmf_alsa_get_queue_length;
 	alsa->iface.Play = tsmf_alsa_play;
-	alsa->iface.Drain = tsmf_alsa_drain;
+	alsa->iface.Flush = tsmf_alsa_flush;
 	alsa->iface.Free = tsmf_alsa_free;
 
 	alsa->mutex = (pthread_mutex_t *) malloc(sizeof(pthread_mutex_t));
