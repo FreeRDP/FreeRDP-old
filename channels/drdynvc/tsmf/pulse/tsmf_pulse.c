@@ -264,6 +264,7 @@ tsmf_pulse_close_stream(TSMFPulseAudioDevice * pulse)
 		return 1;
 	LLOGLN(0, ("tsmf_pulse_close_stream:"));
 	pa_threaded_mainloop_lock(pulse->mainloop);
+	pa_stream_set_write_callback(pulse->stream, NULL, NULL);
 	tsmf_pulse_wait_for_operation(pulse,
 		pa_stream_drain(pulse->stream, tsmf_pulse_stream_success_callback, pulse));
 	pa_stream_disconnect(pulse->stream);
@@ -297,14 +298,14 @@ tsmf_pulse_open_stream(TSMFPulseAudioDevice * pulse)
 		tsmf_pulse_stream_state_callback, pulse);
 	pa_stream_set_write_callback(pulse->stream,
 		tsmf_pulse_stream_request_callback, pulse);
-	buffer_attr.maxlength = (uint32_t) -1;
-	buffer_attr.tlength = (uint32_t) -1;//pa_usec_to_bytes(2000000, &pulse->sample_spec);
+	buffer_attr.maxlength = pa_usec_to_bytes(1000000, &pulse->sample_spec);
+	buffer_attr.tlength = pa_usec_to_bytes(500000, &pulse->sample_spec);
 	buffer_attr.prebuf = (uint32_t) -1;
 	buffer_attr.minreq = (uint32_t) -1;
 	buffer_attr.fragsize = (uint32_t) -1;
 	if (pa_stream_connect_playback(pulse->stream,
 		pulse->device[0] ? pulse->device : NULL,
-		&buffer_attr, 0, NULL, NULL) < 0)
+		&buffer_attr, PA_STREAM_ADJUST_LATENCY, NULL, NULL) < 0)
 	{
 		pa_threaded_mainloop_unlock(pulse->mainloop);
 		LLOGLN(0, ("tsmf_pulse_open_stream: pa_stream_connect_playback failed (%d)",
@@ -409,6 +410,8 @@ tsmf_pulse_flush(ITSMFAudioDevice * audio)
 	}
 	pulse->audio_data_tail = NULL;
 	pulse->audio_data_length = 0;
+	tsmf_pulse_wait_for_operation(pulse,
+		pa_stream_flush(pulse->stream, tsmf_pulse_stream_success_callback, pulse));
 	pa_threaded_mainloop_unlock(pulse->mainloop);
 }
 
