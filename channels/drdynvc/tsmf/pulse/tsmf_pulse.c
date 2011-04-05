@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include <pulse/pulseaudio.h>
 #include "tsmf_audio.h"
 
@@ -393,6 +394,16 @@ tsmf_pulse_play(ITSMFAudioDevice * audio, uint8 * data, uint32 data_size)
 	return 0;
 }
 
+static int
+tsmf_pulse_drain(ITSMFAudioDevice * audio)
+{
+	TSMFPulseAudioDevice * pulse = (TSMFPulseAudioDevice *) audio;
+
+	while (pulse->mainloop && pulse->audio_data_head)
+		usleep(100 * 1000);
+	return 0;
+}
+
 static void
 tsmf_pulse_free(ITSMFAudioDevice * audio)
 {
@@ -438,6 +449,7 @@ TSMFAudioDeviceEntry(void)
 	pulse->iface.SetFormat = tsmf_pulse_set_format;
 	pulse->iface.IsBusy = tsmf_pulse_is_busy;
 	pulse->iface.Play = tsmf_pulse_play;
+	pulse->iface.Drain = tsmf_pulse_drain;
 	pulse->iface.Free = tsmf_pulse_free;
 
 	return (ITSMFAudioDevice *) pulse;
