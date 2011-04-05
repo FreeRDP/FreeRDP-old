@@ -34,6 +34,8 @@ struct _ITSMFAudioDevice
 	int (*IsBusy) (ITSMFAudioDevice * audio);
 	/* Play audio data. */
 	int (*Play) (ITSMFAudioDevice * audio, uint8 * data, uint32 data_size);
+	/* Drain all audio data */
+	int (*Drain) (ITSMFAudioDevice * audio);
 	/* Free the audio device */
 	void (*Free) (ITSMFAudioDevice * audio);
 };

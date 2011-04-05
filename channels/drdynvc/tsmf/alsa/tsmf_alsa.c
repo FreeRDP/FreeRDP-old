@@ -365,6 +365,16 @@ tsmf_alsa_play(ITSMFAudioDevice * audio, uint8 * data, uint32 data_size)
 	return 0;
 }
 
+static int
+tsmf_alsa_drain(ITSMFAudioDevice * audio)
+{
+	TSMFALSAAudioDevice * alsa = (TSMFALSAAudioDevice *) audio;
+
+	while (alsa->thread_status > 0 && alsa->audio_data_head)
+		usleep(100 * 1000);
+	return 0;
+}
+
 static void
 tsmf_alsa_free(ITSMFAudioDevice * audio)
 {
@@ -406,6 +416,7 @@ TSMFAudioDeviceEntry(void)
 	alsa->iface.SetFormat = tsmf_alsa_set_format;
 	alsa->iface.IsBusy = tsmf_alsa_is_busy;
 	alsa->iface.Play = tsmf_alsa_play;
+	alsa->iface.Drain = tsmf_alsa_drain;
 	alsa->iface.Free = tsmf_alsa_free;
 
 	alsa->mutex = (pthread_mutex_t *) malloc(sizeof(pthread_mutex_t));

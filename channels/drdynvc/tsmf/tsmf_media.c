@@ -143,6 +143,7 @@ struct _TSMF_PRESENTATION
 	uint32 sample_rate;
 	uint32 channels;
 	uint32 bits_per_sample;
+	int eos;
 
 	TSMF_STREAM * stream_list_head;
 	TSMF_STREAM * stream_list_tail;
@@ -271,17 +272,19 @@ tsmf_presentation_pop_sample(TSMF_PRESENTATION * presentation)
 	   2. If the earliest sample with start_time <= current playback time, we consume it
 	   3. If the earliest sample with start_time > current playback time, we check if
 	      there's a stream pending for receiving sample. If so, we bypasss it and wait.
-	*/
-	if (earliest_stream && (!has_pending_stream || presentation->playback_time == 0 ||
-		presentation->playback_time >= earliest_stream->sample_queue_head->start_time))
-	{
-		sample = tsmf_stream_pop_sample(earliest_stream);
-	}
-	/* However if the sample is audio, we will let the audio device to decide whether
+	   However if the sample is audio, we will let the audio device to decide whether
 	   to cache it ahead of time, to ensure smoother audio playback. */
-	else if (earliest_stream && earliest_stream->major_type == TSMF_MAJOR_TYPE_AUDIO)
+	if (earliest_stream)
 	{
-		if (!presentation->audio || !presentation->audio->IsBusy(presentation->audio))
+		if (earliest_stream->major_type == TSMF_MAJOR_TYPE_AUDIO)
+		{
+			if (!presentation->audio || !presentation->audio->IsBusy(presentation->audio))
+			{
+				sample = tsmf_stream_pop_sample(earliest_stream);
+			}
+		}
+		else if (!has_pending_stream || presentation->playback_time == 0 ||
+			presentation->playback_time >= earliest_stream->sample_queue_head->start_time)
 		{
 			sample = tsmf_stream_pop_sample(earliest_stream);
 		}
@@ -434,6 +437,8 @@ tsmf_presentation_playback_func(void * arg)
 	}
 	if (presentation->audio)
 	{
+		if (presentation->eos)
+			presentation->audio->Drain(presentation->audio);
 		presentation->audio->Free(presentation->audio);
 		presentation->audio = NULL;
 	}
@@ -702,12 +707,14 @@ tsmf_stream_flush(TSMF_STREAM * stream)
 	pthread_mutex_unlock(presentation->mutex);
 
 	stream->eos = 0;
+	presentation->eos = 0;
 }
 
 void
 tsmf_stream_end(TSMF_STREAM * stream)
 {
 	stream->eos = 1;
+	stream->presentation->eos = 1;
 }
 
 void
