@@ -121,6 +121,25 @@ dvcman_create_listener(IWTSVirtualChannelManager * pChannelMgr,
 }
 
 static int
+dvcman_push_event(IWTSVirtualChannelManager * pChannelMgr,
+	RD_EVENT * pEvent)
+{
+	DVCMAN * dvcman = (DVCMAN *) pChannelMgr;
+	int error;
+
+	error = drdynvc_push_event(dvcman->drdynvc, pEvent);
+	if (error == 0)
+	{
+		LLOGLN(10, ("dvcman_push_event: event_type %d pushed.", pEvent->event_type));
+	}
+	else
+	{
+		LLOGLN(0, ("dvcman_push_event: event_type %d push failed.", pEvent->event_type));
+	}
+	return error;
+}
+
+static int
 dvcman_register_plugin(IDRDYNVC_ENTRY_POINTS * pEntryPoints,
 	const char * name, IWTSPlugin * pPlugin)
 {
@@ -172,6 +191,7 @@ dvcman_new(drdynvcPlugin * plugin)
 	dvcman = (DVCMAN *) malloc(sizeof(DVCMAN));
 	memset(dvcman, 0, sizeof(DVCMAN));
 	dvcman->iface.CreateListener = dvcman_create_listener;
+	dvcman->iface.PushEvent = dvcman_push_event;
 	dvcman->drdynvc = plugin;
 	dvcman->num_plugins = 0;
 	dvcman->num_listeners = 0;

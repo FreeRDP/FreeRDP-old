@@ -559,6 +559,7 @@ run_xfreerdp(xfInfo * xfi)
 	int max_sck;
 	fd_set rfds;
 	fd_set wfds;
+	RD_EVENT * event;
 
 	/* create an instance of the library */
 	inst = freerdp_new(xfi->settings);
@@ -687,6 +688,14 @@ run_xfreerdp(xfInfo * xfi)
 		{
 			printf("run_xfreerdp: freerdp_chanman_check_fds failed\n");
 			break;
+		}
+		/* check channel event */
+		event = freerdp_chanman_pop_event(xfi->chan_man);
+		if (event)
+		{
+			/* TODO */
+			printf("run_xfreerdp: got event type %d\n", event->event_type);
+			freerdp_chanman_free_event(xfi->chan_man, event);
 		}
 	}
 

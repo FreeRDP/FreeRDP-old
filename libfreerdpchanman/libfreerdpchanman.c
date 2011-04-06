@@ -163,6 +163,10 @@ struct rdp_chan_man
 	uint32 sync_data_length;
 	void * sync_user_data;
 	int sync_index;
+
+	/* used for sync event */
+	SEMAPHORE sem_event;
+	RD_EVENT * event;
 };
 
 /* returns the chan_man for the open handle passed in */
@@ -557,6 +561,49 @@ MyVirtualChannelWrite(uint32 openHandle, void * pData, uint32 dataLength,
 	return CHANNEL_RC_OK;
 }
 
+static uint32 VCHAN_CC
+MyVirtualChannelEventPush(uint32 openHandle,
+	RD_EVENT * event)
+{
+	rdpChanMan * chan_man;
+	struct chan_data * lchan;
+	int index;
+
+	chan_man = freerdp_chanman_find_by_open_handle(openHandle, &index);
+	if ((chan_man == NULL) || (index < 0) || (index >= CHANNEL_MAX_COUNT))
+	{
+		printf("MyVirtualChannelEventPush: error bad chanhan\n");
+		return CHANNEL_RC_BAD_CHANNEL_HANDLE;
+	}
+	if (!chan_man->is_connected)
+	{
+		printf("MyVirtualChannelEventPush: error not connected\n");
+		return CHANNEL_RC_NOT_CONNECTED;
+	}
+	if (event == NULL)
+	{
+		printf("MyVirtualChannelEventPush: error bad event\n");
+		return CHANNEL_RC_NULL_DATA;
+	}
+	lchan = chan_man->chans + index;
+	if (lchan->flags != 2)
+	{
+		printf("MyVirtualChannelEventPush: error not open\n");
+		return CHANNEL_RC_NOT_OPEN;
+	}
+	SEMAPHORE_WAIT(chan_man->sem_event); /* lock chan_man->event */
+	if (!chan_man->is_connected)
+	{
+		SEMAPHORE_POST(chan_man->sem_event);
+		printf("MyVirtualChannelEventPush: error not connected\n");
+		return CHANNEL_RC_NOT_CONNECTED;
+	}
+	chan_man->event = event;
+	/* set the event */
+	freerdp_chanman_set_ev(chan_man);
+	return CHANNEL_RC_OK;
+}
+
 /* this is called shortly after the application starts and
    before any other function in the file
    called only from main thread */
@@ -596,6 +643,7 @@ freerdp_chanman_new(void)
 	memset(chan_man, 0, sizeof(rdpChanMan));
 
 	SEMAPHORE_INIT(chan_man->sem, 0, 1); /* start at 1 */
+	SEMAPHORE_INIT(chan_man->sem_event, 0, 1); /* start at 1 */
 #ifdef _WIN32
 	chan_man->chan_event = CreateEvent(NULL, TRUE, FALSE, NULL);
 #else
@@ -626,6 +674,7 @@ freerdp_chanman_free(rdpChanMan * chan_man)
 	rdpChanManList * prev;
 
 	SEMAPHORE_DESTROY(chan_man->sem);
+	SEMAPHORE_DESTROY(chan_man->sem_event);
 #ifdef _WIN32
 	if (chan_man->chan_event)
 	{
@@ -727,6 +776,7 @@ freerdp_chanman_load_plugin(rdpChanMan * chan_man, rdpSet * settings,
 	ep.pVirtualChannelClose = MyVirtualChannelClose;
 	ep.pVirtualChannelWrite = MyVirtualChannelWrite;
 	ep.pExtendedData = data;
+	ep.pVirtualChannelEventPush = MyVirtualChannelEventPush;
 
 	/* enable MyVirtualChannelInit */
 	chan_man->can_call_init = 1;
@@ -878,10 +928,17 @@ freerdp_chanman_process_sync(rdpChanMan * chan_man, rdpInst * inst)
 	struct chan_data * lchan_data;
 	struct rdp_chan * lrdp_chan;
 
+	if (chan_man->sync_data == NULL)
+		return;
+
 	ldata = chan_man->sync_data;
 	ldata_len = chan_man->sync_data_length;
 	luser_data = chan_man->sync_user_data;
 	lindex = chan_man->sync_index;
+	chan_man->sync_data = NULL;
+	chan_man->sync_data_length = 0;
+	chan_man->sync_user_data = NULL;
+	chan_man->sync_index = 0;
 	SEMAPHORE_POST(chan_man->sem); /* release chan_man->sync* vars */
 	lchan_data = chan_man->chans + lindex;
 	lrdp_chan = freerdp_chanman_find_rdp_chan_by_name(chan_man, inst->settings,
@@ -935,6 +992,25 @@ freerdp_chanman_check_fds(rdpChanMan * chan_man, rdpInst * inst)
 		freerdp_chanman_process_sync(chan_man, inst);
 	}
 	return 0;
+}
+
+RD_EVENT *
+freerdp_chanman_pop_event(rdpChanMan * chan_man)
+{
+	RD_EVENT * event;
+
+	if (chan_man->event == NULL)
+		return NULL;
+	event = chan_man->event;
+	chan_man->event = NULL;
+	SEMAPHORE_POST(chan_man->sem_event); /* release chan_man->event */
+	return event;
+}
+
+void
+freerdp_chanman_free_event(rdpChanMan * chan_man, RD_EVENT * event)
+{
+	event->event_callback(event);
 }
 
 void

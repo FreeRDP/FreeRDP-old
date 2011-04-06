@@ -98,6 +98,40 @@ typedef struct _RD_PLUGIN_DATA
 }
 RD_PLUGIN_DATA;
 
+typedef struct _RD_RECT
+{
+	sint16 x;
+	sint16 y;
+	sint16 width;
+	sint16 height;
+}
+RD_RECT;
+
+typedef struct _RD_EVENT RD_EVENT;
+struct _RD_EVENT
+{
+	uint16 event_type;
+	void (*event_callback) (RD_EVENT * event);
+	void * user_data;
+};
+
+typedef struct _RD_VIDEO_FRAME_EVENT RD_VIDEO_FRAME_EVENT;
+struct _RD_VIDEO_FRAME_EVENT
+{
+	RD_EVENT event;
+	uint8 * frame_data;
+	uint32 frame_size;
+	uint16 frame_pixfmt;
+	sint16 frame_width;
+	sint16 frame_height;
+	sint16 x;
+	sint16 y;
+	sint16 width;
+	sint16 height;
+	uint16 num_visible_rects;
+	RD_RECT * visible_rects;
+};
+
 /* defined in include/freerdp/freerdp.h */
 struct rdp_inst;
 typedef struct rdp_inst rdpInst;

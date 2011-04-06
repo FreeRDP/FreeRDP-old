@@ -99,6 +99,9 @@ typedef uint32 (VCHAN_CC * PVIRTUALCHANNELCLOSE)(uint32 openHandle);
 typedef uint32 (VCHAN_CC * PVIRTUALCHANNELWRITE)(uint32  openHandle,
 	void *  pData, uint32  dataLength, void *  pUserData);
 
+typedef uint32 (VCHAN_CC * PVIRTUALCHANNELEVENTPUSH)(uint32 openHandle,
+	RD_EVENT * event);
+
 struct _CHANNEL_ENTRY_POINTS
 {
 	uint32 cbSize;
@@ -122,6 +125,7 @@ struct _CHANNEL_ENTRY_POINTS_EX
 	PVIRTUALCHANNELCLOSE pVirtualChannelClose;
 	PVIRTUALCHANNELWRITE pVirtualChannelWrite;
 	void* pExtendedData; /* extended data field to pass initial parameters */
+	PVIRTUALCHANNELEVENTPUSH pVirtualChannelEventPush;
 };
 typedef struct _CHANNEL_ENTRY_POINTS_EX CHANNEL_ENTRY_POINTS_EX;
 typedef CHANNEL_ENTRY_POINTS_EX * PCHANNEL_ENTRY_POINTS_EX;

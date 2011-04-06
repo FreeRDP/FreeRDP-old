@@ -46,6 +46,7 @@ struct drdynvc_plugin
 	rdpChanPlugin chan_plugin;
 
 	CHANNEL_ENTRY_POINTS ep;
+	PVIRTUALCHANNELEVENTPUSH ep_event_push;
 	CHANNEL_DEF channel_def;
 	uint32 open_handle;
 	char * data_in;
@@ -195,6 +196,25 @@ drdynvc_write_data(drdynvcPlugin * plugin, uint32 ChannelId, char * data, uint32
 		LLOGLN(0, ("drdynvc_write_data: "
 			"VirtualChannelWrite "
 			"failed %d", error));
+		return 1;
+	}
+	return 0;
+}
+
+int
+drdynvc_push_event(drdynvcPlugin * plugin, RD_EVENT * event)
+{
+	int error;
+
+	if (!plugin->ep_event_push)
+	{
+		LLOGLN(0, ("drdynvc_push_event: channel plugin API does not support extensions."));
+		return 1;
+	}
+	error = plugin->ep_event_push(plugin->open_handle, event);
+	if (error != CHANNEL_RC_OK)
+	{
+		LLOGLN(0, ("drdynvc_push_event: pVirtualChannelEventPush failed %d", error));
 		return 1;
 	}
 	return 0;
@@ -677,6 +697,7 @@ VirtualChannelEntry(PCHANNEL_ENTRY_POINTS pEntryPoints)
 
 	if (pEntryPoints->cbSize >= sizeof(CHANNEL_ENTRY_POINTS_EX))
 	{
+		plugin->ep_event_push = ((PCHANNEL_ENTRY_POINTS_EX)pEntryPoints)->pVirtualChannelEventPush;
 		data = (RD_PLUGIN_DATA *) (((PCHANNEL_ENTRY_POINTS_EX)pEntryPoints)->pExtendedData);
 		while (data && data->size > 0)
 		{
