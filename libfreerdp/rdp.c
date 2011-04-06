@@ -699,11 +699,7 @@ rdp_send_confirm_active(rdpRdp * rdp)
 	uint32 sec_flags;
 	uint16 numberCapabilities = 14;
 
-	caps = (STREAM) xmalloc(sizeof(struct stream));
-	memset(caps, 0, sizeof(struct stream));
-	caps->size = 8192;
-	caps->p = caps->data = (uint8 *) xmalloc(caps->size);
-	caps->end = caps->data + caps->size;
+	caps = stream_new(8192);
 
 	rdp_out_general_capset(rdp, caps);
 	rdp_out_bitmap_capset(rdp, caps);
@@ -795,8 +791,7 @@ rdp_send_confirm_active(rdpRdp * rdp)
 	out_uint16_le(s, numberCapabilities); /* numberCapabilities */
 	out_uint8s(s, 2); /* pad2Octets */
 	out_uint8p(s, caps->data, caplen); /* capabilitySets */
-	xfree(caps->data);
-	xfree(caps);
+	stream_delete(caps);
 	s_mark_end(s);
 	sec_send(rdp->sec, s, sec_flags);
 }
