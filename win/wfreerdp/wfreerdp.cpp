@@ -639,11 +639,11 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdS
 #if defined(WITH_DEBUG) || defined(_DEBUG)
 	create_console();
 #endif
-	/*if (!freerdp_global_init())
+	if (!freerdp_global_init())
 	{
 		printf("Error initializing freerdp\n");
 		return 1;
-	}*/
+	}
 	freerdp_chanman_init();
 	g_default_cursor = LoadCursor(NULL, IDC_ARROW);
 
@@ -694,7 +694,7 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdS
 			L"FreeRDP Error", MB_ICONSTOP);
 
 	freerdp_chanman_uninit();
-	//freerdp_global_finish();
+	freerdp_global_finish();
 	WSACleanup();
 	return 0;
 }
