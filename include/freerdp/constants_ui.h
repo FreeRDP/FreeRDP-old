@@ -53,4 +53,10 @@
 #define PERF_ENABLE_FONT_SMOOTHING      0x00000080
 #define PERF_ENABLE_DESKTOP_COMPOSITION 0x00000100
 
+/* RD_EVENT.event_type */
+#define RD_EVENT_TYPE_VIDEO_FRAME           1
+
+/* RD_VIDEO_FRAME_EVENT.frame_pixfmt */
+#define RD_VIDEO_FRAME_PIXFMT_YUV420P       1
+
 #endif
