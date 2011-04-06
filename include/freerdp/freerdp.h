@@ -53,9 +53,9 @@
 extern "C" {
 #endif
 
-RD_BOOL
+FREERDP_API RD_BOOL
 freerdp_global_init(void);
-void
+FREERDP_API void
 freerdp_global_finish(void);
 
 struct rdp_inst

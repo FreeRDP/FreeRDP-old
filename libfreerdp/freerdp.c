@@ -582,13 +582,13 @@ l_rdp_send_frame_ack(rdpInst * inst, int frame_id)
 	return 0;
 }
 
-RD_BOOL
+FREERDP_API RD_BOOL
 freerdp_global_init(void)
 {
 	return rdp_global_init();
 }
 
-void
+FREERDP_API void
 freerdp_global_finish(void)
 {
 	rdp_global_finish();
