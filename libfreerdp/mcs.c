@@ -401,7 +401,7 @@ mcs_connect(rdpMcs * mcs)
 	}
 	return True;
 
-      error:
+error:
 	iso_disconnect(mcs->iso);
 	return False;
 }

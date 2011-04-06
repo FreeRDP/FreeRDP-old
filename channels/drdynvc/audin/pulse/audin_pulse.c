@@ -104,7 +104,7 @@ audin_pulse_connect(audinDevicePlugin * devplugin)
 		state = pa_context_get_state(pulse_data->context);
 		if (state == PA_CONTEXT_READY)
 			break;
-        if (!PA_CONTEXT_IS_GOOD(state))
+		if (!PA_CONTEXT_IS_GOOD(state))
 		{
 			LLOGLN(0, ("audin_pulse_connect: bad context state (%d)",
 				pa_context_errno(pulse_data->context)));
@@ -448,7 +448,7 @@ audin_pulse_open(audinDevicePlugin * devplugin, audin_receive_func receive_func,
 		state = pa_stream_get_state(pulse_data->stream);
 		if (state == PA_STREAM_READY)
 			break;
-        if (!PA_STREAM_IS_GOOD(state))
+		if (!PA_STREAM_IS_GOOD(state))
 		{
 			LLOGLN(0, ("audin_pulse_open: bad stream state (%d)",
 				pa_context_errno(pulse_data->context)));
