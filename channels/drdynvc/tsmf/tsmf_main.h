@@ -23,6 +23,9 @@
 void
 tsmf_playback_ack(IWTSVirtualChannelCallback * pChannelCallback,
 	uint32 message_id, uint64 duration, uint32 data_size);
+int
+tsmf_push_event(IWTSVirtualChannelCallback * pChannelCallback,
+	RD_EVENT * event);
 
 #endif
 
