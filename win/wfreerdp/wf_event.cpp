@@ -24,7 +24,7 @@
 #include "wf_win.h"
 
 extern HCURSOR g_default_cursor;
-extern HWND g_focus_hWnd;
+static HWND g_focus_hWnd;	/* set to hWnd when wfreerdp has focus so the low level keyboard hook can use it */
 
 #define X_POS(lParam) (lParam & 0xffff)
 #define Y_POS(lParam) ((lParam >> 16) & 0xffff)
@@ -32,19 +32,18 @@ extern HWND g_focus_hWnd;
 LRESULT CALLBACK
 wf_ll_kbd_proc(int nCode, WPARAM wParam, LPARAM lParam)
 {
-	HWND hWnd = g_focus_hWnd;
 	wfInfo * wfi;
 	uint8 scanCode;
 	DWORD flags;
 
-	DEBUG_KBD("Low-level keyboard hook, hWnd %X nCode %X wParam %X\n", hWnd, nCode, wParam);
-	if (hWnd && (nCode == HC_ACTION)) {
+	DEBUG_KBD("Low-level keyboard hook, hWnd %X nCode %X wParam %X\n", g_focus_hWnd, nCode, wParam);
+	if (g_focus_hWnd && (nCode == HC_ACTION)) {
 		switch (wParam) {
 		case WM_KEYDOWN:
 		case WM_SYSKEYDOWN:
 		case WM_KEYUP:
 		case WM_SYSKEYUP:
-			wfi = (wfInfo *) GetWindowLongPtr(hWnd, GWLP_USERDATA);
+			wfi = (wfInfo *) GetWindowLongPtr(g_focus_hWnd, GWLP_USERDATA);
 			PKBDLLHOOKSTRUCT p = (PKBDLLHOOKSTRUCT) lParam;
 			scanCode = (uint8)p->scanCode;
 			flags = p->flags;

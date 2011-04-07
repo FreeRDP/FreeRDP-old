@@ -48,8 +48,6 @@ struct wf_info
 
 	/* Windows stuff */
 	HWND hwnd;
-	HWND hwnd_window;
-	HWND hwnd_full;
 	rdpInst * inst;
 	struct wf_bitmap * backstore;
 	struct wf_bitmap * drw;

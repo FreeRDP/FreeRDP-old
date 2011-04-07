@@ -39,7 +39,6 @@ HINSTANCE g_hInstance;
 HCURSOR g_default_cursor;
 volatile int g_thread_count = 0;
 HANDLE g_done_event;
-HWND g_focus_hWnd;
 
 static int
 create_console(void)

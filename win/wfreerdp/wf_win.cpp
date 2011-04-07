@@ -27,7 +27,6 @@
 extern LPCTSTR g_wnd_class_name;
 extern HINSTANCE g_hInstance;
 extern HCURSOR g_default_cursor;
-extern HWND g_focus_hWnd;
 
 // See http://msdn.microsoft.com/en-us/library/dd145130(VS.85).aspx
 static const DWORD rop3_code_table[] =
@@ -1207,38 +1206,31 @@ wf_post_connect(wfInfo * wfi)
 	else
 		_snwprintf(win_title, sizeof(win_title) / sizeof(win_title[0]), L"%S:%d - freerdp", wfi->settings->server, wfi->settings->tcp_port_rdp);
 
+	if (!wfi->hwnd)
+	{
+		wfi->hwnd = CreateWindowEx(NULL, g_wnd_class_name, win_title,
+				0, 0, 0, 0, 0,
+				NULL, NULL, g_hInstance, NULL);
+		SetWindowLongPtr(wfi->hwnd, GWLP_USERDATA, (LONG_PTR)wfi);
+	}
 	if (wfi->fullscreen)
 	{
-		if (!wfi->hwnd_full)
-		{
-			wfi->hwnd_full = CreateWindowEx(NULL, g_wnd_class_name, win_title,
-					WS_POPUP,
-					0, 0, width, height,
-					NULL, NULL, g_hInstance, NULL);
-			SetWindowLongPtr(wfi->hwnd_full, GWLP_USERDATA, (LONG_PTR)wfi);
-		}
-		wfi->hwnd = wfi->hwnd_full;
+		SetWindowLongPtr(wfi->hwnd, GWL_STYLE, WS_POPUP);
+		SetWindowPos(wfi->hwnd, HWND_TOP, 0, 0, width, height, SWP_FRAMECHANGED);
 	}
 	else
 	{
-		if (!wfi->hwnd_window)
-		{
-			RECT rc_client, rc_wnd;
-			POINT diff;
+		RECT rc_client, rc_wnd;
+		POINT diff;
 
-			wfi->hwnd_window = CreateWindowEx(NULL, g_wnd_class_name, win_title,
-					WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX,
-					CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
-					NULL, NULL, g_hInstance, NULL);
-			SetWindowLongPtr(wfi->hwnd_window, GWLP_USERDATA, (LONG_PTR)wfi);
-
-			GetClientRect(wfi->hwnd_window, &rc_client);
-			GetWindowRect(wfi->hwnd_window, &rc_wnd);
-			diff.x = (rc_wnd.right - rc_wnd.left) - rc_client.right;
-			diff.y = (rc_wnd.bottom - rc_wnd.top) - rc_client.bottom;
-			MoveWindow(wfi->hwnd_window, rc_wnd.left, rc_wnd.top, width + diff.x, height + diff.y, FALSE);
-		}
-		wfi->hwnd = wfi->hwnd_window;
+		SetWindowLongPtr(wfi->hwnd, GWL_STYLE, WS_CAPTION | WS_OVERLAPPED | WS_SYSMENU | WS_MINIMIZEBOX);
+		/* Now resize to get full canvas size and room for caption and borders */
+		SetWindowPos(wfi->hwnd, HWND_TOP, 10, 10, width, height, SWP_FRAMECHANGED);
+		GetClientRect(wfi->hwnd, &rc_client);
+		GetWindowRect(wfi->hwnd, &rc_wnd);
+		diff.x = (rc_wnd.right - rc_wnd.left) - rc_client.right;
+		diff.y = (rc_wnd.bottom - rc_wnd.top) - rc_client.bottom;
+		SetWindowPos(wfi->hwnd, HWND_TOP, -1, -1, width + diff.x, height + diff.y, SWP_NOMOVE | SWP_FRAMECHANGED);
 	}
 
 	if (!wfi->backstore)
@@ -1248,7 +1240,6 @@ wf_post_connect(wfInfo * wfi)
 	}
 	wfi->drw = wfi->backstore;
 
-	g_focus_hWnd = wfi->hwnd;
 	ShowWindow(wfi->hwnd, SW_SHOWNORMAL);
 	UpdateWindow(wfi->hwnd);
 
@@ -1258,10 +1249,8 @@ wf_post_connect(wfInfo * wfi)
 void
 wf_uninit(wfInfo * wfi)
 {
-	if (wfi->hwnd_full)
-		CloseWindow(wfi->hwnd_full);
-	if (wfi->hwnd_window)
-		CloseWindow(wfi->hwnd_window);
+	if (wfi->hwnd)
+		CloseWindow(wfi->hwnd);
 
 	wf_bitmap_free(wfi->backstore);
 	if (wfi->colormap != 0)
