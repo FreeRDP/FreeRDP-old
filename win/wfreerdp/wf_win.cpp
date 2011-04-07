@@ -323,21 +323,12 @@ wf_set_rop2(HDC hdc, int rop2)
 static void
 wf_invalidate_region(wfInfo * wfi, int x1, int y1, int x2, int y2)
 {
-	if (wfi->update_pending)
-	{
-		wfi->update_rect.left = min(x1, wfi->update_rect.left);
-		wfi->update_rect.top = min(y1, wfi->update_rect.top);
-		wfi->update_rect.right = max(x2, wfi->update_rect.right);
-		wfi->update_rect.bottom = max(y2, wfi->update_rect.bottom);
-	}
-	else
-	{
-		wfi->update_pending = 1;
-		wfi->update_rect.left = x1;
-		wfi->update_rect.top = y1;
-		wfi->update_rect.right = x2;
-		wfi->update_rect.bottom = y2;
-	}
+	RECT update_rect;
+	update_rect.left = x1;
+	update_rect.top = y1;
+	update_rect.right = x2;
+	update_rect.bottom = y2;
+	InvalidateRect(wfi->hwnd, &update_rect, FALSE);
 }
 
 static HBITMAP
@@ -1264,16 +1255,4 @@ wf_toggle_fullscreen(wfInfo * wfi)
 	wfi->fullscreen = !wfi->fullscreen;
 	wf_post_connect(wfi);
 	SetForegroundWindow(wfi->hwnd);
-}
-
-int
-wf_update_window(wfInfo * wfi)
-{
-	if (wfi->update_pending)
-	{
-		InvalidateRect(wfi->hwnd, &wfi->update_rect, FALSE);
-		wfi->update_pending = 0;
-		return 1;
-	}
-	return 0;
 }

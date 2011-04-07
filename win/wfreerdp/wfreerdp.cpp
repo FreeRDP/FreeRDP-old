@@ -560,7 +560,6 @@ run_wfreerdp(wfInfo * wfi)
 		{
 			break;
 		}
-		wf_update_window(wfi);
 	}
 	/* cleanup */
 	wf_uninit(wfi);

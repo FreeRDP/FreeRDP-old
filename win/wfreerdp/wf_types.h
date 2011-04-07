@@ -53,8 +53,6 @@ struct wf_info
 	/* state: */
 	struct wf_bitmap * drw; /* the current drawing surface - either backstore or something else */
 	uint8 * colormap;
-	RECT update_rect;
-	int update_pending;
 	HCURSOR cursor;
 	HBRUSH brush;
 	HBRUSH org_brush;
