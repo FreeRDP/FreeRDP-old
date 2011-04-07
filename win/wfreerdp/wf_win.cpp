@@ -28,7 +28,7 @@ extern LPCTSTR g_wnd_class_name;
 extern HINSTANCE g_hInstance;
 extern HCURSOR g_default_cursor;
 
-// See http://msdn.microsoft.com/en-us/library/dd145130(VS.85).aspx
+// See http://msdn.microsoft.com/en-us/library/dd145130(VS.85).aspx and @msdn{cc241583}
 static const DWORD rop3_code_table[] =
 {
 	0x00000042, // 0
@@ -235,7 +235,7 @@ static const DWORD rop3_code_table[] =
 	0x00C90184, // SPDoxn
 	0x00CA0749, // DPSDxax
 	0x00CB06E4, // SPDSaoxn
-	0x00CC0020, // S
+	0x00CC0020, // S (SRCCOPY)
 	0x00CD0888, // SDPono
 	0x00CE0B08, // SDPnao
 	0x00CF0224, // SPno
@@ -558,10 +558,8 @@ l_ui_paint_bitmap(struct rdp_inst * inst, int x, int y, int cx, int cy, int widt
 	bm = (struct wf_bitmap *) l_ui_create_bitmap(inst, width, height, data);
 	BitBlt(wfi->backstore->hdc, x, y, cx, cy, bm->hdc, 0, 0, SRCCOPY);
 	wf_bitmap_free(bm);
-	if (wfi->drw == wfi->backstore)
-	{
-		wf_invalidate_region(wfi, x, y, x + cx, y + cy);
-	}
+	/* We painted directly on backstore, so we should _always_ invalidate */
+	wf_invalidate_region(wfi, x, y, x + cx, y + cy);
 }
 
 static void
@@ -802,8 +800,8 @@ l_ui_screenblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int c
 	wfInfo * wfi;
 
 	wfi = GET_WFI(inst);
-	//printf("ui_screenblt: opcode %d x %d y %d cx %d cy %d srcx %d srcy%d \n", opcode, x, y, cx, cy, srcx, srcy);
-	BitBlt(wfi->drw->hdc, x, y, cx, cy, wfi->backstore->hdc, srcx, srcy, rop3_code_table[opcode]);
+	//printf("ui_screenblt: opcode %d x %d y %d cx %d cy %d srcx %d srcy %d \n", opcode, x, y, cx, cy, srcx, srcy);
+	BitBlt(wfi->drw->hdc, x, y, cx, cy, wfi->backstore->hdc, srcx, srcy, rop3_code_table[opcode]); /* The source surface is always the primary drawing surface */
 	if (wfi->drw == wfi->backstore)
 	{
 		wf_invalidate_region(wfi, x, y, x + cx, y + cy);

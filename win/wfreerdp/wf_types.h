@@ -49,8 +49,9 @@ struct wf_info
 	/* Windows stuff */
 	HWND hwnd;
 	rdpInst * inst;
-	struct wf_bitmap * backstore;
-	struct wf_bitmap * drw;
+	struct wf_bitmap * backstore; /* paint here - InvalidateRect will cause a WM_PAINT event that will BitBlt to hWnd */
+	/* state: */
+	struct wf_bitmap * drw; /* the current drawing surface - either backstore or something else */
 	uint8 * colormap;
 	RECT update_rect;
 	int update_pending;

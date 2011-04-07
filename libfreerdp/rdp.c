@@ -1103,7 +1103,7 @@ process_play_sound_pdu(rdpRdp * rdp, STREAM s)
 	DEBUG("(beep not implemented) duration %d frequency %d\n", duration, frequency);
 }
 
-/* Process bitmap updates */
+/* Process bitmap updates @msdn{cc240612} */
 void
 process_bitmap_updates(rdpRdp * rdp, STREAM s)
 {
