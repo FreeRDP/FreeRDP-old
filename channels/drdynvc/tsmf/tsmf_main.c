@@ -89,6 +89,21 @@ tsmf_playback_ack(IWTSVirtualChannelCallback * pChannelCallback,
 	free(out_data);
 }
 
+int
+tsmf_push_event(IWTSVirtualChannelCallback * pChannelCallback,
+	RD_EVENT * event)
+{
+	TSMF_CHANNEL_CALLBACK * callback = (TSMF_CHANNEL_CALLBACK *) pChannelCallback;
+	int error;
+
+	error = callback->channel_mgr->PushEvent(callback->channel_mgr, event);
+	if (error)
+	{
+		LLOGLN(0, ("tsmf_push_event: response error %d", error));
+	}
+	return error;
+}
+
 static int
 tsmf_on_data_received(IWTSVirtualChannelCallback * pChannelCallback,
 	uint32 cbSize,

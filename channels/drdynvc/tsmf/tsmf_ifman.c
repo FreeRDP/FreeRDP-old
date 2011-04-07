@@ -248,7 +248,7 @@ tsmf_ifman_update_geometry_info(TSMF_IFMAN * ifman)
 		error = 1;
 	else
 	{
-		tsmf_presentation_set_size(presentation, Width, Height);
+		tsmf_presentation_set_geometry_info(presentation, Left, Top, Width, Height);
 	}
 	ifman->output_pending = 1;
 	return 0;

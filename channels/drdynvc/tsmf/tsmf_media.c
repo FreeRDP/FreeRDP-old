@@ -22,6 +22,7 @@
 #include <string.h>
 #include <pthread.h>
 #include <unistd.h>
+#include <freerdp/constants_ui.h>
 #include "drdynvc_types.h"
 #include "tsmf_constants.h"
 #include "tsmf_types.h"
@@ -151,6 +152,8 @@ struct _TSMF_PRESENTATION
 	TSMF_PRESENTATION * next;
 	TSMF_PRESENTATION * prev;
 
+	uint32 output_x;
+	uint32 output_y;
 	uint32 output_width;
 	uint32 output_height;
 };
@@ -344,14 +347,48 @@ tsmf_presentation_find_by_id(const uint8 * guid)
 }
 
 static void
+tsmf_free_video_frame_event(RD_EVENT * event)
+{
+	RD_VIDEO_FRAME_EVENT * vevent = (RD_VIDEO_FRAME_EVENT *) event;
+	LLOGLN(10, ("tsmf_free_video_frame_event:"));
+	free(vevent->frame_data);
+	free(vevent);
+}
+
+static void
 tsmf_sample_playback_video(TSMF_SAMPLE * sample)
 {
+	RD_VIDEO_FRAME_EVENT * event;
+
 	LLOGLN(10, ("tsmf_presentation_playback_video_sample: MessageId %d EndTime %d data_size %d consumed.",
 		sample->sample_id, (int)sample->end_time, sample->data_size));
 
-#if 0
 	if (sample->data)
 	{
+		event = (RD_VIDEO_FRAME_EVENT *) malloc(sizeof(RD_VIDEO_FRAME_EVENT));
+		memset(event, 0, sizeof(RD_VIDEO_FRAME_EVENT));
+		event->event.event_type = RD_EVENT_TYPE_VIDEO_FRAME;
+		event->event.event_callback = tsmf_free_video_frame_event;
+		event->frame_data = sample->data;
+		event->frame_size = sample->data_size;
+		event->frame_pixfmt = RD_VIDEO_FRAME_PIXFMT_YUV420P;
+		event->frame_width = sample->stream->width;
+		event->frame_height = sample->stream->height;
+		event->x = sample->stream->presentation->output_x;
+		event->y = sample->stream->presentation->output_y;
+		event->width = sample->stream->presentation->output_width;
+		event->height = sample->stream->presentation->output_height;
+
+		/* The frame data ownership is passed to the event object, and is freed after the event is processed. */
+		sample->data = NULL;
+		sample->data_size = 0;
+
+		if (tsmf_push_event(sample->channel_callback, (RD_EVENT *) event) != 0)
+		{
+			tsmf_free_video_frame_event((RD_EVENT *) event);
+		}
+
+#if 0
 		/* Dump a .ppm image for every 30 frames. Assuming the frame is in YUV format, we
 		   extract the Y values to create a grayscale image. */
 		static int frame_id = 0;
@@ -370,8 +407,8 @@ tsmf_sample_playback_video(TSMF_SAMPLE * sample)
 			fclose(fp);
 		}
 		frame_id++;
-	}
 #endif
+	}
 }
 
 static void
@@ -476,8 +513,10 @@ tsmf_presentation_stop(TSMF_PRESENTATION * presentation)
 }
 
 void
-tsmf_presentation_set_size(TSMF_PRESENTATION * presentation, uint32 width, uint32 height)
+tsmf_presentation_set_geometry_info(TSMF_PRESENTATION * presentation, uint32 x, uint32 y, uint32 width, uint32 height)
 {
+	presentation->output_x = x;
+	presentation->output_y = y;
 	presentation->output_width = width;
 	presentation->output_height = height;
 }
