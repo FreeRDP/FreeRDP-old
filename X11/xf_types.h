@@ -80,6 +80,13 @@ struct xf_info
 	XModifierKeymap * mod_map;
 	RD_BOOL focused;
 	RD_BOOL mouse_into;
+
+	/* XVideo stuff */
+	long xv_port;
+	Atom xv_colorkey_atom;
+	int xv_image_size;
+	int xv_shmid;
+	char * xv_shmaddr;
 };
 typedef struct xf_info xfInfo;
 

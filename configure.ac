@@ -15,6 +15,7 @@ AH_TEMPLATE(B_ENDIAN, [Big endian])
 AH_TEMPLATE(L_ENDIAN, [Little endian])
 AH_TEMPLATE(EGD_SOCKET, [EGD])
 AH_TEMPLATE(HAVE_LIBSAMPLERATE, [Define if you have libsamplerate])
+AH_TEMPLATE(HAVE_XV, [Define if you have XVideo extension])
 AH_TEMPLATE(IPv6, [IPv6])
 AH_TEMPLATE(NEED_ALIGN, [Alignment])
 AH_TEMPLATE(DISABLE_TLS, [Disable TLS encryption])
@@ -247,7 +248,7 @@ PKG_CHECK_MODULES(PULSE, libpulse, [
 	pulse="no"
 ])
 
-PKG_CHECK_MODULES(FFMPEG, [libavcodec libavformat libswscale], [
+PKG_CHECK_MODULES(FFMPEG, [libavcodec libavformat], [
 	HAVE_FFMPEG=1
 	ffmpeg="yes"
 ], [
@@ -964,6 +965,18 @@ else
 fi
 
 #
+# XVideo
+#
+if test "$x11" = "yes"; then
+	PKG_CHECK_MODULES(XV, [xext xv], [
+		xv="yes"
+		AC_DEFINE(HAVE_XV, 1)
+	], [
+		xv="no"
+	])
+fi
+
+#
 # xkbfile
 #
 AC_ARG_WITH([xkbfile],
@@ -1056,5 +1069,7 @@ echo "FFmpeg       : $ffmpeg"
 echo "Printer      : $printer"
 echo "CUnit        : $cunit"
 echo "X11          : $x11"
+echo "XVideo       : $xv"
 echo "xkbfile      : $xkbfile"
 echo "DirectFB     : $dfb"
+
