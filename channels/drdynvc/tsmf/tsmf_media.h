@@ -32,7 +32,7 @@ typedef struct _TSMF_STREAM TSMF_STREAM;
 typedef struct _TSMF_SAMPLE TSMF_SAMPLE;
 
 TSMF_PRESENTATION *
-tsmf_presentation_new(const uint8 * guid);
+tsmf_presentation_new(const uint8 * guid, IWTSVirtualChannelCallback * pChannelCallback);
 TSMF_PRESENTATION *
 tsmf_presentation_find_by_id(const uint8 * guid);
 void

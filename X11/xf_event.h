@@ -24,5 +24,7 @@
 
 int
 xf_handle_event(xfInfo * xfi, XEvent * xevent);
+int
+xf_handle_redraw_event(xfInfo * xfi, RD_REDRAW_EVENT * revent);
 
 #endif

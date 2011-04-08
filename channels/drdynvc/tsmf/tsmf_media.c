@@ -146,16 +146,23 @@ struct _TSMF_PRESENTATION
 	uint32 bits_per_sample;
 	int eos;
 
-	TSMF_STREAM * stream_list_head;
-	TSMF_STREAM * stream_list_tail;
-
-	TSMF_PRESENTATION * next;
-	TSMF_PRESENTATION * prev;
+	uint32 last_x;
+	uint32 last_y;
+	uint32 last_width;
+	uint32 last_height;
 
 	uint32 output_x;
 	uint32 output_y;
 	uint32 output_width;
 	uint32 output_height;
+
+	IWTSVirtualChannelCallback * channel_callback;
+
+	TSMF_STREAM * stream_list_head;
+	TSMF_STREAM * stream_list_tail;
+
+	TSMF_PRESENTATION * next;
+	TSMF_PRESENTATION * prev;
 };
 
 struct _TSMF_STREAM
@@ -300,7 +307,7 @@ tsmf_presentation_pop_sample(TSMF_PRESENTATION * presentation)
 }
 
 TSMF_PRESENTATION *
-tsmf_presentation_new(const uint8 * guid)
+tsmf_presentation_new(const uint8 * guid, IWTSVirtualChannelCallback * pChannelCallback)
 {
 	TSMF_PRESENTATION * presentation;
 
@@ -315,6 +322,7 @@ tsmf_presentation_new(const uint8 * guid)
 	memset(presentation, 0, sizeof(TSMF_PRESENTATION));
 
 	memcpy(presentation->presentation_id, guid, GUID_SIZE);
+	presentation->channel_callback = pChannelCallback;
 	presentation->mutex = (pthread_mutex_t *) malloc(sizeof(pthread_mutex_t));
 	pthread_mutex_init(presentation->mutex, 0);
 
@@ -347,45 +355,86 @@ tsmf_presentation_find_by_id(const uint8 * guid)
 }
 
 static void
+tsmf_presentation_restore_last_video_frame(TSMF_PRESENTATION * presentation)
+{
+	RD_REDRAW_EVENT * revent;
+
+	if (presentation->last_width && presentation->last_height)
+	{
+		revent = (RD_REDRAW_EVENT *) malloc(sizeof(RD_REDRAW_EVENT));
+		memset(revent, 0, sizeof(RD_REDRAW_EVENT));
+		revent->event.event_type = RD_EVENT_TYPE_REDRAW;
+		revent->event.event_callback = (RD_EVENT_CALLBACK) free;
+		revent->x = presentation->last_x;
+		revent->y = presentation->last_y;
+		revent->width = presentation->last_width;
+		revent->height = presentation->last_height;
+		if (tsmf_push_event(presentation->channel_callback, (RD_EVENT *) revent) != 0)
+		{
+			free(revent);
+		}
+		presentation->last_x = 0;
+		presentation->last_y = 0;
+		presentation->last_width = 0;
+		presentation->last_height = 0;
+	}
+}
+
+static void
 tsmf_free_video_frame_event(RD_EVENT * event)
 {
 	RD_VIDEO_FRAME_EVENT * vevent = (RD_VIDEO_FRAME_EVENT *) event;
 	LLOGLN(10, ("tsmf_free_video_frame_event:"));
-	free(vevent->frame_data);
+	if (vevent->frame_data)
+		free(vevent->frame_data);
 	free(vevent);
 }
 
 static void
 tsmf_sample_playback_video(TSMF_SAMPLE * sample)
 {
-	RD_VIDEO_FRAME_EVENT * event;
+	TSMF_PRESENTATION * presentation = sample->stream->presentation;
+	RD_VIDEO_FRAME_EVENT * vevent;
 
 	LLOGLN(10, ("tsmf_presentation_playback_video_sample: MessageId %d EndTime %d data_size %d consumed.",
 		sample->sample_id, (int)sample->end_time, sample->data_size));
 
 	if (sample->data)
 	{
-		event = (RD_VIDEO_FRAME_EVENT *) malloc(sizeof(RD_VIDEO_FRAME_EVENT));
-		memset(event, 0, sizeof(RD_VIDEO_FRAME_EVENT));
-		event->event.event_type = RD_EVENT_TYPE_VIDEO_FRAME;
-		event->event.event_callback = tsmf_free_video_frame_event;
-		event->frame_data = sample->data;
-		event->frame_size = sample->data_size;
-		event->frame_pixfmt = RD_PIXFMT_I420;
-		event->frame_width = sample->stream->width;
-		event->frame_height = sample->stream->height;
-		event->x = sample->stream->presentation->output_x;
-		event->y = sample->stream->presentation->output_y;
-		event->width = sample->stream->presentation->output_width;
-		event->height = sample->stream->presentation->output_height;
+		if (presentation->last_x != presentation->output_x ||
+			presentation->last_y != presentation->output_y ||
+			presentation->last_width != presentation->output_width ||
+			presentation->last_height != presentation->output_height)
+		{
+			tsmf_presentation_restore_last_video_frame(presentation);
+		}
+
+		vevent = (RD_VIDEO_FRAME_EVENT *) malloc(sizeof(RD_VIDEO_FRAME_EVENT));
+		memset(vevent, 0, sizeof(RD_VIDEO_FRAME_EVENT));
+		vevent->event.event_type = RD_EVENT_TYPE_VIDEO_FRAME;
+		vevent->event.event_callback = tsmf_free_video_frame_event;
+		vevent->frame_data = sample->data;
+		vevent->frame_size = sample->data_size;
+		vevent->frame_pixfmt = RD_PIXFMT_I420;
+		vevent->frame_width = sample->stream->width;
+		vevent->frame_height = sample->stream->height;
+		vevent->x = presentation->output_x;
+		vevent->y = presentation->output_y;
+		vevent->width = presentation->output_width;
+		vevent->height = presentation->output_height;
+
+		presentation->last_x = presentation->output_x;
+		presentation->last_y = presentation->output_y;
+		presentation->last_width = presentation->output_width;
+		presentation->last_height = presentation->output_height;
 
 		/* The frame data ownership is passed to the event object, and is freed after the event is processed. */
 		sample->data = NULL;
 		sample->data_size = 0;
 
-		if (tsmf_push_event(sample->channel_callback, (RD_EVENT *) event) != 0)
+		if (tsmf_push_event(sample->channel_callback, (RD_EVENT *) vevent) != 0)
 		{
-			tsmf_free_video_frame_event((RD_EVENT *) event);
+			tsmf_free_video_frame_event((RD_EVENT *) vevent);
 		}
 
 #if 0
@@ -510,6 +559,7 @@ tsmf_presentation_stop(TSMF_PRESENTATION * presentation)
 	{
 		usleep(250 * 1000);
 	}
+	tsmf_presentation_restore_last_video_frame(presentation);
 }
 
 void
