@@ -108,10 +108,13 @@ typedef struct _RD_RECT
 RD_RECT;
 
 typedef struct _RD_EVENT RD_EVENT;
+
+typedef void (*RD_EVENT_CALLBACK) (RD_EVENT * event);
+
 struct _RD_EVENT
 {
 	uint16 event_type;
-	void (*event_callback) (RD_EVENT * event);
+	RD_EVENT_CALLBACK event_callback;
 	void * user_data;
 };
 
@@ -130,6 +133,16 @@ struct _RD_VIDEO_FRAME_EVENT
 	sint16 height;
 	uint16 num_visible_rects;
 	RD_RECT * visible_rects;
+};
+
+typedef struct _RD_REDRAW_EVENT RD_REDRAW_EVENT;
+struct _RD_REDRAW_EVENT
+{
+	RD_EVENT event;
+	sint16 x;
+	sint16 y;
+	sint16 width;
+	sint16 height;
 };
 
 /* defined in include/freerdp/freerdp.h */

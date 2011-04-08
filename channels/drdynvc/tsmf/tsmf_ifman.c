@@ -117,7 +117,7 @@ tsmf_ifman_on_new_presentation(TSMF_IFMAN * ifman)
 	int error = 0;
 
 	LLOGLN(0, ("tsmf_ifman_on_new_presentation:"));
-	presentation = tsmf_presentation_new(ifman->input_buffer);
+	presentation = tsmf_presentation_new(ifman->input_buffer, ifman->channel_callback);
 	if (presentation == NULL)
 		error = 1;
 	tsmf_presentation_set_audio_device(presentation, ifman->audio_name, ifman->audio_device);

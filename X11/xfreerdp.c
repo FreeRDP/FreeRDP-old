@@ -37,6 +37,7 @@
 #include "xf_types.h"
 #include "xf_win.h"
 #include "xf_keyboard.h"
+#include "xf_event.h"
 #include "xf_video.h"
 
 #define MAX_PLUGIN_DATA 20
@@ -699,6 +700,9 @@ run_xfreerdp(xfInfo * xfi)
 			{
 				case RD_EVENT_TYPE_VIDEO_FRAME:
 					xf_video_process_frame(xfi, (RD_VIDEO_FRAME_EVENT *) event);
+					break;
+				case RD_EVENT_TYPE_REDRAW:
+					xf_handle_redraw_event(xfi, (RD_REDRAW_EVENT *) event);
 					break;
 				default:
 					printf("run_xfreerdp: unknown event type %d\n", event->event_type);

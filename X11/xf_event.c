@@ -320,3 +320,12 @@ xf_handle_event(xfInfo * xfi, XEvent * xevent)
 	}
 	return rv;
 }
+
+int
+xf_handle_redraw_event(xfInfo * xfi, RD_REDRAW_EVENT * revent)
+{
+	XCopyArea(xfi->display, xfi->backstore, xfi->wnd, xfi->gc_default,
+		revent->x, revent->y, revent->width, revent->height, revent->x, revent->y);
+	return 0;
+}
+
