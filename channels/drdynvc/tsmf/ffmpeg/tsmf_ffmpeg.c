@@ -180,6 +180,12 @@ tsmf_ffmpeg_set_format(ITSMFDecoder * decoder, const TS_AM_MEDIA_TYPE * media_ty
 		case TSMF_SUB_TYPE_MP3:
 			mdecoder->codec_id = CODEC_ID_MP3;
 			break;
+		case TSMF_SUB_TYPE_MP2A:
+			mdecoder->codec_id = CODEC_ID_MP2;
+			break;
+		case TSMF_SUB_TYPE_MP2V:
+			mdecoder->codec_id = CODEC_ID_MPEG2VIDEO;
+			break;
 		default:
 			return 1;
 	}
