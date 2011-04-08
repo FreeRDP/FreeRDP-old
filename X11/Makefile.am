@@ -9,6 +9,7 @@ xfreerdp_SOURCES = \
 	xf_keyboard.c xf_keyboard.h \
 	xf_types.h \
 	xf_win.h xf_win.c \
+	xf_video.h xf_video.c \
 	xfreerdp.c
 
 xfreerdp_CFLAGS = \
@@ -16,6 +17,7 @@ xfreerdp_CFLAGS = \
 	-I$(top_srcdir)/include \
 	-pthread \
 	@XCURSOR_CFLAGS@ \
+	@XV_CFLAGS@
 	@X_CFLAGS@
 
 xfreerdp_LDADD = \
@@ -23,4 +25,4 @@ xfreerdp_LDADD = \
 	../libfreerdpkbd/libfreerdpkbd.la \
 	../libfreerdputils/libfreerdputils.la \
 	../libfreerdpchanman/libfreerdpchanman.la \
-	@XCURSOR_LIBS@ @X_LIBS@ @X_EXTRA_LIBS@
+	@XCURSOR_LIBS@ @XV_LIBS@ @X_LIBS@ @X_EXTRA_LIBS@
