@@ -121,7 +121,7 @@ struct _RD_VIDEO_FRAME_EVENT
 	RD_EVENT event;
 	uint8 * frame_data;
 	uint32 frame_size;
-	uint16 frame_pixfmt;
+	uint32 frame_pixfmt;
 	sint16 frame_width;
 	sint16 frame_height;
 	sint16 x;

@@ -371,7 +371,7 @@ tsmf_sample_playback_video(TSMF_SAMPLE * sample)
 		event->event.event_callback = tsmf_free_video_frame_event;
 		event->frame_data = sample->data;
 		event->frame_size = sample->data_size;
-		event->frame_pixfmt = RD_VIDEO_FRAME_PIXFMT_YUV420P;
+		event->frame_pixfmt = RD_PIXFMT_I420;
 		event->frame_width = sample->stream->width;
 		event->frame_height = sample->stream->height;
 		event->x = sample->stream->presentation->output_x;

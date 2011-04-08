@@ -57,6 +57,7 @@
 #define RD_EVENT_TYPE_VIDEO_FRAME           1
 
 /* RD_VIDEO_FRAME_EVENT.frame_pixfmt */
-#define RD_VIDEO_FRAME_PIXFMT_YUV420P       1
+/* http://www.fourcc.org/yuv.php */
+#define RD_PIXFMT_I420          0x30323449
 
 #endif
