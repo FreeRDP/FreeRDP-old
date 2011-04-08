@@ -89,6 +89,7 @@ tsmf_ifman_check_format_support_request(TSMF_IFMAN * ifman)
 {
 	uint32 PlatformCookie;
 	uint32 numMediaType;
+	uint32 FormatSupported = 1;
 
 	PlatformCookie = GET_UINT32(ifman->input_buffer, 0);
 	/* NoRolloverFlags (4 bytes) ignored */
@@ -97,11 +98,15 @@ tsmf_ifman_check_format_support_request(TSMF_IFMAN * ifman)
 	LLOGLN(0, ("tsmf_ifman_check_format_support_request: PlatformCookie %d numMediaType %d",
 		PlatformCookie, numMediaType));
 
-	/* TODO: check the actual supported format */
+	if (tsmf_media_check_format(ifman->input_buffer + 12))
+		FormatSupported = 0;
+
+	if (FormatSupported == 1)
+		LLOGLN(0, ("tsmf_ifman_check_format_support_request: format ok."));
 
 	ifman->output_buffer_size = 12;
 	ifman->output_buffer = malloc(12);
-	SET_UINT32(ifman->output_buffer, 0, 1); /* FormatSupported */
+	SET_UINT32(ifman->output_buffer, 0, FormatSupported);
 	SET_UINT32(ifman->output_buffer, 4, PlatformCookie);
 	SET_UINT32(ifman->output_buffer, 8, 0); /* Result */
 
