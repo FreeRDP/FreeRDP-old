@@ -20,6 +20,8 @@
 #ifndef __TSMF_CONSTANTS_H
 #define __TSMF_CONSTANTS_H
 
+#define GUID_SIZE 16
+
 /* Interface IDs defined in [MS-RDPEV]. There's no constant names in the MS
    documentation, so we create them on our own. */
 #define TSMF_INTERFACE_DEFAULT                  0x00000000
@@ -98,11 +100,14 @@
 #define TSMF_SUB_TYPE_WMA2                  2
 #define TSMF_SUB_TYPE_WMA9                  3
 #define TSMF_SUB_TYPE_MP3                   4
+#define TSMF_SUB_TYPE_MP2A                  5
+#define TSMF_SUB_TYPE_MP2V                  6
 
 /* FormatType */
-#define TSMF_FORMAT_TYPE_DEFAULT            0
+#define TSMF_FORMAT_TYPE_UNKNOWN            0
 #define TSMF_FORMAT_TYPE_MFVIDEOFORMAT      1
 #define TSMF_FORMAT_TYPE_WAVEFORMATEX       2
+#define TSMF_FORMAT_TYPE_MPEG2VIDEOINFO     3
 
 #endif
 

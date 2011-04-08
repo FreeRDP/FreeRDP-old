@@ -23,6 +23,7 @@
 #include "drdynvc_types.h"
 #include "tsmf_constants.h"
 #include "tsmf_media.h"
+#include "tsmf_codec.h"
 #include "tsmf_ifman.h"
 
 int
@@ -98,7 +99,7 @@ tsmf_ifman_check_format_support_request(TSMF_IFMAN * ifman)
 	LLOGLN(0, ("tsmf_ifman_check_format_support_request: PlatformCookie %d numMediaType %d",
 		PlatformCookie, numMediaType));
 
-	if (tsmf_media_check_format(ifman->input_buffer + 12))
+	if (tsmf_codec_check_media_type(ifman->input_buffer + 12))
 		FormatSupported = 0;
 
 	if (FormatSupported == 1)

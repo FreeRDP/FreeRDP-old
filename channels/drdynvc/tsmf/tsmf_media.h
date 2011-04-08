@@ -31,9 +31,6 @@ typedef struct _TSMF_STREAM TSMF_STREAM;
 
 typedef struct _TSMF_SAMPLE TSMF_SAMPLE;
 
-int
-tsmf_media_check_format(const uint8 * pMediaType);
-
 TSMF_PRESENTATION *
 tsmf_presentation_new(const uint8 * guid, IWTSVirtualChannelCallback * pChannelCallback);
 TSMF_PRESENTATION *
