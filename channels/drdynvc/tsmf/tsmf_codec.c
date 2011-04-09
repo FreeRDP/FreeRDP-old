@@ -302,18 +302,8 @@ tsmf_codec_parse_media_type(TS_AM_MEDIA_TYPE * mediatype, const uint8 * pMediaTy
 
 		case TSMF_FORMAT_TYPE_MPEG2VIDEOINFO:
 			/* http://msdn.microsoft.com/en-us/library/dd390707.aspx */
-			{
-				uint32 cbSequenceHeader;
-
-				i = tsmf_codec_parse_VIDEOINFOHEADER2(mediatype, pFormat);
-				i += tsmf_codec_parse_BITMAPINFOHEADER(mediatype, pFormat + i);
-				cbSequenceHeader = GET_UINT32(pFormat, i + 4);
-				if (cbFormat >= i + 20 + cbSequenceHeader)
-				{
-					mediatype->ExtraDataSize = cbSequenceHeader;
-					mediatype->ExtraData = pFormat + i + 20;
-				}
-			}
+			i = tsmf_codec_parse_VIDEOINFOHEADER2(mediatype, pFormat);
+			tsmf_codec_parse_BITMAPINFOHEADER(mediatype, pFormat + i);
 			break;
 
 		case TSMF_FORMAT_TYPE_VIDEOINFO2:
