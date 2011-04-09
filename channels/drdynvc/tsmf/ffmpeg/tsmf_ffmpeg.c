@@ -187,6 +187,9 @@ tsmf_ffmpeg_set_format(ITSMFDecoder * decoder, const TS_AM_MEDIA_TYPE * media_ty
 		case TSMF_SUB_TYPE_MP2V:
 			mdecoder->codec_id = CODEC_ID_MPEG2VIDEO;
 			break;
+		case TSMF_SUB_TYPE_WMV3:
+			mdecoder->codec_id = CODEC_ID_WMV3;
+			break;
 		default:
 			return 1;
 	}
@@ -226,7 +229,7 @@ tsmf_ffmpeg_decode_video(ITSMFDecoder * decoder, const uint8 * data, uint32 data
 
 	if (len < 0)
 	{
-		LLOGLN(0, ("tsmf_ffmpeg_decode_video: avcodec_decode_video failed (%d)", len));
+		LLOGLN(0, ("tsmf_ffmpeg_decode_video: data_size %d, avcodec_decode_video failed (%d)", data_size, len));
 		ret = 1;
 	}
 	else if (!decoded)
