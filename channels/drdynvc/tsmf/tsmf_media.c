@@ -101,6 +101,7 @@ struct _TSMF_SAMPLE
 	uint64 duration;
 	uint32 data_size;
 	uint8 * data;
+	uint32 pixfmt;
 
 	TSMF_STREAM * stream;
 	IWTSVirtualChannelCallback * channel_callback;
@@ -301,7 +302,7 @@ tsmf_sample_playback_video(TSMF_SAMPLE * sample)
 		vevent->event.event_callback = tsmf_free_video_frame_event;
 		vevent->frame_data = sample->data;
 		vevent->frame_size = sample->data_size;
-		vevent->frame_pixfmt = RD_PIXFMT_I420;
+		vevent->frame_pixfmt = sample->pixfmt;
 		vevent->frame_width = sample->stream->width;
 		vevent->frame_height = sample->stream->height;
 		vevent->x = presentation->output_x;
@@ -647,11 +648,33 @@ tsmf_stream_push_sample(TSMF_STREAM * stream, IWTSVirtualChannelCallback * pChan
 	TSMF_PRESENTATION * presentation = stream->presentation;
 	TSMF_SAMPLE * sample;
 	int ret = 1;
+	uint32 width;
+	uint32 height;
+	uint32 pixfmt = 0;
 
 	if (stream->decoder)
 		ret = stream->decoder->Decode(stream->decoder, data, data_size, extensions);
 	if (ret)
 		return;
+
+	if (stream->major_type == TSMF_MAJOR_TYPE_VIDEO)
+	{
+		if (stream->decoder->GetDecodedFormat)
+		{
+			pixfmt = stream->decoder->GetDecodedFormat(stream->decoder);
+			if (pixfmt == ((uint32) -1))
+				return;
+		}
+
+		if (stream->decoder->GetDecodedDimension)
+			ret = stream->decoder->GetDecodedDimension(stream->decoder, &width, &height);
+		if (ret == 0 && (width != stream->width || height != stream->height))
+		{
+			LLOGLN(0, ("tsmf_stream_push_sample: video dimension changed to %d x %d", width, height));
+			stream->width = width;
+			stream->height = height;
+		}
+	}
 
 	sample = (TSMF_SAMPLE *) malloc(sizeof(TSMF_SAMPLE));
 	memset(sample, 0, sizeof(TSMF_SAMPLE));
@@ -661,6 +684,7 @@ tsmf_stream_push_sample(TSMF_STREAM * stream, IWTSVirtualChannelCallback * pChan
 	sample->end_time = end_time;
 	sample->duration = duration;
 	sample->stream = stream;
+	sample->pixfmt = pixfmt;
 	sample->channel_callback = pChannelCallback;
 
 	if (stream->decoder->GetDecodedData)
