@@ -442,123 +442,155 @@ int SetROP2(HDC hdc, int fnDrawMode)
 	return prevDrawMode;
 }
 
-/**
- * Bresenham line drawing algorithm.\n
- * http://www.cs.toronto.edu/~smalik/418/tutorial2_bresenham.pdf
- * @param hdc device context
- * @param x1 starting x position
- * @param y1 starting y position
- * @param x2 ending x position
- * @param y2 ending y position
- */
-
 static void
-LineTo_Bresenham(HDC hdc, int x1, int y1, int x2, int y2, int reverse)
+LineTo_Bresenham_8bpp(HDC hdc, int x1, int y1, int x2, int y2)
 {
-	int slope;
+	int x, y;
+	int e, e2;
 	int dx, dy;
-	int d, x, y;
-	HBITMAP hBmp;
-	int incE, incNE;
-	int endX, endY;
+	int sx, sy;
+	uint8 pixel;
+	HBITMAP bmp;
 
-	/* reverse lines where x1 > x2 */
-	if (x1 > x2)
-	{
-		LineTo_Bresenham(hdc, x2, y2, x1, y1, 1);
-		return;
-	}
+	dx = (x1 > x2) ? x1 - x2 : x2 - x1;
+	dy = (y1 > y2) ? y1 - y2 : y2 - y1;
 
-	dx = x2 - x1;
-	dy = y2 - y1;
+	sx = (x1 < x2) ? 1 : -1;
+	sy = (y1 < y2) ? 1 : -1;
 
-	/* adjust y-increment for negatively sloped lines */
-	if (dy < 0)
-	{
-		slope = -1;
-		dy = -dy;
-	}
-	else
-	{
-		slope = 1;
-	}
+	e = dx - dy;
 
-	/* Bresenham constants */
-	incE = 2 * dy;
-	incNE = 2 * dy - 2 * dx;
-	d = 2 * dy - dx;
+	x = x1;
 	y = y1;
 
-	endX = (reverse == 0) ? x2 : x1;
-	endY = (reverse == 0) ? y2 : y1;
+	pixel = 0;
+	bmp = (HBITMAP) hdc->selectedObject;
 
-	/* Blit */
-
-	hBmp = (HBITMAP) hdc->selectedObject;
-	if (hdc->bitsPerPixel == 32)
+	while (1)
 	{
-		uint32 pixel = (uint32) hdc->pen->color;
-		for (x = x1; x <= x2; x++)
+		if (!(x == x2 && y == y2))
 		{
-			if (!(x == endX && y == endY))
-			{
-				/* TODO: apply correct binary raster operation */
-				SetPixel_32bpp(hBmp, x, y, pixel);
-			}
+			SetPixel_8bpp(bmp, x, y, pixel);
+		}
+		else
+		{
+			break;
+		}
 
-			if (d <= 0)
-			{
-				d += incE;
-			}
-			else
-			{
-				d += incNE;
-				y += slope;
-			}
+		e2 = 2 * e;
+
+		if (e2 > -dy)
+		{
+			e -= dy;
+			x += sx;
+		}
+
+		if (e2 < dx)
+		{
+			e += dx;
+			y += sy;
 		}
 	}
-	else if (hdc->bitsPerPixel == 16)
-	{
-		uint16 pixel = 0;
-		for (x = x1; x <= x2; x++)
-		{
-			if (!(x == endX && y == endY))
-			{
-				/* TODO: apply correct binary raster operation */
-				SetPixel_16bpp(hBmp, x, y, pixel);
-			}
+}
 
-			if (d <= 0)
-			{
-				d += incE;
-			}
-			else
-			{
-				d += incNE;
-				y += slope;
-			}
+static void
+LineTo_Bresenham_16bpp(HDC hdc, int x1, int y1, int x2, int y2)
+{
+	int x, y;
+	int e, e2;
+	int dx, dy;
+	int sx, sy;
+	HBITMAP bmp;
+	uint16 pixel;
+
+	dx = (x1 > x2) ? x1 - x2 : x2 - x1;
+	dy = (y1 > y2) ? y1 - y2 : y2 - y1;
+
+	sx = (x1 < x2) ? 1 : -1;
+	sy = (y1 < y2) ? 1 : -1;
+
+	e = dx - dy;
+
+	x = x1;
+	y = y1;
+
+	pixel = 0;
+	bmp = (HBITMAP) hdc->selectedObject;
+
+	while (1)
+	{
+		if (!(x == x2 && y == y2))
+		{
+			SetPixel_16bpp(bmp, x, y, pixel);
+		}
+		else
+		{
+			break;
+		}
+
+		e2 = 2 * e;
+
+		if (e2 > -dy)
+		{
+			e -= dy;
+			x += sx;
+		}
+
+		if (e2 < dx)
+		{
+			e += dx;
+			y += sy;
 		}
 	}
-	else if (hdc->bitsPerPixel == 8)
-	{
-		uint8 pixel = 0;
-		for (x = x1; x <= x2; x++)
-		{
-			if (!(x == endX && y == endY))
-			{
-				/* TODO: apply correct binary raster operation */
-				SetPixel_8bpp(hBmp, x, y, pixel);
-			}
+}
 
-			if (d <= 0)
-			{
-				d += incE;
-			}
-			else
-			{
-				d += incNE;
-				y += slope;
-			}
+static void
+LineTo_Bresenham_32bpp(HDC hdc, int x1, int y1, int x2, int y2)
+{
+	int x, y;
+	int e, e2;
+	int dx, dy;
+	int sx, sy;
+	HBITMAP bmp;
+	uint32 pixel;
+
+	dx = (x1 > x2) ? x1 - x2 : x2 - x1;
+	dy = (y1 > y2) ? y1 - y2 : y2 - y1;
+
+	sx = (x1 < x2) ? 1 : -1;
+	sy = (y1 < y2) ? 1 : -1;
+
+	e = dx - dy;
+
+	x = x1;
+	y = y1;
+
+	pixel = 0;
+	bmp = (HBITMAP) hdc->selectedObject;
+
+	while (1)
+	{
+		if (!(x == x2 && y == y2))
+		{
+			SetPixel_32bpp(bmp, x, y, pixel);
+		}
+		else
+		{
+			break;
+		}
+
+		e2 = 2 * e;
+
+		if (e2 > -dy)
+		{
+			e -= dy;
+			x += sx;
+		}
+
+		if (e2 < dx)
+		{
+			e += dx;
+			y += sy;
 		}
 	}
 }
@@ -577,12 +609,15 @@ int LineTo(HDC hdc, int nXEnd, int nYEnd)
 	/*
 	 * According to this MSDN article, LineTo uses a modified version of Bresenham:
 	 * http://msdn.microsoft.com/en-us/library/dd145027/
-	 *
-	 * However, since I couldn't find the specifications of this modified algorithm,
-	 * we're going to use the original Bresenham line drawing algorithm for now
 	 */
 	
-	LineTo_Bresenham(hdc, hdc->pen->posX, hdc->pen->posY, nXEnd, nYEnd, 0);
+	if (hdc->bitsPerPixel == 32)
+		LineTo_Bresenham_32bpp(hdc, hdc->pen->posX, hdc->pen->posY, nXEnd, nYEnd);
+	else if (hdc->bitsPerPixel == 16)
+		LineTo_Bresenham_16bpp(hdc, hdc->pen->posX, hdc->pen->posY, nXEnd, nYEnd);
+	else if (hdc->bitsPerPixel == 8)
+		LineTo_Bresenham_8bpp(hdc, hdc->pen->posX, hdc->pen->posY, nXEnd, nYEnd);
+
 	return 1;
 }
 
