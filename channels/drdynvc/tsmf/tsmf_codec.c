@@ -99,6 +99,13 @@ static const TSMFMediaTypeMap tsmf_sub_type_map[] =
 		TSMF_SUB_TYPE_MP2V
 	},
 
+	/* 33564D57-0000-0010-8000-00AA00389B71 */
+	{
+		{ 0x57, 0x4D, 0x56, 0x33, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71 },
+		"WMMEDIASUBTYPE_WMV3",
+		TSMF_SUB_TYPE_WMV3
+	},
+
 	{
 		{ 0 },
 		"Unknown",
@@ -128,6 +135,13 @@ static const TSMFMediaTypeMap tsmf_format_type_map[] =
 		{ 0xE3, 0x80, 0x6D, 0xE0, 0x46, 0xDB, 0xCF, 0x11, 0xB4, 0xD1, 0x00, 0x80, 0x5F, 0x6C, 0xBB, 0xEA },
 		"FORMAT_MPEG2_VIDEO",
 		TSMF_FORMAT_TYPE_MPEG2VIDEOINFO
+	},
+
+	/* F72A76A0-EB0A-11D0-ACE4-0000C0CC16BA */
+	{
+		{ 0xA0, 0x76, 0x2A, 0xF7, 0x0A, 0xEB, 0xD0, 0x11, 0xAC, 0xE4, 0x00, 0x00, 0xC0, 0xCC, 0x16, 0xBA },
+		"FORMAT_VideoInfo2",
+		TSMF_FORMAT_TYPE_VIDEOINFO2
 	},
 
 	{
@@ -166,6 +180,10 @@ tsmf_codec_parse_BITMAPINFOHEADER(TS_AM_MEDIA_TYPE * mediatype, const uint8 * pB
 	uint32 biSize;
 
 	biSize = GET_UINT32(pBitmap, 0);
+	if (mediatype->Width == 0)
+		mediatype->Width = GET_UINT32(pBitmap, 4);
+	if (mediatype->Height == 0)
+		mediatype->Height = GET_UINT32(pBitmap, 8);
 	/* Assume there will be no color table for video? */
 	return biSize;
 }
@@ -183,7 +201,7 @@ tsmf_codec_parse_VIDEOINFOHEADER2(TS_AM_MEDIA_TYPE * mediatype, const uint8 * pF
 	mediatype->SamplesPerSecond.Numerator = 1000000;
 	mediatype->SamplesPerSecond.Denominator = (int)(GET_UINT64(pFormat, 40) / 10LL);
 
-	return 72 + tsmf_codec_parse_BITMAPINFOHEADER(mediatype, pFormat + 72);
+	return 72;
 }
 
 int
@@ -288,12 +306,24 @@ tsmf_codec_parse_media_type(TS_AM_MEDIA_TYPE * mediatype, const uint8 * pMediaTy
 				uint32 cbSequenceHeader;
 
 				i = tsmf_codec_parse_VIDEOINFOHEADER2(mediatype, pFormat);
+				i += tsmf_codec_parse_BITMAPINFOHEADER(mediatype, pFormat + i);
 				cbSequenceHeader = GET_UINT32(pFormat, i + 4);
 				if (cbFormat >= i + 20 + cbSequenceHeader)
 				{
 					mediatype->ExtraDataSize = cbSequenceHeader;
 					mediatype->ExtraData = pFormat + i + 20;
 				}
+			}
+			break;
+
+		case TSMF_FORMAT_TYPE_VIDEOINFO2:
+			i = tsmf_codec_parse_VIDEOINFOHEADER2(mediatype, pFormat);
+			tsmf_codec_parse_BITMAPINFOHEADER(mediatype, pFormat + i);
+			i += 40; /* Skip only BITMAPINFOHEADER */
+			if (cbFormat > i)
+			{
+				mediatype->ExtraDataSize = cbFormat - i;
+				mediatype->ExtraData = pFormat + i;
 			}
 			break;
 

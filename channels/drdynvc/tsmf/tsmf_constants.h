@@ -102,12 +102,14 @@
 #define TSMF_SUB_TYPE_MP3                   4
 #define TSMF_SUB_TYPE_MP2A                  5
 #define TSMF_SUB_TYPE_MP2V                  6
+#define TSMF_SUB_TYPE_WMV3                  7
 
 /* FormatType */
 #define TSMF_FORMAT_TYPE_UNKNOWN            0
 #define TSMF_FORMAT_TYPE_MFVIDEOFORMAT      1
 #define TSMF_FORMAT_TYPE_WAVEFORMATEX       2
 #define TSMF_FORMAT_TYPE_MPEG2VIDEOINFO     3
+#define TSMF_FORMAT_TYPE_VIDEOINFO2         4
 
 #endif
 

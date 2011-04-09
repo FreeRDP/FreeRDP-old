@@ -248,6 +248,9 @@ tsmf_copy_set_format(ITSMFDecoder * decoder, const TS_AM_MEDIA_TYPE * media_type
 		case TSMF_SUB_TYPE_MP2V:
 			copy_decoder->codec_id = CODEC_ID_MPEG2VIDEO;
 			break;
+		case TSMF_SUB_TYPE_WMV3:
+			copy_decoder->codec_id = CODEC_ID_WMV3;
+			break;
 		default:
 			return 1;
 	}

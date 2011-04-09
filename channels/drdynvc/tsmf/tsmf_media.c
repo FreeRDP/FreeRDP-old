@@ -574,6 +574,12 @@ tsmf_stream_set_format(TSMF_STREAM * stream, const char * name, const uint8 * pM
 {
 	TS_AM_MEDIA_TYPE mediatype;
 
+	if (stream->decoder)
+	{
+		LLOGLN(0, ("tsmf_stream_set_format: duplicated call"));
+		return;
+	}
+
 	tsmf_codec_parse_media_type(&mediatype, pMediaType);
 
 	if (mediatype.MajorType == TSMF_MAJOR_TYPE_VIDEO)
