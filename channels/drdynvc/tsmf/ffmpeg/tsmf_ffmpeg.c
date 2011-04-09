@@ -275,6 +275,18 @@ tsmf_ffmpeg_decode_audio(ITSMFDecoder * decoder, const uint8 * data, uint32 data
 	uint8 * src;
 	uint8 * dst;
 
+#if 0
+	LLOGLN(0, ("tsmf_ffmpeg_decode_audio: data_size %d", data_size));
+	int i;
+	for (i = 0; i < data_size; i++)
+	{
+		LLOG(0, ("%02X ", data[i]));
+		if (i % 16 == 15)
+			LLOG(0, ("\n"));
+	}
+	LLOG(0, ("\n"));
+#endif
+
 	if (mdecoder->decoded_size_max == 0)
 		mdecoder->decoded_size_max = AVCODEC_MAX_AUDIO_FRAME_SIZE;
 	mdecoder->decoded_data = malloc(mdecoder->decoded_size_max);
