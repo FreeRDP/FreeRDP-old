@@ -1143,5 +1143,7 @@ gdi_init(rdpInst * inst)
 
 	gdi_register_callbacks(inst);
 
+	InitializeGDI();
+
 	return 0;
 }

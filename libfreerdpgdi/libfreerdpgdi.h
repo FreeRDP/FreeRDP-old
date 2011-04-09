@@ -25,6 +25,10 @@
 
 #include "gdi_color.h"
 #include "gdi_window.h"
+#include "gdi_bitmap.h"
+#include "gdi_region.h"
+#include "gdi_clipping.h"
+#include "gdi_line.h"
 
 #ifndef __LIBFREERDPGDI_H
 #define __LIBFREERDPGDI_H
@@ -233,55 +237,30 @@ struct _DC
 typedef struct _DC DC;
 typedef DC* HDC;
 
+#define IBPP(_bpp) (_bpp / 8)
+
+typedef int (*pBitBlt)(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc, int rop);
+typedef int (*pPatBlt)(HDC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight, int rop);
+typedef int (*pFillRect)(HDC hdc, HRECT rect, HBRUSH hbr);
+
 HDC GetDC();
 HDC CreateCompatibleDC(HDC hdc);
-HBITMAP CreateBitmap(int nWidth, int nHeight, int cBitsPerPixel, uint8* data);
-HBITMAP CreateCompatibleBitmap(HDC hdc, int nWidth, int nHeight);
-int CompareBitmaps(HBITMAP hBmp1, HBITMAP hBmp2);
 HPEN CreatePen(int fnPenStyle, int nWidth, int crColor);
 HPALETTE CreatePalette(LOGPALETTE *lplgpl);
 HBRUSH CreateSolidBrush(COLORREF crColor);
 HBRUSH CreatePatternBrush(HBITMAP hbmp);
-HRGN CreateRectRgn(int nLeftRect, int nTopRect, int nRightRect, int nBottomRect);
-HRECT CreateRect(int xLeft, int yTop, int xRight, int yBottom);
-void RectToRgn(HRECT rect, HRGN rgn);
-void RgnToRect(HRGN rgn, HRECT rect);
-void CRectToRgn(int left, int top, int right, int bottom, HRGN rgn);
-void RectToCRgn(HRECT rect, int *x, int *y, int *w, int *h);
-void CRgnToRect(int x, int y, int w, int h, HRECT rect);
-void RgnToCRect(HRGN rgn, int *left, int *top, int *right, int *bottom);
-void CRectToCRgn(int left, int top, int right, int bottom, int *x, int *y, int *w, int *h);
-void CRgnToCRect(int x, int y, int w, int h, int *left, int *top, int *right, int *bottom);
-int CopyOverlap(int x, int y, int width, int height, int srcx, int srcy);
 int SetROP2(HDC hdc, int fnDrawMode);
-int LineTo(HDC hdc, int nXEnd, int nYEnd);
-int MoveToEx(HDC hdc, int X, int Y, HPOINT lpPoint);
 HPALETTE CreateSystemPalette();
 HPALETTE GetSystemPalette();
-int SetRect(HRECT rc, int xLeft, int yTop, int xRight, int yBottom);
-int SetRgn(HRGN hRgn, int nXLeft, int nYLeft, int nWidth, int nHeight);
-int SetRectRgn(HRGN hRgn, int nLeftRect, int nTopRect, int nRightRect, int nBottomRect);
-int SetClipRgn(HDC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight);
-HRGN GetClipRgn(HDC hdc);
-int SetNullClipRgn(HDC hdc);
-int ClipCoords(HDC hdc, int *x, int *y, int *w, int *h, int *srcx, int *srcy);
 int InvalidateRegion(HDC hdc, int x, int y, int w, int h);
-int EqualRgn(HRGN hSrcRgn1, HRGN hSrcRgn2);
-int CopyRect(HRECT dst, HRECT src);
-int PtInRect(HRECT rc, int x, int y);
-int SelectClipRgn(HDC hdc, HRGN hrgn);
 COLORREF GetBkColor(HDC hdc);
 COLORREF SetBkColor(HDC hdc, COLORREF crColor);
 COLORREF SetTextColor(HDC hdc, COLORREF crColor);
 int SetBkMode(HDC hdc, int iBkMode);
-COLORREF GetPixel(HDC hdc, int nXPos, int nYPos);
-COLORREF SetPixel(HDC hdc, int X, int Y, COLORREF crColor);
-int FillRect(HDC hdc, HRECT rect, HBRUSH hbr);
-int PatBlt(HDC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight, int rop);
-int BitBlt(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc, int rop);
 HGDIOBJ SelectObject(HDC hdc, HGDIOBJ hgdiobj);
 int DeleteObject(HGDIOBJ hgdiobj);
 int DeleteDC(HDC hdc);
+void InitializeGDI();
 
 #define SET_GDI(_inst, _gdi) (_inst)->param2 = _gdi
 #define GET_GDI(_inst) ((GDI*) ((_inst)->param2))

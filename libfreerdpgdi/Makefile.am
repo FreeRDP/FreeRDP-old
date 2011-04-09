@@ -8,6 +8,10 @@ libfreerdpgdi_LTLIBRARIES = libfreerdpgdi.la
 libfreerdpgdi_la_SOURCES = \
 	gdi_color.c gdi_color.h \
 	gdi_window.c gdi_window.h \
+	gdi_bitmap.c gdi_bitmap.h \
+	gdi_region.c gdi_region.h \
+	gdi_clipping.c gdi_clipping.h \
+	gdi_line.c gdi_line.h \
 	gdi_32bpp.c gdi_32bpp.h \
 	gdi_16bpp.c gdi_16bpp.h \
 	gdi_8bpp.c gdi_8bpp.h \

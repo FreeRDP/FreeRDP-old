@@ -25,6 +25,7 @@
 
 int init_libfreerdpgdi_suite(void)
 {
+	InitializeGDI();
 	return 0;
 }
 
