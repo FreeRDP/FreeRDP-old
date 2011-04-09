@@ -451,6 +451,8 @@ LineTo_Bresenham_8bpp(HDC hdc, int x1, int y1, int x2, int y2)
 	int sx, sy;
 	uint8 pixel;
 	HBITMAP bmp;
+	int bx1, by1;
+	int bx2, by2;
 
 	dx = (x1 > x2) ? x1 - x2 : x2 - x1;
 	dy = (y1 > y2) ? y1 - y2 : y2 - y1;
@@ -466,11 +468,27 @@ LineTo_Bresenham_8bpp(HDC hdc, int x1, int y1, int x2, int y2)
 	pixel = 0;
 	bmp = (HBITMAP) hdc->selectedObject;
 
+	if (hdc->clip->null)
+	{
+		bx1 = (x1 < x2) ? x1 : x2;
+		by1 = (y1 < y2) ? y1 : y2;
+		bx2 = (x1 > x2) ? x1 : x2;
+		by2 = (y1 > y2) ? y1 : y2;
+	}
+	else
+	{
+		bx1 = hdc->clip->x;
+		by1 = hdc->clip->y;
+		bx2 = bx1 + hdc->clip->w - 1;
+		by2 = by1 + hdc->clip->h - 1;
+	}
+
 	while (1)
 	{
 		if (!(x == x2 && y == y2))
 		{
-			SetPixel_8bpp(bmp, x, y, pixel);
+			if ((x >= bx1 && x <= bx2) && (y >= by1 && y <= by2))
+				SetPixel_8bpp(bmp, x, y, pixel);
 		}
 		else
 		{
@@ -500,8 +518,10 @@ LineTo_Bresenham_16bpp(HDC hdc, int x1, int y1, int x2, int y2)
 	int e, e2;
 	int dx, dy;
 	int sx, sy;
-	HBITMAP bmp;
 	uint16 pixel;
+	HBITMAP bmp;
+	int bx1, by1;
+	int bx2, by2;
 
 	dx = (x1 > x2) ? x1 - x2 : x2 - x1;
 	dy = (y1 > y2) ? y1 - y2 : y2 - y1;
@@ -517,11 +537,27 @@ LineTo_Bresenham_16bpp(HDC hdc, int x1, int y1, int x2, int y2)
 	pixel = 0;
 	bmp = (HBITMAP) hdc->selectedObject;
 
+	if (hdc->clip->null)
+	{
+		bx1 = (x1 < x2) ? x1 : x2;
+		by1 = (y1 < y2) ? y1 : y2;
+		bx2 = (x1 > x2) ? x1 : x2;
+		by2 = (y1 > y2) ? y1 : y2;
+	}
+	else
+	{
+		bx1 = hdc->clip->x;
+		by1 = hdc->clip->y;
+		bx2 = bx1 + hdc->clip->w - 1;
+		by2 = by1 + hdc->clip->h - 1;
+	}
+
 	while (1)
 	{
 		if (!(x == x2 && y == y2))
 		{
-			SetPixel_16bpp(bmp, x, y, pixel);
+			if ((x >= bx1 && x <= bx2) && (y >= by1 && y <= by2))
+				SetPixel_16bpp(bmp, x, y, pixel);
 		}
 		else
 		{
@@ -551,8 +587,10 @@ LineTo_Bresenham_32bpp(HDC hdc, int x1, int y1, int x2, int y2)
 	int e, e2;
 	int dx, dy;
 	int sx, sy;
-	HBITMAP bmp;
 	uint32 pixel;
+	HBITMAP bmp;
+	int bx1, by1;
+	int bx2, by2;
 
 	dx = (x1 > x2) ? x1 - x2 : x2 - x1;
 	dy = (y1 > y2) ? y1 - y2 : y2 - y1;
@@ -568,11 +606,27 @@ LineTo_Bresenham_32bpp(HDC hdc, int x1, int y1, int x2, int y2)
 	pixel = 0;
 	bmp = (HBITMAP) hdc->selectedObject;
 
+	if (hdc->clip->null)
+	{
+		bx1 = (x1 < x2) ? x1 : x2;
+		by1 = (y1 < y2) ? y1 : y2;
+		bx2 = (x1 > x2) ? x1 : x2;
+		by2 = (y1 > y2) ? y1 : y2;
+	}
+	else
+	{
+		bx1 = hdc->clip->x;
+		by1 = hdc->clip->y;
+		bx2 = bx1 + hdc->clip->w - 1;
+		by2 = by1 + hdc->clip->h - 1;
+	}
+
 	while (1)
 	{
 		if (!(x == x2 && y == y2))
 		{
-			SetPixel_32bpp(bmp, x, y, pixel);
+			if ((x >= bx1 && x <= bx2) && (y >= by1 && y <= by2))
+				SetPixel_32bpp(bmp, x, y, pixel);
 		}
 		else
 		{
@@ -610,7 +664,7 @@ int LineTo(HDC hdc, int nXEnd, int nYEnd)
 	 * According to this MSDN article, LineTo uses a modified version of Bresenham:
 	 * http://msdn.microsoft.com/en-us/library/dd145027/
 	 */
-	
+
 	if (hdc->bitsPerPixel == 32)
 		LineTo_Bresenham_32bpp(hdc, hdc->pen->posX, hdc->pen->posY, nXEnd, nYEnd);
 	else if (hdc->bitsPerPixel == 16)

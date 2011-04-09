@@ -17,6 +17,10 @@
    limitations under the License.
 */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <freerdp/freerdp.h>
 
 #include "gdi_color.h"
@@ -46,23 +50,24 @@
 #define R2_WHITE		0x10  /* 1    */
 
 /* Ternary Raster Operations (ROP3) */
-#define SRCCOPY			0x00CC0020 /* D = S			*/
-#define SRCPAINT		0x00EE0086 /* D = S | D			*/
-#define SRCAND			0x008800C6 /* D = S & D			*/
-#define SRCINVERT		0x00660046 /* D = S ^ D			*/
-#define SRCERASE		0x00440328 /* D = S & ~D		*/
-#define NOTSRCCOPY		0x00330008 /* D = ~S			*/
-#define NOTSRCERASE		0x001100A6 /* D = ~S & ~D		*/
-#define MERGECOPY		0x00C000CA /* D = S & P			*/
-#define MERGEPAINT		0x00BB0226 /* D = ~S | D		*/
-#define PATCOPY			0x00F00021 /* D = P			*/
-#define PATPAINT		0x00FB0A09 /* D = D | (P | ~S)		*/
-#define PATINVERT		0x005A0049 /* D = P ^ D			*/
-#define DSTINVERT		0x00550009 /* D = ~D			*/
-#define BLACKNESS		0x00000042 /* D = 0			*/
-#define WHITENESS		0x00FF0062 /* D = 1			*/
-#define DSPDxax			0x00E20746 /* D = (S & P) | (~S & D)	*/
-#define SPna			0x000C0324 /* D = S & ~P		*/
+#define SRCCOPY			0x00CC0020 /* D = S	*/
+#define SRCPAINT		0x00EE0086 /* D = S | D	*/
+#define SRCAND			0x008800C6 /* D = S & D	*/
+#define SRCINVERT		0x00660046 /* D = S ^ D	*/
+#define SRCERASE		0x00440328 /* D = S & ~D */
+#define NOTSRCCOPY		0x00330008 /* D = ~S */
+#define NOTSRCERASE		0x001100A6 /* D = ~S & ~D */
+#define MERGECOPY		0x00C000CA /* D = S & P	*/
+#define MERGEPAINT		0x00BB0226 /* D = ~S | D */
+#define PATCOPY			0x00F00021 /* D = P	*/
+#define PATPAINT		0x00FB0A09 /* D = D | (P | ~S) */
+#define PATINVERT		0x005A0049 /* D = P ^ D	*/
+#define DSTINVERT		0x00550009 /* D = ~D */
+#define BLACKNESS		0x00000042 /* D = 0 */
+#define WHITENESS		0x00FF0062 /* D = 1 */
+#define DSPDxax			0x00E20746 /* D = (S & P) | (~S & D) */
+#define SPna			0x000C0324 /* D = S & ~P */
+#define DSna			0x00220326 /* D = D & ~S */
 
 /* Brush Styles */
 #define BS_SOLID		0x00
@@ -282,7 +287,7 @@ int DeleteDC(HDC hdc);
 #define GET_GDI(_inst) ((GDI*) ((_inst)->param2))
 
 #ifdef WITH_DEBUG_GDI
-#define DEBUG_GDI(fmt, ...) printf("DBG (RDP5) %s (%d): " fmt, __FUNCTION__, __LINE__, ## __VA_ARGS__)
+#define DEBUG_GDI(fmt, ...) printf("DBG (GDI) %s (%d): " fmt, __FUNCTION__, __LINE__, ## __VA_ARGS__)
 #else
 #define DEBUG_GDI(fmt, ...) do { } while (0)
 #endif

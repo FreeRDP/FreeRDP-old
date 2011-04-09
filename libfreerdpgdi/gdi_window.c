@@ -579,13 +579,12 @@ gdi_ui_destroy_bitmap(struct rdp_inst * inst, RD_HBITMAP bmp)
 static void
 gdi_ui_line(struct rdp_inst * inst, uint8 opcode, int startx, int starty, int endx, int endy, RD_PEN * pen)
 {
-	return;
-	DEBUG_GDI("ui_line opcode:%d startx:%d starty:%d endx:%d endy:%d\n", opcode, startx, starty, endx, endy);
-
 	int cx;
 	int cy;
 	HPEN hPen;
 	GDI *gdi = GET_GDI(inst);
+
+	DEBUG_GDI("ui_line opcode:0x%02X startx:%d starty:%d endx:%d endy:%d\n", opcode, startx, starty, endx, endy);
 
 	cx = endx - startx + 1;
 	cy = endy - starty + 1;
@@ -594,7 +593,7 @@ gdi_ui_line(struct rdp_inst * inst, uint8 opcode, int startx, int starty, int en
 	
 	hPen = CreatePen(pen->style, pen->width, (COLORREF) PixelRGB(gdi->pixel));
 	SelectObject(gdi->drawing->hdc, (HGDIOBJ) hPen);
-	SetROP2(gdi->drawing->hdc, opcode + 1);
+	SetROP2(gdi->drawing->hdc, opcode);
 
 	MoveToEx(gdi->drawing->hdc, startx, starty, NULL);
 	LineTo(gdi->drawing->hdc, endx, endy);
@@ -660,7 +659,7 @@ gdi_ui_polygon(struct rdp_inst * inst, uint8 opcode, uint8 fillmode, RD_POINT * 
 static void
 gdi_ui_polyline(struct rdp_inst * inst, uint8 opcode, RD_POINT * points, int npoints, RD_PEN * pen)
 {
-	DEBUG_GDI("ui_polyline\n");
+	DEBUG_GDI("ui_polyline: opcode:%d npoints:%d\n", opcode, npoints);
 }
 
 /**
@@ -1010,7 +1009,7 @@ gdi_ui_create_surface(struct rdp_inst * inst, int width, int height, RD_HBITMAP 
 		gdi->drawing = gdi_bmp;
 	}
 	
-	DEBUG_GDI("ui_create_surface\n");
+	//DEBUG_GDI("ui_create_surface\n");
 	
 	return (RD_HBITMAP) gdi_bmp;
 }
@@ -1027,7 +1026,7 @@ gdi_ui_switch_surface(struct rdp_inst * inst, RD_HBITMAP surface)
 {
 	GDI *gdi = GET_GDI(inst);
 
-	DEBUG_GDI("ui_switch_surface\n");
+	//DEBUG_GDI("ui_switch_surface\n");
 	
 	if (surface != 0)
 	{
