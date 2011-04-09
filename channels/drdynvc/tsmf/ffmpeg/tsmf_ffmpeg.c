@@ -22,6 +22,7 @@
 #include <string.h>
 #include <libavcodec/avcodec.h>
 #include <libswscale/swscale.h>
+#include <freerdp/constants_ui.h>
 #include "tsmf_constants.h"
 #include "tsmf_decoder.h"
 
@@ -235,9 +236,12 @@ tsmf_ffmpeg_decode_video(ITSMFDecoder * decoder, const uint8 * data, uint32 data
 	}
 	else
 	{
-		LLOGLN(10, ("tsmf_ffmpeg_decode_video: linesize[0] %d linesize[1] %d linesize[2] %d linesize[3] %d",
+		LLOGLN(10, ("tsmf_ffmpeg_decode_video: linesize[0] %d linesize[1] %d linesize[2] %d linesize[3] %d "
+			"pix_fmt %d width %d height %d",
 			mdecoder->frame->linesize[0], mdecoder->frame->linesize[1],
-			mdecoder->frame->linesize[2], mdecoder->frame->linesize[3]));
+			mdecoder->frame->linesize[2], mdecoder->frame->linesize[3],
+			mdecoder->codec_context->pix_fmt,
+			mdecoder->codec_context->width, mdecoder->codec_context->height));
 
 		mdecoder->decoded_size = avpicture_get_size(mdecoder->codec_context->pix_fmt,
 			mdecoder->codec_context->width, mdecoder->codec_context->height);
@@ -350,7 +354,7 @@ tsmf_ffmpeg_decode(ITSMFDecoder * decoder, const uint8 * data, uint32 data_size,
 	}
 }
 
-uint8 *
+static uint8 *
 tsmf_ffmpeg_get_decoded_data(ITSMFDecoder * decoder, uint32 * size)
 {
 	TSMFFFmpegDecoder * mdecoder = (TSMFFFmpegDecoder *) decoder;
@@ -363,12 +367,38 @@ tsmf_ffmpeg_get_decoded_data(ITSMFDecoder * decoder, uint32 * size)
 	return buf;
 }
 
-uint32
+static uint32
 tsmf_ffmpeg_get_decoded_format(ITSMFDecoder * decoder)
 {
 	TSMFFFmpegDecoder * mdecoder = (TSMFFFmpegDecoder *) decoder;
 
-	return mdecoder->codec_context->pix_fmt;
+	switch (mdecoder->codec_context->pix_fmt)
+	{
+		case PIX_FMT_YUV420P:
+			return RD_PIXFMT_I420;
+
+		default:
+			LLOGLN(0, ("tsmf_ffmpeg_get_decoded_format: unsupported pixel format %u",
+				mdecoder->codec_context->pix_fmt));
+			return (uint32) -1;
+	}
+}
+
+static int
+tsmf_ffmpeg_get_decoded_dimension(ITSMFDecoder * decoder, uint32 * width, uint32 * height)
+{
+	TSMFFFmpegDecoder * mdecoder = (TSMFFFmpegDecoder *) decoder;
+
+	if (mdecoder->codec_context->width > 0 && mdecoder->codec_context->height > 0)
+	{
+		*width = mdecoder->codec_context->width;
+		*height = mdecoder->codec_context->height;
+		return 0;
+	}
+	else
+	{
+		return 1;
+	}
 }
 
 static void
@@ -412,6 +442,7 @@ TSMFDecoderEntry(void)
 	decoder->iface.Decode = tsmf_ffmpeg_decode;
 	decoder->iface.GetDecodedData = tsmf_ffmpeg_get_decoded_data;
 	decoder->iface.GetDecodedFormat = tsmf_ffmpeg_get_decoded_format;
+	decoder->iface.GetDecodedDimension = tsmf_ffmpeg_get_decoded_dimension;
 	decoder->iface.Free = tsmf_ffmpeg_free;
 
 	return (ITSMFDecoder *) decoder;

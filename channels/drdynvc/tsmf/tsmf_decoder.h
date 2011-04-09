@@ -33,8 +33,10 @@ struct _ITSMFDecoder
 	int (*Decode) (ITSMFDecoder * decoder, const uint8 * data, uint32 data_size, uint32 extensions);
 	/* Get the decoded data */
 	uint8 * (*GetDecodedData) (ITSMFDecoder * decoder, uint32 * size);
-	/* Get the rowstride of decoded video frame */
+	/* Get the pixel format of decoded video frame */
 	uint32 (*GetDecodedFormat) (ITSMFDecoder * decoder);
+	/* Get the width and height of decoded video frame */
+	int (*GetDecodedDimension) (ITSMFDecoder * decoder, uint32 * width, uint32 * height);
 	/* Free the decoder */
 	void (*Free) (ITSMFDecoder * decoder);
 };
