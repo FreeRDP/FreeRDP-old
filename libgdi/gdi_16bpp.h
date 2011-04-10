@@ -1,8 +1,8 @@
 /*
    FreeRDP: A Remote Desktop Protocol client.
-   Dynamic Virtual Channel
+   16bpp Internal Buffer Routines
 
-   Copyright 2010-2011 Vic Lee
+   Copyright 2010 Marc-Andre Moreau <marcandre.moreau@gmail.com>
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -17,21 +17,11 @@
    limitations under the License.
 */
 
-#ifndef __DRDYNVC_TYPES_H
-#define __DRDYNVC_TYPES_H
+#include <freerdp/freerdp.h>
+#include "gdi.h"
+#include "gdi_color.h"
 
-#include <freerdp/types_ui.h>
-#include <freerdp/vchan.h>
-#include <freerdp/dvc.h>
-#include "chan_stream.h"
-#include "chan_plugin.h"
+int FillRect_16bpp(HDC hdc, HRECT rect, HBRUSH hbr);
+int BitBlt_16bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc, int rop);
+int PatBlt_16bpp(HDC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight, int rop);
 
-#define LOG_LEVEL 1
-#define LLOG(_level, _args) \
-  do { if (_level < LOG_LEVEL) { printf _args ; } } while (0)
-#define LLOGLN(_level, _args) \
-  do { if (_level < LOG_LEVEL) { printf _args ; printf("\n"); } } while (0)
-
-#define DRDYNVC_BUFFER_PADDING 8
-
-#endif

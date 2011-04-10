@@ -88,9 +88,9 @@ x224_send_connection_request(rdpIso * iso)
 {
 	STREAM s;
 	int length = 11;
-        int cookie_length;
+	int cookie_length;
 
-        cookie_length = strlen(iso->cookie);
+	cookie_length = strlen(iso->cookie);
 
 	if (iso->mcs->sec->rdp->redirect_routingtoken)
 		/* routingToken */
@@ -365,10 +365,10 @@ iso_recv(rdpIso * iso, isoRecvType * ptype)
 RD_BOOL
 iso_connect(rdpIso * iso, char *server, char *username, int port)
 {
-        if (strlen(iso->mcs->sec->rdp->settings->domain) > 0)
-            iso->cookie = iso->mcs->sec->rdp->settings->domain;
-        else
-            iso->cookie = username;
+	if (strlen(iso->mcs->sec->rdp->settings->domain) > 0)
+		iso->cookie = iso->mcs->sec->rdp->settings->domain;
+	else
+		iso->cookie = username;
 
 	iso->nego->port = port;
 	iso->nego->hostname = server;

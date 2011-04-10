@@ -369,7 +369,7 @@ load_keyboard_map(KeycodeToVkcode keycodeToVkcode, char *xkbfile)
 
 #ifdef __APPLE__
 	/* Apple X11 breaks XKB detection */
-	keymapLoaded += load_xkb_keyboard("macosx(macosx)");
+	keymapLoaded += load_xkb_keyboard(keycodeToVkcode, "macosx(macosx)");
 #else
 	do
 	{

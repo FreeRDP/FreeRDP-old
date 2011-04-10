@@ -1,8 +1,8 @@
 /*
    FreeRDP: A Remote Desktop Protocol client.
-   Dynamic Virtual Channel
+   GDI Drawing Functions
 
-   Copyright 2010-2011 Vic Lee
+   Copyright 2010-2011 Marc-Andre Moreau <marcandre.moreau@gmail.com>
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -17,21 +17,17 @@
    limitations under the License.
 */
 
-#ifndef __DRDYNVC_TYPES_H
-#define __DRDYNVC_TYPES_H
+#ifndef __GDI_DRAWING_H
+#define __GDI_DRAWING_H
 
-#include <freerdp/types_ui.h>
-#include <freerdp/vchan.h>
-#include <freerdp/dvc.h>
-#include "chan_stream.h"
-#include "chan_plugin.h"
+#include "gdi.h"
 
-#define LOG_LEVEL 1
-#define LLOG(_level, _args) \
-  do { if (_level < LOG_LEVEL) { printf _args ; } } while (0)
-#define LLOGLN(_level, _args) \
-  do { if (_level < LOG_LEVEL) { printf _args ; printf("\n"); } } while (0)
+int GetROP2(HDC hdc);
+int SetROP2(HDC hdc, int fnDrawMode);
+COLORREF GetBkColor(HDC hdc);
+COLORREF SetBkColor(HDC hdc, COLORREF crColor);
+int GetBkMode(HDC hdc);
+int SetBkMode(HDC hdc, int iBkMode);
+COLORREF SetTextColor(HDC hdc, COLORREF crColor);
 
-#define DRDYNVC_BUFFER_PADDING 8
-
-#endif
+#endif /* __GDI_DRAWING_H */

@@ -22,6 +22,7 @@ AH_TEMPLATE(DISABLE_TLS, [Disable TLS encryption])
 AH_TEMPLATE(WITH_XKBFILE, [Use xkbfile for keyboard handling])
 AH_TEMPLATE(WITH_SCARD, [Define if smartcard is enabled])
 AH_TEMPLATE(WITH_DEBUG, [Turn on debugging messages])
+AH_TEMPLATE(WITH_DEBUG_GDI, [Turn on debugging messages])
 AH_TEMPLATE(WITH_DEBUG_NLA, [Turn on debugging messages])
 AH_TEMPLATE(WITH_DEBUG_CHANNEL, [Turn on debugging messages])
 AH_TEMPLATE(WITH_DEBUG_KBD, [Turn on debugging messages])
@@ -781,6 +782,15 @@ AC_ARG_WITH(debug,
         fi
     ])
 
+AC_ARG_WITH(debug-gdi,
+    [  --with-debug-gdi        enable debugging of GDI],
+    [
+        if test $withval != "no";
+        then
+            AC_DEFINE(WITH_DEBUG_GDI,1)
+	fi
+    ])
+
 AC_ARG_WITH(debug-nla,
     [  --with-debug-nla        enable debugging of network level authentication],
     [
@@ -1013,7 +1023,7 @@ include/Makefile
 libfreerdpkbd/Makefile
 keymaps/Makefile
 cunit/Makefile
-libfreerdpgdi/Makefile
+libgdi/Makefile
 libfreerdpchanman/Makefile
 X11/Makefile
 dfb/Makefile

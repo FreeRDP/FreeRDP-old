@@ -1,8 +1,8 @@
 /*
    FreeRDP: A Remote Desktop Protocol client.
-   RDP GDI Adaption Layer
+   GDI Library
 
-   Copyright 2010 Marc-Andre Moreau <marcandre.moreau@gmail.com>
+   Copyright 2010-2011 Marc-Andre Moreau <marcandre.moreau@gmail.com>
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -17,13 +17,27 @@
    limitations under the License.
 */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <freerdp/freerdp.h>
 
 #include "gdi_color.h"
 #include "gdi_window.h"
+#include "gdi_bitmap.h"
+#include "gdi_region.h"
+#include "gdi_drawing.h"
+#include "gdi_clipping.h"
+#include "gdi_palette.h"
+#include "gdi_shape.h"
+#include "gdi_line.h"
+#include "gdi_brush.h"
+#include "gdi_pen.h"
+#include "gdi_dc.h"
 
-#ifndef __LIBFREERDPGDI_H
-#define __LIBFREERDPGDI_H
+#ifndef __GDI_H
+#define __GDI_H
 
 /* For more information, see [MS-RDPEGDI].pdf */
 
@@ -46,23 +60,24 @@
 #define R2_WHITE		0x10  /* 1    */
 
 /* Ternary Raster Operations (ROP3) */
-#define SRCCOPY			0x00CC0020 /* D = S			*/
-#define SRCPAINT		0x00EE0086 /* D = S | D			*/
-#define SRCAND			0x008800C6 /* D = S & D			*/
-#define SRCINVERT		0x00660046 /* D = S ^ D			*/
-#define SRCERASE		0x00440328 /* D = S & ~D		*/
-#define NOTSRCCOPY		0x00330008 /* D = ~S			*/
-#define NOTSRCERASE		0x001100A6 /* D = ~S & ~D		*/
-#define MERGECOPY		0x00C000CA /* D = S & P			*/
-#define MERGEPAINT		0x00BB0226 /* D = ~S | D		*/
-#define PATCOPY			0x00F00021 /* D = P			*/
-#define PATPAINT		0x00FB0A09 /* D = D | (P | ~S)		*/
-#define PATINVERT		0x005A0049 /* D = P ^ D			*/
-#define DSTINVERT		0x00550009 /* D = ~D			*/
-#define BLACKNESS		0x00000042 /* D = 0			*/
-#define WHITENESS		0x00FF0062 /* D = 1			*/
-#define DSPDxax			0x00E20746 /* D = (S & P) | (~S & D)	*/
-#define SPna			0x000C0324 /* D = S & ~P		*/
+#define SRCCOPY			0x00CC0020 /* D = S	*/
+#define SRCPAINT		0x00EE0086 /* D = S | D	*/
+#define SRCAND			0x008800C6 /* D = S & D	*/
+#define SRCINVERT		0x00660046 /* D = S ^ D	*/
+#define SRCERASE		0x00440328 /* D = S & ~D */
+#define NOTSRCCOPY		0x00330008 /* D = ~S */
+#define NOTSRCERASE		0x001100A6 /* D = ~S & ~D */
+#define MERGECOPY		0x00C000CA /* D = S & P	*/
+#define MERGEPAINT		0x00BB0226 /* D = ~S | D */
+#define PATCOPY			0x00F00021 /* D = P	*/
+#define PATPAINT		0x00FB0A09 /* D = D | (P | ~S) */
+#define PATINVERT		0x005A0049 /* D = P ^ D	*/
+#define DSTINVERT		0x00550009 /* D = ~D */
+#define BLACKNESS		0x00000042 /* D = 0 */
+#define WHITENESS		0x00FF0062 /* D = 1 */
+#define DSPDxax			0x00E20746 /* D = (S & P) | (~S & D) */
+#define SPna			0x000C0324 /* D = S & ~P */
+#define DSna			0x00220326 /* D = D & ~S */
 
 /* Brush Styles */
 #define BS_SOLID		0x00
@@ -228,61 +243,19 @@ struct _DC
 typedef struct _DC DC;
 typedef DC* HDC;
 
-HDC GetDC();
-HDC CreateCompatibleDC(HDC hdc);
-HBITMAP CreateBitmap(int nWidth, int nHeight, int cBitsPerPixel, uint8* data);
-HBITMAP CreateCompatibleBitmap(HDC hdc, int nWidth, int nHeight);
-int CompareBitmaps(HBITMAP hBmp1, HBITMAP hBmp2);
-HPEN CreatePen(int fnPenStyle, int nWidth, int crColor);
-HPALETTE CreatePalette(LOGPALETTE *lplgpl);
-HBRUSH CreateSolidBrush(COLORREF crColor);
-HBRUSH CreatePatternBrush(HBITMAP hbmp);
-HRGN CreateRectRgn(int nLeftRect, int nTopRect, int nRightRect, int nBottomRect);
-HRECT CreateRect(int xLeft, int yTop, int xRight, int yBottom);
-void RectToRgn(HRECT rect, HRGN rgn);
-void RgnToRect(HRGN rgn, HRECT rect);
-void CRectToRgn(int left, int top, int right, int bottom, HRGN rgn);
-void RectToCRgn(HRECT rect, int *x, int *y, int *w, int *h);
-void CRgnToRect(int x, int y, int w, int h, HRECT rect);
-void RgnToCRect(HRGN rgn, int *left, int *top, int *right, int *bottom);
-void CRectToCRgn(int left, int top, int right, int bottom, int *x, int *y, int *w, int *h);
-void CRgnToCRect(int x, int y, int w, int h, int *left, int *top, int *right, int *bottom);
-int CopyOverlap(int x, int y, int width, int height, int srcx, int srcy);
-int SetROP2(HDC hdc, int fnDrawMode);
-int LineTo(HDC hdc, int nXEnd, int nYEnd);
-int MoveToEx(HDC hdc, int X, int Y, HPOINT lpPoint);
-HPALETTE CreateSystemPalette();
-HPALETTE GetSystemPalette();
-int SetRect(HRECT rc, int xLeft, int yTop, int xRight, int yBottom);
-int SetRgn(HRGN hRgn, int nXLeft, int nYLeft, int nWidth, int nHeight);
-int SetRectRgn(HRGN hRgn, int nLeftRect, int nTopRect, int nRightRect, int nBottomRect);
-int SetClipRgn(HDC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight);
-HRGN GetClipRgn(HDC hdc);
-int SetNullClipRgn(HDC hdc);
-int ClipCoords(HDC hdc, int *x, int *y, int *w, int *h, int *srcx, int *srcy);
-int InvalidateRegion(HDC hdc, int x, int y, int w, int h);
-int EqualRgn(HRGN hSrcRgn1, HRGN hSrcRgn2);
-int CopyRect(HRECT dst, HRECT src);
-int PtInRect(HRECT rc, int x, int y);
-int SelectClipRgn(HDC hdc, HRGN hrgn);
-COLORREF GetBkColor(HDC hdc);
-COLORREF SetBkColor(HDC hdc, COLORREF crColor);
-COLORREF SetTextColor(HDC hdc, COLORREF crColor);
-int SetBkMode(HDC hdc, int iBkMode);
-COLORREF GetPixel(HDC hdc, int nXPos, int nYPos);
-COLORREF SetPixel(HDC hdc, int X, int Y, COLORREF crColor);
-int FillRect(HDC hdc, HRECT rect, HBRUSH hbr);
-int PatBlt(HDC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight, int rop);
-int BitBlt(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc, int rop);
-HGDIOBJ SelectObject(HDC hdc, HGDIOBJ hgdiobj);
-int DeleteObject(HGDIOBJ hgdiobj);
-int DeleteDC(HDC hdc);
+#define IBPP(_bpp) (_bpp / 8)
+
+typedef int (*pBitBlt)(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc, int rop);
+typedef int (*pPatBlt)(HDC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight, int rop);
+typedef int (*pFillRect)(HDC hdc, HRECT rect, HBRUSH hbr);
+
+void InitializeGDI();
 
 #define SET_GDI(_inst, _gdi) (_inst)->param2 = _gdi
 #define GET_GDI(_inst) ((GDI*) ((_inst)->param2))
 
 #ifdef WITH_DEBUG_GDI
-#define DEBUG_GDI(fmt, ...) printf("DBG (RDP5) %s (%d): " fmt, __FUNCTION__, __LINE__, ## __VA_ARGS__)
+#define DEBUG_GDI(fmt, ...) printf("DBG (GDI) %s (%d): " fmt, __FUNCTION__, __LINE__, ## __VA_ARGS__)
 #else
 #define DEBUG_GDI(fmt, ...) do { } while (0)
 #endif
@@ -290,4 +263,4 @@ int DeleteDC(HDC hdc);
 #include "gdi_color.h"
 #include "gdi_window.h"
 
-#endif /* __LIBFREERDPGDI_H */
+#endif /* __GDI_H */

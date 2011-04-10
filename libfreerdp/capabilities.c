@@ -1091,6 +1091,9 @@ void rdp_out_multifragmentupdate_capset(rdpRdp * rdp, STREAM s)
 
 void rdp_process_multifragmentupdate_capset(rdpRdp * rdp, STREAM s)
 {
+	if (rdp->got_multifragmentupdate_caps)
+		stream_delete(rdp->fragment_data);
+
 	rdp->got_multifragmentupdate_caps = 1;
 	in_uint32_le(s, rdp->multifragmentupdate_request_size);
 	rdp->fragment_data = stream_new(rdp->multifragmentupdate_request_size);

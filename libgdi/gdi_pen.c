@@ -1,8 +1,8 @@
 /*
    FreeRDP: A Remote Desktop Protocol client.
-   DirectFB UI
+   GDI Pen Functions
 
-   Copyright 2010 Marc-Andre Moreau <marcandre.moreau@gmail.com>
+   Copyright 2010-2011 Marc-Andre Moreau <marcandre.moreau@gmail.com>
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -17,32 +17,32 @@
    limitations under the License.
 */
 
-#ifndef __DFBFREERDP_H
-#define __DFBFREERDP_H
+/* GDI Pen Functions: http://msdn.microsoft.com/en-us/library/dd162790 */
 
-#include <directfb.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+
 #include <freerdp/freerdp.h>
 #include "gdi.h"
 
-#define SET_DFBI(_inst, _dfbi) (_inst)->param1 = _dfbi
-#define GET_DFBI(_inst) ((dfbInfo *) ((_inst)->param1))
+#include "gdi_pen.h"
 
-struct dfb_info
+/**
+ * Create a new pen.\n
+ * @msdn{dd183509}
+ * @param fnPenStyle pen style
+ * @param nWidth pen width
+ * @param crColor pen color
+ * @return new pen
+ */
+
+HPEN CreatePen(int fnPenStyle, int nWidth, int crColor)
 {
-	DFBResult err;
-	IDirectFB *dfb;
-	DFBEvent event;
-	DFBSurfaceDescription dsc;
-	IDirectFBSurface *primary;
-	IDirectFBSurface *surface;
-	IDirectFBDisplayLayer *layer;
-	DFBRectangle update_rect;
-	IDirectFBEventBuffer *event_buffer;
-	int read_fds;
-};
-typedef struct dfb_info dfbInfo;
-
-int
-dfb_process_event(rdpInst * inst, DFBEvent * event);
-
-#endif /* __DFBFREERDP_H */
+	HPEN hPen = (HPEN) malloc(sizeof(PEN));
+	hPen->objectType = GDIOBJ_PEN;
+	hPen->style = fnPenStyle;
+	hPen->color = crColor;
+	hPen->width = nWidth;
+	return hPen;
+}

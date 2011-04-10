@@ -1,8 +1,8 @@
 /*
    FreeRDP: A Remote Desktop Protocol client.
-   8bpp Internal Buffer Routines
+   GDI Shape Functions
 
-   Copyright 2010 Marc-Andre Moreau <marcandre.moreau@gmail.com>
+   Copyright 2010-2011 Marc-Andre Moreau <marcandre.moreau@gmail.com>
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -17,11 +17,14 @@
    limitations under the License.
 */
 
-#include <freerdp/freerdp.h>
-#include "libfreerdpgdi.h"
-#include "gdi_color.h"
+#ifndef __GDI_SHAPE_H
+#define __GDI_SHAPE_H
 
-int FillRect_8bpp(HDC hdc, HRECT rect, HBRUSH hbr);
-int BitBlt_8bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc, int rop);
-int PatBlt_8bpp(HDC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight, int rop);
+#include "gdi.h"
 
+void ShapeInit();
+int Ellipse(HDC hdc, int nLeftRect, int nTopRect, int nRightRect, int nBottomRect);
+int Polygon(HDC hdc, POINT *lpPoints, int nCount);
+int FillRect(HDC hdc, HRECT rect, HBRUSH hbr);
+
+#endif /* __GDI_SHAPE_H */

@@ -8,7 +8,7 @@ REQUIRED_SUBDIRS = \
 	include \
 	libfreerdpkbd \
 	keymaps \
-	libfreerdpgdi \
+	libgdi \
 	libfreerdpchanman \
 	channels/common \
 	channels/rdpsnd \

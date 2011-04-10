@@ -26,8 +26,6 @@ int
 wf_pre_connect(wfInfo * wfif);
 int
 wf_post_connect(wfInfo * wfi);
-int
-wf_update_window(wfInfo * wfi);
 void
 wf_toggle_fullscreen(wfInfo * wfi);
 void

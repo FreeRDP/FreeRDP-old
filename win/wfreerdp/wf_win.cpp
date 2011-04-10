@@ -27,9 +27,8 @@
 extern LPCTSTR g_wnd_class_name;
 extern HINSTANCE g_hInstance;
 extern HCURSOR g_default_cursor;
-extern HWND g_focus_hWnd;
 
-// See http://msdn.microsoft.com/en-us/library/dd145130(VS.85).aspx
+// See http://msdn.microsoft.com/en-us/library/dd145130(VS.85).aspx and @msdn{cc241583}
 static const DWORD rop3_code_table[] =
 {
 	0x00000042, // 0
@@ -236,7 +235,7 @@ static const DWORD rop3_code_table[] =
 	0x00C90184, // SPDoxn
 	0x00CA0749, // DPSDxax
 	0x00CB06E4, // SPDSaoxn
-	0x00CC0020, // S
+	0x00CC0020, // S (SRCCOPY)
 	0x00CD0888, // SDPono
 	0x00CE0B08, // SDPnao
 	0x00CF0224, // SPno
@@ -324,21 +323,12 @@ wf_set_rop2(HDC hdc, int rop2)
 static void
 wf_invalidate_region(wfInfo * wfi, int x1, int y1, int x2, int y2)
 {
-	if (wfi->update_pending)
-	{
-		wfi->update_rect.left = min(x1, wfi->update_rect.left);
-		wfi->update_rect.top = min(y1, wfi->update_rect.top);
-		wfi->update_rect.right = max(x2, wfi->update_rect.right);
-		wfi->update_rect.bottom = max(y2, wfi->update_rect.bottom);
-	}
-	else
-	{
-		wfi->update_pending = 1;
-		wfi->update_rect.left = x1;
-		wfi->update_rect.top = y1;
-		wfi->update_rect.right = x2;
-		wfi->update_rect.bottom = y2;
-	}
+	RECT update_rect;
+	update_rect.left = x1;
+	update_rect.top = y1;
+	update_rect.right = x2;
+	update_rect.bottom = y2;
+	InvalidateRect(wfi->hwnd, &update_rect, FALSE);
 }
 
 static HBITMAP
@@ -559,10 +549,8 @@ l_ui_paint_bitmap(struct rdp_inst * inst, int x, int y, int cx, int cy, int widt
 	bm = (struct wf_bitmap *) l_ui_create_bitmap(inst, width, height, data);
 	BitBlt(wfi->backstore->hdc, x, y, cx, cy, bm->hdc, 0, 0, SRCCOPY);
 	wf_bitmap_free(bm);
-	if (wfi->drw == wfi->backstore)
-	{
-		wf_invalidate_region(wfi, x, y, x + cx, y + cy);
-	}
+	/* We painted directly on backstore, so we should _always_ invalidate */
+	wf_invalidate_region(wfi, x, y, x + cx, y + cy);
 }
 
 static void
@@ -803,8 +791,8 @@ l_ui_screenblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int c
 	wfInfo * wfi;
 
 	wfi = GET_WFI(inst);
-	//printf("ui_screenblt: opcode %d x %d y %d cx %d cy %d srcx %d srcy%d \n", opcode, x, y, cx, cy, srcx, srcy);
-	BitBlt(wfi->drw->hdc, x, y, cx, cy, wfi->backstore->hdc, srcx, srcy, rop3_code_table[opcode]);
+	//printf("ui_screenblt: opcode %d x %d y %d cx %d cy %d srcx %d srcy %d \n", opcode, x, y, cx, cy, srcx, srcy);
+	BitBlt(wfi->drw->hdc, x, y, cx, cy, wfi->backstore->hdc, srcx, srcy, rop3_code_table[opcode]); /* The source surface is always the primary drawing surface */
 	if (wfi->drw == wfi->backstore)
 	{
 		wf_invalidate_region(wfi, x, y, x + cx, y + cy);
@@ -1207,38 +1195,31 @@ wf_post_connect(wfInfo * wfi)
 	else
 		_snwprintf(win_title, sizeof(win_title) / sizeof(win_title[0]), L"%S:%d - freerdp", wfi->settings->server, wfi->settings->tcp_port_rdp);
 
+	if (!wfi->hwnd)
+	{
+		wfi->hwnd = CreateWindowEx(NULL, g_wnd_class_name, win_title,
+				0, 0, 0, 0, 0,
+				NULL, NULL, g_hInstance, NULL);
+		SetWindowLongPtr(wfi->hwnd, GWLP_USERDATA, (LONG_PTR)wfi);
+	}
 	if (wfi->fullscreen)
 	{
-		if (!wfi->hwnd_full)
-		{
-			wfi->hwnd_full = CreateWindowEx(NULL, g_wnd_class_name, win_title,
-					WS_POPUP,
-					0, 0, width, height,
-					NULL, NULL, g_hInstance, NULL);
-			SetWindowLongPtr(wfi->hwnd_full, GWLP_USERDATA, (LONG_PTR)wfi);
-		}
-		wfi->hwnd = wfi->hwnd_full;
+		SetWindowLongPtr(wfi->hwnd, GWL_STYLE, WS_POPUP);
+		SetWindowPos(wfi->hwnd, HWND_TOP, 0, 0, width, height, SWP_FRAMECHANGED);
 	}
 	else
 	{
-		if (!wfi->hwnd_window)
-		{
-			RECT rc_client, rc_wnd;
-			POINT diff;
+		RECT rc_client, rc_wnd;
+		POINT diff;
 
-			wfi->hwnd_window = CreateWindowEx(NULL, g_wnd_class_name, win_title,
-					WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX,
-					CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
-					NULL, NULL, g_hInstance, NULL);
-			SetWindowLongPtr(wfi->hwnd_window, GWLP_USERDATA, (LONG_PTR)wfi);
-
-			GetClientRect(wfi->hwnd_window, &rc_client);
-			GetWindowRect(wfi->hwnd_window, &rc_wnd);
-			diff.x = (rc_wnd.right - rc_wnd.left) - rc_client.right;
-			diff.y = (rc_wnd.bottom - rc_wnd.top) - rc_client.bottom;
-			MoveWindow(wfi->hwnd_window, rc_wnd.left, rc_wnd.top, width + diff.x, height + diff.y, FALSE);
-		}
-		wfi->hwnd = wfi->hwnd_window;
+		SetWindowLongPtr(wfi->hwnd, GWL_STYLE, WS_CAPTION | WS_OVERLAPPED | WS_SYSMENU | WS_MINIMIZEBOX);
+		/* Now resize to get full canvas size and room for caption and borders */
+		SetWindowPos(wfi->hwnd, HWND_TOP, 10, 10, width, height, SWP_FRAMECHANGED);
+		GetClientRect(wfi->hwnd, &rc_client);
+		GetWindowRect(wfi->hwnd, &rc_wnd);
+		diff.x = (rc_wnd.right - rc_wnd.left) - rc_client.right;
+		diff.y = (rc_wnd.bottom - rc_wnd.top) - rc_client.bottom;
+		SetWindowPos(wfi->hwnd, HWND_TOP, -1, -1, width + diff.x, height + diff.y, SWP_NOMOVE | SWP_FRAMECHANGED);
 	}
 
 	if (!wfi->backstore)
@@ -1248,7 +1229,6 @@ wf_post_connect(wfInfo * wfi)
 	}
 	wfi->drw = wfi->backstore;
 
-	g_focus_hWnd = wfi->hwnd;
 	ShowWindow(wfi->hwnd, SW_SHOWNORMAL);
 	UpdateWindow(wfi->hwnd);
 
@@ -1258,10 +1238,8 @@ wf_post_connect(wfInfo * wfi)
 void
 wf_uninit(wfInfo * wfi)
 {
-	if (wfi->hwnd_full)
-		CloseWindow(wfi->hwnd_full);
-	if (wfi->hwnd_window)
-		CloseWindow(wfi->hwnd_window);
+	if (wfi->hwnd)
+		CloseWindow(wfi->hwnd);
 
 	wf_bitmap_free(wfi->backstore);
 	if (wfi->colormap != 0)
@@ -1277,16 +1255,4 @@ wf_toggle_fullscreen(wfInfo * wfi)
 	wfi->fullscreen = !wfi->fullscreen;
 	wf_post_connect(wfi);
 	SetForegroundWindow(wfi->hwnd);
-}
-
-int
-wf_update_window(wfInfo * wfi)
-{
-	if (wfi->update_pending)
-	{
-		InvalidateRect(wfi->hwnd, &wfi->update_rect, FALSE);
-		wfi->update_pending = 0;
-		return 1;
-	}
-	return 0;
 }

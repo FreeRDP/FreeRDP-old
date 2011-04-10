@@ -25,7 +25,7 @@
 
 #include "gdi_color.h"
 #include "gdi_window.h"
-#include "libfreerdpgdi.h"
+#include "gdi.h"
 
 void
 gdi_color_convert(PIXEL *pixel, int color, int bpp, HPALETTE palette)

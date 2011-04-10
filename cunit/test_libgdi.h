@@ -19,9 +19,9 @@
 
 #include "test_freerdp.h"
 
-int init_libfreerdpgdi_suite(void);
-int clean_libfreerdpgdi_suite(void);
-int add_libfreerdpgdi_suite(void);
+int init_libgdi_suite(void);
+int clean_libgdi_suite(void);
+int add_libgdi_suite(void);
 
 void test_GetDC(void);
 void test_CreateCompatibleDC(void);

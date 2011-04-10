@@ -20,9 +20,9 @@
 #ifndef __GDI_COLOR_H
 #define __GDI_COLOR_H
 
-#include "libfreerdpgdi.h"
+#include "gdi.h"
 
-/* GDI Color Space Conversions: http://msdn.microsoft.com/en-us/library/ff566496(VS.85).aspx */
+/* GDI Color Space Conversions: http://msdn.microsoft.com/en-us/library/ff566496/ */
 
 /* Color Space Conversion */
  

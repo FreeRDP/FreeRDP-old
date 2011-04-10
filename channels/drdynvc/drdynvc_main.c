@@ -543,8 +543,10 @@ OpenEventProcessReceived(uint32 openHandle, void * pData, uint32 dataLength,
 		{
 			free(plugin->data_in);
 		}
-		plugin->data_in = (char *) malloc(totalLength);
+		/* Add a padding to avoid invalid memory read in some plugin using some kind of optimization */
+		plugin->data_in = (char *) malloc(totalLength + DRDYNVC_BUFFER_PADDING);
 		plugin->data_in_size = totalLength;
+		memset(plugin->data_in + totalLength, 0, DRDYNVC_BUFFER_PADDING);
 	}
 	memcpy(plugin->data_in + plugin->data_in_read, pData, dataLength);
 	plugin->data_in_read += dataLength;

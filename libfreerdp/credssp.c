@@ -56,7 +56,7 @@ asn1_write(const void *buffer, size_t size, void *fd)
  * @param credssp
  */
 
-void credssp_ntlmssp_init(rdpCredssp * credssp)
+void credssp_ntlmssp_init(rdpCredssp *credssp)
 {
 	NTLMSSP *ntlmssp = credssp->ntlmssp;
 	rdpSet *settings = credssp->sec->rdp->settings;
@@ -88,7 +88,7 @@ void credssp_ntlmssp_init(rdpCredssp * credssp)
  * @param credssp
  */
 
-int credssp_get_public_key(rdpCredssp * credssp)
+int credssp_get_public_key(rdpCredssp *credssp)
 {
 	CryptoCert cert;
 	int ret;
@@ -111,57 +111,63 @@ int credssp_get_public_key(rdpCredssp * credssp)
  * @return 1 if authentication is successful
  */
 
-int credssp_authenticate(rdpCredssp * credssp)
+int credssp_authenticate(rdpCredssp *credssp)
 {
 	NTLMSSP *ntlmssp = credssp->ntlmssp;
-	STREAM negoToken = xmalloc(sizeof(struct stream));
-	STREAM pubKeyAuth = xmalloc(sizeof(struct stream));
-	STREAM authInfo = xmalloc(sizeof(struct stream));
+	STREAM s = xmalloc(sizeof(struct stream));
 	uint8* negoTokenBuffer = (uint8*) xmalloc(2048);
 
 	credssp_ntlmssp_init(credssp);
+
 	if (credssp_get_public_key(credssp) == 0)
 		return 0;
 
 	/* NTLMSSP NEGOTIATE MESSAGE */
-	negoToken->p = negoToken->data = negoTokenBuffer;
-	negoToken->end = negoToken->p;
-	ntlmssp_send(ntlmssp, negoToken);
-	credssp_send(credssp, negoToken, NULL, NULL);
+	s->p = s->end = s->data = negoTokenBuffer;
+	ntlmssp_send(ntlmssp, s);
+	credssp->negoToken.data = s->data;
+	credssp->negoToken.length = s->end - s->data;
+	credssp_send(credssp, &credssp->negoToken, NULL, NULL);
 
 	/* NTLMSSP CHALLENGE MESSAGE */
-	if (credssp_recv(credssp, negoToken, NULL, NULL) < 0)
+	if (credssp_recv(credssp, &credssp->negoToken, NULL, NULL) < 0)
 		return -1;
-	ntlmssp_recv(ntlmssp, negoToken);
+
+	s->p = s->data = credssp->negoToken.data;
+	s->end = s->p + credssp->negoToken.length;
+	ntlmssp_recv(ntlmssp, s);
+
+	datablob_free(&credssp->negoToken);
 
 	/* NTLMSSP AUTHENTICATE MESSAGE */
-	negoToken->p = negoToken->data = negoTokenBuffer;
-	negoToken->end = negoToken->p;
-	ntlmssp_send(ntlmssp, negoToken);
+	s->p = s->end = s->data = negoTokenBuffer;
+	ntlmssp_send(ntlmssp, s);
 
 	/* The last NTLMSSP message is sent with the encrypted public key */
-	credssp_encrypt_public_key(credssp, pubKeyAuth);
-	credssp_send(credssp, negoToken, pubKeyAuth, NULL);
+	credssp->negoToken.data = s->data;
+	credssp->negoToken.length = s->end - s->data;
+	credssp_encrypt_public_key(credssp, &credssp->pubKeyAuth);
+	credssp_send(credssp, &credssp->negoToken, &credssp->pubKeyAuth, NULL);
 
 	/* Encrypted Public Key +1 */
-	if (credssp_recv(credssp, negoToken, pubKeyAuth, NULL) < 0)
+	if (credssp_recv(credssp, &credssp->negoToken, &credssp->pubKeyAuth, NULL) < 0)
 		return -1;
 
-	if (credssp_verify_public_key(credssp, pubKeyAuth) == 0)
+	if (credssp_verify_public_key(credssp, &credssp->pubKeyAuth) == 0)
 	{
 		/* Failed to verify server public key echo */
 		return 0; /* DO NOT SEND CREDENTIALS! */
 	}
 
+	datablob_free(&credssp->negoToken);
+	datablob_free(&credssp->pubKeyAuth);
+
 	/* Send encrypted credentials */
 	credssp_encode_ts_credentials(credssp);
-	credssp_encrypt_ts_credentials(credssp, authInfo);
-	credssp_send(credssp, NULL, NULL, authInfo);
+	credssp_encrypt_ts_credentials(credssp, &credssp->authInfo);
+	credssp_send(credssp, NULL, NULL, &credssp->authInfo);
 
-	xfree(negoToken);
-	xfree(pubKeyAuth);
-	xfree(authInfo);
-	xfree(negoTokenBuffer);
+	xfree(s);
 
 	return 1;
 }
@@ -172,17 +178,15 @@ int credssp_authenticate(rdpCredssp * credssp)
  * @param s
  */
 
-void credssp_encrypt_public_key(rdpCredssp *credssp, STREAM s)
+void credssp_encrypt_public_key(rdpCredssp *credssp, DATABLOB *d)
 {
+	uint8 *p;
 	uint8 signature[16];
 	DATABLOB encrypted_public_key;
 	NTLMSSP *ntlmssp = credssp->ntlmssp;
 
+	datablob_alloc(d, credssp->public_key.length + 16);
 	ntlmssp_encrypt_message(ntlmssp, &credssp->public_key, &encrypted_public_key, signature);
-
-	s->data = xmalloc(credssp->public_key.length + 16);
-	s->p = s->data;
-	s->end = s->p;
 
 #ifdef WITH_DEBUG_NLA
 	printf("Public Key (length = %d)\n", credssp->public_key.length);
@@ -198,10 +202,9 @@ void credssp_encrypt_public_key(rdpCredssp *credssp, STREAM s)
 	printf("\n");
 #endif
 
-	out_uint8p(s, signature, 16); /* Message Signature */
-	out_uint8p(s, encrypted_public_key.data, encrypted_public_key.length); /* Encrypted Public Key */
-
-	s_mark_end(s);
+	p = (uint8*) d->data;
+	memcpy(p, signature, 16); /* Message Signature */
+	memcpy(&p[16], encrypted_public_key.data, encrypted_public_key.length); /* Encrypted Public Key */
 
 	datablob_free(&encrypted_public_key);
 }
@@ -213,16 +216,16 @@ void credssp_encrypt_public_key(rdpCredssp *credssp, STREAM s)
  * @return 1 if verification is successful, 0 otherwise
  */
 
-int credssp_verify_public_key(rdpCredssp *credssp, STREAM s)
+int credssp_verify_public_key(rdpCredssp *credssp, DATABLOB *d)
 {
 	uint8 *p1, *p2;
 	uint8 *signature;
 	DATABLOB public_key;
 	DATABLOB encrypted_public_key;
 
-	signature = s->data;
+	signature = d->data;
 	encrypted_public_key.data = (void*) (signature + 16);
-	encrypted_public_key.length = s->size - 16;
+	encrypted_public_key.length = d->length - 16;
 
 	ntlmssp_decrypt_message(credssp->ntlmssp, &encrypted_public_key, &public_key, signature);
 
@@ -248,17 +251,15 @@ int credssp_verify_public_key(rdpCredssp *credssp, STREAM s)
  * @param s
  */
 
-void credssp_encrypt_ts_credentials(rdpCredssp *credssp, STREAM s)
+void credssp_encrypt_ts_credentials(rdpCredssp *credssp, DATABLOB *d)
 {
+	uint8 *p;
 	uint8 signature[16];
 	DATABLOB encrypted_ts_credentials;
 	NTLMSSP *ntlmssp = credssp->ntlmssp;
 
+	datablob_alloc(d, credssp->ts_credentials.length + 16);
 	ntlmssp_encrypt_message(ntlmssp, &credssp->ts_credentials, &encrypted_ts_credentials, signature);
-
-	s->data = xmalloc(credssp->ts_credentials.length + 16);
-	s->p = s->data;
-	s->end = s->p;
 
 #ifdef WITH_DEBUG_NLA
 	printf("TSCredentials (length = %d)\n", credssp->ts_credentials.length);
@@ -274,10 +275,9 @@ void credssp_encrypt_ts_credentials(rdpCredssp *credssp, STREAM s)
 	printf("\n");
 #endif
 
-	out_uint8p(s, signature, 16); /* Message Signature */
-	out_uint8p(s, encrypted_ts_credentials.data, encrypted_ts_credentials.length); /* Encrypted TSCredentials */
-
-	s_mark_end(s);
+	p = (uint8*) d->data;
+	memcpy(p, signature, 16); /* Message Signature */
+	memcpy(&p[16], encrypted_ts_credentials.data, encrypted_ts_credentials.length); /* Encrypted TSCredentials */
 
 	datablob_free(&encrypted_ts_credentials);
 }
@@ -349,7 +349,7 @@ void credssp_encode_ts_credentials(rdpCredssp *credssp)
  * @param authInfo
  */
 
-void credssp_send(rdpCredssp *credssp, STREAM negoToken, STREAM pubKeyAuth, STREAM authInfo)
+void credssp_send(rdpCredssp *credssp, DATABLOB *negoToken, DATABLOB *pubKeyAuth, DATABLOB *authInfo)
 {
 	TSRequest_t *ts_request;
 	OCTET_STRING_t *nego_token;
@@ -365,7 +365,7 @@ void credssp_send(rdpCredssp *credssp, STREAM negoToken, STREAM pubKeyAuth, STRE
 	{
 		ts_request->negoTokens = calloc(1, sizeof(NegoData_t));
 		nego_token = calloc(1, sizeof(OCTET_STRING_t));
-		nego_token->size = negoToken->end - negoToken->data;
+		nego_token->size = negoToken->length;
 		nego_token->buf = malloc(nego_token->size);
 		memcpy(nego_token->buf, negoToken->data, nego_token->size);
 		ASN_SEQUENCE_ADD(ts_request->negoTokens, nego_token);
@@ -375,14 +375,14 @@ void credssp_send(rdpCredssp *credssp, STREAM negoToken, STREAM pubKeyAuth, STRE
 	{
 		ts_request->pubKeyAuth = calloc(1, sizeof(OCTET_STRING_t));
 		ts_request->pubKeyAuth->buf = pubKeyAuth->data;
-		ts_request->pubKeyAuth->size = pubKeyAuth->end - pubKeyAuth->data;
+		ts_request->pubKeyAuth->size = pubKeyAuth->length;
 	}
 
 	if (authInfo != NULL)
 	{
 		ts_request->authInfo = calloc(1, sizeof(OCTET_STRING_t));
 		ts_request->authInfo->buf = authInfo->data;
-		ts_request->authInfo->size = authInfo->end - authInfo->data;
+		ts_request->authInfo->size = authInfo->length;
 	}
 
 	/* get size of the encoded ASN.1 payload */
@@ -414,18 +414,15 @@ void credssp_send(rdpCredssp *credssp, STREAM negoToken, STREAM pubKeyAuth, STRE
  * @return
  */
 
-int credssp_recv(rdpCredssp *credssp, STREAM negoToken, STREAM pubKeyAuth, STREAM authInfo)
+int credssp_recv(rdpCredssp *credssp, DATABLOB *negoToken, DATABLOB *pubKeyAuth, DATABLOB *authInfo)
 {
-	TSRequest_t *ts_request = 0;
-	NegotiationToken_t *negotiation_token = 0;
-	asn_dec_rval_t dec_rval;
-
-	int size = 2048;
 	int bytes_read;
-	char* recv_buffer;
+	int size = 2048;
+	char *recv_buffer;
+	asn_dec_rval_t dec_rval;
+	TSRequest_t *ts_request = 0;
 
 	recv_buffer = xmalloc(size);
-
 	bytes_read = tls_read(credssp->sec->tls, recv_buffer, size);
 
 	if (bytes_read < 0)
@@ -437,31 +434,20 @@ int credssp_recv(rdpCredssp *credssp, STREAM negoToken, STREAM pubKeyAuth, STREA
 	{
 		if (ts_request->negoTokens != NULL)
 		{
-			int i;
-			for(i = 0; i < ts_request->negoTokens->list.count; i++)
+			if (ts_request->negoTokens->list.count > 0)
 			{
-				dec_rval = ber_decode(0, &asn_DEF_NegotiationToken, (void **)&negotiation_token,
-					ts_request->negoTokens->list.array[i]->negoToken.buf,
-					ts_request->negoTokens->list.array[i]->negoToken.size);
-				if (negotiation_token)
-				{
-					asn_DEF_NegotiationToken.free_struct(&asn_DEF_NegotiationToken, negotiation_token, 0);
-					negotiation_token = 0;
-				}
-
-				negoToken->data = (unsigned char*)(ts_request->negoTokens->list.array[i]->negoToken.buf);
-				negoToken->size = ts_request->negoTokens->list.array[i]->negoToken.size;
-				negoToken->p = negoToken->data;
-				negoToken->end = negoToken->p + negoToken->size;
+				datablob_alloc(negoToken, ts_request->negoTokens->list.array[0]->negoToken.size);
+				memcpy(negoToken->data, ts_request->negoTokens->list.array[0]->negoToken.buf, negoToken->length);
 			}
 		}
 
 		if (ts_request->pubKeyAuth != NULL)
 		{
-			pubKeyAuth->data = ts_request->pubKeyAuth->buf;
-			pubKeyAuth->size = ts_request->pubKeyAuth->size;
-			pubKeyAuth->p = pubKeyAuth->data;
+			datablob_alloc(pubKeyAuth, ts_request->pubKeyAuth->size);
+			memcpy(pubKeyAuth->data, ts_request->pubKeyAuth->buf, pubKeyAuth->length);
 		}
+
+		asn_DEF_TSRequest.free_struct(&asn_DEF_TSRequest, ts_request, 0);
 	}
 	else
 	{
