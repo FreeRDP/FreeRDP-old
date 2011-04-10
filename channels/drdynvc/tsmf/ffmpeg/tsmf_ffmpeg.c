@@ -124,9 +124,11 @@ tsmf_ffmpeg_init_stream(ITSMFDecoder * decoder, const TS_AM_MEDIA_TYPE * media_t
 
 	if (media_type->ExtraData)
 	{
-		mdecoder->codec_context->extradata_size = media_type->ExtraDataSize;
+		/* Add a padding to avoid invalid memory read in some codec */
+		mdecoder->codec_context->extradata_size = media_type->ExtraDataSize + 8;
 		mdecoder->codec_context->extradata = malloc(mdecoder->codec_context->extradata_size);
 		memcpy(mdecoder->codec_context->extradata, media_type->ExtraData, media_type->ExtraDataSize);
+		memset(mdecoder->codec_context->extradata + media_type->ExtraDataSize, 0, 8);
 	}
 
 	if (mdecoder->codec->capabilities & CODEC_CAP_TRUNCATED)
@@ -271,8 +273,7 @@ tsmf_ffmpeg_decode_audio(ITSMFDecoder * decoder, const uint8 * data, uint32 data
 	int len;
 	int frame_size;
 	uint32 src_size;
-	uint8 * pad_data;
-	uint8 * src;
+	const uint8 * src;
 	uint8 * dst;
 
 #if 0
@@ -291,10 +292,7 @@ tsmf_ffmpeg_decode_audio(ITSMFDecoder * decoder, const uint8 * data, uint32 data
 		mdecoder->decoded_size_max = AVCODEC_MAX_AUDIO_FRAME_SIZE;
 	mdecoder->decoded_data = malloc(mdecoder->decoded_size_max);
 	dst = mdecoder->decoded_data;
-	pad_data = malloc(data_size + FF_INPUT_BUFFER_PADDING_SIZE);
-	memcpy(pad_data, data, data_size);
-	memset(pad_data + data_size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
-	src = pad_data;
+	src = data;
 	src_size = data_size;
 
 	while (src_size > 0)
@@ -315,7 +313,7 @@ tsmf_ffmpeg_decode_audio(ITSMFDecoder * decoder, const uint8 * data, uint32 data
 		{
 			AVPacket pkt;
 			av_init_packet(&pkt);
-			pkt.data = src;
+			pkt.data = (uint8 *) src;
 			pkt.size = src_size;
 			len = avcodec_decode_audio3(mdecoder->codec_context,
 				(int16_t *) dst, &frame_size, &pkt);
@@ -337,7 +335,6 @@ tsmf_ffmpeg_decode_audio(ITSMFDecoder * decoder, const uint8 * data, uint32 data
 		free(mdecoder->decoded_data);
 		mdecoder->decoded_data = NULL;
 	}
-	free(pad_data);
 
 	LLOGLN(10, ("tsmf_ffmpeg_decode_audio: data_size %d decoded_size %d",
 		data_size, mdecoder->decoded_size));
