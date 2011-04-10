@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <freerdp/freerdp.h>
 #include "gdi.h"
-#include "test_libfreerdpgdi.h"
+#include "test_libgdi.h"
 
 int init_libfreerdpgdi_suite(void)
 {

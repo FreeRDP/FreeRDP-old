@@ -21,7 +21,7 @@
 
 #include "test_credssp.h"
 #include "test_ntlmssp.h"
-#include "test_libfreerdpgdi.h"
+#include "test_libgdi.h"
 #include "test_gdi_color.h"
 #include "test_freerdp.h"
 

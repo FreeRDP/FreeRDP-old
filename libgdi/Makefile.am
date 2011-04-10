@@ -1,11 +1,11 @@
 ## Process this file with automake to produce Makefile.in
 
-# libfreerdpgdi
-libfreerdpgdidir = $(libdir)
+# libgdi
+libgdidir = $(libdir)
 
-libfreerdpgdi_LTLIBRARIES = libfreerdpgdi.la
+libgdi_LTLIBRARIES = libgdi.la
 
-libfreerdpgdi_la_SOURCES = \
+libgdi_la_SOURCES = \
 	gdi_color.c gdi_color.h \
 	gdi_window.c gdi_window.h \
 	gdi_bitmap.c gdi_bitmap.h \
@@ -22,11 +22,11 @@ libfreerdpgdi_la_SOURCES = \
 	gdi_8bpp.c gdi_8bpp.h \
 	gdi.c gdi.h
 
-libfreerdpgdi_la_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include
+libgdi_la_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include
 
-libfreerdpgdi_la_LDFLAGS =
+libgdi_la_LDFLAGS =
 
-libfreerdpgdi_la_LIBDADD =
+libgdi_la_LIBDADD =
 
 # extra
 EXTRA_DIST =

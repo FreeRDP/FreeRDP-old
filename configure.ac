@@ -995,7 +995,7 @@ include/Makefile
 libfreerdpkbd/Makefile
 keymaps/Makefile
 cunit/Makefile
-libfreerdpgdi/Makefile
+libgdi/Makefile
 libfreerdpchanman/Makefile
 X11/Makefile
 dfb/Makefile

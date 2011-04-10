@@ -12,14 +12,14 @@ dfbfreerdp_SOURCES = \
 dfbfreerdp_CFLAGS = \
 	-I$(top_srcdir) \
 	-I$(top_srcdir)/include \
-	-I$(top_srcdir)/libfreerdpgdi \
+	-I$(top_srcdir)/libgdi \
 	-pthread \
 	@DFB_CFLAGS@
 
 dfbfreerdp_LDADD = \
 	../libfreerdp/libfreerdp.la \
+	../libgdi/libgdi.la \
 	../libfreerdpkbd/libfreerdpkbd.la \
-	../libfreerdpgdi/libfreerdpgdi.la \
 	../libfreerdpchanman/libfreerdpchanman.la \
 	@DFB_LIBS@ -lfusion -ldirect -lz
 

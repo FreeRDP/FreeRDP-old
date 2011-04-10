@@ -1,8 +1,8 @@
 /*
    FreeRDP: A Remote Desktop Protocol client.
-   RDP GDI Adaption Layer
+   GDI Library
 
-   Copyright 2010 Marc-Andre Moreau <marcandre.moreau@gmail.com>
+   Copyright 2010-2011 Marc-Andre Moreau <marcandre.moreau@gmail.com>
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -35,8 +35,8 @@
 #include "gdi_pen.h"
 #include "gdi_dc.h"
 
-#ifndef __LIBFREERDPGDI_H
-#define __LIBFREERDPGDI_H
+#ifndef __GDI_H
+#define __GDI_H
 
 /* For more information, see [MS-RDPEGDI].pdf */
 
@@ -262,4 +262,4 @@ void InitializeGDI();
 #include "gdi_color.h"
 #include "gdi_window.h"
 
-#endif /* __LIBFREERDPGDI_H */
+#endif /* __GDI_H */
