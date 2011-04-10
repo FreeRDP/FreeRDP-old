@@ -58,11 +58,15 @@ struct _TSMF_PRESENTATION
 	uint32 last_y;
 	uint32 last_width;
 	uint32 last_height;
+	uint16 last_num_rects;
+	RD_RECT * last_rects;
 
 	uint32 output_x;
 	uint32 output_y;
 	uint32 output_width;
 	uint32 output_height;
+	uint16 output_num_rects;
+	RD_RECT * output_rects;
 
 	IWTSVirtualChannelCallback * channel_callback;
 
@@ -274,6 +278,8 @@ tsmf_free_video_frame_event(RD_EVENT * event)
 	LLOGLN(10, ("tsmf_free_video_frame_event:"));
 	if (vevent->frame_data)
 		free(vevent->frame_data);
+	if (vevent->visible_rects)
+		free(vevent->visible_rects);
 	free(vevent);
 }
 
@@ -291,9 +297,31 @@ tsmf_sample_playback_video(TSMF_SAMPLE * sample)
 		if (presentation->last_x != presentation->output_x ||
 			presentation->last_y != presentation->output_y ||
 			presentation->last_width != presentation->output_width ||
-			presentation->last_height != presentation->output_height)
+			presentation->last_height != presentation->output_height ||
+			presentation->last_num_rects != presentation->output_num_rects ||
+			(presentation->last_rects && presentation->output_rects &&
+			memcmp(presentation->last_rects, presentation->output_rects,
+			presentation->last_num_rects * sizeof(RD_RECT)) != 0))
 		{
 			tsmf_presentation_restore_last_video_frame(presentation);
+
+			presentation->last_x = presentation->output_x;
+			presentation->last_y = presentation->output_y;
+			presentation->last_width = presentation->output_width;
+			presentation->last_height = presentation->output_height;
+
+			if (presentation->last_rects)
+			{
+				free(presentation->last_rects);
+				presentation->last_rects = NULL;
+			}
+			presentation->last_num_rects = presentation->output_num_rects;
+			if (presentation->last_num_rects > 0)
+			{
+				presentation->last_rects = malloc(presentation->last_num_rects * sizeof(RD_RECT));
+				memcpy(presentation->last_rects, presentation->output_rects,
+					presentation->last_num_rects * sizeof(RD_RECT));
+			}
 		}
 
 		vevent = (RD_VIDEO_FRAME_EVENT *) malloc(sizeof(RD_VIDEO_FRAME_EVENT));
@@ -309,11 +337,13 @@ tsmf_sample_playback_video(TSMF_SAMPLE * sample)
 		vevent->y = presentation->output_y;
 		vevent->width = presentation->output_width;
 		vevent->height = presentation->output_height;
-
-		presentation->last_x = presentation->output_x;
-		presentation->last_y = presentation->output_y;
-		presentation->last_width = presentation->output_width;
-		presentation->last_height = presentation->output_height;
+		if (presentation->output_num_rects > 0)
+		{
+			vevent->num_visible_rects = presentation->output_num_rects;
+			vevent->visible_rects = (RD_RECT *) malloc(presentation->output_num_rects * sizeof(RD_RECT));
+			memcpy(vevent->visible_rects, presentation->output_rects,
+				presentation->output_num_rects * sizeof(RD_RECT));
+		}
 
 		/* The frame data ownership is passed to the event object, and is freed after the event is processed. */
 		sample->data = NULL;
@@ -447,15 +477,33 @@ tsmf_presentation_stop(TSMF_PRESENTATION * presentation)
 		usleep(250 * 1000);
 	}
 	tsmf_presentation_restore_last_video_frame(presentation);
+	if (presentation->last_rects)
+	{
+		free(presentation->last_rects);
+		presentation->last_rects = NULL;
+	}
+	presentation->last_num_rects = 0;
+	if (presentation->output_rects)
+	{
+		free(presentation->output_rects);
+		presentation->output_rects = NULL;
+	}
+	presentation->output_num_rects = 0;
 }
 
 void
-tsmf_presentation_set_geometry_info(TSMF_PRESENTATION * presentation, uint32 x, uint32 y, uint32 width, uint32 height)
+tsmf_presentation_set_geometry_info(TSMF_PRESENTATION * presentation,
+	uint32 x, uint32 y, uint32 width, uint32 height,
+	int num_rects, RD_RECT * rects)
 {
 	presentation->output_x = x;
 	presentation->output_y = y;
 	presentation->output_width = width;
 	presentation->output_height = height;
+	if (presentation->output_rects)
+		free(presentation->output_rects);
+	presentation->output_rects = rects;
+	presentation->output_num_rects = num_rects;
 }
 
 void

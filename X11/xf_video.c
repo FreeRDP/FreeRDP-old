@@ -113,12 +113,13 @@ xf_video_process_frame(xfInfo * xfi, RD_VIDEO_FRAME_EVENT * vevent)
 	XShmSegmentInfo shminfo;
 	XvImage * image;
 	int colorkey = 0;
+	int i;
 
 	if (xfi->xv_port == -1)
 		return 1;
 
 	/* In case the player is minimized */
-	if (vevent->x < -2048 || vevent->y < -2048)
+	if (vevent->x < -2048 || vevent->y < -2048 || vevent->num_visible_rects <= 0)
 		return 0;
 
 	if (xfi->xv_colorkey_atom != None)
@@ -127,8 +128,14 @@ xf_video_process_frame(xfInfo * xfi, RD_VIDEO_FRAME_EVENT * vevent)
 		XSetFunction(xfi->display, xfi->gc, GXcopy);
 		XSetFillStyle(xfi->display, xfi->gc, FillSolid);
 		XSetForeground(xfi->display, xfi->gc, colorkey);
-		XFillRectangle(xfi->display, xfi->wnd, xfi->gc,
-			vevent->x, vevent->y, vevent->width, vevent->height);
+		for (i = 0; i < vevent->num_visible_rects; i++)
+		{
+			XFillRectangle(xfi->display, xfi->wnd, xfi->gc,
+				vevent->x + vevent->visible_rects[i].x,
+				vevent->y + vevent->visible_rects[i].y,
+				vevent->visible_rects[i].width,
+				vevent->visible_rects[i].height);
+		}
 	}
 
 	image = XvShmCreateImage(xfi->display, xfi->xv_port,
