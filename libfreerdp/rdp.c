@@ -139,7 +139,7 @@ rdp_recv(rdpRdp * rdp, enum RDP_PDU_TYPE * type, uint16 * source)
 
 #if WITH_DEBUG
 	DEBUG("Share Control Data PDU #%d, (type %x)\n", ++(rdp->packetno), *type);
-	hexdump(rdp->next_packet, totalLength);
+	hexdump(rdp->next_packet - totalLength, totalLength);
 #endif
 
 	return rdp->rdp_s;
