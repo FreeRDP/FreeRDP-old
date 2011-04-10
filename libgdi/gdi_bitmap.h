@@ -30,7 +30,6 @@ void SetPixel_16bpp(HBITMAP hBmp, int X, int Y, uint16 pixel);
 void SetPixel_32bpp(HBITMAP hBmp, int X, int Y, uint32 pixel);
 HBITMAP CreateBitmap(int nWidth, int nHeight, int cBitsPerPixel, uint8* data);
 HBITMAP CreateCompatibleBitmap(HDC hdc, int nWidth, int nHeight);
-int FillRect(HDC hdc, HRECT rect, HBRUSH hbr);
 int BitBlt(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc, int rop);
 
 #endif /* __GDI_BITMAP_H */

@@ -14,6 +14,7 @@ libgdi_la_SOURCES = \
 	gdi_palette.c gdi_palette.h \
 	gdi_clipping.c gdi_clipping.h \
 	gdi_brush.c gdi_brush.h \
+	gdi_shape.c gdi_shape.h \
 	gdi_pen.c gdi_pen.h \
 	gdi_dc.c gdi_dc.h \
 	gdi_line.c gdi_line.h \

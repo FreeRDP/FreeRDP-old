@@ -24,4 +24,5 @@ void InitializeGDI()
 {
 	BitmapInit();
 	BrushInit();
+	ShapeInit();
 }

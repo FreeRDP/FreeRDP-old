@@ -23,20 +23,20 @@
 #include "gdi.h"
 #include "test_libgdi.h"
 
-int init_libfreerdpgdi_suite(void)
+int init_libgdi_suite(void)
 {
 	InitializeGDI();
 	return 0;
 }
 
-int clean_libfreerdpgdi_suite(void)
+int clean_libgdi_suite(void)
 {
 	return 0;
 }
 
-int add_libfreerdpgdi_suite(void)
+int add_libgdi_suite(void)
 {
-	add_test_suite(libfreerdpgdi);
+	add_test_suite(libgdi);
 
 	add_test_function(GetDC);
 	add_test_function(CreateCompatibleDC);

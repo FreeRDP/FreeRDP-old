@@ -24,13 +24,6 @@
 #include <freerdp/freerdp.h>
 #include "gdi.h"
 
-#include "gdi_color.h"
-#include "gdi_window.h"
-#include "gdi_bitmap.h"
-#include "gdi_32bpp.h"
-#include "gdi_16bpp.h"
-#include "gdi_8bpp.h"
-
 #include "gdi_region.h"
 
 /**

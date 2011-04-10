@@ -1,6 +1,6 @@
 /*
    FreeRDP: A Remote Desktop Protocol client.
-   GDI Pen Functions
+   GDI Shape Functions
 
    Copyright 2010-2011 Marc-Andre Moreau <marcandre.moreau@gmail.com>
 
@@ -17,8 +17,6 @@
    limitations under the License.
 */
 
-/* GDI Pen Functions: http://msdn.microsoft.com/en-us/library/dd162790 */
-
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -26,23 +24,42 @@
 #include <freerdp/freerdp.h>
 #include "gdi.h"
 
-#include "gdi_pen.h"
+#include "gdi_32bpp.h"
+#include "gdi_16bpp.h"
+#include "gdi_8bpp.h"
+
+#include "gdi_shape.h"
+
+pFillRect FillRect_[5];
+
+int Ellipse(HDC hdc, int nLeftRect, int nTopRect, int nRightRect, int nBottomRect)
+{
+	return 1;
+}
+
+int Polygon(HDC hdc, POINT *lpPoints, int nCount)
+{
+	return 1;
+}
 
 /**
- * Create a new pen.\n
- * @msdn{dd183509}
- * @param fnPenStyle pen style
- * @param nWidth pen width
- * @param crColor pen color
- * @return new pen
+ * Fill a rectangle with the given brush.\n
+ * @msdn{dd162719}
+ * @param hdc device context
+ * @param rect rectangle
+ * @param hbr brush
+ * @return 1 if successful, 0 otherwise
  */
 
-HPEN CreatePen(int fnPenStyle, int nWidth, int crColor)
+int FillRect(HDC hdc, HRECT rect, HBRUSH hbr)
 {
-	HPEN hPen = (HPEN) malloc(sizeof(PEN));
-	hPen->objectType = GDIOBJ_PEN;
-	hPen->style = fnPenStyle;
-	hPen->color = crColor;
-	hPen->width = nWidth;
-	return hPen;
+	return FillRect_[IBPP(hdc->bitsPerPixel)](hdc, rect, hbr);
+}
+
+void ShapeInit()
+{
+	/* FillRect */
+	FillRect_[1] = FillRect_8bpp;
+	FillRect_[2] = FillRect_16bpp;
+	FillRect_[4] = FillRect_32bpp;
 }

@@ -33,7 +33,6 @@
 #include "gdi_bitmap.h"
 
 pBitBlt BitBlt_[5];
-pFillRect FillRect_[5];
 
 /**
  * Get pixel at the given coordinates.\n
@@ -129,20 +128,6 @@ HBITMAP CreateCompatibleBitmap(HDC hdc, int nWidth, int nHeight)
 }
 
 /**
- * Fill a rectangle with the given brush.\n
- * @msdn{dd162719}
- * @param hdc device context
- * @param rect rectangle
- * @param hbr brush
- * @return 1 if successful, 0 otherwise
- */
-
-int FillRect(HDC hdc, HRECT rect, HBRUSH hbr)
-{
-	return FillRect_[IBPP(hdc->bitsPerPixel)](hdc, rect, hbr);
-}
-
-/**
  * Perform a bit blit operation on the given pixel buffers.\n
  * @msdn{dd183370}
  * @param hdcDest destination device context
@@ -168,9 +153,4 @@ void BitmapInit()
 	BitBlt_[1] = BitBlt_8bpp;
 	BitBlt_[2] = BitBlt_16bpp;
 	BitBlt_[4] = BitBlt_32bpp;
-
-	/* FillRect */
-	FillRect_[1] = FillRect_8bpp;
-	FillRect_[2] = FillRect_16bpp;
-	FillRect_[4] = FillRect_32bpp;
 }

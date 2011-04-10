@@ -30,6 +30,7 @@
 #include "gdi_drawing.h"
 #include "gdi_clipping.h"
 #include "gdi_palette.h"
+#include "gdi_shape.h"
 #include "gdi_line.h"
 #include "gdi_brush.h"
 #include "gdi_pen.h"

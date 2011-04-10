@@ -1,6 +1,6 @@
 /*
    FreeRDP: A Remote Desktop Protocol client.
-   GDI Pen Functions
+   GDI Shape Functions
 
    Copyright 2010-2011 Marc-Andre Moreau <marcandre.moreau@gmail.com>
 
@@ -17,32 +17,13 @@
    limitations under the License.
 */
 
-/* GDI Pen Functions: http://msdn.microsoft.com/en-us/library/dd162790 */
+#ifndef __GDI_SHAPE_H
+#define __GDI_SHAPE_H
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-
-#include <freerdp/freerdp.h>
 #include "gdi.h"
 
-#include "gdi_pen.h"
+int Ellipse(HDC hdc, int nLeftRect, int nTopRect, int nRightRect, int nBottomRect);
+int Polygon(HDC hdc, POINT *lpPoints, int nCount);
+int FillRect(HDC hdc, HRECT rect, HBRUSH hbr);
 
-/**
- * Create a new pen.\n
- * @msdn{dd183509}
- * @param fnPenStyle pen style
- * @param nWidth pen width
- * @param crColor pen color
- * @return new pen
- */
-
-HPEN CreatePen(int fnPenStyle, int nWidth, int crColor)
-{
-	HPEN hPen = (HPEN) malloc(sizeof(PEN));
-	hPen->objectType = GDIOBJ_PEN;
-	hPen->style = fnPenStyle;
-	hPen->color = crColor;
-	hPen->width = nWidth;
-	return hPen;
-}
+#endif /* __GDI_SHAPE_H */
