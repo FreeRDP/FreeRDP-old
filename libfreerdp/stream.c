@@ -42,7 +42,7 @@ stream_init(struct stream * st, size_t size)
 		st->size = size;
 	}
 	st->p = st->data;
-	st->end = st->data;
+	st->end = st->data + st->size;
 	return 0;
 }
 
