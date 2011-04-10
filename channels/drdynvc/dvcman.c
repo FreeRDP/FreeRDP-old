@@ -406,8 +406,9 @@ dvcman_receive_channel_data_first(IWTSVirtualChannelManager * pChannelMgr, uint3
 	}
 	if (channel->dvc_data)
 		free(channel->dvc_data);
-	channel->dvc_data = (char *) malloc(length);
-	memset(channel->dvc_data, 0, length);
+	/* Add a padding to avoid invalid memory read in some plugin using some kind of optimization */
+	channel->dvc_data = (char *) malloc(length + DRDYNVC_BUFFER_PADDING);
+	memset(channel->dvc_data, 0, length + DRDYNVC_BUFFER_PADDING);
 	channel->dvc_data_pos = 0;
 	channel->dvc_data_size = length;
 

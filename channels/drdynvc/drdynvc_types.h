@@ -32,4 +32,6 @@
 #define LLOGLN(_level, _args) \
   do { if (_level < LOG_LEVEL) { printf _args ; printf("\n"); } } while (0)
 
+#define DRDYNVC_BUFFER_PADDING 8
+
 #endif
