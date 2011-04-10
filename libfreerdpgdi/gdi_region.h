@@ -20,7 +20,7 @@
 #ifndef __GDI_REGION_H
 #define __GDI_REGION_H
 
-#include "libfreerdpgdi.h"
+#include "gdi.h"
 
 HRGN CreateRectRgn(int nLeftRect, int nTopRect, int nRightRect, int nBottomRect);
 HRECT CreateRect(int xLeft, int yTop, int xRight, int yBottom);
@@ -39,5 +39,6 @@ int SetRectRgn(HRGN hRgn, int nLeftRect, int nTopRect, int nRightRect, int nBott
 int EqualRgn(HRGN hSrcRgn1, HRGN hSrcRgn2);
 int CopyRect(HRECT dst, HRECT src);
 int PtInRect(HRECT rc, int x, int y);
+int InvalidateRegion(HDC hdc, int x, int y, int w, int h);
 
 #endif /* __GDI_REGION_H */

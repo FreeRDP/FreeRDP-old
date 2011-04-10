@@ -1,8 +1,8 @@
 /*
    FreeRDP: A Remote Desktop Protocol client.
-   32bpp Internal Buffer Routines
+   GDI Drawing Functions
 
-   Copyright 2010 Marc-Andre Moreau <marcandre.moreau@gmail.com>
+   Copyright 2010-2011 Marc-Andre Moreau <marcandre.moreau@gmail.com>
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -17,11 +17,17 @@
    limitations under the License.
 */
 
-#include <freerdp/freerdp.h>
+#ifndef __GDI_DRAWING_H
+#define __GDI_DRAWING_H
+
 #include "gdi.h"
-#include "gdi_color.h"
 
-int FillRect_32bpp(HDC hdc, HRECT rect, HBRUSH hbr);
-int BitBlt_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc, int rop);
-int PatBlt_32bpp(HDC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight, int rop);
+int GetROP2(HDC hdc);
+int SetROP2(HDC hdc, int fnDrawMode);
+COLORREF GetBkColor(HDC hdc);
+COLORREF SetBkColor(HDC hdc, COLORREF crColor);
+int GetBkMode(HDC hdc);
+int SetBkMode(HDC hdc, int iBkMode);
+COLORREF SetTextColor(HDC hdc, COLORREF crColor);
 
+#endif /* __GDI_DRAWING_H */

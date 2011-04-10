@@ -20,7 +20,7 @@
 #ifndef __GDI_LINE_H
 #define __GDI_LINE_H
 
-#include "libfreerdpgdi.h"
+#include "gdi.h"
 
 int LineTo(HDC hdc, int nXEnd, int nYEnd);
 int MoveToEx(HDC hdc, int X, int Y, HPOINT lpPoint);

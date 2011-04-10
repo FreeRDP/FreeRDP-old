@@ -27,8 +27,13 @@
 #include "gdi_window.h"
 #include "gdi_bitmap.h"
 #include "gdi_region.h"
+#include "gdi_drawing.h"
 #include "gdi_clipping.h"
+#include "gdi_palette.h"
 #include "gdi_line.h"
+#include "gdi_brush.h"
+#include "gdi_pen.h"
+#include "gdi_dc.h"
 
 #ifndef __LIBFREERDPGDI_H
 #define __LIBFREERDPGDI_H
@@ -243,23 +248,6 @@ typedef int (*pBitBlt)(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHei
 typedef int (*pPatBlt)(HDC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight, int rop);
 typedef int (*pFillRect)(HDC hdc, HRECT rect, HBRUSH hbr);
 
-HDC GetDC();
-HDC CreateCompatibleDC(HDC hdc);
-HPEN CreatePen(int fnPenStyle, int nWidth, int crColor);
-HPALETTE CreatePalette(LOGPALETTE *lplgpl);
-HBRUSH CreateSolidBrush(COLORREF crColor);
-HBRUSH CreatePatternBrush(HBITMAP hbmp);
-int SetROP2(HDC hdc, int fnDrawMode);
-HPALETTE CreateSystemPalette();
-HPALETTE GetSystemPalette();
-int InvalidateRegion(HDC hdc, int x, int y, int w, int h);
-COLORREF GetBkColor(HDC hdc);
-COLORREF SetBkColor(HDC hdc, COLORREF crColor);
-COLORREF SetTextColor(HDC hdc, COLORREF crColor);
-int SetBkMode(HDC hdc, int iBkMode);
-HGDIOBJ SelectObject(HDC hdc, HGDIOBJ hgdiobj);
-int DeleteObject(HGDIOBJ hgdiobj);
-int DeleteDC(HDC hdc);
 void InitializeGDI();
 
 #define SET_GDI(_inst, _gdi) (_inst)->param2 = _gdi

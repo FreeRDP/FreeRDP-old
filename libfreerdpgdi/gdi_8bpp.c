@@ -22,7 +22,7 @@
 #include <stdlib.h>
 
 #include <freerdp/freerdp.h>
-#include "libfreerdpgdi.h"
+#include "gdi.h"
 #include "gdi_color.h"
 #include "gdi_8bpp.h"
 

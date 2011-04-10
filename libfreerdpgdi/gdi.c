@@ -1,6 +1,6 @@
 /*
    FreeRDP: A Remote Desktop Protocol client.
-   32bpp Internal Buffer Routines
+   RDP GDI Adaption Layer
 
    Copyright 2010 Marc-Andre Moreau <marcandre.moreau@gmail.com>
 
@@ -19,9 +19,9 @@
 
 #include <freerdp/freerdp.h>
 #include "gdi.h"
-#include "gdi_color.h"
 
-int FillRect_32bpp(HDC hdc, HRECT rect, HBRUSH hbr);
-int BitBlt_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc, int rop);
-int PatBlt_32bpp(HDC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight, int rop);
-
+void InitializeGDI()
+{
+	BitmapInit();
+	BrushInit();
+}

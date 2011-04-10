@@ -20,7 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <freerdp/freerdp.h>
-#include "libfreerdpgdi.h"
+#include "gdi.h"
 #include "test_libfreerdpgdi.h"
 
 int init_libfreerdpgdi_suite(void)

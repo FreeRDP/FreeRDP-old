@@ -24,7 +24,7 @@
 #include <directfb.h>
 #include <freerdp/chanman.h>
 #include <freerdp/types_ui.h>
-#include "libfreerdpgdi.h"
+#include "gdi.h"
 #include "dfbfreerdp.h"
 #include "dfb_win.h"
 #include "dfb_keyboard.h"

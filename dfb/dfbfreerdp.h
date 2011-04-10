@@ -22,7 +22,7 @@
 
 #include <directfb.h>
 #include <freerdp/freerdp.h>
-#include "libfreerdpgdi.h"
+#include "gdi.h"
 
 #define SET_DFBI(_inst, _dfbi) (_inst)->param1 = _dfbi
 #define GET_DFBI(_inst) ((dfbInfo *) ((_inst)->param1))

@@ -1,8 +1,8 @@
 /*
    FreeRDP: A Remote Desktop Protocol client.
-   32bpp Internal Buffer Routines
+   GDI Brush Functions
 
-   Copyright 2010 Marc-Andre Moreau <marcandre.moreau@gmail.com>
+   Copyright 2010-2011 Marc-Andre Moreau <marcandre.moreau@gmail.com>
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -17,11 +17,14 @@
    limitations under the License.
 */
 
-#include <freerdp/freerdp.h>
+#ifndef __GDI_BRUSH_H
+#define __GDI_BRUSH_H
+
 #include "gdi.h"
-#include "gdi_color.h"
 
-int FillRect_32bpp(HDC hdc, HRECT rect, HBRUSH hbr);
-int BitBlt_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc, int rop);
-int PatBlt_32bpp(HDC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight, int rop);
+void BrushInit();
+HBRUSH CreateSolidBrush(COLORREF crColor);
+HBRUSH CreatePatternBrush(HBITMAP hbmp);
+int PatBlt(HDC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight, int rop);
 
+#endif /* __GDI_BRUSH_H */

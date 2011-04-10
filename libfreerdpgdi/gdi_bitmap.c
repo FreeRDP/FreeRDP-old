@@ -22,7 +22,7 @@
 #include <stdlib.h>
 
 #include <freerdp/freerdp.h>
-#include "libfreerdpgdi.h"
+#include "gdi.h"
 
 #include "gdi_color.h"
 #include "gdi_window.h"
@@ -33,7 +33,6 @@
 #include "gdi_bitmap.h"
 
 pBitBlt BitBlt_[5];
-pPatBlt PatBlt_[5];
 pFillRect FillRect_[5];
 
 /**
@@ -163,34 +162,12 @@ int BitBlt(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdc
 	return BitBlt_[IBPP(hdcDest->bitsPerPixel)](hdcDest, nXDest, nYDest, nWidth, nHeight, hdcSrc, nXSrc, nYSrc, rop);
 }
 
-/**
- * Perform a pattern blit operation on the given pixel buffer.\n
- * @msdn{dd162778}
- * @param hdc device context
- * @param nXLeft x1
- * @param nYLeft y1
- * @param nWidth width
- * @param nHeight height
- * @param rop raster operation code
- * @return 1 if successful, 0 otherwise
- */
-
-int PatBlt(HDC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight, int rop)
-{
-	return PatBlt_[IBPP(hdc->bitsPerPixel)](hdc, nXLeft, nYLeft, nWidth, nHeight, rop);
-}
-
-void GDIBitmapInit()
+void BitmapInit()
 {
 	/* BitBlt */
 	BitBlt_[1] = BitBlt_8bpp;
 	BitBlt_[2] = BitBlt_16bpp;
 	BitBlt_[4] = BitBlt_32bpp;
-
-	/* PatBlt */
-	PatBlt_[1] = PatBlt_8bpp;
-	PatBlt_[2] = PatBlt_16bpp;
-	PatBlt_[4] = PatBlt_32bpp;
 
 	/* FillRect */
 	FillRect_[1] = FillRect_8bpp;

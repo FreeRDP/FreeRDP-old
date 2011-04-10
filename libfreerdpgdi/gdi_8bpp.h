@@ -18,7 +18,7 @@
 */
 
 #include <freerdp/freerdp.h>
-#include "libfreerdpgdi.h"
+#include "gdi.h"
 #include "gdi_color.h"
 
 int FillRect_8bpp(HDC hdc, HRECT rect, HBRUSH hbr);

@@ -22,7 +22,7 @@
 #include <stdlib.h>
 
 #include <freerdp/freerdp.h>
-#include "libfreerdpgdi.h"
+#include "gdi.h"
 
 #include "gdi_color.h"
 #include "gdi_window.h"
@@ -361,6 +361,69 @@ int PtInRect(HRECT rc, int x, int y)
 			return 1;
 		}
 	}
+
+	return 0;
+}
+
+/**
+ * Invalidate a given region, such that it is redrawn on the next region update.\n
+ * @msdn{dd145003}
+ * @param hdc device context
+ * @param x x1
+ * @param y y1
+ * @param w width
+ * @param h height
+ * @return
+ */
+
+int InvalidateRegion(HDC hdc, int x, int y, int w, int h)
+{
+	RECT inv;
+	RECT rgn;
+	HRGN invalid;
+	HBITMAP bmp;
+
+	if (hdc->hwnd == NULL)
+		return 0;
+
+	if (hdc->hwnd->invalid == NULL)
+		return 0;
+
+	invalid = hdc->hwnd->invalid;
+	bmp = (HBITMAP) hdc->selectedObject;
+
+	if (invalid->null)
+	{
+		invalid->x = x;
+		invalid->y = y;
+		invalid->w = w;
+		invalid->h = h;
+		invalid->null = 0;
+		return 0;
+	}
+
+	CRgnToRect(x, y, w, h, &rgn);
+	RgnToRect(invalid, &inv);
+
+	if (rgn.left < 0)
+		rgn.left = 0;
+
+	if (rgn.top < 0)
+		rgn.top = 0;
+
+	if (rgn.left < inv.left)
+		inv.left = rgn.left;
+
+	if (rgn.top < inv.top)
+		inv.top = rgn.top;
+
+	if (rgn.right > inv.right)
+		inv.right = rgn.right;
+
+	if (rgn.bottom > inv.bottom)
+		inv.bottom = rgn.bottom;
+
+	RectToRgn(&inv, invalid);
 
 	return 0;
 }

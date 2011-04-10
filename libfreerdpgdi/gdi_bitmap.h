@@ -20,8 +20,9 @@
 #ifndef __GDI_BITMAP_H
 #define __GDI_BITMAP_H
 
-#include "libfreerdpgdi.h"
+#include "gdi.h"
 
+void BitmapInit();
 COLORREF GetPixel(HDC hdc, int nXPos, int nYPos);
 COLORREF SetPixel(HDC hdc, int X, int Y, COLORREF crColor);
 void SetPixel_8bpp(HBITMAP hBmp, int X, int Y, uint8 pixel);
@@ -30,8 +31,6 @@ void SetPixel_32bpp(HBITMAP hBmp, int X, int Y, uint32 pixel);
 HBITMAP CreateBitmap(int nWidth, int nHeight, int cBitsPerPixel, uint8* data);
 HBITMAP CreateCompatibleBitmap(HDC hdc, int nWidth, int nHeight);
 int FillRect(HDC hdc, HRECT rect, HBRUSH hbr);
-int PatBlt(HDC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight, int rop);
 int BitBlt(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc, int rop);
-void GDIBitmapInit();
 
 #endif /* __GDI_BITMAP_H */

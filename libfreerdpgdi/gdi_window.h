@@ -21,7 +21,7 @@
 #define __GDI_WINDOW_H
 
 #include <freerdp/freerdp.h>
-#include "libfreerdpgdi.h"
+#include "gdi.h"
 
 struct _gdi_bitmap
 {
