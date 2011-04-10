@@ -40,7 +40,9 @@ tsmf_presentation_start(TSMF_PRESENTATION * presentation);
 void
 tsmf_presentation_stop(TSMF_PRESENTATION * presentation);
 void
-tsmf_presentation_set_geometry_info(TSMF_PRESENTATION * presentation, uint32 x, uint32 y, uint32 width, uint32 height);
+tsmf_presentation_set_geometry_info(TSMF_PRESENTATION * presentation,
+	uint32 x, uint32 y, uint32 width, uint32 height,
+	int num_rects, RD_RECT * rects);
 void
 tsmf_presentation_set_audio_device(TSMF_PRESENTATION * presentation, const char * name, const char * device);
 void

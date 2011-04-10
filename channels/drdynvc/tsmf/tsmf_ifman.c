@@ -226,7 +226,7 @@ tsmf_ifman_on_channel_volume(TSMF_IFMAN * ifman)
 int
 tsmf_ifman_set_video_window(TSMF_IFMAN * ifman)
 {
-	LLOGLN(0, ("tsmf_ifman_set_video_window:"));
+	LLOGLN(10, ("tsmf_ifman_set_video_window:"));
 	ifman->output_pending = 1;
 	return 0;
 }
@@ -240,6 +240,10 @@ tsmf_ifman_update_geometry_info(TSMF_IFMAN * ifman)
 	uint32 Top;
 	uint32 Width;
 	uint32 Height;
+	uint32 cbVisibleRect;
+	RD_RECT * rects = NULL;
+	int num_rects = 0;
+	int i;
 	int error = 0;
 
 	numGeometryInfo = GET_UINT32(ifman->input_buffer, 16);
@@ -247,15 +251,32 @@ tsmf_ifman_update_geometry_info(TSMF_IFMAN * ifman)
 	Height = GET_UINT32(ifman->input_buffer, 20 + 16);
 	Left = GET_UINT32(ifman->input_buffer, 20 + 20);
 	Top = GET_UINT32(ifman->input_buffer, 20 + 24);
-	LLOGLN(10, ("tsmf_ifman_update_geometry_info: numGeometryInfo %d Width %d Height %d Left %d Top %d",
-		numGeometryInfo, Width, Height, Left, Top));
+
+	cbVisibleRect = GET_UINT32(ifman->input_buffer, 20 + numGeometryInfo);
+	num_rects = cbVisibleRect / 16;
+
+	LLOGLN(10, ("tsmf_ifman_update_geometry_info: numGeometryInfo %d "
+		"Width %d Height %d Left %d Top %d cbVisibleRect %d num_rects %d",
+		numGeometryInfo, Width, Height, Left, Top, cbVisibleRect, num_rects));
 
 	presentation = tsmf_presentation_find_by_id(ifman->input_buffer);
 	if (presentation == NULL)
 		error = 1;
 	else
 	{
-		tsmf_presentation_set_geometry_info(presentation, Left, Top, Width, Height);
+		if (num_rects > 0)
+		{
+			rects = (RD_RECT *) malloc(sizeof(RD_RECT) * num_rects);
+			for (i = 0; i < num_rects; i++)
+			{
+				rects[i].x = (uint16) GET_UINT32(ifman->input_buffer, 24 + numGeometryInfo + i * 16 + 4);
+				rects[i].y = (uint16) GET_UINT32(ifman->input_buffer, 24 + numGeometryInfo + i * 16);
+				rects[i].width = (uint16) GET_UINT32(ifman->input_buffer, 24 + numGeometryInfo + i * 16 + 12) - rects[i].x;
+				rects[i].height = (uint16) GET_UINT32(ifman->input_buffer, 24 + numGeometryInfo + i * 16 + 8) - rects[i].y;
+				LLOGLN(10, ("rect %d: %d %d %d %d", i, rects[i].x, rects[i].y, rects[i].width, rects[i].height));
+			}
+		}
+		tsmf_presentation_set_geometry_info(presentation, Left, Top, Width, Height, num_rects, rects);
 	}
 	ifman->output_pending = 1;
 	return 0;
