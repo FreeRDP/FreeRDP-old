@@ -213,7 +213,7 @@ tsmf_copy_prepare(ITSMFDecoder * decoder)
 }
 
 static int
-tsmf_copy_set_format(ITSMFDecoder * decoder, const TS_AM_MEDIA_TYPE * media_type)
+tsmf_copy_set_format(ITSMFDecoder * decoder, TS_AM_MEDIA_TYPE * media_type)
 {
 	TSMFCopyDecoder * copy_decoder = (TSMFCopyDecoder *) decoder;
 

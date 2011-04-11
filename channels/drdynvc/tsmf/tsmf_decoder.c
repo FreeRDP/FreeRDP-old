@@ -41,7 +41,7 @@
 #endif
 
 static ITSMFDecoder *
-tsmf_load_decoder_by_name(const char * name, const TS_AM_MEDIA_TYPE * media_type)
+tsmf_load_decoder_by_name(const char * name, TS_AM_MEDIA_TYPE * media_type)
 {
 	ITSMFDecoder * decoder;
 	char path[256];
@@ -86,7 +86,7 @@ tsmf_load_decoder_by_name(const char * name, const TS_AM_MEDIA_TYPE * media_type
 }
 
 ITSMFDecoder *
-tsmf_load_decoder(const char * name, const TS_AM_MEDIA_TYPE * media_type)
+tsmf_load_decoder(const char * name, TS_AM_MEDIA_TYPE * media_type)
 {
 	ITSMFDecoder * decoder;
 

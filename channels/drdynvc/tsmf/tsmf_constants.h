@@ -104,6 +104,8 @@
 #define TSMF_SUB_TYPE_MP2A                  5
 #define TSMF_SUB_TYPE_MP2V                  6
 #define TSMF_SUB_TYPE_WMV3                  7
+#define TSMF_SUB_TYPE_AAC                   8
+#define TSMF_SUB_TYPE_H264                  9
 
 /* FormatType */
 #define TSMF_FORMAT_TYPE_UNKNOWN            0
