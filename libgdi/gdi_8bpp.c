@@ -340,6 +340,31 @@ static int BitBlt_SPna_8bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int
 	return 0;
 }
 
+static int BitBlt_DSna_8bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc)
+{
+	int x, y;
+	uint8 *srcp;
+	uint8 *dstp;
+
+	for (y = 0; y < nHeight; y++)
+	{
+		srcp = gdi_get_bitmap_pointer(hdcSrc, nXSrc, nYSrc + y);
+		dstp = gdi_get_bitmap_pointer(hdcDest, nXDest, nYDest + y);
+
+		if (dstp != 0)
+		{
+			for (x = 0; x < nWidth; x++)
+			{
+				*dstp = ~(*srcp) & (*dstp);
+				srcp++;
+				dstp++;
+			}
+		}
+	}
+
+	return 0;
+}
+
 static int BitBlt_MERGECOPY_8bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc)
 {
 	int x, y;
@@ -506,6 +531,10 @@ int BitBlt_8bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HD
 
 		case SPna:
 			return BitBlt_SPna_8bpp(hdcDest, nXDest, nYDest, nWidth, nHeight, hdcSrc, nXSrc, nYSrc);
+			break;
+
+		case DSna:
+			return BitBlt_DSna_8bpp(hdcDest, nXDest, nYDest, nWidth, nHeight, hdcSrc, nXSrc, nYSrc);
 			break;
 
 		case DSPDxax:
