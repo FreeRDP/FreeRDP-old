@@ -30,8 +30,6 @@ struct _ITSMFAudioDevice
 	int (*Open) (ITSMFAudioDevice * audio, const char * device);
 	/* Set the audio data format. */
 	int (*SetFormat) (ITSMFAudioDevice * audio, uint32 sample_rate, uint32 channels, uint32 bits_per_sample);
-	/* Return the length of audio data queue. */
-	int (*GetQueueLength) (ITSMFAudioDevice * audio);
 	/* Play audio data. */
 	int (*Play) (ITSMFAudioDevice * audio, uint8 * data, uint32 data_size);
 	/* Flush queued audio data */

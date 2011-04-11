@@ -355,14 +355,6 @@ tsmf_pulse_set_format(ITSMFAudioDevice * audio, uint32 sample_rate, uint32 chann
 }
 
 static int
-tsmf_pulse_get_queue_length(ITSMFAudioDevice * audio)
-{
-	TSMFPulseAudioDevice * pulse = (TSMFPulseAudioDevice *) audio;
-
-	return pulse->audio_data_length;
-}
-
-static int
 tsmf_pulse_play(ITSMFAudioDevice * audio, uint8 * data, uint32 data_size)
 {
 	TSMFPulseAudioDevice * pulse = (TSMFPulseAudioDevice *) audio;
@@ -460,7 +452,6 @@ TSMFAudioDeviceEntry(void)
 
 	pulse->iface.Open = tsmf_pulse_open;
 	pulse->iface.SetFormat = tsmf_pulse_set_format;
-	pulse->iface.GetQueueLength = tsmf_pulse_get_queue_length;
 	pulse->iface.Play = tsmf_pulse_play;
 	pulse->iface.Flush = tsmf_pulse_flush;
 	pulse->iface.Free = tsmf_pulse_free;
