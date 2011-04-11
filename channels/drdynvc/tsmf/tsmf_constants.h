@@ -21,6 +21,7 @@
 #define __TSMF_CONSTANTS_H
 
 #define GUID_SIZE 16
+#define TSMF_BUFFER_PADDING_SIZE 8
 
 /* Interface IDs defined in [MS-RDPEV]. There's no constant names in the MS
    documentation, so we create them on our own. */

@@ -26,14 +26,6 @@
 #include "wait_obj.h"
 #include "tsmf_audio.h"
 
-typedef struct _TSMFAudioData TSMFAudioData;
-struct _TSMFAudioData
-{
-	uint8 * data;
-	uint32 data_size;
-	TSMFAudioData * next;
-};
-
 typedef struct _TSMFALSAAudioDevice
 {
 	ITSMFAudioDevice iface;
@@ -45,15 +37,6 @@ typedef struct _TSMFALSAAudioDevice
 	uint32 source_channels;
 	uint32 actual_channels;
 	uint32 bytes_per_sample;
-
-	pthread_mutex_t * mutex;
-	struct wait_obj * term_event;
-	struct wait_obj * data_event;
-	int thread_status;
-
-	TSMFAudioData * audio_data_head;
-	TSMFAudioData * audio_data_tail;
-	int audio_data_length;
 } TSMFALSAAudioDevice;
 
 static uint8 *
@@ -112,134 +95,10 @@ tsmf_alsa_open_device(TSMFALSAAudioDevice * alsa)
 	return 0;
 }
 
-static void
-tsmf_alsa_thread_process_audio_data(TSMFALSAAudioDevice * alsa, TSMFAudioData * audio_data)
-{
-	uint8 * resampled_data;
-	uint8 * src;
-	uint32 data_size;
-	int len;
-	int error;
-	int frames;
-	int rbytes_per_frame;
-	int sbytes_per_frame;
-	uint8 * pindex;
-	uint8 * end;
-
-	LLOGLN(10, ("tsmf_alsa_thread_process_audio_data: data_size %d", audio_data->data_size));
-	if (alsa->out_handle)
-	{
-		sbytes_per_frame = alsa->source_channels * alsa->bytes_per_sample;
-		rbytes_per_frame = alsa->actual_channels * alsa->bytes_per_sample;
-
-		if ((alsa->source_rate == alsa->actual_rate) &&
-			(alsa->source_channels == alsa->actual_channels))
-		{
-			resampled_data = NULL;
-			src = audio_data->data;
-			data_size = audio_data->data_size;
-		}
-		else
-		{
-			resampled_data = tsmf_alsa_resample(audio_data->data, alsa->bytes_per_sample,
-				alsa->source_channels, alsa->source_rate, audio_data->data_size / sbytes_per_frame,
-				alsa->actual_channels, alsa->actual_rate, &frames);
-			LLOGLN(10, ("tsmf_alsa_thread_process_audio_data: resampled %d frames at %d to %d frames at %d",
-				audio_data->data_size / sbytes_per_frame, alsa->source_rate, frames, alsa->actual_rate));
-			data_size = frames * rbytes_per_frame;
-			src = resampled_data;
-		}
-
-		pindex = src;
-		end = pindex + data_size;
-		while (pindex < end)
-		{
-			len = end - pindex;
-			frames = len / rbytes_per_frame;
-			error = snd_pcm_writei(alsa->out_handle, pindex, frames);
-			if (error == -EPIPE)
-			{
-				LLOGLN(0, ("tsmf_alsa_thread_process_audio_data: underrun occurred"));
-				snd_pcm_recover(alsa->out_handle, error, 0);
-				error = 0;
-			}
-			else if (error < 0)
-			{
-				LLOGLN(0, ("tsmf_alsa_thread_process_audio_data: error len %d", error));
-				snd_pcm_close(alsa->out_handle);
-				alsa->out_handle = 0;
-				tsmf_alsa_open_device(alsa);
-				break;
-			}
-			LLOGLN(10, ("tsmf_alsa_thread_process_audio_data: %d frames played.", error));
-			if (error == 0)
-				break;
-			pindex += error * rbytes_per_frame;
-		}
-
-		if (resampled_data)
-			free(resampled_data);
-	}
-
-	free(audio_data->data);
-	free(audio_data);
-}
-
-static void *
-tsmf_alsa_thread_func(void * arg)
-{
-	TSMFALSAAudioDevice * alsa = (TSMFALSAAudioDevice *) arg;
-	struct wait_obj * listobj[2];
-	int numobj;
-	TSMFAudioData * audio_data;
-
-	LLOGLN(10, ("tsmf_alsa_thread_func: in"));
-
-	while (1)
-	{
-		if (!alsa->audio_data_head)
-		{
-			listobj[0] = alsa->term_event;
-			listobj[1] = alsa->data_event;
-			numobj = 2;
-			wait_obj_select(listobj, numobj, NULL, 0, -1);
-		}
-		if (wait_obj_is_set(alsa->term_event))
-		{
-			break;
-		}
-		if (alsa->audio_data_head)
-		{
-			wait_obj_clear(alsa->data_event);
-
-			pthread_mutex_lock(alsa->mutex);
-			audio_data = alsa->audio_data_head;
-			if (audio_data)
-			{
-				alsa->audio_data_head = audio_data->next;
-				if (alsa->audio_data_head == NULL)
-					alsa->audio_data_tail = NULL;
-				audio_data->next = NULL;
-				alsa->audio_data_length--;
-			}
-			pthread_mutex_unlock(alsa->mutex);
-
-			if (audio_data)
-				tsmf_alsa_thread_process_audio_data(alsa, audio_data);
-		}
-	}
-
-	LLOGLN(10, ("tsmf_alsa_thread_func: out"));
-	alsa->thread_status = -1;
-	return NULL;
-}
-
 static int
 tsmf_alsa_open(ITSMFAudioDevice * audio, const char * device)
 {
 	TSMFALSAAudioDevice * alsa = (TSMFALSAAudioDevice *) audio;
-	int error;
-	pthread_t thread;
 
 	if (!device)
 	{
@@ -251,14 +110,7 @@ tsmf_alsa_open(ITSMFAudioDevice * audio, const char * device)
 		strcpy(alsa->device, device);
 	}
 
-	error = tsmf_alsa_open_device(alsa);
-	if (error == 0)
-	{
-		alsa->thread_status = 1;
-		pthread_create(&thread, 0, tsmf_alsa_thread_func, alsa);
-		pthread_detach(thread);
-	}
-	return error;
+	return tsmf_alsa_open_device(alsa);
 }
 
 static int
@@ -329,39 +181,73 @@ tsmf_alsa_set_format(ITSMFAudioDevice * audio, uint32 sample_rate, uint32 channe
 }
 
 static int
-tsmf_alsa_get_queue_length(ITSMFAudioDevice * audio)
-{
-	TSMFALSAAudioDevice * alsa = (TSMFALSAAudioDevice *) audio;
-
-	return alsa->audio_data_length;
-}
-
-static int
 tsmf_alsa_play(ITSMFAudioDevice * audio, uint8 * data, uint32 data_size)
 {
 	TSMFALSAAudioDevice * alsa = (TSMFALSAAudioDevice *) audio;
-	TSMFAudioData * audio_data;
+	uint8 * resampled_data;
+	uint8 * src;
+	int len;
+	int error;
+	int frames;
+	int rbytes_per_frame;
+	int sbytes_per_frame;
+	uint8 * pindex;
+	uint8 * end;
 
-	audio_data = (TSMFAudioData *) malloc(sizeof(TSMFAudioData));
-	audio_data->data = data;
-	audio_data->data_size = data_size;
-	audio_data->next = NULL;
-
-	pthread_mutex_lock(alsa->mutex);
-	if (alsa->audio_data_head == NULL)
+	LLOGLN(10, ("tsmf_alsa_play: data_size %d", data_size));
+	if (alsa->out_handle)
 	{
-		alsa->audio_data_head = audio_data;
-		alsa->audio_data_tail = audio_data;
-	}
-	else
-	{
-		alsa->audio_data_tail->next = audio_data;
-		alsa->audio_data_tail = audio_data;
-	}
-	alsa->audio_data_length++;
-	pthread_mutex_unlock(alsa->mutex);
+		sbytes_per_frame = alsa->source_channels * alsa->bytes_per_sample;
+		rbytes_per_frame = alsa->actual_channels * alsa->bytes_per_sample;
 
-	wait_obj_set(alsa->data_event);
+		if ((alsa->source_rate == alsa->actual_rate) &&
+			(alsa->source_channels == alsa->actual_channels))
+		{
+			resampled_data = NULL;
+			src = data;
+			data_size = data_size;
+		}
+		else
+		{
+			resampled_data = tsmf_alsa_resample(data, alsa->bytes_per_sample,
+				alsa->source_channels, alsa->source_rate, data_size / sbytes_per_frame,
+				alsa->actual_channels, alsa->actual_rate, &frames);
+			LLOGLN(10, ("tsmf_alsa_play: resampled %d frames at %d to %d frames at %d",
+				data_size / sbytes_per_frame, alsa->source_rate, frames, alsa->actual_rate));
+			data_size = frames * rbytes_per_frame;
+			src = resampled_data;
+		}
+
+		pindex = src;
+		end = pindex + data_size;
+		while (pindex < end)
+		{
+			len = end - pindex;
+			frames = len / rbytes_per_frame;
+			error = snd_pcm_writei(alsa->out_handle, pindex, frames);
+			if (error == -EPIPE)
+			{
+				LLOGLN(0, ("tsmf_alsa_play: underrun occurred"));
+				snd_pcm_recover(alsa->out_handle, error, 0);
+				error = 0;
+			}
+			else if (error < 0)
+			{
+				LLOGLN(0, ("tsmf_alsa_play: error len %d", error));
+				snd_pcm_close(alsa->out_handle);
+				alsa->out_handle = 0;
+				tsmf_alsa_open_device(alsa);
+				break;
+			}
+			LLOGLN(10, ("tsmf_alsa_play: %d frames played.", error));
+			if (error == 0)
+				break;
+			pindex += error * rbytes_per_frame;
+		}
+
+		if (resampled_data)
+			free(resampled_data);
+	}
 
 	return 0;
 }
@@ -369,50 +255,20 @@ tsmf_alsa_play(ITSMFAudioDevice * audio, uint8 * data, uint32 data_size)
 static void
 tsmf_alsa_flush(ITSMFAudioDevice * audio)
 {
-	TSMFALSAAudioDevice * alsa = (TSMFALSAAudioDevice *) audio;
-	TSMFAudioData * audio_data;
-
-	pthread_mutex_lock(alsa->mutex);
-	while (alsa->audio_data_head)
-	{
-		audio_data = alsa->audio_data_head;
-		alsa->audio_data_head = audio_data->next;
-		free(audio_data->data);
-		free(audio_data);
-	}
-	alsa->audio_data_tail = NULL;
-	alsa->audio_data_length = 0;
-	pthread_mutex_unlock(alsa->mutex);
 }
 
 static void
 tsmf_alsa_free(ITSMFAudioDevice * audio)
 {
 	TSMFALSAAudioDevice * alsa = (TSMFALSAAudioDevice *) audio;
-	TSMFAudioData * audio_data;
 
 	LLOGLN(10, ("tsmf_alsa_free:"));
 
-	wait_obj_set(alsa->term_event);
-	while (alsa->thread_status > 0)
-		usleep(250 * 1000);
-	wait_obj_free(alsa->term_event);
-	wait_obj_free(alsa->data_event);
-
-	while (alsa->audio_data_head)
-	{
-		audio_data = alsa->audio_data_head;
-		alsa->audio_data_head = audio_data->next;
-		free(audio_data->data);
-		free(audio_data);
-	}
 	if (alsa->out_handle)
 	{
 		snd_pcm_drain(alsa->out_handle);
 		snd_pcm_close(alsa->out_handle);
 	}
-	pthread_mutex_destroy(alsa->mutex);
-	free(alsa->mutex);
 	free(alsa);
 }
 
@@ -426,15 +282,9 @@ TSMFAudioDeviceEntry(void)
 
 	alsa->iface.Open = tsmf_alsa_open;
 	alsa->iface.SetFormat = tsmf_alsa_set_format;
-	alsa->iface.GetQueueLength = tsmf_alsa_get_queue_length;
 	alsa->iface.Play = tsmf_alsa_play;
 	alsa->iface.Flush = tsmf_alsa_flush;
 	alsa->iface.Free = tsmf_alsa_free;
-
-	alsa->mutex = (pthread_mutex_t *) malloc(sizeof(pthread_mutex_t));
-	pthread_mutex_init(alsa->mutex, 0);
-	alsa->term_event = wait_obj_new("freerdptsmfalsaterm");
-	alsa->data_event = wait_obj_new("freerdptsmfalsadata");
 
 	return (ITSMFAudioDevice *) alsa;
 }
