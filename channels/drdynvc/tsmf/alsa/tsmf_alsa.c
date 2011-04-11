@@ -248,6 +248,7 @@ tsmf_alsa_play(ITSMFAudioDevice * audio, uint8 * data, uint32 data_size)
 		if (resampled_data)
 			free(resampled_data);
 	}
+	free(data);
 
 	return 0;
 }
