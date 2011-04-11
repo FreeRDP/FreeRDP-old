@@ -23,6 +23,7 @@
 #include "gdi.h"
 
 int LineTo(HDC hdc, int nXEnd, int nYEnd);
+int Polyline(HDC hdc, POINT *lppt, int cPoints);
 int PolylineTo(HDC hdc, POINT *lppt, int cCount);
 int MoveToEx(HDC hdc, int X, int Y, HPOINT lpPoint);
 

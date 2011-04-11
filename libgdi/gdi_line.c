@@ -131,11 +131,46 @@ int LineTo(HDC hdc, int nXEnd, int nYEnd)
  * Draw one or more straight lines
  * @param hdc device context
  * @param lppt array of points
+ * @param cPoints number of points
+ * @return
+ */
+int Polyline(HDC hdc, POINT *lppt, int cPoints)
+{
+	if (cPoints > 0)
+	{
+		int i;
+		POINT pt;
+
+		MoveToEx(hdc, lppt[0].x, lppt[0].y, &pt);
+
+		for (i = 0; i < cPoints; i++)
+		{
+			LineTo(hdc, lppt[i].x, lppt[i].y);
+			MoveToEx(hdc, lppt[i].x, lppt[i].y, NULL);
+		}
+
+		MoveToEx(hdc, pt.x, pt.y, NULL);
+	}
+
+	return 1;
+}
+
+/**
+ * Draw one or more straight lines
+ * @param hdc device context
+ * @param lppt array of points
  * @param cCount number of points
  * @return
  */
 int PolylineTo(HDC hdc, POINT *lppt, int cCount)
 {
+	int i;
+	for (i = 0; i < cCount; i++)
+	{
+		LineTo(hdc, lppt[i].x, lppt[i].y);
+		MoveToEx(hdc, lppt[i].x, lppt[i].y, NULL);
+	}
+
 	return 1;
 }
 
