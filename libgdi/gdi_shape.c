@@ -32,12 +32,16 @@
 
 pFillRect FillRect_[5];
 
+/**
+ * Draw an ellipse
+ * @param hdc device context
+ * @param nLeftRect x1
+ * @param nTopRect y1
+ * @param nRightRect x2
+ * @param nBottomRect y2
+ * @return
+ */
 int Ellipse(HDC hdc, int nLeftRect, int nTopRect, int nRightRect, int nBottomRect)
-{
-	return 1;
-}
-
-int Polygon(HDC hdc, POINT *lpPoints, int nCount)
 {
 	return 1;
 }
@@ -54,6 +58,45 @@ int Polygon(HDC hdc, POINT *lpPoints, int nCount)
 int FillRect(HDC hdc, HRECT rect, HBRUSH hbr)
 {
 	return FillRect_[IBPP(hdc->bitsPerPixel)](hdc, rect, hbr);
+}
+
+/**
+ *
+ * @param hdc device context
+ * @param lpPoints array of points
+ * @param nCount number of points
+ * @return
+ */
+int Polygon(HDC hdc, POINT *lpPoints, int nCount)
+{
+	return 1;
+}
+
+/**
+ * Draw a series of closed polygons
+ * @param hdc device context
+ * @param lpPoints array of series of points
+ * @param lpPolyCounts array of number of points in each series
+ * @param nCount count of number of points in lpPolyCounts
+ * @return
+ */
+int PolyPolygon(HDC hdc, POINT *lpPoints, int *lpPolyCounts, int nCount)
+{
+	return 1;
+}
+
+/**
+ * Draw a rectangle
+ * @param hdc device context
+ * @param nLeftRect x1
+ * @param nTopRect y1
+ * @param nRightRect x2
+ * @param nBottomRect y2
+ * @return
+ */
+int Rectangle(HDC hdc, int nLeftRect, int nTopRect, int nRightRect, int nBottomRect)
+{
+	return 1;
 }
 
 void ShapeInit()
