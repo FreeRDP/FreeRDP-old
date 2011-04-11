@@ -24,15 +24,6 @@
 #include <pulse/pulseaudio.h>
 #include "tsmf_audio.h"
 
-typedef struct _TSMFAudioData TSMFAudioData;
-struct _TSMFAudioData
-{
-	uint8 * data;
-	uint32 data_size;
-	uint32 data_played;
-	TSMFAudioData * next;
-};
-
 typedef struct _TSMFPulseAudioDevice
 {
 	ITSMFAudioDevice iface;
@@ -42,10 +33,6 @@ typedef struct _TSMFPulseAudioDevice
 	pa_context *context;
 	pa_sample_spec sample_spec;
 	pa_stream *stream;
-
-	TSMFAudioData * audio_data_head;
-	TSMFAudioData * audio_data_tail;
-	int audio_data_length;
 } TSMFPulseAudioDevice;
 
 static void
@@ -200,61 +187,13 @@ tsmf_pulse_stream_state_callback(pa_stream * stream, void * userdata)
 }
 
 static void
-tsmf_pulse_stream_playback(TSMFPulseAudioDevice * pulse)
-{
-	TSMFAudioData * audio_data;
-	int len;
-	int played;
-	int ret;
-
-	if (!pulse->stream)
-		return;
-
-	len = pa_stream_writable_size(pulse->stream);
-	if (len <= 0)
-		return;
-
-	while (pulse->audio_data_head && len > 0)
-	{
-		audio_data = pulse->audio_data_head;
-		played = audio_data->data_size - audio_data->data_played;
-		if (played > len)
-			played = len;
-		ret = pa_stream_write(pulse->stream,
-			audio_data->data + audio_data->data_played,
-			played, NULL, 0LL, PA_SEEK_RELATIVE);
-		if (ret < 0)
-		{
-			LLOGLN(0, ("tsmf_pulse_stream_playback: pa_stream_write failed (%d)",
-				pa_context_errno(pulse->context)));
-			audio_data->data_played = audio_data->data_size;
-		}
-		else
-		{
-			audio_data->data_played += played;
-			len -= played;
-		}
-
-		if (audio_data->data_played >= audio_data->data_size)
-		{
-			pulse->audio_data_head = audio_data->next;
-			if (pulse->audio_data_head == NULL)
-				pulse->audio_data_tail = NULL;
-			free(audio_data->data);
-			free(audio_data);
-			pulse->audio_data_length--;
-		}
-	}
-}
-
-static void
 tsmf_pulse_stream_request_callback(pa_stream * stream, size_t length, void * userdata)
 {
 	TSMFPulseAudioDevice * pulse = (TSMFPulseAudioDevice *) userdata;
 
 	LLOGLN(10, ("tsmf_pulse_stream_request_callback: %d", length));
 
-	tsmf_pulse_stream_playback(pulse);
+	pa_threaded_mainloop_signal(pulse->mainloop, 0);
 }
 
 static int
@@ -358,30 +297,42 @@ static int
 tsmf_pulse_play(ITSMFAudioDevice * audio, uint8 * data, uint32 data_size)
 {
 	TSMFPulseAudioDevice * pulse = (TSMFPulseAudioDevice *) audio;
-	TSMFAudioData * audio_data;
+	uint8 * src;
+	int len;
+	int ret;
 
 	LLOGLN(10, ("tsmf_pulse_play: data_size %d", data_size));
 
-	audio_data = (TSMFAudioData *) malloc(sizeof(TSMFAudioData));
-	audio_data->data = data;
-	audio_data->data_size = data_size;
-	audio_data->data_played = 0;
-	audio_data->next = NULL;
+	if (pulse->stream)
+	{
+		pa_threaded_mainloop_lock(pulse->mainloop);
 
-	pa_threaded_mainloop_lock(pulse->mainloop);
-	if (pulse->audio_data_head == NULL)
-	{
-		pulse->audio_data_head = audio_data;
-		pulse->audio_data_tail = audio_data;
+		src = data;
+		while (data_size > 0)
+		{
+			while ((len = pa_stream_writable_size(pulse->stream)) == 0)
+			{
+				LLOGLN(10, ("tsmf_pulse_play: waiting"));
+				pa_threaded_mainloop_wait(pulse->mainloop);
+			}
+			if (len < 0)
+				break;
+			if (len > data_size)
+				len = data_size;
+			ret = pa_stream_write(pulse->stream, src, len, NULL, 0LL, PA_SEEK_RELATIVE);
+			if (ret < 0)
+			{
+				LLOGLN(0, ("tsmf_pulse_play: pa_stream_write failed (%d)",
+					pa_context_errno(pulse->context)));
+				break;
+			}
+			src += len;
+			data_size -= len;
+		}
+
+		pa_threaded_mainloop_unlock(pulse->mainloop);
 	}
-	else
-	{
-		pulse->audio_data_tail->next = audio_data;
-		pulse->audio_data_tail = audio_data;
-	}
-	pulse->audio_data_length++;
-	tsmf_pulse_stream_playback(pulse);
-	pa_threaded_mainloop_unlock(pulse->mainloop);
+	free(data);
 
 	return 0;
 }
@@ -390,18 +341,8 @@ static void
 tsmf_pulse_flush(ITSMFAudioDevice * audio)
 {
 	TSMFPulseAudioDevice * pulse = (TSMFPulseAudioDevice *) audio;
-	TSMFAudioData * audio_data;
 
 	pa_threaded_mainloop_lock(pulse->mainloop);
-	while (pulse->audio_data_head)
-	{
-		audio_data = pulse->audio_data_head;
-		pulse->audio_data_head = audio_data->next;
-		free(audio_data->data);
-		free(audio_data);
-	}
-	pulse->audio_data_tail = NULL;
-	pulse->audio_data_length = 0;
 	tsmf_pulse_wait_for_operation(pulse,
 		pa_stream_flush(pulse->stream, tsmf_pulse_stream_success_callback, pulse));
 	pa_threaded_mainloop_unlock(pulse->mainloop);
@@ -411,7 +352,6 @@ static void
 tsmf_pulse_free(ITSMFAudioDevice * audio)
 {
 	TSMFPulseAudioDevice * pulse = (TSMFPulseAudioDevice *) audio;
-	TSMFAudioData * audio_data;
 
 	LLOGLN(0, ("tsmf_pulse_free:"));
 
@@ -431,14 +371,6 @@ tsmf_pulse_free(ITSMFAudioDevice * audio)
 		pa_threaded_mainloop_free(pulse->mainloop);
 		pulse->mainloop = NULL;
 	}
-	while (pulse->audio_data_head)
-	{
-		audio_data = pulse->audio_data_head;
-		pulse->audio_data_head = audio_data->next;
-		free(audio_data->data);
-		free(audio_data);
-	}
-
 	free(pulse);
 }
 
