@@ -24,7 +24,9 @@
 
 void ShapeInit();
 int Ellipse(HDC hdc, int nLeftRect, int nTopRect, int nRightRect, int nBottomRect);
-int Polygon(HDC hdc, POINT *lpPoints, int nCount);
 int FillRect(HDC hdc, HRECT rect, HBRUSH hbr);
+int Polygon(HDC hdc, POINT *lpPoints, int nCount);
+int PolyPolygon(HDC hdc, POINT *lpPoints, int *lpPolyCounts, int nCount);
+int Rectangle(HDC hdc, int nLeftRect, int nTopRect, int nRightRect, int nBottomRect);
 
 #endif /* __GDI_SHAPE_H */

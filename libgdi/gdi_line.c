@@ -136,6 +136,64 @@ int LineTo(HDC hdc, int nXEnd, int nYEnd)
  */
 int PolylineTo(HDC hdc, POINT *lppt, int cCount)
 {
+	int i;
+	for (i = 0; i < cCount; i++)
+	{
+		LineTo(hdc, lppt[i].x, lppt[i].y);
+		MoveToEx(hdc, lppt[i].x, lppt[i].y, NULL);
+	}
+
+	return 1;
+}
+
+/**
+ * Draw one or more straight lines
+ * @param hdc device context
+ * @param lppt array of points
+ * @param cPoints number of points
+ * @return
+ */
+int Polyline(HDC hdc, POINT *lppt, int cPoints)
+{
+	if (cPoints > 0)
+	{
+		int i;
+		POINT pt;
+
+		MoveToEx(hdc, lppt[0].x, lppt[0].y, &pt);
+
+		for (i = 0; i < cPoints; i++)
+		{
+			LineTo(hdc, lppt[i].x, lppt[i].y);
+			MoveToEx(hdc, lppt[i].x, lppt[i].y, NULL);
+		}
+
+		MoveToEx(hdc, pt.x, pt.y, NULL);
+	}
+
+	return 1;
+}
+
+/**
+ * Draw multiple series of connected line segments
+ * @param hdc device context
+ * @param lppt array of points
+ * @param lpdwPolyPoints array of numbers of points per series
+ * @param cCount count of entries in lpdwPolyPoints
+ * @return
+ */
+int PolyPolyline(HDC hdc, POINT *lppt, int *lpdwPolyPoints, int cCount)
+{
+	int cPoints;
+	int i, j = 0;
+
+	for (i = 0; i < cCount; i++)
+	{
+		cPoints = lpdwPolyPoints[i];
+		Polyline(hdc, &lppt[j], cPoints);
+		j += cPoints;
+	}
+
 	return 1;
 }
 

@@ -53,6 +53,7 @@ int add_libgdi_suite(void)
 	add_test_function(SetROP2);
 	add_test_function(MoveToEx);
 	add_test_function(LineTo);
+	add_test_function(Ellipse);
 	add_test_function(PtInRect);
 	add_test_function(FillRect);
 	add_test_function(BitBlt_32bpp);
@@ -1302,6 +1303,47 @@ void test_LineTo(void)
 	MoveToEx(hdc, 0, 0, NULL);
 	LineTo(hdc, 16 + 10, 16 + 10);
 	assertBitmapsEqual(hBmp, hBmp_LineTo_11, "Case 11");
+}
+
+void test_Ellipse(void)
+{
+	HDC hdc;
+	HPEN pen;
+	uint8* data;
+	HBITMAP hBmp;
+	HBITMAP hBmp_Ellipse_1;
+	HBITMAP hBmp_Ellipse_2;
+	HBITMAP hBmp_Ellipse_3;
+	HPALETTE hPalette;
+	int bitsPerPixel = 8;
+	int bytesPerPixel = 1;
+
+	hdc = GetDC();
+	hdc->bitsPerPixel = bitsPerPixel;
+	hdc->bytesPerPixel = bytesPerPixel;
+	SetNullClipRgn(hdc);
+
+	pen = CreatePen(1, 1, 0);
+	SelectObject(hdc, (HGDIOBJ) pen);
+
+	hBmp = CreateCompatibleBitmap(hdc, 16, 16);
+	SelectObject(hdc, (HGDIOBJ) hBmp);
+
+	hPalette = GetSystemPalette();
+
+	data = (uint8*) gdi_image_convert((uint8*) ellipse_case_1, 16, 16, 8, bitsPerPixel, hPalette);
+	hBmp_Ellipse_1 = CreateBitmap(16, 16, bitsPerPixel, data);
+
+	data = (uint8*) gdi_image_convert((uint8*) ellipse_case_2, 16, 16, 8, bitsPerPixel, hPalette);
+	hBmp_Ellipse_2 = CreateBitmap(16, 16, bitsPerPixel, data);
+
+	data = (uint8*) gdi_image_convert((uint8*) ellipse_case_3, 16, 16, 8, bitsPerPixel, hPalette);
+	hBmp_Ellipse_3 = CreateBitmap(16, 16, bitsPerPixel, data);
+
+	/* Test Case 1: (0,0) -> (16, 16) */
+	BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, WHITENESS);
+	Ellipse(hdc, 0, 0, 16, 16);
+	//assertBitmapsEqual(hBmp, hBmp_Ellipse_1, "Case 1");
 }
 
 void test_PtInRect(void)

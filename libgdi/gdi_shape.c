@@ -32,13 +32,143 @@
 
 pFillRect FillRect_[5];
 
-int Ellipse(HDC hdc, int nLeftRect, int nTopRect, int nRightRect, int nBottomRect)
+static void Ellipse_Bresenham(HDC hdc, int x1, int y1, int x2, int y2)
 {
-	return 1;
+	int i;
+	long e, e2;
+	long dx, dy;
+	int a, b, c;
+	int bx1, by1;
+	int bx2, by2;
+
+	HBITMAP bmp;
+	uint8 pixel8;
+	uint16 pixel16;
+	uint32 pixel32;
+	int bpp = hdc->bitsPerPixel;
+
+	a = (x1 < x2) ? x2 - x1 : x1 - x2;
+	b = (y1 < y2) ? y2 - y1 : y1 - y2;
+	c = b & 1;
+
+	dx = 4 * (1 - a) * b * b;
+	dy = 4 * (c + 1) * a * a;
+	e = dx + dy + c * a * a;
+
+	if (x1 > x2)
+	{
+		x1 = x2;
+		x2 += a;
+	}
+
+	if (y1 > y2)
+		y1 = y2;
+
+	y1 += (b + 1) / 2;
+	y2 = y1 - c;
+
+	a *= 8 * a;
+	c = 8 * b * b;
+
+	pixel8 = pixel16 = pixel32 = 0;
+	bmp = (HBITMAP) hdc->selectedObject;
+
+	if (hdc->clip->null)
+	{
+		bx1 = (x1 < x2) ? x1 : x2;
+		by1 = (y1 < y2) ? y1 : y2;
+		bx2 = (x1 > x2) ? x1 : x2;
+		by2 = (y1 > y2) ? y1 : y2;
+	}
+	else
+	{
+		bx1 = hdc->clip->x;
+		by1 = hdc->clip->y;
+		bx2 = bx1 + hdc->clip->w - 1;
+		by2 = by1 + hdc->clip->h - 1;
+	}
+
+	do
+	{
+		if (bpp == 32)
+		{
+			SetPixel_32bpp(bmp, x2, y1, pixel32);
+			SetPixel_32bpp(bmp, x1, y1, pixel32);
+			SetPixel_32bpp(bmp, x1, y2, pixel32);
+			SetPixel_32bpp(bmp, x2, y2, pixel32);
+		}
+		else if (bpp == 16)
+		{
+			SetPixel_16bpp(bmp, x2, y1, pixel16);
+			SetPixel_16bpp(bmp, x1, y1, pixel16);
+			SetPixel_16bpp(bmp, x1, y2, pixel16);
+			SetPixel_16bpp(bmp, x2, y2, pixel16);
+		}
+		else if (bpp == 8)
+		{
+			for (i = x1; i < x2; i++)
+			{
+				SetPixel_8bpp(bmp, i, y1, pixel8);
+				SetPixel_8bpp(bmp, i, y2, pixel8);
+			}
+
+			for (i = y1; i < y2; i++)
+			{
+				SetPixel_8bpp(bmp, x1, i, pixel8);
+				SetPixel_8bpp(bmp, x2, i, pixel8);
+			}
+		}
+
+		e2 = 2 * e;
+
+		if (e2 >= dx)
+		{
+			x1++;
+			x2--;
+			e += dx += c;
+		}
+
+		if (e2 <= dy)
+		{
+			y1++;
+			y2--;
+			e += dy += a;
+		}
+	}
+	while (x1 <= x2);
+
+	while (y1 - y2 < b)
+	{
+		if (bpp == 32)
+		{
+			SetPixel_32bpp(bmp, x1 - 1, ++y1, pixel32);
+			SetPixel_32bpp(bmp, x1 - 1, --y2, pixel32);
+		}
+		else if (bpp == 16)
+		{
+			SetPixel_16bpp(bmp, x1 - 1, ++y1, pixel16);
+			SetPixel_16bpp(bmp, x1 - 1, --y2, pixel16);
+		}
+		else if (bpp == 8)
+		{
+			SetPixel_8bpp(bmp, x1 - 1, ++y1, pixel8);
+			SetPixel_8bpp(bmp, x1 - 1, --y2, pixel8);
+		}
+	}
 }
 
-int Polygon(HDC hdc, POINT *lpPoints, int nCount)
+/**
+ * Draw an ellipse
+ * @param hdc device context
+ * @param nLeftRect x1
+ * @param nTopRect y1
+ * @param nRightRect x2
+ * @param nBottomRect y2
+ * @return
+ */
+int Ellipse(HDC hdc, int nLeftRect, int nTopRect, int nRightRect, int nBottomRect)
 {
+	Ellipse_Bresenham(hdc, nLeftRect, nTopRect, nRightRect, nBottomRect);
 	return 1;
 }
 
@@ -54,6 +184,45 @@ int Polygon(HDC hdc, POINT *lpPoints, int nCount)
 int FillRect(HDC hdc, HRECT rect, HBRUSH hbr)
 {
 	return FillRect_[IBPP(hdc->bitsPerPixel)](hdc, rect, hbr);
+}
+
+/**
+ *
+ * @param hdc device context
+ * @param lpPoints array of points
+ * @param nCount number of points
+ * @return
+ */
+int Polygon(HDC hdc, POINT *lpPoints, int nCount)
+{
+	return 1;
+}
+
+/**
+ * Draw a series of closed polygons
+ * @param hdc device context
+ * @param lpPoints array of series of points
+ * @param lpPolyCounts array of number of points in each series
+ * @param nCount count of number of points in lpPolyCounts
+ * @return
+ */
+int PolyPolygon(HDC hdc, POINT *lpPoints, int *lpPolyCounts, int nCount)
+{
+	return 1;
+}
+
+/**
+ * Draw a rectangle
+ * @param hdc device context
+ * @param nLeftRect x1
+ * @param nTopRect y1
+ * @param nRightRect x2
+ * @param nBottomRect y2
+ * @return
+ */
+int Rectangle(HDC hdc, int nLeftRect, int nTopRect, int nRightRect, int nBottomRect)
+{
+	return 1;
 }
 
 void ShapeInit()
