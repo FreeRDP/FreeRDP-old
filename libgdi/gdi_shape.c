@@ -34,9 +34,12 @@ pFillRect FillRect_[5];
 
 static void Ellipse_Bresenham(HDC hdc, int x1, int y1, int x2, int y2)
 {
+	int i;
+	long e, e2;
+	long dx, dy;
 	int a, b, c;
-	int e, e2;
-	int dx, dy;
+	int bx1, by1;
+	int bx2, by2;
 
 	HBITMAP bmp;
 	uint8 pixel8;
@@ -50,15 +53,16 @@ static void Ellipse_Bresenham(HDC hdc, int x1, int y1, int x2, int y2)
 
 	dx = 4 * (1 - a) * b * b;
 	dy = 4 * (c + 1) * a * a;
+	e = dx + dy + c * a * a;
 
-	if (x2 > x1)
+	if (x1 > x2)
 	{
-		x2 = x1;
+		x1 = x2;
 		x2 += a;
 	}
 
-	if (y2 > y1)
-		y2 = y1;
+	if (y1 > y2)
+		y1 = y2;
 
 	y1 += (b + 1) / 2;
 	y2 = y1 - c;
@@ -68,6 +72,21 @@ static void Ellipse_Bresenham(HDC hdc, int x1, int y1, int x2, int y2)
 
 	pixel8 = pixel16 = pixel32 = 0;
 	bmp = (HBITMAP) hdc->selectedObject;
+
+	if (hdc->clip->null)
+	{
+		bx1 = (x1 < x2) ? x1 : x2;
+		by1 = (y1 < y2) ? y1 : y2;
+		bx2 = (x1 > x2) ? x1 : x2;
+		by2 = (y1 > y2) ? y1 : y2;
+	}
+	else
+	{
+		bx1 = hdc->clip->x;
+		by1 = hdc->clip->y;
+		bx2 = bx1 + hdc->clip->w - 1;
+		by2 = by1 + hdc->clip->h - 1;
+	}
 
 	do
 	{
@@ -87,10 +106,17 @@ static void Ellipse_Bresenham(HDC hdc, int x1, int y1, int x2, int y2)
 		}
 		else if (bpp == 8)
 		{
-			SetPixel_8bpp(bmp, x2, y1, pixel8);
-			SetPixel_8bpp(bmp, x1, y1, pixel8);
-			SetPixel_8bpp(bmp, x1, y2, pixel8);
-			SetPixel_8bpp(bmp, x2, y2, pixel8);
+			for (i = x1; i < x2; i++)
+			{
+				SetPixel_8bpp(bmp, i, y1, pixel8);
+				SetPixel_8bpp(bmp, i, y2, pixel8);
+			}
+
+			for (i = y1; i < y2; i++)
+			{
+				SetPixel_8bpp(bmp, x1, i, pixel8);
+				SetPixel_8bpp(bmp, x2, i, pixel8);
+			}
 		}
 
 		e2 = 2 * e;
@@ -102,7 +128,7 @@ static void Ellipse_Bresenham(HDC hdc, int x1, int y1, int x2, int y2)
 			e += dx += c;
 		}
 
-		if (e2 >= dy)
+		if (e2 <= dy)
 		{
 			y1++;
 			y2--;
