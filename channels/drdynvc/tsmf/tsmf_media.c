@@ -36,8 +36,6 @@ struct _TSMF_PRESENTATION
 {
 	uint8 presentation_id[GUID_SIZE];
 
-	uint64 playback_time;
-
 	const char * audio_name;
 	const char * audio_device;
 	int eos;
@@ -409,7 +407,7 @@ tsmf_stream_playback_func(void * arg)
 	TSMF_PRESENTATION * presentation = stream->presentation;
 	TSMF_SAMPLE * sample;
 
-	LLOGLN(0, ("tsmf_stream_playback_func: in %d", stream->stream_id));
+	LLOGLN(10, ("tsmf_stream_playback_func: in %d", stream->stream_id));
 	if (stream->major_type == TSMF_MAJOR_TYPE_AUDIO &&
 		stream->sample_rate && stream->channels && stream->bits_per_sample)
 	{
@@ -440,7 +438,7 @@ tsmf_stream_playback_func(void * arg)
 		stream->audio->Free(stream->audio);
 		stream->audio = NULL;
 	}
-	LLOGLN(0, ("tsmf_stream_playback_func: out %d", stream->stream_id));
+	LLOGLN(10, ("tsmf_stream_playback_func: out %d", stream->stream_id));
 	stream->thread_status = 0;
 	return NULL;
 }
