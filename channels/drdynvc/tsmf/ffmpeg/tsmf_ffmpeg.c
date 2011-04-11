@@ -154,7 +154,7 @@ tsmf_ffmpeg_prepare(ITSMFDecoder * decoder)
 }
 
 static int
-tsmf_ffmpeg_set_format(ITSMFDecoder * decoder, const TS_AM_MEDIA_TYPE * media_type)
+tsmf_ffmpeg_set_format(ITSMFDecoder * decoder, TS_AM_MEDIA_TYPE * media_type)
 {
 	TSMFFFmpegDecoder * mdecoder = (TSMFFFmpegDecoder *) decoder;
 
@@ -191,6 +191,20 @@ tsmf_ffmpeg_set_format(ITSMFDecoder * decoder, const TS_AM_MEDIA_TYPE * media_ty
 			break;
 		case TSMF_SUB_TYPE_WMV3:
 			mdecoder->codec_id = CODEC_ID_WMV3;
+			break;
+		case TSMF_SUB_TYPE_AAC:
+			mdecoder->codec_id = CODEC_ID_AAC;
+			/* For AAC the pFormat is a HEAACWAVEINFO struct, and the codec data
+			   is at the end of it. See
+			   http://msdn.microsoft.com/en-us/library/dd757806.aspx */
+			if (media_type->ExtraData)
+			{
+				media_type->ExtraData += 12;
+				media_type->ExtraDataSize -= 12;
+			}
+			break;
+		case TSMF_SUB_TYPE_H264:
+			mdecoder->codec_id = CODEC_ID_H264;
 			break;
 		default:
 			return 1;
