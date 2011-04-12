@@ -120,6 +120,13 @@ static const TSMFMediaTypeMap tsmf_sub_type_map[] =
 		TSMF_SUB_TYPE_H264
 	},
 
+	/* 31435641-0000-0010-8000-00AA00389B71 */
+	{
+		{ 0x41, 0x56, 0x43, 0x31, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71 },
+		"MEDIASUBTYPE_AVC1",
+		TSMF_SUB_TYPE_AVC1
+	},
+
 	{
 		{ 0 },
 		"Unknown",
@@ -317,7 +324,12 @@ tsmf_codec_parse_media_type(TS_AM_MEDIA_TYPE * mediatype, const uint8 * pMediaTy
 		case TSMF_FORMAT_TYPE_MPEG2VIDEOINFO:
 			/* http://msdn.microsoft.com/en-us/library/dd390707.aspx */
 			i = tsmf_codec_parse_VIDEOINFOHEADER2(mediatype, pFormat);
-			tsmf_codec_parse_BITMAPINFOHEADER(mediatype, pFormat + i);
+			i += tsmf_codec_parse_BITMAPINFOHEADER(mediatype, pFormat + i);
+			if (cbFormat > i)
+			{
+				mediatype->ExtraDataSize = cbFormat - i;
+				mediatype->ExtraData = pFormat + i;
+			}
 			break;
 
 		case TSMF_FORMAT_TYPE_VIDEOINFO2:
