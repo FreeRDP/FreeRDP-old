@@ -236,6 +236,9 @@ tsmf_ffmpeg_set_format(ITSMFDecoder * decoder, TS_AM_MEDIA_TYPE * media_type)
 		case TSMF_SUB_TYPE_AVC1:
 			mdecoder->codec_id = CODEC_ID_H264;
 			break;
+		case TSMF_SUB_TYPE_AC3:
+			mdecoder->codec_id = CODEC_ID_AC3;
+			break;
 		default:
 			return 1;
 	}
