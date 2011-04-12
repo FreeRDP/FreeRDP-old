@@ -23,6 +23,7 @@
 #include "drdynvc_types.h"
 #include "tsmf_constants.h"
 #include "tsmf_ifman.h"
+#include "tsmf_media.h"
 #include "tsmf_main.h"
 
 typedef struct _TSMF_LISTENER_CALLBACK TSMF_LISTENER_CALLBACK;
@@ -328,7 +329,21 @@ tsmf_on_data_received(IWTSVirtualChannelCallback * pChannelCallback,
 static int
 tsmf_on_close(IWTSVirtualChannelCallback * pChannelCallback)
 {
+	TSMF_CHANNEL_CALLBACK * callback = (TSMF_CHANNEL_CALLBACK *) pChannelCallback;
+	TSMF_PRESENTATION * presentation;
+	TSMF_STREAM * stream;
+
 	LLOGLN(10, ("tsmf_on_close:"));
+	if (callback->stream_id)
+	{
+		presentation = tsmf_presentation_find_by_id(callback->presentation_id);
+		if (presentation)
+		{
+			stream = tsmf_stream_find_by_id(presentation, callback->stream_id);
+			if (stream)
+				tsmf_stream_free(stream);
+		}
+	}
 	free(pChannelCallback);
 	return 0;
 }
