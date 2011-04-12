@@ -127,6 +127,13 @@ static const TSMFMediaTypeMap tsmf_sub_type_map[] =
 		TSMF_SUB_TYPE_AVC1
 	},
 
+	/* E06D802C-DB46-11CF-B4D1-00805F6CBBEA */
+	{
+		{ 0x2C, 0x80, 0x6D, 0xE0, 0x46, 0xDB, 0xCF, 0x11, 0xB4, 0xD1, 0x00, 0x80, 0x5F, 0x6C, 0xBB, 0xEA },
+		"MEDIASUBTYPE_DOLBY_AC3",
+		TSMF_SUB_TYPE_AC3
+	},
+
 	{
 		{ 0 },
 		"Unknown",
