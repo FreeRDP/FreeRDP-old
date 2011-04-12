@@ -56,6 +56,9 @@ struct _TSMF_PRESENTATION
 
 	IWTSVirtualChannelCallback * channel_callback;
 
+	/* The stream list could be accessed by differnt threads and need to be protected. */
+	pthread_mutex_t * mutex;
+
 	TSMF_STREAM * stream_list_head;
 	TSMF_STREAM * stream_list_tail;
 
@@ -80,6 +83,9 @@ struct _TSMF_STREAM
 	uint32 sample_rate;
 	uint32 channels;
 	uint32 bits_per_sample;
+
+	/* The end_time of last played sample */
+	uint64 last_end_time;
 
 	/* The samples will be accessed by producer/consumer running in different
 	   threads. So we use mutex to protect it at stream layer. */
@@ -119,7 +125,28 @@ static TSMF_PRESENTATION * presentation_list_tail = NULL;
 static TSMF_SAMPLE *
 tsmf_stream_pop_sample(TSMF_STREAM * stream)
 {
+	TSMF_PRESENTATION * presentation = stream->presentation;
 	TSMF_SAMPLE * sample;
+	TSMF_STREAM * s;
+	int pending = 0;
+
+	/* Check if some other stream has earlier sample that needs to be played first */
+	if (stream->last_end_time > 1000000) /* 100ms */
+	{
+		pthread_mutex_lock(presentation->mutex);
+		for (s = presentation->stream_list_head; s; s = s->next)
+		{
+			if (s != stream && !s->eos && s->last_end_time &&
+				s->last_end_time < stream->last_end_time - 1000000)
+			{
+					pending = 1;
+					break;
+			}
+		}
+		pthread_mutex_unlock(presentation->mutex);
+		if (pending)
+			return NULL;
+	}
 
 	pthread_mutex_lock(stream->mutex);
 
@@ -133,6 +160,9 @@ tsmf_stream_pop_sample(TSMF_STREAM * stream)
 	}
 
 	pthread_mutex_unlock(stream->mutex);
+
+	if (sample)
+		stream->last_end_time = sample->end_time;
 
 	return sample;
 }
@@ -168,6 +198,9 @@ tsmf_presentation_new(const uint8 * guid, IWTSVirtualChannelCallback * pChannelC
 
 	memcpy(presentation->presentation_id, guid, GUID_SIZE);
 	presentation->channel_callback = pChannelCallback;
+
+	presentation->mutex = (pthread_mutex_t *) malloc(sizeof(pthread_mutex_t));
+	pthread_mutex_init(presentation->mutex, 0);
 
 	if (presentation_list_tail == NULL)
 	{
@@ -533,6 +566,7 @@ tsmf_stream_flush(TSMF_STREAM * stream)
 		stream->audio->Flush(stream->audio);
 
 	stream->eos = 0;
+	stream->last_end_time = 0;
 }
 
 void
@@ -564,6 +598,9 @@ tsmf_presentation_free(TSMF_PRESENTATION * presentation)
 	while (presentation->stream_list_head)
 		tsmf_stream_free(presentation->stream_list_head);
 
+	pthread_mutex_destroy(presentation->mutex);
+	free(presentation->mutex);
+
 	free(presentation);
 }
 
@@ -587,6 +624,8 @@ tsmf_stream_new(TSMF_PRESENTATION * presentation, uint32 stream_id)
 	stream->mutex = (pthread_mutex_t *) malloc(sizeof(pthread_mutex_t));
 	pthread_mutex_init(stream->mutex, 0);
 
+	pthread_mutex_lock(presentation->mutex);
+
 	if (presentation->stream_list_tail == NULL)
 	{
 		presentation->stream_list_head = stream;
@@ -598,6 +637,8 @@ tsmf_stream_new(TSMF_PRESENTATION * presentation, uint32 stream_id)
 		presentation->stream_list_tail->next = stream;
 		presentation->stream_list_tail = stream;
 	}
+
+	pthread_mutex_unlock(presentation->mutex);
 
 	return stream;
 }
@@ -668,6 +709,8 @@ tsmf_stream_free(TSMF_STREAM * stream)
 	tsmf_stream_stop(stream);
 	tsmf_stream_flush(stream);
 
+	pthread_mutex_lock(presentation->mutex);
+
 	if (presentation->stream_list_head == stream)
 		presentation->stream_list_head = stream->next;
 	else
@@ -677,6 +720,8 @@ tsmf_stream_free(TSMF_STREAM * stream)
 		presentation->stream_list_tail = stream->prev;
 	else
 		stream->next->prev = stream->prev;
+
+	pthread_mutex_unlock(presentation->mutex);
 
 	if (stream->decoder)
 		stream->decoder->Free(stream->decoder);
