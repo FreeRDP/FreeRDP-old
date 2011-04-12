@@ -424,24 +424,44 @@ static int BitBlt_PATCOPY_8bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, 
 	int x, y;
 	uint8 *dstp;
 	uint8 *patp;
-		
-	for (y = 0; y < nHeight; y++)
-	{
-		dstp = gdi_get_bitmap_pointer(hdcDest, nXDest, nYDest + y);
+	uint8 palIndex;
 
-		if (dstp != 0)
+	if(hdcDest->brush->style == BS_SOLID)
+	{
+		palIndex = ((hdcDest->brush->color >> 16) & 0xFF);
+		for (y = 0; y < nHeight; y++)
 		{
-			for (x = 0; x < nWidth; x++)
+			dstp = gdi_get_bitmap_pointer(hdcDest, nXDest, nYDest + y);
+			if (dstp != 0)
 			{
-				patp = gdi_get_brush_pointer(hdcDest, x, y);
-				
-				*dstp = *patp;
-				patp++;
-				dstp++;
+				for (x = 0; x < nWidth; x++)
+				{
+					*dstp = palIndex;
+					dstp++;
+				}
 			}
 		}
 	}
-	
+	else
+	{
+		for (y = 0; y < nHeight; y++)
+		{
+			dstp = gdi_get_bitmap_pointer(hdcDest, nXDest, nYDest + y);
+
+			if (dstp != 0)
+			{
+				for (x = 0; x < nWidth; x++)
+				{
+					patp = gdi_get_brush_pointer(hdcDest, x, y);
+
+					*dstp = *patp;
+					patp++;
+					dstp++;
+				}
+			}
+		}
+	}
+
 	return 0;
 }
 
@@ -450,20 +470,40 @@ static int BitBlt_PATINVERT_8bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth
 	int x, y;
 	uint8 *dstp;
 	uint8 *patp;
-		
-	for (y = 0; y < nHeight; y++)
-	{
-		dstp = gdi_get_bitmap_pointer(hdcDest, nXDest, nYDest + y);
+	uint8 palIndex;
 
-		if (dstp != 0)
+	if(hdcDest->brush->style == BS_SOLID)
+	{
+		palIndex = ((hdcDest->brush->color >> 16) & 0xFF);
+		for (y = 0; y < nHeight; y++)
 		{
-			for (x = 0; x < nWidth; x++)
+			dstp = gdi_get_bitmap_pointer(hdcDest, nXDest, nYDest + y);
+			if (dstp != 0)
 			{
-				patp = gdi_get_brush_pointer(hdcDest, x, y);
-				
-				*dstp = *patp ^ *dstp;
-				patp++;
-				dstp++;
+				for (x = 0; x < nWidth; x++)
+				{
+					*dstp ^= palIndex;
+					dstp++;
+				}
+			}
+		}
+	}
+	else
+	{
+		for (y = 0; y < nHeight; y++)
+		{
+			dstp = gdi_get_bitmap_pointer(hdcDest, nXDest, nYDest + y);
+
+			if (dstp != 0)
+			{
+				for (x = 0; x < nWidth; x++)
+				{
+					patp = gdi_get_brush_pointer(hdcDest, x, y);
+
+					*dstp = *patp ^ *dstp;
+					patp++;
+					dstp++;
+				}
 			}
 		}
 	}

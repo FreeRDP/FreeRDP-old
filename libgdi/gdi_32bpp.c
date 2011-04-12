@@ -610,27 +610,51 @@ static int BitBlt_PATCOPY_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth,
 	int x, y;
 	uint8 *dstp;
 	uint8 *patp;
-		
-	for (y = 0; y < nHeight; y++)
+	uint8 colR, colG, colB;
+	uint32 col;
+	uint32 *dstp32;
+
+	if(hdcDest->brush->style == BS_SOLID)
 	{
-		dstp = gdi_get_bitmap_pointer(hdcDest, nXDest, nYDest + y);
-
-		if (dstp != 0)
+		GetRGB(colR, colG, colB, hdcDest->brush->color);
+		col = ABGR32(0xFF, colR, colG, colB);
+		for (y = 0; y < nHeight; y++)
 		{
-			for (x = 0; x < nWidth; x++)
-			{
-				patp = gdi_get_brush_pointer(hdcDest, x, y);
-				
-				*dstp = *patp;
-				patp++;
-				dstp++;
-					
-				*dstp = *patp;
-				patp++;
-				dstp++;
+			dstp32 = (uint32*)gdi_get_bitmap_pointer(hdcDest, nXDest, nYDest + y);
 
-				*dstp = *patp;
-				dstp += 2;
+			if (dstp != 0)
+			{
+				for (x = 0; x < nWidth; x++)
+				{
+					*dstp32 = col;
+					dstp32++;
+				}
+			}
+		}
+	}
+	else
+	{
+		for (y = 0; y < nHeight; y++)
+		{
+			dstp = gdi_get_bitmap_pointer(hdcDest, nXDest, nYDest + y);
+
+			if (dstp != 0)
+			{
+				for (x = 0; x < nWidth; x++)
+				{
+					patp = gdi_get_brush_pointer(hdcDest, x, y);
+				
+					*dstp = *patp;
+					patp++;
+					dstp++;
+					
+					*dstp = *patp;
+					patp++;
+					dstp++;
+
+					*dstp = *patp;
+					dstp += 2;
+				}
 			}
 		}
 	}
@@ -643,27 +667,51 @@ static int BitBlt_PATINVERT_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidt
 	int x, y;
 	uint8 *dstp;
 	uint8 *patp;
+	uint8 colR, colG, colB;
+	uint32 col;
+	uint32 *dstp32;
 		
-	for (y = 0; y < nHeight; y++)
+	if(hdcDest->brush->style == BS_SOLID)
 	{
-		dstp = gdi_get_bitmap_pointer(hdcDest, nXDest, nYDest + y);
-
-		if (dstp != 0)
+		GetRGB(colR, colG, colB, hdcDest->brush->color);
+		col = ABGR32(0xFF, colR, colG, colB);
+		for (y = 0; y < nHeight; y++)
 		{
-			for (x = 0; x < nWidth; x++)
-			{
-				patp = gdi_get_brush_pointer(hdcDest, x, y);
-				
-				*dstp = *patp ^ *dstp;
-				patp++;
-				dstp++;
-					
-				*dstp = *patp ^ *dstp;
-				patp++;
-				dstp++;
+			dstp32 = (uint32*)gdi_get_bitmap_pointer(hdcDest, nXDest, nYDest + y);
 
-				*dstp = *patp ^ *dstp;
-				dstp += 2;
+			if (dstp != 0)
+			{
+				for (x = 0; x < nWidth; x++)
+				{
+					*dstp32 ^= col;
+					dstp32++;
+				}
+			}
+		}
+	}
+	else
+	{
+		for (y = 0; y < nHeight; y++)
+		{
+			dstp = gdi_get_bitmap_pointer(hdcDest, nXDest, nYDest + y);
+
+			if (dstp != 0)
+			{
+				for (x = 0; x < nWidth; x++)
+				{
+					patp = gdi_get_brush_pointer(hdcDest, x, y);
+					
+					*dstp = *patp ^ *dstp;
+					patp++;
+					dstp++;
+
+					*dstp = *patp ^ *dstp;
+					patp++;
+					dstp++;
+
+					*dstp = *patp ^ *dstp;
+					dstp += 2;
+				}
 			}
 		}
 	}
