@@ -100,6 +100,9 @@ static int
 tsmf_ffmpeg_init_stream(ITSMFDecoder * decoder, const TS_AM_MEDIA_TYPE * media_type)
 {
 	TSMFFFmpegDecoder * mdecoder = (TSMFFFmpegDecoder *) decoder;
+	uint32 size;
+	const uint8 * s;
+	uint8 * p;
 
 	mdecoder->codec = avcodec_find_decoder(mdecoder->codec_id);
 	if (!mdecoder->codec)
@@ -124,11 +127,37 @@ tsmf_ffmpeg_init_stream(ITSMFDecoder * decoder, const TS_AM_MEDIA_TYPE * media_t
 
 	if (media_type->ExtraData)
 	{
-		/* Add a padding to avoid invalid memory read in some codec */
-		mdecoder->codec_context->extradata_size = media_type->ExtraDataSize + 8;
-		mdecoder->codec_context->extradata = malloc(mdecoder->codec_context->extradata_size);
-		memcpy(mdecoder->codec_context->extradata, media_type->ExtraData, media_type->ExtraDataSize);
-		memset(mdecoder->codec_context->extradata + media_type->ExtraDataSize, 0, 8);
+		if (media_type->SubType == TSMF_SUB_TYPE_AVC1 &&
+			media_type->FormatType == TSMF_FORMAT_TYPE_MPEG2VIDEOINFO)
+		{
+			/* The extradata format that FFmpeg uses is following CodecPrivate in Matroska.
+			   See http://haali.su/mkv/codecs.pdf */
+			mdecoder->codec_context->extradata_size = media_type->ExtraDataSize + 8;
+			mdecoder->codec_context->extradata = malloc(mdecoder->codec_context->extradata_size);
+			p = mdecoder->codec_context->extradata;
+			*p++ = 1; /* Reserved? */
+			*p++ = media_type->ExtraData[8]; /* Profile */
+			*p++ = 0; /* Profile */
+			*p++ = media_type->ExtraData[12]; /* Level */
+			*p++ = 0xff; /* Flag? */
+			*p++ = 0xe0 | 0x01; /* Reserved | #sps */
+			s = media_type->ExtraData + 20;
+			size = ((uint32)(*s)) * 256 + ((uint32)(*(s + 1)));
+			memcpy(p, s, size + 2);
+			s += size + 2;
+			p += size + 2;
+			*p++ = 1; /* #pps */
+			size = ((uint32)(*s)) * 256 + ((uint32)(*(s + 1)));
+			memcpy(p, s, size + 2);
+		}
+		else
+		{
+			/* Add a padding to avoid invalid memory read in some codec */
+			mdecoder->codec_context->extradata_size = media_type->ExtraDataSize + 8;
+			mdecoder->codec_context->extradata = malloc(mdecoder->codec_context->extradata_size);
+			memcpy(mdecoder->codec_context->extradata, media_type->ExtraData, media_type->ExtraDataSize);
+			memset(mdecoder->codec_context->extradata + media_type->ExtraDataSize, 0, 8);
+		}
 	}
 
 	if (mdecoder->codec->capabilities & CODEC_CAP_TRUNCATED)
@@ -204,6 +233,7 @@ tsmf_ffmpeg_set_format(ITSMFDecoder * decoder, TS_AM_MEDIA_TYPE * media_type)
 			}
 			break;
 		case TSMF_SUB_TYPE_H264:
+		case TSMF_SUB_TYPE_AVC1:
 			mdecoder->codec_id = CODEC_ID_H264;
 			break;
 		default:
