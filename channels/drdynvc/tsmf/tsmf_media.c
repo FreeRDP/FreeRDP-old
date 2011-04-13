@@ -365,6 +365,9 @@ tsmf_sample_playback_video(TSMF_SAMPLE * sample)
 static void
 tsmf_sample_playback_audio(TSMF_SAMPLE * sample)
 {
+	TSMF_STREAM * stream = sample->stream;
+	uint64 latency = 0;
+
 	LLOGLN(10, ("tsmf_presentation_playback_audio_sample: MessageId %d EndTime %d consumed.",
 		sample->sample_id, (int)sample->end_time));
 
@@ -374,6 +377,9 @@ tsmf_sample_playback_audio(TSMF_SAMPLE * sample)
 			sample->data, sample->decoded_size);
 		sample->data = NULL;
 		sample->decoded_size = 0;
+
+		if (stream->audio && stream->audio->GetLatency)
+			latency = stream->audio->GetLatency(stream->audio);
 	}
 }
 
