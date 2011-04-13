@@ -57,6 +57,9 @@ struct _TSMF_PRESENTATION
 
 	IWTSVirtualChannelCallback * channel_callback;
 
+	uint64 audio_start_time;
+	uint64 audio_end_time;
+
 	/* The stream list could be accessed by differnt threads and need to be protected. */
 	pthread_mutex_t * mutex;
 
@@ -87,6 +90,8 @@ struct _TSMF_STREAM
 
 	/* The end_time of last played sample */
 	uint64 last_end_time;
+	/* Next sample should not start before this system time. */
+	uint64 next_start_time;
 
 	/* The samples will be accessed by producer/consumer running in different
 	   threads. So we use mutex to protect it at stream layer. */
@@ -128,34 +133,55 @@ struct _TSMF_SAMPLE
 static TSMF_PRESENTATION * presentation_list_head = NULL;
 static TSMF_PRESENTATION * presentation_list_tail = NULL;
 
+static uint64
+get_current_time(void)
+{
+	struct timeval tp;
+
+	gettimeofday(&tp, 0);
+	return ((uint64)tp.tv_sec) * 10000000LL + ((uint64)tp.tv_usec) * 10LL;
+}
+
 static TSMF_SAMPLE *
-tsmf_stream_pop_sample(TSMF_STREAM * stream)
+tsmf_stream_pop_sample(TSMF_STREAM * stream, int sync)
 {
 	TSMF_PRESENTATION * presentation = stream->presentation;
 	TSMF_SAMPLE * sample;
 	TSMF_STREAM * s;
 	int pending = 0;
-	uint64 tolerance;
+	static const uint64 audio_tolerance = 10000000LL;
 
-	tolerance = stream->major_type == TSMF_MAJOR_TYPE_AUDIO ? 10000000LL : 1000000LL;
+	if (!stream->sample_queue_head)
+		return NULL;
 
-	/* Check if some other stream has earlier sample that needs to be played first */
-	if (stream->last_end_time > tolerance)
+	if (sync)
 	{
-		pthread_mutex_lock(presentation->mutex);
-		for (s = presentation->stream_list_head; s; s = s->next)
+		if (stream->major_type == TSMF_MAJOR_TYPE_AUDIO)
 		{
-			if (s != stream && !s->eos && s->last_end_time &&
-				s->last_end_time < stream->last_end_time - tolerance)
+			/* Check if some other stream has earlier sample that needs to be played first */
+			if (stream->last_end_time > audio_tolerance)
 			{
-					pending = 1;
-					break;
+				pthread_mutex_lock(presentation->mutex);
+				for (s = presentation->stream_list_head; s; s = s->next)
+				{
+					if (s != stream && !s->eos && s->last_end_time &&
+						s->last_end_time < stream->last_end_time - audio_tolerance)
+					{
+							pending = 1;
+							break;
+					}
+				}
+				pthread_mutex_unlock(presentation->mutex);
 			}
 		}
-		pthread_mutex_unlock(presentation->mutex);
-		if (pending)
-			return NULL;
+		else
+		{
+			if (stream->last_end_time > presentation->audio_end_time)
+				pending = 1;
+		}
 	}
+	if (pending)
+		return NULL;
 
 	pthread_mutex_lock(stream->mutex);
 
@@ -211,11 +237,9 @@ static void
 tsmf_stream_process_ack(TSMF_STREAM * stream)
 {
 	TSMF_SAMPLE * sample;
-	struct timeval tp;
 	uint64 ack_time;
 
-	gettimeofday(&tp, 0);
-	ack_time = ((uint64)tp.tv_sec) * 10000000LL + ((uint64)tp.tv_usec) * 10LL;
+	ack_time = get_current_time();
 	while (stream->sample_ack_head && !stream->thread_exit)
 	{
 		sample = stream->sample_ack_head;
@@ -321,13 +345,23 @@ static void
 tsmf_sample_playback_video(TSMF_SAMPLE * sample)
 {
 	TSMF_PRESENTATION * presentation = sample->stream->presentation;
+	TSMF_STREAM * stream = sample->stream;
 	RD_VIDEO_FRAME_EVENT * vevent;
+	uint64 t;
 
 	LLOGLN(10, ("tsmf_sample_playback_video: MessageId %d EndTime %d data_size %d consumed.",
 		sample->sample_id, (int)sample->end_time, sample->data_size));
 
 	if (sample->data)
 	{
+		t = get_current_time();
+		if (stream->next_start_time > t &&
+			sample->end_time >= presentation->audio_start_time)
+		{
+			usleep((stream->next_start_time - t) / 10);
+		}
+		stream->next_start_time = t + sample->duration - 50000;
+
 		if (presentation->last_x != presentation->output_x ||
 			presentation->last_y != presentation->output_y ||
 			presentation->last_width != presentation->output_width ||
@@ -416,7 +450,6 @@ tsmf_sample_playback_audio(TSMF_SAMPLE * sample)
 {
 	TSMF_STREAM * stream = sample->stream;
 	uint64 latency = 0;
-	struct timeval tp;
 
 	LLOGLN(10, ("tsmf_presentation_playback_audio_sample: MessageId %d EndTime %d consumed.",
 		sample->sample_id, (int)sample->end_time));
@@ -431,10 +464,10 @@ tsmf_sample_playback_audio(TSMF_SAMPLE * sample)
 		if (stream->audio && stream->audio->GetLatency)
 			latency = stream->audio->GetLatency(stream->audio);
 
-		gettimeofday(&tp, NULL);
-		sample->ack_time = latency +
-			((uint64)tp.tv_sec) * 10000000LL + ((uint64)tp.tv_usec) * 10LL;
+		sample->ack_time = latency + get_current_time();
 		stream->last_end_time = sample->end_time + latency;
+		stream->presentation->audio_start_time = sample->start_time + latency;
+		stream->presentation->audio_end_time = sample->end_time + latency;
 	}
 }
 
@@ -525,7 +558,7 @@ tsmf_stream_playback_func(void * arg)
 	while (!stream->thread_exit)
 	{
 		tsmf_stream_process_ack(stream);
-		sample = tsmf_stream_pop_sample(stream);
+		sample = tsmf_stream_pop_sample(stream, 1);
 		if (sample)
 			tsmf_sample_playback(sample);
 		else
@@ -533,7 +566,7 @@ tsmf_stream_playback_func(void * arg)
 	}
 	if (stream->eos || presentation->eos)
 	{
-		while ((sample = tsmf_stream_pop_sample(stream)) != NULL)
+		while ((sample = tsmf_stream_pop_sample(stream, 1)) != NULL)
 			tsmf_sample_playback(sample);
 	}
 	if (stream->audio)
@@ -629,7 +662,7 @@ tsmf_stream_flush(TSMF_STREAM * stream)
 {
 	TSMF_SAMPLE * sample;
 
-	while ((sample = tsmf_stream_pop_sample(stream)) != NULL)
+	while ((sample = tsmf_stream_pop_sample(stream, 0)) != NULL)
 		tsmf_sample_free(sample);
 
 	while ((sample = stream->sample_ack_head) != NULL)
@@ -644,6 +677,11 @@ tsmf_stream_flush(TSMF_STREAM * stream)
 
 	stream->eos = 0;
 	stream->last_end_time = 0;
+	if (stream->major_type == TSMF_MAJOR_TYPE_AUDIO)
+	{
+		stream->presentation->audio_start_time = 0;
+		stream->presentation->audio_end_time = 0;
+	}
 }
 
 void
