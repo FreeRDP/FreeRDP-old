@@ -243,8 +243,9 @@ tsmf_pulse_open_stream(TSMFPulseAudioDevice * pulse)
 	buffer_attr.minreq = (uint32_t) -1;
 	buffer_attr.fragsize = (uint32_t) -1;
 	if (pa_stream_connect_playback(pulse->stream,
-		pulse->device[0] ? pulse->device : NULL,
-		&buffer_attr, PA_STREAM_ADJUST_LATENCY, NULL, NULL) < 0)
+		pulse->device[0] ? pulse->device : NULL, &buffer_attr,
+		PA_STREAM_ADJUST_LATENCY | PA_STREAM_INTERPOLATE_TIMING | PA_STREAM_AUTO_TIMING_UPDATE,
+		NULL, NULL) < 0)
 	{
 		pa_threaded_mainloop_unlock(pulse->mainloop);
 		LLOGLN(0, ("tsmf_pulse_open_stream: pa_stream_connect_playback failed (%d)",
@@ -337,6 +338,20 @@ tsmf_pulse_play(ITSMFAudioDevice * audio, uint8 * data, uint32 data_size)
 	return 0;
 }
 
+static uint64
+tsmf_pulse_get_latency(ITSMFAudioDevice * audio)
+{
+	TSMFPulseAudioDevice * pulse = (TSMFPulseAudioDevice *) audio;
+	uint64 latency = 0;
+	pa_usec_t usec;
+
+	if (pulse->stream && pa_stream_get_latency(pulse->stream, &usec, NULL) == 0)
+	{
+		latency = ((uint64)usec) * 10LL;
+	}
+	return latency;
+}
+
 static void
 tsmf_pulse_flush(ITSMFAudioDevice * audio)
 {
@@ -385,6 +400,7 @@ TSMFAudioDeviceEntry(void)
 	pulse->iface.Open = tsmf_pulse_open;
 	pulse->iface.SetFormat = tsmf_pulse_set_format;
 	pulse->iface.Play = tsmf_pulse_play;
+	pulse->iface.GetLatency = tsmf_pulse_get_latency;
 	pulse->iface.Flush = tsmf_pulse_flush;
 	pulse->iface.Free = tsmf_pulse_free;
 
