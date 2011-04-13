@@ -22,6 +22,7 @@
 #include <string.h>
 #include <pthread.h>
 #include <unistd.h>
+#include <sys/time.h>
 #include <freerdp/constants_ui.h>
 #include "drdynvc_types.h"
 #include "tsmf_constants.h"
@@ -97,6 +98,10 @@ struct _TSMF_STREAM
 	TSMF_SAMPLE * sample_queue_head;
 	TSMF_SAMPLE * sample_queue_tail;
 
+	/* The sample ack response queue will be accessed only by the stream thread. */
+	TSMF_SAMPLE * sample_ack_head;
+	TSMF_SAMPLE * sample_ack_tail;
+
 	TSMF_STREAM * next;
 	TSMF_STREAM * prev;
 };
@@ -115,6 +120,7 @@ struct _TSMF_SAMPLE
 
 	TSMF_STREAM * stream;
 	IWTSVirtualChannelCallback * channel_callback;
+	uint64 ack_time;
 
 	TSMF_SAMPLE * next;
 };
@@ -129,15 +135,18 @@ tsmf_stream_pop_sample(TSMF_STREAM * stream)
 	TSMF_SAMPLE * sample;
 	TSMF_STREAM * s;
 	int pending = 0;
+	uint64 tolerance;
+
+	tolerance = stream->major_type == TSMF_MAJOR_TYPE_AUDIO ? 10000000LL : 1000000LL;
 
 	/* Check if some other stream has earlier sample that needs to be played first */
-	if (stream->last_end_time > 1000000) /* 100ms */
+	if (stream->last_end_time > tolerance)
 	{
 		pthread_mutex_lock(presentation->mutex);
 		for (s = presentation->stream_list_head; s; s = s->next)
 		{
 			if (s != stream && !s->eos && s->last_end_time &&
-				s->last_end_time < stream->last_end_time - 1000000)
+				s->last_end_time < stream->last_end_time - tolerance)
 			{
 					pending = 1;
 					break;
@@ -161,10 +170,18 @@ tsmf_stream_pop_sample(TSMF_STREAM * stream)
 
 	pthread_mutex_unlock(stream->mutex);
 
-	if (sample)
+	if (sample && sample->end_time > stream->last_end_time)
 		stream->last_end_time = sample->end_time;
 
 	return sample;
+}
+
+static void
+tsmf_sample_free(TSMF_SAMPLE * sample)
+{
+	if (sample->data)
+		free(sample->data);
+	free(sample);
 }
 
 static void
@@ -174,11 +191,43 @@ tsmf_sample_ack(TSMF_SAMPLE * sample)
 }
 
 static void
-tsmf_sample_free(TSMF_SAMPLE * sample)
+tsmf_sample_queue_ack(TSMF_SAMPLE * sample)
 {
-	if (sample->data)
-		free(sample->data);
-	free(sample);
+	TSMF_STREAM * stream = sample->stream;
+
+	if (stream->sample_ack_head == NULL)
+	{
+		stream->sample_ack_head = sample;
+		stream->sample_ack_tail = sample;
+	}
+	else
+	{
+		stream->sample_ack_tail->next = sample;
+		stream->sample_ack_tail = sample;
+	}
+}
+
+static void
+tsmf_stream_process_ack(TSMF_STREAM * stream)
+{
+	TSMF_SAMPLE * sample;
+	struct timeval tp;
+	uint64 ack_time;
+
+	gettimeofday(&tp, 0);
+	ack_time = ((uint64)tp.tv_sec) * 10000000LL + ((uint64)tp.tv_usec) * 10LL;
+	while (stream->sample_ack_head && !stream->thread_exit)
+	{
+		sample = stream->sample_ack_head;
+		if (sample->ack_time > ack_time)
+			break;
+
+		stream->sample_ack_head = sample->next;
+		if (stream->sample_ack_head == NULL)
+			stream->sample_ack_tail = NULL;
+		tsmf_sample_ack(sample);
+		tsmf_sample_free(sample);
+	}
 }
 
 TSMF_PRESENTATION *
@@ -367,6 +416,7 @@ tsmf_sample_playback_audio(TSMF_SAMPLE * sample)
 {
 	TSMF_STREAM * stream = sample->stream;
 	uint64 latency = 0;
+	struct timeval tp;
 
 	LLOGLN(10, ("tsmf_presentation_playback_audio_sample: MessageId %d EndTime %d consumed.",
 		sample->sample_id, (int)sample->end_time));
@@ -380,6 +430,11 @@ tsmf_sample_playback_audio(TSMF_SAMPLE * sample)
 
 		if (stream->audio && stream->audio->GetLatency)
 			latency = stream->audio->GetLatency(stream->audio);
+
+		gettimeofday(&tp, NULL);
+		sample->ack_time = latency +
+			((uint64)tp.tv_sec) * 10000000LL + ((uint64)tp.tv_usec) * 10LL;
+		stream->last_end_time = sample->end_time + latency;
 	}
 }
 
@@ -395,7 +450,11 @@ tsmf_sample_playback(TSMF_SAMPLE * sample)
 	if (stream->decoder)
 		ret = stream->decoder->Decode(stream->decoder, sample->data, sample->data_size, sample->extensions);
 	if (ret)
+	{
+		tsmf_sample_ack(sample);
+		tsmf_sample_free(sample);
 		return;
+	}
 
 	free(sample->data);
 	sample->data = NULL;
@@ -406,7 +465,11 @@ tsmf_sample_playback(TSMF_SAMPLE * sample)
 		{
 			pixfmt = stream->decoder->GetDecodedFormat(stream->decoder);
 			if (pixfmt == ((uint32) -1))
+			{
+				tsmf_sample_ack(sample);
+				tsmf_sample_free(sample);
 				return;
+			}
 			sample->pixfmt = pixfmt;
 		}
 
@@ -429,14 +492,14 @@ tsmf_sample_playback(TSMF_SAMPLE * sample)
 	{
 		case TSMF_MAJOR_TYPE_VIDEO:
 			tsmf_sample_playback_video(sample);
+			tsmf_sample_ack(sample);
+			tsmf_sample_free(sample);
 			break;
 		case TSMF_MAJOR_TYPE_AUDIO:
 			tsmf_sample_playback_audio(sample);
+			tsmf_sample_queue_ack(sample);
 			break;
 	}
-
-	tsmf_sample_ack(sample);
-	tsmf_sample_free(sample);
 }
 
 static void *
@@ -461,11 +524,12 @@ tsmf_stream_playback_func(void * arg)
 	}
 	while (!stream->thread_exit)
 	{
+		tsmf_stream_process_ack(stream);
 		sample = tsmf_stream_pop_sample(stream);
 		if (sample)
 			tsmf_sample_playback(sample);
 		else
-			usleep(10000);
+			usleep(5000);
 	}
 	if (stream->eos || presentation->eos)
 	{
@@ -567,6 +631,13 @@ tsmf_stream_flush(TSMF_STREAM * stream)
 
 	while ((sample = tsmf_stream_pop_sample(stream)) != NULL)
 		tsmf_sample_free(sample);
+
+	while ((sample = stream->sample_ack_head) != NULL)
+	{
+		stream->sample_ack_head = sample->next;
+		tsmf_sample_free(sample);
+	}
+	stream->sample_ack_tail = NULL;
 
 	if (stream->audio)
 		stream->audio->Flush(stream->audio);
