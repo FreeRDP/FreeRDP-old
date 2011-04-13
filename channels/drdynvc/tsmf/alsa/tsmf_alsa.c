@@ -253,6 +253,23 @@ tsmf_alsa_play(ITSMFAudioDevice * audio, uint8 * data, uint32 data_size)
 	return 0;
 }
 
+static uint64
+tsmf_alsa_get_latency(ITSMFAudioDevice * audio)
+{
+	TSMFALSAAudioDevice * alsa = (TSMFALSAAudioDevice *) audio;
+
+	uint64 latency = 0;
+	snd_pcm_sframes_t frames = 0;
+
+	if (alsa->out_handle && alsa->actual_rate > 0 &&
+		snd_pcm_delay(alsa->out_handle, &frames) == 0 &&
+		frames > 0)
+	{
+		latency = ((uint64)frames) * 10000000LL / (uint64)alsa->actual_rate;
+	}
+	return latency;
+}
+
 static void
 tsmf_alsa_flush(ITSMFAudioDevice * audio)
 {
@@ -284,6 +301,7 @@ TSMFAudioDeviceEntry(void)
 	alsa->iface.Open = tsmf_alsa_open;
 	alsa->iface.SetFormat = tsmf_alsa_set_format;
 	alsa->iface.Play = tsmf_alsa_play;
+	alsa->iface.GetLatency = tsmf_alsa_get_latency;
 	alsa->iface.Flush = tsmf_alsa_flush;
 	alsa->iface.Free = tsmf_alsa_free;
 

@@ -32,6 +32,8 @@ struct _ITSMFAudioDevice
 	int (*SetFormat) (ITSMFAudioDevice * audio, uint32 sample_rate, uint32 channels, uint32 bits_per_sample);
 	/* Play audio data. */
 	int (*Play) (ITSMFAudioDevice * audio, uint8 * data, uint32 data_size);
+	/* Get the latency of the last written sample, in 100ns */
+	uint64 (*GetLatency) (ITSMFAudioDevice * audio);
 	/* Flush queued audio data */
 	void (*Flush) (ITSMFAudioDevice * audio);
 	/* Free the audio device */
