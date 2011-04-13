@@ -356,7 +356,8 @@ tsmf_sample_playback_video(TSMF_SAMPLE * sample)
 	{
 		t = get_current_time();
 		if (stream->next_start_time > t &&
-			sample->end_time >= presentation->audio_start_time)
+			(sample->end_time >= presentation->audio_start_time ||
+			sample->end_time < stream->last_end_time))
 		{
 			usleep((stream->next_start_time - t) / 10);
 		}
