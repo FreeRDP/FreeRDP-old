@@ -659,7 +659,31 @@ gdi_ui_polygon(struct rdp_inst * inst, uint8 opcode, uint8 fillmode, RD_POINT * 
 static void
 gdi_ui_polyline(struct rdp_inst * inst, uint8 opcode, RD_POINT * points, int npoints, RD_PEN * pen)
 {
+	int i;
+	int cx;
+	int cy;
+	HPEN hPen;
+	GDI *gdi = GET_GDI(inst);
+
 	DEBUG_GDI("ui_polyline: opcode:%d npoints:%d\n", opcode, npoints);
+
+	gdi_color_convert(&(gdi->pixel), pen->color, gdi->srcBpp, gdi->palette);
+
+	hPen = CreatePen(pen->style, pen->width, (COLORREF) PixelRGB(gdi->pixel));
+	SelectObject(gdi->drawing->hdc, (HGDIOBJ) hPen);
+	SetROP2(gdi->drawing->hdc, opcode);
+
+	cx = points[0].x;
+	cy = points[0].y;
+	for(i = 1; i < npoints; i++)
+	{
+		MoveToEx(gdi->drawing->hdc, cx, cy, NULL);
+		cx += points[i].x;
+		cy += points[i].y;
+		LineTo(gdi->drawing->hdc, cx, cy);
+	}
+
+	DeleteObject((HGDIOBJ) hPen);
 }
 
 /**
