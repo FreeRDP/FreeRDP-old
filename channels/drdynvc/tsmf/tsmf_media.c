@@ -618,6 +618,8 @@ tsmf_presentation_stop(TSMF_PRESENTATION * presentation)
 {
 	TSMF_STREAM * stream;
 
+	tsmf_presentation_flush(presentation);
+
 	for (stream = presentation->stream_list_head; stream; stream = stream->next)
 		tsmf_stream_stop(stream);
 
@@ -678,6 +680,7 @@ tsmf_stream_flush(TSMF_STREAM * stream)
 
 	stream->eos = 0;
 	stream->last_end_time = 0;
+	stream->next_start_time = 0;
 	if (stream->major_type == TSMF_MAJOR_TYPE_AUDIO)
 	{
 		stream->presentation->audio_start_time = 0;
@@ -694,6 +697,8 @@ tsmf_presentation_flush(TSMF_PRESENTATION * presentation)
 		tsmf_stream_flush(stream);
 
 	presentation->eos = 0;
+	presentation->audio_start_time = 0;
+	presentation->audio_end_time = 0;
 }
 
 void
