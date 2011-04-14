@@ -29,7 +29,6 @@ OPTIONAL_SUBDIRS = \
 	channels/rdpsnd/pulse \
 	channels/drdynvc/audin/alsa \
 	channels/drdynvc/audin/pulse \
-	channels/drdynvc/tsmf/copy \
 	channels/drdynvc/tsmf/ffmpeg \
 	channels/drdynvc/tsmf/alsa \
 	channels/drdynvc/tsmf/pulse \
