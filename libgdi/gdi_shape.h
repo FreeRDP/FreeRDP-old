@@ -22,7 +22,6 @@
 
 #include "gdi.h"
 
-void ShapeInit();
 int Ellipse(HDC hdc, int nLeftRect, int nTopRect, int nRightRect, int nBottomRect);
 int FillRect(HDC hdc, HRECT rect, HBRUSH hbr);
 int Polygon(HDC hdc, POINT *lpPoints, int nCount);

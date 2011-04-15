@@ -30,7 +30,14 @@
 
 #include "gdi_shape.h"
 
-pFillRect FillRect_[5];
+pFillRect FillRect_[5] =
+{
+	NULL,
+	FillRect_8bpp,
+	FillRect_16bpp,
+	NULL,
+	FillRect_32bpp
+};
 
 static void Ellipse_Bresenham(HDC hdc, int x1, int y1, int x2, int y2)
 {
@@ -183,7 +190,12 @@ int Ellipse(HDC hdc, int nLeftRect, int nTopRect, int nRightRect, int nBottomRec
 
 int FillRect(HDC hdc, HRECT rect, HBRUSH hbr)
 {
-	return FillRect_[IBPP(hdc->bitsPerPixel)](hdc, rect, hbr);
+	pFillRect _FillRect = FillRect_[IBPP(hdc->bitsPerPixel)];
+
+	if (_FillRect != NULL)
+		return FillRect_[IBPP(hdc->bitsPerPixel)](hdc, rect, hbr);
+	else
+		return 0;
 }
 
 /**
@@ -223,12 +235,4 @@ int PolyPolygon(HDC hdc, POINT *lpPoints, int *lpPolyCounts, int nCount)
 int Rectangle(HDC hdc, int nLeftRect, int nTopRect, int nRightRect, int nBottomRect)
 {
 	return 1;
-}
-
-void ShapeInit()
-{
-	/* FillRect */
-	FillRect_[1] = FillRect_8bpp;
-	FillRect_[2] = FillRect_16bpp;
-	FillRect_[4] = FillRect_32bpp;
 }

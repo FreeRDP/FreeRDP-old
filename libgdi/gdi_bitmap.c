@@ -32,7 +32,14 @@
 
 #include "gdi_bitmap.h"
 
-pBitBlt BitBlt_[5];
+pBitBlt BitBlt_[5] =
+{
+	NULL,
+	BitBlt_8bpp,
+	BitBlt_16bpp,
+	NULL,
+	BitBlt_32bpp
+};
 
 /**
  * Get pixel at the given coordinates.\n
@@ -48,6 +55,36 @@ COLORREF GetPixel(HDC hdc, int nXPos, int nYPos)
 	HBITMAP hBmp = (HBITMAP) hdc->selectedObject;
 	COLORREF* colorp = (COLORREF*)&(hBmp->data[(nYPos * hBmp->width * hdc->bytesPerPixel) + nXPos * hdc->bytesPerPixel]);
 	return (COLORREF) *colorp;
+}
+
+uint8 GetPixel_8bpp(HBITMAP hBmp, int X, int Y)
+{
+	return *((uint8*)&(hBmp->data[(Y * hBmp->width) + X]));
+}
+
+uint16 GetPixel_16bpp(HBITMAP hBmp, int X, int Y)
+{
+	return *((uint16*)&(hBmp->data[(Y * hBmp->width * 2) + X * 2]));
+}
+
+uint32 GetPixel_32bpp(HBITMAP hBmp, int X, int Y)
+{
+	return *((uint32*)&(hBmp->data[(Y * hBmp->width * 4) + X * 4]));
+}
+
+uint8* GetPointer_8bpp(HBITMAP hBmp, int X, int Y)
+{
+	return ((uint8*)&(hBmp->data[(Y * hBmp->width) + X]));
+}
+
+uint16* GetPointer_16bpp(HBITMAP hBmp, int X, int Y)
+{
+	return ((uint16*)&(hBmp->data[(Y * hBmp->width * 2) + X * 2]));
+}
+
+uint32* GetPointer_32bpp(HBITMAP hBmp, int X, int Y)
+{
+	return ((uint32*)&(hBmp->data[(Y * hBmp->width * 4) + X * 4]));
 }
 
 /**
@@ -144,13 +181,10 @@ HBITMAP CreateCompatibleBitmap(HDC hdc, int nWidth, int nHeight)
 
 int BitBlt(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc, int rop)
 {
-	return BitBlt_[IBPP(hdcDest->bitsPerPixel)](hdcDest, nXDest, nYDest, nWidth, nHeight, hdcSrc, nXSrc, nYSrc, rop);
-}
+	pBitBlt _BitBlt = BitBlt_[IBPP(hdcDest->bitsPerPixel)];
 
-void BitmapInit()
-{
-	/* BitBlt */
-	BitBlt_[1] = BitBlt_8bpp;
-	BitBlt_[2] = BitBlt_16bpp;
-	BitBlt_[4] = BitBlt_32bpp;
+	if (_BitBlt != NULL)
+		return _BitBlt(hdcDest, nXDest, nYDest, nWidth, nHeight, hdcSrc, nXSrc, nYSrc, rop);
+	else
+		return 0;
 }

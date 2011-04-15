@@ -32,7 +32,14 @@
 
 #include "gdi_brush.h"
 
-pPatBlt PatBlt_[5];
+pPatBlt PatBlt_[5] =
+{
+	NULL,
+	PatBlt_8bpp,
+	PatBlt_16bpp,
+	NULL,
+	PatBlt_32bpp
+};
 
 /**
  * Create a new solid brush.\n
@@ -80,13 +87,10 @@ HBRUSH CreatePatternBrush(HBITMAP hbmp)
 
 int PatBlt(HDC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight, int rop)
 {
-	return PatBlt_[IBPP(hdc->bitsPerPixel)](hdc, nXLeft, nYLeft, nWidth, nHeight, rop);
-}
+	pPatBlt _PatBlt = PatBlt_[IBPP(hdc->bitsPerPixel)];
 
-void BrushInit()
-{
-	/* PatBlt */
-	PatBlt_[1] = PatBlt_8bpp;
-	PatBlt_[2] = PatBlt_16bpp;
-	PatBlt_[4] = PatBlt_32bpp;
+	if (_PatBlt != NULL)
+		return PatBlt_[IBPP(hdc->bitsPerPixel)](hdc, nXLeft, nYLeft, nWidth, nHeight, rop);
+	else
+		return 0;
 }

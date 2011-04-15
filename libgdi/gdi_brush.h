@@ -22,7 +22,6 @@
 
 #include "gdi.h"
 
-void BrushInit();
 HBRUSH CreateSolidBrush(COLORREF crColor);
 HBRUSH CreatePatternBrush(HBITMAP hbmp);
 int PatBlt(HDC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight, int rop);

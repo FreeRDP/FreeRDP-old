@@ -19,10 +19,3 @@
 
 #include <freerdp/freerdp.h>
 #include "gdi.h"
-
-void InitializeGDI()
-{
-	BitmapInit();
-	BrushInit();
-	ShapeInit();
-}

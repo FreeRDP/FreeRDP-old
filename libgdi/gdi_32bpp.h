@@ -24,4 +24,4 @@
 int FillRect_32bpp(HDC hdc, HRECT rect, HBRUSH hbr);
 int BitBlt_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc, int rop);
 int PatBlt_32bpp(HDC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight, int rop);
-
+int LineTo_32bpp(HDC hdc, int nXEnd, int nYEnd);

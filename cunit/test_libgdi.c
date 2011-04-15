@@ -25,7 +25,6 @@
 
 int init_libgdi_suite(void)
 {
-	InitializeGDI();
 	return 0;
 }
 

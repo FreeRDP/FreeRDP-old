@@ -24,87 +24,20 @@
 #include <freerdp/freerdp.h>
 #include "gdi.h"
 
+#include "gdi_32bpp.h"
+#include "gdi_16bpp.h"
+#include "gdi_8bpp.h"
+
 #include "gdi_line.h"
 
-static void
-LineTo_Bresenham(HDC hdc, int x1, int y1, int x2, int y2)
+pLineTo LineTo_[5] =
 {
-	int x, y;
-	int e, e2;
-	int dx, dy;
-	int sx, sy;
-	HBITMAP bmp;
-	int bx1, by1;
-	int bx2, by2;
-
-	uint8 pixel8;
-	uint16 pixel16;
-	uint32 pixel32;
-	int bpp = hdc->bitsPerPixel;
-
-	dx = (x1 > x2) ? x1 - x2 : x2 - x1;
-	dy = (y1 > y2) ? y1 - y2 : y2 - y1;
-
-	sx = (x1 < x2) ? 1 : -1;
-	sy = (y1 < y2) ? 1 : -1;
-
-	e = dx - dy;
-
-	x = x1;
-	y = y1;
-
-	pixel8 = pixel16 = pixel32 = 0;
-	bmp = (HBITMAP) hdc->selectedObject;
-
-	if (hdc->clip->null)
-	{
-		bx1 = (x1 < x2) ? x1 : x2;
-		by1 = (y1 < y2) ? y1 : y2;
-		bx2 = (x1 > x2) ? x1 : x2;
-		by2 = (y1 > y2) ? y1 : y2;
-	}
-	else
-	{
-		bx1 = hdc->clip->x;
-		by1 = hdc->clip->y;
-		bx2 = bx1 + hdc->clip->w - 1;
-		by2 = by1 + hdc->clip->h - 1;
-	}
-
-	while (1)
-	{
-		if (!(x == x2 && y == y2))
-		{
-			if ((x >= bx1 && x <= bx2) && (y >= by1 && y <= by2))
-			{
-				if (bpp == 32)
-					SetPixel_32bpp(bmp, x, y, pixel32);
-				else if (bpp == 16)
-					SetPixel_16bpp(bmp, x, y, pixel16);
-				else if (bpp == 8)
-					SetPixel_8bpp(bmp, x, y, pixel8);
-			}
-		}
-		else
-		{
-			break;
-		}
-
-		e2 = 2 * e;
-
-		if (e2 > -dy)
-		{
-			e -= dy;
-			x += sx;
-		}
-
-		if (e2 < dx)
-		{
-			e += dx;
-			y += sy;
-		}
-	}
-}
+	NULL,
+	LineTo_8bpp,
+	LineTo_16bpp,
+	NULL,
+	LineTo_32bpp
+};
 
 /**
  * Draw a line from the current position to the given position.\n
@@ -117,14 +50,12 @@ LineTo_Bresenham(HDC hdc, int x1, int y1, int x2, int y2)
 
 int LineTo(HDC hdc, int nXEnd, int nYEnd)
 {
-	/*
-	 * According to this MSDN article, LineTo uses a modified version of Bresenham:
-	 * http://msdn.microsoft.com/en-us/library/dd145027/
-	 */
+	pLineTo _LineTo = LineTo_[IBPP(hdc->bitsPerPixel)];
 
-	LineTo_Bresenham(hdc, hdc->pen->posX, hdc->pen->posY, nXEnd, nYEnd);
-
-	return 1;
+	if (_LineTo != NULL)
+		return _LineTo(hdc, nXEnd, nYEnd);
+	else
+		return 0;
 }
 
 /**

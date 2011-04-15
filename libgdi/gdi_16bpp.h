@@ -24,4 +24,4 @@
 int FillRect_16bpp(HDC hdc, HRECT rect, HBRUSH hbr);
 int BitBlt_16bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc, int rop);
 int PatBlt_16bpp(HDC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight, int rop);
-
+int LineTo_16bpp(HDC hdc, int nXEnd, int nYEnd);

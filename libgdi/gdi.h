@@ -243,13 +243,12 @@ struct _DC
 typedef struct _DC DC;
 typedef DC* HDC;
 
-#define IBPP(_bpp) (_bpp / 8)
+#define IBPP(_bpp) ((_bpp / 8) % 5)
 
 typedef int (*pBitBlt)(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc, int rop);
 typedef int (*pPatBlt)(HDC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight, int rop);
 typedef int (*pFillRect)(HDC hdc, HRECT rect, HBRUSH hbr);
-
-void InitializeGDI();
+typedef int (*pLineTo)(HDC hdc, int nXEnd, int nYEnd);
 
 #define SET_GDI(_inst, _gdi) (_inst)->param2 = _gdi
 #define GET_GDI(_inst) ((GDI*) ((_inst)->param2))

@@ -22,9 +22,14 @@
 
 #include "gdi.h"
 
-void BitmapInit();
 COLORREF GetPixel(HDC hdc, int nXPos, int nYPos);
 COLORREF SetPixel(HDC hdc, int X, int Y, COLORREF crColor);
+uint8 GetPixel_8bpp(HBITMAP hBmp, int X, int Y);
+uint16 GetPixel_16bpp(HBITMAP hBmp, int X, int Y);
+uint32 GetPixel_32bpp(HBITMAP hBmp, int X, int Y);
+uint8* GetPointer_8bpp(HBITMAP hBmp, int X, int Y);
+uint16* GetPointer_16bpp(HBITMAP hBmp, int X, int Y);
+uint32* GetPointer_32bpp(HBITMAP hBmp, int X, int Y);
 void SetPixel_8bpp(HBITMAP hBmp, int X, int Y, uint8 pixel);
 void SetPixel_16bpp(HBITMAP hBmp, int X, int Y, uint16 pixel);
 void SetPixel_32bpp(HBITMAP hBmp, int X, int Y, uint32 pixel);
