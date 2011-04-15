@@ -659,7 +659,31 @@ gdi_ui_polygon(struct rdp_inst * inst, uint8 opcode, uint8 fillmode, RD_POINT * 
 static void
 gdi_ui_polyline(struct rdp_inst * inst, uint8 opcode, RD_POINT * points, int npoints, RD_PEN * pen)
 {
+	int i;
+	int cx;
+	int cy;
+	HPEN hPen;
+	GDI *gdi = GET_GDI(inst);
+
 	DEBUG_GDI("ui_polyline: opcode:%d npoints:%d\n", opcode, npoints);
+
+	gdi_color_convert(&(gdi->pixel), pen->color, gdi->srcBpp, gdi->palette);
+
+	hPen = CreatePen(pen->style, pen->width, (COLORREF) PixelRGB(gdi->pixel));
+	SelectObject(gdi->drawing->hdc, (HGDIOBJ) hPen);
+	SetROP2(gdi->drawing->hdc, opcode);
+
+	cx = points[0].x;
+	cy = points[0].y;
+	for(i = 1; i < npoints; i++)
+	{
+		MoveToEx(gdi->drawing->hdc, cx, cy, NULL);
+		cx += points[i].x;
+		cy += points[i].y;
+		LineTo(gdi->drawing->hdc, cx, cy);
+	}
+
+	DeleteObject((HGDIOBJ) hPen);
 }
 
 /**
@@ -773,6 +797,7 @@ static void
 gdi_ui_patblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy, RD_BRUSH * brush, int bgcolor, int fgcolor)
 {
 	GDI *gdi = GET_GDI(inst);
+	HBRUSH originalBrush;
 	
 	DEBUG_GDI("ui_patblt: x: %d y: %d cx: %d cy: %d rop: 0x%X\n", x, y, cx, cy, gdi_rop3_code(opcode));
 	
@@ -780,7 +805,6 @@ gdi_ui_patblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy
 	{
 		uint8* data;
 		HBITMAP hBmp;
-		HBRUSH originalBrush;
 
 		if (brush->bd == 0) /* RDP4 Brush */
 		{
@@ -809,14 +833,15 @@ gdi_ui_patblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy
 	}
 	else if (brush->style == BS_SOLID)
 	{
-#if 0
-		gdi_color_convert(&(gdi->pixel), fgcolor, gdi->dstBpp, gdi->palette);
-		gdi->textColor = SetTextColor(gdi->drawing->hdc, PixelRGB(gdi->pixel));
-		
+		originalBrush = gdi->drawing->hdc->brush;
+
+		gdi_color_convert(&(gdi->pixel), fgcolor, gdi->srcBpp, gdi->palette);
+		gdi->drawing->hdc->brush = CreateSolidBrush(PixelRGB(gdi->pixel));
+
 		PatBlt(gdi->drawing->hdc, x, y, cx, cy, gdi_rop3_code(opcode));
 
-		SetTextColor(gdi->drawing->hdc, gdi->textColor);
-#endif
+		DeleteObject((HGDIOBJ) gdi->drawing->hdc->brush);
+		gdi->drawing->hdc->brush = originalBrush;
 	}
 	else
 	{
