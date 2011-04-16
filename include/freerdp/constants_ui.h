@@ -53,4 +53,12 @@
 #define PERF_ENABLE_FONT_SMOOTHING      0x00000080
 #define PERF_ENABLE_DESKTOP_COMPOSITION 0x00000100
 
+/* RD_EVENT.event_type */
+#define RD_EVENT_TYPE_VIDEO_FRAME           1
+#define RD_EVENT_TYPE_REDRAW                2
+
+/* RD_VIDEO_FRAME_EVENT.frame_pixfmt */
+/* http://www.fourcc.org/yuv.php */
+#define RD_PIXFMT_I420          0x30323449
+
 #endif

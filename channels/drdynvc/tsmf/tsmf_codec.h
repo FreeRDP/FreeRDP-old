@@ -1,8 +1,8 @@
 /*
    FreeRDP: A Remote Desktop Protocol client.
-   UI event processing
+   Video Redirection Virtual Channel - Codec
 
-   Copyright (C) Jay Sorg 2009-2011
+   Copyright 2010-2011 Vic Lee
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -17,14 +17,15 @@
    limitations under the License.
 */
 
-#ifndef __XF_EVENT_H
-#define __XF_EVENT_H
+#ifndef __TSMF_CODEC
+#define __TSMF_CODEC
 
-#include "xf_types.h"
+#include "tsmf_types.h"
 
 int
-xf_handle_event(xfInfo * xfi, XEvent * xevent);
+tsmf_codec_parse_media_type(TS_AM_MEDIA_TYPE * mediatype, const uint8 * pMediaType);
 int
-xf_handle_redraw_event(xfInfo * xfi, RD_REDRAW_EVENT * revent);
+tsmf_codec_check_media_type(const uint8 * pMediaType);
 
 #endif
+

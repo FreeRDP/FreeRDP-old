@@ -74,6 +74,10 @@ freerdp_chanman_get_fds(rdpChanMan * chan_man, rdpInst * inst, void ** read_fds,
 	int * read_count, void ** write_fds, int * write_count);
 FREERDP_CHANMAN_API int
 freerdp_chanman_check_fds(rdpChanMan * chan_man, rdpInst * inst);
+FREERDP_CHANMAN_API RD_EVENT *
+freerdp_chanman_pop_event(rdpChanMan * chan_man);
+FREERDP_CHANMAN_API void
+freerdp_chanman_free_event(rdpChanMan * chan_man, RD_EVENT * event);
 FREERDP_CHANMAN_API void
 freerdp_chanman_close(rdpChanMan * chan_man, rdpInst * inst);
 

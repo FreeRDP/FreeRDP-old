@@ -1,8 +1,8 @@
 /*
    FreeRDP: A Remote Desktop Protocol client.
-   UI event processing
+   Video Redirection Virtual Channel
 
-   Copyright (C) Jay Sorg 2009-2011
+   Copyright 2010-2011 Vic Lee
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -17,14 +17,29 @@
    limitations under the License.
 */
 
-#ifndef __XF_EVENT_H
-#define __XF_EVENT_H
+#ifndef __TSMF_TYPES_H
+#define __TSMF_TYPES_H
 
-#include "xf_types.h"
+typedef struct _TS_AM_MEDIA_TYPE
+{
+	int MajorType;
+	int SubType;
+	int FormatType;
 
-int
-xf_handle_event(xfInfo * xfi, XEvent * xevent);
-int
-xf_handle_redraw_event(xfInfo * xfi, RD_REDRAW_EVENT * revent);
+	uint32 Width;
+	uint32 Height;	
+	uint32 BitRate;
+	struct
+	{
+		uint32 Numerator;
+		uint32 Denominator;
+	} SamplesPerSecond;
+	uint32 Channels;
+	uint32 BitsPerSample;
+	uint32 BlockAlign;
+	const uint8 * ExtraData;
+	uint32 ExtraDataSize;
+} TS_AM_MEDIA_TYPE;
 
 #endif
+

@@ -15,6 +15,7 @@ AH_TEMPLATE(B_ENDIAN, [Big endian])
 AH_TEMPLATE(L_ENDIAN, [Little endian])
 AH_TEMPLATE(EGD_SOCKET, [EGD])
 AH_TEMPLATE(HAVE_LIBSAMPLERATE, [Define if you have libsamplerate])
+AH_TEMPLATE(HAVE_XV, [Define if you have XVideo extension])
 AH_TEMPLATE(IPv6, [IPv6])
 AH_TEMPLATE(NEED_ALIGN, [Alignment])
 AH_TEMPLATE(DISABLE_TLS, [Disable TLS encryption])
@@ -245,6 +246,14 @@ PKG_CHECK_MODULES(PULSE, libpulse, [
 ], [
 	HAVE_PULSE=0
 	pulse="no"
+])
+
+PKG_CHECK_MODULES(FFMPEG, [libavcodec], [
+	HAVE_FFMPEG=1
+	ffmpeg="yes"
+], [
+	HAVE_FFMPEG=0
+	ffmpeg="no"
 ])
 
 #
@@ -907,14 +916,21 @@ EXTRA_SUBDIRS=""
 # ALSA
 #
 if test x"$HAVE_ALSA" = "x1"; then
-	EXTRA_SUBDIRS="$EXTRA_SUBDIRS channels/rdpsnd/alsa channels/drdynvc/audin/alsa"
+	EXTRA_SUBDIRS="$EXTRA_SUBDIRS channels/rdpsnd/alsa channels/drdynvc/audin/alsa channels/drdynvc/tsmf/alsa"
 fi
 
 #
 # PulseAudio
 #
 if test x"$HAVE_PULSE" = "x1"; then
-	EXTRA_SUBDIRS="$EXTRA_SUBDIRS channels/rdpsnd/pulse channels/drdynvc/audin/pulse"
+	EXTRA_SUBDIRS="$EXTRA_SUBDIRS channels/rdpsnd/pulse channels/drdynvc/audin/pulse channels/drdynvc/tsmf/pulse"
+fi
+
+#
+# FFmpeg
+#
+if test x"$HAVE_FFMPEG" = "x1"; then
+	EXTRA_SUBDIRS="$EXTRA_SUBDIRS channels/drdynvc/tsmf/ffmpeg"
 fi
 
 #
@@ -946,6 +962,18 @@ else
 	PKG_CHECK_MODULES(XCURSOR, [xcursor])
 	x11="yes"
 	EXTRA_SUBDIRS="$EXTRA_SUBDIRS X11"
+fi
+
+#
+# XVideo
+#
+if test "$x11" = "yes"; then
+	PKG_CHECK_MODULES(XV, [xext xv], [
+		xv="yes"
+		AC_DEFINE(HAVE_XV, 1)
+	], [
+		xv="no"
+	])
 fi
 
 #
@@ -1007,6 +1035,10 @@ channels/rdpsnd/alsa/Makefile
 channels/rdpsnd/pulse/Makefile
 channels/drdynvc/Makefile
 channels/drdynvc/pnpdr/Makefile
+channels/drdynvc/tsmf/Makefile
+channels/drdynvc/tsmf/ffmpeg/Makefile
+channels/drdynvc/tsmf/alsa/Makefile
+channels/drdynvc/tsmf/pulse/Makefile
 channels/drdynvc/audin/Makefile
 channels/drdynvc/audin/alsa/Makefile
 channels/drdynvc/audin/pulse/Makefile
@@ -1032,8 +1064,11 @@ else
 fi
 echo "ALSA         : $alsa"
 echo "PulseAudio   : $pulse"
+echo "FFmpeg       : $ffmpeg"
 echo "Printer      : $printer"
 echo "CUnit        : $cunit"
 echo "X11          : $x11"
+echo "XVideo       : $xv"
 echo "xkbfile      : $xkbfile"
 echo "DirectFB     : $dfb"
+

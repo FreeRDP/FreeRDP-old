@@ -14,6 +14,7 @@ REQUIRED_SUBDIRS = \
 	channels/rdpsnd \
 	channels/drdynvc \
 	channels/drdynvc/pnpdr \
+	channels/drdynvc/tsmf \
 	channels/drdynvc/audin \
 	channels/cliprdr \
 	channels/rdpdbg \
@@ -28,6 +29,9 @@ OPTIONAL_SUBDIRS = \
 	channels/rdpsnd/pulse \
 	channels/drdynvc/audin/alsa \
 	channels/drdynvc/audin/pulse \
+	channels/drdynvc/tsmf/ffmpeg \
+	channels/drdynvc/tsmf/alsa \
+	channels/drdynvc/tsmf/pulse \
 	cunit \
 	X11 \
 	win \

@@ -37,6 +37,8 @@
 #include "xf_types.h"
 #include "xf_win.h"
 #include "xf_keyboard.h"
+#include "xf_event.h"
+#include "xf_video.h"
 
 #define MAX_PLUGIN_DATA 20
 
@@ -559,6 +561,7 @@ run_xfreerdp(xfInfo * xfi)
 	int max_sck;
 	fd_set rfds;
 	fd_set wfds;
+	RD_EVENT * event;
 
 	/* create an instance of the library */
 	inst = freerdp_new(xfi->settings);
@@ -607,6 +610,7 @@ run_xfreerdp(xfInfo * xfi)
 		printf("run_xfreerdp: xf_post_connect failed\n");
 		return XF_EXIT_CONN_FAILED;
 	}
+	xf_video_init(xfi);
 
 	/* program main loop */
 	while (1)
@@ -688,11 +692,30 @@ run_xfreerdp(xfInfo * xfi)
 			printf("run_xfreerdp: freerdp_chanman_check_fds failed\n");
 			break;
 		}
+		/* check channel event */
+		event = freerdp_chanman_pop_event(xfi->chan_man);
+		if (event)
+		{
+			switch (event->event_type)
+			{
+				case RD_EVENT_TYPE_VIDEO_FRAME:
+					xf_video_process_frame(xfi, (RD_VIDEO_FRAME_EVENT *) event);
+					break;
+				case RD_EVENT_TYPE_REDRAW:
+					xf_handle_redraw_event(xfi, (RD_REDRAW_EVENT *) event);
+					break;
+				default:
+					printf("run_xfreerdp: unknown event type %d\n", event->event_type);
+					break;
+			}
+			freerdp_chanman_free_event(xfi->chan_man, event);
+		}
 	}
 
 	g_disconnect_reason = inst->disc_reason;
 
 	/* cleanup */
+	xf_video_uninit(xfi);
 	freerdp_chanman_close(xfi->chan_man, inst);
 	inst->rdp_disconnect(inst);
 	freerdp_free(inst);

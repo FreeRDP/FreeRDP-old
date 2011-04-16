@@ -1,8 +1,8 @@
 /*
    FreeRDP: A Remote Desktop Protocol client.
-   UI event processing
+   UI XVideo
 
-   Copyright (C) Jay Sorg 2009-2011
+   Copyright (C) Vic Lee 2011
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -17,14 +17,17 @@
    limitations under the License.
 */
 
-#ifndef __XF_EVENT_H
-#define __XF_EVENT_H
+#ifndef __XF_VIDEO_H
+#define __XF_VIDEO_H
 
 #include "xf_types.h"
 
 int
-xf_handle_event(xfInfo * xfi, XEvent * xevent);
+xf_video_init(xfInfo * xfi);
 int
-xf_handle_redraw_event(xfInfo * xfi, RD_REDRAW_EVENT * revent);
+xf_video_process_frame(xfInfo * xfi, RD_VIDEO_FRAME_EVENT * vevent);
+void
+xf_video_uninit(xfInfo * xfi);
 
 #endif
+
