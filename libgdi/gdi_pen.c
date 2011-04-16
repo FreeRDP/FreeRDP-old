@@ -50,7 +50,7 @@ HPEN CreatePen(int fnPenStyle, int nWidth, int crColor)
 uint8 GetPenColor_8bpp(HPEN pen)
 {
 	/* TODO: implement conversion using palette */
-	return 0;
+	return 0xFF;
 }
 
 uint16 GetPenColor_16bpp(HPEN pen)

@@ -676,12 +676,14 @@ void SetPixel_BLACK_8bpp(uint8 *pixel, uint8 *pen)
 
 void SetPixel_NOTMERGEPEN_8bpp(uint8 *pixel, uint8 *pen)
 {
-
+	/* D = ~(D | P) */
+	*pixel = ~(*pixel | *pen);
 }
 
 void SetPixel_MASKNOTPEN_8bpp(uint8 *pixel, uint8 *pen)
 {
-
+	/* D = D & ~P */
+	*pixel &= ~(*pen);
 }
 
 void SetPixel_NOTCOPYPEN_8bpp(uint8 *pixel, uint8 *pen)
@@ -692,7 +694,8 @@ void SetPixel_NOTCOPYPEN_8bpp(uint8 *pixel, uint8 *pen)
 
 void SetPixel_MASKPENNOT_8bpp(uint8 *pixel, uint8 *pen)
 {
-
+	/* D = P & ~D */
+	*pixel = *pen & ~*pixel;
 }
 
 void SetPixel_NOT_8bpp(uint8 *pixel, uint8 *pen)
@@ -703,22 +706,26 @@ void SetPixel_NOT_8bpp(uint8 *pixel, uint8 *pen)
 
 void SetPixel_XORPEN_8bpp(uint8 *pixel, uint8 *pen)
 {
-
+	/* D = D ^ P */
+	*pixel = *pixel ^ *pen;
 }
 
 void SetPixel_NOTMASKPEN_8bpp(uint8 *pixel, uint8 *pen)
 {
-
+	/* D = ~(D & P) */
+	*pixel = ~(*pixel & *pen);
 }
 
 void SetPixel_MASKPEN_8bpp(uint8 *pixel, uint8 *pen)
 {
-
+	/* D = D & P */
+	*pixel &= *pen;
 }
 
 void SetPixel_NOTXORPEN_8bpp(uint8 *pixel, uint8 *pen)
 {
-
+	/* D = ~(D ^ P) */
+	*pixel = ~(*pixel ^ *pen);
 }
 
 void SetPixel_NOP_8bpp(uint8 *pixel, uint8 *pen)
@@ -728,7 +735,8 @@ void SetPixel_NOP_8bpp(uint8 *pixel, uint8 *pen)
 
 void SetPixel_MERGENOTPEN_8bpp(uint8 *pixel, uint8 *pen)
 {
-
+	/* D = D | ~P */
+	*pixel |= ~(*pen);
 }
 
 void SetPixel_COPYPEN_8bpp(uint8 *pixel, uint8 *pen)
@@ -739,12 +747,14 @@ void SetPixel_COPYPEN_8bpp(uint8 *pixel, uint8 *pen)
 
 void SetPixel_MERGEPENNOT_8bpp(uint8 *pixel, uint8 *pen)
 {
-
+	/* D = P | ~D */
+	*pixel = *pen | ~(*pixel);
 }
 
 void SetPixel_MERGEPEN_8bpp(uint8 *pixel, uint8 *pen)
 {
-
+	/* D = P | D */
+	*pixel |= *pen;
 }
 
 void SetPixel_WHITE_8bpp(uint8 *pixel, uint8 *pen)

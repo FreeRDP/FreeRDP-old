@@ -812,12 +812,14 @@ void SetPixel_BLACK_16bpp(uint16 *pixel, uint16 *pen)
 
 void SetPixel_NOTMERGEPEN_16bpp(uint16 *pixel, uint16 *pen)
 {
-
+	/* D = ~(D | P) */
+	*pixel = ~(*pixel | *pen);
 }
 
 void SetPixel_MASKNOTPEN_16bpp(uint16 *pixel, uint16 *pen)
 {
-
+	/* D = D & ~P */
+	*pixel &= ~(*pen);
 }
 
 void SetPixel_NOTCOPYPEN_16bpp(uint16 *pixel, uint16 *pen)
@@ -828,7 +830,8 @@ void SetPixel_NOTCOPYPEN_16bpp(uint16 *pixel, uint16 *pen)
 
 void SetPixel_MASKPENNOT_16bpp(uint16 *pixel, uint16 *pen)
 {
-
+	/* D = P & ~D */
+	*pixel = *pen & ~*pixel;
 }
 
 void SetPixel_NOT_16bpp(uint16 *pixel, uint16 *pen)
@@ -839,22 +842,26 @@ void SetPixel_NOT_16bpp(uint16 *pixel, uint16 *pen)
 
 void SetPixel_XORPEN_16bpp(uint16 *pixel, uint16 *pen)
 {
-
+	/* D = D ^ P */
+	*pixel = *pixel ^ *pen;
 }
 
 void SetPixel_NOTMASKPEN_16bpp(uint16 *pixel, uint16 *pen)
 {
-
+	/* D = ~(D & P) */
+	*pixel = ~(*pixel & *pen);
 }
 
 void SetPixel_MASKPEN_16bpp(uint16 *pixel, uint16 *pen)
 {
-
+	/* D = D & P */
+	*pixel &= *pen;
 }
 
 void SetPixel_NOTXORPEN_16bpp(uint16 *pixel, uint16 *pen)
 {
-
+	/* D = ~(D ^ P) */
+	*pixel = ~(*pixel ^ *pen);
 }
 
 void SetPixel_NOP_16bpp(uint16 *pixel, uint16 *pen)
@@ -864,7 +871,8 @@ void SetPixel_NOP_16bpp(uint16 *pixel, uint16 *pen)
 
 void SetPixel_MERGENOTPEN_16bpp(uint16 *pixel, uint16 *pen)
 {
-
+	/* D = D | ~P */
+	*pixel |= ~(*pen);
 }
 
 void SetPixel_COPYPEN_16bpp(uint16 *pixel, uint16 *pen)
@@ -875,12 +883,14 @@ void SetPixel_COPYPEN_16bpp(uint16 *pixel, uint16 *pen)
 
 void SetPixel_MERGEPENNOT_16bpp(uint16 *pixel, uint16 *pen)
 {
-
+	/* D = P | ~D */
+	*pixel = *pen | ~(*pixel);
 }
 
 void SetPixel_MERGEPEN_16bpp(uint16 *pixel, uint16 *pen)
 {
-
+	/* D = P | D */
+	*pixel |= *pen;
 }
 
 void SetPixel_WHITE_16bpp(uint16 *pixel, uint16 *pen)
