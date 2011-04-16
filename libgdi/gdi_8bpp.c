@@ -668,6 +668,111 @@ int PatBlt_8bpp(HDC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight, int ro
 	return 1;
 }
 
+void SetPixel_BLACK_8bpp(uint8 *pixel, uint8 *pen)
+{
+	/* D = 0 */
+	*pixel = 0;
+}
+
+void SetPixel_NOTMERGEPEN_8bpp(uint8 *pixel, uint8 *pen)
+{
+
+}
+
+void SetPixel_MASKNOTPEN_8bpp(uint8 *pixel, uint8 *pen)
+{
+
+}
+
+void SetPixel_NOTCOPYPEN_8bpp(uint8 *pixel, uint8 *pen)
+{
+	/* D = ~P */
+	*pixel = ~(*pen);
+}
+
+void SetPixel_MASKPENNOT_8bpp(uint8 *pixel, uint8 *pen)
+{
+
+}
+
+void SetPixel_NOT_8bpp(uint8 *pixel, uint8 *pen)
+{
+	/* D = ~D */
+	*pixel = ~(*pixel);
+}
+
+void SetPixel_XORPEN_8bpp(uint8 *pixel, uint8 *pen)
+{
+
+}
+
+void SetPixel_NOTMASKPEN_8bpp(uint8 *pixel, uint8 *pen)
+{
+
+}
+
+void SetPixel_MASKPEN_8bpp(uint8 *pixel, uint8 *pen)
+{
+
+}
+
+void SetPixel_NOTXORPEN_8bpp(uint8 *pixel, uint8 *pen)
+{
+
+}
+
+void SetPixel_NOP_8bpp(uint8 *pixel, uint8 *pen)
+{
+	/* D = D */
+}
+
+void SetPixel_MERGENOTPEN_8bpp(uint8 *pixel, uint8 *pen)
+{
+
+}
+
+void SetPixel_COPYPEN_8bpp(uint8 *pixel, uint8 *pen)
+{
+	/* D = P */
+	*pixel = *pen;
+}
+
+void SetPixel_MERGEPENNOT_8bpp(uint8 *pixel, uint8 *pen)
+{
+
+}
+
+void SetPixel_MERGEPEN_8bpp(uint8 *pixel, uint8 *pen)
+{
+
+}
+
+void SetPixel_WHITE_8bpp(uint8 *pixel, uint8 *pen)
+{
+	/* D = 1 */
+	*pixel = 0xFF;
+}
+
+pSetPixel8_ROP2 SetPixel8_ROP2_[16] =
+{
+	SetPixel_BLACK_8bpp,
+	SetPixel_NOTMERGEPEN_8bpp,
+	SetPixel_MASKNOTPEN_8bpp,
+	SetPixel_NOTCOPYPEN_8bpp,
+	SetPixel_MASKPENNOT_8bpp,
+	SetPixel_NOT_8bpp,
+	SetPixel_XORPEN_8bpp,
+	SetPixel_NOTMASKPEN_8bpp,
+	SetPixel_MASKPEN_8bpp,
+	SetPixel_NOTXORPEN_8bpp,
+	SetPixel_NOP_8bpp,
+	SetPixel_MERGENOTPEN_8bpp,
+	SetPixel_COPYPEN_8bpp,
+	SetPixel_MERGEPENNOT_8bpp,
+	SetPixel_MERGEPEN_8bpp,
+	SetPixel_WHITE_8bpp
+};
+
 int LineTo_8bpp(HDC hdc, int nXEnd, int nYEnd)
 {
 	int x, y;
@@ -679,6 +784,9 @@ int LineTo_8bpp(HDC hdc, int nXEnd, int nYEnd)
 	HBITMAP bmp;
 	int bx1, by1;
 	int bx2, by2;
+
+	int irop2;
+	uint8 pen;
 	uint8 *pixel;
 
 	x1 = hdc->pen->posX;
@@ -697,6 +805,7 @@ int LineTo_8bpp(HDC hdc, int nXEnd, int nYEnd)
 	x = x1;
 	y = y1;
 
+	irop2 = GetROP2(hdc) - 1;
 	bmp = (HBITMAP) hdc->selectedObject;
 
 	if (hdc->clip->null)
@@ -714,6 +823,8 @@ int LineTo_8bpp(HDC hdc, int nXEnd, int nYEnd)
 		by2 = by1 + hdc->clip->h - 1;
 	}
 
+	pen = GetPenColor_8bpp(hdc->pen);
+
 	while (1)
 	{
 		if (!(x == x2 && y == y2))
@@ -721,7 +832,7 @@ int LineTo_8bpp(HDC hdc, int nXEnd, int nYEnd)
 			if ((x >= bx1 && x <= bx2) && (y >= by1 && y <= by2))
 			{
 				pixel = GetPointer_8bpp(bmp, x, y);
-				*pixel = 0;
+				SetPixel8_ROP2_[irop2](pixel, &pen);
 			}
 		}
 		else

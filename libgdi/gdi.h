@@ -39,7 +39,7 @@
 #ifndef __GDI_H
 #define __GDI_H
 
-/* For more information, see [MS-RDPEGDI].pdf */
+/* For more information, see [MS-RDPEGDI] */
 
 /* Binary Raster Operations (ROP2) */
 #define R2_BLACK		0x01  /* 0    */
@@ -60,7 +60,7 @@
 #define R2_WHITE		0x10  /* 1    */
 
 /* Ternary Raster Operations (ROP3) */
-#define SRCCOPY			0x00CC0020 /* D = S	*/
+#define SRCCOPY			0x00CC0020 /* D = S */
 #define SRCPAINT		0x00EE0086 /* D = S | D	*/
 #define SRCAND			0x008800C6 /* D = S & D	*/
 #define SRCINVERT		0x00660046 /* D = S ^ D	*/
@@ -69,7 +69,7 @@
 #define NOTSRCERASE		0x001100A6 /* D = ~S & ~D */
 #define MERGECOPY		0x00C000CA /* D = S & P	*/
 #define MERGEPAINT		0x00BB0226 /* D = ~S | D */
-#define PATCOPY			0x00F00021 /* D = P	*/
+#define PATCOPY			0x00F00021 /* D = P */
 #define PATPAINT		0x00FB0A09 /* D = D | (P | ~S) */
 #define PATINVERT		0x005A0049 /* D = P ^ D	*/
 #define DSTINVERT		0x00550009 /* D = ~D */

@@ -51,7 +51,10 @@ int GetROP2(HDC hdc)
 int SetROP2(HDC hdc, int fnDrawMode)
 {
 	int prevDrawMode = hdc->drawMode;
-	hdc->drawMode = fnDrawMode;
+
+	if (fnDrawMode > 0 && fnDrawMode <= 16)
+		hdc->drawMode = fnDrawMode;
+
 	return prevDrawMode;
 }
 

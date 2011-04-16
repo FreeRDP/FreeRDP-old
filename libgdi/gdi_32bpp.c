@@ -885,6 +885,111 @@ int PatBlt_32bpp(HDC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight, int r
 	return 1;
 }
 
+void SetPixel_BLACK_32bpp(uint32 *pixel, uint32 *pen)
+{
+	/* D = 0 */
+	*pixel = 0;
+}
+
+void SetPixel_NOTMERGEPEN_32bpp(uint32 *pixel, uint32 *pen)
+{
+
+}
+
+void SetPixel_MASKNOTPEN_32bpp(uint32 *pixel, uint32 *pen)
+{
+
+}
+
+void SetPixel_NOTCOPYPEN_32bpp(uint32 *pixel, uint32 *pen)
+{
+	/* D = ~P */
+	*pixel = ~(*pen);
+}
+
+void SetPixel_MASKPENNOT_32bpp(uint32 *pixel, uint32 *pen)
+{
+
+}
+
+void SetPixel_NOT_32bpp(uint32 *pixel, uint32 *pen)
+{
+	/* D = ~D */
+	*pixel = ~(*pixel);
+}
+
+void SetPixel_XORPEN_32bpp(uint32 *pixel, uint32 *pen)
+{
+
+}
+
+void SetPixel_NOTMASKPEN_32bpp(uint32 *pixel, uint32 *pen)
+{
+
+}
+
+void SetPixel_MASKPEN_32bpp(uint32 *pixel, uint32 *pen)
+{
+
+}
+
+void SetPixel_NOTXORPEN_32bpp(uint32 *pixel, uint32 *pen)
+{
+
+}
+
+void SetPixel_NOP_32bpp(uint32 *pixel, uint32 *pen)
+{
+	/* D = D */
+}
+
+void SetPixel_MERGENOTPEN_32bpp(uint32 *pixel, uint32 *pen)
+{
+
+}
+
+void SetPixel_COPYPEN_32bpp(uint32 *pixel, uint32 *pen)
+{
+	/* D = P */
+	*pixel = *pen;
+}
+
+void SetPixel_MERGEPENNOT_32bpp(uint32 *pixel, uint32 *pen)
+{
+
+}
+
+void SetPixel_MERGEPEN_32bpp(uint32 *pixel, uint32 *pen)
+{
+
+}
+
+void SetPixel_WHITE_32bpp(uint32 *pixel, uint32 *pen)
+{
+	/* D = 1 */
+	*pixel = 0xFFFFFF;
+}
+
+pSetPixel32_ROP2 SetPixel32_ROP2_[32] =
+{
+	SetPixel_BLACK_32bpp,
+	SetPixel_NOTMERGEPEN_32bpp,
+	SetPixel_MASKNOTPEN_32bpp,
+	SetPixel_NOTCOPYPEN_32bpp,
+	SetPixel_MASKPENNOT_32bpp,
+	SetPixel_NOT_32bpp,
+	SetPixel_XORPEN_32bpp,
+	SetPixel_NOTMASKPEN_32bpp,
+	SetPixel_MASKPEN_32bpp,
+	SetPixel_NOTXORPEN_32bpp,
+	SetPixel_NOP_32bpp,
+	SetPixel_MERGENOTPEN_32bpp,
+	SetPixel_COPYPEN_32bpp,
+	SetPixel_MERGEPENNOT_32bpp,
+	SetPixel_MERGEPEN_32bpp,
+	SetPixel_WHITE_32bpp
+};
+
 int LineTo_32bpp(HDC hdc, int nXEnd, int nYEnd)
 {
 	int x, y;
@@ -896,6 +1001,9 @@ int LineTo_32bpp(HDC hdc, int nXEnd, int nYEnd)
 	HBITMAP bmp;
 	int bx1, by1;
 	int bx2, by2;
+
+	int irop2;
+	uint32 pen;
 	uint32 *pixel;
 
 	x1 = hdc->pen->posX;
@@ -914,6 +1022,7 @@ int LineTo_32bpp(HDC hdc, int nXEnd, int nYEnd)
 	x = x1;
 	y = y1;
 
+	irop2 = GetROP2(hdc) - 1;
 	bmp = (HBITMAP) hdc->selectedObject;
 
 	if (hdc->clip->null)
@@ -931,6 +1040,8 @@ int LineTo_32bpp(HDC hdc, int nXEnd, int nYEnd)
 		by2 = by1 + hdc->clip->h - 1;
 	}
 
+	pen = GetPenColor_32bpp(hdc->pen);
+
 	while (1)
 	{
 		if (!(x == x2 && y == y2))
@@ -938,7 +1049,7 @@ int LineTo_32bpp(HDC hdc, int nXEnd, int nYEnd)
 			if ((x >= bx1 && x <= bx2) && (y >= by1 && y <= by2))
 			{
 				pixel = GetPointer_32bpp(bmp, x, y);
-				*pixel = 0;
+				SetPixel32_ROP2_[irop2](pixel, &pen);
 			}
 		}
 		else

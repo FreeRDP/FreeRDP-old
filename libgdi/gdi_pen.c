@@ -46,3 +46,24 @@ HPEN CreatePen(int fnPenStyle, int nWidth, int crColor)
 	hPen->width = nWidth;
 	return hPen;
 }
+
+uint8 GetPenColor_8bpp(HPEN pen)
+{
+	/* TODO: implement conversion using palette */
+	return 0;
+}
+
+uint16 GetPenColor_16bpp(HPEN pen)
+{
+	uint16 p;
+	int r, g, b;
+	GetRGB32(r, g, b, pen->color);
+ 	RGB_888_565(r, g, b);
+	p = RGB16(r, g, b);
+	return p;
+}
+
+uint32 GetPenColor_32bpp(HPEN pen)
+{
+	return pen->color;
+}

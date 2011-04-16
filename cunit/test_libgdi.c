@@ -926,7 +926,7 @@ void test_GetDC(void)
 	HDC hdc = GetDC();
 	CU_ASSERT(hdc->bytesPerPixel == 4);
 	CU_ASSERT(hdc->bitsPerPixel == 32);
-	CU_ASSERT(hdc->drawMode == R2_COPYPEN);
+	CU_ASSERT(hdc->drawMode == R2_BLACK);
 }
 
 void test_CreateCompatibleDC(void)

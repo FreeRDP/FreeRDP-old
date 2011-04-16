@@ -21,6 +21,8 @@
 #include "gdi.h"
 #include "gdi_color.h"
 
+typedef void (*pSetPixel16_ROP2)(uint16 *pixel, uint16 *pen);
+
 int FillRect_16bpp(HDC hdc, HRECT rect, HBRUSH hbr);
 int BitBlt_16bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc, int rop);
 int PatBlt_16bpp(HDC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight, int rop);

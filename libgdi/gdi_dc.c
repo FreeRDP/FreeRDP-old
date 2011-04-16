@@ -39,7 +39,7 @@ HDC GetDC()
 	HDC hDC = (HDC) malloc(sizeof(DC));
 	hDC->bytesPerPixel = 4;
 	hDC->bitsPerPixel = 32;
-	hDC->drawMode = R2_COPYPEN;
+	hDC->drawMode = R2_BLACK;
 	hDC->clip = CreateRectRgn(0, 0, 0, 0);
 	hDC->clip->null = 1;
 	hDC->hwnd = NULL;
