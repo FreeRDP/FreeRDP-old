@@ -33,9 +33,9 @@
 #include <freerdp/chanman.h>
 #include "xf_types.h"
 #include "xf_event.h"
-#include "xf_color.h"
 #include "xf_keyboard.h"
 #include "xf_win.h"
+#include "gdi_color.h"
 
 #define MWM_HINTS_DECORATIONS   (1L << 1)
 #define PROP_MOTIF_WM_HINTS_ELEMENTS    5
@@ -276,7 +276,7 @@ l_ui_create_bitmap(struct rdp_inst * inst, int width, int height, uint8 * data)
 	xfi = GET_XFI(inst);
 	//DEBUG("ui_create_bitmap: inst %p width %d height %d\n", inst, width, height);
 	bitmap = XCreatePixmap(xfi->display, xfi->wnd, width, height, xfi->depth);
-	cdata = xf_image_convert(xfi, inst->settings, width, height, data);
+	cdata = gdi_image_convert(data, width, height, inst->settings->server_depth, xfi->depth, (HPALETTE) xfi->colormap);
 	image = XCreateImage(xfi->display, xfi->visual, xfi->depth, ZPixmap, 0,
 		(char *) cdata, width, height, xfi->bitmap_pad, 0);
 	XPutImage(xfi->display, bitmap, xfi->gc_default, image, 0, 0, 0, 0, width, height);
@@ -297,7 +297,7 @@ l_ui_paint_bitmap(struct rdp_inst * inst, int x, int y, int cx, int cy, int widt
 	uint8 * cdata;
 
 	xfi = GET_XFI(inst);
-	cdata = xf_image_convert(xfi, inst->settings, width, height, data);
+	cdata = gdi_image_convert(data, width, height, inst->settings->server_depth, xfi->depth, (HPALETTE) xfi->colormap);
 	image = XCreateImage(xfi->display, xfi->visual, xfi->depth, ZPixmap, 0,
 		(char *) cdata, width, height, xfi->bitmap_pad, 0);
 	XPutImage(xfi->display, xfi->backstore, xfi->gc_default, image, 0, 0, x, y, cx, cy);
@@ -328,7 +328,7 @@ l_ui_line(struct rdp_inst * inst, uint8 opcode, int startx, int starty, int endx
 
 	xfi = GET_XFI(inst);
 	//DEBUG("ui_line: opcode %d\n", opcode);
-	color = xf_color_convert(xfi, inst->settings, pen->color);
+	color = gdi_color(pen->color, inst->settings->server_depth, xfi->bpp, (HPALETTE) xfi->colormap);
 	xf_set_rop2(xfi, opcode);
 	XSetFillStyle(xfi->display, xfi->gc, FillSolid);
 	XSetForeground(xfi->display, xfi->gc, color);
@@ -345,7 +345,7 @@ l_ui_rect(struct rdp_inst * inst, int x, int y, int cx, int cy, int color)
 	xfInfo * xfi;
 
 	xfi = GET_XFI(inst);
-	color = xf_color_convert(xfi, inst->settings, color);
+	color = gdi_color(color, inst->settings->server_depth, xfi->bpp, (HPALETTE) xfi->colormap);
 	//DEBUG("ui_rect: inst %p x %d y %d cx %d cy %d color %d\n", inst, x, y, cx, cy, color);
 	XSetFunction(xfi->display, xfi->gc, GXcopy);
 	XSetFillStyle(xfi->display, xfi->gc, FillSolid);
@@ -369,8 +369,8 @@ l_ui_polygon(struct rdp_inst * inst, uint8 opcode, uint8 fillmode, RD_POINT * po
 	xf_set_rop2(xfi, opcode);
 	style = brush ? brush->style : 0;
 
-	fgcolor = xf_color_convert(xfi, inst->settings, fgcolor);
-	bgcolor = xf_color_convert(xfi, inst->settings, bgcolor);
+	fgcolor = gdi_color(fgcolor, inst->settings->server_depth, xfi->bpp, (HPALETTE) xfi->colormap);
+	bgcolor = gdi_color(bgcolor, inst->settings->server_depth, xfi->bpp, (HPALETTE) xfi->colormap);
 
 	switch (fillmode)
 	{
@@ -495,7 +495,7 @@ l_ui_polyline(struct rdp_inst * inst, uint8 opcode, RD_POINT * points, int npoin
 
 	//DEBUG("ui_polyline:\n");
 	xfi = GET_XFI(inst);
-	color = xf_color_convert(xfi, inst->settings, pen->color);
+	color = gdi_color(pen->color, inst->settings->server_depth, xfi->bpp, (HPALETTE) xfi->colormap);
 	DEBUG("opcode %d npoints %d color %d %d\n", opcode, npoints, color, pen->color);
 	xf_set_rop2(xfi, opcode);
 	XSetFillStyle(xfi->display, xfi->gc, FillSolid);
@@ -521,8 +521,8 @@ l_ui_start_draw_glyphs(struct rdp_inst * inst, int bgcolor, int fgcolor)
 	xfInfo * xfi;
 
 	xfi = GET_XFI(inst);
-	bgcolor = xf_color_convert(xfi, inst->settings, bgcolor);
-	fgcolor = xf_color_convert(xfi, inst->settings, fgcolor);
+	fgcolor = gdi_color(fgcolor, inst->settings->server_depth, xfi->bpp, (HPALETTE) xfi->colormap);
+	bgcolor = gdi_color(bgcolor, inst->settings->server_depth, xfi->bpp, (HPALETTE) xfi->colormap);
 	//DEBUG("ui_start_draw_glyphs:\n");
 	XSetFunction(xfi->display, xfi->gc, GXcopy);
 	XSetForeground(xfi->display, xfi->gc, fgcolor);
@@ -598,8 +598,8 @@ l_ui_patblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy,
 	uint8 * pat;
 
 	xfi = GET_XFI(inst);
-	fgcolor = xf_color_convert(xfi, inst->settings, fgcolor);
-	bgcolor = xf_color_convert(xfi, inst->settings, bgcolor);
+	fgcolor = gdi_color(fgcolor, inst->settings->server_depth, xfi->bpp, (HPALETTE) xfi->colormap);
+	bgcolor = gdi_color(bgcolor, inst->settings->server_depth, xfi->bpp, (HPALETTE) xfi->colormap);
 	//DEBUG("ui_patblt: style %d brush->bd %p\n", brush->style, brush->bd);
 	//if (brush->bd != 0)
 	//{
@@ -846,8 +846,7 @@ l_ui_create_cursor(struct rdp_inst * inst, uint32 x, uint32 y,
 	memset(ci.pixels, 0, width * height * 4);
 	if ((andmask != 0) && (xormask != 0))
 	{
-		xf_cursor_convert_alpha(xfi, (uint8 *) (ci.pixels), xormask, andmask,
-			width, height, bpp);
+		gdi_alpha_cursor_convert((uint8 *) (ci.pixels), xormask, andmask, width, height, bpp);
 	}
 	if (bpp > 24)
 	{
@@ -884,7 +883,7 @@ l_ui_create_cursor(struct rdp_inst * inst, uint32 x, uint32 y,
 	memset(&bg, 0, sizeof(bg));
 	if ((andmask != 0) && (xormask != 0))
 	{
-		xf_cursor_convert_mono(xfi, src_data, msk_data, xormask, andmask, width, height, bpp);
+		gdi_mono_cursor_convert(src_data, msk_data, xormask, andmask, width, height, bpp);
 	}
 	src_glyph = (Pixmap) l_ui_create_glyph(inst, width, height, src_data);
 	msk_glyph = (Pixmap) l_ui_create_glyph(inst, width, height, msk_data);
@@ -920,10 +919,9 @@ static RD_HPALETTE
 l_ui_create_colormap(struct rdp_inst * inst, RD_PALETTE * colors)
 {
 	xfInfo * xfi;
-
 	xfi = GET_XFI(inst);
 	DEBUG("ui_create_colormap:\n");
-	return xf_create_colormap(xfi, inst->settings, colors);
+	return (RD_HPALETTE) CreateSystemPalette();
 }
 
 static void
@@ -940,10 +938,8 @@ static void
 l_ui_set_colormap(struct rdp_inst * inst, RD_HPALETTE map)
 {
 	xfInfo * xfi;
-
 	xfi = GET_XFI(inst);
 	DEBUG("ui_set_colormap:\n");
-	xf_set_colormap(xfi, inst->settings, map);
 }
 
 static RD_HBITMAP
