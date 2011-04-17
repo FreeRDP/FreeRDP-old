@@ -42,22 +42,22 @@
 /* For more information, see [MS-RDPEGDI] */
 
 /* Binary Raster Operations (ROP2) */
-#define R2_BLACK		0x01  /* 0    */
-#define R2_NOTMERGEPEN		0x02  /* DPon */
-#define R2_MASKNOTPEN		0x03  /* DPna */
-#define R2_NOTCOPYPEN		0x04  /* PN   */
-#define R2_MASKPENNOT		0x05  /* PDna */
-#define R2_NOT			0x06  /* Dn   */
-#define R2_XORPEN		0x07  /* DPx  */
-#define R2_NOTMASKPEN		0x08  /* DPan */
-#define R2_MASKPEN		0x09  /* DPa  */
-#define R2_NOTXORPEN		0x0A  /* DPxn */
-#define R2_NOP			0x0B  /* D    */
-#define R2_MERGENOTPEN		0x0C  /* DPno */
-#define R2_COPYPEN		0x0D  /* P    */
-#define R2_MERGEPENNOT		0x0E  /* PDno */
-#define R2_MERGEPEN		0x0F  /* DPo  */
-#define R2_WHITE		0x10  /* 1    */
+#define R2_BLACK		0x01  /* D = 0 */
+#define R2_NOTMERGEPEN		0x02  /* D = ~(D | P) */
+#define R2_MASKNOTPEN		0x03  /* D = D & ~P */
+#define R2_NOTCOPYPEN		0x04  /* D = ~P */
+#define R2_MASKPENNOT		0x05  /* D = P & ~D */
+#define R2_NOT			0x06  /* D = ~D */
+#define R2_XORPEN		0x07  /* D = D ^ P */
+#define R2_NOTMASKPEN		0x08  /* D = ~(D & P) */
+#define R2_MASKPEN		0x09  /* D = D & P */
+#define R2_NOTXORPEN		0x0A  /* D = ~(D ^ P) */
+#define R2_NOP			0x0B  /* D = D */
+#define R2_MERGENOTPEN		0x0C  /* D = D | ~P */
+#define R2_COPYPEN		0x0D  /* D = P */
+#define R2_MERGEPENNOT		0x0E  /* D = P | ~D */
+#define R2_MERGEPEN		0x0F  /* D = P | D */
+#define R2_WHITE		0x10  /* D = 1 */
 
 /* Ternary Raster Operations (ROP3) */
 #define SRCCOPY			0x00CC0020 /* D = S */
@@ -180,15 +180,15 @@ typedef PEN* HPEN;
 
 struct _PALETTEENTRY
 {
-	unsigned char red;
-	unsigned char green;
-	unsigned char blue;
+	uint8 red;
+	uint8 green;
+	uint8 blue;
 };
 typedef struct _PALETTEENTRY PALETTEENTRY;
 
 struct _LOGPALETTE
 {
-	unsigned int count;
+	uint16 count;
 	PALETTEENTRY *entries;
 };
 typedef struct _LOGPALETTE LOGPALETTE;
@@ -245,11 +245,6 @@ typedef DC* HDC;
 
 #define IBPP(_bpp) (((_bpp + 1)/ 8) % 5)
 
-typedef int (*pBitBlt)(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc, int rop);
-typedef int (*pPatBlt)(HDC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight, int rop);
-typedef int (*pFillRect)(HDC hdc, HRECT rect, HBRUSH hbr);
-typedef int (*pLineTo)(HDC hdc, int nXEnd, int nYEnd);
-
 #define SET_GDI(_inst, _gdi) (_inst)->param2 = _gdi
 #define GET_GDI(_inst) ((GDI*) ((_inst)->param2))
 
@@ -258,8 +253,5 @@ typedef int (*pLineTo)(HDC hdc, int nXEnd, int nYEnd);
 #else
 #define DEBUG_GDI(fmt, ...) do { } while (0)
 #endif
-
-#include "gdi_color.h"
-#include "gdi_window.h"
 
 #endif /* __GDI_H */

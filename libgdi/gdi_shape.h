@@ -28,4 +28,6 @@ int Polygon(HDC hdc, POINT *lpPoints, int nCount);
 int PolyPolygon(HDC hdc, POINT *lpPoints, int *lpPolyCounts, int nCount);
 int Rectangle(HDC hdc, int nLeftRect, int nTopRect, int nRightRect, int nBottomRect);
 
+typedef int (*pFillRect)(HDC hdc, HRECT rect, HBRUSH hbr);
+
 #endif /* __GDI_SHAPE_H */

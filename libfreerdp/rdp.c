@@ -1195,15 +1195,15 @@ process_palette(rdpRdp * rdp, STREAM s)
 {
 	int i;
 	size_t size;
-	RD_COLORENTRY *entry;
-	RD_PALETTE map;
-	RD_HPALETTE hmap;
+	RD_PALETTEENTRY *entry;
+	RD_PALETTE pal;
+	RD_HPALETTE hpal;
 
 	in_uint8s(s, 2);	/* pad */
-	in_uint16_le(s, map.ncolors);
+	in_uint16_le(s, pal.count);
 	in_uint8s(s, 2);	/* pad */
 
-	size = sizeof(RD_COLORENTRY) * map.ncolors;
+	size = sizeof(RD_PALETTEENTRY) * pal.count;
 
 	if (size > rdp->buffer_size)
 	{
@@ -1211,20 +1211,20 @@ process_palette(rdpRdp * rdp, STREAM s)
 		rdp->buffer_size = size;
 	}
 
-	map.colors = (RD_COLORENTRY *) rdp->buffer;
+	pal.entries = (RD_PALETTEENTRY *) rdp->buffer;
 
-	DEBUG_DRAW("PALETTE(c=%d)\n", map.ncolors);
+	DEBUG_DRAW("PALETTE(c=%d)\n", pal.count);
 
-	for (i = 0; i < map.ncolors; i++)
+	for (i = 0; i < pal.count; i++)
 	{
-		entry = &map.colors[i];
+		entry = &pal.entries[i];
 		in_uint8(s, entry->red);
 		in_uint8(s, entry->green);
 		in_uint8(s, entry->blue);
 	}
 
-	hmap = ui_create_colormap(rdp->inst, &map);
-	ui_set_colormap(rdp->inst, hmap);
+	hpal = ui_create_colormap(rdp->inst, &pal);
+	ui_set_colormap(rdp->inst, hpal);
 }
 
 /* Process an update PDU */

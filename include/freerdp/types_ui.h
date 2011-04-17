@@ -49,18 +49,18 @@ typedef struct _RD_POINT
 }
 RD_POINT;
 
-typedef struct _RD_COLORENTRY
+typedef struct _RD_PALETTEENTRY
 {
 	uint8 red;
 	uint8 green;
 	uint8 blue;
 }
-RD_COLORENTRY;
+RD_PALETTEENTRY;
 
 typedef struct _RD_PALETTE
 {
-	uint16 ncolors;
-	RD_COLORENTRY *colors;
+	uint16 count;
+	RD_PALETTEENTRY *entries;
 }
 RD_PALETTE;
 
