@@ -1335,7 +1335,6 @@ void test_CreatePalette(void)
 
 	hPalette = CreatePalette(logicalPalette);
 	CU_ASSERT(hPalette->objectType == GDIOBJ_PALETTE);
-	CU_ASSERT(hPalette->logicalPalette == logicalPalette);
 	DeleteObject((HGDIOBJ) hPalette);
 }
 

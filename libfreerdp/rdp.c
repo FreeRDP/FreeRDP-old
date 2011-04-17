@@ -1195,9 +1195,9 @@ process_palette(rdpRdp * rdp, STREAM s)
 {
 	int i;
 	size_t size;
-	RD_PALETTEENTRY *entry;
 	RD_PALETTE pal;
 	RD_HPALETTE hpal;
+	RD_PALETTEENTRY *entry;
 
 	in_uint8s(s, 2);	/* pad */
 	in_uint16_le(s, pal.count);
@@ -1223,8 +1223,8 @@ process_palette(rdpRdp * rdp, STREAM s)
 		in_uint8(s, entry->blue);
 	}
 
-	hpal = ui_create_colormap(rdp->inst, &pal);
-	ui_set_colormap(rdp->inst, hpal);
+	hpal = ui_create_palette(rdp->inst, &pal);
+	ui_set_palette(rdp->inst, hpal);
 }
 
 /* Process an update PDU */

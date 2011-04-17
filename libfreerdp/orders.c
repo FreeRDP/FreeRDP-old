@@ -1772,15 +1772,15 @@ process_cache_color_table(rdpOrders * orders, STREAM s)
 {
 	int i;
 	size_t size;
+	uint8 cacheIndex;
+	RD_PALETTE palette;
+	RD_HPALETTE hpalette;
 	RD_PALETTEENTRY *entry;
-	RD_PALETTE map;
-	RD_HPALETTE hmap;
-	uint8 cache_id;
 
-	in_uint8(s, cache_id);
-	in_uint16_le(s, map.count);
+	in_uint8(s, cacheIndex); /* cacheIndex */
+	in_uint16_le(s, palette.count); /* numberColors */
 
-	size = sizeof(RD_PALETTEENTRY) * map.count;
+	size = sizeof(RD_PALETTEENTRY) * palette.count;
 
 	if (size > orders->buffer_size)
 	{
@@ -1788,23 +1788,23 @@ process_cache_color_table(rdpOrders * orders, STREAM s)
 		orders->buffer_size = size;
 	}
 
-	map.entries = (RD_PALETTEENTRY *) orders->buffer;
+	palette.entries = (RD_PALETTEENTRY *) orders->buffer;
 
-	for (i = 0; i < map.count; i++)
+	for (i = 0; i < palette.count; i++)
 	{
-		entry = &map.entries[i];
+		entry = &palette.entries[i];
 		in_uint8(s, entry->blue);
 		in_uint8(s, entry->green);
 		in_uint8(s, entry->red);
 		in_uint8s(s, 1);	/* pad */
 	}
 
-	DEBUG_DRAW("COLORTABLECACHE(id=%d,n=%d)\n", cache_id, map.ncolors);
+	DEBUG_DRAW("COLORTABLECACHE(id=%d,n=%d)\n", cacheIndex, palette.count);
 
-	if (cache_id)
+	if (cacheIndex)
 	{
-		hmap = ui_create_colormap(orders->rdp->inst, &map);
-		ui_set_colormap(orders->rdp->inst, hmap);
+		hpalette = ui_create_palette(orders->rdp->inst, &palette);
+		ui_set_palette(orders->rdp->inst, hpalette);
 	}
 }
 

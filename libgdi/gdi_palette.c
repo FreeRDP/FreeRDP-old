@@ -68,7 +68,16 @@ HPALETTE CreatePalette(LOGPALETTE *lplgpl)
 {
 	HPALETTE hPalette = (HPALETTE) malloc(sizeof(PALETTE));
 	hPalette->objectType = GDIOBJ_PALETTE;
-	hPalette->logicalPalette = lplgpl;
+
+	hPalette->logicalPalette = (LOGPALETTE*) malloc(sizeof(LOGPALETTE));
+
+	if (lplgpl->count > 256)
+		lplgpl->count = 256;
+
+	hPalette->logicalPalette->count = lplgpl->count;
+	hPalette->logicalPalette->entries = (PALETTEENTRY*) malloc(sizeof(PALETTEENTRY) * lplgpl->count);
+	memcpy(hPalette->logicalPalette->entries, lplgpl->entries, sizeof(PALETTEENTRY) * lplgpl->count);
+
 	return hPalette;
 }
 
@@ -90,7 +99,9 @@ HPALETTE CreateSystemPalette()
 	memcpy(&logicalPalette->entries[0], &default_system_palette[0], 10 * sizeof(PALETTEENTRY));
 	memcpy(&logicalPalette->entries[256 - 10], &default_system_palette[10], 10 * sizeof(PALETTEENTRY));
 
-	hPalette = CreatePalette(logicalPalette);
+	hPalette = (HPALETTE) malloc(sizeof(PALETTE));
+	hPalette->objectType = GDIOBJ_PALETTE;
+	hPalette->logicalPalette = logicalPalette;
 
 	return hPalette;
 }

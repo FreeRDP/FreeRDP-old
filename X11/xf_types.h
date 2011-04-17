@@ -24,6 +24,8 @@
 #include <freerdp/chanman.h>
 #include <X11/Xlib.h>
 
+#include "gdi.h"
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -70,7 +72,7 @@ struct xf_info
 	int red_mask;
 	int green_mask;
 	int blue_mask;
-	int * colormap;
+	HPALETTE palette;
 	Drawable drw;
 	Pixmap bitmap_mono;
 	GC gc_mono;

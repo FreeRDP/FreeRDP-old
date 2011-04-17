@@ -388,21 +388,21 @@ ui_destroy_bitmap(rdpInst * inst, RD_HBITMAP bmp)
 }
 
 RD_HPALETTE
-ui_create_colormap(rdpInst * inst, RD_PALETTE * colors)
+ui_create_palette(rdpInst * inst, RD_HPALETTE palette)
 {
-	return inst->ui_create_colormap(inst, colors);
+	return inst->ui_create_palette(inst, palette);
+}
+
+void
+ui_set_palette(rdpInst * inst, RD_HPALETTE palette)
+{
+	inst->ui_set_palette(inst, palette);
 }
 
 void
 ui_move_pointer(rdpInst * inst, int x, int y)
 {
 	inst->ui_move_pointer(inst, x, y);
-}
-
-void
-ui_set_colormap(rdpInst * inst, RD_HPALETTE map)
-{
-	inst->ui_set_colormap(inst, map);
 }
 
 RD_HBITMAP

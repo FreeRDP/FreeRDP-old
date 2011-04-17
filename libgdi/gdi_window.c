@@ -933,33 +933,10 @@ gdi_ui_mem3blt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int c
  */
 
 static RD_HPALETTE
-gdi_ui_create_palette(struct rdp_inst * inst, RD_PALETTE * colors)
+gdi_ui_create_palette(struct rdp_inst * inst, RD_HPALETTE palette)
 {
-	int i;
-	HPALETTE palette;
-	LOGPALETTE *logicalPalette;
-
 	DEBUG_GDI("gdi_ui_create_palette\n");
-	
-	logicalPalette = (LOGPALETTE*) malloc(sizeof(LOGPALETTE));
-
-	logicalPalette->entries = (PALETTEENTRY*) malloc(sizeof(PALETTEENTRY) * 256);
-	memset(logicalPalette->entries, 0, sizeof(PALETTEENTRY) * 256);
-	logicalPalette->count = colors->count;
-
-	if (logicalPalette->count > 256)
-		logicalPalette->count = 256;
-
-	for (i = logicalPalette->count - 1; i >= 0; i--)
-	{
-		logicalPalette->entries[i].red = colors->entries[i].red;
-		logicalPalette->entries[i].green = colors->entries[i].green;
-		logicalPalette->entries[i].blue = colors->entries[i].blue;
-	}
-
-	palette = CreatePalette(logicalPalette);
-
-	return (RD_HPALETTE) palette;
+	return (RD_HPALETTE) CreatePalette(palette);
 }
 
 /**
@@ -972,7 +949,6 @@ static void
 gdi_ui_set_palette(struct rdp_inst * inst, RD_HPALETTE palette)
 {
 	GDI *gdi = GET_GDI(inst);
-
 	DEBUG_GDI("gdi_ui_set_palette\n");
 	gdi->palette = (HPALETTE) palette;
 }
@@ -1114,8 +1090,8 @@ gdi_register_callbacks(rdpInst * inst)
 	inst->ui_screenblt = gdi_ui_screenblt;
 	inst->ui_memblt = gdi_ui_memblt;
 	inst->ui_triblt = gdi_ui_mem3blt;
-	inst->ui_create_colormap = gdi_ui_create_palette;
-	inst->ui_set_colormap = gdi_ui_set_palette;
+	inst->ui_create_palette = gdi_ui_create_palette;
+	inst->ui_set_palette = gdi_ui_set_palette;
 	inst->ui_create_glyph = gdi_ui_create_glyph;
 	inst->ui_destroy_glyph = gdi_ui_destroy_glyph;
 	inst->ui_set_clip = gdi_ui_set_clipping_region;
