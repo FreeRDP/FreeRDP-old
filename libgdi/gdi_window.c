@@ -945,16 +945,16 @@ gdi_ui_create_palette(struct rdp_inst * inst, RD_PALETTE * colors)
 
 	logicalPalette->entries = (PALETTEENTRY*) malloc(sizeof(PALETTEENTRY) * 256);
 	memset(logicalPalette->entries, 0, sizeof(PALETTEENTRY) * 256);
-	logicalPalette->count = colors->ncolors;
+	logicalPalette->count = colors->count;
 
 	if (logicalPalette->count > 256)
 		logicalPalette->count = 256;
 
 	for (i = logicalPalette->count - 1; i >= 0; i--)
 	{
-		logicalPalette->entries[i].red = colors->colors[i].red;
-		logicalPalette->entries[i].green = colors->colors[i].green;
-		logicalPalette->entries[i].blue = colors->colors[i].blue;
+		logicalPalette->entries[i].red = colors->entries[i].red;
+		logicalPalette->entries[i].green = colors->entries[i].green;
+		logicalPalette->entries[i].blue = colors->entries[i].blue;
 	}
 
 	palette = CreatePalette(logicalPalette);

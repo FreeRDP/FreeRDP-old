@@ -1772,15 +1772,15 @@ process_cache_color_table(rdpOrders * orders, STREAM s)
 {
 	int i;
 	size_t size;
-	RD_COLORENTRY *entry;
+	RD_PALETTEENTRY *entry;
 	RD_PALETTE map;
 	RD_HPALETTE hmap;
 	uint8 cache_id;
 
 	in_uint8(s, cache_id);
-	in_uint16_le(s, map.ncolors);
+	in_uint16_le(s, map.count);
 
-	size = sizeof(RD_COLORENTRY) * map.ncolors;
+	size = sizeof(RD_PALETTEENTRY) * map.count;
 
 	if (size > orders->buffer_size)
 	{
@@ -1788,11 +1788,11 @@ process_cache_color_table(rdpOrders * orders, STREAM s)
 		orders->buffer_size = size;
 	}
 
-	map.colors = (RD_COLORENTRY *) orders->buffer;
+	map.entries = (RD_PALETTEENTRY *) orders->buffer;
 
-	for (i = 0; i < map.ncolors; i++)
+	for (i = 0; i < map.count; i++)
 	{
-		entry = &map.colors[i];
+		entry = &map.entries[i];
 		in_uint8(s, entry->blue);
 		in_uint8(s, entry->green);
 		in_uint8(s, entry->red);

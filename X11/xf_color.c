@@ -374,16 +374,16 @@ xf_create_colormap(xfInfo * xfi, rdpSet * settings, RD_PALETTE * colors)
 
 	colormap = (int *) malloc(sizeof(int) * 256);
 	memset(colormap, 0, sizeof(int) * 256);
-	count = colors->ncolors;
+	count = colors->count;
 	if (count > 256)
 	{
 		count = 256;
 	}
 	for (index = count - 1; index >= 0; index--)
 	{
-		red = colors->colors[index].red;
-		green = colors->colors[index].green;
-		blue = colors->colors[index].blue;
+		red = colors->entries[index].red;
+		green = colors->entries[index].green;
+		blue = colors->entries[index].blue;
 		colormap[index] = MAKE24RGB(red, green, blue);
 	}
 	return (RD_HPALETTE) colormap;
