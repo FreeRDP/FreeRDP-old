@@ -70,12 +70,14 @@ wf_color_convert(wfInfo * wfi, int in_color, int in_bpp)
 	int green;
 	int blue;
 	int rv;
+	uint8* palette;
 
 	alpha = 0xff;
 	red = 0;
 	green = 0;
 	blue = 0;
 	rv = 0;
+
 	switch (in_bpp)
 	{
 		case 32:
@@ -92,9 +94,10 @@ wf_color_convert(wfInfo * wfi, int in_color, int in_bpp)
 			break;
 		case 8:
 			in_color &= 0xff;
-			blue = *(wfi->palette + in_color * 3);
-			green = *(wfi->palette + in_color * 3 + 1);
-			red = *(wfi->palette + in_color * 3 + 2);
+			palette = (uint8*) wfi->palette->entries;
+			blue = *(palette + in_color * 3);
+			green = *(palette + in_color * 3 + 1);
+			red = *(palette + in_color * 3 + 2);
 			break;
 		case 1:
 			if (in_color != 0)
@@ -113,8 +116,7 @@ wf_color_convert(wfInfo * wfi, int in_color, int in_bpp)
 }
 
 uint8 *
-wf_image_convert(wfInfo * wfi, int width, int height, int bpp,
-	int reverse, uint8 * in_data, uint8 * out_data)
+wf_image_convert(wfInfo * wfi, int width, int height, int bpp, int reverse, uint8 * in_data, uint8 * out_data)
 {
 	int red;
 	int green;
@@ -197,55 +199,19 @@ wf_image_convert(wfInfo * wfi, int width, int height, int bpp,
 	else if (bpp == 8)
 	{
 		src8 = in_data;
+		uint8* palette = (uint8*) wfi->palette->entries;	
 		for (indexy = 0; indexy < height; indexy++)
 		{
 			dst8 = out_data + ((reverse ? height - indexy - 1 : indexy) * bytes_per_line);
 			for (indexx = 0; indexx < width; indexx++)
 			{
 				pixel = *src8++;
-				memcpy(dst8, wfi->palette + pixel * 3, 3);
+				memcpy(dst8, palette + pixel * 3, 3);
 				dst8 += 3;
 			}
 		}
 	}
 	return out_data;
-}
-
-RD_HPALETTE
-wf_create_palette(wfInfo * wfi, RD_PALETTE * palette)
-{
-	int i;
-	int count;
-	uint8 * pal;
-	uint8 * dst;
-
-	pal = (uint8*) malloc(3 * 256);
-	memset(pal, 0, 3 * 256);
-	count = palette->count;
-
-	if (count > 256)
-		count = 256;
-	
-	dst = pal;
-	for (i = 0; i < count; i++)
-	{
-		*dst++ = palette->entries[i].blue;
-		*dst++ = palette->entries[i].green;
-		*dst++ = palette->entries[i].red;
-	}
-
-	return (RD_HPALETTE) pal;
-}
-
-int
-wf_set_palette(wfInfo * wfi, RD_HPALETTE palette)
-{
-	if (wfi->palette != NULL)
-		free(wfi->palette);
-
-	wfi->palette = (uint8 *) palette;
-
-	return 0;
 }
 
 uint8 *

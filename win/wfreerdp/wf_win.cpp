@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <conio.h>
+#include "gdi_color.h"
 #include "wf_color.h"
 #include "wf_win.h"
 
@@ -28,7 +29,7 @@ extern LPCTSTR g_wnd_class_name;
 extern HINSTANCE g_hInstance;
 extern HCURSOR g_default_cursor;
 
-// See http://msdn.microsoft.com/en-us/library/dd145130(VS.85).aspx and @msdn{cc241583}
+/* See http://msdn.microsoft.com/en-us/library/dd145130/ and @msdn{cc241583} */
 static const DWORD rop3_code_table[] =
 {
 	0x00000042, // 0
@@ -334,10 +335,10 @@ wf_invalidate_region(wfInfo * wfi, int x1, int y1, int x2, int y2)
 static HBITMAP
 wf_create_dib(wfInfo * wfi, int width, int height, int bpp, int reverse, uint8 * data)
 {
-	HBITMAP bitmap;
-	uint8 * cdata;
-	BITMAPINFO bmi;
 	HDC hdc;
+	HBITMAP bitmap;
+	BITMAPINFO bmi;
+	uint8* cdata = NULL;
 
 	hdc = GetDC(NULL);
 	bmi.bmiHeader.biSize = sizeof(BITMAPINFO);
@@ -347,10 +348,10 @@ wf_create_dib(wfInfo * wfi, int width, int height, int bpp, int reverse, uint8 *
 	bmi.bmiHeader.biBitCount = 24;
 	bmi.bmiHeader.biCompression = BI_RGB;
 	bitmap = CreateDIBSection (hdc, &bmi, DIB_RGB_COLORS, (void**)&cdata, NULL, 0);
+
 	if (data != NULL)
-	{
 		wf_image_convert(wfi, width, height, bpp, reverse, data, cdata);
-	}
+
 	ReleaseDC(NULL, hdc);
 	GdiFlush();
 	return bitmap;
@@ -560,16 +561,14 @@ l_ui_destroy_bitmap(struct rdp_inst * inst, RD_HBITMAP bmp)
 }
 
 static void
-l_ui_line(struct rdp_inst * inst, uint8 opcode, int startx, int starty, int endx,
-	int endy, RD_PEN * pen)
+l_ui_line(struct rdp_inst * inst, uint8 opcode, int startx, int starty, int endx, int endy, RD_PEN * pen)
 {
-	wfInfo * wfi;
 	HPEN hpen;
 	HPEN org_hpen;
 	int color;
 	int org_rop2;
-
-	wfi = GET_WFI(inst);
+	wfInfo * wfi = GET_WFI(inst);
+	
 	//printf("ui_line opcode %d startx %d starty %d endx %d endy %d\n", opcode, startx, starty, endx, endy);
 	color = wf_color_convert(wfi, pen->color, inst->settings->server_depth);
 	hpen = CreatePen(pen->style, pen->width, color);
@@ -589,11 +588,10 @@ l_ui_line(struct rdp_inst * inst, uint8 opcode, int startx, int starty, int endx
 static void
 l_ui_rect(struct rdp_inst * inst, int x, int y, int cx, int cy, int color)
 {
-	wfInfo * wfi;
 	RECT rect;
 	HBRUSH brush;
+	wfInfo * wfi = GET_WFI(inst);
 
-	wfi = GET_WFI(inst);
 	color = wf_color_convert(wfi, color, inst->settings->server_depth);
 	//printf("ui_rect %i %i %i %i %i\n", x, y, cx, cy, color);
 	rect.left = x;
@@ -603,6 +601,7 @@ l_ui_rect(struct rdp_inst * inst, int x, int y, int cx, int cy, int color)
 	brush = CreateSolidBrush(color);
 	FillRect(wfi->drw->hdc, &rect, brush);
 	DeleteObject(brush);
+
 	if (wfi->drw == wfi->backstore)
 	{
 		wf_invalidate_region(wfi, rect.left, rect.top, rect.right, rect.bottom);
@@ -617,18 +616,16 @@ l_ui_polygon(struct rdp_inst * inst, uint8 opcode, uint8 fillmode, RD_POINT * po
 }
 
 static void
-l_ui_polyline(struct rdp_inst * inst, uint8 opcode, RD_POINT * points, int npoints,
-	RD_PEN * pen)
+l_ui_polyline(struct rdp_inst * inst, uint8 opcode, RD_POINT * points, int npoints, RD_PEN * pen)
 {
-	wfInfo * wfi;
-	HPEN hpen;
-	HPEN org_hpen;
+	int i;
 	int color;
 	int org_rop2;
-	int i;
+	HPEN hpen;
+	HPEN org_hpen;
 	POINT * ps;
+	wfInfo * wfi = GET_WFI(inst);
 
-	wfi = GET_WFI(inst);
 	//printf("ui_polyline opcode %d npoints %d\n", opcode, npoints);
 	color = wf_color_convert(wfi, pen->color, inst->settings->server_depth);
 	hpen = CreatePen(pen->style, pen->width, color);
@@ -672,10 +669,9 @@ l_ui_ellipse(struct rdp_inst * inst, uint8 opcode, uint8 fillmode, int x, int y,
 static void
 l_ui_start_draw_glyphs(struct rdp_inst * inst, int bgcolor, int fgcolor)
 {
-	wfInfo * wfi;
-
-	wfi = GET_WFI(inst);
-	wfi->brush = CreateSolidBrush(wf_color_convert(wfi, fgcolor, inst->settings->server_depth));
+	wfInfo * wfi = GET_WFI(inst);
+	fgcolor = wf_color_convert(wfi, fgcolor, inst->settings->server_depth);
+	wfi->brush = CreateSolidBrush(fgcolor);
 	wfi->org_brush = (HBRUSH)SelectObject(wfi->drw->hdc, wfi->brush);
 }
 
@@ -741,9 +737,8 @@ l_ui_bell(struct rdp_inst * inst)
 static void
 l_ui_destblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy)
 {
-	wfInfo * wfi;
+	wfInfo * wfi = GET_WFI(inst);
 
-	wfi = GET_WFI(inst);
 	BitBlt(wfi->drw->hdc, x, y, cx, cy, NULL, 0, 0, rop3_code_table[opcode]);
 	if (wfi->drw == wfi->backstore)
 	{
@@ -755,17 +750,17 @@ static void
 l_ui_patblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy,
 	RD_BRUSH * brush, int bgcolor, int fgcolor)
 {
-	wfInfo * wfi;
 	HBRUSH br;
 	HBRUSH org_br;
 	int org_bkmode;
 	COLORREF org_bkcolor;
 	COLORREF org_textcolor;
-
-	wfi = GET_WFI(inst);
+	wfInfo * wfi = GET_WFI(inst);
+	
 	//printf("ui_patblt: style %d x %d y %d cx %d cy %d\n", brush->style, x, y, cx, cy);
-	bgcolor = wf_color_convert(wfi, bgcolor, inst->settings->server_depth);
+
 	fgcolor = wf_color_convert(wfi, fgcolor, inst->settings->server_depth);
+	bgcolor = wf_color_convert(wfi, bgcolor, inst->settings->server_depth);
 
 	br = wf_create_brush(wfi, brush, fgcolor, inst->settings->server_depth);
 	org_bkmode = SetBkMode(wfi->drw->hdc, OPAQUE);
@@ -788,9 +783,7 @@ static void
 l_ui_screenblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy,
 	int srcx, int srcy)
 {
-	wfInfo * wfi;
-
-	wfi = GET_WFI(inst);
+	wfInfo * wfi = GET_WFI(inst);
 	//printf("ui_screenblt: opcode %d x %d y %d cx %d cy %d srcx %d srcy %d \n", opcode, x, y, cx, cy, srcx, srcy);
 	BitBlt(wfi->drw->hdc, x, y, cx, cy, wfi->backstore->hdc, srcx, srcy, rop3_code_table[opcode]); /* The source surface is always the primary drawing surface */
 	if (wfi->drw == wfi->backstore)
@@ -820,17 +813,15 @@ static void
 l_ui_triblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy,
 	RD_HBITMAP src, int srcx, int srcy, RD_BRUSH * brush, int bgcolor, int fgcolor)
 {
-	wfInfo * wfi;
-
-	wfi = GET_WFI(inst);
+	wfInfo * wfi = GET_WFI(inst);
 	printf("ui_triblt\n");
-	//TODO
+	/* TODO */
 }
 
 static int
 l_ui_select(struct rdp_inst * inst, int rdp_socket)
 {
-	//printf("ui_select: inst %p\n", inst);
+	/* printf("ui_select: inst %p\n", inst); */
 	return 1;
 }
 
@@ -841,7 +832,7 @@ l_ui_set_clip(struct rdp_inst * inst, int x, int y, int cx, int cy)
 	HRGN hrgn;
 
 	wfi = GET_WFI(inst);
-	//printf("ui_set_clip %i %i %i %i\n", x, y, cx, cy);
+	/* printf("ui_set_clip %i %i %i %i\n", x, y, cx, cy); */
 	hrgn = CreateRectRgn(x, y, x + cx, y + cy);
 	SelectClipRgn(wfi->drw->hdc, hrgn);
 	DeleteObject(hrgn);
@@ -850,10 +841,8 @@ l_ui_set_clip(struct rdp_inst * inst, int x, int y, int cx, int cy)
 static void
 l_ui_reset_clip(struct rdp_inst * inst)
 {
-	wfInfo * wfi;
-
-	wfi = GET_WFI(inst);
-	//printf("ui_reset_clip\n");
+	wfInfo * wfi = GET_WFI(inst);
+	/* printf("ui_reset_clip\n"); */
 	SelectClipRgn(wfi->drw->hdc, NULL);
 }
 
@@ -866,9 +855,7 @@ l_ui_resize_window(struct rdp_inst * inst)
 static void
 l_ui_set_cursor(struct rdp_inst * inst, RD_HCURSOR cursor)
 {
-	wfInfo * wfi;
-
-	wfi = GET_WFI(inst);
+	wfInfo * wfi = GET_WFI(inst);
 	wfi->cursor = (HCURSOR)cursor;
 	PostMessage(wfi->hwnd, WM_SETCURSOR, 0, 0);
 }
@@ -876,9 +863,8 @@ l_ui_set_cursor(struct rdp_inst * inst, RD_HCURSOR cursor)
 static void
 l_ui_destroy_cursor(struct rdp_inst * inst, RD_HCURSOR cursor)
 {
-	wfInfo * wfi;
+	wfInfo * wfi = GET_WFI(inst);
 
-	wfi = GET_WFI(inst);
 	if (wfi->cursor == (HCURSOR)cursor)
 	{
 		wfi->cursor = g_default_cursor;
@@ -940,15 +926,25 @@ l_ui_set_default_cursor(struct rdp_inst * inst)
 static RD_HPALETTE
 l_ui_create_palette(struct rdp_inst * inst, RD_HPALETTE palette)
 {
-	wfInfo * wfi = GET_WFI(inst);
-	return wf_create_palette(wfi, (RD_PALETTE*) palette);
+	RD_PALETTE* opal = (RD_PALETTE*) palette;
+	RD_PALETTE* npal = (RD_PALETTE*) malloc(sizeof(RD_PALETTE));
+
+	npal->count = opal->count;
+	npal->entries = (RD_PALETTEENTRY*) malloc(sizeof(RD_PALETTEENTRY) * npal->count);
+	memcpy(npal->entries, opal->entries, sizeof(RD_PALETTEENTRY) * npal->count);
+
+	return (RD_HPALETTE) npal;
 }
 
 static void
 l_ui_set_palette(struct rdp_inst * inst, RD_HPALETTE palette)
 {
 	wfInfo * wfi = GET_WFI(inst);
-	wf_set_palette(wfi, palette);
+
+	if (wfi->palette != NULL)
+		free(wfi->palette);
+
+	wfi->palette = (RD_PALETTE*) palette;
 }
 
 static void
@@ -999,9 +995,8 @@ l_ui_set_surface(struct rdp_inst * inst, RD_HBITMAP surface)
 static void
 l_ui_destroy_surface(struct rdp_inst * inst, RD_HBITMAP surface)
 {
-	wfInfo * wfi;
+	wfInfo * wfi = GET_WFI(inst);
 
-	wfi = GET_WFI(inst);
 	if (wfi->drw == surface)
 	{
 		l_ui_warning(inst, "ui_destroy_surface: freeing active surface!\n");
@@ -1017,7 +1012,7 @@ static void
 l_ui_channel_data(struct rdp_inst * inst, int chan_id, char * data, int data_size,
 	int flags, int total_size)
 {
-	//TODO
+	/* TODO */
 }
 
 /* fgets from stdin do for some reason not work and there is no getpass ... */
