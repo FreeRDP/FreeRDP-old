@@ -377,34 +377,50 @@ uint8* gdi_image_convert_16bpp(uint8* srcData, uint8* dstData, int width, int he
 #endif
 		return dstData;
 	}
+	else if (dstBpp == 32)
+	{
+		int i;
+		uint32 pixel;
+		uint16 *src16;
+		uint32 *dst32;
+		uint8 red, green, blue;
+
+		if (dstData == NULL)
+			dstData = (uint8*) malloc(width * height * 4);
+
+		src16 = (uint16 *) srcData;
+		dst32 = (uint32 *) dstData;
+		for (i = width * height; i > 0; i--)
+		{
+			pixel = *src16;
+			src16++;
+			GetBGR16(red, green, blue, pixel);
+			pixel = BGR32(red, green, blue);
+			*dst32 = pixel;
+			dst32++;
+		}
+		return dstData;
+	}
 
 	return srcData;
 }
 
 uint8* gdi_image_convert_24bpp(uint8* srcData, uint8* dstData, int width, int height, int srcBpp, int dstBpp, RD_PALETTE* palette)
 {
+	int i;
 	uint8 red;
 	uint8 green;
 	uint8 blue;
-	int index;
 	uint32 pixel;
 	uint32 *dst32;
 
-	if (dstBpp == 24)
-	{
-		if (dstData == NULL)
-			dstData = (uint8*) malloc(width * height * 3);
-
-		memcpy(dstData, srcData, width * height * 3);
-		return dstData;
-	}
-	else if (dstBpp == 32)
+	if (dstBpp == 32)
 	{
 		if (dstData == NULL)
 			dstData = (uint8*) malloc(width * height * 4);
 		
 		dst32 = (uint32 *) dstData;
-		for (index = width * height; index > 0; index--)
+		for (i = width * height; i > 0; i--)
 		{
 			red = *(srcData++);
 			green = *(srcData++);
@@ -421,6 +437,26 @@ uint8* gdi_image_convert_24bpp(uint8* srcData, uint8* dstData, int width, int he
 
 uint8* gdi_image_convert_32bpp(uint8* srcData, uint8* dstData, int width, int height, int srcBpp, int dstBpp, RD_PALETTE* palette)
 {
+	if (dstBpp == 24)
+	{
+		int index;
+		uint8 red, green, blue;
+
+		if (dstData == NULL)
+			dstData = (uint8*) malloc(width * height * 3);
+
+		for (index = 0; index < width * height; index++)
+		{
+			red = *(srcData++);
+			green = *(srcData++);
+			blue = *(srcData++);
+			*dstData++ = blue;
+			*dstData++ = green;
+			*dstData++ = red;
+			srcData++;
+		}
+		return dstData;
+	}
 	if (dstBpp == 32)
 	{
 #ifdef USE_ALPHA
