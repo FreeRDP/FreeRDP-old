@@ -169,9 +169,9 @@ wf_color_convert(wfInfo * wfi, int in_color, int in_bpp)
 			break;
 		case 8:
 			in_color &= 0xff;
-			blue = *(wfi->colormap + in_color * 3);
-			green = *(wfi->colormap + in_color * 3 + 1);
-			red = *(wfi->colormap + in_color * 3 + 2);
+			blue = *(wfi->palette + in_color * 3);
+			green = *(wfi->palette + in_color * 3 + 1);
+			red = *(wfi->palette + in_color * 3 + 2);
 			break;
 		case 1:
 			if (in_color != 0)
@@ -280,7 +280,7 @@ wf_image_convert(wfInfo * wfi, int width, int height, int bpp,
 			for (indexx = 0; indexx < width; indexx++)
 			{
 				pixel = *src8++;
-				memcpy(dst8, wfi->colormap + pixel * 3, 3);
+				memcpy(dst8, wfi->palette + pixel * 3, 3);
 				dst8 += 3;
 			}
 		}
@@ -289,38 +289,39 @@ wf_image_convert(wfInfo * wfi, int width, int height, int bpp,
 }
 
 RD_HPALETTE
-wf_create_colormap(wfInfo * wfi, RD_PALETTE * colors)
+wf_create_palette(wfInfo * wfi, RD_PALETTE * palette)
 {
-	uint8 * colormap;
-	uint8 * dst;
-	int index;
+	int i;
 	int count;
+	uint8 * pal;
+	uint8 * dst;
 
-	colormap = (uint8 *) malloc(3 * 256);
-	memset(colormap, 0, 3 * 256);
-	count = colors->ncolors;
+	pal = (uint8*) malloc(3 * 256);
+	memset(pal, 0, 3 * 256);
+	count = palette->count;
+
 	if (count > 256)
-	{
 		count = 256;
-	}
-	dst = colormap;
-	for (index = 0; index < count; index++)
+	
+	dst = pal;
+	for (i = 0; i < count; i++)
 	{
-		*dst++ = colors->colors[index].blue;
-		*dst++ = colors->colors[index].green;
-		*dst++ = colors->colors[index].red;
+		*dst++ = palette->entries[i].blue;
+		*dst++ = palette->entries[i].green;
+		*dst++ = palette->entries[i].red;
 	}
-	return (RD_HPALETTE) colormap;
+
+	return (RD_HPALETTE) pal;
 }
 
 int
-wf_set_colormap(wfInfo * wfi, RD_HPALETTE map)
+wf_set_palette(wfInfo * wfi, RD_HPALETTE palette)
 {
-	if (wfi->colormap != NULL)
-	{
-		free(wfi->colormap);
-	}
-	wfi->colormap = (uint8 *) map;
+	if (wfi->palette != NULL)
+		free(wfi->palette);
+
+	wfi->palette = (uint8 *) palette;
+
 	return 0;
 }
 

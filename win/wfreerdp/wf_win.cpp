@@ -938,30 +938,24 @@ l_ui_set_default_cursor(struct rdp_inst * inst)
 }
 
 static RD_HPALETTE
-l_ui_create_colormap(struct rdp_inst * inst, RD_PALETTE * colors)
+l_ui_create_palette(struct rdp_inst * inst, RD_HPALETTE palette)
 {
-	wfInfo * wfi;
+	wfInfo * wfi = GET_WFI(inst);
+	return wf_create_palette(wfi, (RD_PALETTE*) palette);
+}
 
-	wfi = GET_WFI(inst);
-	return wf_create_colormap(wfi, colors);
+static void
+l_ui_set_palette(struct rdp_inst * inst, RD_HPALETTE palette)
+{
+	wfInfo * wfi = GET_WFI(inst);
+	wf_set_palette(wfi, palette);
 }
 
 static void
 l_ui_move_pointer(struct rdp_inst * inst, int x, int y)
 {
-	wfInfo * wfi;
-
-	wfi = GET_WFI(inst);
-	//TODO
-}
-
-static void
-l_ui_set_colormap(struct rdp_inst * inst, RD_HPALETTE map)
-{
-	wfInfo * wfi;
-
-	wfi = GET_WFI(inst);
-	wf_set_colormap(wfi, map);
+	wfInfo * wfi = GET_WFI(inst);
+	/* TODO */
 }
 
 static RD_HBITMAP
@@ -1133,9 +1127,9 @@ wf_assign_callbacks(rdpInst * inst)
 	inst->ui_create_cursor = l_ui_create_cursor;
 	inst->ui_set_null_cursor = l_ui_set_null_cursor;
 	inst->ui_set_default_cursor = l_ui_set_default_cursor;
-	inst->ui_create_colormap = l_ui_create_colormap;
+	inst->ui_create_palette = l_ui_create_palette;
+	inst->ui_set_palette = l_ui_set_palette;
 	inst->ui_move_pointer = l_ui_move_pointer;
-	inst->ui_set_colormap = l_ui_set_colormap;
 	inst->ui_create_surface = l_ui_create_surface;
 	inst->ui_set_surface = l_ui_set_surface;
 	inst->ui_destroy_surface = l_ui_destroy_surface;
@@ -1242,10 +1236,9 @@ wf_uninit(wfInfo * wfi)
 		CloseWindow(wfi->hwnd);
 
 	wf_bitmap_free(wfi->backstore);
-	if (wfi->colormap != 0)
-	{
-		free(wfi->colormap);
-	}
+
+	if (wfi->palette != 0)
+		free(wfi->palette);
 }
 
 void

@@ -52,7 +52,7 @@ struct wf_info
 	struct wf_bitmap * backstore; /* paint here - InvalidateRect will cause a WM_PAINT event that will BitBlt to hWnd */
 	/* state: */
 	struct wf_bitmap * drw; /* the current drawing surface - either backstore or something else */
-	uint8 * colormap;
+	uint8 * palette;
 	HCURSOR cursor;
 	HBRUSH brush;
 	HBRUSH org_brush;
