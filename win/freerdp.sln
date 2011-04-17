@@ -24,7 +24,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libasn1", "libasn1.vcproj",
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libfreerdputils", "libfreerdputils.vcproj", "{E4BE093E-F3DF-4DEE-B228-00B065320A18}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libgdi", "libgdi\libgdi.vcproj", "{65B0C0EE-55CF-417A-B4BD-A3F3E036DEC1}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libgdi", "libgdi.vcproj", "{65B0C0EE-55CF-417A-B4BD-A3F3E036DEC1}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
