@@ -85,7 +85,7 @@ void gdi_set_pixel(uint8* data, int x, int y, int width, int height, int bpp, in
 	}
 }
 
-int gdi_color(int srcColor, int srcBpp, int dstBpp, RD_PALETTE* palette)
+int gdi_color_convert(int srcColor, int srcBpp, int dstBpp, RD_PALETTE* palette)
 {
 	uint8 red = 0;
 	uint8 green = 0;
@@ -96,10 +96,10 @@ int gdi_color(int srcColor, int srcBpp, int dstBpp, RD_PALETTE* palette)
 	switch (srcBpp)
 	{
 		case 32:
-			GetRGB32(red, green, blue, srcColor);
+			GetBGR32(red, green, blue, srcColor);
 			break;
 		case 24:
-			GetRGB24(red, green, blue, srcColor);
+			GetBGR24(red, green, blue, srcColor);
 			break;
 		case 16:
 			GetRGB16(red, green, blue, srcColor);
@@ -127,7 +127,7 @@ int gdi_color(int srcColor, int srcBpp, int dstBpp, RD_PALETTE* palette)
 	switch (dstBpp)
 	{
 		case 32:
-			dstColor = BGR32(red, green, blue);
+			dstColor = ARGB32(alpha, red, green, blue);
 			break;
 		case 24:
 			dstColor = RGB24(red, green, blue);
@@ -137,6 +137,12 @@ int gdi_color(int srcColor, int srcBpp, int dstBpp, RD_PALETTE* palette)
 			break;
 		case 15:
 			dstColor = RGB15(red, green, blue);
+			break;
+		case 8:
+			srcColor &= 0xFF;
+			red = palette->entries[srcColor].red;
+			green = palette->entries[srcColor].green;
+			blue = palette->entries[srcColor].blue;
 			break;
 		case 1:
 			if ((red != 0) || (green != 0) || (blue != 0))
@@ -149,7 +155,7 @@ int gdi_color(int srcColor, int srcBpp, int dstBpp, RD_PALETTE* palette)
 	return dstColor;
 }
 
-void gdi_color_convert(PIXEL *pixel, int color, int bpp, RD_PALETTE* palette)
+void gdi_color_convert_pixel(PIXEL *pixel, int color, int bpp, RD_PALETTE* palette)
 {
 	pixel->red = 0;
 	pixel->green = 0;
@@ -168,7 +174,7 @@ void gdi_color_convert(PIXEL *pixel, int color, int bpp, RD_PALETTE* palette)
 			GetRGB16(pixel->red, pixel->green, pixel->blue, color);
 			break;
 		case 15:
-			GetBGR15(pixel->red, pixel->green, pixel->blue, color);
+			GetRGB15(pixel->red, pixel->green, pixel->blue, color);
 			break;
 		case 8:
 			color &= 0xFF;
@@ -609,7 +615,7 @@ int gdi_mono_cursor_convert(uint8* srcData, uint8* maskData, uint8* xorMask, uin
 		for (i = 0; i < width; i++)
 		{
 			xpixel = gdi_get_pixel(xorMask, i, jj, width, height, bpp);
-			xpixel = gdi_color(xpixel, bpp, 24, palette);
+			xpixel = gdi_color_convert(xpixel, bpp, 24, palette);
 			apixel = gdi_get_pixel(andMask, i, jj, width, height, 1);
 
 			if ((xpixel == 0xffffff) && (apixel != 0))
@@ -644,7 +650,7 @@ int gdi_alpha_cursor_convert(uint8* alphaData, uint8* xorMask, uint8* andMask, i
 		for (i = 0; i < width; i++)
 		{
 			xpixel = gdi_get_pixel(xorMask, i, jj, width, height, bpp);
-			xpixel = gdi_color(xpixel, bpp, 32, palette);
+			xpixel = gdi_color_convert(xpixel, bpp, 32, palette);
 			apixel = gdi_get_pixel(andMask, i, jj, width, height, 1);
 
 			if (apixel != 0)

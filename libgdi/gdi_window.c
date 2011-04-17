@@ -589,7 +589,7 @@ gdi_ui_line(struct rdp_inst * inst, uint8 opcode, int startx, int starty, int en
 	cx = endx - startx + 1;
 	cy = endy - starty + 1;
 	
-	gdi_color_convert(&(gdi->pixel), pen->color, gdi->srcBpp, gdi->palette);
+	gdi_color_convert_pixel(&(gdi->pixel), pen->color, gdi->srcBpp, gdi->palette);
 	
 	hPen = CreatePen(pen->style, pen->width, (COLORREF) PixelRGB32(gdi->pixel));
 	SelectObject(gdi->drawing->hdc, (HGDIOBJ) hPen);
@@ -621,7 +621,7 @@ gdi_ui_rect(struct rdp_inst * inst, int x, int y, int cx, int cy, int color)
 	//DEBUG_GDI("ui_rect: x:%d y:%d cx:%d cy:%d\n", x, y, cx, cy);
 
 	CRgnToRect(x, y, cx, cy, &rect);
-	gdi_color_convert(&(gdi->pixel), color, gdi->srcBpp, gdi->palette);
+	gdi_color_convert_pixel(&(gdi->pixel), color, gdi->srcBpp, gdi->palette);
 	hBrush = CreateSolidBrush(PixelRGB32(gdi->pixel));
 	FillRect(gdi->drawing->hdc, &rect, hBrush);
 }
@@ -667,7 +667,7 @@ gdi_ui_polyline(struct rdp_inst * inst, uint8 opcode, RD_POINT * points, int npo
 
 	DEBUG_GDI("ui_polyline: opcode:%d npoints:%d\n", opcode, npoints);
 
-	gdi_color_convert(&(gdi->pixel), pen->color, gdi->srcBpp, gdi->palette);
+	gdi_color_convert_pixel(&(gdi->pixel), pen->color, gdi->srcBpp, gdi->palette);
 
 	hPen = CreatePen(pen->style, pen->width, (COLORREF) PixelRGB32(gdi->pixel));
 	SelectObject(gdi->drawing->hdc, (HGDIOBJ) hPen);
@@ -719,7 +719,7 @@ static void
 gdi_ui_start_draw_glyphs(struct rdp_inst * inst, int bgcolor, int fgcolor)
 {
 	GDI *gdi = GET_GDI(inst);
-	gdi_color_convert(&(gdi->pixel), fgcolor, gdi->srcBpp, gdi->palette);
+	gdi_color_convert_pixel(&(gdi->pixel), fgcolor, gdi->srcBpp, gdi->palette);
 	gdi->textColor = SetTextColor(gdi->drawing->hdc, PixelRGB32(gdi->pixel));
 }
 
@@ -835,7 +835,7 @@ gdi_ui_patblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy
 	{
 		originalBrush = gdi->drawing->hdc->brush;
 
-		gdi_color_convert(&(gdi->pixel), fgcolor, gdi->srcBpp, gdi->palette);
+		gdi_color_convert_pixel(&(gdi->pixel), fgcolor, gdi->srcBpp, gdi->palette);
 		gdi->drawing->hdc->brush = CreateSolidBrush(PixelRGB32(gdi->pixel));
 
 		PatBlt(gdi->drawing->hdc, x, y, cx, cy, gdi_rop3_code(opcode));
