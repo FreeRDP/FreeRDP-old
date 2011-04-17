@@ -29,8 +29,124 @@
 
 #include "gdi_brush.h"
 
-void
-gdi_color_convert(PIXEL *pixel, int color, int bpp, HPALETTE palette)
+int gdi_get_pixel(uint8 * data, int x, int y, int width, int height, int bpp)
+{
+	int start;
+	int shift;
+	uint16 *src16;
+	uint32 *src32;
+	int red, green, blue;
+
+	switch (bpp)
+	{
+		case  1:
+			width = (width + 7) / 8;
+			start = (y * width) + x / 8;
+			shift = x % 8;
+			return (data[start] & (0x80 >> shift)) != 0;
+		case 8:
+			return data[y * width + x];
+		case 15:
+		case 16:
+			src16 = (uint16*) data;
+			return src16[y * width + x];
+		case 24:
+			data += y * width * 3;
+			data += x * 3;
+			red = data[0];
+			green = data[1];
+			blue = data[2];
+			return RGB24(red, green, blue);
+		case 32:
+			src32 = (uint32*) data;
+			return src32[y * width + x];
+		default:
+			break;
+	}
+
+	return 0;
+}
+
+void gdi_set_pixel(uint8* data, int x, int y, int width, int height, int bpp, int pixel)
+{
+	int start;
+	int shift;
+	int *dst32;
+
+	if (bpp == 1)
+	{
+		width = (width + 7) / 8;
+		start = (y * width) + x / 8;
+		shift = x % 8;
+		if (pixel)
+			data[start] = data[start] | (0x80 >> shift);
+		else
+			data[start] = data[start] & ~(0x80 >> shift);
+	}
+	else if (bpp == 32)
+	{
+		dst32 = (int*) data;
+		dst32[y * width + x] = pixel;
+	}
+}
+
+int gdi_color(int srcColor, int srcBpp, int dstBpp, HPALETTE palette)
+{
+	uint8 red = 0;
+	uint8 green = 0;
+	uint8 blue = 0;
+	uint8 alpha = 0xFF;
+	int dstColor = 0;
+
+	switch (srcBpp)
+	{
+		case 32:
+			GetBGR32(red, green, blue, srcColor);
+			break;
+		case 24:
+			GetBGR24(red, green, blue, srcColor);
+			break;
+		case 16:
+			GetRGB16(red, green, blue, srcColor);
+			break;
+		case 15:
+			GetBGR15(red, green, blue, srcColor);
+			break;
+		case 8:
+			srcColor &= 0xFF;
+			red = palette->logicalPalette->entries[srcColor].red;
+			green = palette->logicalPalette->entries[srcColor].green;
+			blue = palette->logicalPalette->entries[srcColor].blue;
+			break;
+		default:
+			break;
+	}
+	switch (dstBpp)
+	{
+		case 32:
+			dstColor = ARGB32(alpha, red, green, blue);
+			break;
+		case 24:
+			dstColor = RGB24(red, green, blue);
+			break;
+		case 16:
+			dstColor = RGB16(red, green, blue);
+			break;
+		case 15:
+			dstColor = RGB15(red, green, blue);
+			break;
+		case 1:
+			if ((red != 0) || (green != 0) || (blue != 0))
+				dstColor = 1;
+			break;
+		default:
+			break;
+	}
+
+	return dstColor;
+}
+
+void gdi_color_convert(PIXEL *pixel, int color, int bpp, HPALETTE palette)
 {
 	pixel->red = 0;
 	pixel->green = 0;
@@ -453,3 +569,75 @@ uint8* gdi_mono_image_convert(uint8* srcData, int width, int height, int srcBpp,
 	return srcData;
 }
 
+/* create mono cursor */
+int gdi_mono_cursor_convert(uint8* srcData, uint8* maskData, uint8* xorMask, uint8* andMask, int width, int height, int bpp)
+{
+	int i,j,jj;
+	uint32 xpixel;
+	uint32 apixel;
+
+	for (j = 0; j < height; j++)
+	{
+		jj = (bpp == 1) ? j : (height - 1) - j;
+		for (i = 0; i < width; i++)
+		{
+			xpixel = gdi_get_pixel(xorMask, i, jj, width, height, bpp);
+			xpixel = gdi_color(xpixel, bpp, 24, NULL);
+			apixel = gdi_get_pixel(andMask, i, jj, width, height, 1);
+
+			if ((xpixel == 0xffffff) && (apixel != 0))
+			{
+				/* use pattern (not solid black) for xor area */
+				xpixel = (i & 1) == (j & 1);
+				apixel = 1;
+			}
+			else
+			{
+				xpixel = xpixel != 0;
+				apixel = apixel == 0;
+			}
+
+			gdi_set_pixel(srcData, i, j, width, height, 1, xpixel);
+			gdi_set_pixel(maskData, i, j, width, height, 1, apixel);
+		}
+	}
+	return 0;
+}
+
+/* create 32bpp cursor */
+int gdi_alpha_cursor_convert(uint8* alphaData, uint8* xorMask, uint8* andMask, int width, int height, int bpp)
+{
+	int xpixel;
+	int apixel;
+	int i, j, jj;
+
+	for (j = 0; j < height; j++)
+	{
+		jj = (bpp == 1) ? j : (height - 1) - j;
+		for (i = 0; i < width; i++)
+		{
+			xpixel = gdi_get_pixel(xorMask, i, jj, width, height, bpp);
+			xpixel = gdi_color(xpixel, bpp, 32, NULL);
+			apixel = gdi_get_pixel(andMask, i, jj, width, height, 1);
+
+			if (apixel != 0)
+			{
+				if ((xpixel & 0xffffff) == 0xffffff)
+				{
+					/* use pattern (not solid black) for xor area */
+					xpixel = (i & 1) == (j & 1);
+					xpixel = xpixel ? 0xffffff : 0;
+					xpixel |= 0xff000000;
+				}
+				else if (xpixel == 0xff000000)
+				{
+					xpixel = 0;
+				}
+			}
+
+			gdi_set_pixel(alphaData, i, j, width, height, 32, xpixel);
+		}
+	}
+
+	return 0;
+}
