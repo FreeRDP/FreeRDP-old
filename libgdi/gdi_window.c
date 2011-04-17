@@ -406,7 +406,7 @@ gdi_create_bitmap(GDI* gdi, int width, int height, int bpp, int reverse, uint8* 
 	uint8* bmpData;
 	HBITMAP bitmap;
 	
-	bmpData = gdi_image_convert(data, width, height, gdi->srcBpp, bpp, gdi->palette);
+	bmpData = gdi_image_convert(data, NULL, width, height, gdi->srcBpp, bpp, gdi->palette);
 	bitmap = CreateBitmap(width, height, gdi->dstBpp, bmpData);
 	
 	return bitmap;
@@ -814,7 +814,7 @@ gdi_ui_patblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy
 		{
 			if (brush->bd->color_code > 1) /*  > 1 bpp */
 			{
-				data = gdi_image_convert(brush->bd->data, 8, 8, gdi->srcBpp, gdi->dstBpp, gdi->palette);
+				data = gdi_image_convert(brush->bd->data, NULL, 8, 8, gdi->srcBpp, gdi->dstBpp, gdi->palette);
 			}
 			else
 			{

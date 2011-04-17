@@ -276,7 +276,7 @@ l_ui_create_bitmap(struct rdp_inst * inst, int width, int height, uint8 * data)
 	xfi = GET_XFI(inst);
 	//DEBUG("ui_create_bitmap: inst %p width %d height %d\n", inst, width, height);
 	bitmap = XCreatePixmap(xfi->display, xfi->wnd, width, height, xfi->depth);
-	cdata = gdi_image_convert(data, width, height, inst->settings->server_depth, xfi->depth, xfi->palette);
+	cdata = gdi_image_convert(data, NULL, width, height, inst->settings->server_depth, xfi->depth, xfi->palette);
 	image = XCreateImage(xfi->display, xfi->visual, xfi->depth, ZPixmap, 0,
 		(char *) cdata, width, height, xfi->bitmap_pad, 0);
 	XPutImage(xfi->display, bitmap, xfi->gc_default, image, 0, 0, 0, 0, width, height);
@@ -297,7 +297,7 @@ l_ui_paint_bitmap(struct rdp_inst * inst, int x, int y, int cx, int cy, int widt
 	uint8 * cdata;
 
 	xfi = GET_XFI(inst);
-	cdata = gdi_image_convert(data, width, height, inst->settings->server_depth, xfi->depth, xfi->palette);
+	cdata = gdi_image_convert(data, NULL, width, height, inst->settings->server_depth, xfi->depth, xfi->palette);
 	image = XCreateImage(xfi->display, xfi->visual, xfi->depth, ZPixmap, 0,
 		(char *) cdata, width, height, xfi->bitmap_pad, 0);
 	XPutImage(xfi->display, xfi->backstore, xfi->gc_default, image, 0, 0, x, y, cx, cy);
