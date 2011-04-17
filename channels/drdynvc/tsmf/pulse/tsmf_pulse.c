@@ -237,8 +237,8 @@ tsmf_pulse_open_stream(TSMFPulseAudioDevice * pulse)
 		tsmf_pulse_stream_state_callback, pulse);
 	pa_stream_set_write_callback(pulse->stream,
 		tsmf_pulse_stream_request_callback, pulse);
-	buffer_attr.maxlength = pa_usec_to_bytes(1000000, &pulse->sample_spec);
-	buffer_attr.tlength = pa_usec_to_bytes(500000, &pulse->sample_spec);
+	buffer_attr.maxlength = pa_usec_to_bytes(500000, &pulse->sample_spec);
+	buffer_attr.tlength = pa_usec_to_bytes(250000, &pulse->sample_spec);
 	buffer_attr.prebuf = (uint32_t) -1;
 	buffer_attr.minreq = (uint32_t) -1;
 	buffer_attr.fragsize = (uint32_t) -1;
