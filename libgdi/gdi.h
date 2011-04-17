@@ -110,15 +110,6 @@
 #define OPAQUE			0x00000001
 #define TRANSPARENT		0x00000002
 
-struct _PIXEL
-{
-	int red;
-	int green;
-	int blue;
-	int alpha;
-};
-typedef struct _PIXEL PIXEL;
-
 struct _GDIOBJ
 {
 	unsigned char objectType;
@@ -235,8 +226,6 @@ struct _DC
 };
 typedef struct _DC DC;
 typedef DC* HDC;
-
-#define IBPP(_bpp) (((_bpp + 1)/ 8) % 5)
 
 #define SET_GDI(_inst, _gdi) (_inst)->param2 = _gdi
 #define GET_GDI(_inst) ((GDI*) ((_inst)->param2))

@@ -20,7 +20,7 @@
 #ifndef __GDI_COLOR_H
 #define __GDI_COLOR_H
 
-#include "gdi.h"
+#include <freerdp/freerdp.h>
 
 /* GDI Color Space Conversions: http://msdn.microsoft.com/en-us/library/ff566496/ */
 
@@ -50,24 +50,6 @@
 	_r = (_r >> 3); \
 	_g = (_g >> 3); \
 	_b = (_b >> 3);
-
-/* COLORREF (RGB 24) */
-
-#ifdef USE_ALPHA
-#define RGB(_r, _g, _b)  \
-	(0xFF << 24) | (_r << 16) | (_g << 8) | _b;
-#else
-#define RGB(_r, _g, _b)  \
-	(_r << 16) | (_g << 8) | _b;
-#endif
-
-#define PixelRGB(_pixel)  \
-	(_pixel.red << 16) | (_pixel.green << 8) | _pixel.blue
-
-#define GetRGB(_r, _g, _b, _p) \
-	_r = (_p & 0xFF0000) >> 16; \
-	_g = (_p & 0xFF00) >> 8; \
-	_b = (_p & 0xFF); \
 
 /* RGB 15 (RGB_555) */
 
@@ -201,16 +183,27 @@
 	_g = (_g << 1 & ~0x1) | (_g >> 4); \
 	_p = RGB16(_r, _g, _b);
 
-typedef uint8* (*p_gdi_image_convert)(uint8* srcData, int width, int height, int srcBpp, int dstBpp, HPALETTE palette);
+struct _PIXEL
+{
+	int red;
+	int green;
+	int blue;
+	int alpha;
+};
+typedef struct _PIXEL PIXEL;
+
+#define IBPP(_bpp) (((_bpp + 1)/ 8) % 5)
+
+typedef uint8* (*p_gdi_image_convert)(uint8* srcData, int width, int height, int srcBpp, int dstBpp, RD_PALETTE* palette);
 
 int gdi_get_pixel(uint8 * data, int x, int y, int width, int height, int bpp);
 void gdi_set_pixel(uint8* data, int x, int y, int width, int height, int bpp, int pixel);
-int gdi_color(int srcColor, int srcBpp, int dstBpp, HPALETTE palette);
-void gdi_color_convert(PIXEL *pixel, int color, int bpp, HPALETTE palette);
-uint8* gdi_image_convert(uint8* srcData, int width, int height, int srcBpp, int dstBpp, HPALETTE palette);
+int gdi_color(int srcColor, int srcBpp, int dstBpp, RD_PALETTE* palette);
+void gdi_color_convert(PIXEL *pixel, int color, int bpp, RD_PALETTE* palette);
+uint8* gdi_image_convert(uint8* srcData, int width, int height, int srcBpp, int dstBpp, RD_PALETTE* palette);
 uint8* gdi_glyph_convert(int width, int height, uint8* data);
-uint8* gdi_mono_image_convert(uint8* srcData, int width, int height, int srcBpp, int dstBpp, int bgcolor, int fgcolor, HPALETTE palette);
-int gdi_mono_cursor_convert(uint8* srcData, uint8* maskData, uint8* xorMask, uint8* andMask, int width, int height, int bpp, HPALETTE palette);
-int gdi_alpha_cursor_convert(uint8* alphaData, uint8* xorMask, uint8* andMask, int width, int height, int bpp, HPALETTE palette);
+uint8* gdi_mono_image_convert(uint8* srcData, int width, int height, int srcBpp, int dstBpp, int bgcolor, int fgcolor, RD_PALETTE* palette);
+int gdi_mono_cursor_convert(uint8* srcData, uint8* maskData, uint8* xorMask, uint8* andMask, int width, int height, int bpp, RD_PALETTE* palette);
+int gdi_alpha_cursor_convert(uint8* alphaData, uint8* xorMask, uint8* andMask, int width, int height, int bpp, RD_PALETTE* palette);
 
 #endif /* __GDI_COLOR_H */

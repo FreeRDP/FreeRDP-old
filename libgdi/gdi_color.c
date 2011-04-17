@@ -20,14 +20,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-
 #include <freerdp/freerdp.h>
 
 #include "gdi_color.h"
-#include "gdi_window.h"
-#include "gdi.h"
-
-#include "gdi_brush.h"
 
 int gdi_get_pixel(uint8 * data, int x, int y, int width, int height, int bpp)
 {
@@ -90,7 +85,7 @@ void gdi_set_pixel(uint8* data, int x, int y, int width, int height, int bpp, in
 	}
 }
 
-int gdi_color(int srcColor, int srcBpp, int dstBpp, HPALETTE palette)
+int gdi_color(int srcColor, int srcBpp, int dstBpp, RD_PALETTE* palette)
 {
 	uint8 red = 0;
 	uint8 green = 0;
@@ -154,7 +149,7 @@ int gdi_color(int srcColor, int srcBpp, int dstBpp, HPALETTE palette)
 	return dstColor;
 }
 
-void gdi_color_convert(PIXEL *pixel, int color, int bpp, HPALETTE palette)
+void gdi_color_convert(PIXEL *pixel, int color, int bpp, RD_PALETTE* palette)
 {
 	pixel->red = 0;
 	pixel->green = 0;
@@ -186,7 +181,7 @@ void gdi_color_convert(PIXEL *pixel, int color, int bpp, HPALETTE palette)
 	}
 }
 
-uint8* gdi_image_convert_8bpp(uint8* srcData, int width, int height, int srcBpp, int dstBpp, HPALETTE palette)
+uint8* gdi_image_convert_8bpp(uint8* srcData, int width, int height, int srcBpp, int dstBpp, RD_PALETTE* palette)
 {
 	int i;
 	uint8 red;
@@ -262,7 +257,7 @@ uint8* gdi_image_convert_8bpp(uint8* srcData, int width, int height, int srcBpp,
 	return srcData;
 }
 
-uint8* gdi_image_convert_15bpp(uint8* srcData, int width, int height, int srcBpp, int dstBpp, HPALETTE palette)
+uint8* gdi_image_convert_15bpp(uint8* srcData, int width, int height, int srcBpp, int dstBpp, RD_PALETTE* palette)
 {
 	int i;
 	uint8 red;
@@ -329,7 +324,7 @@ uint8* gdi_image_convert_15bpp(uint8* srcData, int width, int height, int srcBpp
 	return srcData;
 }
 
-uint8* gdi_image_convert_16bpp(uint8* srcData, int width, int height, int srcBpp, int dstBpp, HPALETTE palette)
+uint8* gdi_image_convert_16bpp(uint8* srcData, int width, int height, int srcBpp, int dstBpp, RD_PALETTE* palette)
 {
 	uint8 *dstData;
 
@@ -359,7 +354,7 @@ uint8* gdi_image_convert_16bpp(uint8* srcData, int width, int height, int srcBpp
 	return srcData;
 }
 
-uint8* gdi_image_convert_24bpp(uint8* srcData, int width, int height, int srcBpp, int dstBpp, HPALETTE palette)
+uint8* gdi_image_convert_24bpp(uint8* srcData, int width, int height, int srcBpp, int dstBpp, RD_PALETTE* palette)
 {
 	uint8 red;
 	uint8 green;
@@ -394,7 +389,7 @@ uint8* gdi_image_convert_24bpp(uint8* srcData, int width, int height, int srcBpp
 	return srcData;
 }
 
-uint8* gdi_image_convert_32bpp(uint8* srcData, int width, int height, int srcBpp, int dstBpp, HPALETTE palette)
+uint8* gdi_image_convert_32bpp(uint8* srcData, int width, int height, int srcBpp, int dstBpp, RD_PALETTE* palette)
 {
 	uint8 *dstData;
 
@@ -436,7 +431,7 @@ p_gdi_image_convert gdi_image_convert_[5] =
 	gdi_image_convert_32bpp
 };
 
-uint8* gdi_image_convert(uint8* srcData, int width, int height, int srcBpp, int dstBpp, HPALETTE palette)
+uint8* gdi_image_convert(uint8* srcData, int width, int height, int srcBpp, int dstBpp, RD_PALETTE* palette)
 {
 	p_gdi_image_convert _p_gdi_image_convert = gdi_image_convert_[IBPP(srcBpp)];
 
@@ -485,7 +480,7 @@ gdi_glyph_convert(int width, int height, uint8* data)
 }
 
 
-uint8* gdi_mono_image_convert(uint8* srcData, int width, int height, int srcBpp, int dstBpp, int bgcolor, int fgcolor, HPALETTE palette)
+uint8* gdi_mono_image_convert(uint8* srcData, int width, int height, int srcBpp, int dstBpp, int bgcolor, int fgcolor, RD_PALETTE* palette)
 {
 	int index;
 	uint16* dst16;
@@ -546,8 +541,8 @@ uint8* gdi_mono_image_convert(uint8* srcData, int width, int height, int srcBpp,
 	}
 	else if(dstBpp == 32)
 	{
-		GetRGB(redBg, greenBg, blueBg, bgcolor);
-		GetRGB(redFg, greenFg, blueFg, fgcolor);
+		GetRGB32(redBg, greenBg, blueBg, bgcolor);
+		GetRGB32(redFg, greenFg, blueFg, fgcolor);
 
 		dstData = (uint8*) malloc(width * height * 4);
 		dst32 = (uint32*) dstData;
@@ -571,14 +566,12 @@ uint8* gdi_mono_image_convert(uint8* srcData, int width, int height, int srcBpp,
 		}
 		return dstData;
 	}
-	else
-		DEBUG_GDI("conversion to %d bpp not implemented", dstBpp);
 
 	return srcData;
 }
 
 /* create mono cursor */
-int gdi_mono_cursor_convert(uint8* srcData, uint8* maskData, uint8* xorMask, uint8* andMask, int width, int height, int bpp, HPALETTE palette)
+int gdi_mono_cursor_convert(uint8* srcData, uint8* maskData, uint8* xorMask, uint8* andMask, int width, int height, int bpp, RD_PALETTE* palette)
 {
 	int i,j,jj;
 	uint32 xpixel;
@@ -613,7 +606,7 @@ int gdi_mono_cursor_convert(uint8* srcData, uint8* maskData, uint8* xorMask, uin
 }
 
 /* create 32bpp cursor */
-int gdi_alpha_cursor_convert(uint8* alphaData, uint8* xorMask, uint8* andMask, int width, int height, int bpp, HPALETTE palette)
+int gdi_alpha_cursor_convert(uint8* alphaData, uint8* xorMask, uint8* andMask, int width, int height, int bpp, RD_PALETTE* palette)
 {
 	int xpixel;
 	int apixel;
