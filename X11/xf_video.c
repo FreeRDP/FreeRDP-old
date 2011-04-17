@@ -162,8 +162,58 @@ xf_video_process_frame(xfInfo * xfi, RD_VIDEO_FRAME_EVENT * vevent)
 		return 1;
 	}
 
-	memcpy(image->data, vevent->frame_data, image->data_size <= vevent->frame_size ?
-		image->data_size : vevent->frame_size);
+	/* The video driver may align each line to a different size
+	   and we need to convert our original image data. */
+	switch (vevent->frame_pixfmt)
+	{
+		case RD_PIXFMT_I420:
+			/* Y */
+			if (image->pitches[0] == vevent->frame_width)
+			{
+				memcpy(image->data + image->offsets[0],
+					vevent->frame_data,
+					vevent->frame_width * vevent->frame_height);
+			}
+			else
+			{
+				for (i = 0; i < vevent->frame_height; i++)
+				{
+					memcpy(image->data + image->offsets[0] + i * image->pitches[0],
+						vevent->frame_data + i * vevent->frame_width,
+						vevent->frame_width);
+				}
+			}
+			/* UV */
+			if (image->pitches[1] * 2 == vevent->frame_width)
+			{
+				memcpy(image->data + image->offsets[1],
+					vevent->frame_data + vevent->frame_width * vevent->frame_height,
+					vevent->frame_width * vevent->frame_height / 4);
+				memcpy(image->data + image->offsets[2],
+					vevent->frame_data + vevent->frame_width * vevent->frame_height +
+					vevent->frame_width * vevent->frame_height / 4,
+					vevent->frame_width * vevent->frame_height / 4);
+			}
+			else
+			{
+				for (i = 0; i < vevent->frame_height / 2; i++)
+				{
+					memcpy(image->data + image->offsets[1] + i * image->pitches[1],
+						vevent->frame_data + vevent->frame_width * vevent->frame_height + i * vevent->frame_width / 2,
+						vevent->frame_width / 2);
+					memcpy(image->data + image->offsets[2] + i * image->pitches[2],
+						vevent->frame_data + vevent->frame_width * vevent->frame_height +
+						vevent->frame_width * vevent->frame_height / 4 + i * vevent->frame_width / 2,
+						vevent->frame_width / 2);
+				}
+			}
+			break;
+
+		default:
+			memcpy(image->data, vevent->frame_data, image->data_size <= vevent->frame_size ?
+				image->data_size : vevent->frame_size);
+			break;
+	}
 
 	XvShmPutImage(xfi->display, xfi->xv_port, xfi->wnd, xfi->gc_default, image,
 		0, 0, image->width, image->height,
