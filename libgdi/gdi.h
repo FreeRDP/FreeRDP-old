@@ -186,17 +186,10 @@ struct _PALETTEENTRY
 };
 typedef struct _PALETTEENTRY PALETTEENTRY;
 
-struct _LOGPALETTE
+struct _PALETTE
 {
 	uint16 count;
 	PALETTEENTRY *entries;
-};
-typedef struct _LOGPALETTE LOGPALETTE;
-
-struct _PALETTE
-{
-	unsigned char objectType;
-	LOGPALETTE *logicalPalette;
 };
 typedef struct _PALETTE PALETTE;
 typedef PALETTE* HPALETTE;

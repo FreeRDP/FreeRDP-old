@@ -28,7 +28,6 @@ void test_CreateCompatibleDC(void);
 void test_CreateBitmap(void);
 void test_CreateCompatibleBitmap(void);
 void test_CreatePen(void);
-void test_CreatePalette(void);
 void test_CreateSolidBrush(void);
 void test_CreatePatternBrush(void);
 void test_CreateRectRgn(void);

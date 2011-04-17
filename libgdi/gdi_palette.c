@@ -60,24 +60,16 @@ static const PALETTEENTRY default_system_palette[20] =
 /**
  * Create a new palette.\n
  * @msdn{dd183507}
- * @param lplgpl logical palette
+ * @param original palette
  * @return new palette
  */
 
-HPALETTE CreatePalette(LOGPALETTE *lplgpl)
+HPALETTE CreatePalette(HPALETTE palette)
 {
 	HPALETTE hPalette = (HPALETTE) malloc(sizeof(PALETTE));
-	hPalette->objectType = GDIOBJ_PALETTE;
-
-	hPalette->logicalPalette = (LOGPALETTE*) malloc(sizeof(LOGPALETTE));
-
-	if (lplgpl->count > 256)
-		lplgpl->count = 256;
-
-	hPalette->logicalPalette->count = lplgpl->count;
-	hPalette->logicalPalette->entries = (PALETTEENTRY*) malloc(sizeof(PALETTEENTRY) * lplgpl->count);
-	memcpy(hPalette->logicalPalette->entries, lplgpl->entries, sizeof(PALETTEENTRY) * lplgpl->count);
-
+	hPalette->count = palette->count;
+	hPalette->entries = (PALETTEENTRY*) malloc(sizeof(PALETTEENTRY) * hPalette->count);
+	memcpy(hPalette->entries, palette->entries, sizeof(PALETTEENTRY) * hPalette->count);
 	return hPalette;
 }
 
@@ -88,22 +80,16 @@ HPALETTE CreatePalette(LOGPALETTE *lplgpl)
 
 HPALETTE CreateSystemPalette()
 {
-	HPALETTE hPalette;
-	LOGPALETTE *logicalPalette;
+	HPALETTE palette = (HPALETTE) malloc(sizeof(PALETTE));
 
-	logicalPalette = (LOGPALETTE*) malloc(sizeof(LOGPALETTE));
-	logicalPalette->count = 256;
-	logicalPalette->entries = (PALETTEENTRY*) malloc(sizeof(PALETTEENTRY) * 256);
-	memset(logicalPalette->entries, 0, sizeof(PALETTEENTRY) * 256);
+	palette->count = 256;
+	palette->entries = (PALETTEENTRY*) malloc(sizeof(PALETTEENTRY) * 256);
+	memset(palette->entries, 0, sizeof(PALETTEENTRY) * 256);
 
-	memcpy(&logicalPalette->entries[0], &default_system_palette[0], 10 * sizeof(PALETTEENTRY));
-	memcpy(&logicalPalette->entries[256 - 10], &default_system_palette[10], 10 * sizeof(PALETTEENTRY));
+	memcpy(&palette->entries[0], &default_system_palette[0], 10 * sizeof(PALETTEENTRY));
+	memcpy(&palette->entries[256 - 10], &default_system_palette[10], 10 * sizeof(PALETTEENTRY));
 
-	hPalette = (HPALETTE) malloc(sizeof(PALETTE));
-	hPalette->objectType = GDIOBJ_PALETTE;
-	hPalette->logicalPalette = logicalPalette;
-
-	return hPalette;
+	return palette;
 }
 
 /**

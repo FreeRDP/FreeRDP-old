@@ -114,9 +114,17 @@ int gdi_color(int srcColor, int srcBpp, int dstBpp, HPALETTE palette)
 			break;
 		case 8:
 			srcColor &= 0xFF;
-			red = palette->logicalPalette->entries[srcColor].red;
-			green = palette->logicalPalette->entries[srcColor].green;
-			blue = palette->logicalPalette->entries[srcColor].blue;
+			red = palette->entries[srcColor].red;
+			green = palette->entries[srcColor].green;
+			blue = palette->entries[srcColor].blue;
+			break;
+		case 1:
+			if (srcColor != 0)
+			{
+				red = 0xFF;
+				green = 0xFF;
+				blue = 0xFF;
+			}
 			break;
 		default:
 			break;
@@ -169,9 +177,9 @@ void gdi_color_convert(PIXEL *pixel, int color, int bpp, HPALETTE palette)
 			break;
 		case 8:
 			color &= 0xFF;
-			pixel->red = palette->logicalPalette->entries[color].red;
-			pixel->green = palette->logicalPalette->entries[color].green;
-			pixel->blue = palette->logicalPalette->entries[color].blue;
+			pixel->red = palette->entries[color].red;
+			pixel->green = palette->entries[color].green;
+			pixel->blue = palette->entries[color].blue;
 			break;
 		default:
 			break;
@@ -204,9 +212,9 @@ uint8* gdi_image_convert_8bpp(uint8* srcData, int width, int height, int srcBpp,
 		{
 			pixel = *srcData;
 			srcData++;
-			red = palette->logicalPalette->entries[pixel].red;
-			green = palette->logicalPalette->entries[pixel].green;
-			blue = palette->logicalPalette->entries[pixel].blue;
+			red = palette->entries[pixel].red;
+			green = palette->entries[pixel].green;
+			blue = palette->entries[pixel].blue;
 			RGB_888_565(red, green, blue);
 			pixel = RGB16(red, green, blue);
 			*dst16 = pixel;
@@ -222,9 +230,9 @@ uint8* gdi_image_convert_8bpp(uint8* srcData, int width, int height, int srcBpp,
 		{
 			pixel = *srcData;
 			srcData++;
-			red = palette->logicalPalette->entries[pixel].red;
-			green = palette->logicalPalette->entries[pixel].green;
-			blue = palette->logicalPalette->entries[pixel].blue;
+			red = palette->entries[pixel].red;
+			green = palette->entries[pixel].green;
+			blue = palette->entries[pixel].blue;
 			RGB_888_555(red, green, blue);
 			pixel = RGB15(red, green, blue);
 			*dst16 = pixel;
@@ -241,9 +249,9 @@ uint8* gdi_image_convert_8bpp(uint8* srcData, int width, int height, int srcBpp,
 		{
 			pixel = *src8;
 			src8++;
-			red = palette->logicalPalette->entries[pixel].red;
-			green = palette->logicalPalette->entries[pixel].green;
-			blue = palette->logicalPalette->entries[pixel].blue;
+			red = palette->entries[pixel].red;
+			green = palette->entries[pixel].green;
+			blue = palette->entries[pixel].blue;
 			pixel = BGR32(red, green, blue);
 			*dst32 = pixel;
 			dst32++;
@@ -494,16 +502,16 @@ uint8* gdi_mono_image_convert(uint8* srcData, int width, int height, int srcBpp,
 		{
 			/* convert palette colors to 16-bit colors */
 			bgcolor &= 0xFF;
-			redBg = palette->logicalPalette->entries[bgcolor].red;
-			greenBg = palette->logicalPalette->entries[bgcolor].green;
-			blueBg = palette->logicalPalette->entries[bgcolor].blue;
+			redBg = palette->entries[bgcolor].red;
+			greenBg = palette->entries[bgcolor].green;
+			blueBg = palette->entries[bgcolor].blue;
 			RGB_888_565(redBg, greenBg, blueBg);
 			bgcolor = RGB16(redBg, greenBg, blueBg);
 
 			fgcolor &= 0xFF;
-			redFg = palette->logicalPalette->entries[fgcolor].red;
-			greenFg = palette->logicalPalette->entries[fgcolor].green;
-			blueFg = palette->logicalPalette->entries[fgcolor].blue;
+			redFg = palette->entries[fgcolor].red;
+			greenFg = palette->entries[fgcolor].green;
+			blueFg = palette->entries[fgcolor].blue;
 			RGB_888_565(redFg, greenFg, blueFg);
 			fgcolor = RGB16(redFg, greenFg, blueFg);
 		}
@@ -570,7 +578,7 @@ uint8* gdi_mono_image_convert(uint8* srcData, int width, int height, int srcBpp,
 }
 
 /* create mono cursor */
-int gdi_mono_cursor_convert(uint8* srcData, uint8* maskData, uint8* xorMask, uint8* andMask, int width, int height, int bpp)
+int gdi_mono_cursor_convert(uint8* srcData, uint8* maskData, uint8* xorMask, uint8* andMask, int width, int height, int bpp, HPALETTE palette)
 {
 	int i,j,jj;
 	uint32 xpixel;
@@ -582,7 +590,7 @@ int gdi_mono_cursor_convert(uint8* srcData, uint8* maskData, uint8* xorMask, uin
 		for (i = 0; i < width; i++)
 		{
 			xpixel = gdi_get_pixel(xorMask, i, jj, width, height, bpp);
-			xpixel = gdi_color(xpixel, bpp, 24, NULL);
+			xpixel = gdi_color(xpixel, bpp, 24, palette);
 			apixel = gdi_get_pixel(andMask, i, jj, width, height, 1);
 
 			if ((xpixel == 0xffffff) && (apixel != 0))
@@ -605,7 +613,7 @@ int gdi_mono_cursor_convert(uint8* srcData, uint8* maskData, uint8* xorMask, uin
 }
 
 /* create 32bpp cursor */
-int gdi_alpha_cursor_convert(uint8* alphaData, uint8* xorMask, uint8* andMask, int width, int height, int bpp)
+int gdi_alpha_cursor_convert(uint8* alphaData, uint8* xorMask, uint8* andMask, int width, int height, int bpp, HPALETTE palette)
 {
 	int xpixel;
 	int apixel;
@@ -617,7 +625,7 @@ int gdi_alpha_cursor_convert(uint8* alphaData, uint8* xorMask, uint8* andMask, i
 		for (i = 0; i < width; i++)
 		{
 			xpixel = gdi_get_pixel(xorMask, i, jj, width, height, bpp);
-			xpixel = gdi_color(xpixel, bpp, 32, NULL);
+			xpixel = gdi_color(xpixel, bpp, 32, palette);
 			apixel = gdi_get_pixel(andMask, i, jj, width, height, 1);
 
 			if (apixel != 0)

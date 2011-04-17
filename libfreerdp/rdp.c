@@ -145,7 +145,7 @@ rdp_recv(rdpRdp * rdp, enum RDP_PDU_TYPE * type, uint16 * source)
 	return rdp->rdp_s;
 }
 
-/* Initialise an RDP data packet */
+/* Initialize an RDP data packet */
 static STREAM
 rdp_init_data(rdpRdp * rdp, int maxlen)
 {

@@ -42,7 +42,6 @@ int add_libgdi_suite(void)
 	add_test_function(CreateBitmap);
 	add_test_function(CreateCompatibleBitmap);
 	add_test_function(CreatePen);
-	add_test_function(CreatePalette);
 	add_test_function(CreateSolidBrush);
 	add_test_function(CreatePatternBrush);
 	add_test_function(CreateRectRgn);
@@ -1321,21 +1320,6 @@ void test_CreatePen(void)
 	CU_ASSERT(hPen->width == 8);
 	CU_ASSERT(hPen->color == 0xAABBCCDD);
 	DeleteObject((HGDIOBJ) hPen);
-}
-
-void test_CreatePalette(void)
-{
-	HPALETTE hPalette;
-	LOGPALETTE *logicalPalette;
-
-	logicalPalette = (LOGPALETTE*) malloc(sizeof(LOGPALETTE));
-	logicalPalette->entries = (PALETTEENTRY*) malloc(sizeof(PALETTEENTRY) * 256);
-	memset(logicalPalette->entries, 0, sizeof(PALETTEENTRY) * 256);
-	logicalPalette->count = 5;
-
-	hPalette = CreatePalette(logicalPalette);
-	CU_ASSERT(hPalette->objectType == GDIOBJ_PALETTE);
-	DeleteObject((HGDIOBJ) hPalette);
 }
 
 void test_CreateSolidBrush(void)

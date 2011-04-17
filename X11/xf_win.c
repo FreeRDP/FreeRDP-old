@@ -846,7 +846,7 @@ l_ui_create_cursor(struct rdp_inst * inst, uint32 x, uint32 y,
 	memset(ci.pixels, 0, width * height * 4);
 	if ((andmask != 0) && (xormask != 0))
 	{
-		gdi_alpha_cursor_convert((uint8 *) (ci.pixels), xormask, andmask, width, height, bpp);
+		gdi_alpha_cursor_convert((uint8 *) (ci.pixels), xormask, andmask, width, height, bpp, xfi->palette);
 	}
 	if (bpp > 24)
 	{
@@ -883,7 +883,7 @@ l_ui_create_cursor(struct rdp_inst * inst, uint32 x, uint32 y,
 	memset(&bg, 0, sizeof(bg));
 	if ((andmask != 0) && (xormask != 0))
 	{
-		gdi_mono_cursor_convert(src_data, msk_data, xormask, andmask, width, height, bpp);
+		gdi_mono_cursor_convert(src_data, msk_data, xormask, andmask, width, height, bpp, xfi->palette);
 	}
 	src_glyph = (Pixmap) l_ui_create_glyph(inst, width, height, src_data);
 	msk_glyph = (Pixmap) l_ui_create_glyph(inst, width, height, msk_data);
@@ -917,15 +917,7 @@ static RD_HPALETTE
 l_ui_create_palette(struct rdp_inst * inst, RD_HPALETTE palette)
 {
 	DEBUG("ui_create_palette:\n");
-	return (RD_HPALETTE) CreatePalette((LOGPALETTE*) palette);
-}
-
-static void
-l_ui_move_pointer(struct rdp_inst * inst, int x, int y)
-{
-	xfInfo * xfi = GET_XFI(inst);
-	DEBUG("ui_move_pointer:\n");
-	XWarpPointer(xfi->display, xfi->wnd, xfi->wnd, 0, 0, 0, 0, x, y);
+	return (RD_HPALETTE) CreatePalette((HPALETTE) palette);
 }
 
 static void
@@ -934,6 +926,14 @@ l_ui_set_palette(struct rdp_inst * inst, RD_HPALETTE palette)
 	xfInfo * xfi = GET_XFI(inst);
 	DEBUG("ui_set_palette:\n");
 	xfi->palette = (HPALETTE) palette;
+}
+
+static void
+l_ui_move_pointer(struct rdp_inst * inst, int x, int y)
+{
+	xfInfo * xfi = GET_XFI(inst);
+	DEBUG("ui_move_pointer:\n");
+	XWarpPointer(xfi->display, xfi->wnd, xfi->wnd, 0, 0, 0, 0, x, y);
 }
 
 static RD_HBITMAP
