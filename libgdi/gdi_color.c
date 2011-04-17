@@ -64,10 +64,10 @@ gdi_color_convert(PIXEL *pixel, int color, int bpp, HPALETTE palette)
 
 uint8* gdi_image_convert_8bpp(uint8* srcData, int width, int height, int srcBpp, int dstBpp, HPALETTE palette)
 {
+	int i;
 	uint8 red;
 	uint8 green;
 	uint8 blue;
-	int index;
 	uint32 pixel;
 	uint8 *src8;
 	uint16 *dst16;
@@ -84,7 +84,7 @@ uint8* gdi_image_convert_8bpp(uint8* srcData, int width, int height, int srcBpp,
 	{
 		dstData = (uint8*) malloc(width * height * 2);
 		dst16 = (uint16 *) dstData;
-		for (index = width * height; index > 0; index--)
+		for (i = width * height; i > 0; i--)
 		{
 			pixel = *srcData;
 			srcData++;
@@ -102,7 +102,7 @@ uint8* gdi_image_convert_8bpp(uint8* srcData, int width, int height, int srcBpp,
 	{
 		dstData = (uint8*) malloc(width * height * 2);
 		dst16 = (uint16 *) dstData;
-		for (index = width * height; index > 0; index--)
+		for (i = width * height; i > 0; i--)
 		{
 			pixel = *srcData;
 			srcData++;
@@ -121,7 +121,7 @@ uint8* gdi_image_convert_8bpp(uint8* srcData, int width, int height, int srcBpp,
 		dstData = (uint8*) malloc(width * height * 4);
 		src8 = (uint8*) srcData;
 		dst32 = (uint32*) dstData;
-		for (index = width * height; index > 0; index--)
+		for (i = width * height; i > 0; i--)
 		{
 			pixel = *src8;
 			src8++;
@@ -138,41 +138,42 @@ uint8* gdi_image_convert_8bpp(uint8* srcData, int width, int height, int srcBpp,
 	return srcData;
 }
 
-uint8* gdi_image_convert_16bpp(uint8* srcData, int width, int height, int srcBpp, int dstBpp, HPALETTE palette)
+uint8* gdi_image_convert_15bpp(uint8* srcData, int width, int height, int srcBpp, int dstBpp, HPALETTE palette)
 {
+	int i;
 	uint8 red;
 	uint8 green;
 	uint8 blue;
-	int index;
 	uint32 pixel;
 	uint16 *src16;
 	uint16 *dst16;
 	uint32 *dst32;
 	uint8 *dstData;
 
-	if (dstBpp == 16)
+	if (dstBpp == 15 || dstBpp == 16)
 	{
-		dstData = (uint8*) malloc(width * height * 2);
 #ifdef GDI_SWAP_16BPP
 		src16 = (uint16*) srcData;
 		dst16 = (uint16*) dstData;
-		for (index = width * height; index > 0; index--)
+		dstData = (uint8*) malloc(width * height * 2);
+		for (i = width * height; i > 0; i--)
 		{
 			*dst16 = (*src16 >> 8) | (*src16 << 8);
 			src16++;
 			dst16++;
 		}
 #else
+		dstData = (uint8*) malloc(width * height * 2);
 		memcpy(dstData, srcData, width * height * 2);
 #endif
 		return dstData;
 	}
-	else if ((srcBpp == 15) && (dstBpp == 32))
+	else if (dstBpp == 32)
 	{
 		dstData = (uint8*) malloc(width * height * 4);
 		src16 = (uint16 *) srcData;
 		dst32 = (uint32 *) dstData;
-		for (index = width * height; index > 0; index--)
+		for (i = width * height; i > 0; i--)
 		{
 			pixel = *src16;
 			src16++;
@@ -183,29 +184,12 @@ uint8* gdi_image_convert_16bpp(uint8* srcData, int width, int height, int srcBpp
 		}
 		return dstData;
 	}
-	else if ((srcBpp == 15) && (dstBpp == 32))
-	{
-		dstData = (uint8*) malloc(width * height * 4);
-		src16 = (uint16 *) srcData;
-		dst32 = (uint32 *) dstData;
-		for (index = width * height; index > 0; index--)
-		{
-			pixel = *src16;
-			src16++;
-			GetRGB15(red, green, blue, pixel);
-			RGB_555_888(red, green, blue);
-			pixel = BGR24(red, green, blue);
-			*dst32 = pixel;
-			dst32++;
-		}
-		return dstData;
-	}
-	else if ((srcBpp == 15) && (dstBpp == 16))
+	else if (dstBpp == 16)
 	{
 		dstData = (uint8*) malloc(width * height * 2);
 		src16 = (uint16 *) srcData;
 		dst16 = (uint16 *) dstData;
-		for (index = width * height; index > 0; index--)
+		for (i = width * height; i > 0; i--)
 		{
 			pixel = *src16;
 			src16++;
@@ -215,6 +199,36 @@ uint8* gdi_image_convert_16bpp(uint8* srcData, int width, int height, int srcBpp
 			*dst16 = pixel;
 			dst16++;
 		}
+		return dstData;
+	}
+
+	return srcData;
+}
+
+uint8* gdi_image_convert_16bpp(uint8* srcData, int width, int height, int srcBpp, int dstBpp, HPALETTE palette)
+{
+	uint8 *dstData;
+
+	if (srcBpp == 15)
+		return gdi_image_convert_15bpp(srcData, width, height, srcBpp, dstBpp, palette);
+
+	if (dstBpp == 16)
+	{
+#ifdef GDI_SWAP_16BPP
+		int i;
+		uint16* src16 = (uint16*) srcData;
+		uint16* dst16 = (uint16*) dstData;
+		dstData = (uint8*) malloc(width * height * 2);
+		for (i = width * height; i > 0; i--)
+		{
+			*dst16 = (*src16 >> 8) | (*src16 << 8);
+			src16++;
+			dst16++;
+		}
+#else
+		dstData = (uint8*) malloc(width * height * 2);
+		memcpy(dstData, srcData, width * height * 2);
+#endif
 		return dstData;
 	}
 
@@ -264,7 +278,7 @@ uint8* gdi_image_convert_32bpp(uint8* srcData, int width, int height, int srcBpp
 	{
 #ifdef USE_ALPHA
 		int x, y;
-		char *dstp;
+		uint8 *dstp;
 
 		dstData = (uint8*) malloc(width * height * 4);
 		memcpy(dstData, srcData, width * height * 4);
