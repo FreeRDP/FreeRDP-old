@@ -39,7 +39,7 @@ int FillRect_32bpp(HDC hdc, HRECT rect, HBRUSH hbr)
 	if (ClipCoords(hdc, &nXDest, &nYDest, &nWidth, &nHeight, NULL, NULL) == 0)
 		return 0;
 
-	GetRGB(r, g, b, hbr->color);
+	GetRGB32(r, g, b, hbr->color);
 	
 	for (y = 0; y < nHeight; y++)
 	{
@@ -616,7 +616,7 @@ static int BitBlt_PATCOPY_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth,
 
 	if(hdcDest->brush->style == BS_SOLID)
 	{
-		GetRGB(colR, colG, colB, hdcDest->brush->color);
+		GetRGB32(colR, colG, colB, hdcDest->brush->color);
 		col = ABGR32(0xFF, colR, colG, colB);
 		for (y = 0; y < nHeight; y++)
 		{
@@ -673,7 +673,7 @@ static int BitBlt_PATINVERT_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidt
 		
 	if(hdcDest->brush->style == BS_SOLID)
 	{
-		GetRGB(colR, colG, colB, hdcDest->brush->color);
+		GetRGB32(colR, colG, colB, hdcDest->brush->color);
 		col = ABGR32(0xFF, colR, colG, colB);
 		for (y = 0; y < nHeight; y++)
 		{

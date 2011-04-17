@@ -134,6 +134,9 @@
 	_g = (_p & 0xFF00) >> 8; \
 	_b = (_p & 0xFF);
 
+#define PixelRGB32(_pixel)  \
+	(_pixel.red << 16) | (_pixel.green << 8) | _pixel.blue
+
 /* ARGB 32 (ARGB_8888) */
 
 #define ARGB32(_a,_r, _g, _b)  \

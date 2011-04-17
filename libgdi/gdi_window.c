@@ -591,7 +591,7 @@ gdi_ui_line(struct rdp_inst * inst, uint8 opcode, int startx, int starty, int en
 	
 	gdi_color_convert(&(gdi->pixel), pen->color, gdi->srcBpp, gdi->palette);
 	
-	hPen = CreatePen(pen->style, pen->width, (COLORREF) PixelRGB(gdi->pixel));
+	hPen = CreatePen(pen->style, pen->width, (COLORREF) PixelRGB32(gdi->pixel));
 	SelectObject(gdi->drawing->hdc, (HGDIOBJ) hPen);
 	SetROP2(gdi->drawing->hdc, opcode);
 
@@ -622,7 +622,7 @@ gdi_ui_rect(struct rdp_inst * inst, int x, int y, int cx, int cy, int color)
 
 	CRgnToRect(x, y, cx, cy, &rect);
 	gdi_color_convert(&(gdi->pixel), color, gdi->srcBpp, gdi->palette);
-	hBrush = CreateSolidBrush(PixelRGB(gdi->pixel));
+	hBrush = CreateSolidBrush(PixelRGB32(gdi->pixel));
 	FillRect(gdi->drawing->hdc, &rect, hBrush);
 }
 
@@ -669,7 +669,7 @@ gdi_ui_polyline(struct rdp_inst * inst, uint8 opcode, RD_POINT * points, int npo
 
 	gdi_color_convert(&(gdi->pixel), pen->color, gdi->srcBpp, gdi->palette);
 
-	hPen = CreatePen(pen->style, pen->width, (COLORREF) PixelRGB(gdi->pixel));
+	hPen = CreatePen(pen->style, pen->width, (COLORREF) PixelRGB32(gdi->pixel));
 	SelectObject(gdi->drawing->hdc, (HGDIOBJ) hPen);
 	SetROP2(gdi->drawing->hdc, opcode);
 
@@ -720,7 +720,7 @@ gdi_ui_start_draw_glyphs(struct rdp_inst * inst, int bgcolor, int fgcolor)
 {
 	GDI *gdi = GET_GDI(inst);
 	gdi_color_convert(&(gdi->pixel), fgcolor, gdi->srcBpp, gdi->palette);
-	gdi->textColor = SetTextColor(gdi->drawing->hdc, PixelRGB(gdi->pixel));
+	gdi->textColor = SetTextColor(gdi->drawing->hdc, PixelRGB32(gdi->pixel));
 }
 
 /**
@@ -836,7 +836,7 @@ gdi_ui_patblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy
 		originalBrush = gdi->drawing->hdc->brush;
 
 		gdi_color_convert(&(gdi->pixel), fgcolor, gdi->srcBpp, gdi->palette);
-		gdi->drawing->hdc->brush = CreateSolidBrush(PixelRGB(gdi->pixel));
+		gdi->drawing->hdc->brush = CreateSolidBrush(PixelRGB32(gdi->pixel));
 
 		PatBlt(gdi->drawing->hdc, x, y, cx, cy, gdi_rop3_code(opcode));
 
@@ -950,7 +950,7 @@ gdi_ui_set_palette(struct rdp_inst * inst, RD_HPALETTE palette)
 {
 	GDI *gdi = GET_GDI(inst);
 	DEBUG_GDI("gdi_ui_set_palette\n");
-	gdi->palette = (HPALETTE) palette;
+	gdi->palette = (RD_PALETTE*) palette;
 }
 
 /**

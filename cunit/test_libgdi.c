@@ -1496,7 +1496,7 @@ void test_LineTo(void)
 	HBITMAP hBmp_LineTo_R2_MERGEPENNOT;
 	HBITMAP hBmp_LineTo_R2_MERGEPEN;
 	HBITMAP hBmp_LineTo_R2_WHITE;
-	HPALETTE hPalette;
+	RD_PALETTE* hPalette;
 	int bitsPerPixel = 8;
 	int bytesPerPixel = 1;
 
@@ -1511,7 +1511,7 @@ void test_LineTo(void)
 	hBmp = CreateCompatibleBitmap(hdc, 16, 16);
 	SelectObject(hdc, (HGDIOBJ) hBmp);
 
-	hPalette = GetSystemPalette();
+	hPalette = (RD_PALETTE*) GetSystemPalette();
 
 	data = (uint8*) gdi_image_convert((uint8*) line_to_case_1, 16, 16, 8, bitsPerPixel, hPalette);
 	hBmp_LineTo_1 = CreateBitmap(16, 16, bitsPerPixel, data);
@@ -1808,7 +1808,7 @@ void test_Ellipse(void)
 	HBITMAP hBmp_Ellipse_1;
 	HBITMAP hBmp_Ellipse_2;
 	HBITMAP hBmp_Ellipse_3;
-	HPALETTE hPalette;
+	RD_PALETTE* hPalette;
 	int bitsPerPixel = 8;
 	int bytesPerPixel = 1;
 
@@ -1823,7 +1823,7 @@ void test_Ellipse(void)
 	hBmp = CreateCompatibleBitmap(hdc, 16, 16);
 	SelectObject(hdc, (HGDIOBJ) hBmp);
 
-	hPalette = GetSystemPalette();
+	hPalette = (RD_PALETTE*) GetSystemPalette();
 
 	data = (uint8*) gdi_image_convert((uint8*) ellipse_case_1, 16, 16, 8, bitsPerPixel, hPalette);
 	hBmp_Ellipse_1 = CreateBitmap(16, 16, bitsPerPixel, data);
@@ -1890,7 +1890,7 @@ void test_FillRect(void)
 	memset(hBitmap->data, 0, width * height * hdc->bytesPerPixel);
 	SelectObject(hdc, (HGDIOBJ) hBitmap);
 
-	color = (COLORREF) RGB(0xAA, 0xBB, 0xCC);
+	color = (COLORREF) RGB32(0xAA, 0xBB, 0xCC);
 	hBrush = CreateSolidBrush(color);
 
 	FillRect(hdc, hRect, hBrush);
@@ -1956,7 +1956,7 @@ void test_BitBlt_32bpp(void)
 	HBITMAP hBmp_PATPAINT;
 	HBITMAP hBmp_PATINVERT;
 	HBITMAP hBmpDstOriginal;
-	HPALETTE hPalette;
+	RD_PALETTE* hPalette;
 
 	int bytesPerPixel = 4;
 	int bitsPerPixel = 32;
@@ -1969,7 +1969,7 @@ void test_BitBlt_32bpp(void)
 	hdcDst->bytesPerPixel = bytesPerPixel;
 	hdcDst->bitsPerPixel = bitsPerPixel;
 
-	hPalette = GetSystemPalette();
+	hPalette = (RD_PALETTE*) GetSystemPalette();
 
 	data = (uint8*) gdi_image_convert((uint8*) bmp_SRC, 16, 16, 8, bitsPerPixel, hPalette);
 	hBmpSrc = CreateBitmap(16, 16, bitsPerPixel, data);
@@ -2204,7 +2204,7 @@ void test_BitBlt_16bpp(void)
 	HBITMAP hBmp_PATPAINT;
 	HBITMAP hBmp_PATINVERT;
 	HBITMAP hBmpDstOriginal;
-	HPALETTE hPalette;
+	RD_PALETTE* hPalette;
 
 	int bytesPerPixel = 2;
 	int bitsPerPixel = 16;
@@ -2217,7 +2217,7 @@ void test_BitBlt_16bpp(void)
 	hdcDst->bytesPerPixel = bytesPerPixel;
 	hdcDst->bitsPerPixel = bitsPerPixel;
 
-	hPalette = GetSystemPalette();
+	hPalette = (RD_PALETTE*) GetSystemPalette();
 
 	data = (uint8*) gdi_image_convert((uint8*) bmp_SRC, 16, 16, 8, bitsPerPixel, hPalette);
 	hBmpSrc = CreateBitmap(16, 16, bitsPerPixel, data);
@@ -2452,7 +2452,7 @@ void test_BitBlt_8bpp(void)
 	HBITMAP hBmp_PATPAINT;
 	HBITMAP hBmp_PATINVERT;
 	HBITMAP hBmpDstOriginal;
-	HPALETTE hPalette;
+	RD_PALETTE* hPalette;
 
 	int bytesPerPixel = 1;
 	int bitsPerPixel = 8;
@@ -2465,7 +2465,7 @@ void test_BitBlt_8bpp(void)
 	hdcDst->bytesPerPixel = bytesPerPixel;
 	hdcDst->bitsPerPixel = bitsPerPixel;
 
-	hPalette = GetSystemPalette();
+	hPalette = (RD_PALETTE*) GetSystemPalette();
 
 	data = (uint8*) gdi_image_convert((uint8*) bmp_SRC, 16, 16, 8, bitsPerPixel, hPalette);
 	hBmpSrc = CreateBitmap(16, 16, bitsPerPixel, data);

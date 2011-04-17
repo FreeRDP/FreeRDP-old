@@ -46,7 +46,7 @@ struct _GDI
 	gdi_bitmap *drawing;
 	uint8* primary_buffer;
 	COLORREF textColor;
-	HPALETTE palette;
+	RD_PALETTE* palette;
 	PIXEL pixel;
 };
 typedef struct _GDI GDI;
