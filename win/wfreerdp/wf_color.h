@@ -27,9 +27,9 @@ uint8 *
 wf_image_convert(wfInfo * wfi, int width, int height, int bpp,
 	int reverse, uint8 * in_data, uint8 * out_data);
 RD_HPALETTE
-wf_create_colormap(wfInfo * wfi, RD_PALETTE * colors);
+wf_create_palette(wfInfo * wfi, RD_PALETTE * palette);
 int
-wf_set_colormap(wfInfo * wfi, RD_HPALETTE map);
+wf_set_palette(wfInfo * wfi, RD_HPALETTE palette);
 uint8 *
 wf_glyph_convert(wfInfo * wfi, int width, int height, uint8 * data);
 uint8 *
