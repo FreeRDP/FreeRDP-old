@@ -27,6 +27,8 @@
 #include "gdi_window.h"
 #include "gdi.h"
 
+#include "gdi_brush.h"
+
 void
 gdi_color_convert(PIXEL *pixel, int color, int bpp, HPALETTE palette)
 {
@@ -60,8 +62,7 @@ gdi_color_convert(PIXEL *pixel, int color, int bpp, HPALETTE palette)
 	}
 }
 
-uint8*
-gdi_image_convert(uint8* srcData, int width, int height, int srcBpp, int dstBpp, HPALETTE palette)
+uint8* gdi_image_convert_8bpp(uint8* srcData, int width, int height, int srcBpp, int dstBpp, HPALETTE palette)
 {
 	uint8 red;
 	uint8 green;
@@ -69,76 +70,104 @@ gdi_image_convert(uint8* srcData, int width, int height, int srcBpp, int dstBpp,
 	int index;
 	uint32 pixel;
 	uint8 *src8;
-	uint16 *src16;
 	uint16 *dst16;
 	uint32 *dst32;
 	uint8 *dstData;
 
-	if (srcBpp == dstBpp)
+	if (dstBpp == 8)
 	{
-		if (dstBpp == 32)
+		dstData = (uint8*) malloc(width * height);
+		memcpy(dstData, srcData, width * height);
+		return dstData;
+	}
+	else if (dstBpp == 16)
+	{
+		dstData = (uint8*) malloc(width * height * 2);
+		dst16 = (uint16 *) dstData;
+		for (index = width * height; index > 0; index--)
 		{
-#ifdef USE_ALPHA
-			int x, y;
-			char *dstp;
-
-			dstData = (uint8*) malloc(width * height * 4);
-			memcpy(dstData, srcData, width * height * 4);
-
-			dstp = dstData;
-			for (y = 0; y < height; y++)
-			{
-				for (x = 0; x < width * 4; x += 4)
-				{
-					dstp += 3;
-					*dstp = 0xFF;
-					dstp++;
-				}
-			}
-#else
-			dstData = (uint8*) malloc(width * height * 4);
-			memcpy(dstData, srcData, width * height * 4);
-#endif
-		}
-		else if (dstBpp == 16)
-		{
-			dstData = (uint8*) malloc(width * height * 2);
-#ifdef GDI_SWAP_16BPP
-			src16 = (uint16*) srcData;
-			dst16 = (uint16*) dstData;
-			for (index = width * height; index > 0; index--)
-			{
-				*dst16 = (*src16 >> 8) | (*src16 << 8);
-				src16++;
-				dst16++;
-			}
-#else
-			memcpy(dstData, srcData, width * height * 2);
-#endif
-		}
-		else
-		{
-			dstData = (uint8*) malloc(width * height * 4);
-			memcpy(dstData, srcData, width * height * 4);
+			pixel = *srcData;
+			srcData++;
+			red = palette->logicalPalette->entries[pixel].red;
+			green = palette->logicalPalette->entries[pixel].green;
+			blue = palette->logicalPalette->entries[pixel].blue;
+			RGB_888_565(red, green, blue);
+			pixel = RGB16(red, green, blue);
+			*dst16 = pixel;
+			dst16++;
 		}
 		return dstData;
 	}
-	if ((srcBpp == 24) && (dstBpp == 32))
+	else if (dstBpp == 15)
 	{
-		dstData = (uint8*) malloc(width * height * 4);
-		dst32 = (uint32 *) dstData;
+		dstData = (uint8*) malloc(width * height * 2);
+		dst16 = (uint16 *) dstData;
 		for (index = width * height; index > 0; index--)
 		{
-			red = *(srcData++);
-			green = *(srcData++);
-			blue = *(srcData++);
-			pixel = BGR24(red, green, blue);
+			pixel = *srcData;
+			srcData++;
+			red = palette->logicalPalette->entries[pixel].red;
+			green = palette->logicalPalette->entries[pixel].green;
+			blue = palette->logicalPalette->entries[pixel].blue;
+			RGB_888_555(red, green, blue);
+			pixel = RGB15(red, green, blue);
+			*dst16 = pixel;
+			dst16++;
+		}
+		return dstData;
+	}
+	else if (dstBpp == 32)
+	{
+		dstData = (uint8*) malloc(width * height * 4);
+		src8 = (uint8*) srcData;
+		dst32 = (uint32*) dstData;
+		for (index = width * height; index > 0; index--)
+		{
+			pixel = *src8;
+			src8++;
+			red = palette->logicalPalette->entries[pixel].red;
+			green = palette->logicalPalette->entries[pixel].green;
+			blue = palette->logicalPalette->entries[pixel].blue;
+			pixel = BGR32(red, green, blue);
 			*dst32 = pixel;
 			dst32++;
 		}
 		return dstData;
 	}
-	else if ((srcBpp == 16) && (dstBpp == 32))
+
+	return srcData;
+}
+
+uint8* gdi_image_convert_16bpp(uint8* srcData, int width, int height, int srcBpp, int dstBpp, HPALETTE palette)
+{
+	uint8 red;
+	uint8 green;
+	uint8 blue;
+	int index;
+	uint32 pixel;
+	uint16 *src16;
+	uint16 *dst16;
+	uint32 *dst32;
+	uint8 *dstData;
+
+	if (dstBpp == 16)
+	{
+		dstData = (uint8*) malloc(width * height * 2);
+#ifdef GDI_SWAP_16BPP
+		src16 = (uint16*) srcData;
+		dst16 = (uint16*) dstData;
+		for (index = width * height; index > 0; index--)
+		{
+			*dst16 = (*src16 >> 8) | (*src16 << 8);
+			src16++;
+			dst16++;
+		}
+#else
+		memcpy(dstData, srcData, width * height * 2);
+#endif
+		return dstData;
+	}
+	else if ((srcBpp == 15) && (dstBpp == 32))
 	{
 		dstData = (uint8*) malloc(width * height * 4);
 		src16 = (uint16 *) srcData;
@@ -188,55 +217,36 @@ gdi_image_convert(uint8* srcData, int width, int height, int srcBpp, int dstBpp,
 		}
 		return dstData;
 	}
-	else if ((srcBpp == 8) && (dstBpp == 16))
+
+	return srcData;
+}
+
+uint8* gdi_image_convert_24bpp(uint8* srcData, int width, int height, int srcBpp, int dstBpp, HPALETTE palette)
+{
+	uint8 red;
+	uint8 green;
+	uint8 blue;
+	int index;
+	uint32 pixel;
+	uint32 *dst32;
+	uint8 *dstData;
+
+	if (dstBpp == 24)
 	{
-		dstData = (uint8*) malloc(width * height * 2);
-		dst16 = (uint16 *) dstData;
-		for (index = width * height; index > 0; index--)
-		{
-			pixel = *srcData;
-			srcData++;
-			red = palette->logicalPalette->entries[pixel].red;
-			green = palette->logicalPalette->entries[pixel].green;
-			blue = palette->logicalPalette->entries[pixel].blue;
-			RGB_888_565(red, green, blue);
-			pixel = RGB16(red, green, blue);
-			*dst16 = pixel;
-			dst16++;
-		}
+		dstData = (uint8*) malloc(width * height * 3);
+		memcpy(dstData, srcData, width * height * 3);
 		return dstData;
 	}
-	else if ((srcBpp == 8) && (dstBpp == 15))
-	{
-		dstData = (uint8*) malloc(width * height * 2);
-		dst16 = (uint16 *) dstData;
-		for (index = width * height; index > 0; index--)
-		{
-			pixel = *srcData;
-			srcData++;
-			red = palette->logicalPalette->entries[pixel].red;
-			green = palette->logicalPalette->entries[pixel].green;
-			blue = palette->logicalPalette->entries[pixel].blue;
-			RGB_888_555(red, green, blue);
-			pixel = RGB15(red, green, blue);
-			*dst16 = pixel;
-			dst16++;
-		}
-		return dstData;
-	}
-	else if ((srcBpp == 8) && (dstBpp == 32))
+	else if (dstBpp == 32)
 	{
 		dstData = (uint8*) malloc(width * height * 4);
-		src8 = (uint8*) srcData;
-		dst32 = (uint32*) dstData;
+		dst32 = (uint32 *) dstData;
 		for (index = width * height; index > 0; index--)
 		{
-			pixel = *src8;
-			src8++;
-			red = palette->logicalPalette->entries[pixel].red;
-			green = palette->logicalPalette->entries[pixel].green;
-			blue = palette->logicalPalette->entries[pixel].blue;
-			pixel = BGR32(red, green, blue);
+			red = *(srcData++);
+			green = *(srcData++);
+			blue = *(srcData++);
+			pixel = BGR24(red, green, blue);
 			*dst32 = pixel;
 			dst32++;
 		}
@@ -244,6 +254,58 @@ gdi_image_convert(uint8* srcData, int width, int height, int srcBpp, int dstBpp,
 	}
 
 	return srcData;
+}
+
+uint8* gdi_image_convert_32bpp(uint8* srcData, int width, int height, int srcBpp, int dstBpp, HPALETTE palette)
+{
+	uint8 *dstData;
+
+	if (dstBpp == 32)
+	{
+#ifdef USE_ALPHA
+		int x, y;
+		char *dstp;
+
+		dstData = (uint8*) malloc(width * height * 4);
+		memcpy(dstData, srcData, width * height * 4);
+
+		dstp = dstData;
+		for (y = 0; y < height; y++)
+		{
+			for (x = 0; x < width * 4; x += 4)
+			{
+				dstp += 3;
+				*dstp = 0xFF;
+				dstp++;
+			}
+		}
+#else
+		dstData = (uint8*) malloc(width * height * 4);
+		memcpy(dstData, srcData, width * height * 4);
+#endif
+		return dstData;
+	}
+
+	return srcData;
+}
+
+p_gdi_image_convert gdi_image_convert_[5] =
+{
+	NULL,
+	gdi_image_convert_8bpp,
+	gdi_image_convert_16bpp,
+	gdi_image_convert_24bpp,
+	gdi_image_convert_32bpp
+};
+
+uint8* gdi_image_convert(uint8* srcData, int width, int height, int srcBpp, int dstBpp, HPALETTE palette)
+{
+	p_gdi_image_convert _p_gdi_image_convert = gdi_image_convert_[IBPP(srcBpp)];
+
+	if (_p_gdi_image_convert != NULL)
+		return _p_gdi_image_convert(srcData, width, height, srcBpp, dstBpp, palette);
+	else
+		return 0;
 }
 
 uint8*

@@ -243,7 +243,7 @@ struct _DC
 typedef struct _DC DC;
 typedef DC* HDC;
 
-#define IBPP(_bpp) ((_bpp / 8) % 5)
+#define IBPP(_bpp) (((_bpp + 1)/ 8) % 5)
 
 typedef int (*pBitBlt)(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc, int rop);
 typedef int (*pPatBlt)(HDC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight, int rop);

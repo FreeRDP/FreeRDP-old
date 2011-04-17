@@ -201,6 +201,7 @@
 	_g = (_g << 1 & ~0x1) | (_g >> 4); \
 	_p = RGB16(_r, _g, _b);
 
+typedef uint8* (*p_gdi_image_convert)(uint8* srcData, int width, int height, int srcBpp, int dstBpp, HPALETTE palette);
 
 void gdi_color_convert(PIXEL *pixel, int color, int bpp, HPALETTE palette);
 uint8* gdi_image_convert(uint8* srcData, int width, int height, int srcBpp, int dstBpp, HPALETTE palette);

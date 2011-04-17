@@ -193,7 +193,7 @@ int FillRect(HDC hdc, HRECT rect, HBRUSH hbr)
 	pFillRect _FillRect = FillRect_[IBPP(hdc->bitsPerPixel)];
 
 	if (_FillRect != NULL)
-		return FillRect_[IBPP(hdc->bitsPerPixel)](hdc, rect, hbr);
+		return _FillRect(hdc, rect, hbr);
 	else
 		return 0;
 }

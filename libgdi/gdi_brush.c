@@ -90,7 +90,7 @@ int PatBlt(HDC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight, int rop)
 	pPatBlt _PatBlt = PatBlt_[IBPP(hdc->bitsPerPixel)];
 
 	if (_PatBlt != NULL)
-		return PatBlt_[IBPP(hdc->bitsPerPixel)](hdc, nXLeft, nYLeft, nWidth, nHeight, rop);
+		return _PatBlt(hdc, nXLeft, nYLeft, nWidth, nHeight, rop);
 	else
 		return 0;
 }
