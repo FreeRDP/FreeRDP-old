@@ -208,6 +208,15 @@ audin:channel:n
 Force to use specific number of channels. Possible values are 1(mono) and
 2(stereo).
 
+.B
+tsmf[:<backend>[:<device>]]
+Redirect video and audio content from Windows Media Player to the client for
+smooth multimedia playback experience. This feature is only available when the
+server is running Windows 7 or Windows 2008 R2. <backend> can be "alsa" or
+"pulse", used for audio playback. If omitted, FreeRDP will detect the backend
+automatically. Please read the FreeRDP Wiki for more information regarding
+Multimedia Redirection.
+
 .PP
 .SH LINKS
 Main website of FreeRDP
