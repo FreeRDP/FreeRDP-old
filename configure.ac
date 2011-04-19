@@ -247,12 +247,20 @@ PKG_CHECK_MODULES(PULSE, libpulse, [
 	pulse="no"
 ])
 
-PKG_CHECK_MODULES(FFMPEG, [libavcodec], [
-	HAVE_FFMPEG=1
-	ffmpeg="yes"
-], [
-	HAVE_FFMPEG=0
-	ffmpeg="no"
+#
+# Video
+#
+AC_ARG_WITH([ffmpeg],
+	[AS_HELP_STRING([--with-ffmpeg], [Build Multimedia Redirection with FFmpeg])])
+ffmpeg="no"
+AS_IF([test "x$with_ffmpeg" != xno], [
+	PKG_CHECK_MODULES(FFMPEG, [libavcodec], [
+		ffmpeg="yes"
+	], [
+		if test "x$with_ffmpeg" == xyes; then
+			AC_MSG_ERROR([FFmpeg development headers not found])
+		fi
+	])
 ])
 
 #
@@ -928,7 +936,7 @@ fi
 #
 # FFmpeg
 #
-if test x"$HAVE_FFMPEG" = "x1"; then
+if test x"$ffmpeg" = "xyes"; then
 	EXTRA_SUBDIRS="$EXTRA_SUBDIRS channels/drdynvc/tsmf/ffmpeg"
 fi
 
