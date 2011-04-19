@@ -966,14 +966,21 @@ fi
 #
 # XVideo
 #
-if test "$x11" = "yes"; then
+AC_ARG_WITH([xvideo],
+	[AS_HELP_STRING([--with-xvideo], [Build XVideo extension])])
+xv="no"
+AS_IF([test "x$with_xvideo" != xno], [
 	PKG_CHECK_MODULES(XV, [xext xv], [
 		xv="yes"
 		AC_DEFINE(HAVE_XV, 1)
+		AC_SUBST(XV_CFLAGS)
+		AC_SUBST(XV_LIBS)
 	], [
-		xv="no"
+		if test "x$with_xvideo" == xyes; then
+			AC_MSG_ERROR([XVideo development headers not found])
+		fi
 	])
-fi
+])
 
 #
 # xkbfile
