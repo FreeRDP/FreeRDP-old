@@ -14,7 +14,6 @@ fi
 AH_TEMPLATE(B_ENDIAN, [Big endian])
 AH_TEMPLATE(L_ENDIAN, [Little endian])
 AH_TEMPLATE(EGD_SOCKET, [EGD])
-AH_TEMPLATE(HAVE_LIBSAMPLERATE, [Define if you have libsamplerate])
 AH_TEMPLATE(HAVE_XV, [Define if you have XVideo extension])
 AH_TEMPLATE(IPv6, [IPv6])
 AH_TEMPLATE(NEED_ALIGN, [Alignment])
