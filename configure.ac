@@ -270,6 +270,8 @@ ffmpeg="no"
 AS_IF([test "x$with_ffmpeg" != xno], [
 	PKG_CHECK_MODULES(FFMPEG, [libavcodec], [
 		ffmpeg="yes"
+		AC_SUBST(FFMPEG_CFLAGS)
+		AC_SUBST(FFMPEG_LIBS)
 	], [
 		if test "x$with_ffmpeg" == xyes; then
 			AC_MSG_ERROR([FFmpeg development headers not found])
