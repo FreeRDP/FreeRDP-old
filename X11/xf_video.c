@@ -46,6 +46,7 @@ xf_video_init(xfInfo * xfi)
 	int ret;
 	XvAdaptorInfo * ai;
 	XvAttribute * attr;
+	XvImageFormatValues * fo;
 
 	xfi->xv_port = -1;
 	xfi->xv_colorkey_atom = None;
@@ -104,6 +105,38 @@ xf_video_init(xfInfo * xfi)
 	}
 	XFree(attr);
 
+	printf("xf_video_init: pixel format ");
+	fo = XvListImageFormats(xfi->display, xfi->xv_port, &ret);
+	if (ret > 0)
+	{
+		xfi->xv_pixfmts = (uint32 *) malloc((ret + 1) * sizeof(uint32));
+		for (i = 0; i < ret; i++)
+		{
+			xfi->xv_pixfmts[i] = fo[i].id;
+			printf("%c%c%c%c ", ((char*)(xfi->xv_pixfmts + i))[0], ((char*)(xfi->xv_pixfmts + i))[1],
+				((char*)(xfi->xv_pixfmts + i))[2], ((char*)(xfi->xv_pixfmts + i))[3]);
+		}
+		xfi->xv_pixfmts[i] = 0;
+	}
+	printf("\n");
+
+	return 0;
+}
+
+static int
+xf_video_is_format_supported(xfInfo * xfi, uint32 pixfmt)
+{
+	int i;
+
+	if (!xfi->xv_pixfmts)
+		return 0;
+
+	for (i = 0; xfi->xv_pixfmts[i]; i++)
+	{
+		if (xfi->xv_pixfmts[i] == pixfmt)
+			return 1;
+	}
+
 	return 0;
 }
 
@@ -114,6 +147,9 @@ xf_video_process_frame(xfInfo * xfi, RD_VIDEO_FRAME_EVENT * vevent)
 	XvImage * image;
 	int colorkey = 0;
 	int i;
+	uint32 pixfmt;
+	uint8 * data1;
+	uint8 * data2;
 
 	if (xfi->xv_port == -1)
 		return 1;
@@ -138,8 +174,9 @@ xf_video_process_frame(xfInfo * xfi, RD_VIDEO_FRAME_EVENT * vevent)
 		}
 	}
 
+	pixfmt = vevent->frame_pixfmt;
 	image = XvShmCreateImage(xfi->display, xfi->xv_port,
-		vevent->frame_pixfmt, 0, vevent->frame_width, vevent->frame_height, &shminfo);
+		pixfmt, 0, vevent->frame_width, vevent->frame_height, &shminfo);
 	if (xfi->xv_image_size != image->data_size)
 	{
 		if (xfi->xv_image_size > 0)
@@ -164,9 +201,16 @@ xf_video_process_frame(xfInfo * xfi, RD_VIDEO_FRAME_EVENT * vevent)
 
 	/* The video driver may align each line to a different size
 	   and we need to convert our original image data. */
-	switch (vevent->frame_pixfmt)
+	switch (pixfmt)
 	{
 		case RD_PIXFMT_I420:
+		case RD_PIXFMT_YV12:
+			if (!xf_video_is_format_supported(xfi, RD_PIXFMT_I420) &&
+				!xf_video_is_format_supported(xfi, RD_PIXFMT_YV12))
+			{
+				printf("xf_video_process_frame: pixel format 0x%X not supported by hardware.\n", pixfmt);
+				break;
+			}
 			/* Y */
 			if (image->pitches[0] == vevent->frame_width)
 			{
@@ -184,14 +228,27 @@ xf_video_process_frame(xfInfo * xfi, RD_VIDEO_FRAME_EVENT * vevent)
 				}
 			}
 			/* UV */
+			/* Conversion between I420 and YV12 is to simply swap U and V */
+			if (xf_video_is_format_supported(xfi, pixfmt))
+			{
+				data1 = vevent->frame_data + vevent->frame_width * vevent->frame_height;
+				data2 = vevent->frame_data + vevent->frame_width * vevent->frame_height +
+					vevent->frame_width * vevent->frame_height / 4;
+			}
+			else
+			{
+				data2 = vevent->frame_data + vevent->frame_width * vevent->frame_height;
+				data1 = vevent->frame_data + vevent->frame_width * vevent->frame_height +
+					vevent->frame_width * vevent->frame_height / 4;
+				image->id = pixfmt == RD_PIXFMT_I420 ? RD_PIXFMT_YV12 : RD_PIXFMT_I420;
+			}
 			if (image->pitches[1] * 2 == vevent->frame_width)
 			{
 				memcpy(image->data + image->offsets[1],
-					vevent->frame_data + vevent->frame_width * vevent->frame_height,
+					data1,
 					vevent->frame_width * vevent->frame_height / 4);
 				memcpy(image->data + image->offsets[2],
-					vevent->frame_data + vevent->frame_width * vevent->frame_height +
-					vevent->frame_width * vevent->frame_height / 4,
+					data2,
 					vevent->frame_width * vevent->frame_height / 4);
 			}
 			else
@@ -199,11 +256,10 @@ xf_video_process_frame(xfInfo * xfi, RD_VIDEO_FRAME_EVENT * vevent)
 				for (i = 0; i < vevent->frame_height / 2; i++)
 				{
 					memcpy(image->data + image->offsets[1] + i * image->pitches[1],
-						vevent->frame_data + vevent->frame_width * vevent->frame_height + i * vevent->frame_width / 2,
+						data1 + i * vevent->frame_width / 2,
 						vevent->frame_width / 2);
 					memcpy(image->data + image->offsets[2] + i * image->pitches[2],
-						vevent->frame_data + vevent->frame_width * vevent->frame_height +
-						vevent->frame_width * vevent->frame_height / 4 + i * vevent->frame_width / 2,
+						data2 + i * vevent->frame_width / 2,
 						vevent->frame_width / 2);
 				}
 			}
@@ -233,6 +289,11 @@ xf_video_uninit(xfInfo * xfi)
 	{
 		shmdt(xfi->xv_shmaddr);
 		shmctl(xfi->xv_shmid, IPC_RMID, NULL);
+	}
+	if (xfi->xv_pixfmts)
+	{
+		free(xfi->xv_pixfmts);
+		xfi->xv_pixfmts = NULL;
 	}
 }
 

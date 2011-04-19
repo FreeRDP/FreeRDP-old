@@ -87,6 +87,7 @@ struct xf_info
 	int xv_image_size;
 	int xv_shmid;
 	char * xv_shmaddr;
+	uint32 * xv_pixfmts;
 };
 typedef struct xf_info xfInfo;
 
