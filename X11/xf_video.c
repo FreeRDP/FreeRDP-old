@@ -48,7 +48,6 @@ xf_video_init(xfInfo * xfi)
 	XvAttribute * attr;
 	XvImageFormatValues * fo;
 
-	xfi->xv_port = -1;
 	xfi->xv_colorkey_atom = None;
 	xfi->xv_image_size = 0;
 
@@ -79,8 +78,10 @@ xf_video_init(xfInfo * xfi)
 
 	for (i = 0; i < num_adaptors; i++)
 	{
-		printf("xf_video_init: adapter port %ld (%s)\n", ai[i].base_id, ai[i].name);
-		xfi->xv_port = ai[i].base_id;
+		printf("xf_video_init: adapter port %ld-%ld (%s)\n", ai[i].base_id,
+			ai[i].base_id + ai[i].num_ports - 1, ai[i].name);
+		if (xfi->xv_port == -1 && i == num_adaptors - 1)
+			xfi->xv_port = ai[i].base_id;
 	}
 
 	if (num_adaptors > 0)
