@@ -21,7 +21,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <libavcodec/avcodec.h>
-#include <libswscale/swscale.h>
 #include <freerdp/constants_ui.h>
 #include "tsmf_constants.h"
 #include "tsmf_decoder.h"
