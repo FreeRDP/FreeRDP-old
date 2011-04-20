@@ -60,5 +60,6 @@
 /* RD_VIDEO_FRAME_EVENT.frame_pixfmt */
 /* http://www.fourcc.org/yuv.php */
 #define RD_PIXFMT_I420          0x30323449
+#define RD_PIXFMT_YV12          0x32315659
 
 #endif

@@ -14,7 +14,6 @@ fi
 AH_TEMPLATE(B_ENDIAN, [Big endian])
 AH_TEMPLATE(L_ENDIAN, [Little endian])
 AH_TEMPLATE(EGD_SOCKET, [EGD])
-AH_TEMPLATE(HAVE_LIBSAMPLERATE, [Define if you have libsamplerate])
 AH_TEMPLATE(HAVE_XV, [Define if you have XVideo extension])
 AH_TEMPLATE(IPv6, [IPv6])
 AH_TEMPLATE(NEED_ALIGN, [Alignment])
@@ -232,28 +231,52 @@ int main(int argc, char **argv)
 #
 # sound
 #
-PKG_CHECK_MODULES(ALSA, alsa, [
-	HAVE_ALSA=1
-	alsa="yes"
-], [
-	HAVE_ALSA=0
-	alsa="no"
+AC_ARG_WITH([alsa],
+	[AS_HELP_STRING([--with-alsa], [Build ALSA sub-plugins])])
+alsa="no"
+AS_IF([test "x$with_alsa" != xno], [
+	PKG_CHECK_MODULES(ALSA, alsa, [
+		alsa="yes"
+		AC_SUBST(ALSA_CFLAGS)
+		AC_SUBST(ALSA_LIBS)
+	], [
+		if test "x$with_alsa" == xyes; then
+			AC_MSG_ERROR([ALSA development headers not found])
+		fi
+	])
 ])
 
-PKG_CHECK_MODULES(PULSE, libpulse, [
-	HAVE_PULSE=1
-	pulse="yes"
-], [
-	HAVE_PULSE=0
-	pulse="no"
+AC_ARG_WITH([pulse],
+	[AS_HELP_STRING([--with-pulse], [Build PulseAudio sub-plugins])])
+pulse="no"
+AS_IF([test "x$with_pulse" != xno], [
+	PKG_CHECK_MODULES(PULSE, libpulse, [
+		pulse="yes"
+		AC_SUBST(PULSE_CFLAGS)
+		AC_SUBST(PULSE_LIBS)
+	], [
+		if test "x$with_pulse" == xyes; then
+			AC_MSG_ERROR([PulseAudio development headers not found])
+		fi
+	])
 ])
 
-PKG_CHECK_MODULES(FFMPEG, [libavcodec], [
-	HAVE_FFMPEG=1
-	ffmpeg="yes"
-], [
-	HAVE_FFMPEG=0
-	ffmpeg="no"
+#
+# Video
+#
+AC_ARG_WITH([ffmpeg],
+	[AS_HELP_STRING([--with-ffmpeg], [Build Multimedia Redirection with FFmpeg])])
+ffmpeg="no"
+AS_IF([test "x$with_ffmpeg" != xno], [
+	PKG_CHECK_MODULES(FFMPEG, [libavcodec], [
+		ffmpeg="yes"
+		AC_SUBST(FFMPEG_CFLAGS)
+		AC_SUBST(FFMPEG_LIBS)
+	], [
+		if test "x$with_ffmpeg" == xyes; then
+			AC_MSG_ERROR([FFmpeg development headers not found])
+		fi
+	])
 ])
 
 #
@@ -915,21 +938,21 @@ EXTRA_SUBDIRS=""
 #
 # ALSA
 #
-if test x"$HAVE_ALSA" = "x1"; then
+if test x"$alsa" = "xyes"; then
 	EXTRA_SUBDIRS="$EXTRA_SUBDIRS channels/rdpsnd/alsa channels/drdynvc/audin/alsa channels/drdynvc/tsmf/alsa"
 fi
 
 #
 # PulseAudio
 #
-if test x"$HAVE_PULSE" = "x1"; then
+if test x"$pulse" = "xyes"; then
 	EXTRA_SUBDIRS="$EXTRA_SUBDIRS channels/rdpsnd/pulse channels/drdynvc/audin/pulse channels/drdynvc/tsmf/pulse"
 fi
 
 #
 # FFmpeg
 #
-if test x"$HAVE_FFMPEG" = "x1"; then
+if test x"$ffmpeg" = "xyes"; then
 	EXTRA_SUBDIRS="$EXTRA_SUBDIRS channels/drdynvc/tsmf/ffmpeg"
 fi
 
@@ -967,14 +990,21 @@ fi
 #
 # XVideo
 #
-if test "$x11" = "yes"; then
+AC_ARG_WITH([xvideo],
+	[AS_HELP_STRING([--with-xvideo], [Build XVideo extension])])
+xv="no"
+AS_IF([test "x$with_xvideo" != xno], [
 	PKG_CHECK_MODULES(XV, [xext xv], [
 		xv="yes"
 		AC_DEFINE(HAVE_XV, 1)
+		AC_SUBST(XV_CFLAGS)
+		AC_SUBST(XV_LIBS)
 	], [
-		xv="no"
+		if test "x$with_xvideo" == xyes; then
+			AC_MSG_ERROR([XVideo development headers not found])
+		fi
 	])
-fi
+])
 
 #
 # xkbfile

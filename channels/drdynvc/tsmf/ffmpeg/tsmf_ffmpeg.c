@@ -21,7 +21,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <libavcodec/avcodec.h>
-#include <libswscale/swscale.h>
 #include <freerdp/constants_ui.h>
 #include "tsmf_constants.h"
 #include "tsmf_decoder.h"
@@ -91,7 +90,11 @@ tsmf_ffmpeg_init_audio_stream(ITSMFDecoder * decoder, const TS_AM_MEDIA_TYPE * m
 
 	/* FFmpeg's float_to_int16_interleave_sse2 would crash at least in WMA decoder.
 	   We disable sse2 to workaround it, however this should be further investigated. */
+#if LIBAVCODEC_VERSION_MAJOR < 52 || (LIBAVCODEC_VERSION_MAJOR == 52 && LIBAVCODEC_VERSION_MINOR <= 20)
+	mdecoder->codec_context->dsp_mask = FF_MM_SSE2 | FF_MM_MMXEXT;
+#else
 	mdecoder->codec_context->dsp_mask = FF_MM_SSE2 | FF_MM_MMX2;
+#endif
 
 	return 0;
 }
@@ -262,7 +265,7 @@ tsmf_ffmpeg_decode_video(ITSMFDecoder * decoder, const uint8 * data, uint32 data
 	int ret = 0;
 	AVFrame * frame;
 
-#if LIBAVCODEC_VERSION_MAJOR < 52
+#if LIBAVCODEC_VERSION_MAJOR < 52 || (LIBAVCODEC_VERSION_MAJOR == 52 && LIBAVCODEC_VERSION_MINOR <= 20)
 	len = avcodec_decode_video(mdecoder->codec_context, mdecoder->frame, &decoded, data, data_size);
 #else
 	{
@@ -352,7 +355,7 @@ tsmf_ffmpeg_decode_audio(ITSMFDecoder * decoder, const uint8 * data, uint32 data
 			dst = mdecoder->decoded_data + mdecoder->decoded_size;
 		}
 		frame_size = mdecoder->decoded_size_max - mdecoder->decoded_size;
-#if LIBAVCODEC_VERSION_MAJOR < 52
+#if LIBAVCODEC_VERSION_MAJOR < 52 || (LIBAVCODEC_VERSION_MAJOR == 52 && LIBAVCODEC_VERSION_MINOR <= 20)
 		len = avcodec_decode_audio2(mdecoder->codec_context,
 			(int16_t *) dst, &frame_size,
 			src, src_size);

@@ -83,6 +83,9 @@ set_default_params(xfInfo * xfi)
 #endif
 	xfi->fullscreen = xfi->fs_toggle = 0;
 	xfi->decoration = 1;
+#ifdef HAVE_XV
+	xfi->xv_port = -1;
+#endif
 	return 0;
 }
 
@@ -122,6 +125,9 @@ out_args(void)
 		"\t--plugin: load a virtual channel plugin\n"
 		"\t--no-osb: disable off screen bitmaps, default on\n"
 		"\t--rfx: ask for RemoteFX session\n"
+#ifdef HAVE_XV
+		"\t--xv-port: choose XVideo adaptor port number.\n"
+#endif
 		"\t--version: Print out the version and exit\n"
 		"\t-h: show this help\n";
 	printf("%s\n", help);
@@ -337,6 +343,13 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 			settings->ui_decode_flags = 0;
 			settings->use_frame_ack = 1;
 		}
+#ifdef HAVE_XV
+		else if (strcmp("--xv-port", argv[*pindex]) == 0)
+		{
+			*pindex = *pindex + 1;
+			xfi->xv_port = atoi(argv[*pindex]);
+		}
+#endif
 		else if (strcmp("-f", argv[*pindex]) == 0)
 		{
 			xfi->fullscreen = xfi->fs_toggle = 1;
