@@ -589,7 +589,7 @@ gdi_ui_line(struct rdp_inst * inst, uint8 opcode, int startx, int starty, int en
 	cx = endx - startx + 1;
 	cy = endy - starty + 1;
 	
-	color = gdi_color_convert(pen->color, gdi->srcBpp, gdi->dstBpp, gdi->palette);
+	color = gdi_color_convert(pen->color, gdi->srcBpp, 32, gdi->palette);
 	hPen = CreatePen(pen->style, pen->width, (COLORREF) color);
 	SelectObject(gdi->drawing->hdc, (HGDIOBJ) hPen);
 	SetROP2(gdi->drawing->hdc, opcode);
@@ -620,7 +620,8 @@ gdi_ui_rect(struct rdp_inst * inst, int x, int y, int cx, int cy, int color)
 	//DEBUG_GDI("ui_rect: x:%d y:%d cx:%d cy:%d\n", x, y, cx, cy);
 
 	CRgnToRect(x, y, cx, cy, &rect);
-	color = gdi_color_convert(color, gdi->srcBpp, gdi->dstBpp, gdi->palette);
+	color = gdi_color_convert(color, gdi->srcBpp, 32, gdi->palette);
+
 	hBrush = CreateSolidBrush(color);
 	FillRect(gdi->drawing->hdc, &rect, hBrush);
 }
@@ -666,7 +667,7 @@ gdi_ui_polyline(struct rdp_inst * inst, uint8 opcode, RD_POINT * points, int npo
 
 	DEBUG_GDI("ui_polyline: opcode:%d npoints:%d\n", opcode, npoints);
 
-	color = gdi_color_convert(pen->color, gdi->srcBpp, gdi->dstBpp, gdi->palette);
+	color = gdi_color_convert(pen->color, gdi->srcBpp, 32, gdi->palette);
 
 	hPen = CreatePen(pen->style, pen->width, (COLORREF) color);
 	SelectObject(gdi->drawing->hdc, (HGDIOBJ) hPen);
@@ -719,7 +720,7 @@ gdi_ui_start_draw_glyphs(struct rdp_inst * inst, int bgcolor, int fgcolor)
 {
 	int color;
 	GDI *gdi = GET_GDI(inst);
-	color = gdi_color_convert(fgcolor, gdi->srcBpp, gdi->dstBpp, gdi->palette);
+	color = gdi_color_convert(fgcolor, gdi->srcBpp, 32, gdi->palette);
 	gdi->textColor = SetTextColor(gdi->drawing->hdc, color);
 }
 
@@ -836,7 +837,7 @@ gdi_ui_patblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy
 		int color;
 		originalBrush = gdi->drawing->hdc->brush;
 
-		color = gdi_color_convert(fgcolor, gdi->srcBpp, gdi->dstBpp, gdi->palette);
+		color = gdi_color_convert(fgcolor, gdi->srcBpp, 32, gdi->palette);
 		gdi->drawing->hdc->brush = CreateSolidBrush(color);
 
 		PatBlt(gdi->drawing->hdc, x, y, cx, cy, gdi_rop3_code(opcode));
