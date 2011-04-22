@@ -155,38 +155,6 @@ int gdi_color_convert(int srcColor, int srcBpp, int dstBpp, RD_PALETTE* palette)
 	return dstColor;
 }
 
-void gdi_color_convert_pixel(PIXEL *pixel, int color, int bpp, RD_PALETTE* palette)
-{
-	pixel->red = 0;
-	pixel->green = 0;
-	pixel->blue = 0;
-	pixel->alpha = 0xFF;
-
-	switch (bpp)
-	{
-		case 32:
-			GetBGR32(pixel->red, pixel->green, pixel->blue, color);
-			break;
-		case 24:
-			GetBGR24(pixel->red, pixel->green, pixel->blue, color);
-			break;
-		case 16:
-			GetRGB16(pixel->red, pixel->green, pixel->blue, color);
-			break;
-		case 15:
-			GetRGB15(pixel->red, pixel->green, pixel->blue, color);
-			break;
-		case 8:
-			color &= 0xFF;
-			pixel->red = palette->entries[color].red;
-			pixel->green = palette->entries[color].green;
-			pixel->blue = palette->entries[color].blue;
-			break;
-		default:
-			break;
-	}
-}
-
 uint8* gdi_image_convert_8bpp(uint8* srcData, uint8* dstData, int width, int height, int srcBpp, int dstBpp, RD_PALETTE* palette)
 {
 	int i;
