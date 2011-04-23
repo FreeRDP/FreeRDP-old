@@ -1516,7 +1516,7 @@ void test_LineTo(void)
 
 	clrconv = (HCLRCONV) malloc(sizeof(CLRCONV));
 	clrconv->alpha = 1;
-	clrconv->inverse = 0;
+	clrconv->invert = 0;
 	clrconv->palette = hPalette;
 
 	data = (uint8*) gdi_image_convert((uint8*) line_to_case_1, NULL, 16, 16, 8, bitsPerPixel, clrconv);
@@ -1834,7 +1834,7 @@ void test_Ellipse(void)
 
 	clrconv = (HCLRCONV) malloc(sizeof(CLRCONV));
 	clrconv->alpha = 1;
-	clrconv->inverse = 0;
+	clrconv->invert = 0;
 	clrconv->palette = hPalette;
 
 	data = (uint8*) gdi_image_convert((uint8*) ellipse_case_1, NULL, 16, 16, 8, bitsPerPixel, clrconv);
@@ -1986,7 +1986,7 @@ void test_BitBlt_32bpp(void)
 
 	clrconv = (HCLRCONV) malloc(sizeof(CLRCONV));
 	clrconv->alpha = 1;
-	clrconv->inverse = 0;
+	clrconv->invert = 0;
 	clrconv->palette = hPalette;
 
 	data = (uint8*) gdi_image_convert((uint8*) bmp_SRC, NULL, 16, 16, 8, bitsPerPixel, clrconv);
@@ -2240,7 +2240,7 @@ void test_BitBlt_16bpp(void)
 
 	clrconv = (HCLRCONV) malloc(sizeof(CLRCONV));
 	clrconv->alpha = 1;
-	clrconv->inverse = 0;
+	clrconv->invert = 0;
 	clrconv->palette = hPalette;
 
 	data = (uint8*) gdi_image_convert((uint8*) bmp_SRC, NULL, 16, 16, 8, bitsPerPixel, clrconv);
@@ -2494,7 +2494,7 @@ void test_BitBlt_8bpp(void)
 
 	clrconv = (HCLRCONV) malloc(sizeof(CLRCONV));
 	clrconv->alpha = 1;
-	clrconv->inverse = 0;
+	clrconv->invert = 0;
 	clrconv->palette = hPalette;
 
 	data = (uint8*) gdi_image_convert((uint8*) bmp_SRC, NULL, 16, 16, 8, bitsPerPixel, clrconv);

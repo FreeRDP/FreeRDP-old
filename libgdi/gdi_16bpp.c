@@ -26,11 +26,31 @@
 #include "gdi_color.h"
 #include "gdi_16bpp.h"
 
+uint16 gdi_get_color_16bpp(HDC hdc, COLORREF color)
+{
+	uint8 r, g, b;
+	uint16 color16;
+
+	if (hdc->invert)
+	{
+		GetRGB32(r, g, b, color);
+		RGB_888_565(r, g, b);
+		color16 = BGR16(r, g, b);
+	}
+	else
+	{
+		GetRGB32(r, g, b, color);
+		RGB_888_565(r, g, b);
+		color16 = RGB16(r, g, b);
+	}
+
+	return color16;
+}
+
 int FillRect_16bpp(HDC hdc, HRECT rect, HBRUSH hbr)
 {
 	int x, y;
 	uint16 *dstp;
-	uint8 r, g, b;
 	int nXDest, nYDest;
 	int nWidth, nHeight;
 
@@ -41,10 +61,8 @@ int FillRect_16bpp(HDC hdc, HRECT rect, HBRUSH hbr)
 	if (ClipCoords(hdc, &nXDest, &nYDest, &nWidth, &nHeight, NULL, NULL) == 0)
 		return 0;
 
-	GetRGB32(r, g, b, hbr->color);
-	RGB_888_565(r, g, b);
-	color16 = RGB16(r, g, b);
-	
+	color16 = gdi_get_color_16bpp(hdc, hbr->color);
+
 	for (y = 0; y < nHeight; y++)
 	{
 		dstp = (uint16*)gdi_get_bitmap_pointer(hdc, nXDest, nYDest + y);
@@ -537,24 +555,22 @@ static int BitBlt_PATCOPY_16bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth,
 	int x, y;
 	uint8 *dstp;
 	uint8 *patp;
-	uint8 colR, colG, colB;
-	uint16 col;
+	uint16 color16;
 	uint16 *dstp16;
 
 	if(hdcDest->brush->style == BS_SOLID)
 	{
-		GetRGB32(colR, colG, colB, hdcDest->brush->color);
-		RGB_888_565(colR, colG, colB);
-		col = RGB16(colR, colG, colB);
+		color16 = gdi_get_color_16bpp(hdcDest, hdcDest->brush->color);
+
 		for (y = 0; y < nHeight; y++)
 		{
-			dstp16 = (uint16*)gdi_get_bitmap_pointer(hdcDest, nXDest, nYDest + y);
+			dstp16 = (uint16*) gdi_get_bitmap_pointer(hdcDest, nXDest, nYDest + y);
 
 			if (dstp16 != 0)
 			{
 				for (x = 0; x < nWidth; x++)
 				{
-					*dstp16 = col;
+					*dstp16 = color16;
 					dstp16++;
 				}
 			}
@@ -592,24 +608,22 @@ static int BitBlt_PATINVERT_16bpp(HDC hdcDest, int nXDest, int nYDest, int nWidt
 	int x, y;
 	uint8 *dstp;
 	uint8 *patp;
-	uint8 colR, colG, colB;
-	uint16 col;
+	uint16 color16;
 	uint16 *dstp16;
 
 	if(hdcDest->brush->style == BS_SOLID)
 	{
-		GetRGB32(colR, colG, colB, hdcDest->brush->color);
-		RGB_888_565(colR, colG, colB);
-		col = RGB16(colR, colG, colB);
+		color16 = gdi_get_color_16bpp(hdcDest, hdcDest->brush->color);
+
 		for (y = 0; y < nHeight; y++)
 		{
-			dstp16 = (uint16*)gdi_get_bitmap_pointer(hdcDest, nXDest, nYDest + y);
+			dstp16 = (uint16*) gdi_get_bitmap_pointer(hdcDest, nXDest, nYDest + y);
 
 			if (dstp16 != 0)
 			{
 				for (x = 0; x < nWidth; x++)
 				{
-					*dstp16 ^= col;
+					*dstp16 ^= color16;
 					dstp16++;
 				}
 			}

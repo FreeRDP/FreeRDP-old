@@ -432,6 +432,9 @@ gdi_bitmap_new(GDI *gdi, int width, int height, int bpp, int reverse, uint8* dat
 	SelectObject(gdi_bmp->hdc, (HGDIOBJ) gdi_bmp->bitmap);
 	gdi_bmp->org_bitmap = NULL;
 	
+	gdi_bmp->hdc->alpha = gdi->clrconv->alpha;
+	gdi_bmp->hdc->invert = gdi->clrconv->invert;
+
 	return gdi_bmp;
 }
 
@@ -1146,7 +1149,7 @@ gdi_init(rdpInst * inst)
 
 	gdi->clrconv = (HCLRCONV) malloc(sizeof(CLRCONV));
 	gdi->clrconv->alpha = 1;
-	gdi->clrconv->inverse = 0;
+	gdi->clrconv->invert = 0;
 	gdi->clrconv->palette = NULL;
 
 	gdi_register_callbacks(inst);

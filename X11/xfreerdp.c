@@ -812,7 +812,7 @@ main(int argc, char ** argv)
 		xfi->clrconv = (HCLRCONV) malloc(sizeof(CLRCONV));
 
 		xfi->clrconv->alpha = 1;
-		xfi->clrconv->inverse = 0;
+		xfi->clrconv->invert = 0;
 		xfi->clrconv->palette = NULL;
 
 		rv = process_params(xfi, argc, argv, &index);

@@ -193,7 +193,7 @@ extern "C" {
 struct _CLRCONV
 {
 	int alpha;
-	int inverse;
+	int invert;
 	RD_PALETTE* palette;
 };
 typedef struct _CLRCONV CLRCONV;

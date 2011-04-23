@@ -223,6 +223,8 @@ struct _DC
 	HWND hwnd;
 	int drawMode;
 	int bkMode;
+	int alpha;
+	int invert;
 };
 typedef struct _DC DC;
 typedef DC* HDC;
