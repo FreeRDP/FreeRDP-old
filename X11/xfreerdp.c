@@ -809,6 +809,12 @@ main(int argc, char ** argv)
 		memset(xfi, 0, sizeof(xfInfo));
 		xfi->settings = (rdpSet *) malloc(sizeof(rdpSet));
 		xfi->chan_man = freerdp_chanman_new();
+		xfi->clrconv = (HCLRCONV) malloc(sizeof(CLRCONV));
+
+		xfi->clrconv->alpha = 1;
+		xfi->clrconv->inverse = 0;
+		xfi->clrconv->palette = NULL;
+
 		rv = process_params(xfi, argc, argv, &index);
 		if (rv)
 		{

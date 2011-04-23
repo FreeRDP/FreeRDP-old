@@ -276,7 +276,7 @@ l_ui_create_bitmap(struct rdp_inst * inst, int width, int height, uint8 * data)
 	xfi = GET_XFI(inst);
 	//DEBUG("ui_create_bitmap: inst %p width %d height %d\n", inst, width, height);
 	bitmap = XCreatePixmap(xfi->display, xfi->wnd, width, height, xfi->depth);
-	cdata = gdi_image_convert(data, NULL, width, height, inst->settings->server_depth, xfi->bpp, xfi->palette);
+	cdata = gdi_image_convert(data, NULL, width, height, inst->settings->server_depth, xfi->bpp, xfi->clrconv);
 	image = XCreateImage(xfi->display, xfi->visual, xfi->depth, ZPixmap, 0,
 		(char *) cdata, width, height, xfi->bitmap_pad, 0);
 	XPutImage(xfi->display, bitmap, xfi->gc_default, image, 0, 0, 0, 0, width, height);
@@ -297,7 +297,7 @@ l_ui_paint_bitmap(struct rdp_inst * inst, int x, int y, int cx, int cy, int widt
 	uint8 * cdata;
 
 	xfi = GET_XFI(inst);
-	cdata = gdi_image_convert(data, NULL, width, height, inst->settings->server_depth, xfi->bpp, xfi->palette);
+	cdata = gdi_image_convert(data, NULL, width, height, inst->settings->server_depth, xfi->bpp, xfi->clrconv);
 	image = XCreateImage(xfi->display, xfi->visual, xfi->depth, ZPixmap, 0,
 		(char *) cdata, width, height, xfi->bitmap_pad, 0);
 	XPutImage(xfi->display, xfi->backstore, xfi->gc_default, image, 0, 0, x, y, cx, cy);
@@ -328,7 +328,7 @@ l_ui_line(struct rdp_inst * inst, uint8 opcode, int startx, int starty, int endx
 
 	xfi = GET_XFI(inst);
 	//DEBUG("ui_line: opcode %d\n", opcode);
-	color = gdi_color_convert(pen->color, inst->settings->server_depth, xfi->bpp, xfi->palette);
+	color = gdi_color_convert(pen->color, inst->settings->server_depth, xfi->bpp, xfi->clrconv);
 	xf_set_rop2(xfi, opcode);
 	XSetFillStyle(xfi->display, xfi->gc, FillSolid);
 	XSetForeground(xfi->display, xfi->gc, color);
@@ -345,7 +345,7 @@ l_ui_rect(struct rdp_inst * inst, int x, int y, int cx, int cy, int color)
 	xfInfo * xfi;
 
 	xfi = GET_XFI(inst);
-	color = gdi_color_convert(color, inst->settings->server_depth, xfi->bpp, xfi->palette);
+	color = gdi_color_convert(color, inst->settings->server_depth, xfi->bpp, xfi->clrconv);
 	//DEBUG("ui_rect: inst %p x %d y %d cx %d cy %d color %d\n", inst, x, y, cx, cy, color);
 	XSetFunction(xfi->display, xfi->gc, GXcopy);
 	XSetFillStyle(xfi->display, xfi->gc, FillSolid);
@@ -369,8 +369,8 @@ l_ui_polygon(struct rdp_inst * inst, uint8 opcode, uint8 fillmode, RD_POINT * po
 	xf_set_rop2(xfi, opcode);
 	style = brush ? brush->style : 0;
 
-	fgcolor = gdi_color_convert(fgcolor, inst->settings->server_depth, xfi->bpp, xfi->palette);
-	bgcolor = gdi_color_convert(bgcolor, inst->settings->server_depth, xfi->bpp, xfi->palette);
+	fgcolor = gdi_color_convert(fgcolor, inst->settings->server_depth, xfi->bpp, xfi->clrconv);
+	bgcolor = gdi_color_convert(bgcolor, inst->settings->server_depth, xfi->bpp, xfi->clrconv);
 
 	switch (fillmode)
 	{
@@ -495,7 +495,7 @@ l_ui_polyline(struct rdp_inst * inst, uint8 opcode, RD_POINT * points, int npoin
 
 	//DEBUG("ui_polyline:\n");
 	xfi = GET_XFI(inst);
-	color = gdi_color_convert(pen->color, inst->settings->server_depth, xfi->bpp, xfi->palette);
+	color = gdi_color_convert(pen->color, inst->settings->server_depth, xfi->bpp, xfi->clrconv);
 	DEBUG("opcode %d npoints %d color %d %d\n", opcode, npoints, color, pen->color);
 	xf_set_rop2(xfi, opcode);
 	XSetFillStyle(xfi->display, xfi->gc, FillSolid);
@@ -521,8 +521,8 @@ l_ui_start_draw_glyphs(struct rdp_inst * inst, int bgcolor, int fgcolor)
 	xfInfo * xfi;
 
 	xfi = GET_XFI(inst);
-	fgcolor = gdi_color_convert(fgcolor, inst->settings->server_depth, xfi->bpp, xfi->palette);
-	bgcolor = gdi_color_convert(bgcolor, inst->settings->server_depth, xfi->bpp, xfi->palette);
+	fgcolor = gdi_color_convert(fgcolor, inst->settings->server_depth, xfi->bpp, xfi->clrconv);
+	bgcolor = gdi_color_convert(bgcolor, inst->settings->server_depth, xfi->bpp, xfi->clrconv);
 	//DEBUG("ui_start_draw_glyphs:\n");
 	XSetFunction(xfi->display, xfi->gc, GXcopy);
 	XSetForeground(xfi->display, xfi->gc, fgcolor);
@@ -598,8 +598,8 @@ l_ui_patblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy,
 	uint8 * pat;
 
 	xfi = GET_XFI(inst);
-	fgcolor = gdi_color_convert(fgcolor, inst->settings->server_depth, xfi->bpp, xfi->palette);
-	bgcolor = gdi_color_convert(bgcolor, inst->settings->server_depth, xfi->bpp, xfi->palette);
+	fgcolor = gdi_color_convert(fgcolor, inst->settings->server_depth, xfi->bpp, xfi->clrconv);
+	bgcolor = gdi_color_convert(bgcolor, inst->settings->server_depth, xfi->bpp, xfi->clrconv);
 	//DEBUG("ui_patblt: style %d brush->bd %p\n", brush->style, brush->bd);
 	//if (brush->bd != 0)
 	//{
@@ -846,7 +846,7 @@ l_ui_create_cursor(struct rdp_inst * inst, uint32 x, uint32 y,
 	memset(ci.pixels, 0, width * height * 4);
 	if ((andmask != 0) && (xormask != 0))
 	{
-		gdi_alpha_cursor_convert((uint8 *) (ci.pixels), xormask, andmask, width, height, bpp, xfi->palette);
+		gdi_alpha_cursor_convert((uint8 *) (ci.pixels), xormask, andmask, width, height, bpp, xfi->clrconv);
 	}
 	if (bpp > 24)
 	{
@@ -883,7 +883,7 @@ l_ui_create_cursor(struct rdp_inst * inst, uint32 x, uint32 y,
 	memset(&bg, 0, sizeof(bg));
 	if ((andmask != 0) && (xormask != 0))
 	{
-		gdi_mono_cursor_convert(src_data, msk_data, xormask, andmask, width, height, bpp, xfi->palette);
+		gdi_mono_cursor_convert(src_data, msk_data, xormask, andmask, width, height, bpp, xfi->clrconv);
 	}
 	src_glyph = (Pixmap) l_ui_create_glyph(inst, width, height, src_data);
 	msk_glyph = (Pixmap) l_ui_create_glyph(inst, width, height, msk_data);
@@ -925,7 +925,7 @@ l_ui_set_palette(struct rdp_inst * inst, RD_HPALETTE palette)
 {
 	xfInfo * xfi = GET_XFI(inst);
 	DEBUG("ui_set_palette:\n");
-	xfi->palette = (RD_PALETTE*) palette;
+	xfi->clrconv->palette = (RD_PALETTE*) palette;
 }
 
 static void

@@ -42,11 +42,11 @@ struct _GDI
 	int bytesPerPixel;
 
 	HDC hdc;
+	HCLRCONV clrconv;
 	gdi_bitmap *primary;
 	gdi_bitmap *drawing;
 	uint8* primary_buffer;
 	COLORREF textColor;
-	RD_PALETTE* palette;
 };
 typedef struct _GDI GDI;
 

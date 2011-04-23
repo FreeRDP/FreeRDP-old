@@ -190,18 +190,27 @@ extern "C" {
 	_g = (_g << 1 & ~0x1) | (_g >> 4); \
 	_p = RGB16(_r, _g, _b);
 
+struct _CLRCONV
+{
+	int alpha;
+	int inverse;
+	RD_PALETTE* palette;
+};
+typedef struct _CLRCONV CLRCONV;
+typedef CLRCONV* HCLRCONV;
+
 #define IBPP(_bpp) (((_bpp + 1)/ 8) % 5)
 
-typedef uint8* (*p_gdi_image_convert)(uint8* srcData, uint8* dstData, int width, int height, int srcBpp, int dstBpp, RD_PALETTE* palette);
+typedef uint8* (*p_gdi_image_convert)(uint8* srcData, uint8* dstData, int width, int height, int srcBpp, int dstBpp, HCLRCONV clrconv);
 
 int gdi_get_pixel(uint8 * data, int x, int y, int width, int height, int bpp);
 void gdi_set_pixel(uint8* data, int x, int y, int width, int height, int bpp, int pixel);
-int gdi_color_convert(int srcColor, int srcBpp, int dstBpp, RD_PALETTE* palette);
-uint8* gdi_image_convert(uint8* srcData, uint8 *dstData, int width, int height, int srcBpp, int dstBpp, RD_PALETTE* palette);
+int gdi_color_convert(int srcColor, int srcBpp, int dstBpp, HCLRCONV clrconv);
+uint8* gdi_image_convert(uint8* srcData, uint8 *dstData, int width, int height, int srcBpp, int dstBpp, HCLRCONV clrconv);
 uint8* gdi_glyph_convert(int width, int height, uint8* data);
-uint8* gdi_mono_image_convert(uint8* srcData, int width, int height, int srcBpp, int dstBpp, int bgcolor, int fgcolor, RD_PALETTE* palette);
-int gdi_mono_cursor_convert(uint8* srcData, uint8* maskData, uint8* xorMask, uint8* andMask, int width, int height, int bpp, RD_PALETTE* palette);
-int gdi_alpha_cursor_convert(uint8* alphaData, uint8* xorMask, uint8* andMask, int width, int height, int bpp, RD_PALETTE* palette);
+uint8* gdi_mono_image_convert(uint8* srcData, int width, int height, int srcBpp, int dstBpp, int bgcolor, int fgcolor, HCLRCONV clrconv);
+int gdi_mono_cursor_convert(uint8* srcData, uint8* maskData, uint8* xorMask, uint8* andMask, int width, int height, int bpp, HCLRCONV clrconv);
+int gdi_alpha_cursor_convert(uint8* alphaData, uint8* xorMask, uint8* andMask, int width, int height, int bpp, HCLRCONV clrconv);
 
 #ifdef __cplusplus
 }

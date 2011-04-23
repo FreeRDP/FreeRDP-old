@@ -72,7 +72,7 @@ struct xf_info
 	int red_mask;
 	int green_mask;
 	int blue_mask;
-	RD_PALETTE* palette;
+	HCLRCONV clrconv;
 	Drawable drw;
 	Pixmap bitmap_mono;
 	GC gc_mono;
