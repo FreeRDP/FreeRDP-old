@@ -320,9 +320,13 @@ void rdp_out_bitmapcache_capset(rdpRdp * rdp, STREAM s)
 void rdp_out_bitmapcache_rev2_capset(rdpRdp * rdp, STREAM s)
 {
 	capsetHeaderRef header;
+	uint16 flag;
 
 	header = rdp_skip_capset_header(s);
-	out_uint16_le(s, rdp->settings->bitmap_cache_persist_enable ? 3 : 2); /* CacheFlags */
+	flag = ALLOW_CACHE_WAITING_LIST_FLAG;
+	if (rdp->settings->bitmap_cache_persist_enable)
+		flag |= PERSISTENT_KEYS_EXPECTED_FLAG;
+	out_uint16_le(s, flag); /* CacheFlags */
 	out_uint8s(s, 1); /* pad */
 	out_uint8(s, 3); /* numCellCaches */
 
