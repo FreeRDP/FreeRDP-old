@@ -26,11 +26,31 @@
 #include "gdi_color.h"
 #include "gdi_32bpp.h"
 
+uint32 gdi_get_color_32bpp(HDC hdc, COLORREF color)
+{
+	uint32 color32;
+	uint8 a, r, g, b;
+
+	a = 0xFF;
+	GetRGB32(r, g, b, color);
+
+	if (hdc->invert)
+	{
+		color32 = ABGR32(a, r, g, b);
+	}
+	else
+	{
+		color32 = ARGB32(a, r, g, b);
+	}
+
+	return color32;
+}
+
 int FillRect_32bpp(HDC hdc, HRECT rect, HBRUSH hbr)
 {
 	int x, y;
-	uint8 *dstp;
-	char r, g, b;
+	uint32 *dstp;
+	uint32 color32;
 	int nXDest, nYDest;
 	int nWidth, nHeight;
 
@@ -39,30 +59,18 @@ int FillRect_32bpp(HDC hdc, HRECT rect, HBRUSH hbr)
 	if (ClipCoords(hdc, &nXDest, &nYDest, &nWidth, &nHeight, NULL, NULL) == 0)
 		return 0;
 
-	GetRGB32(r, g, b, hbr->color);
-	
+	color32 = gdi_get_color_32bpp(hdc, hbr->color);
+
 	for (y = 0; y < nHeight; y++)
 	{
-		dstp = gdi_get_bitmap_pointer(hdc, nXDest, nYDest + y);
+		dstp = (uint32*) gdi_get_bitmap_pointer(hdc, nXDest, nYDest + y);
 
 		if (dstp != 0)
 		{
 			for (x = 0; x < nWidth; x++)
 			{
-				*dstp = b;
+				*dstp = color32;
 				dstp++;
-					
-				*dstp = g;
-				dstp++;
-
-				*dstp = r;
-#ifdef USE_ALPHA
-				dstp++;
-				*dstp = 0xFF;
-				dstp++;
-#else
-				dstp += 2;
-#endif
 			}
 		}
 	}
@@ -73,44 +81,47 @@ int FillRect_32bpp(HDC hdc, HRECT rect, HBRUSH hbr)
 
 static int BitBlt_BLACKNESS_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight)
 {
-	int y;
-	uint8 *dstp;
-
-#ifdef USE_ALPHA
-	int x;
-	for (y = 0; y < nHeight; y++)
+	if (hdcDest->alpha)
 	{
-		dstp = gdi_get_bitmap_pointer(hdcDest, nXDest, nYDest + y);
+		int x, y;
+		uint8 *dstp;
 
-		if (dstp != 0)
+		for (y = 0; y < nHeight; y++)
 		{
-			for (x = 0; x < nWidth; x++)
+			dstp = gdi_get_bitmap_pointer(hdcDest, nXDest, nYDest + y);
+
+			if (dstp != 0)
 			{
-				*dstp = 0;
-				dstp++;
+				for (x = 0; x < nWidth; x++)
+				{
+					*dstp = 0;
+					dstp++;
 
-				*dstp = 0;
-				dstp++;
+					*dstp = 0;
+					dstp++;
 
-				*dstp = 0;
-				dstp++;
+					*dstp = 0;
+					dstp++;
 
-				*dstp = 0xFF;
-				dstp++;
+					*dstp = 0xFF;
+					dstp++;
+				}
 			}
 		}
 	}
-#else
-	for (y = 0; y < nHeight; y++)
+	else
 	{
-		dstp = gdi_get_bitmap_pointer(hdcDest, nXDest, nYDest + y);
+		int y;
+		uint8 *dstp;
 
-		if (dstp != 0)
-			memset(dstp, 0, nWidth * hdcDest->bytesPerPixel);
+		for (y = 0; y < nHeight; y++)
+		{
+			dstp = gdi_get_bitmap_pointer(hdcDest, nXDest, nYDest + y);
+
+			if (dstp != 0)
+				memset(dstp, 0, nWidth * hdcDest->bytesPerPixel);
+		}
 	}
-#endif
-
-	return 0;
 }
 
 static int BitBlt_WHITENESS_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight)
@@ -428,11 +439,16 @@ static int BitBlt_DSPDxax_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth,
 {	
 	int x, y;
 	uint8 *srcp;
-	uint32 *dstp;
+	uint8 *dstp;
+	uint8 *patp;
+	uint32 color32;
 	HBITMAP hSrcBmp;
 
-	/* D = (S & P) | (~S & D)	*/
+	/* D = (S & P) | (~S & D) */
 	/* DSPDxax, used to draw glyphs */
+
+	color32 = gdi_get_color_32bpp(hdcDest, hdcDest->textColor);
+
 	hSrcBmp = (HBITMAP) hdcSrc->selectedObject;
 	srcp = hSrcBmp->data;
 
@@ -445,15 +461,24 @@ static int BitBlt_DSPDxax_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth,
 	for (y = 0; y < nHeight; y++)
 	{
 		srcp = gdi_get_bitmap_pointer(hdcSrc, nXSrc, nYSrc + y);
-		dstp = (uint32*)gdi_get_bitmap_pointer(hdcDest, nXDest, nYDest + y);
+		dstp = gdi_get_bitmap_pointer(hdcDest, nXDest, nYDest + y);
 
 		if (dstp != 0)
 		{
 			for (x = 0; x < nWidth; x++)
 			{
-				/* we need the char* cast here so that 0xFF becomes 0xFFFFFFFF and not 0x000000FF */
-				*dstp = (*((char*)srcp) & hdcDest->textColor) | (~(*((char*)srcp)) & *dstp);
+				patp = (uint8*) &color32;
+
+				*dstp = (*srcp & *patp) | (~(*srcp) & *dstp);
 				dstp++;
+				patp++;
+
+				*dstp = (*srcp & *patp) | (~(*srcp) & *dstp);
+				dstp++;
+				patp++;
+
+				*dstp = (*srcp & *patp) | (~(*srcp) & *dstp);
+				dstp += 2;
 				srcp++;
 			}
 		}
@@ -610,23 +635,22 @@ static int BitBlt_PATCOPY_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth,
 	int x, y;
 	uint8 *dstp;
 	uint8 *patp;
-	uint8 colR, colG, colB;
-	uint32 col;
+	uint32 color32;
 	uint32 *dstp32;
 
 	if(hdcDest->brush->style == BS_SOLID)
 	{
-		GetRGB32(colR, colG, colB, hdcDest->brush->color);
-		col = ABGR32(0xFF, colR, colG, colB);
+		color32 = gdi_get_color_32bpp(hdcDest, hdcDest->brush->color);
+
 		for (y = 0; y < nHeight; y++)
 		{
-			dstp32 = (uint32*)gdi_get_bitmap_pointer(hdcDest, nXDest, nYDest + y);
+			dstp32 = (uint32*) gdi_get_bitmap_pointer(hdcDest, nXDest, nYDest + y);
 
 			if (dstp32 != 0)
 			{
 				for (x = 0; x < nWidth; x++)
 				{
-					*dstp32 = col;
+					*dstp32 = color32;
 					dstp32++;
 				}
 			}
@@ -667,23 +691,22 @@ static int BitBlt_PATINVERT_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidt
 	int x, y;
 	uint8 *dstp;
 	uint8 *patp;
-	uint8 colR, colG, colB;
-	uint32 col;
+	uint32 color32;
 	uint32 *dstp32;
 		
 	if(hdcDest->brush->style == BS_SOLID)
 	{
-		GetRGB32(colR, colG, colB, hdcDest->brush->color);
-		col = ABGR32(0xFF, colR, colG, colB);
+		color32 = gdi_get_color_32bpp(hdcDest, hdcDest->brush->color);
+
 		for (y = 0; y < nHeight; y++)
 		{
-			dstp32 = (uint32*)gdi_get_bitmap_pointer(hdcDest, nXDest, nYDest + y);
+			dstp32 = (uint32*) gdi_get_bitmap_pointer(hdcDest, nXDest, nYDest + y);
 
 			if (dstp32 != 0)
 			{
 				for (x = 0; x < nWidth; x++)
 				{
-					*dstp32 ^= col;
+					*dstp32 ^= color32;
 					dstp32++;
 				}
 			}

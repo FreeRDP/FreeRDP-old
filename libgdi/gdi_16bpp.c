@@ -31,16 +31,15 @@ uint16 gdi_get_color_16bpp(HDC hdc, COLORREF color)
 	uint8 r, g, b;
 	uint16 color16;
 
+	GetRGB32(r, g, b, color);
+	RGB_888_565(r, g, b);
+
 	if (hdc->invert)
 	{
-		GetRGB32(r, g, b, color);
-		RGB_888_565(r, g, b);
 		color16 = BGR16(r, g, b);
 	}
 	else
 	{
-		GetRGB32(r, g, b, color);
-		RGB_888_565(r, g, b);
 		color16 = RGB16(r, g, b);
 	}
 
@@ -65,7 +64,7 @@ int FillRect_16bpp(HDC hdc, HRECT rect, HBRUSH hbr)
 
 	for (y = 0; y < nHeight; y++)
 	{
-		dstp = (uint16*)gdi_get_bitmap_pointer(hdc, nXDest, nYDest + y);
+		dstp = (uint16*) gdi_get_bitmap_pointer(hdc, nXDest, nYDest + y);
 
 		if (dstp != 0)
 		{
@@ -385,15 +384,17 @@ static int BitBlt_DSPDxax_16bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth,
 {	
 	int x, y;
 	uint8 *srcp;
-	uint16 *dstp;
+	uint8 *dstp;
+	uint8 *patp;
 	uint8 r, g, b;
+	uint16 color16;
 	HBITMAP hSrcBmp;
 
-	/* D = (S & P) | (~S & D)	*/
+	/* D = (S & P) | (~S & D) */
 	/* DSPDxax, used to draw glyphs */
 
-	uint32 pixelColor = hdcDest->textColor;
-	RGB32_RGB16(r, g, b, pixelColor);
+	color16 = gdi_get_color_16bpp(hdcDest, hdcDest->textColor);
+
 	hSrcBmp = (HBITMAP) hdcSrc->selectedObject;
 	srcp = hSrcBmp->data;
 
@@ -406,15 +407,21 @@ static int BitBlt_DSPDxax_16bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth,
 	for (y = 0; y < nHeight; y++)
 	{
 		srcp = gdi_get_bitmap_pointer(hdcSrc, nXSrc, nYSrc + y);
-		dstp = (uint16*)gdi_get_bitmap_pointer(hdcDest, nXDest, nYDest + y);
+		dstp = gdi_get_bitmap_pointer(hdcDest, nXDest, nYDest + y);
 
 		if (dstp != 0)
 		{
 			for (x = 0; x < nWidth; x++)
 			{
-				/* we need the char* cast here so that 0xFF becomes 0xFFFF and not 0x00FF */
-				*dstp = (*((char*)srcp) & pixelColor) | (~(*((char*)srcp)) & *dstp);
+				patp = (uint8*) &color16;
+
+				*dstp = (*srcp & *patp) | (~(*srcp) & *dstp);
 				dstp++;
+				patp++;
+
+				*dstp = (*srcp & *patp) | (~(*srcp) & *dstp);
+				dstp++;
+				patp++;
 				srcp++;
 			}
 		}

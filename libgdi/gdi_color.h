@@ -125,21 +125,13 @@ extern "C" {
 
 /* RGB 32 (ARGB_8888), alpha ignored */
 
-#ifdef USE_ALPHA
-#define RGB32(_r, _g, _b)  \
-	(0xFF << 24) | (_r << 16) | (_g << 8) | _b;
-#else
 #define RGB32(_r, _g, _b)  \
 	(_r << 16) | (_g << 8) | _b;
-#endif
 
 #define GetRGB32(_r, _g, _b, _p) \
 	_r = (_p & 0xFF0000) >> 16; \
 	_g = (_p & 0xFF00) >> 8; \
 	_b = (_p & 0xFF);
-
-#define PixelRGB32(_pixel)  \
-	(_pixel.red << 16) | (_pixel.green << 8) | _pixel.blue
 
 /* ARGB 32 (ARGB_8888) */
 
@@ -190,10 +182,15 @@ extern "C" {
 	_g = (_g << 1 & ~0x1) | (_g >> 4); \
 	_p = RGB16(_r, _g, _b);
 
+#define CLRCONV_ALPHA		1
+#define CLRCONV_INVERT		2
+#define CLRCONV_SWAP_16BPP	4
+
 struct _CLRCONV
 {
 	int alpha;
 	int invert;
+	int swap_16bpp;
 	RD_PALETTE* palette;
 };
 typedef struct _CLRCONV CLRCONV;
@@ -205,7 +202,7 @@ typedef uint8* (*p_gdi_image_convert)(uint8* srcData, uint8* dstData, int width,
 
 int gdi_get_pixel(uint8 * data, int x, int y, int width, int height, int bpp);
 void gdi_set_pixel(uint8* data, int x, int y, int width, int height, int bpp, int pixel);
-int gdi_color_convert(int srcColor, int srcBpp, int dstBpp, HCLRCONV clrconv);
+uint32 gdi_color_convert(int srcColor, int srcBpp, int dstBpp, HCLRCONV clrconv);
 uint8* gdi_image_convert(uint8* srcData, uint8 *dstData, int width, int height, int srcBpp, int dstBpp, HCLRCONV clrconv);
 uint8* gdi_glyph_convert(int width, int height, uint8* data);
 uint8* gdi_mono_image_convert(uint8* srcData, int width, int height, int srcBpp, int dstBpp, int bgcolor, int fgcolor, HCLRCONV clrconv);

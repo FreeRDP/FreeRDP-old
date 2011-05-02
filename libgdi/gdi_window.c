@@ -401,7 +401,7 @@ gdi_is_mono_pixel_set(uint8* data, int x, int y, int width)
 }
 
 HBITMAP
-gdi_create_bitmap(GDI* gdi, int width, int height, int bpp, int reverse, uint8* data)
+gdi_create_bitmap(GDI* gdi, int width, int height, int bpp, uint8* data)
 {
 	uint8* bmpData;
 	HBITMAP bitmap;
@@ -413,27 +413,27 @@ gdi_create_bitmap(GDI* gdi, int width, int height, int bpp, int reverse, uint8* 
 }
 
 gdi_bitmap*
-gdi_bitmap_new(GDI *gdi, int width, int height, int bpp, int reverse, uint8* data)
+gdi_bitmap_new(GDI *gdi, int width, int height, int bpp, uint8* data)
 {
 	gdi_bitmap *gdi_bmp;
 	
 	gdi_bmp = (gdi_bitmap*) malloc(sizeof(gdi_bitmap));
 	gdi_bmp->hdc = CreateCompatibleDC(gdi->hdc);
 	
+	gdi_bmp->hdc->alpha = gdi->clrconv->alpha;
+	gdi_bmp->hdc->invert = gdi->clrconv->invert;
+
 	if (data == NULL)
 	{
 		gdi_bmp->bitmap = CreateCompatibleBitmap(gdi->hdc, width, height);
 	}
 	else
 	{
-		gdi_bmp->bitmap = gdi_create_bitmap(gdi, width, height, bpp, reverse, data);
+		gdi_bmp->bitmap = gdi_create_bitmap(gdi, width, height, bpp, data);
 	}
 	
 	SelectObject(gdi_bmp->hdc, (HGDIOBJ) gdi_bmp->bitmap);
 	gdi_bmp->org_bitmap = NULL;
-	
-	gdi_bmp->hdc->alpha = gdi->clrconv->alpha;
-	gdi_bmp->hdc->invert = gdi->clrconv->invert;
 
 	return gdi_bmp;
 }
@@ -525,7 +525,7 @@ gdi_ui_create_bitmap(struct rdp_inst * inst, int width, int height, uint8* data)
 
 	//DEBUG_GDI("gdi_ui_create_bitmap: width:%d height:%d\n", width, height);
 
-	gdi_bmp = gdi_bitmap_new(gdi, width, height, gdi->dstBpp, 1, data);
+	gdi_bmp = gdi_bitmap_new(gdi, width, height, gdi->dstBpp, data);
 	
 	return (RD_HBITMAP) gdi_bmp;
 }
@@ -721,7 +721,7 @@ gdi_ui_ellipse(struct rdp_inst * inst, uint8 opcode, uint8 fillmode, int x, int 
 static void
 gdi_ui_start_draw_glyphs(struct rdp_inst * inst, int bgcolor, int fgcolor)
 {
-	int color;
+	uint32 color;
 	GDI *gdi = GET_GDI(inst);
 	color = gdi_color_convert(fgcolor, gdi->srcBpp, 32, gdi->clrconv);
 	gdi->textColor = SetTextColor(gdi->drawing->hdc, color);
@@ -1002,7 +1002,7 @@ gdi_ui_create_surface(struct rdp_inst * inst, int width, int height, RD_HBITMAP 
 	gdi_bitmap *old_gdi_bmp;
 	GDI *gdi = GET_GDI(inst);
 
-	gdi_bmp = gdi_bitmap_new(gdi, width, height, 0, 0, NULL);
+	gdi_bmp = gdi_bitmap_new(gdi, width, height, 0, NULL);
 	old_gdi_bmp = (gdi_bitmap*) old_surface;
 	
 	if (old_gdi_bmp != 0)
@@ -1114,7 +1114,7 @@ gdi_register_callbacks(rdpInst * inst)
  */
 
 int
-gdi_init(rdpInst * inst)
+gdi_init(rdpInst * inst, uint32 flags)
 {
 	GDI *gdi = (GDI*) malloc(sizeof(GDI));
 	memset(gdi, 0, sizeof(GDI));
@@ -1139,18 +1139,19 @@ gdi_init(rdpInst * inst)
 	gdi->hdc->bitsPerPixel = gdi->dstBpp;
 	gdi->hdc->bytesPerPixel = gdi->bytesPerPixel;
 
-	gdi->primary = gdi_bitmap_new(gdi, gdi->width, gdi->height, gdi->dstBpp, 0, NULL);
+	gdi->clrconv = (HCLRCONV) malloc(sizeof(CLRCONV));
+	gdi->clrconv->palette = NULL;
+	gdi->clrconv->alpha = flags & CLRCONV_ALPHA;
+	gdi->clrconv->invert = flags & CLRCONV_INVERT;
+	gdi->clrconv->swap_16bpp = flags & CLRCONV_SWAP_16BPP;
+
+	gdi->primary = gdi_bitmap_new(gdi, gdi->width, gdi->height, gdi->dstBpp, NULL);
 	gdi->primary_buffer = gdi->primary->bitmap->data;
 	gdi->drawing = gdi->primary;
 
 	gdi->primary->hdc->hwnd = (HWND) malloc(sizeof(WND));
 	gdi->primary->hdc->hwnd->invalid = CreateRectRgn(0, 0, 0, 0);
 	gdi->primary->hdc->hwnd->invalid->null = 1;
-
-	gdi->clrconv = (HCLRCONV) malloc(sizeof(CLRCONV));
-	gdi->clrconv->alpha = 1;
-	gdi->clrconv->invert = 0;
-	gdi->clrconv->palette = NULL;
 
 	gdi_register_callbacks(inst);
 

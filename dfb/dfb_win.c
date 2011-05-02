@@ -249,7 +249,7 @@ dfb_post_connect(rdpInst * inst)
 	GDI *gdi;
 	dfbInfo *dfbi = GET_DFBI(inst);
 
-	gdi_init(inst);
+	gdi_init(inst, CLRCONV_ALPHA);
 	gdi = GET_GDI(inst);
 
 	dfbi->err = DirectFBCreate(&(dfbi->dfb));

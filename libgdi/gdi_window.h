@@ -56,6 +56,6 @@ void gdi_copy_memb(uint8 *d, uint8 *s, int n);
 uint8* gdi_get_bitmap_pointer(HDC hdcBmp, int x, int y);
 uint8* gdi_get_brush_pointer(HDC hdcBrush, int x, int y);
 int gdi_is_mono_pixel_set(uint8* data, int x, int y, int width);
-int gdi_init(rdpInst * inst);
+int gdi_init(rdpInst * inst, uint32 flags);
 
 #endif /* __GDI_WINDOW_H */

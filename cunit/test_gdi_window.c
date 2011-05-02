@@ -65,7 +65,7 @@ int add_gdi_window_suite(void)
 
 void test_gdi_init(void)
 {
-	CU_ASSERT(gdi_init(inst) == 0);
+	CU_ASSERT(gdi_init(inst, CLRCONV_ALPHA) == 0);
 
 	gdi = GET_GDI(inst);
 	CU_ASSERT(gdi != NULL);
