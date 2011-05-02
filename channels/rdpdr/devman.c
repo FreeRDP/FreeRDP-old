@@ -289,7 +289,7 @@ devman_load_device_service(DEVMAN* devman, char* filename)
 	if (!dl)
 		return 0;
 
-	pDeviceServiceEntry = (PDEVICE_SERVICE_ENTRY)dlsym(dl, "DeviceServiceEntry3");
+	pDeviceServiceEntry = (PDEVICE_SERVICE_ENTRY)dlsym(dl, "DeviceServiceEntry");
 
 	if (!pDeviceServiceEntry)
 	{
