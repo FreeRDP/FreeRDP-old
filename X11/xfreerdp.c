@@ -146,6 +146,7 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 	int i, j;
 	struct passwd * pw;
 	int num_extensions;
+	int rv;
 
 	set_default_params(xfi);
 	settings = xfi->settings;
@@ -476,7 +477,9 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 					i++;
 				}
 			}
-			freerdp_chanman_load_plugin(xfi->chan_man, settings, argv[index], plugin_data);
+			rv = freerdp_chanman_load_plugin(xfi->chan_man, settings, argv[index], plugin_data);
+			if (rv)
+				exit(XF_EXIT_WRONG_PARAM);
 		}
 		else if (strcmp("--ext", argv[*pindex]) == 0)
 		{
