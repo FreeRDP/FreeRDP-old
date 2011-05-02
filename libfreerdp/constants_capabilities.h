@@ -178,6 +178,10 @@
 /* Large pointer capability set flags */
 #define LARGE_POINTER_FLAG_96x96        0x0001
 
+/* Bitmap cache capability set flags */
+#define PERSISTENT_KEYS_EXPECTED_FLAG   0x0001
+#define ALLOW_CACHE_WAITING_LIST_FLAG   0x0002
+
 /* Desktop composition capability set flags */
 #define COMPDESK_NOT_SUPPORTED  0x0000
 #define COMPDESK_SUPPORTED      0x0001

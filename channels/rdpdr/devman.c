@@ -286,7 +286,16 @@ devman_load_device_service(DEVMAN* devman, char* filename)
 	}
 	dl = dlopen(fn, RTLD_LOCAL | RTLD_LAZY);
 
+	if (!dl)
+		return 0;
+
 	pDeviceServiceEntry = (PDEVICE_SERVICE_ENTRY)dlsym(dl, "DeviceServiceEntry");
+
+	if (!pDeviceServiceEntry)
+	{
+		fprintf(stderr, "Failed to load device service for %s\n", filename);
+		return 0;
+	}
 
 	if(pDeviceServiceEntry != NULL)
 	{
