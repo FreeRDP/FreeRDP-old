@@ -386,7 +386,6 @@ static int BitBlt_DSPDxax_16bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth,
 	uint8 *srcp;
 	uint8 *dstp;
 	uint8 *patp;
-	uint8 r, g, b;
 	uint16 color16;
 	HBITMAP hSrcBmp;
 

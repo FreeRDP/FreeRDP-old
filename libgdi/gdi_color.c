@@ -85,7 +85,7 @@ void gdi_set_pixel(uint8* data, int x, int y, int width, int height, int bpp, in
 	}
 }
 
-uint32 gdi_color_convert_rgb(int srcColor, int srcBpp, int dstBpp, HCLRCONV clrconv)
+uint32 gdi_color_convert_rgb(uint32 srcColor, int srcBpp, int dstBpp, HCLRCONV clrconv)
 {
 	uint8 red = 0;
 	uint8 green = 0;
@@ -133,6 +133,7 @@ uint32 gdi_color_convert_rgb(int srcColor, int srcBpp, int dstBpp, HCLRCONV clrc
 			dstColor = RGB24(red, green, blue);
 			break;
 		case 16:
+			RGB_888_565(red, green, blue);
 			dstColor = RGB16(red, green, blue);
 			break;
 		case 15:
@@ -155,7 +156,7 @@ uint32 gdi_color_convert_rgb(int srcColor, int srcBpp, int dstBpp, HCLRCONV clrc
 	return dstColor;
 }
 
-uint32 gdi_color_convert_bgr(int srcColor, int srcBpp, int dstBpp, HCLRCONV clrconv)
+uint32 gdi_color_convert_bgr(uint32 srcColor, int srcBpp, int dstBpp, HCLRCONV clrconv)
 {
 	uint8 red = 0;
 	uint8 green = 0;
@@ -225,7 +226,7 @@ uint32 gdi_color_convert_bgr(int srcColor, int srcBpp, int dstBpp, HCLRCONV clrc
 	return dstColor;
 }
 
-uint32 gdi_color_convert(int srcColor, int srcBpp, int dstBpp, HCLRCONV clrconv)
+uint32 gdi_color_convert(uint32 srcColor, int srcBpp, int dstBpp, HCLRCONV clrconv)
 {
 	if (clrconv->invert)
 		return gdi_color_convert_bgr(srcColor, srcBpp, dstBpp, clrconv);
@@ -491,7 +492,30 @@ uint8* gdi_image_convert_24bpp(uint8* srcData, uint8* dstData, int width, int he
 
 uint8* gdi_image_convert_32bpp(uint8* srcData, uint8* dstData, int width, int height, int srcBpp, int dstBpp, HCLRCONV clrconv)
 {
-	if (dstBpp == 24)
+	if (dstBpp == 16)
+	{
+		int index;
+		uint16 *dst16;
+		uint32 *src32;
+		uint8 red, green, blue;
+
+		if (dstData == NULL)
+			dstData = (uint8*) malloc(width * height * 2);
+
+		dst16 = (uint16*) dstData;
+		src32 = (uint32*) srcData;
+
+		for (index = 0; index < width * height; index++)
+		{
+			GetBGR32(blue, green, red, *src32);
+			RGB_888_565(red, green, blue);
+			*dst16 = RGB16(red, green, blue);
+			src32++;
+			dst16++;
+		}
+		return dstData;
+	}
+	else if (dstBpp == 24)
 	{
 		int index;
 		uint8 red, green, blue;
@@ -511,7 +535,7 @@ uint8* gdi_image_convert_32bpp(uint8* srcData, uint8* dstData, int width, int he
 		}
 		return dstData;
 	}
-	if (dstBpp == 32)
+	else if (dstBpp == 32)
 	{
 		if (clrconv->alpha)
 		{
@@ -606,7 +630,7 @@ gdi_glyph_convert(int width, int height, uint8* data)
 }
 
 
-uint8* gdi_mono_image_convert(uint8* srcData, int width, int height, int srcBpp, int dstBpp, int bgcolor, int fgcolor, HCLRCONV clrconv)
+uint8* gdi_mono_image_convert(uint8* srcData, int width, int height, int srcBpp, int dstBpp, uint32 bgcolor, uint32 fgcolor, HCLRCONV clrconv)
 {
 	int index;
 	uint16* dst16;

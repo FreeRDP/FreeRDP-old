@@ -202,14 +202,13 @@ ui_line(rdpInst * inst, uint8 opcode, int startx, int starty, int endx, int endy
 }
 
 void
-ui_rect(rdpInst * inst, int x, int y, int cx, int cy, int color)
+ui_rect(rdpInst * inst, int x, int y, int cx, int cy, uint32 color)
 {
 	inst->ui_rect(inst, x, y, cx, cy, color);
 }
 
 void
-ui_polygon(rdpInst * inst, uint8 opcode, uint8 fillmode, RD_POINT * point, int npoints,
-	   RD_BRUSH * brush, int bgcolor, int fgcolor)
+ui_polygon(rdpInst * inst, uint8 opcode, uint8 fillmode, RD_POINT * point, int npoints, RD_BRUSH * brush, uint32 bgcolor, uint32 fgcolor)
 {
 	inst->ui_polygon(inst, opcode, fillmode, point, npoints, brush, bgcolor, fgcolor);
 }
@@ -222,13 +221,13 @@ ui_polyline(rdpInst * inst, uint8 opcode, RD_POINT * points, int npoints, RD_PEN
 
 void
 ui_ellipse(rdpInst * inst, uint8 opcode, uint8 fillmode, int x, int y, int cx, int cy,
-	   RD_BRUSH * brush, int bgcolor, int fgcolor)
+	   RD_BRUSH * brush, uint32 bgcolor, uint32 fgcolor)
 {
 	inst->ui_ellipse(inst, opcode, fillmode, x, y, cx, cy, brush, bgcolor, fgcolor);
 }
 
 void
-ui_start_draw_glyphs(rdpInst * inst, int bgcolor, int fgcolor)
+ui_start_draw_glyphs(rdpInst * inst, uint32 bgcolor, uint32 fgcolor)
 {
 	inst->ui_start_draw_glyphs(inst, bgcolor, fgcolor);
 }
@@ -277,7 +276,7 @@ ui_destblt(rdpInst * inst, uint8 opcode, int x, int y, int cx, int cy)
 
 void
 ui_patblt(rdpInst * inst, uint8 opcode, int x, int y, int cx, int cy, RD_BRUSH * brush,
-	  int bgcolor, int fgcolor)
+	  uint32 bgcolor, uint32 fgcolor)
 {
 	inst->ui_patblt(inst, opcode, x, y, cx, cy, brush, bgcolor, fgcolor);
 }
@@ -297,7 +296,7 @@ ui_memblt(rdpInst * inst, uint8 opcode, int x, int y, int cx, int cy, RD_HBITMAP
 
 void
 ui_triblt(rdpInst * inst, uint8 opcode, int x, int y, int cx, int cy, RD_HBITMAP src,
-	  int srcx, int srcy, RD_BRUSH * brush, int bgcolor, int fgcolor)
+	  int srcx, int srcy, RD_BRUSH * brush, uint32 bgcolor, uint32 fgcolor)
 {
 	inst->ui_triblt(inst, opcode, x, y, cx, cy, src, srcx, srcy, brush, bgcolor, fgcolor);
 }

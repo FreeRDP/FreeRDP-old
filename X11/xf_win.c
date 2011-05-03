@@ -320,19 +320,20 @@ l_ui_destroy_bitmap(struct rdp_inst * inst, RD_HBITMAP bmp)
 }
 
 static void
-l_ui_line(struct rdp_inst * inst, uint8 opcode, int startx, int starty, int endx,
-	int endy, RD_PEN * pen)
+l_ui_line(struct rdp_inst * inst, uint8 opcode, int startx, int starty, int endx, int endy, RD_PEN * pen)
 {
-	xfInfo * xfi;
-	int color;
+	uint32 color;
+	xfInfo * xfi = GET_XFI(inst);
 
-	xfi = GET_XFI(inst);
 	//DEBUG("ui_line: opcode %d\n", opcode);
-	color = gdi_color_convert(pen->color, inst->settings->server_depth, xfi->bpp, xfi->clrconv);
+
 	xf_set_rop2(xfi, opcode);
+	color = gdi_color_convert(pen->color, inst->settings->server_depth, xfi->bpp, xfi->clrconv);
+
 	XSetFillStyle(xfi->display, xfi->gc, FillSolid);
 	XSetForeground(xfi->display, xfi->gc, color);
 	XDrawLine(xfi->display, xfi->drw, xfi->gc, startx, starty, endx, endy);
+
 	if (xfi->drw == xfi->backstore)
 	{
 		XDrawLine(xfi->display, xfi->wnd, xfi->gc, startx, starty, endx, endy);
@@ -340,17 +341,18 @@ l_ui_line(struct rdp_inst * inst, uint8 opcode, int startx, int starty, int endx
 }
 
 static void
-l_ui_rect(struct rdp_inst * inst, int x, int y, int cx, int cy, int color)
+l_ui_rect(struct rdp_inst * inst, int x, int y, int cx, int cy, uint32 color)
 {
-	xfInfo * xfi;
+	xfInfo * xfi = GET_XFI(inst);
 
-	xfi = GET_XFI(inst);
-	color = gdi_color_convert(color, inst->settings->server_depth, xfi->bpp, xfi->clrconv);
 	//DEBUG("ui_rect: inst %p x %d y %d cx %d cy %d color %d\n", inst, x, y, cx, cy, color);
+	color = gdi_color_convert(color, inst->settings->server_depth, xfi->bpp, xfi->clrconv);
+
 	XSetFunction(xfi->display, xfi->gc, GXcopy);
 	XSetFillStyle(xfi->display, xfi->gc, FillSolid);
 	XSetForeground(xfi->display, xfi->gc, color);
 	XFillRectangle(xfi->display, xfi->drw, xfi->gc, x, y, cx, cy);
+
 	if (xfi->drw == xfi->backstore)
 	{
 		XFillRectangle(xfi->display, xfi->wnd, xfi->gc, x, y, cx, cy);
@@ -359,18 +361,19 @@ l_ui_rect(struct rdp_inst * inst, int x, int y, int cx, int cy, int color)
 
 static void
 l_ui_polygon(struct rdp_inst * inst, uint8 opcode, uint8 fillmode, RD_POINT * point,
-	int npoints, RD_BRUSH * brush, int bgcolor, int fgcolor)
+	int npoints, RD_BRUSH * brush, uint32 bgcolor, uint32 fgcolor)
 {
-	uint8 style, i, ipattern[8];
 	Pixmap fill;
-	xfInfo * xfi;
+	uint32 polygon_bgcolor;
+	uint32 polygon_fgcolor;
+	uint8 style, i, ipattern[8];
+	xfInfo * xfi = GET_XFI(inst);
 
-	xfi = GET_XFI(inst);
 	xf_set_rop2(xfi, opcode);
 	style = brush ? brush->style : 0;
 
-	fgcolor = gdi_color_convert(fgcolor, inst->settings->server_depth, xfi->bpp, xfi->clrconv);
-	bgcolor = gdi_color_convert(bgcolor, inst->settings->server_depth, xfi->bpp, xfi->clrconv);
+	polygon_fgcolor = gdi_color_convert(fgcolor, inst->settings->server_depth, xfi->bpp, xfi->clrconv);
+	polygon_bgcolor = gdi_color_convert(bgcolor, inst->settings->server_depth, xfi->bpp, xfi->clrconv);
 
 	switch (fillmode)
 	{
@@ -388,7 +391,7 @@ l_ui_polygon(struct rdp_inst * inst, uint8 opcode, uint8 fillmode, RD_POINT * po
 	{
 		case 0:	/* Solid */
 			XSetFillStyle(xfi->display, xfi->gc, FillSolid);
-			XSetForeground(xfi->display, xfi->gc, fgcolor);
+			XSetForeground(xfi->display, xfi->gc, polygon_fgcolor);
 			XFillPolygon(xfi->display, xfi->drw, xfi->gc,
 				(XPoint *) point, npoints, Complex, CoordModePrevious);
 			if (xfi->drw == xfi->backstore)
@@ -401,8 +404,8 @@ l_ui_polygon(struct rdp_inst * inst, uint8 opcode, uint8 fillmode, RD_POINT * po
 		case 2:	/* Hatch */
 			fill = (Pixmap) l_ui_create_glyph(inst, 8, 8,
 							g_hatch_patterns + brush->pattern[0] * 8);
-			XSetForeground(xfi->display, xfi->gc, fgcolor);
-			XSetBackground(xfi->display, xfi->gc, bgcolor);
+			XSetForeground(xfi->display, xfi->gc, polygon_fgcolor);
+			XSetBackground(xfi->display, xfi->gc, polygon_bgcolor);
 			XSetFillStyle(xfi->display, xfi->gc, FillOpaqueStippled);
 			XSetStipple(xfi->display, xfi->gc, fill);
 			XSetTSOrigin(xfi->display, xfi->gc, brush->xorigin, brush->yorigin);
@@ -424,8 +427,8 @@ l_ui_polygon(struct rdp_inst * inst, uint8 opcode, uint8 fillmode, RD_POINT * po
 				for (i = 0; i != 8; i++)
 					ipattern[7 - i] = brush->pattern[i];
 				fill = (Pixmap) l_ui_create_glyph(inst, 8, 8, ipattern);
-				XSetForeground(xfi->display, xfi->gc, fgcolor);
-				XSetBackground(xfi->display, xfi->gc, bgcolor);
+				XSetForeground(xfi->display, xfi->gc, polygon_fgcolor);
+				XSetBackground(xfi->display, xfi->gc, polygon_bgcolor);
 				XSetFillStyle(xfi->display, xfi->gc, FillOpaqueStippled);
 				XSetStipple(xfi->display, xfi->gc, fill);
 				XSetTSOrigin(xfi->display, xfi->gc, brush->xorigin, brush->yorigin);
@@ -460,8 +463,8 @@ l_ui_polygon(struct rdp_inst * inst, uint8 opcode, uint8 fillmode, RD_POINT * po
 			else
 			{
 				fill = (Pixmap) l_ui_create_glyph(inst, 8, 8, brush->bd->data);
-				XSetForeground(xfi->display, xfi->gc, fgcolor);
-				XSetBackground(xfi->display, xfi->gc, bgcolor);
+				XSetForeground(xfi->display, xfi->gc, polygon_fgcolor);
+				XSetBackground(xfi->display, xfi->gc, polygon_bgcolor);
 				XSetFillStyle(xfi->display, xfi->gc, FillOpaqueStippled);
 				XSetStipple(xfi->display, xfi->gc, fill);
 				XSetTSOrigin(xfi->display, xfi->gc, brush->xorigin, brush->yorigin);
@@ -486,15 +489,14 @@ l_ui_polygon(struct rdp_inst * inst, uint8 opcode, uint8 fillmode, RD_POINT * po
 }
 
 static void
-l_ui_polyline(struct rdp_inst * inst, uint8 opcode, RD_POINT * points, int npoints,
-	RD_PEN * pen)
+l_ui_polyline(struct rdp_inst * inst, uint8 opcode, RD_POINT * points, int npoints, RD_PEN * pen)
 {
-	xfInfo * xfi;
 	XPoint * pts;
-	int color;
+	uint32 color;
+	xfInfo * xfi = GET_XFI(inst);
 
 	//DEBUG("ui_polyline:\n");
-	xfi = GET_XFI(inst);
+
 	color = gdi_color_convert(pen->color, inst->settings->server_depth, xfi->bpp, xfi->clrconv);
 	DEBUG("opcode %d npoints %d color %d %d\n", opcode, npoints, color, pen->color);
 	xf_set_rop2(xfi, opcode);
@@ -510,33 +512,33 @@ l_ui_polyline(struct rdp_inst * inst, uint8 opcode, RD_POINT * points, int npoin
 
 static void
 l_ui_ellipse(struct rdp_inst * inst, uint8 opcode, uint8 fillmode, int x, int y,
-	int cx, int cy, RD_BRUSH * brush, int bgcolor, int fgcolor)
+	int cx, int cy, RD_BRUSH * brush, uint32 bgcolor, uint32 fgcolor)
 {
 	printf("ui_ellipse:\n");
 }
 
 static void
-l_ui_start_draw_glyphs(struct rdp_inst * inst, int bgcolor, int fgcolor)
+l_ui_start_draw_glyphs(struct rdp_inst * inst, uint32 bgcolor, uint32 fgcolor)
 {
-	xfInfo * xfi;
+	uint32 glyph_bgcolor;
+	uint32 glyph_fgcolor;
+	xfInfo * xfi = GET_XFI(inst);
 
-	xfi = GET_XFI(inst);
-	fgcolor = gdi_color_convert(fgcolor, inst->settings->server_depth, xfi->bpp, xfi->clrconv);
-	bgcolor = gdi_color_convert(bgcolor, inst->settings->server_depth, xfi->bpp, xfi->clrconv);
 	//DEBUG("ui_start_draw_glyphs:\n");
+	glyph_fgcolor = gdi_color_convert(fgcolor, inst->settings->server_depth, xfi->bpp, xfi->clrconv);
+	glyph_bgcolor = gdi_color_convert(bgcolor, inst->settings->server_depth, xfi->bpp, xfi->clrconv);
+
 	XSetFunction(xfi->display, xfi->gc, GXcopy);
-	XSetForeground(xfi->display, xfi->gc, fgcolor);
-	XSetBackground(xfi->display, xfi->gc, bgcolor);
+	XSetForeground(xfi->display, xfi->gc, glyph_fgcolor);
+	XSetBackground(xfi->display, xfi->gc, glyph_bgcolor);
 	XSetFillStyle(xfi->display, xfi->gc, FillStippled);
 }
 
 static void
-l_ui_draw_glyph(struct rdp_inst * inst, int x, int y, int cx, int cy,
-	RD_HGLYPH glyph)
+l_ui_draw_glyph(struct rdp_inst * inst, int x, int y, int cx, int cy, RD_HGLYPH glyph)
 {
-	xfInfo * xfi;
+	xfInfo * xfi = GET_XFI(inst);
 
-	xfi = GET_XFI(inst);
 	//DEBUG("ui_draw_glyph:\n");
 	XSetStipple(xfi->display, xfi->gc, (Pixmap) glyph);
 	XSetTSOrigin(xfi->display, xfi->gc, x, y);
@@ -547,10 +549,10 @@ l_ui_draw_glyph(struct rdp_inst * inst, int x, int y, int cx, int cy,
 static void
 l_ui_end_draw_glyphs(struct rdp_inst * inst, int x, int y, int cx, int cy)
 {
-	xfInfo * xfi;
+	xfInfo * xfi = GET_XFI(inst);
 
-	xfi = GET_XFI(inst);
 	//DEBUG("ui_end_draw_glyphs:\n");
+
 	if (xfi->drw == xfi->backstore)
 	{
 		XCopyArea(xfi->display, xfi->backstore, xfi->wnd, xfi->gc, x, y, cx, cy, x, y);
@@ -590,16 +592,17 @@ l_ui_destblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy)
 
 static void
 l_ui_patblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy,
-	RD_BRUSH * brush, int bgcolor, int fgcolor)
+	RD_BRUSH * brush, uint32 bgcolor, uint32 fgcolor)
 {
-	xfInfo * xfi;
 	Pixmap fill;
-	uint8 i, ipattern[8];
 	uint8 * pat;
+	uint8 i, ipattern[8];
+	uint32 patblt_bgcolor;
+	uint32 patblt_fgcolor;
+	xfInfo * xfi = GET_XFI(inst);
 
-	xfi = GET_XFI(inst);
-	fgcolor = gdi_color_convert(fgcolor, inst->settings->server_depth, xfi->bpp, xfi->clrconv);
-	bgcolor = gdi_color_convert(bgcolor, inst->settings->server_depth, xfi->bpp, xfi->clrconv);
+	patblt_fgcolor = gdi_color_convert(fgcolor, inst->settings->server_depth, xfi->bpp, xfi->clrconv);
+	patblt_bgcolor = gdi_color_convert(bgcolor, inst->settings->server_depth, xfi->bpp, xfi->clrconv);
 	//DEBUG("ui_patblt: style %d brush->bd %p\n", brush->style, brush->bd);
 	//if (brush->bd != 0)
 	//{
@@ -610,7 +613,7 @@ l_ui_patblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy,
 	{
 		case 0:	/* Solid */
 			XSetFillStyle(xfi->display, xfi->gc, FillSolid);
-			XSetForeground(xfi->display, xfi->gc, fgcolor);
+			XSetForeground(xfi->display, xfi->gc, patblt_fgcolor);
 			XFillRectangle(xfi->display, xfi->drw, xfi->gc, x, y, cx, cy);
 			if (xfi->drw == xfi->backstore)
 			{
@@ -620,8 +623,8 @@ l_ui_patblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy,
 		case 2:	/* Hatch */
 			pat = g_hatch_patterns + brush->pattern[0] * 8;
 			fill = (Pixmap) l_ui_create_glyph(inst, 8, 8, pat);
-			XSetForeground(xfi->display, xfi->gc, fgcolor);
-			XSetBackground(xfi->display, xfi->gc, bgcolor);
+			XSetForeground(xfi->display, xfi->gc, patblt_fgcolor);
+			XSetBackground(xfi->display, xfi->gc, patblt_bgcolor);
 			XSetFillStyle(xfi->display, xfi->gc, FillOpaqueStippled);
 			XSetStipple(xfi->display, xfi->gc, fill);
 			XSetTSOrigin(xfi->display, xfi->gc, brush->xorigin, brush->yorigin);
@@ -635,8 +638,8 @@ l_ui_patblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy,
 				for (i = 0; i != 8; i++)
 					ipattern[7 - i] = brush->pattern[i];
 				fill = (Pixmap) l_ui_create_glyph(inst, 8, 8, ipattern);
-				XSetForeground(xfi->display, xfi->gc, bgcolor);
-				XSetBackground(xfi->display, xfi->gc, fgcolor);
+				XSetForeground(xfi->display, xfi->gc, patblt_bgcolor);
+				XSetBackground(xfi->display, xfi->gc, patblt_fgcolor);
 				XSetFillStyle(xfi->display, xfi->gc, FillOpaqueStippled);
 				XSetStipple(xfi->display, xfi->gc, fill);
 				XSetTSOrigin(xfi->display, xfi->gc, brush->xorigin, brush->yorigin);
@@ -657,8 +660,8 @@ l_ui_patblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy,
 			else
 			{
 				fill = (Pixmap) l_ui_create_glyph(inst, 8, 8, brush->bd->data);
-				XSetForeground(xfi->display, xfi->gc, bgcolor);
-				XSetBackground(xfi->display, xfi->gc, fgcolor);
+				XSetForeground(xfi->display, xfi->gc, patblt_bgcolor);
+				XSetBackground(xfi->display, xfi->gc, patblt_fgcolor);
 				XSetFillStyle(xfi->display, xfi->gc, FillOpaqueStippled);
 				XSetStipple(xfi->display, xfi->gc, fill);
 				XSetTSOrigin(xfi->display, xfi->gc, brush->xorigin, brush->yorigin);
@@ -727,11 +730,10 @@ l_ui_memblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy,
 
 static void
 l_ui_triblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy,
-	RD_HBITMAP src, int srcx, int srcy, RD_BRUSH * brush, int bgcolor, int fgcolor)
+	RD_HBITMAP src, int srcx, int srcy, RD_BRUSH * brush, uint32 bgcolor, uint32 fgcolor)
 {
-	xfInfo * xfi;
+	xfInfo * xfi = GET_XFI(inst);
 
-	xfi = GET_XFI(inst);
 	DEBUG("ui_triblt:\n");
 	xf_set_rop3(xfi, opcode);
 }
@@ -1191,6 +1193,8 @@ xf_pre_connect(xfInfo * xfi)
 	xfi->screen = ScreenOfDisplay(xfi->display, xfi->screen_num);
 	xfi->depth = DefaultDepthOfScreen(xfi->screen);
 	xfi->xserver_be = (ImageByteOrder(xfi->display) == MSBFirst);
+
+	printf("depth:%d be:%d\n", xfi->depth, xfi->xserver_be);
 
 	if (xfi->percentscreen > 0)
 	{

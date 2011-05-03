@@ -583,8 +583,8 @@ static void
 gdi_ui_line(struct rdp_inst * inst, uint8 opcode, int startx, int starty, int endx, int endy, RD_PEN * pen)
 {
 	HPEN hPen;
-	int color;
 	int cx, cy;
+	uint32 color;
 	GDI *gdi = GET_GDI(inst);
 
 	DEBUG_GDI("ui_line opcode:0x%02X startx:%d starty:%d endx:%d endy:%d\n", opcode, startx, starty, endx, endy);
@@ -614,18 +614,19 @@ gdi_ui_line(struct rdp_inst * inst, uint8 opcode, int startx, int starty, int en
  */
 
 static void
-gdi_ui_rect(struct rdp_inst * inst, int x, int y, int cx, int cy, int color)
+gdi_ui_rect(struct rdp_inst * inst, int x, int y, int cx, int cy, uint32 color)
 {
 	RECT rect;
 	HBRUSH hBrush;
+	uint32 brush_color;
 	GDI *gdi = GET_GDI(inst);
 
 	//DEBUG_GDI("ui_rect: x:%d y:%d cx:%d cy:%d\n", x, y, cx, cy);
 
 	CRgnToRect(x, y, cx, cy, &rect);
-	color = gdi_color_convert(color, gdi->srcBpp, 32, gdi->clrconv);
+	brush_color = gdi_color_convert(color, gdi->srcBpp, 32, gdi->clrconv);
 
-	hBrush = CreateSolidBrush(color);
+	hBrush = CreateSolidBrush(brush_color);
 	FillRect(gdi->drawing->hdc, &rect, hBrush);
 }
 
@@ -644,7 +645,7 @@ gdi_ui_rect(struct rdp_inst * inst, int x, int y, int cx, int cy, int color)
  */
 
 static void
-gdi_ui_polygon(struct rdp_inst * inst, uint8 opcode, uint8 fillmode, RD_POINT * point, int npoints, RD_BRUSH * brush, int bgcolor, int fgcolor)
+gdi_ui_polygon(struct rdp_inst * inst, uint8 opcode, uint8 fillmode, RD_POINT * point, int npoints, RD_BRUSH * brush, uint32 bgcolor, uint32 fgcolor)
 {
 	DEBUG_GDI("ui_polygon\n");
 }
@@ -664,8 +665,8 @@ gdi_ui_polyline(struct rdp_inst * inst, uint8 opcode, RD_POINT * points, int npo
 {
 	int i;
 	HPEN hPen;
-	int color;
 	int cx, cy;
+	uint32 color;
 	GDI *gdi = GET_GDI(inst);
 
 	DEBUG_GDI("ui_polyline: opcode:%d npoints:%d\n", opcode, npoints);
@@ -706,7 +707,7 @@ gdi_ui_polyline(struct rdp_inst * inst, uint8 opcode, RD_POINT * points, int npo
  */
 
 static void
-gdi_ui_ellipse(struct rdp_inst * inst, uint8 opcode, uint8 fillmode, int x, int y, int cx, int cy, RD_BRUSH * brush, int bgcolor, int fgcolor)
+gdi_ui_ellipse(struct rdp_inst * inst, uint8 opcode, uint8 fillmode, int x, int y, int cx, int cy, RD_BRUSH * brush, uint32 bgcolor, uint32 fgcolor)
 {
 	DEBUG_GDI("ui_ellipse\n");
 }
@@ -719,7 +720,7 @@ gdi_ui_ellipse(struct rdp_inst * inst, uint8 opcode, uint8 fillmode, int x, int 
  */
 
 static void
-gdi_ui_start_draw_glyphs(struct rdp_inst * inst, int bgcolor, int fgcolor)
+gdi_ui_start_draw_glyphs(struct rdp_inst * inst, uint32 bgcolor, uint32 fgcolor)
 {
 	uint32 color;
 	GDI *gdi = GET_GDI(inst);
@@ -798,10 +799,10 @@ gdi_ui_destblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int c
  */
 
 static void
-gdi_ui_patblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy, RD_BRUSH * brush, int bgcolor, int fgcolor)
+gdi_ui_patblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy, RD_BRUSH * brush, uint32 bgcolor, uint32 fgcolor)
 {
-	GDI *gdi = GET_GDI(inst);
 	HBRUSH originalBrush;
+	GDI *gdi = GET_GDI(inst);
 	
 	DEBUG_GDI("ui_patblt: x: %d y: %d cx: %d cy: %d rop: 0x%X\n", x, y, cx, cy, gdi_rop3_code(opcode));
 	
@@ -837,7 +838,7 @@ gdi_ui_patblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy
 	}
 	else if (brush->style == BS_SOLID)
 	{
-		int color;
+		uint32 color;
 		originalBrush = gdi->drawing->hdc->brush;
 
 		color = gdi_color_convert(fgcolor, gdi->srcBpp, 32, gdi->clrconv);
@@ -924,7 +925,7 @@ gdi_ui_memblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy
 
 static void
 gdi_ui_mem3blt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy,
-	RD_HBITMAP src, int srcx, int srcy, RD_BRUSH * brush, int bgcolor, int fgcolor)
+	RD_HBITMAP src, int srcx, int srcy, RD_BRUSH * brush, uint32 bgcolor, uint32 fgcolor)
 {
 	DEBUG_GDI("gdi_ui_mem3blt opcode: 0x%X\n", rop3_code_table[opcode]);
 }

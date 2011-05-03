@@ -32,15 +32,15 @@
 static void
 rdp_in_present(STREAM s, uint32 * present, uint8 flags, int size)
 {
-	uint8 bits;
 	int i;
+	uint8 bits;
 
-	if (flags & RDP_ORDER_SMALL)
+	if (flags & RDP_ORDER_CTL_ZERO_FIELD_BYTE_BIT0)
 	{
 		size--;
 	}
 
-	if (flags & RDP_ORDER_TINY)
+	if (flags & RDP_ORDER_CTL_ZERO_FIELD_BYTE_BIT1)
 	{
 		if (size < 2)
 			size = 0;
@@ -56,7 +56,7 @@ rdp_in_present(STREAM s, uint32 * present, uint8 flags, int size)
 	}
 }
 
-/* Read a co-ordinate (16-bit, or 8-bit delta) */
+/* Read a coordinate (16-bit, or 8-bit delta) */
 static void
 rdp_in_coord(STREAM s, sint16 * coord, RD_BOOL delta)
 {
@@ -73,7 +73,7 @@ rdp_in_coord(STREAM s, sint16 * coord, RD_BOOL delta)
 	}
 }
 
-/* Parse a delta co-ordinate in polyline/polygon order form */
+/* Parse a delta coordinate in polyline/polygon order form */
 static int
 parse_delta(uint8 * buffer, int *offset)
 {
@@ -120,7 +120,7 @@ parse_u2byte(uint8 * buffer, int *offset)
 
 /* Read a color entry */
 static void
-rdp_in_color(STREAM s, uint32 * color)
+rdp_in_color(STREAM s, uint32 *color)
 {
 	uint32 i;
 	in_uint8(s, i);
@@ -461,6 +461,7 @@ static void
 process_opaquerect(rdpOrders * orders, STREAM s, OPAQUERECT_ORDER * os, uint32 present, RD_BOOL delta)
 {
 	uint32 i;
+
 	if (present & 0x01)
 		rdp_in_coord(s, &os->x, delta);
 
@@ -1078,8 +1079,7 @@ process_ellipse_cb(rdpOrders * orders, STREAM s, ELLIPSE_CB_ORDER * os, uint32 p
 	setup_brush(orders, &brush, &os->brush);
 
 	ui_ellipse(orders->rdp->inst, os->opcode, os->fillmode, os->left, os->top,
-		   os->right - os->left, os->bottom - os->top, &brush, os->bgcolor,
-		   os->fgcolor);
+		   os->right - os->left, os->bottom - os->top, &brush, os->bgcolor, os->fgcolor);
 }
 
 static void
@@ -1126,7 +1126,7 @@ static void
 draw_text(rdpOrders * orders, uint8 font, uint8 flags, uint8 opcode, int mixmode,
 	  int x, int y, int clipx, int clipy, int clipcx, int clipcy,
 	  int boxx, int boxy, int boxcx, int boxcy, RD_BRUSH * brush,
-	  int bgcolor, int fgcolor, uint8 * text, uint8 length)
+	  uint32 bgcolor, uint32 fgcolor, uint8 * text, uint8 length)
 {
 	/* TODO: use brush appropriately */
 
@@ -2080,17 +2080,17 @@ process_orders(rdpOrders * orders, STREAM s, uint16 num_orders)
 	{
 		in_uint8(s, order_flags);
 
-		if (!(order_flags & RDP_ORDER_STANDARD))
+		if (!(order_flags & RDP_ORDER_CTL_STANDARD))
 		{
 			process_alternate_secondary_order(orders, s, order_flags);
 		}
-		else if (order_flags & RDP_ORDER_SECONDARY)
+		else if (order_flags & RDP_ORDER_CTL_SECONDARY)
 		{
 			process_secondary_order(orders, s);
 		}
 		else
 		{
-			if (order_flags & RDP_ORDER_CHANGE)
+			if (order_flags & RDP_ORDER_CTL_TYPE_CHANGE)
 			{
 				in_uint8(s, os->order_type);
 			}
@@ -2120,9 +2120,9 @@ process_orders(rdpOrders * orders, STREAM s, uint16 num_orders)
 
 			rdp_in_present(s, &present, order_flags, size);
 
-			if (order_flags & RDP_ORDER_BOUNDS)
+			if (order_flags & RDP_ORDER_CTL_BOUNDS)
 			{
-				if (!(order_flags & RDP_ORDER_LASTBOUNDS))
+				if (!(order_flags & RDP_ORDER_CTL_ZERO_BOUNDS_DELTA))
 					rdp_parse_bounds(s, &os->bounds);
 
 				ui_set_clip(orders->rdp->inst, os->bounds.left,
@@ -2132,7 +2132,7 @@ process_orders(rdpOrders * orders, STREAM s, uint16 num_orders)
 					    os->bounds.bottom - os->bounds.top + 1);
 			}
 
-			delta = order_flags & RDP_ORDER_DELTA;
+			delta = order_flags & RDP_ORDER_CTL_DELTA_COORDINATES;
 
 			switch (os->order_type)
 			{
@@ -2213,7 +2213,7 @@ process_orders(rdpOrders * orders, STREAM s, uint16 num_orders)
 					return;
 			}
 
-			if (order_flags & RDP_ORDER_BOUNDS)
+			if (order_flags & RDP_ORDER_CTL_BOUNDS)
 				ui_reset_clip(orders->rdp->inst);
 		}
 

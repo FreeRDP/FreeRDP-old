@@ -122,6 +122,8 @@ static int BitBlt_BLACKNESS_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidt
 				memset(dstp, 0, nWidth * hdcDest->bytesPerPixel);
 		}
 	}
+
+	return 0;
 }
 
 static int BitBlt_WHITENESS_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight)
