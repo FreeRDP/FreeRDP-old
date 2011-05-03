@@ -33,10 +33,11 @@ dfb_process_event(rdpInst * inst, DFBEvent * event)
 	int cursor_y;
 	int device_flags;
 	GDI *gdi = GET_GDI(inst);
+	dfbInfo *dfbi = GET_DFBI(inst);
+
 	DFBInputEvent * input_event;
 
-	cursor_x = gdi->cursor_x;
-	cursor_y = gdi->cursor_y;
+	dfbi->layer->GetCursorPosition(dfbi->layer, &cursor_x, &cursor_y);
 
 	if (event->clazz == DFEC_INPUT)
 	{
@@ -46,21 +47,6 @@ dfb_process_event(rdpInst * inst, DFBEvent * event)
 		switch (input_event->type)
 		{
 			case DIET_AXISMOTION:
-
-				if (input_event->flags & DIEF_AXISABS)
-				{
-					if (input_event->axis == DIAI_X)
-						cursor_x = input_event->axisabs;
-					else if (input_event->axis == DIAI_Y)
-						cursor_y = input_event->axisabs;
-				}
-				else if (input_event->flags & DIEF_AXISREL)
-				{
-					if (input_event->axis == DIAI_X)
-						cursor_x += input_event->axisrel;
-					else if (input_event->axis == DIAI_Y)
-						cursor_y += input_event->axisrel;
-				}
 
 				if (cursor_x > (gdi->width - 1))
 					cursor_x = gdi->width - 1;
@@ -73,28 +59,18 @@ dfb_process_event(rdpInst * inst, DFBEvent * event)
 				break;
 
 			case DIET_BUTTONPRESS:
-
-				if (input_event->button == DIBI_LEFT)
-					device_flags = PTRFLAGS_DOWN | PTRFLAGS_BUTTON1;
-				else if (input_event->button == DIBI_RIGHT)
-					device_flags = PTRFLAGS_DOWN | PTRFLAGS_BUTTON2;
-				else if (input_event->button == DIBI_MIDDLE)
-					device_flags = PTRFLAGS_DOWN | PTRFLAGS_BUTTON3;
-
-				if (device_flags != 0)
-					inst->rdp_send_input_mouse(inst, device_flags, cursor_x, cursor_y);
-
-				break;
+				device_flags = PTRFLAGS_DOWN;
+				/* fall */
 
 			case DIET_BUTTONRELEASE:
-
 				if (input_event->button == DIBI_LEFT)
-					device_flags = PTRFLAGS_BUTTON1;
+					device_flags |= PTRFLAGS_BUTTON1;
 				else if (input_event->button == DIBI_RIGHT)
-					device_flags = PTRFLAGS_BUTTON2;
+					device_flags |= PTRFLAGS_BUTTON2;
 				else if (input_event->button == DIBI_MIDDLE)
-					device_flags = PTRFLAGS_BUTTON3;
-
+					device_flags |= PTRFLAGS_BUTTON3;
+				
+				/* printf("Button=> @(%d, %d) %x\n", cursor_x, cursor_y, device_flags); */
 				if (device_flags != 0)
 					inst->rdp_send_input_mouse(inst, device_flags, cursor_x, cursor_y);
 

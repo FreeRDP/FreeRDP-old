@@ -94,29 +94,94 @@ l_ui_resize_window(struct rdp_inst * inst)
 }
 
 static void
-l_ui_set_cursor(struct rdp_inst * inst, RD_HCURSOR cursor)
+l_ui_set_cursor(struct rdp_inst * inst, RD_HCURSOR cur)
 {
+	CursorInfo *cursor = (CursorInfo*) cur;
+	dfbInfo *dfbi = GET_DFBI(inst);
+	dfbi->layer->SetCooperativeLevel(dfbi->layer, DLSCL_ADMINISTRATIVE);
+	DFBResult ret = dfbi->layer->SetCursorShape(dfbi->layer, cursor->surface, cursor->hotx, cursor->hoty);
+
+	if (ret != DFB_OK)
+		DirectFBErrorFatal("Error SetCursorShape", ret);
+
+	dfbi->layer->SetCooperativeLevel(dfbi->layer, DLSCL_SHARED);
 }
 
 static void
-l_ui_destroy_cursor(struct rdp_inst * inst, RD_HCURSOR cursor)
+l_ui_destroy_cursor(struct rdp_inst * inst, RD_HCURSOR cur)
 {
+	CursorInfo *cursor = (CursorInfo*) cur;
+
+	if (cursor == NULL)
+		return;
+
+	cursor->surface->Release(cursor->surface);
+	free(cursor);
 }
 
 static RD_HCURSOR
 l_ui_create_cursor(struct rdp_inst * inst, uint32 x, uint32 y, int width, int height, uint8 * andmask, uint8 * xormask, int bpp)
 {
-	return (RD_HCURSOR) NULL;
+	DFBResult ret;
+	CursorInfo *cursor;
+	DFBSurfaceDescription dsc;
+	dfbInfo *dfbi = GET_DFBI(inst);
+	GDI *gdi = GET_GDI(inst);
+
+	cursor = malloc(sizeof(CursorInfo));
+	dsc.flags = DSDESC_CAPS | DSDESC_WIDTH | DSDESC_HEIGHT | DSDESC_PIXELFORMAT;
+	dsc.caps = DSCAPS_SYSTEMONLY;
+	dsc.width = width;
+	dsc.height = height;
+	dsc.pixelformat = DSPF_ARGB;
+	ret = dfbi->dfb->CreateSurface(dfbi->dfb, &dsc, &cursor->surface);
+
+	if (ret == DFB_OK)
+	{
+		int pitch;
+		uint8* point = NULL;
+
+		cursor->hotx = x;
+		cursor->hoty = y;
+
+		/* copy the data */
+		ret = cursor->surface->Lock(cursor->surface, DSLF_WRITE, (void**) &point, &pitch);
+
+		if (ret != DFB_OK)
+			goto out;
+    
+		gdi_alpha_cursor_convert(point, xormask, andmask, width, height, bpp, gdi->clrconv);
+		cursor->surface->Unlock(cursor->surface);
+	}
+
+out:
+	if (ret != DFB_OK)
+	{
+		DirectFBErrorFatal("Error create cursor surface", ret);
+		return (RD_HCURSOR) NULL;
+	}
+
+	return (RD_HCURSOR) cursor;
 }
 
 static void
 l_ui_set_null_cursor(struct rdp_inst * inst)
 {
+	dfbInfo *dfbi = GET_DFBI(inst);
+	dfbi->layer->EnableCursor(dfbi->layer, 0);
 }
 
 static void
 l_ui_set_default_cursor(struct rdp_inst * inst)
 {
+	dfbInfo *dfbi = GET_DFBI(inst);
+	dfbi->layer->SetCooperativeLevel(dfbi->layer, DLSCL_ADMINISTRATIVE);
+	DFBResult ret = dfbi->layer->SetCursorShape(dfbi->layer, NULL, 0, 0);
+
+	if (ret != DFB_OK)
+		DirectFBErrorFatal("Error SetCursorShape", ret);
+
+	dfbi->layer->SetCooperativeLevel(dfbi->layer, DLSCL_SHARED);
 }
 
 static void

@@ -42,6 +42,13 @@ struct dfb_info
 };
 typedef struct dfb_info dfbInfo;
 
+typedef struct _cursorInfo
+{
+	uint32 hotx;
+	uint32 hoty;
+	IDirectFBSurface *surface;
+}CursorInfo;
+
 int
 dfb_process_event(rdpInst * inst, DFBEvent * event);
 
