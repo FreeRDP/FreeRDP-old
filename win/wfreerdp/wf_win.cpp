@@ -586,7 +586,7 @@ l_ui_line(struct rdp_inst * inst, uint8 opcode, int startx, int starty, int endx
 }
 
 static void
-l_ui_rect(struct rdp_inst * inst, int x, int y, int cx, int cy, int color)
+l_ui_rect(struct rdp_inst * inst, int x, int y, int cx, int cy, uint32 color)
 {
 	RECT rect;
 	HBRUSH brush;
@@ -610,7 +610,7 @@ l_ui_rect(struct rdp_inst * inst, int x, int y, int cx, int cy, int color)
 
 static void
 l_ui_polygon(struct rdp_inst * inst, uint8 opcode, uint8 fillmode, RD_POINT * point,
-	int npoints, RD_BRUSH * brush, int bgcolor, int fgcolor)
+	int npoints, RD_BRUSH * brush, uint32 bgcolor, uint32 fgcolor)
 {
 	printf("ui_polygon:\n");
 }
@@ -661,13 +661,13 @@ l_ui_polyline(struct rdp_inst * inst, uint8 opcode, RD_POINT * points, int npoin
 
 static void
 l_ui_ellipse(struct rdp_inst * inst, uint8 opcode, uint8 fillmode, int x, int y,
-	int cx, int cy, RD_BRUSH * brush, int bgcolor, int fgcolor)
+	int cx, int cy, RD_BRUSH * brush, uint32 bgcolor, uint32 fgcolor)
 {
 	printf("ui_ellipse:\n");
 }
 
 static void
-l_ui_start_draw_glyphs(struct rdp_inst * inst, int bgcolor, int fgcolor)
+l_ui_start_draw_glyphs(struct rdp_inst * inst, uint32 bgcolor, uint32 fgcolor)
 {
 	wfInfo * wfi = GET_WFI(inst);
 	fgcolor = wf_color_convert(wfi, fgcolor, inst->settings->server_depth);
@@ -748,7 +748,7 @@ l_ui_destblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy)
 
 static void
 l_ui_patblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy,
-	RD_BRUSH * brush, int bgcolor, int fgcolor)
+	RD_BRUSH * brush, uint32 bgcolor, uint32 fgcolor)
 {
 	HBRUSH br;
 	HBRUSH org_br;
@@ -811,7 +811,7 @@ l_ui_memblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy,
 
 static void
 l_ui_triblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy,
-	RD_HBITMAP src, int srcx, int srcy, RD_BRUSH * brush, int bgcolor, int fgcolor)
+	RD_HBITMAP src, int srcx, int srcy, RD_BRUSH * brush, uint32 bgcolor, uint32 fgcolor)
 {
 	wfInfo * wfi = GET_WFI(inst);
 	printf("ui_triblt\n");
