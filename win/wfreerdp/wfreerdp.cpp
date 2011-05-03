@@ -674,8 +674,6 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdS
 		wfi->clrconv = (HCLRCONV) malloc(sizeof(CLRCONV));
 		memset(wfi->clrconv, 0, sizeof(CLRCONV));
 		wfi->clrconv->alpha = 1;
-		wfi->clrconv->invert = 1;
-		wfi->clrconv->swap_16bpp = 1;
 		wfi->clrconv->palette = NULL;
 
 		rv = process_params(wfi, __argc, __argv, &index);

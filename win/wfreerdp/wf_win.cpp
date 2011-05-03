@@ -336,21 +336,31 @@ static HBITMAP
 wf_create_dib(wfInfo * wfi, int width, int height, int bpp, int reverse, uint8 * data)
 {
 	HDC hdc;
+	int negHeight;
 	HBITMAP bitmap;
 	BITMAPINFO bmi;
 	uint8* cdata = NULL;
 
+	/**
+	 * See: http://msdn.microsoft.com/en-us/library/dd183376
+	 * if biHeight is positive, the bitmap is bottom-up
+	 * if biHeight is negative, the bitmap is top-down
+	 * Since we get top-down bitmaps, let's keep it that way
+	 */
+
+	negHeight = (height < 0) ? height : height * (-1);
+
 	hdc = GetDC(NULL);
 	bmi.bmiHeader.biSize = sizeof(BITMAPINFO);
 	bmi.bmiHeader.biWidth = width;
-	bmi.bmiHeader.biHeight = height;
+	bmi.bmiHeader.biHeight = negHeight;
 	bmi.bmiHeader.biPlanes = 1;
 	bmi.bmiHeader.biBitCount = 24;
 	bmi.bmiHeader.biCompression = BI_RGB;
 	bitmap = CreateDIBSection (hdc, &bmi, DIB_RGB_COLORS, (void**)&cdata, NULL, 0);
 
 	if (data != NULL)
-		wf_image_convert(wfi, width, height, bpp, reverse, data, cdata);
+		gdi_image_convert(data, cdata, width, height, bpp, 24, wfi->clrconv);
 
 	ReleaseDC(NULL, hdc);
 	GdiFlush();

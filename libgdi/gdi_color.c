@@ -137,7 +137,7 @@ uint32 gdi_color_convert_rgb(uint32 srcColor, int srcBpp, int dstBpp, HCLRCONV c
 			dstColor = ARGB32(alpha, red, green, blue);
 			break;
 		case 24:
-			dstColor = RGB24(red, green, blue);
+			dstColor = BGR24(red, green, blue);
 			break;
 		case 16:
 			RGB_888_565(red, green, blue);
@@ -446,6 +446,38 @@ uint8* gdi_image_convert_16bpp(uint8* srcData, uint8* dstData, int width, int he
 
 		return dstData;
 	}
+	else if (dstBpp == 24)
+	{
+		int i;
+		uint8 *dst8;
+		uint16 *src16;
+		uint8 red, green, blue;
+
+		if (dstData == NULL)
+			dstData = (uint8*) malloc(width * height * 3);
+
+		dst8 = (uint8 *) dstData;
+		src16 = (uint16 *) srcData;
+		for (i = width * height; i > 0; i--)
+		{
+			GetBGR16(red, green, blue, *src16);
+			src16++;
+
+			if (clrconv->invert)
+			{
+				*dst8++ = blue;
+				*dst8++ = green;
+				*dst8++ = red;
+			}
+			else
+			{
+				*dst8++ = red;
+				*dst8++ = green;
+				*dst8++ = blue;
+			}
+		}
+		return dstData;
+	}
 	else if (dstBpp == 32)
 	{
 		int i;
@@ -542,9 +574,20 @@ uint8* gdi_image_convert_32bpp(uint8* srcData, uint8* dstData, int width, int he
 			red = *(srcData++);
 			green = *(srcData++);
 			blue = *(srcData++);
-			*dstData++ = blue;
-			*dstData++ = green;
-			*dstData++ = red;
+
+			if (clrconv->invert)
+			{
+				*dstData++ = blue;
+				*dstData++ = green;
+				*dstData++ = red;
+			}
+			else
+			{
+				*dstData++ = red;
+				*dstData++ = green;
+				*dstData++ = blue;
+			}
+
 			srcData++;
 		}
 		return dstData;
