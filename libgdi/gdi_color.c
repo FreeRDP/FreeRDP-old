@@ -96,7 +96,14 @@ uint32 gdi_color_convert_rgb(uint32 srcColor, int srcBpp, int dstBpp, HCLRCONV c
 	switch (srcBpp)
 	{
 		case 32:
-			GetBGR32(red, green, blue, srcColor);
+			if (clrconv->alpha)
+			{
+				GetABGR32(alpha, red, green, blue, srcColor);
+			}
+			else
+			{
+				GetBGR32(red, green, blue, srcColor);
+			}
 			break;
 		case 24:
 			GetBGR24(red, green, blue, srcColor);
@@ -167,7 +174,14 @@ uint32 gdi_color_convert_bgr(uint32 srcColor, int srcBpp, int dstBpp, HCLRCONV c
 	switch (srcBpp)
 	{
 		case 32:
-			GetBGR32(red, green, blue, srcColor);
+			if (clrconv->alpha)
+			{
+				GetABGR32(alpha, red, green, blue, srcColor);
+			}
+			else
+			{
+				GetBGR32(red, green, blue, srcColor);
+			}
 			break;
 		case 24:
 			GetBGR24(red, green, blue, srcColor);
