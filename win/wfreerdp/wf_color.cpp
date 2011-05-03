@@ -62,59 +62,6 @@
   (((_green & 0xff) >> 2) <<  5) | \
   (((_blue & 0xff) >> 3) <<  0)s
 
-int
-wf_color_convert(wfInfo * wfi, int in_color, int in_bpp)
-{
-	int alpha;
-	int red;
-	int green;
-	int blue;
-	int rv;
-	uint8* palette;
-
-	alpha = 0xff;
-	red = 0;
-	green = 0;
-	blue = 0;
-	rv = 0;
-
-	switch (in_bpp)
-	{
-		case 32:
-			SPLIT32BGR(alpha, red, green, blue, in_color);
-			break;
-		case 24:
-			SPLIT24BGR(red, green, blue, in_color);
-			break;
-		case 16:
-			SPLIT16RGB(red, green, blue, in_color);
-			break;
-		case 15:
-			SPLIT15RGB(red, green, blue, in_color);
-			break;
-		case 8:
-			in_color &= 0xff;
-			palette = (uint8*) wfi->palette->entries;
-			blue = *(palette + in_color * 3);
-			green = *(palette + in_color * 3 + 1);
-			red = *(palette + in_color * 3 + 2);
-			break;
-		case 1:
-			if (in_color != 0)
-			{
-				red = 0xff;
-				green = 0xff;
-				blue = 0xff;
-			}
-			break;
-		default:
-			printf("wf_color: bad in_bpp %d\n", in_bpp);
-			break;
-	}
-	rv = RGB(red, green, blue);
-	return rv;
-}
-
 uint8 *
 wf_image_convert(wfInfo * wfi, int width, int height, int bpp, int reverse, uint8 * in_data, uint8 * out_data)
 {

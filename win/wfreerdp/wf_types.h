@@ -25,6 +25,8 @@
 #include <freerdp/chanman.h>
 #include <freerdp/types_ui.h>
 
+#include "gdi_color.h"
+
 #define SET_WFI(_inst, _wfi) (_inst)->param1 = _wfi
 #define GET_WFI(_inst) ((wfInfo *) ((_inst)->param1))
 
@@ -53,6 +55,7 @@ struct wf_info
 	/* state: */
 	struct wf_bitmap * drw; /* the current drawing surface - either backstore or something else */
 	RD_PALETTE* palette;
+	HCLRCONV clrconv;
 	HCURSOR cursor;
 	HBRUSH brush;
 	HBRUSH org_brush;

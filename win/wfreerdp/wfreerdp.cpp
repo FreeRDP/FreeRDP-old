@@ -623,11 +623,11 @@ kbd_thread_func(LPVOID lpParam)
 INT WINAPI
 WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
-	WNDCLASSEX wnd_cls;
-	WSADATA wsa_data;
-	wfInfo * wfi;
 	int rv;
 	int index = 1;
+	wfInfo * wfi;
+	WSADATA wsa_data;
+	WNDCLASSEX wnd_cls;
 
 	if (WSAStartup(0x101, &wsa_data) != 0)
 	{
@@ -670,6 +670,14 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdS
 		memset(wfi, 0, sizeof(wfInfo));
 		wfi->settings = (rdpSet *) malloc(sizeof(rdpSet));
 		wfi->chan_man = freerdp_chanman_new();
+
+		wfi->clrconv = (HCLRCONV) malloc(sizeof(CLRCONV));
+		memset(wfi->clrconv, 0, sizeof(CLRCONV));
+		wfi->clrconv->alpha = 1;
+		wfi->clrconv->invert = 1;
+		wfi->clrconv->swap_16bpp = 1;
+		wfi->clrconv->palette = NULL;
+
 		rv = process_params(wfi, __argc, __argv, &index);
 		if (rv)
 		{

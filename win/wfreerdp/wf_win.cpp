@@ -565,12 +565,12 @@ l_ui_line(struct rdp_inst * inst, uint8 opcode, int startx, int starty, int endx
 {
 	HPEN hpen;
 	HPEN org_hpen;
-	int color;
+	uint32 color;
 	int org_rop2;
 	wfInfo * wfi = GET_WFI(inst);
 	
 	//printf("ui_line opcode %d startx %d starty %d endx %d endy %d\n", opcode, startx, starty, endx, endy);
-	color = wf_color_convert(wfi, pen->color, inst->settings->server_depth);
+	color = gdi_color_convert(pen->color, inst->settings->server_depth, 24, wfi->clrconv);
 	hpen = CreatePen(pen->style, pen->width, color);
 	org_rop2 = wf_set_rop2(wfi->drw->hdc, opcode);
 	org_hpen = (HPEN)SelectObject(wfi->drw->hdc, hpen);
@@ -579,6 +579,7 @@ l_ui_line(struct rdp_inst * inst, uint8 opcode, int startx, int starty, int endx
 	SelectObject(wfi->drw->hdc, org_hpen);
 	wf_set_rop2(wfi->drw->hdc, org_rop2);
 	DeleteObject(hpen);
+
 	if (wfi->drw == wfi->backstore)
 	{
 		wf_invalidate_region(wfi, min(startx, endx), min(starty, endy), max(startx, endx) + 1, max(starty, endy) + 1);
@@ -592,7 +593,7 @@ l_ui_rect(struct rdp_inst * inst, int x, int y, int cx, int cy, uint32 color)
 	HBRUSH brush;
 	wfInfo * wfi = GET_WFI(inst);
 
-	color = wf_color_convert(wfi, color, inst->settings->server_depth);
+	color = gdi_color_convert(color, inst->settings->server_depth, 24, wfi->clrconv);
 	//printf("ui_rect %i %i %i %i %i\n", x, y, cx, cy, color);
 	rect.left = x;
 	rect.top = y;
@@ -627,7 +628,7 @@ l_ui_polyline(struct rdp_inst * inst, uint8 opcode, RD_POINT * points, int npoin
 	wfInfo * wfi = GET_WFI(inst);
 
 	//printf("ui_polyline opcode %d npoints %d\n", opcode, npoints);
-	color = wf_color_convert(wfi, pen->color, inst->settings->server_depth);
+	color = gdi_color_convert(pen->color, inst->settings->server_depth, 24, wfi->clrconv);
 	hpen = CreatePen(pen->style, pen->width, color);
 	org_rop2 = wf_set_rop2(wfi->drw->hdc, opcode);
 	org_hpen = (HPEN)SelectObject(wfi->drw->hdc, hpen);
@@ -670,21 +671,21 @@ static void
 l_ui_start_draw_glyphs(struct rdp_inst * inst, uint32 bgcolor, uint32 fgcolor)
 {
 	wfInfo * wfi = GET_WFI(inst);
-	fgcolor = wf_color_convert(wfi, fgcolor, inst->settings->server_depth);
+
+	fgcolor = gdi_color_convert(fgcolor, inst->settings->server_depth, 24, wfi->clrconv);
 	wfi->brush = CreateSolidBrush(fgcolor);
 	wfi->org_brush = (HBRUSH)SelectObject(wfi->drw->hdc, wfi->brush);
 }
 
 static void
-l_ui_draw_glyph(struct rdp_inst * inst, int x, int y, int cx, int cy,
-	RD_HGLYPH glyph)
+l_ui_draw_glyph(struct rdp_inst * inst, int x, int y, int cx, int cy, RD_HGLYPH glyph)
 {
 	wfInfo * wfi;
 	struct wf_bitmap * bm;
 
 	wfi = GET_WFI(inst);
 	bm = (struct wf_bitmap *) glyph;
-	BitBlt(wfi->drw->hdc, x, y, cx, cy, bm->hdc, 0, 0, 0x00E20746); // DSPDxax
+	BitBlt(wfi->drw->hdc, x, y, cx, cy, bm->hdc, 0, 0, 0x00E20746); /* DSPDxax */
 
 	if (wfi->drw == wfi->backstore)
 	{
@@ -695,9 +696,7 @@ l_ui_draw_glyph(struct rdp_inst * inst, int x, int y, int cx, int cy,
 static void
 l_ui_end_draw_glyphs(struct rdp_inst * inst, int x, int y, int cx, int cy)
 {
-	wfInfo * wfi;
-
-	wfi = GET_WFI(inst);
+	wfInfo * wfi = GET_WFI(inst);
 	SelectObject(wfi->drw->hdc, wfi->org_brush);
 	DeleteObject(wfi->brush);
 	wfi->brush = NULL;
@@ -759,8 +758,8 @@ l_ui_patblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy,
 	
 	//printf("ui_patblt: style %d x %d y %d cx %d cy %d\n", brush->style, x, y, cx, cy);
 
-	fgcolor = wf_color_convert(wfi, fgcolor, inst->settings->server_depth);
-	bgcolor = wf_color_convert(wfi, bgcolor, inst->settings->server_depth);
+	fgcolor = gdi_color_convert(fgcolor, inst->settings->server_depth, 24, wfi->clrconv);
+	bgcolor = gdi_color_convert(bgcolor, inst->settings->server_depth, 24, wfi->clrconv);
 
 	br = wf_create_brush(wfi, brush, fgcolor, inst->settings->server_depth);
 	org_bkmode = SetBkMode(wfi->drw->hdc, OPAQUE);
@@ -773,6 +772,7 @@ l_ui_patblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy,
 	SetBkMode(wfi->drw->hdc, org_bkmode);
 	SetBkColor(wfi->drw->hdc, org_bkcolor);
 	SetTextColor(wfi->drw->hdc, org_textcolor);
+
 	if (wfi->drw == wfi->backstore)
 	{
 		wf_invalidate_region(wfi, x, y, x + cx, y + cy);
@@ -780,12 +780,12 @@ l_ui_patblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy,
 }
 
 static void
-l_ui_screenblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy,
-	int srcx, int srcy)
+l_ui_screenblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy, int srcx, int srcy)
 {
 	wfInfo * wfi = GET_WFI(inst);
 	//printf("ui_screenblt: opcode %d x %d y %d cx %d cy %d srcx %d srcy %d \n", opcode, x, y, cx, cy, srcx, srcy);
 	BitBlt(wfi->drw->hdc, x, y, cx, cy, wfi->backstore->hdc, srcx, srcy, rop3_code_table[opcode]); /* The source surface is always the primary drawing surface */
+
 	if (wfi->drw == wfi->backstore)
 	{
 		wf_invalidate_region(wfi, x, y, x + cx, y + cy);
@@ -803,6 +803,7 @@ l_ui_memblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy,
 	bm = (struct wf_bitmap *) src;
 	//printf("ui_memblt %i %i %i %i %i %i %i\n", x, y, cx, cy, srcx, srcy, opcode);
 	BitBlt(wfi->drw->hdc, x, y, cx, cy, bm->hdc, srcx, srcy, rop3_code_table[opcode]);
+
 	if (wfi->drw == wfi->backstore)
 	{
 		wf_invalidate_region(wfi, x, y, x + cx, y + cy);
