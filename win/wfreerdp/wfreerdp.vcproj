@@ -41,7 +41,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="../../libgdi;../../include"
+				AdditionalIncludeDirectories="..\..\libgdi;..\..\include"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;PACKAGE_VERSION=\&quot;unknown\&quot;"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -117,7 +117,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="../../include"
+				AdditionalIncludeDirectories="..\..\libgdi;..\..\include"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;PACKAGE_VERSION=\&quot;unknown\&quot;"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
@@ -174,7 +174,7 @@
 		/>
 		<ProjectReference
 			ReferencedProjectIdentifier="{65B0C0EE-55CF-417A-B4BD-A3F3E036DEC1}"
-			RelativePathToProject=".\libgdi\libgdi.vcproj"
+			RelativePathToProject=".\libgdi.vcproj"
 		/>
 		<ProjectReference
 			ReferencedProjectIdentifier="{B64C0469-B9E5-4712-9800-D0F4A8DF20F9}"
