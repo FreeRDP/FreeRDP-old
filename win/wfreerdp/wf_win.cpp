@@ -1190,7 +1190,9 @@ wf_post_connect(wfInfo * wfi)
 
 	width = wfi->inst->settings->width;
 	height = wfi->inst->settings->height;
-	if (wfi->settings->tcp_port_rdp == 3389)
+	if (strlen(wfi->window_title) > 0)
+		_snwprintf(win_title, sizeof(win_title), L"%S", wfi->window_title);
+	else if (wfi->settings->tcp_port_rdp == 3389)
 		_snwprintf(win_title, sizeof(win_title) / sizeof(win_title[0]), L"%S - freerdp", wfi->settings->server);
 	else
 		_snwprintf(win_title, sizeof(win_title) / sizeof(win_title[0]), L"%S:%d - freerdp", wfi->settings->server, wfi->settings->tcp_port_rdp);

@@ -1299,7 +1299,9 @@ xf_post_connect(xfInfo * xfi)
 	}
 
 	char win_title[64];
-	if (xfi->settings->tcp_port_rdp == 3389)
+	if (strlen(xfi->window_title) > 0)
+		snprintf(win_title, sizeof(win_title), "%s", xfi->window_title);
+	else if (xfi->settings->tcp_port_rdp == 3389)
 		snprintf(win_title, sizeof(win_title), "%s - freerdp", xfi->settings->server);
 	else
 		snprintf(win_title, sizeof(win_title), "%s:%d - freerdp", xfi->settings->server, xfi->settings->tcp_port_rdp);

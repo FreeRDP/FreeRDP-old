@@ -102,6 +102,7 @@ out_args(void)
 		"\t-c: directory\n"
 		"\t-g: geometry, using format WxH or X%, default is 800x600\n"
 		"\t-t: alternative port number, default is 3389\n"
+		"\t-T: set window title\n"
 		"\t-n: hostname\n"
 		"\t-o: console audio\n"
 		"\t-0: console session\n"
@@ -254,6 +255,17 @@ process_params(wfInfo * wfi, int argc, char ** argv, int * pindex)
 				return 1;
 			}
 			settings->tcp_port_rdp = atoi(argv[*pindex]);
+		}
+		else if (strcmp("-T", argv[*pindex]) == 0)
+		{
+			*pindex = *pindex + 1;
+			if (*pindex == argc)
+			{
+				printf("missing window title\n");
+				return 1;
+			}
+			strncpy(wfi->window_title, argv[*pindex], sizeof(wfi->window_title) - 1);
+			wfi->window_title[sizeof(wfi->window_title) - 1] = 0;
 		}
 		else if (strcmp("-n", argv[*pindex]) == 0)
 		{

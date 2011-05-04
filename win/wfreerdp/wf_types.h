@@ -47,6 +47,7 @@ struct wf_info
 	int fs_toggle;
 	int fullscreen;
 	int percentscreen;
+	char window_title[64];
 
 	/* Windows stuff */
 	HWND hwnd;
