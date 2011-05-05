@@ -184,13 +184,11 @@ extern "C" {
 
 #define CLRCONV_ALPHA		1
 #define CLRCONV_INVERT		2
-#define CLRCONV_SWAP_16BPP	4
 
 struct _CLRCONV
 {
 	int alpha;
 	int invert;
-	int swap_16bpp;
 	RD_PALETTE* palette;
 };
 typedef struct _CLRCONV CLRCONV;

@@ -423,6 +423,8 @@ gdi_bitmap_new(GDI *gdi, int width, int height, int bpp, uint8* data)
 	gdi_bmp->hdc->alpha = gdi->clrconv->alpha;
 	gdi_bmp->hdc->invert = gdi->clrconv->invert;
 
+	DEBUG_GDI("gdi_bitmap_new: width:%d height:%d bpp:%d\n", width, height, bpp);
+
 	if (data == NULL)
 	{
 		gdi_bmp->bitmap = CreateCompatibleBitmap(gdi->hdc, width, height);
@@ -548,7 +550,7 @@ gdi_ui_paint_bitmap(struct rdp_inst * inst, int x, int y, int cx, int cy, int wi
 	gdi_bitmap *gdi_bmp;
 	GDI *gdi = GET_GDI(inst);
 
-	//DEBUG_GDI("ui_paint_bitmap: x:%d y:%d cx:%d cy:%d\n", x, y, cx, cy);
+	DEBUG_GDI("ui_paint_bitmap: x:%d y:%d cx:%d cy:%d\n", x, y, cx, cy);
 
 	gdi_bmp = (gdi_bitmap*) inst->ui_create_bitmap(inst, width, height, data);
 	BitBlt(gdi->primary->hdc, x, y, cx, cy, gdi_bmp->hdc, 0, 0, SRCCOPY);
@@ -1003,7 +1005,7 @@ gdi_ui_create_surface(struct rdp_inst * inst, int width, int height, RD_HBITMAP 
 	gdi_bitmap *old_gdi_bmp;
 	GDI *gdi = GET_GDI(inst);
 
-	gdi_bmp = gdi_bitmap_new(gdi, width, height, 0, NULL);
+	gdi_bmp = gdi_bitmap_new(gdi, width, height, gdi->dstBpp, NULL);
 	old_gdi_bmp = (gdi_bitmap*) old_surface;
 	
 	if (old_gdi_bmp != 0)
@@ -1142,9 +1144,11 @@ gdi_init(rdpInst * inst, uint32 flags)
 
 	gdi->clrconv = (HCLRCONV) malloc(sizeof(CLRCONV));
 	gdi->clrconv->palette = NULL;
-	gdi->clrconv->alpha = flags & CLRCONV_ALPHA;
-	gdi->clrconv->invert = flags & CLRCONV_INVERT;
-	gdi->clrconv->swap_16bpp = flags & CLRCONV_SWAP_16BPP;
+	gdi->clrconv->alpha = (flags & CLRCONV_ALPHA > 0) ? 1 : 0;
+	gdi->clrconv->invert = (flags & CLRCONV_INVERT > 0) ? 1 : 0;
+
+	gdi->hdc->alpha = gdi->clrconv->alpha;
+	gdi->hdc->invert = gdi->clrconv->invert;
 
 	gdi->primary = gdi_bitmap_new(gdi, gdi->width, gdi->height, gdi->dstBpp, NULL);
 	gdi->primary_buffer = gdi->primary->bitmap->data;
