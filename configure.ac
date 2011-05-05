@@ -1054,6 +1054,7 @@ libfreerdpkbd/Makefile
 keymaps/Makefile
 cunit/Makefile
 libgdi/Makefile
+librfx/Makefile
 libfreerdpchanman/Makefile
 X11/Makefile
 dfb/Makefile
