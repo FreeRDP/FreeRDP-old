@@ -81,6 +81,14 @@ rfx_bitstream_eos(RFX_BITSTREAM * bs)
 	return bs->byte_pos >= bs->nbytes;
 }
 
+int
+rfx_bitstream_left(RFX_BITSTREAM * bs)
+{
+	if (bs->byte_pos >= bs->nbytes)
+		return 0;
+	return (bs->nbytes - bs->byte_pos - 1) * 8 + bs->bits_left;
+}
+
 void
 rfx_bitstream_free(RFX_BITSTREAM * bs)
 {

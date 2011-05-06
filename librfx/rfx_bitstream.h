@@ -30,6 +30,8 @@ unsigned int
 rfx_bitstream_get_bits(RFX_BITSTREAM * bs, int nbits);
 int
 rfx_bitstream_eos(RFX_BITSTREAM * bs);
+int
+rfx_bitstream_left(RFX_BITSTREAM * bs);
 void
 rfx_bitstream_free(RFX_BITSTREAM * bs);
 

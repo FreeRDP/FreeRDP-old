@@ -20,5 +20,16 @@
 #ifndef __RFX_RLGR_H
 #define __RFX_RLGR_H
 
+typedef enum
+{
+	RLGR1,
+	RLGR3
+} RLGR_MODE;
+
+int
+rfx_rlgr_decode(RLGR_MODE mode,
+	const unsigned char * data, int data_size,
+	int * buffer, int buffer_size);
+
 #endif
 
