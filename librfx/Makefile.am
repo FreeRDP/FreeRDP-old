@@ -8,6 +8,7 @@ librfx_LTLIBRARIES = librfx.la
 librfx_la_SOURCES = \
 	rfx_bitstream.c rfx_bitstream.h \
 	rfx_rlgr.c rfx_rlgr.h \
+	rfx_differential.c rfx_differential.h \
 	rfx_decode.c rfx_decode.h
 
 librfx_la_CFLAGS =
