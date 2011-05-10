@@ -10,6 +10,7 @@ librfx_la_SOURCES = \
 	rfx_rlgr.c rfx_rlgr.h \
 	rfx_differential.c rfx_differential.h \
 	rfx_quantization.c rfx_quantization.h \
+	rfx_dwt.c rfx_dwt.h \
 	rfx_decode.c rfx_decode.h
 
 librfx_la_CFLAGS =
