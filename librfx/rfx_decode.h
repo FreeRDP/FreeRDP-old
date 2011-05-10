@@ -20,5 +20,11 @@
 #ifndef __RFX_DECODE_H
 #define __RFX_DECODE_H
 
+unsigned char *
+rfx_decode_yv12(RLGR_MODE mode, const int * quantization_values,
+	const unsigned char * y_data, int y_size,
+	const unsigned char * cb_data, int cb_size,
+	const unsigned char * cr_data, int cr_size);
+
 #endif
 
