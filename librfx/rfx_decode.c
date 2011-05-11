@@ -52,10 +52,10 @@ rfx_decode_component(RLGR_MODE mode, const int * quantization_values, int half,
 }
 
 unsigned char *
-rfx_decode_yv12(RLGR_MODE mode, const int * quantization_values,
-	const unsigned char * y_data, int y_size,
-	const unsigned char * cb_data, int cb_size,
-	const unsigned char * cr_data, int cr_size)
+rfx_decode_yv12(RLGR_MODE mode,
+	const unsigned char * y_data, int y_size, const int * y_quants,
+	const unsigned char * cb_data, int cb_size, const int * cb_quants,
+	const unsigned char * cr_data, int cr_size, const int * cr_quants)
 {
 	unsigned char * output;
 	unsigned char * dst;
@@ -66,16 +66,16 @@ rfx_decode_yv12(RLGR_MODE mode, const int * quantization_values,
 	output = (unsigned char *) malloc(4096 + 1024 + 1024);
 	dst = output;
 
-	rfx_decode_component(mode, quantization_values, 0, y_data, y_size, buffer);
+	rfx_decode_component(mode, y_quants, 0, y_data, y_size, buffer);
 	for (i = 0; i < 4096; i++)
 		*dst++ = (unsigned char) (buffer[i] + 128);
 
 	/* For Cb and Cr, we only need LL1 (which is half-size) to construct YV12 pixel format */
-	rfx_decode_component(mode, quantization_values, 1, cb_data, cb_size, buffer);
+	rfx_decode_component(mode, cb_quants, 1, cb_data, cb_size, buffer);
 	for (i = 3072; i < 4096; i++)
 		*dst++ = (unsigned char) (buffer[i]);
 
-	rfx_decode_component(mode, quantization_values, 1, cr_data, cr_size, buffer);
+	rfx_decode_component(mode, cr_quants, 1, cr_data, cr_size, buffer);
 	for (i = 3072; i < 4096; i++)
 		*dst++ = (unsigned char) (buffer[i]);
 
