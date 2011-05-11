@@ -353,8 +353,10 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 		else if (strcmp("--rfx", argv[*pindex]) == 0)
 		{
 			settings->rfx_flags = 1;
-			settings->ui_decode_flags = 0;
+			settings->ui_decode_flags = 1;
 			settings->use_frame_ack = 1;
+			settings->server_depth = 32;
+			settings->performanceflags = PERF_FLAG_NONE;
 		}
 #ifdef HAVE_XV
 		else if (strcmp("--xv-port", argv[*pindex]) == 0)
