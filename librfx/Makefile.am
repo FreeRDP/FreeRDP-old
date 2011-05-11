@@ -12,13 +12,18 @@ librfx_la_SOURCES = \
 	rfx_quantization.c rfx_quantization.h \
 	rfx_dwt.c rfx_dwt.h \
 	rfx_decode.c rfx_decode.h \
-	rfx_constants.h
+	rfx_constants.h \
+	rfx.c
 
 librfx_la_CFLAGS =
 
 librfx_la_LDFLAGS =
 
 librfx_la_LIBDADD =
+
+# librfx headers
+includedir = $(prefix)/include/librfx
+include_HEADERS = rfx.h
 
 # extra
 EXTRA_DIST =
