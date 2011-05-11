@@ -9,6 +9,7 @@ xfreerdp_SOURCES = \
 	xf_types.h \
 	xf_win.h xf_win.c \
 	xf_video.h xf_video.c \
+	xf_decode.h xf_decode.c \
 	xfreerdp.c
 
 xfreerdp_CFLAGS = \
