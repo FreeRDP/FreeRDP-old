@@ -10,7 +10,6 @@ REQUIRED_SUBDIRS = \
 	keymaps \
 	libgdi \
 	libfreerdpchanman \
-	channels/common \
 	channels/rdpsnd \
 	channels/drdynvc \
 	channels/drdynvc/pnpdr \

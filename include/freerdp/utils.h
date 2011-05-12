@@ -82,4 +82,87 @@ void freerdp_uniconv_free(UNICONV *uniconv);
 char* freerdp_uniconv_in(UNICONV *uniconv, unsigned char* pin, size_t in_len);
 char* freerdp_uniconv_out(UNICONV *uniconv, char *str, size_t *pout_len);
 
+/* stream macros */
+
+#define GET_UINT8(_p1, _offset) *(((uint8 *) _p1) + _offset)
+#define GET_UINT16(_p1, _offset) ( \
+	(uint16) (*(((uint8 *) _p1) + _offset)) + \
+	((uint16) (*(((uint8 *) _p1) + _offset + 1)) << 8))
+#define GET_UINT32(_p1, _offset) ( \
+	(uint32) (*(((uint8 *) _p1) + _offset)) + \
+	((uint32) (*(((uint8 *) _p1) + _offset + 1)) << 8) + \
+	((uint32) (*(((uint8 *) _p1) + _offset + 2)) << 16) + \
+	((uint32) (*(((uint8 *) _p1) + _offset + 3)) << 24))
+#define GET_UINT64(_p1, _offset) ( \
+	(uint64) (*(((uint8 *) _p1) + _offset)) + \
+	((uint64) (*(((uint8 *) _p1) + _offset + 1)) << 8) + \
+	((uint64) (*(((uint8 *) _p1) + _offset + 2)) << 16) + \
+	((uint64) (*(((uint8 *) _p1) + _offset + 3)) << 24) + \
+	((uint64) (*(((uint8 *) _p1) + _offset + 4)) << 32) + \
+	((uint64) (*(((uint8 *) _p1) + _offset + 5)) << 40) + \
+	((uint64) (*(((uint8 *) _p1) + _offset + 6)) << 48) + \
+	((uint64) (*(((uint8 *) _p1) + _offset + 7)) << 56))
+
+#define SET_UINT8(_p1, _offset, _value) *(((uint8 *) _p1) + _offset) = (uint8) (_value)
+#define SET_UINT16(_p1, _offset, _value) \
+	*(((uint8 *) _p1) + _offset) = (uint8) (((uint16) (_value)) & 0xff), \
+	*(((uint8 *) _p1) + _offset + 1) = (uint8) ((((uint16) (_value)) >> 8) & 0xff)
+#define SET_UINT32(_p1, _offset, _value) \
+	*(((uint8 *) _p1) + _offset) = (uint8) (((uint32) (_value)) & 0xff), \
+	*(((uint8 *) _p1) + _offset + 1) = (uint8) ((((uint32) (_value)) >> 8) & 0xff), \
+	*(((uint8 *) _p1) + _offset + 2) = (uint8) ((((uint32) (_value)) >> 16) & 0xff), \
+	*(((uint8 *) _p1) + _offset + 3) = (uint8) ((((uint32) (_value)) >> 24) & 0xff)
+#define SET_UINT64(_p1, _offset, _value) \
+	*(((uint8 *) _p1) + _offset) = (uint8) (((uint64) (_value)) & 0xff), \
+	*(((uint8 *) _p1) + _offset + 1) = (uint8) ((((uint64) (_value)) >> 8) & 0xff), \
+	*(((uint8 *) _p1) + _offset + 2) = (uint8) ((((uint64) (_value)) >> 16) & 0xff), \
+	*(((uint8 *) _p1) + _offset + 3) = (uint8) ((((uint64) (_value)) >> 24) & 0xff), \
+	*(((uint8 *) _p1) + _offset + 4) = (uint8) ((((uint64) (_value)) >> 32) & 0xff), \
+	*(((uint8 *) _p1) + _offset + 5) = (uint8) ((((uint64) (_value)) >> 40) & 0xff), \
+	*(((uint8 *) _p1) + _offset + 6) = (uint8) ((((uint64) (_value)) >> 48) & 0xff), \
+	*(((uint8 *) _p1) + _offset + 7) = (uint8) ((((uint64) (_value)) >> 56) & 0xff)
+
+/* wait_obj */
+
+struct wait_obj *
+wait_obj_new(const char * name);
+int
+wait_obj_free(struct wait_obj * obj);
+int
+wait_obj_is_set(struct wait_obj * obj);
+int
+wait_obj_set(struct wait_obj * obj);
+int
+wait_obj_clear(struct wait_obj * obj);
+int
+wait_obj_select(struct wait_obj ** listobj, int numobj, int * listr, int numr,
+	int timeout);
+
+/* channel plugin base class */
+
+#define CHANNEL_MAX_COUNT 30
+
+typedef struct rdp_chan_plugin rdpChanPlugin;
+struct rdp_chan_plugin
+{
+	void * init_handle;
+	int open_handle[CHANNEL_MAX_COUNT];
+	int num_open_handles;
+};
+
+void
+chan_plugin_init(rdpChanPlugin * chan_plugin);
+void
+chan_plugin_uninit(rdpChanPlugin * chan_plugin);
+int
+chan_plugin_register_open_handle(rdpChanPlugin * chan_plugin,
+	int open_handle);
+int
+chan_plugin_unregister_open_handle(rdpChanPlugin * chan_plugin,
+	int open_handle);
+rdpChanPlugin *
+chan_plugin_find_by_init_handle(void * init_handle);
+rdpChanPlugin *
+chan_plugin_find_by_open_handle(int open_handle);
+
 #endif /* __LIBFREERDPUTILS_H */

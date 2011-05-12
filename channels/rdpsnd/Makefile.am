@@ -12,13 +12,12 @@ rdpsnd_la_SOURCES = \
 
 rdpsnd_la_CFLAGS = \
 	-I$(top_srcdir)/include \
-	-I$(srcdir)/../common \
 	-DPLUGIN_PATH=\"$(PLUGIN_PATH)\" \
 	-pthread
 
 rdpsnd_la_LDFLAGS = -avoid-version -module
 
-rdpsnd_la_LIBADD = ../common/libcommon.la -ldl
+rdpsnd_la_LIBADD = ../../libfreerdputils/libfreerdputils.la -ldl
 
 # extra
 EXTRA_DIST =

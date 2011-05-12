@@ -8,11 +8,11 @@ cliprdr_LTLIBRARIES = cliprdr.la
 cliprdr_la_SOURCES = \
 	cliprdr_main.h cliprdr_main.c
 
-cliprdr_la_CFLAGS = -I$(top_srcdir)/include -I$(srcdir)/../common
+cliprdr_la_CFLAGS = -I$(top_srcdir)/include
 
 cliprdr_la_LDFLAGS = -avoid-version -module
 
-cliprdr_la_LIBADD = ../common/libcommon.la
+cliprdr_la_LIBADD = ../../libfreerdputils/libfreerdputils.la
 
 if WITH_X11
 cliprdr_la_SOURCES += cliprdr_x11.c

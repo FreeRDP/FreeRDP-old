@@ -9,12 +9,12 @@ audin_alsa_la_SOURCES = \
 	audin_alsa.c
 
 audin_alsa_la_CFLAGS = @ALSA_CFLAGS@ \
-	-I$(top_srcdir)/include -I$(srcdir)/.. -I$(srcdir)/../.. -I$(srcdir)/../../../common \
+	-I$(top_srcdir)/include -I$(srcdir)/.. -I$(srcdir)/../.. \
 	-DPLUGIN_PATH=\"$(PLUGIN_PATH)\"
 
 audin_alsa_la_LDFLAGS = -avoid-version -module
 
-audin_alsa_la_LIBADD = @ALSA_LIBS@ ../../../common/libcommon.la
+audin_alsa_la_LIBADD = @ALSA_LIBS@ ../../../../libfreerdputils/libfreerdputils.la
 
 # extra
 EXTRA_DIST =

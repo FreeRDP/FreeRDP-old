@@ -9,7 +9,9 @@ libfreerdputils_la_SOURCES = \
 	datablob.c \
 	memory.c \
 	semaphore.c \
-	unicode.c
+	unicode.c \
+	wait_obj.c \
+	chan_plugin.c
 
 libfreerdputils_la_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include
 

@@ -23,7 +23,7 @@
 #include <pthread.h>
 #include <freerdp/types_ui.h>
 #include <freerdp/vchan.h>
-#include "chan_plugin.h"
+#include <freerdp/utils.h>
 
 /* The list of all plugin instances. */
 typedef struct rdp_chan_plugin_list rdpChanPluginList;

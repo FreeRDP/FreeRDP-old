@@ -15,12 +15,12 @@ tsmf_la_SOURCES = \
 	tsmf_codec.c tsmf_codec.h \
 	tsmf_main.c tsmf_main.h
 
-tsmf_la_CFLAGS = -I$(top_srcdir)/include -I$(srcdir)/../../common \
+tsmf_la_CFLAGS = -I$(top_srcdir)/include \
 	-I$(srcdir)/.. -DPLUGIN_PATH=\"$(PLUGIN_PATH)\"
 
 tsmf_la_LDFLAGS = -avoid-version -module
 
-tsmf_la_LIBADD = ../../common/libcommon.la
+tsmf_la_LIBADD = ../../../libfreerdputils/libfreerdputils.la
 
 # extra
 EXTRA_DIST =

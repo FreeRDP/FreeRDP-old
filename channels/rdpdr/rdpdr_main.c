@@ -146,12 +146,14 @@ rdpdr_send_client_name_request(rdpdrPlugin * plugin)
 	int size;
 	uint32 error;
 	char computerName[256];
-	uint32 computerNameLen;
-	uint32 computerNameLenW;
+	size_t computerNameLenW;
+	UNICONV * uniconv;
+	char * s;
 
+	uniconv = freerdp_uniconv_new();
 	gethostname(computerName, sizeof(computerName) - 1);
-	computerNameLen = strlen(computerName);
-	size = 16 + computerNameLen * 2 + 2;
+	s = freerdp_uniconv_out(uniconv, computerName, &computerNameLenW);
+	size = 16 + computerNameLenW + 2;
 	data = malloc(size);
 	memset(data, 0, size);
 
@@ -160,12 +162,13 @@ rdpdr_send_client_name_request(rdpdrPlugin * plugin)
 
 	SET_UINT32(data, 4, 1); // unicodeFlag, 0 for ASCII and 1 for Unicode
 	SET_UINT32(data, 8, 0); // codePage, must be set to zero
-
-	computerNameLenW = freerdp_set_wstr(&data[16], size - 16, computerName, computerNameLen); /* computerName */
 	SET_UINT32(data, 12, computerNameLenW + 2); /* computerNameLen, including null terminator */
+	memcpy(data + 16, s, computerNameLenW);
+	xfree(s);
+	freerdp_uniconv_free(uniconv);
 
 	error = plugin->ep.pVirtualChannelWrite(plugin->open_handle,
-				data, 16 + computerNameLenW + 2, data);
+				data, size, data);
 
 	if (error != CHANNEL_RC_OK)
 	{
