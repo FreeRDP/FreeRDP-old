@@ -21,7 +21,7 @@
 #include <string.h>
 #include <pulse/pulseaudio.h>
 #include <freerdp/types_ui.h>
-#include "chan_stream.h"
+#include <freerdp/utils.h>
 #include "rdpsnd_types.h"
 
 #define LOG_LEVEL 1

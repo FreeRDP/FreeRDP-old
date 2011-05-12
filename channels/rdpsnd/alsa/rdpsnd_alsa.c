@@ -23,7 +23,7 @@
 #include <string.h>
 #include <alsa/asoundlib.h>
 #include <freerdp/types_ui.h>
-#include "chan_stream.h"
+#include <freerdp/utils.h>
 #include "rdpsnd_types.h"
 
 #define LOG_LEVEL 1

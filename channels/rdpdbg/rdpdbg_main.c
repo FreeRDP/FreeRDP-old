@@ -24,7 +24,7 @@
 #include <unistd.h>
 #include <freerdp/types_ui.h>
 #include <freerdp/vchan.h>
-#include "chan_stream.h"
+#include <freerdp/utils.h>
 #include "chan_plugin.h"
 #include "wait_obj.h"
 #include "rdpdbg_main.h"

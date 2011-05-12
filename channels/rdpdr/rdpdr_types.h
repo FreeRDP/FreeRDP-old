@@ -22,8 +22,8 @@
 
 #include <freerdp/types_ui.h>
 #include <freerdp/vchan.h>
+#include <freerdp/utils.h>
 #include "chan_plugin.h"
-#include "chan_stream.h"
 
 #define LOG_LEVEL 1
 #define LLOG(_level, _args) \

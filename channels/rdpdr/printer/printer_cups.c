@@ -27,7 +27,6 @@
 #include "rdpdr_constants.h"
 #include "rdpdr_types.h"
 #include "devman.h"
-#include "chan_stream.h"
 #include "printer_main.h"
 
 struct _PRINTER_DEVICE_INFO

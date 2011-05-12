@@ -23,7 +23,7 @@
 #include <freerdp/types_ui.h>
 #include <freerdp/vchan.h>
 #include <freerdp/dvc.h>
-#include "chan_stream.h"
+#include <freerdp/utils.h>
 #include "chan_plugin.h"
 
 #define LOG_LEVEL 1
