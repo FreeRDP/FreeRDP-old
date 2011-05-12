@@ -39,7 +39,6 @@
 #include <X11/Xatom.h>
 #include <freerdp/types_ui.h>
 #include <freerdp/utils.h>
-#include "wait_obj.h"
 #include "cliprdr_main.h"
 
 #define LOG_LEVEL 1

@@ -24,7 +24,6 @@
 #include <unistd.h>
 #include <sys/time.h>
 #include "drdynvc_types.h"
-#include "wait_obj.h"
 #include "dvcman.h"
 #include "drdynvc_main.h"
 

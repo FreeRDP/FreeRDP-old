@@ -9,12 +9,12 @@ rdpsnd_pulse_la_SOURCES = \
 	rdpsnd_pulse.c
 
 rdpsnd_pulse_la_CFLAGS = @PULSE_CFLAGS@ \
-	-I$(top_srcdir)/include -I$(srcdir)/.. -I$(srcdir)/../../common \
+	-I$(top_srcdir)/include -I$(srcdir)/.. \
 	-DPLUGIN_PATH=\"$(PLUGIN_PATH)\"
 
 rdpsnd_pulse_la_LDFLAGS = -avoid-version -module
 
-rdpsnd_pulse_la_LIBADD = @PULSE_LIBS@
+rdpsnd_pulse_la_LIBADD = @PULSE_LIBS@ ../../../libfreerdputils/libfreerdputils.la
 
 # extra
 EXTRA_DIST =

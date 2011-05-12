@@ -26,8 +26,6 @@
 #include <freerdp/types_ui.h>
 #include <freerdp/vchan.h>
 #include <freerdp/utils.h>
-#include "chan_plugin.h"
-#include "wait_obj.h"
 #include "rdpsnd_types.h"
 #include "rdpsnd_dsp.h"
 

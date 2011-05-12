@@ -122,4 +122,45 @@ char* freerdp_uniconv_out(UNICONV *uniconv, char *str, size_t *pout_len);
 	*(((uint8 *) _p1) + _offset + 6) = (uint8) ((((uint64) (_value)) >> 48) & 0xff), \
 	*(((uint8 *) _p1) + _offset + 7) = (uint8) ((((uint64) (_value)) >> 56) & 0xff)
 
+/* wait_obj */
+
+struct wait_obj *
+wait_obj_new(const char * name);
+int
+wait_obj_free(struct wait_obj * obj);
+int
+wait_obj_is_set(struct wait_obj * obj);
+int
+wait_obj_set(struct wait_obj * obj);
+int
+wait_obj_clear(struct wait_obj * obj);
+int
+wait_obj_select(struct wait_obj ** listobj, int numobj, int * listr, int numr,
+	int timeout);
+
+/* channel plugin base class */
+
+typedef struct rdp_chan_plugin rdpChanPlugin;
+struct rdp_chan_plugin
+{
+	void * init_handle;
+	int open_handle[30];
+	int num_open_handles;
+};
+
+void
+chan_plugin_init(rdpChanPlugin * chan_plugin);
+void
+chan_plugin_uninit(rdpChanPlugin * chan_plugin);
+int
+chan_plugin_register_open_handle(rdpChanPlugin * chan_plugin,
+	int open_handle);
+int
+chan_plugin_unregister_open_handle(rdpChanPlugin * chan_plugin,
+	int open_handle);
+rdpChanPlugin *
+chan_plugin_find_by_init_handle(void * init_handle);
+rdpChanPlugin *
+chan_plugin_find_by_open_handle(int open_handle);
+
 #endif /* __LIBFREERDPUTILS_H */

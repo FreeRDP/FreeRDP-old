@@ -21,9 +21,9 @@
 #define __RDPDR_MAIN_H
 
 #include <pthread.h>
+#include <freerdp/utils.h>
 
 #include "rdpdr_types.h"
-#include "wait_obj.h"
 
 struct data_in_item
 {
