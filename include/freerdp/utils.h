@@ -140,11 +140,13 @@ wait_obj_select(struct wait_obj ** listobj, int numobj, int * listr, int numr,
 
 /* channel plugin base class */
 
+#define CHANNEL_MAX_COUNT 30
+
 typedef struct rdp_chan_plugin rdpChanPlugin;
 struct rdp_chan_plugin
 {
 	void * init_handle;
-	int open_handle[30];
+	int open_handle[CHANNEL_MAX_COUNT];
 	int num_open_handles;
 };
 

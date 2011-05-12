@@ -78,6 +78,7 @@
 #endif
 #include <freerdp/freerdp.h>
 #include <freerdp/chanman.h>
+#include <freerdp/utils.h>
 #include <freerdp/vchan.h>
 
 #ifdef HAVE_CONFIG_H
