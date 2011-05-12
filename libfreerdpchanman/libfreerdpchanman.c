@@ -78,6 +78,7 @@
 #endif
 #include <freerdp/freerdp.h>
 #include <freerdp/chanman.h>
+#include <freerdp/utils.h>
 #include <freerdp/vchan.h>
 
 #ifdef HAVE_CONFIG_H
@@ -93,6 +94,12 @@
 /* The current channel manager reference passes from VirtualChannelEntry to
    VirtualChannelInit for the pInitHandle. */
 static rdpChanMan * g_init_chan_man;
+
+typedef struct rdp_init_handle rdpInitHandle;
+struct rdp_init_handle
+{
+	rdpChanMan * chan_man;
+};
 
 /* The list of all channel managers. */
 typedef struct rdp_chan_man_list rdpChanManList;
@@ -117,6 +124,7 @@ struct lib_data
 	void * han; /* returned from dlopen */
 	PVIRTUALCHANNELENTRY entry; /* the one and only exported function */
 	PCHANNEL_INIT_EVENT_FN init_event_proc;
+	void * init_handle;
 };
 
 struct chan_data
@@ -140,6 +148,8 @@ struct rdp_chan_man
 	int num_libs;
 	struct chan_data chans[CHANNEL_MAX_COUNT];
 	int num_chans;
+	rdpInitHandle init_handles[CHANNEL_MAX_COUNT];
+	int num_init_handles;
 
 	/* control for entry into MyVirtualChannelInit */
 	int can_call_init;
@@ -305,7 +315,9 @@ MyVirtualChannelInit(void ** ppInitHandle, PCHANNEL_DEF pChannel,
 	PCHANNEL_DEF lchan_def;
 
 	chan_man = g_init_chan_man;
-	*ppInitHandle = chan_man;
+	chan_man->init_handles[chan_man->num_init_handles].chan_man = chan_man;
+	*ppInitHandle = &chan_man->init_handles[chan_man->num_init_handles];
+	chan_man->num_init_handles++;
 
 	DEBUG("MyVirtualChannelInit:\n");
 	if (!chan_man->can_call_init)
@@ -348,6 +360,7 @@ MyVirtualChannelInit(void ** ppInitHandle, PCHANNEL_DEF pChannel,
 	}
 	llib = chan_man->libs + chan_man->num_libs;
 	llib->init_event_proc = pChannelInitEventProc;
+	llib->init_handle = *ppInitHandle;
 	chan_man->num_libs++;
 	for (index = 0; index < channelCount; index++)
 	{
@@ -388,7 +401,7 @@ MyVirtualChannelOpen(void * pInitHandle, uint32 * pOpenHandle,
 	struct chan_data * lchan;
 
 	DEBUG("MyVirtualChannelOpen:\n");
-	chan_man = (rdpChanMan *) pInitHandle;
+	chan_man = ((rdpInitHandle *) pInitHandle)->chan_man;
 	if (pOpenHandle == 0)
 	{
 		printf("MyVirtualChannelOpen: error bad chanhan\n");
@@ -840,7 +853,7 @@ freerdp_chanman_pre_connect(rdpChanMan * chan_man, rdpInst * inst)
 		llib = chan_man->libs + index;
 		if (llib->init_event_proc != 0)
 		{
-			llib->init_event_proc(chan_man, CHANNEL_EVENT_INITIALIZED,
+			llib->init_event_proc(llib->init_handle, CHANNEL_EVENT_INITIALIZED,
 				0, 0);
 		}
 	}
@@ -868,7 +881,7 @@ freerdp_chanman_post_connect(rdpChanMan * chan_man, rdpInst * inst)
 		llib = chan_man->libs + index;
 		if (llib->init_event_proc != 0)
 		{
-			llib->init_event_proc(chan_man, CHANNEL_EVENT_CONNECTED,
+			llib->init_event_proc(llib->init_handle, CHANNEL_EVENT_CONNECTED,
 				server_name, server_name_len);
 		}
 	}
@@ -1027,7 +1040,7 @@ freerdp_chanman_close(rdpChanMan * chan_man, rdpInst * inst)
 		llib = chan_man->libs + index;
 		if (llib->init_event_proc != 0)
 		{
-			llib->init_event_proc(chan_man, CHANNEL_EVENT_TERMINATED,
+			llib->init_event_proc(llib->init_handle, CHANNEL_EVENT_TERMINATED,
 				0, 0);
 		}
 	}

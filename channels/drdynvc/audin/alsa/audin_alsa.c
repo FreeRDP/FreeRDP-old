@@ -24,7 +24,6 @@
 #include <unistd.h>
 #include <alsa/asoundlib.h>
 #include "drdynvc_types.h"
-#include "wait_obj.h"
 #include "audin_types.h"
 
 struct alsa_device_data
