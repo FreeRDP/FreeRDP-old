@@ -47,7 +47,7 @@ xf_decode_uninit(xfInfo * xfi)
 }
 
 static void
-xf_decode_frame(xfInfo * xfi, uint8 * bitmapData, uint32 bitmapDataLength)
+xf_decode_frame(xfInfo * xfi, int x, int y, uint8 * bitmapData, uint32 bitmapDataLength)
 {
 	RFX_MESSAGE * message;
 
@@ -70,6 +70,8 @@ xf_decode_data(xfInfo * xfi, uint8 * data, int data_size)
 {
 	uint16 cmdType;
 	uint32 bitmapDataLength;
+	int destLeft;
+	int destTop;
 	int size;
 
 	///printf("xf_decode_data: %d\n", data_size);
@@ -81,8 +83,10 @@ xf_decode_data(xfInfo * xfi, uint8 * data, int data_size)
 		{
 			case CMDTYPE_SET_SURFACE_BITS:
 			case CMDTYPE_STREAM_SURFACE_BITS:
+				destLeft = GET_UINT16(data, 2);
+				destTop = GET_UINT16(data, 4);
 				bitmapDataLength = GET_UINT32(data, 18);
-				xf_decode_frame(xfi, data + 22, bitmapDataLength);
+				xf_decode_frame(xfi, destLeft, destTop, data + 22, bitmapDataLength);
 				size = 22 + bitmapDataLength;
 				break;
 

@@ -25,6 +25,14 @@
 #include "rfx_decode.h"
 #include "rfx.h"
 
+typedef struct _RFX_RECT
+{
+	unsigned int x;
+	unsigned int y;
+	unsigned int width;
+	unsigned int height;
+} RFX_RECT;
+
 struct _RFX_CONTEXT
 {
 	unsigned int version;
@@ -36,6 +44,8 @@ struct _RFX_CONTEXT
 	RLGR_MODE mode;
 
 	/* temporary data within a frame */
+	int num_rects;
+	RFX_RECT * rects;
 	int * quants;
 };
 
@@ -52,6 +62,8 @@ rfx_context_new(void)
 void
 rfx_context_free(RFX_CONTEXT * context)
 {
+	if (context->rects)
+		free(context->rects);
 	if (context->quants)
 		free(context->quants);
 	free(context);
@@ -152,6 +164,36 @@ rfx_process_message_context(RFX_CONTEXT * context, unsigned char * data, int dat
 	}
 }
 
+static void
+rfx_process_message_region(RFX_CONTEXT * context, unsigned char * data, int data_size)
+{
+	int i;
+
+	context->num_rects = GET_UINT16(data, 3);
+	if (context->num_rects < 1)
+	{
+		printf("rfx_process_message_region: no rects.\n");
+		return;
+	}
+	if (context->rects)
+		free(context->rects);
+	context->rects = (RFX_RECT *) malloc(context->num_rects * sizeof(RFX_RECT));
+	data += 5;
+	data_size -= 5;
+	for (i = 0; i < context->num_rects && data_size > 0; i++)
+	{
+		context->rects[i].x = GET_UINT16(data, 0);
+		context->rects[i].y = GET_UINT16(data, 2);
+		context->rects[i].width = GET_UINT16(data, 4);
+		context->rects[i].height = GET_UINT16(data, 6);
+		printf("rfx_process_message_region: rect %d (%d %d %d %d).\n",
+			i, context->rects[i].x, context->rects[i].y, context->rects[i].width, context->rects[i].height);
+
+		data += 8;
+		data_size -= 8;
+	}
+}
+
 RFX_MESSAGE *
 rfx_process_message(RFX_CONTEXT * context, unsigned char * data, int data_size)
 {
@@ -189,6 +231,10 @@ rfx_process_message(RFX_CONTEXT * context, unsigned char * data, int data_size)
 			case WBT_FRAME_BEGIN:
 			case WBT_FRAME_END:
 				/* Can be ignored. */
+				break;
+
+			case WBT_REGION:
+				rfx_process_message_region(context, data + 6, blockLen - 6);
 				break;
 
 			default:
