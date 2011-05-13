@@ -17,6 +17,7 @@
    limitations under the License.
 */
 
+#include "config.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -585,7 +586,9 @@ disk_query_volume_info(IRP * irp)
 	uint32 status;
 	int size;
 	char * buf;
-	int len;
+	size_t len;
+	UNICONV * uniconv;
+	char * s;
 
 	LLOGLN(10, ("disk_query_volume_info: class=%d id=%d", irp->infoClass, irp->fileID));
 	finfo = disk_get_file_info(irp->dev, irp->fileID);
@@ -603,6 +606,7 @@ disk_query_volume_info(IRP * irp)
 	size = 0;
 	buf = NULL;
 	status = RD_STATUS_SUCCESS;
+	uniconv = freerdp_uniconv_new();
 
 	switch (irp->infoClass)
 	{
@@ -611,7 +615,9 @@ disk_query_volume_info(IRP * irp)
 			memset(buf, 0, 256);
 			SET_UINT64(buf, 0, 0); /* VolumeCreationTime */
 			SET_UINT32(buf, 8, 0); /* VolumeSerialNumber */
-			len = freerdp_set_wstr(buf + 17, size - 17, "FREERDP", strlen("FREERDP") + 1);
+			s = freerdp_uniconv_out(uniconv, "FREERDP", &len);
+			memcpy(buf + 17, s, len);
+			xfree(s);
 			SET_UINT32(buf, 12, len); /* VolumeLabelLength */
 			SET_UINT8(buf, 16, 0);	/* SupportsObjects */
 			size = 17 + len;
@@ -632,7 +638,9 @@ disk_query_volume_info(IRP * irp)
 			memset(buf, 0, 256);
 			SET_UINT32(buf, 0, FILE_CASE_SENSITIVE_SEARCH | FILE_CASE_PRESERVED_NAMES | FILE_UNICODE_ON_DISK); /* FileSystemAttributes */
 			SET_UINT32(buf, 4, F_NAMELEN(stat_fs)); /* MaximumComponentNameLength */
-			len = freerdp_set_wstr(buf + 12, 256 - 12, "FREERDP", 8);
+			s = freerdp_uniconv_out(uniconv, "FREERDP", &len);
+			memcpy(buf + 17, s, len);
+			xfree(s);
 			SET_UINT32(buf, 8, len); /* FileSystemNameLength */
 			size = 12 + len;
 			break;
@@ -661,6 +669,8 @@ disk_query_volume_info(IRP * irp)
 			status = RD_STATUS_NOT_SUPPORTED;
 			break;
 	}
+
+	freerdp_uniconv_free(uniconv);
 
 	irp->outputBuffer = buf;
 	irp->outputBufferLength = size;
@@ -743,13 +753,13 @@ disk_set_info(IRP * irp)
 	uint32 status;
 	uint64 len;
 	char * buf;
-	int size;
 	char * fullpath;
 	struct stat file_stat;
 	struct utimbuf tvs;
 	int mode;
 	uint32 attr;
 	time_t t;
+	UNICONV * uniconv;
 
 	LLOGLN(10, ("disk_set_info: class=%d id=%d", irp->infoClass, irp->fileID));
 	finfo = disk_get_file_info(irp->dev, irp->fileID);
@@ -806,12 +816,11 @@ disk_set_info(IRP * irp)
 			//replaceIfExists = GET_UINT8(irp->inputBuffer, 0); /* ReplaceIfExists */
 			//rootDirectory = GET_UINT8(irp->inputBuffer, 1); /* RootDirectory */
 			len = GET_UINT32(irp->inputBuffer, 2);
-			size = len * 2;
-			buf = malloc(size);
-			memset(buf, 0, size);
-			freerdp_get_wstr(buf, size, irp->inputBuffer + 6, len);
+			uniconv = freerdp_uniconv_new();
+			buf = freerdp_uniconv_in(uniconv, (unsigned char*) (irp->inputBuffer + 6), len);
+			freerdp_uniconv_free(uniconv);
 			fullpath = disk_get_fullpath(irp->dev, buf);
-			free(buf);
+			xfree(buf);
 			LLOGLN(10, ("disk_set_info: rename %s to %s", finfo->fullpath, fullpath));
 			if (rename(finfo->fullpath, fullpath) == 0)
 			{
@@ -843,10 +852,11 @@ disk_query_directory(IRP * irp, uint8 initialQuery, const char * path)
 	uint32 status;
 	char * buf;
 	int size;
-	int len;
+	size_t len;
 	struct dirent * pdirent;
 	struct stat file_stat;
 	uint32 attr;
+	UNICONV * uniconv;
 
 	LLOGLN(10, ("disk_query_directory: class=%d id=%d init=%d path=%s", irp->infoClass, irp->fileID,
 		initialQuery, path));
@@ -891,6 +901,7 @@ disk_query_directory(IRP * irp, uint8 initialQuery, const char * path)
 	free(p);
 
 	attr = get_file_attribute(pdirent->d_name, &file_stat);
+	uniconv = freerdp_uniconv_new();
 
 	switch (irp->infoClass)
 	{
@@ -914,7 +925,9 @@ disk_query_directory(IRP * irp, uint8 initialQuery, const char * path)
 			/* [MS-FSCC] has one byte padding here but RDP does not! */
 			//SET_UINT8(buf, 69, 0); /* Reserved */
 			/* ShortName 24  bytes */
-			len = freerdp_set_wstr(buf + 93, size - 93, pdirent->d_name, strlen(pdirent->d_name));
+			p = freerdp_uniconv_out(uniconv, pdirent->d_name, &len);
+			memcpy(buf + 93, p, len);
+			xfree(p);
 			SET_UINT32(buf, 60, len); /* FileNameLength */
 			size = 93 + len;
 			break;
@@ -935,7 +948,9 @@ disk_query_directory(IRP * irp, uint8 initialQuery, const char * path)
 			SET_UINT64(buf, 48, file_stat.st_size); /* AllocationSize */
 			SET_UINT32(buf, 56, attr); /* FileAttributes */
 			SET_UINT32(buf, 64, 0); /* EaSize */
-			len = freerdp_set_wstr(buf + 68, size - 68, pdirent->d_name, strlen(pdirent->d_name));
+			p = freerdp_uniconv_out(uniconv, pdirent->d_name, &len);
+			memcpy(buf + 68, p, len);
+			xfree(p);
 			SET_UINT32(buf, 60, len); /* FileNameLength */
 			size = 68 + len;
 			break;
@@ -947,7 +962,9 @@ disk_query_directory(IRP * irp, uint8 initialQuery, const char * path)
 
 			SET_UINT32(buf, 0, 0); /* NextEntryOffset */
 			SET_UINT32(buf, 4, 0); /* FileIndex */
-			len = freerdp_set_wstr(buf + 12, size - 12, pdirent->d_name, strlen(pdirent->d_name));
+			p = freerdp_uniconv_out(uniconv, pdirent->d_name, &len);
+			memcpy(buf + 12, p, len);
+			xfree(p);
 			SET_UINT32(buf, 8, len); /* FileNameLength */
 			size = 12 + len;
 			break;
@@ -967,7 +984,9 @@ disk_query_directory(IRP * irp, uint8 initialQuery, const char * path)
 			SET_UINT64(buf, 40, file_stat.st_size); /* EndOfFile */
 			SET_UINT64(buf, 48, file_stat.st_size); /* AllocationSize */
 			SET_UINT32(buf, 56, attr); /* FileAttributes */
-			len = freerdp_set_wstr(buf + 64, size - 64, pdirent->d_name, strlen(pdirent->d_name));
+			p = freerdp_uniconv_out(uniconv, pdirent->d_name, &len);
+			memcpy(buf + 64, p, len);
+			xfree(p);
 			SET_UINT32(buf, 60, len); /* FileNameLength */
 			size = 64 + len;
 			break;
@@ -977,6 +996,8 @@ disk_query_directory(IRP * irp, uint8 initialQuery, const char * path)
 			status = RD_STATUS_NOT_SUPPORTED;
 			break;
 	}
+
+	freerdp_uniconv_free(uniconv);
 
 	irp->outputBuffer = buf;
 	irp->outputBufferLength = size;

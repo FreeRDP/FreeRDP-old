@@ -344,28 +344,10 @@ uint8* gdi_image_convert_15bpp(uint8* srcData, uint8* dstData, int width, int he
 
 	if (dstBpp == 15 || dstBpp == 16)
 	{
-		if (clrconv->swap_16bpp)
-		{
-			if (dstData == NULL)
-				dstData = (uint8*) malloc(width * height * 2);
+		if (dstData == NULL)
+			dstData = (uint8*) malloc(width * height * 2);
 
-			src16 = (uint16*) srcData;
-			dst16 = (uint16*) dstData;
-
-			for (i = width * height; i > 0; i--)
-			{
-				*dst16 = (*src16 >> 8) | (*src16 << 8);
-				src16++;
-				dst16++;
-			}
-		}
-		else
-		{
-			if (dstData == NULL)
-				dstData = (uint8*) malloc(width * height * 2);
-
-			memcpy(dstData, srcData, width * height * 2);
-		}
+		memcpy(dstData, srcData, width * height * 2);
 
 		return dstData;
 	}
@@ -417,32 +399,10 @@ uint8* gdi_image_convert_16bpp(uint8* srcData, uint8* dstData, int width, int he
 
 	if (dstBpp == 16)
 	{
-		if (clrconv->swap_16bpp)
-		{
-			int i;
-			uint16* src16;
-			uint16* dst16;
+		if (dstData == NULL)
+			dstData = (uint8*) malloc(width * height * 2);
 
-			if (dstData == NULL)
-				dstData = (uint8*) malloc(width * height * 2);
-
-			src16 = (uint16*) srcData;
-			dst16 = (uint16*) dstData;
-
-			for (i = width * height; i > 0; i--)
-			{
-				*dst16 = (*src16 >> 8) | (*src16 << 8);
-				src16++;
-				dst16++;
-			}
-		}
-		else
-		{
-			if (dstData == NULL)
-				dstData = (uint8*) malloc(width * height * 2);
-
-			memcpy(dstData, srcData, width * height * 2);
-		}
+		memcpy(dstData, srcData, width * height * 2);
 
 		return dstData;
 	}

@@ -50,9 +50,9 @@ irp_output_device_io_completion(IRP* irp, int * data_size)
 void
 irp_process_create_request(IRP* irp, char* data, int data_size)
 {
+	UNICONV * uniconv;
 	uint32 pathLength;
 	char * path;
-	int size;
 
 	irp->desiredAccess = GET_UINT32(data, 0); /* desiredAccess */
 	//irp->allocationSize = GET_UINT64(data, 4); /* allocationSize */
@@ -62,13 +62,9 @@ irp_process_create_request(IRP* irp, char* data, int data_size)
 	irp->createOptions = GET_UINT32(data, 24); /* createOptions */
 	pathLength = GET_UINT32(data, 28); /* pathLength */
 
-	size = pathLength * 3 / 2 + 1;
-	path = (char *) malloc(size);
-	memset(path, 0, size);
-	if (pathLength > 0)
-	{
-		freerdp_get_wstr(path, size, &data[32], pathLength);
-	}
+	uniconv = freerdp_uniconv_new();
+	path = freerdp_uniconv_in(uniconv, (unsigned char*) (&data[32]), pathLength);
+	freerdp_uniconv_free(uniconv);
 
 	if (!irp->dev->service->create)
 	{
@@ -324,9 +320,9 @@ irp_process_file_lock_control_request(IRP* irp, char* data, int data_size)
 void
 irp_process_query_directory_request(IRP* irp, char* data, int data_size)
 {
+	UNICONV * uniconv;
 	uint8 initialQuery;
 	uint32 pathLength;
-	int size;
 	char * path;
 
 	irp->infoClass = GET_UINT32(data, 0); /* fsInformationClass */
@@ -334,13 +330,9 @@ irp_process_query_directory_request(IRP* irp, char* data, int data_size)
 	pathLength = GET_UINT32(data, 5); /* pathLength */
 	/* 23-byte pad */
 
-	size = pathLength * 3 / 2 + 1;
-	path = (char *) malloc(size);
-	memset(path, 0, size);
-	if (pathLength > 0)
-	{
-		freerdp_get_wstr(path, size, &data[32], pathLength);
-	}
+	uniconv = freerdp_uniconv_new();
+	path = freerdp_uniconv_in(uniconv, (unsigned char*) (&data[32]), pathLength);
+	freerdp_uniconv_free(uniconv);
 
 	if (!irp->dev->service->query_directory)
 	{

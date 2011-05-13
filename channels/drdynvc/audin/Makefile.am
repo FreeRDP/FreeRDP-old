@@ -10,12 +10,12 @@ audin_la_SOURCES = \
 	audin_dsp.c audin_dsp.h \
 	audin_main.c
 
-audin_la_CFLAGS = -I$(top_srcdir)/include -I$(srcdir)/../../common \
+audin_la_CFLAGS = -I$(top_srcdir)/include \
 	-I$(srcdir)/.. -DPLUGIN_PATH=\"$(PLUGIN_PATH)\"
 
 audin_la_LDFLAGS = -avoid-version -module
 
-audin_la_LIBADD = ../../common/libcommon.la
+audin_la_LIBADD = ../../../libfreerdputils/libfreerdputils.la
 
 # extra
 EXTRA_DIST =

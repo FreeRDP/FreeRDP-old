@@ -11,7 +11,6 @@ REQUIRED_SUBDIRS = \
 	libgdi \
 	librfx \
 	libfreerdpchanman \
-	channels/common \
 	channels/rdpsnd \
 	channels/drdynvc \
 	channels/drdynvc/pnpdr \

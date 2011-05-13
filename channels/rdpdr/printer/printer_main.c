@@ -110,7 +110,7 @@ printer_process_update_printer_event(SERVICE * srv, const char * data, int data_
 	uint32 printerNameLen;
 	char * printerName;
 	uint32 configDataLen;
-	uint32 size;
+	UNICONV * uniconv;
 
 	printerNameLen = GET_UINT32(data, 0);
 	configDataLen = GET_UINT32(data, 4);
@@ -121,13 +121,12 @@ printer_process_update_printer_event(SERVICE * srv, const char * data, int data_
 			printerNameLen, configDataLen, data_len));
 		return 1;
 	}
-	size = printerNameLen * 3 / 2 + 2;
-	printerName = (char *) malloc(size);
-	memset(printerName, 0, size);
-	freerdp_get_wstr(printerName, size, (char *)(data + 8), printerNameLen);
+	uniconv = freerdp_uniconv_new();
+	printerName = freerdp_uniconv_in(uniconv, (unsigned char*) (data + 8), printerNameLen);
 	LLOGLN(10, ("printer_process_update_printer_event: %s %d", printerName, configDataLen));
 	printer_save_data(printerName, data + 8 + printerNameLen, configDataLen);
-	free(printerName);
+	xfree(printerName);
+	freerdp_uniconv_free(uniconv);
 
 	return 0;
 }
@@ -137,21 +136,20 @@ printer_process_delete_printer_event(SERVICE * srv, const char * data, int data_
 {
 	uint32 printerNameLen;
 	char * printerName;
-	uint32 size;
 	char * filename;
+	UNICONV * uniconv;
 
 	printerNameLen = GET_UINT32(data, 0);
 
-	size = printerNameLen * 3 / 2 + 2;
-	printerName = (char *) malloc(size);
-	memset(printerName, 0, size);
-	freerdp_get_wstr(printerName, size, (char *)(data + 4), printerNameLen);
+	uniconv = freerdp_uniconv_new();
+	printerName = freerdp_uniconv_in(uniconv, (unsigned char*) (data + 4), printerNameLen);
+	freerdp_uniconv_free(uniconv);
 
 	filename = printer_get_filename(printerName);
 	remove(filename);
 	LLOGLN(0, ("printer_process_delete_printer_event: %s deleted", filename));
 	free(filename);
-	free(printerName);
+	xfree(printerName);
 
 	return 0;
 }
@@ -243,9 +241,11 @@ printer_register(PDEVMAN pDevman, PDEVMAN_ENTRY_POINTS pEntryPoints, SERVICE * s
 	uint32 flags;
 	int size;
 	int offset;
-	int len;
+	size_t len;
+	char * s;
 	char * cache_data;
 	int cache_data_len;
+	UNICONV * uniconv;
 
 	LLOGLN(0, ("printer_register: %s (default=%d)", name, is_default));
 
@@ -271,15 +271,23 @@ printer_register(PDEVMAN pDevman, PDEVMAN_ENTRY_POINTS pEntryPoints, SERVICE * s
 	if (is_default)
 		flags |= RDPDR_PRINTER_ANNOUNCE_FLAG_DEFAULTPRINTER;
 
+	uniconv = freerdp_uniconv_new();
+
 	SET_UINT32 (dev->data, 0, flags); /* Flags */
 	SET_UINT32 (dev->data, 4, 0); /* CodePage, reserved */
 	SET_UINT32 (dev->data, 8, 0); /* PnPNameLen */
 	SET_UINT32 (dev->data, 20, cache_data_len); /* CachedFieldsLen */
 	offset = 24;
-	len = freerdp_set_wstr(&dev->data[offset], size - offset, (char *) driver, strlen(driver) + 1);
+	s = freerdp_uniconv_out(uniconv, (char *) driver, &len);
+	memcpy(&dev->data[offset], s, len);
+	xfree(s);
+	len += 2;
 	SET_UINT32 (dev->data, 12, len); /* DriverNameLen */
 	offset += len;
-	len = freerdp_set_wstr(&dev->data[offset], size - offset, (char *) name, strlen(name) + 1);
+	s = freerdp_uniconv_out(uniconv, (char *) name, &len);
+	memcpy(&dev->data[offset], s, len);
+	xfree(s);
+	len += 2;
 	SET_UINT32 (dev->data, 16, len); /* PrintNameLen */
 	offset += len;
 	if (cache_data)
@@ -290,6 +298,8 @@ printer_register(PDEVMAN pDevman, PDEVMAN_ENTRY_POINTS pEntryPoints, SERVICE * s
 	}
 
 	dev->data_len = offset;
+
+	freerdp_uniconv_free(uniconv);
 
 	return 0;
 }

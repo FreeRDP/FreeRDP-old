@@ -23,7 +23,6 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <alsa/asoundlib.h>
-#include "wait_obj.h"
 #include "tsmf_audio.h"
 
 typedef struct _TSMFALSAAudioDevice

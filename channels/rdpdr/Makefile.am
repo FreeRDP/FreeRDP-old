@@ -14,12 +14,12 @@ rdpdr_la_SOURCES = \
 	irp.c irp.h \
 	irp_queue.c irp_queue.h
 
-rdpdr_la_CFLAGS = -I$(top_srcdir)/include -I$(srcdir)/../common \
+rdpdr_la_CFLAGS = -I$(top_srcdir)/include \
 	-DPLUGIN_PATH=\"$(PLUGIN_PATH)\"
 
 rdpdr_la_LDFLAGS = -avoid-version -module
 
-rdpdr_la_LIBADD = ../common/libcommon.la
+rdpdr_la_LIBADD = ../../libfreerdputils/libfreerdputils.la
 
 # extra
 EXTRA_DIST =

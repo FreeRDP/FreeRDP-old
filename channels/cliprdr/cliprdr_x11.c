@@ -38,8 +38,7 @@
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
 #include <freerdp/types_ui.h>
-#include "chan_stream.h"
-#include "wait_obj.h"
+#include <freerdp/utils.h>
 #include "cliprdr_main.h"
 
 #define LOG_LEVEL 1

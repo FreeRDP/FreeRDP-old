@@ -21,7 +21,7 @@
 #include <string.h>
 #include <netdb.h>
 #include <unistd.h>
-#include "wait_obj.h"
+#include <freerdp/utils.h>
 
 #define LOG_LEVEL 1
 #define LLOG(_level, _args) \
