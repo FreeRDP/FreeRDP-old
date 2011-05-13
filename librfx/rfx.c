@@ -111,6 +111,39 @@ rfx_process_message_channels(RFX_CONTEXT * context, unsigned char * data, int da
 		numChannels, channelId, context->width, context->height);
 }
 
+static void
+rfx_process_message_context(RFX_CONTEXT * context, unsigned char * data, int data_size)
+{
+	int codecId;
+	int channelId;
+	int ctxId;
+	int tileSize;
+	unsigned int properties;
+
+	codecId = GET_UINT8(data, 0);
+	channelId = GET_UINT8(data, 1);
+	ctxId = GET_UINT8(data, 2);
+	tileSize = GET_UINT16(data, 3);
+	properties = GET_UINT16(data, 5);
+	printf("rfx_process_message_context: codec %d channel %d ctx %d tileSize %d properties 0x%X.\n",
+		codecId, channelId, ctxId, tileSize, properties);
+
+	switch ((properties & 0x1e00) >> 9)
+	{
+		case CLW_ENTROPY_RLGR1:
+			context->mode = RLGR1;
+			printf("rfx_process_message_context: RLGR1.\n");
+			break;
+		case CLW_ENTROPY_RLGR3:
+			context->mode = RLGR3;
+			printf("rfx_process_message_context: RLGR3.\n");
+			break;
+		default:
+			printf("rfx_process_message_context: unknown RLGR algorithm.\n");
+			break;
+	}
+}
+
 RFX_MESSAGE *
 rfx_process_message(RFX_CONTEXT * context, unsigned char * data, int data_size)
 {
@@ -139,6 +172,10 @@ rfx_process_message(RFX_CONTEXT * context, unsigned char * data, int data_size)
 
 			case WBT_CHANNELS:
 				rfx_process_message_channels(context, data + 6, blockLen - 6);
+				break;
+
+			case WBT_CONTEXT:
+				rfx_process_message_context(context, data + 6, blockLen - 6);
 				break;
 
 			default:
