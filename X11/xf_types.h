@@ -59,7 +59,6 @@ struct xf_info
 	int keyboard_layout_id;
 	int decoration;
 	char window_title[64];
-	int codec;
 
 	/* X11 stuff */
 	Window embed;
@@ -98,6 +97,10 @@ struct xf_info
 	int xv_shmid;
 	char * xv_shmaddr;
 	uint32 * xv_pixfmts;
+
+	/* RemoteFX */
+	int codec;
+	void * rfx_context;
 };
 typedef struct xf_info xfInfo;
 

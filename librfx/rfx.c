@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <freerdp/utils.h>
 #include "rfx_decode.h"
 #include "rfx.h"
 
@@ -46,5 +47,35 @@ rfx_context_free(RFX_CONTEXT * context)
 	if (context->quants)
 		free(context->quants);
 	free(context);
+}
+
+RFX_MESSAGE *
+rfx_process_message(RFX_CONTEXT * context, unsigned char * data, int data_size)
+{
+	RFX_MESSAGE * message;
+	unsigned int blockType;
+	int size;
+
+	message = (RFX_MESSAGE *) malloc(sizeof(RFX_MESSAGE));
+	memset(message, 0, sizeof(RFX_MESSAGE));
+
+	return message;
+}
+
+void
+rfx_message_free(RFX_MESSAGE * message)
+{
+	int i;
+
+	if (message->tiles)
+	{
+		for (i = 0; i < message->num_tiles; i++)
+		{
+			if (message->tiles[i].data)
+				free(message->tiles[i].data);
+		}
+		free(message->tiles);
+	}
+	free(message);
 }
 

@@ -21,6 +21,10 @@
 #define __XF_DECODE_H
 
 void
+xf_decode_init(xfInfo * xfi);
+void
+xf_decode_uninit(xfInfo * xfi);
+void
 xf_decode_data(xfInfo * xfi, uint8 * data, int data_size);
 
 #endif

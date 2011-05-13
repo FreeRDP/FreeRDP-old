@@ -25,13 +25,38 @@
 #include "xf_types.h"
 #include "xf_decode.h"
 
-static void
-xf_decode_frame(xfInfo * xfi, uint8 * bitmapData, uint32 bitmapDataLength)
+void
+xf_decode_init(xfInfo * xfi)
 {
 	switch (xfi->codec)
 	{
 		case XF_CODEC_REMOTEFX:
+			xfi->rfx_context = rfx_context_new();
+			break;
+
+		default:
+			break;
+	}
+}
+
+void
+xf_decode_uninit(xfInfo * xfi)
+{
+	if (xfi->rfx_context)
+		rfx_context_free((RFX_CONTEXT *) xfi->rfx_context);
+}
+
+static void
+xf_decode_frame(xfInfo * xfi, uint8 * bitmapData, uint32 bitmapDataLength)
+{
+	RFX_MESSAGE * message;
+
+	switch (xfi->codec)
+	{
+		case XF_CODEC_REMOTEFX:
 			printf("xf_decode_frame: RemoteFX frame size %d.\n", bitmapDataLength);
+			message = rfx_process_message((RFX_CONTEXT *) xfi->rfx_context, bitmapData, bitmapDataLength);
+			rfx_message_free(message);
 			break;
 
 		default:

@@ -22,10 +22,30 @@
 
 typedef struct _RFX_CONTEXT RFX_CONTEXT;
 
+typedef struct _RFX_TILE RFX_TILE;
+struct _RFX_TILE
+{
+	int x;
+	int y;
+	unsigned char * data;
+};
+
+typedef struct _RFX_MESSAGE RFX_MESSAGE;
+struct _RFX_MESSAGE
+{
+	int num_tiles;
+	RFX_TILE * tiles;
+};
+
 RFX_CONTEXT *
 rfx_context_new(void);
 void
 rfx_context_free(RFX_CONTEXT * context);
+
+RFX_MESSAGE *
+rfx_process_message(RFX_CONTEXT * context, unsigned char * data, int data_size);
+void
+rfx_message_free(RFX_MESSAGE * message);
 
 #endif
 
