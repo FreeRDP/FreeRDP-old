@@ -113,16 +113,16 @@ surface_cmd(rdpRdp * rdp, STREAM s)
 		//printf("  surface_cmd: %d\n", cmdType);
 		switch (cmdType)
 		{
-			case 4: /* CMDTYPE_FRAME_MARKER */
+			case CMDTYPE_FRAME_MARKER:
 				in_uint16_le(s, frameAction);
 				in_uint32_le(s, frameId);
 				//printf("    surface_cmd: CMDTYPE_FRAME_MARKER %d %d\n", frameAction, frameId);
-				if (frameAction == 1)
+				if (frameAction == SURFACECMD_FRAMEACTION_END)
 				{
 					rdp_send_frame_ack(rdp, frameId);
 				}
 				break;
-			case 6: /* CMDTYPE_STREAM_SURFACE_BITS */
+			case CMDTYPE_STREAM_SURFACE_BITS:
 				in_uint16_le(s, destLeft);
 				in_uint16_le(s, destTop);
 				in_uint16_le(s, destRight);

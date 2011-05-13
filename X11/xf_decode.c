@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <freerdp/utils.h>
 #include <librfx/rfx.h>
 #include "xf_types.h"
 #include "xf_decode.h"
