@@ -54,7 +54,7 @@ xf_decode_frame(xfInfo * xfi, uint8 * bitmapData, uint32 bitmapDataLength)
 	switch (xfi->codec)
 	{
 		case XF_CODEC_REMOTEFX:
-			printf("xf_decode_frame: RemoteFX frame size %d.\n", bitmapDataLength);
+			//printf("xf_decode_frame: RemoteFX frame size %d.\n", bitmapDataLength);
 			message = rfx_process_message((RFX_CONTEXT *) xfi->rfx_context, bitmapData, bitmapDataLength);
 			rfx_message_free(message);
 			break;

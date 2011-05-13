@@ -20,6 +20,11 @@
 #ifndef __RFX_CONSTANTS_H
 #define __RFX_CONSTANTS_H
 
+/* sync */
+
+#define WF_MAGIC        0xCACCACCA
+#define WF_VERSION_1_0  0x0100
+
 /* blockType */
 #define WBT_SYNC            0xCCC0
 #define WBT_CODEC_VERSIONS  0xCCC1

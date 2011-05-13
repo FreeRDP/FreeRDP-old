@@ -21,11 +21,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <freerdp/utils.h>
+#include "rfx_constants.h"
 #include "rfx_decode.h"
 #include "rfx.h"
 
 struct _RFX_CONTEXT
 {
+	unsigned int version;
 	int flags;
 	RLGR_MODE mode;
 	int * quants;
@@ -49,6 +51,26 @@ rfx_context_free(RFX_CONTEXT * context)
 	free(context);
 }
 
+static void
+rfx_process_message_sync(RFX_CONTEXT * context, unsigned char * data, int data_size)
+{
+	unsigned int magic;
+
+	magic = GET_UINT32(data, 0);
+	if (magic != WF_MAGIC)
+	{
+		printf("rfx_process_message_sync: invalid magic number 0x%X\n", magic);
+		return;
+	}
+	context->version = GET_UINT16(data, 4);
+	if (context->version != WF_VERSION_1_0)
+	{
+		printf("rfx_process_message_sync: unknown version number 0x%X\n", context->version);
+		return;
+	}
+	printf("rfx_process_message_sync: version 0x%X\n", context->version);
+}
+
 RFX_MESSAGE *
 rfx_process_message(RFX_CONTEXT * context, unsigned char * data, int data_size)
 {
@@ -63,7 +85,18 @@ rfx_process_message(RFX_CONTEXT * context, unsigned char * data, int data_size)
 	{
 		blockType = GET_UINT16(data, 0);
 		blockLen = GET_UINT32(data, 2);
-		printf("rfx_process_message: blockType 0x%X blockLen %d\n", blockType, blockLen);
+		//printf("rfx_process_message: blockType 0x%X blockLen %d\n", blockType, blockLen);
+
+		switch (blockType)
+		{
+			case WBT_SYNC:
+				rfx_process_message_sync(context, data + 6, blockLen - 6);
+				break;
+
+			default:
+				printf("rfx_process_message: unknown blockType 0x%X\n", blockType);
+				break;
+		}
 
 		data_size -= blockLen;
 		data += blockLen;
