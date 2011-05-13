@@ -30,6 +30,8 @@ struct _RFX_CONTEXT
 	unsigned int version;
 	unsigned int codec_id;
 	unsigned int codec_version;
+	int width;
+	int height;
 	int flags;
 	RLGR_MODE mode;
 	int * quants;
@@ -90,6 +92,25 @@ rfx_process_message_codec_versions(RFX_CONTEXT * context, unsigned char * data, 
 		context->codec_id, context->codec_version);
 }
 
+static void
+rfx_process_message_channels(RFX_CONTEXT * context, unsigned char * data, int data_size)
+{
+	int numChannels;
+	int channelId;
+
+	numChannels = GET_UINT8(data, 0);
+	if (numChannels < 1)
+	{
+		printf("rfx_process_message_channels: no channel.\n");
+		return;
+	}
+	channelId = GET_UINT8(data, 1);
+	context->width = GET_UINT16(data, 2);
+	context->height = GET_UINT16(data, 4);
+	printf("rfx_process_message_channels: numChannels %d id %d, %dx%d.\n",
+		numChannels, channelId, context->width, context->height);
+}
+
 RFX_MESSAGE *
 rfx_process_message(RFX_CONTEXT * context, unsigned char * data, int data_size)
 {
@@ -114,6 +135,10 @@ rfx_process_message(RFX_CONTEXT * context, unsigned char * data, int data_size)
 
 			case WBT_CODEC_VERSIONS:
 				rfx_process_message_codec_versions(context, data + 6, blockLen - 6);
+				break;
+
+			case WBT_CHANNELS:
+				rfx_process_message_channels(context, data + 6, blockLen - 6);
 				break;
 
 			default:
