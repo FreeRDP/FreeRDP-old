@@ -86,6 +86,12 @@ char* freerdp_uniconv_out(UNICONV *uniconv, char *str, size_t *pout_len);
 /* stream macros */
 
 #define GET_UINT8(_p1, _offset) *(((uint8 *) _p1) + _offset)
+#define GET_UINT8A(_dest, _src, _offset, _len) ( \
+	memcpy( \
+	((void *) _dest), \
+	((const void *) (_src + _offset)), \
+	((size_t) _len) \
+	))
 #define GET_UINT16(_p1, _offset) ( \
 	(uint16) (*(((uint8 *) _p1) + _offset)) + \
 	((uint16) (*(((uint8 *) _p1) + _offset + 1)) << 8))
@@ -105,6 +111,18 @@ char* freerdp_uniconv_out(UNICONV *uniconv, char *str, size_t *pout_len);
 	((uint64) (*(((uint8 *) _p1) + _offset + 7)) << 56))
 
 #define SET_UINT8(_p1, _offset, _value) *(((uint8 *) _p1) + _offset) = (uint8) (_value)
+#define SET_UINT8A(_dest, _offset, _src, _len) ( \
+	memcpy( \
+	((void *) (_dest + _offset)), \
+	((const void *) _src), \
+	((size_t) _len) \
+	))
+#define SET_UINT8V(_dest, _offset, _value, _len) ( \
+	memset( \
+	((void *) (_dest + _offset)), \
+	((int) _value), \
+	((size_t) _len) \
+	))
 #define SET_UINT16(_p1, _offset, _value) \
 	*(((uint8 *) _p1) + _offset) = (uint8) (((uint16) (_value)) & 0xff), \
 	*(((uint8 *) _p1) + _offset + 1) = (uint8) ((((uint16) (_value)) >> 8) & 0xff)

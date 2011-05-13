@@ -31,6 +31,9 @@
 #include "devman.h"
 #include "irp.h"
 #include "irp_queue.h"
+#include "config.h"
+
+#include "rdpdr_scard.h"
 
 #define MAX(x,y)             (((x) > (y)) ? (x) : (y))
 
@@ -207,6 +210,11 @@ rdpdr_send_device_list_announce_request(rdpdrPlugin * plugin)
 	{
 		pdev = devman_get_next(plugin->devman);
 
+		/* [MS-RDPEFS] 2.2.1.3 Device Announce Header
+		For a smart card device, the DeviceDataLength field MUST be set to zero. */
+		if (pdev->service->type == RDPDR_DTYP_SMARTCARD)
+			pdev->data_len = 0;
+
 		size += 20 + pdev->data_len;
 		out_data = realloc(out_data, size);
 
@@ -214,8 +222,12 @@ rdpdr_send_device_list_announce_request(rdpdrPlugin * plugin)
 		SET_UINT32(out_data, offset + 4, pdev->id); /* deviceID */
 		offset += 8;
 
-		/* preferredDosName, Max 8 characters, may not be null terminated */
-		strncpy(&out_data[offset], pdev->name, 8);
+		/* We've got to use "SCARD" as the redirection name. It is not documented though */
+		if (pdev->service->type == RDPDR_DTYP_SMARTCARD)
+			strncpy(&out_data[offset], "SCARD", 8);
+		else /* preferredDosName, Max 8 characters, may not be null terminated */
+			strncpy(&out_data[offset], pdev->name, 8);
+
 		for (i = 0; i < 8; i++)
 		{
 			if (out_data[offset + i] < 0)
@@ -450,6 +462,7 @@ rdpdr_process_irp(rdpdrPlugin * plugin, char* data, int data_size)
 	switch (irp.dev->service->type)
 	{
 		case RDPDR_DTYP_SERIAL:
+		case RDPDR_DTYP_SMARTCARD:
 			irp.rwBlocking = 0;
 			break;
 
@@ -460,10 +473,6 @@ rdpdr_process_irp(rdpdrPlugin * plugin, char* data, int data_size)
 			break;
 
 		case RDPDR_DTYP_FILESYSTEM:
-			irp.rwBlocking = 1;
-			break;
-
-		case RDPDR_DTYP_SMARTCARD:
 			irp.rwBlocking = 1;
 			break;
 
@@ -556,6 +565,11 @@ rdpdr_process_irp(rdpdrPlugin * plugin, char* data, int data_size)
 	{
 		LLOGLN(10, ("IRP enqueue event"));
 		irp_queue_push(plugin->queue, &irp);
+	}
+	else if (irp.ioStatus == (RD_STATUS_PENDING | 0xC0000000)) /* smart card */
+	{
+		irp.ioStatus = RD_STATUS_PENDING; /* this is going to be handled by the smart card plugin */
+		LLOGLN(10, ("smart card irp must not be stored into plgugin->queue"));
 	}
 	else if (irp.ioStatus != RD_STATUS_PENDING)
 	{
@@ -658,6 +672,7 @@ thread_process_message(rdpdrPlugin * plugin, char * data, int data_size)
 	uint16 packetID;
 	uint32 deviceID;
 	uint32 status;
+	SERVICE * scard_srv;
 
 	component = GET_UINT16(data, 0);
 	packetID = GET_UINT16(data, 2);
@@ -685,15 +700,19 @@ thread_process_message(rdpdrPlugin * plugin, char * data, int data_size)
 				LLOGLN(10, ("PAKID_CORE_CLIENTID_CONFIRM"));
 				rdpdr_process_server_clientid_confirm(plugin, &data[4], data_size - 4);
 
+				scard_srv = devman_get_service_by_type(plugin->devman, RDPDR_DTYP_SMARTCARD);
+
 				/* versionMinor 0x0005 doesn't send PAKID_CORE_USER_LOGGEDON,
 					so we have to send it here */
-				if (plugin->versionMinor == 0x0005)
+				if (plugin->versionMinor == 0x0005 || scard_srv)
 					rdpdr_send_device_list_announce_request(plugin);
 				break;
 
 			case PAKID_CORE_USER_LOGGEDON:
 				LLOGLN(10, ("PAKID_CORE_USER_LOGGEDON"));
-				rdpdr_send_device_list_announce_request(plugin);
+				scard_srv = devman_get_service_by_type(plugin->devman, RDPDR_DTYP_SMARTCARD);
+				if (!scard_srv)
+					rdpdr_send_device_list_announce_request(plugin);
 				break;
 
 			case PAKID_CORE_DEVICE_REPLY:
@@ -781,10 +800,25 @@ thread_func(void * arg)
 	rdpdrPlugin * plugin;
 	struct wait_obj * listobj[2];
 	int numobj;
+	SERVICE * scard_srv;
+
+	if (arg == NULL)
+	{
+		LLOGLN(0, ("thread_func: arg is null"));
+		return NULL;
+	}
 
 	plugin = (rdpdrPlugin *) arg;
 	plugin->queue = irp_queue_new();
 	plugin->thread_status = 1;
+
+	scard_srv = devman_get_service_by_type(plugin->devman, RDPDR_DTYP_SMARTCARD);
+	if (scard_srv)
+	{
+		if (scard_srv->create(NULL, NULL) == RD_STATUS_SUCCESS)
+			pthread_create(&scard_thread, NULL, &rdpdr_scard_finished_scanner, plugin);
+	}
+
 	LLOGLN(10, ("thread_func: in"));
 
 	while (1)
@@ -814,12 +848,15 @@ thread_func(void * arg)
 			thread_process_data(plugin);
 		}
 
-		rdpdr_check_fds(plugin);
-
-		if (irp_queue_size(plugin->queue))
+		if (!scard_srv)
 		{
-			rdpdr_abort_ios(plugin);
-/*			wait_obj_set(plugin->data_in_event);*/
+			rdpdr_check_fds(plugin);
+
+			if (irp_queue_size(plugin->queue))
+			{
+				rdpdr_abort_ios(plugin);
+/*				wait_obj_set(plugin->data_in_event);*/
+			}
 		}
 	}
 
@@ -1009,6 +1046,7 @@ VirtualChannelEntry(PCHANNEL_ENTRY_POINTS pEntryPoints)
 	devman_load_device_service(plugin->devman, "printer");
 	devman_load_device_service(plugin->devman, "serial");
 	devman_load_device_service(plugin->devman, "parallel");
+	devman_load_device_service(plugin->devman, "scard");
 
 	plugin->ep.pVirtualChannelInit(&plugin->chan_plugin.init_handle, &plugin->channel_def, 1,
 		VIRTUAL_CHANNEL_VERSION_WIN2000, InitEvent);

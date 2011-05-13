@@ -31,6 +31,8 @@
 #include <fnmatch.h>
 #include <utime.h>
 
+#include "config.h"
+
 #ifdef HAVE_SYS_VFS_H
 #include <sys/vfs.h>
 #endif
