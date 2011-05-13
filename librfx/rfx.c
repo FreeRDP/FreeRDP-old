@@ -28,6 +28,8 @@
 struct _RFX_CONTEXT
 {
 	unsigned int version;
+	unsigned int codec_id;
+	unsigned int codec_version;
 	int flags;
 	RLGR_MODE mode;
 	int * quants;
@@ -71,6 +73,23 @@ rfx_process_message_sync(RFX_CONTEXT * context, unsigned char * data, int data_s
 	printf("rfx_process_message_sync: version 0x%X\n", context->version);
 }
 
+static void
+rfx_process_message_codec_versions(RFX_CONTEXT * context, unsigned char * data, int data_size)
+{
+	int numCodecs;
+
+	numCodecs = GET_UINT8(data, 0);
+	if (numCodecs < 1)
+	{
+		printf("rfx_process_message_codec_versions: no version.\n");
+		return;
+	}
+	context->codec_id = GET_UINT8(data, 1);
+	context->codec_version = GET_UINT16(data, 2);
+	printf("rfx_process_message_codec_versions: id %d version 0x%X.\n",
+		context->codec_id, context->codec_version);
+}
+
 RFX_MESSAGE *
 rfx_process_message(RFX_CONTEXT * context, unsigned char * data, int data_size)
 {
@@ -91,6 +110,10 @@ rfx_process_message(RFX_CONTEXT * context, unsigned char * data, int data_size)
 		{
 			case WBT_SYNC:
 				rfx_process_message_sync(context, data + 6, blockLen - 6);
+				break;
+
+			case WBT_CODEC_VERSIONS:
+				rfx_process_message_codec_versions(context, data + 6, blockLen - 6);
 				break;
 
 			default:
