@@ -128,6 +128,12 @@ rfx_process_message_context(RFX_CONTEXT * context, unsigned char * data, int dat
 	printf("rfx_process_message_context: codec %d channel %d ctx %d tileSize %d properties 0x%X.\n",
 		codecId, channelId, ctxId, tileSize, properties);
 
+	context->flags = (properties & 0x0007);
+	if (context->flags == CODEC_MODE)
+		printf("rfx_process_message_context: codec in image mode.\n");
+	else
+		printf("rfx_process_message_context: codec in video mode.\n");
+
 	switch ((properties & 0x1e00) >> 9)
 	{
 		case CLW_ENTROPY_RLGR1:
