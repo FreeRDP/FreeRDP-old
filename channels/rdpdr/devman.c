@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "rdpdr_scard.h"
 #include "config.h"
 #include "rdpdr_types.h"
 #include "rdpdr_constants.h"
@@ -104,6 +105,9 @@ devman_unregister_service(DEVMAN* devman, SERVICE* srv)
 		{
 			devman_unregister_device(devman, pdev);
 			devman_rewind(devman);
+
+			if (pdev->service->type == RDPDR_DTYP_SMARTCARD)
+				pthread_cancel(scard_thread);
 		}
 	}
 
