@@ -54,10 +54,20 @@ rfx_process_message(RFX_CONTEXT * context, unsigned char * data, int data_size)
 {
 	RFX_MESSAGE * message;
 	unsigned int blockType;
-	int size;
+	unsigned int blockLen;
 
 	message = (RFX_MESSAGE *) malloc(sizeof(RFX_MESSAGE));
 	memset(message, 0, sizeof(RFX_MESSAGE));
+
+	while (data_size > 0)
+	{
+		blockType = GET_UINT16(data, 0);
+		blockLen = GET_UINT32(data, 2);
+		printf("rfx_process_message: blockType 0x%X blockLen %d\n", blockType, blockLen);
+
+		data_size -= blockLen;
+		data += blockLen;
+	}
 
 	return message;
 }
