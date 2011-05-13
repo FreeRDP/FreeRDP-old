@@ -46,6 +46,7 @@ struct _RFX_CONTEXT
 	/* temporary data within a frame */
 	int num_rects;
 	RFX_RECT * rects;
+	int num_quants;
 	int * quants;
 };
 
@@ -194,12 +195,105 @@ rfx_process_message_region(RFX_CONTEXT * context, unsigned char * data, int data
 	}
 }
 
+static void
+rfx_process_message_tile(RFX_CONTEXT * context, RFX_MESSAGE * message, unsigned char * data, int data_size)
+{
+	int quantIdxY, quantIdxCb, quantIdxCr;
+	int xIdx, yIdx;
+	int YLen, CbLen, CrLen;
+
+	quantIdxY = GET_UINT8(data, 0);
+	quantIdxCb = GET_UINT8(data, 1);
+	quantIdxCr = GET_UINT8(data, 2);
+	xIdx = GET_UINT16(data, 3);
+	yIdx = GET_UINT16(data, 5);
+	YLen = GET_UINT16(data, 7);
+	CbLen = GET_UINT16(data, 9);
+	CrLen = GET_UINT16(data, 11);
+	printf("rfx_process_message_tile: %d %d %d %d %d %d %d %d\n",
+		quantIdxY, quantIdxCb, quantIdxCr, xIdx, yIdx, YLen, CbLen, CrLen);
+}
+
+static void
+rfx_process_message_tileset(RFX_CONTEXT * context, RFX_MESSAGE * message, unsigned char * data, int data_size)
+{
+	int numTiles;
+	unsigned int tileDataSize;
+	int i;
+	unsigned int blockType;
+	unsigned int blockLen;
+
+	context->num_quants = GET_UINT8(data, 4);
+	if (context->num_quants < 1)
+	{
+		printf("rfx_process_message_tileset: no quantization value.\n");
+		return;
+	}
+	numTiles = GET_UINT16(data, 6);
+	if (numTiles < 1)
+	{
+		printf("rfx_process_message_tileset: no tiles.\n");
+		return;
+	}
+	tileDataSize = GET_UINT32(data, 8);
+
+	data += 12;
+	data_size -= 12;
+
+	if (context->quants)
+		free(context->quants);
+	context->quants = (int *) malloc(context->num_quants * 10 * sizeof(int));
+	for (i = 0; i < context->num_quants && data_size > 0; i++)
+	{
+		context->quants[i * 10] = (data[0] & 0x0f);
+		context->quants[i * 10 + 1] = (data[0] >> 4);
+		context->quants[i * 10 + 2] = (data[1] & 0x0f);
+		context->quants[i * 10 + 3] = (data[1] >> 4);
+		context->quants[i * 10 + 4] = (data[2] & 0x0f);
+		context->quants[i * 10 + 5] = (data[2] >> 4);
+		context->quants[i * 10 + 6] = (data[3] & 0x0f);
+		context->quants[i * 10 + 7] = (data[3] >> 4);
+		context->quants[i * 10 + 8] = (data[4] & 0x0f);
+		context->quants[i * 10 + 9] = (data[4] >> 4);
+		printf("rfx_process_message_tileset: quant %d (%d %d %d %d %d %d %d %d %d %d).\n",
+			i, context->quants[i * 10], context->quants[i * 10 + 1],
+			context->quants[i * 10 + 2], context->quants[i * 10 + 3],
+			context->quants[i * 10 + 4], context->quants[i * 10 + 5],
+			context->quants[i * 10 + 6], context->quants[i * 10 + 7],
+			context->quants[i * 10 + 8], context->quants[i * 10 + 9]);
+
+		data += 5;
+		data_size -= 5;
+	}
+
+	for (i = 0; i < numTiles && data_size > 0; i++)
+	{
+		blockType = GET_UINT16(data, 0);
+		blockLen = GET_UINT32(data, 2);
+
+		switch (blockType)
+		{
+			case CBT_TILE:
+				rfx_process_message_tile(context, message, data + 6, blockLen - 6);
+				break;
+
+			default:
+				printf("rfx_process_message_tileset: unknown block type 0x%X\n", blockType);
+				break;
+		}
+
+		data_size -= blockLen;
+		data += blockLen;
+	}
+}
+
 RFX_MESSAGE *
 rfx_process_message(RFX_CONTEXT * context, unsigned char * data, int data_size)
 {
 	RFX_MESSAGE * message;
 	unsigned int blockType;
 	unsigned int blockLen;
+	unsigned int subtype;
 
 	message = (RFX_MESSAGE *) malloc(sizeof(RFX_MESSAGE));
 	memset(message, 0, sizeof(RFX_MESSAGE));
@@ -235,6 +329,19 @@ rfx_process_message(RFX_CONTEXT * context, unsigned char * data, int data_size)
 
 			case WBT_REGION:
 				rfx_process_message_region(context, data + 6, blockLen - 6);
+				break;
+
+			case WBT_EXTENSION:
+				subtype = GET_UINT16(data, 8);
+				switch (subtype)
+				{
+					case CBT_TILESET:
+						rfx_process_message_tileset(context, message, data + 10, blockLen - 10);
+						break;
+					default:
+						printf("rfx_process_message: unknown subtype 0x%X\n", subtype);
+						break;
+				}
 				break;
 
 			default:
