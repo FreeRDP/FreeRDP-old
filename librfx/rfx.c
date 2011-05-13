@@ -34,6 +34,8 @@ struct _RFX_CONTEXT
 	int height;
 	int flags;
 	RLGR_MODE mode;
+
+	/* temporary data within a frame */
 	int * quants;
 };
 
@@ -182,6 +184,11 @@ rfx_process_message(RFX_CONTEXT * context, unsigned char * data, int data_size)
 
 			case WBT_CONTEXT:
 				rfx_process_message_context(context, data + 6, blockLen - 6);
+				break;
+
+			case WBT_FRAME_BEGIN:
+			case WBT_FRAME_END:
+				/* Can be ignored. */
 				break;
 
 			default:
