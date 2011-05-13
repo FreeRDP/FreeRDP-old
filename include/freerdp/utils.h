@@ -28,6 +28,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stddef.h>
+#include <freerdp/types_base.h>
 
 /* semaphore utils */
 
