@@ -25,9 +25,53 @@
 #include "xf_types.h"
 #include "xf_decode.h"
 
+static void
+xf_decode_frame(xfInfo * xfi, uint8 * bitmapData, uint32 bitmapDataLength)
+{
+	switch (xfi->codec)
+	{
+		case XF_CODEC_REMOTEFX:
+			printf("xf_decode_frame: RemoteFX frame size %d.\n", bitmapDataLength);
+			break;
+
+		default:
+			printf("xf_decode_frame: no codec defined.\n");
+			break;
+	}
+}
+
 void
 xf_decode_data(xfInfo * xfi, uint8 * data, int data_size)
 {
-	printf("xf_decode_data: %d\n", data_size);
+	uint16 cmdType;
+	uint32 bitmapDataLength;
+	int size;
+
+	///printf("xf_decode_data: %d\n", data_size);
+	while (data_size > 0)
+	{
+		cmdType = GET_UINT16(data, 0);
+		//printf("xf_decode_data: cmdType %d\n", cmdType);
+		switch (cmdType)
+		{
+			case CMDTYPE_SET_SURFACE_BITS:
+			case CMDTYPE_STREAM_SURFACE_BITS:
+				bitmapDataLength = GET_UINT32(data, 18);
+				xf_decode_frame(xfi, data + 22, bitmapDataLength);
+				size = 22 + bitmapDataLength;
+				break;
+
+			case CMDTYPE_FRAME_MARKER:
+				size = 8;
+				break;
+
+			default:
+				printf("xf_decode_data: unknown cmdType %d\n", cmdType);
+				size = 2;
+				break;
+		}
+		data_size -= size;
+		data += size;
+	}
 }
 

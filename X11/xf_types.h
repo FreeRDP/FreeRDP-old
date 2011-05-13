@@ -33,6 +33,12 @@
 #define SET_XFI(_inst, _xfi) (_inst)->param1 = _xfi
 #define GET_XFI(_inst) ((xfInfo *) ((_inst)->param1))
 
+enum
+{
+	XF_CODEC_NONE,
+	XF_CODEC_REMOTEFX
+};
+
 struct xf_km
 {
 	int scancode;
@@ -53,6 +59,7 @@ struct xf_info
 	int keyboard_layout_id;
 	int decoration;
 	char window_title[64];
+	int codec;
 
 	/* X11 stuff */
 	Window embed;
