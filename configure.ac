@@ -19,7 +19,6 @@ AH_TEMPLATE(IPv6, [IPv6])
 AH_TEMPLATE(NEED_ALIGN, [Alignment])
 AH_TEMPLATE(DISABLE_TLS, [Disable TLS encryption])
 AH_TEMPLATE(WITH_XKBFILE, [Use xkbfile for keyboard handling])
-AH_TEMPLATE(WITH_SCARD, [Define if smartcard is enabled])
 AH_TEMPLATE(WITH_DEBUG, [Turn on debugging messages])
 AH_TEMPLATE(WITH_DEBUG_GDI, [Turn on debugging messages])
 AH_TEMPLATE(WITH_DEBUG_NLA, [Turn on debugging messages])
@@ -157,14 +156,14 @@ fi
 #
 # Smartcard
 #
-AC_ARG_ENABLE(smartcard,
-             [  --enable-smartcard	  Enables smart-card support.
-	     ],
-             [
-			  if test "$enableval" = no; then
-				  WITH_SCARD=0
-			  else
-	     	case "$OSTYPE" in
+smartcard="no"
+AC_ARG_WITH(smartcard,
+	[AS_HELP_STRING([--with-smartcard], [Build smart-card sub-plugin])],
+	[
+		if test "$withval" = no; then
+			WITH_SCARD=0
+		else
+			case "$OSTYPE" in
 			darwin*)
 				AC_CHECK_HEADER(PCSC/pcsclite.h, [WITH_SCARD=1], [WITH_SCARD=0])
 				PCSCLITE_CFLAGS=""
@@ -175,33 +174,15 @@ AC_ARG_ENABLE(smartcard,
 					PKG_CHECK_MODULES(PCSCLITE, libpcsclite, [WITH_SCARD=1], [WITH_SCARD=0])
 				fi
 				;;
-		esac
+			esac
 
-		if test x"$WITH_SCARD" = "x1"; then
-			SCARDOBJ="scard.o"
-			CFLAGS="$CFLAGS $PCSCLITE_CFLAGS"
-			LIBS="$LIBS $PCSCLITE_LIBS"
-			AC_DEFINE(WITH_SCARD)
+			if test x"$WITH_SCARD" = "x1"; then
+				AC_SUBST(PCSCLITE_CFLAGS)
+				AC_SUBST(PCSCLITE_LIBS)
+				smartcard="yes"
+			fi
 		fi
-
-		AC_MSG_CHECKING([for old version of PCSC])
-		AC_TRY_LINK([
-			#include <stdlib.h>
-			#ifdef __APPLE__
-			#include <PCSC/wintypes.h>
-			#include <PCSC/winscard.h>
-			#else
-			#include <winscard.h>
-			#endif
-			],
-			[SCardControl(NULL, NULL, 0, NULL, NULL);],
-			[AC_MSG_RESULT(yes) AC_DEFINE(WITH_PCSC120, 1, [old version of PCSC])],
-			[AC_MSG_RESULT(no)]
-		)
-		fi
-             ])
-
-AC_SUBST(SCARDOBJ)
+	])
 
 #
 # Alignment
@@ -878,10 +859,8 @@ AC_ARG_WITH(debug-smartcard,
     [
         if test $withval != "no";
         then
-          if test x"$WITH_SCARD" = "x1"; then
-            AC_DEFINE(WITH_DEBUG_SCARD,1)
-            debug_support=yes
-          fi
+           AC_DEFINE(WITH_DEBUG_SCARD,1)
+           debug_support=yes
         fi
     ])
 
@@ -1040,6 +1019,13 @@ AC_ARG_WITH([dfb],
 		fi
 	])
 
+#
+# Smartcard
+#
+if test x"$smartcard" = "xyes"; then
+	EXTRA_SUBDIRS="$EXTRA_SUBDIRS channels/rdpdr/smartcard"
+fi
+
 AC_SUBST(EXTRA_SUBDIRS)
 
 AC_CONFIG_FILES([
@@ -1077,6 +1063,7 @@ channels/rdpdr/disk/Makefile
 channels/rdpdr/printer/Makefile
 channels/rdpdr/serial/Makefile
 channels/rdpdr/parallel/Makefile
+channels/rdpdr/smartcard/Makefile
 contrib/Makefile
 ])
 
@@ -1100,4 +1087,4 @@ echo "X11          : $x11"
 echo "XVideo       : $xv"
 echo "xkbfile      : $xkbfile"
 echo "DirectFB     : $dfb"
-
+echo "Smart card   : $smartcard"
