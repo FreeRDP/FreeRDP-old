@@ -941,10 +941,10 @@ gdi_ui_mem3blt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int c
  */
 
 static RD_HPALETTE
-gdi_ui_create_palette(struct rdp_inst * inst, RD_HPALETTE palette)
+gdi_ui_create_palette(struct rdp_inst * inst, RD_PALETTE * palette)
 {
 	DEBUG_GDI("gdi_ui_create_palette\n");
-	return (RD_HPALETTE) CreatePalette(palette);
+	return (RD_HPALETTE) CreatePalette((HPALETTE) palette);
 }
 
 /**

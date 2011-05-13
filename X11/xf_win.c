@@ -916,7 +916,7 @@ l_ui_set_default_cursor(struct rdp_inst * inst)
 }
 
 static RD_HPALETTE
-l_ui_create_palette(struct rdp_inst * inst, RD_HPALETTE palette)
+l_ui_create_palette(struct rdp_inst * inst, RD_PALETTE * palette)
 {
 	DEBUG("ui_create_palette:\n");
 	return (RD_HPALETTE) CreatePalette((HPALETTE) palette);

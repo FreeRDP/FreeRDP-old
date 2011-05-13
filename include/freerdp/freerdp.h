@@ -131,7 +131,7 @@ struct rdp_inst
 		int width, int height, uint8 * andmask, uint8 * xormask, int bpp);
 	void (* ui_set_null_cursor)(rdpInst * inst);
 	void (* ui_set_default_cursor)(rdpInst * inst);
-	RD_HPALETTE (* ui_create_palette)(rdpInst * inst, RD_HPALETTE palette);
+	RD_HPALETTE (* ui_create_palette)(rdpInst * inst, RD_PALETTE * palette);
 	void (* ui_set_palette)(rdpInst * inst, RD_HPALETTE palette);
 	void (* ui_move_pointer)(rdpInst * inst, int x, int y);
 	RD_HBITMAP (* ui_create_surface)(rdpInst * inst, int width, int height, RD_HBITMAP old);

@@ -144,7 +144,7 @@ ui_paint_bitmap(rdpInst * inst, int x, int y, int cx, int cy, int width, int hei
 void
 ui_destroy_bitmap(rdpInst * inst, RD_HBITMAP bmp);
 RD_HPALETTE
-ui_create_palette(rdpInst * inst, RD_HPALETTE palette);
+ui_create_palette(rdpInst * inst, RD_PALETTE * palette);
 void
 ui_set_palette(rdpInst * inst, RD_HPALETTE palette);
 void

@@ -935,7 +935,7 @@ l_ui_set_default_cursor(struct rdp_inst * inst)
 }
 
 static RD_HPALETTE
-l_ui_create_palette(struct rdp_inst * inst, RD_HPALETTE palette)
+l_ui_create_palette(struct rdp_inst * inst, RD_PALETTE * palette)
 {
 	RD_PALETTE* opal = (RD_PALETTE*) palette;
 	RD_PALETTE* npal = (RD_PALETTE*) malloc(sizeof(RD_PALETTE));
