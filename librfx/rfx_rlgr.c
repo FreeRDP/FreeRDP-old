@@ -149,7 +149,7 @@ rfx_rlgr_decode(RLGR_MODE mode,
 			int mag;
 
 			/* RL MODE */
-			while (GetBits(1) == 0)
+			while (!rfx_bitstream_eos(bs) && GetBits(1) == 0)
 			{
 				/* we have an RL escape "0", which translates to a run (1<<k) of zeros */
 				WriteZeroes(1 << k);
