@@ -526,7 +526,7 @@ l_rdp_send_input_scancode(rdpInst * inst, RD_BOOL up, RD_BOOL extended, uint8 ke
 }
 
 static int
-l_rdp_send_input_unicode(rdpInst * inst, uint8 character)
+l_rdp_send_input_unicode(rdpInst * inst, uint16 character)
 {
 	rdpRdp * rdp;
 	rdp = RDP_FROM_INST(inst);
