@@ -196,7 +196,7 @@ rfx_process_message_region(RFX_CONTEXT * context, unsigned char * data, int data
 }
 
 static void
-rfx_process_message_tile(RFX_CONTEXT * context, RFX_MESSAGE * message, unsigned char * data, int data_size)
+rfx_process_message_tile(RFX_CONTEXT * context, RFX_TILE * tile, unsigned char * data, int data_size)
 {
 	int quantIdxY, quantIdxCb, quantIdxCr;
 	int xIdx, yIdx;
@@ -212,12 +212,20 @@ rfx_process_message_tile(RFX_CONTEXT * context, RFX_MESSAGE * message, unsigned 
 	CrLen = GET_UINT16(data, 11);
 	printf("rfx_process_message_tile: %d %d %d %d %d %d %d %d\n",
 		quantIdxY, quantIdxCb, quantIdxCr, xIdx, yIdx, YLen, CbLen, CrLen);
+
+	data += 13;
+
+	tile->x = xIdx * 64;
+	tile->y = yIdx * 64;
+	tile->data = rfx_decode_yv12(context->mode,
+		data, YLen, context->quants + (quantIdxY * 10),
+		data + YLen, CbLen, context->quants + (quantIdxCb * 10),
+		data + YLen + CbLen, CrLen, context->quants + (quantIdxCr * 10));
 }
 
 static void
 rfx_process_message_tileset(RFX_CONTEXT * context, RFX_MESSAGE * message, unsigned char * data, int data_size)
 {
-	int numTiles;
 	unsigned int tileDataSize;
 	int i;
 	unsigned int blockType;
@@ -229,8 +237,8 @@ rfx_process_message_tileset(RFX_CONTEXT * context, RFX_MESSAGE * message, unsign
 		printf("rfx_process_message_tileset: no quantization value.\n");
 		return;
 	}
-	numTiles = GET_UINT16(data, 6);
-	if (numTiles < 1)
+	message->num_tiles = GET_UINT16(data, 6);
+	if (message->num_tiles < 1)
 	{
 		printf("rfx_process_message_tileset: no tiles.\n");
 		return;
@@ -266,7 +274,9 @@ rfx_process_message_tileset(RFX_CONTEXT * context, RFX_MESSAGE * message, unsign
 		data_size -= 5;
 	}
 
-	for (i = 0; i < numTiles && data_size > 0; i++)
+	message->tiles = (RFX_TILE *) malloc(message->num_tiles * sizeof(RFX_TILE));
+
+	for (i = 0; i < message->num_tiles && data_size > 0; i++)
 	{
 		blockType = GET_UINT16(data, 0);
 		blockLen = GET_UINT32(data, 2);
@@ -274,7 +284,7 @@ rfx_process_message_tileset(RFX_CONTEXT * context, RFX_MESSAGE * message, unsign
 		switch (blockType)
 		{
 			case CBT_TILE:
-				rfx_process_message_tile(context, message, data + 6, blockLen - 6);
+				rfx_process_message_tile(context, &message->tiles[i], data + 6, blockLen - 6);
 				break;
 
 			default:
