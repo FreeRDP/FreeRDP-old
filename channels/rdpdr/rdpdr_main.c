@@ -817,6 +817,8 @@ thread_func(void * arg)
 	{
 		if (scard_srv->create(NULL, NULL) == RD_STATUS_SUCCESS)
 			pthread_create(&scard_thread, NULL, &rdpdr_scard_finished_scanner, plugin);
+		else
+			scard_srv->control = NULL; /* disallow any smart card operation */
 	}
 
 	LLOGLN(10, ("thread_func: in"));
