@@ -55,6 +55,7 @@ struct rdpdr_plugin
 	uint16 versionMinor;
 	uint16 clientID;
 	DEVMAN* devman;
+	char computerName[256];
 
 	/* Async IO stuff */
 	IRPQueue * queue;
