@@ -21,6 +21,7 @@
 #define __RDPDR_MAIN_H
 
 #include <pthread.h>
+#include <sys/select.h>
 #include <freerdp/utils.h>
 
 #include "rdpdr_types.h"
