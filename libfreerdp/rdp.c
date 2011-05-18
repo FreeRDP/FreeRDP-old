@@ -1654,6 +1654,7 @@ rdp_connect(rdpRdp * rdp)
 	size_t password_encoded_len = 0;
 	uint32 connect_flags = INFO_NORMALLOGON;
 
+	rdp->current_status = 1;
 	if (rdp->settings->bulk_compression)
 	{
 		connect_flags |= INFO_COMPRESSION | PACKET_COMPR_TYPE_64K;

@@ -374,6 +374,7 @@ iso_connect(rdpIso * iso, char *server, char *username, int port)
 	iso->nego->hostname = server;
 	iso->nego->tcp_connected = 0;
 
+	nego_init(iso->nego);
 	if (nego_connect(iso->nego) > 0)
 	{
 		return True;

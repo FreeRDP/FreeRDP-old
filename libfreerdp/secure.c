@@ -1033,6 +1033,7 @@ sec_connect(rdpSec * sec, char *server, char *username, int port)
 {
 	NEGO *nego = sec->mcs->iso->nego;
 
+	sec->licence->licence_issued = 0;
 	if (sec->rdp->settings->nla_security)
 		nego->enabled_protocols[PROTOCOL_NLA] = 1;
 	if (sec->rdp->settings->tls_security)
@@ -1119,6 +1120,7 @@ sec_disconnect(rdpSec * sec)
 	if (sec->tls)
 		tls_free(sec->tls);
 	sec->tls = NULL;
+	sec->tls_connected = 0;
 #endif
 
 	if (sec->rc4_decrypt_key)
