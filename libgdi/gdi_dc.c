@@ -62,6 +62,9 @@ HDC CreateCompatibleDC(HDC hdc)
 	hDC->clip = CreateRectRgn(0, 0, 0, 0);
 	hDC->clip->null = 1;
 	hDC->hwnd = NULL;
+	hDC->alpha = hdc->alpha;
+	hDC->invert = hdc->invert;
+	hDC->rgb555 = hdc->rgb555;
 	return hDC;
 }
 

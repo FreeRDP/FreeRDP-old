@@ -32,15 +32,28 @@ uint16 gdi_get_color_16bpp(HDC hdc, COLORREF color)
 	uint16 color16;
 
 	GetRGB32(r, g, b, color);
-	RGB_888_565(r, g, b);
 
-	if (hdc->invert)
+	if(hdc->rgb555)
 	{
-		color16 = BGR16(r, g, b);
+		if (hdc->invert)
+		{
+			color16 = BGR15(r, g, b);
+		}
+		else
+		{
+			color16 = RGB15(r, g, b);
+		}
 	}
 	else
 	{
-		color16 = RGB16(r, g, b);
+		if (hdc->invert)
+		{
+			color16 = BGR16(r, g, b);
+		}
+		else
+		{
+			color16 = RGB16(r, g, b);
+		}
 	}
 
 	return color16;

@@ -420,9 +420,6 @@ gdi_bitmap_new(GDI *gdi, int width, int height, int bpp, uint8* data)
 	gdi_bmp = (gdi_bitmap*) malloc(sizeof(gdi_bitmap));
 	gdi_bmp->hdc = CreateCompatibleDC(gdi->hdc);
 	
-	gdi_bmp->hdc->alpha = gdi->clrconv->alpha;
-	gdi_bmp->hdc->invert = gdi->clrconv->invert;
-
 	DEBUG_GDI("gdi_bitmap_new: width:%d height:%d bpp:%d\n", width, height, bpp);
 
 	if (data == NULL)
@@ -1144,11 +1141,13 @@ gdi_init(rdpInst * inst, uint32 flags)
 
 	gdi->clrconv = (HCLRCONV) malloc(sizeof(CLRCONV));
 	gdi->clrconv->palette = NULL;
-	gdi->clrconv->alpha = (flags & CLRCONV_ALPHA > 0) ? 1 : 0;
-	gdi->clrconv->invert = (flags & CLRCONV_INVERT > 0) ? 1 : 0;
+	gdi->clrconv->alpha = (flags & CLRCONV_ALPHA) ? 1 : 0;
+	gdi->clrconv->invert = (flags & CLRCONV_INVERT) ? 1 : 0;
+	gdi->clrconv->rgb555 = (flags & CLRCONV_RGB555) ? 1 : 0;
 
 	gdi->hdc->alpha = gdi->clrconv->alpha;
 	gdi->hdc->invert = gdi->clrconv->invert;
+	gdi->hdc->rgb555 = gdi->clrconv->rgb555;
 
 	gdi->primary = gdi_bitmap_new(gdi, gdi->width, gdi->height, gdi->dstBpp, NULL);
 	gdi->primary_buffer = gdi->primary->bitmap->data;

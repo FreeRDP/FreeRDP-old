@@ -225,6 +225,7 @@ struct _DC
 	int bkMode;
 	int alpha;
 	int invert;
+	int rgb555;
 };
 typedef struct _DC DC;
 typedef DC* HDC;

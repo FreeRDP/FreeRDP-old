@@ -140,8 +140,14 @@ uint32 gdi_color_convert_rgb(uint32 srcColor, int srcBpp, int dstBpp, HCLRCONV c
 			dstColor = BGR24(red, green, blue);
 			break;
 		case 16:
-			RGB_888_565(red, green, blue);
-			dstColor = RGB16(red, green, blue);
+			if(clrconv->rgb555)
+			{
+				dstColor = RGB15(red, green, blue);
+			}
+			else
+			{
+				dstColor = RGB16(red, green, blue);
+			}
 			break;
 		case 15:
 			dstColor = RGB15(red, green, blue);
@@ -218,7 +224,14 @@ uint32 gdi_color_convert_bgr(uint32 srcColor, int srcBpp, int dstBpp, HCLRCONV c
 			dstColor = BGR24(red, green, blue);
 			break;
 		case 16:
-			dstColor = BGR16(red, green, blue);
+			if(clrconv->rgb555)
+			{
+				dstColor = BGR15(red, green, blue);
+			}
+			else
+			{
+				dstColor = BGR16(red, green, blue);
+			}
 			break;
 		case 15:
 			dstColor = BGR15(red, green, blue);
@@ -267,6 +280,25 @@ uint8* gdi_image_convert_8bpp(uint8* srcData, uint8* dstData, int width, int hei
 		memcpy(dstData, srcData, width * height);
 		return dstData;
 	}
+	else if (dstBpp == 15 || (dstBpp == 16 && clrconv->rgb555))
+	{
+		if (dstData == NULL)
+			dstData = (uint8*) malloc(width * height * 2);
+		
+		dst16 = (uint16 *) dstData;
+		for (i = width * height; i > 0; i--)
+		{
+			pixel = *srcData;
+			srcData++;
+			red = clrconv->palette->entries[pixel].red;
+			green = clrconv->palette->entries[pixel].green;
+			blue = clrconv->palette->entries[pixel].blue;
+			pixel = RGB15(red, green, blue);
+			*dst16 = pixel;
+			dst16++;
+		}
+		return dstData;
+	}
 	else if (dstBpp == 16)
 	{
 		if (dstData == NULL)
@@ -280,28 +312,7 @@ uint8* gdi_image_convert_8bpp(uint8* srcData, uint8* dstData, int width, int hei
 			red = clrconv->palette->entries[pixel].red;
 			green = clrconv->palette->entries[pixel].green;
 			blue = clrconv->palette->entries[pixel].blue;
-			RGB_888_565(red, green, blue);
 			pixel = RGB16(red, green, blue);
-			*dst16 = pixel;
-			dst16++;
-		}
-		return dstData;
-	}
-	else if (dstBpp == 15)
-	{
-		if (dstData == NULL)
-			dstData = (uint8*) malloc(width * height * 2);
-		
-		dst16 = (uint16 *) dstData;
-		for (i = width * height; i > 0; i--)
-		{
-			pixel = *srcData;
-			srcData++;
-			red = clrconv->palette->entries[pixel].red;
-			green = clrconv->palette->entries[pixel].green;
-			blue = clrconv->palette->entries[pixel].blue;
-			RGB_888_555(red, green, blue);
-			pixel = RGB15(red, green, blue);
 			*dst16 = pixel;
 			dst16++;
 		}
@@ -342,7 +353,7 @@ uint8* gdi_image_convert_15bpp(uint8* srcData, uint8* dstData, int width, int he
 	uint16 *dst16;
 	uint32 *dst32;
 
-	if (dstBpp == 15 || dstBpp == 16)
+	if (dstBpp == 15 || (dstBpp == 16 && clrconv->rgb555))
 	{
 		if (dstData == NULL)
 			dstData = (uint8*) malloc(width * height * 2);
@@ -380,9 +391,9 @@ uint8* gdi_image_convert_15bpp(uint8* srcData, uint8* dstData, int width, int he
 		{
 			pixel = *src16;
 			src16++;
-			GetRGB15(red, green, blue, pixel);
+			GetRGB_555(red, green, blue, pixel);
 			RGB_555_565(red, green, blue);
-			pixel = RGB16(red, green, blue);
+			pixel = RGB565(red, green, blue);
 			*dst16 = pixel;
 			dst16++;
 		}
@@ -402,7 +413,26 @@ uint8* gdi_image_convert_16bpp(uint8* srcData, uint8* dstData, int width, int he
 		if (dstData == NULL)
 			dstData = (uint8*) malloc(width * height * 2);
 
-		memcpy(dstData, srcData, width * height * 2);
+		if(clrconv->rgb555)
+		{
+			int i;
+			uint8 red, green, blue;
+			uint16* src16 = (uint16 *) srcData;
+			uint16* dst16 = (uint16 *) dstData;
+
+			for (i = width * height; i > 0; i--)
+			{
+				GetRGB_565(red, green, blue, (*src16));
+				RGB_565_555(red, green, blue);
+				(*dst16) = RGB555(red, green, blue);
+				src16++;
+				dst16++;
+			}
+		}
+		else
+		{
+			memcpy(dstData, srcData, width * height * 2);
+		}
 
 		return dstData;
 	}
@@ -514,7 +544,6 @@ uint8* gdi_image_convert_32bpp(uint8* srcData, uint8* dstData, int width, int he
 		for (index = 0; index < width * height; index++)
 		{
 			GetBGR32(blue, green, red, *src32);
-			RGB_888_565(red, green, blue);
 			*dst16 = RGB16(red, green, blue);
 			src32++;
 			dst16++;
@@ -667,21 +696,40 @@ uint8* gdi_mono_image_convert(uint8* srcData, int width, int height, int srcBpp,
 			redBg = clrconv->palette->entries[bgcolor].red;
 			greenBg = clrconv->palette->entries[bgcolor].green;
 			blueBg = clrconv->palette->entries[bgcolor].blue;
-			RGB_888_565(redBg, greenBg, blueBg);
-			bgcolor = RGB16(redBg, greenBg, blueBg);
 
 			fgcolor &= 0xFF;
 			redFg = clrconv->palette->entries[fgcolor].red;
 			greenFg = clrconv->palette->entries[fgcolor].green;
 			blueFg = clrconv->palette->entries[fgcolor].blue;
-			RGB_888_565(redFg, greenFg, blueFg);
-			fgcolor = RGB16(redFg, greenFg, blueFg);
+
+			if(clrconv->rgb555)
+			{
+				bgcolor = RGB15(redBg, greenBg, blueBg);
+				fgcolor = RGB15(redFg, greenFg, blueFg);
+			}
+			else
+			{
+				bgcolor = RGB16(redBg, greenBg, blueBg);
+				fgcolor = RGB16(redFg, greenFg, blueFg);
+			}
 		}
-		if(srcBpp == 15)
+		if(clrconv->rgb555)
 		{
-			/* convert 15-bit colors to 16-bit colors */
-			RGB15_RGB16(redBg, greenBg, blueBg, bgcolor);
-			RGB15_RGB16(redFg, greenFg, blueFg, fgcolor);
+			if(srcBpp == 16)
+			{
+				/* convert 15-bit colors to 16-bit colors */
+				RGB16_RGB15(redBg, greenBg, blueBg, bgcolor);
+				RGB16_RGB15(redFg, greenFg, blueFg, fgcolor);
+			}
+		}
+		else
+		{
+			if(srcBpp == 15)
+			{
+				/* convert 15-bit colors to 16-bit colors */
+				RGB15_RGB16(redBg, greenBg, blueBg, bgcolor);
+				RGB15_RGB16(redFg, greenFg, blueFg, fgcolor);
+			}
 		}
 
 		dstData = (uint8*) malloc(width * height * 2);

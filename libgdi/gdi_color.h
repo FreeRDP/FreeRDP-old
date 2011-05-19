@@ -35,6 +35,11 @@ extern "C" {
 	_g = (_g << 1 & ~0x1) | (_g >> 4); \
 	_b = _b;
 
+#define RGB_565_555(_r, _g, _b) \
+	_r = _r; \
+	_g = (_g >> 1); \
+	_b = _b;
+
 #define RGB_555_888(_r, _g, _b) \
 	_r = (_r << 3 & ~0x7) | (_r >> 2); \
 	_g = (_g << 3 & ~0x7) | (_g >> 2); \
@@ -57,28 +62,45 @@ extern "C" {
 
 /* RGB 15 (RGB_555) */
 
-#define RGB15(_r, _g, _b)  \
-	((_r & 0x1F) << 11) | ((_g & 0x1F) << 5) | (_b & 0x1F);
+#define RGB555(_r, _g, _b)  \
+	((_r & 0x1F) << 10) | ((_g & 0x1F) << 5) | (_b & 0x1F);
 
-#define GetRGB15(_r, _g, _b, _p) \
+#define RGB15(_r, _g, _b)  \
+	(((_r >> 3) & 0x1F) << 10) | (((_g >> 3) & 0x1F) << 5) | ((_b >> 3) & 0x1F);
+
+#define GetRGB_555(_r, _g, _b, _p) \
 	_r = (_p & 0x7C00) >> 10; \
 	_g = (_p & 0x3E0) >> 5; \
 	_b = (_p & 0x1F);
 
+#define GetRGB15(_r, _g, _b, _p) \
+	GetRGB_555(_r, _g, _b, _p); \
+	RGB_555_888(_r, _g, _b);
+
 /* BGR 15 (BGR_555) */
 
+#define BGR555(_r, _g, _b)  \
+	((_b & 0x1F) << 10) | ((_g & 0x1F) << 5) | (_r & 0x1F);
+
 #define BGR15(_r, _g, _b)  \
-	((_b & 0x1F) << 11) | ((_g & 0x1F) << 5) | (_r & 0x1F);
+	(((_b >> 3) & 0x1F) << 10) | (((_g >> 3) & 0x1F) << 5) | ((_r >> 3) & 0x1F);
+
+#define GetBGR_555(_r, _g, _b, _p) \
+	_b = (_p & 0x7C00) >> 10; \
+	_g = (_p & 0x3E0) >> 5; \
+	_r = (_p & 0x1F);
 
 #define GetBGR15(_r, _g, _b, _p) \
-	_b = ((_p << 3) & 0xF8) | ((_p >> 2) & 0x7); \
-	_g = ((_p >> 2) & 0xF8) | ((_p >> 8) & 0x7); \
-	_r = ((_p >> 7) & 0xF8) | ((_p >> 12) & 0x7);
+	GetBGR_555(_r, _g, _b, _p); \
+	RGB_555_888(_r, _g, _b);
 
 /* RGB 16 (RGB_565) */
 
-#define RGB16(_r, _g, _b)  \
+#define RGB565(_r, _g, _b)  \
 	((_r & 0x1F) << 11) | ((_g & 0x3F) << 5) | (_b & 0x1F);
+
+#define RGB16(_r, _g, _b)  \
+	(((_r >> 3) & 0x1F) << 11) | (((_g >> 2) & 0x3F) << 5) | ((_b >> 3) & 0x1F);
 
 #define GetRGB_565(_r, _g, _b, _p) \
 	_r = (_p & 0xF800) >> 11; \
@@ -91,8 +113,11 @@ extern "C" {
 
 /* BGR 16 (BGR_565) */
 
-#define BGR16(_r, _g, _b)  \
+#define BGR565(_r, _g, _b)  \
 	((_b & 0x1F) << 11) | ((_g & 0x3F) << 5) | (_r & 0x1F);
+
+#define BGR16(_r, _g, _b)  \
+	(((_b >> 3) & 0x1F) << 11) | (((_g >> 2) & 0x3F) << 5) | ((_r >> 3) & 0x1F);
 
 #define GetBGR_565(_r, _g, _b, _p) \
 	_b = (_p & 0xF800) >> 11; \
@@ -175,20 +200,28 @@ extern "C" {
 #define RGB32_RGB16(_r, _g, _b, _p) \
 	GetRGB32(_r, _g, _b, _p); \
  	RGB_888_565(_r, _g, _b); \
-	_p = RGB16(_r, _g, _b);
+	_p = RGB565(_r, _g, _b);
 
 #define RGB15_RGB16(_r, _g, _b, _p) \
-	GetRGB15(_r, _g, _b, _p); \
+	GetRGB_555(_r, _g, _b, _p); \
 	_g = (_g << 1 & ~0x1) | (_g >> 4); \
-	_p = RGB16(_r, _g, _b);
+	_p = RGB565(_r, _g, _b);
+
+#define RGB16_RGB15(_r, _g, _b, _p) \
+	GetRGB_565(_r, _g, _b, _p); \
+	_g = (_g >> 1); \
+	_p = RGB555(_r, _g, _b);
 
 #define CLRCONV_ALPHA		1
 #define CLRCONV_INVERT		2
+/* if defined RGB555 format is used when rendering with a 16-bit frame buffer */
+#define CLRCONV_RGB555		4
 
 struct _CLRCONV
 {
 	int alpha;
 	int invert;
+	int rgb555;
 	RD_PALETTE* palette;
 };
 typedef struct _CLRCONV CLRCONV;
