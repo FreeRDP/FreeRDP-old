@@ -75,7 +75,7 @@ AC_SUBST(EXT_PATH)
 #
 AC_ARG_WITH([crypto],
 	[AS_HELP_STRING([--with-crypto=ARG],
-		[Choose the crypto library. Valid arguments are nss, gnutls, openssl (the default), polarssl or simple])],
+		[Choose the crypto library. Valid arguments are nss, gnutls, openssl (the default) or polarssl])],
 	[with_crypto=$withval],
 	[with_crypto=openssl])
 
@@ -84,7 +84,6 @@ AM_CONDITIONAL(CRYPTO_NSS, false)
 AM_CONDITIONAL(CRYPTO_GNUTLS, false)
 AM_CONDITIONAL(CRYPTO_OPENSSL, false)
 AM_CONDITIONAL(CRYPTO_POLARSSL, false)
-AM_CONDITIONAL(CRYPTO_SIMPLE, false)
 case $with_crypto in
 	nss)
 		PKG_CHECK_MODULES(CRYPTO, [nss])
@@ -121,11 +120,6 @@ case $with_crypto in
 		AC_SUBST(CRYPTO_LIBS)
 		AC_SUBST(CRYPTO_CFLAGS)
 		AM_CONDITIONAL(CRYPTO_POLARSSL, true)
-		;;
-
-	simple)
-		AC_MSG_WARN([Using simple built-in cryptographic library.])
-		AM_CONDITIONAL(CRYPTO_SIMPLE, true)
 		;;
 
 	*)

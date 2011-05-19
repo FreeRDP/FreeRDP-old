@@ -55,10 +55,6 @@ if CRYPTO_POLARSSL
 libfreerdp_la_SOURCES += crypto_polarssl.c
 endif
 
-if CRYPTO_SIMPLE
-libfreerdp_la_SOURCES += crypto_simple.c ssl.c ssl.h
-endif
-
 if ENABLE_TLS
 libfreerdp_la_SOURCES += tls.h credssp.c credssp.h ntlmssp.c ntlmssp.h
 endif

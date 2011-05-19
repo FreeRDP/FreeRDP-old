@@ -19,7 +19,6 @@
 
 #include <freerdp/utils.h>
 #include "frdp.h"
-#include "ssl.h"
 #include "secure.h"
 #include "mcs.h"
 #include "iso.h"
