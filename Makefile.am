@@ -24,6 +24,7 @@ REQUIRED_SUBDIRS = \
 	channels/rdpdr/parallel
 
 OPTIONAL_SUBDIRS = \
+	channels/rdpdr/smartcard \
 	channels/rdpsnd/alsa \
 	channels/rdpsnd/pulse \
 	channels/drdynvc/audin/alsa \

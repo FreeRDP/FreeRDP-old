@@ -25,13 +25,14 @@
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/Xatom.h>
-#include <X11/extensions/Xv.h>
-#include <X11/extensions/Xvlib.h>
 #include <X11/extensions/XShm.h>
 #include "xf_types.h"
 #include "xf_video.h"
 
 #ifdef HAVE_XV
+
+#include <X11/extensions/Xv.h>
+#include <X11/extensions/Xvlib.h>
 
 int
 xf_video_init(xfInfo * xfi)

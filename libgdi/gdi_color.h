@@ -58,7 +58,7 @@ extern "C" {
 /* RGB 15 (RGB_555) */
 
 #define RGB15(_r, _g, _b)  \
-	(_r << 10) | (_g << 5) | _b;
+	((_r & 0x1F) << 11) | ((_g & 0x1F) << 5) | (_b & 0x1F);
 
 #define GetRGB15(_r, _g, _b, _p) \
 	_r = (_p & 0x7C00) >> 10; \
@@ -68,7 +68,7 @@ extern "C" {
 /* BGR 15 (BGR_555) */
 
 #define BGR15(_r, _g, _b)  \
-	(_b << 10) | (_g << 5) | _r;
+	((_b & 0x1F) << 11) | ((_g & 0x1F) << 5) | (_r & 0x1F);
 
 #define GetBGR15(_r, _g, _b, _p) \
 	_b = ((_p << 3) & 0xF8) | ((_p >> 2) & 0x7); \
@@ -78,7 +78,7 @@ extern "C" {
 /* RGB 16 (RGB_565) */
 
 #define RGB16(_r, _g, _b)  \
-	(_r << 11) | (_g << 5) | _b;
+	((_r & 0x1F) << 11) | ((_g & 0x3F) << 5) | (_b & 0x1F);
 
 #define GetRGB_565(_r, _g, _b, _p) \
 	_r = (_p & 0xF800) >> 11; \
@@ -92,7 +92,7 @@ extern "C" {
 /* BGR 16 (BGR_565) */
 
 #define BGR16(_r, _g, _b)  \
-	(_b << 11) | (_g << 5) | _r;
+	((_b & 0x1F) << 11) | ((_g & 0x3F) << 5) | (_r & 0x1F);
 
 #define GetBGR_565(_r, _g, _b, _p) \
 	_b = (_p & 0xF800) >> 11; \

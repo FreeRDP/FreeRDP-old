@@ -28,6 +28,8 @@
 #include <strings.h>
 #include <sys/ioctl.h>
 
+#include "config.h"
+
 #ifdef HAVE_SYS_MODEM_H
 #include <sys/modem.h>
 #endif

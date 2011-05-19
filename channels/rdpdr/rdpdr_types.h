@@ -24,6 +24,8 @@
 #include <freerdp/vchan.h>
 #include <freerdp/utils.h>
 
+#include "config.h"
+
 #define LOG_LEVEL 1
 #define LLOG(_level, _args) \
   do { if (_level < LOG_LEVEL) { printf _args ; } } while (0)
@@ -59,6 +61,7 @@ struct _SERVICE
 	int    (*get_event) (IRP * irp, uint32 * result);
 	int    (*file_descriptor) (IRP *irp);
 	void   (*get_timeouts) (IRP * irp, uint32 * timeout, uint32 * interval_timeout);
+	void * (*message) (void * generic_data);
 };
 typedef SERVICE * PSERVICE;
 
