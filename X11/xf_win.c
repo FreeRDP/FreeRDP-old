@@ -1313,7 +1313,10 @@ xf_post_connect(xfInfo * xfi)
 	input_mask =
 		KeyPressMask | KeyReleaseMask | ButtonPressMask | ButtonReleaseMask |
 		VisibilityChangeMask | FocusChangeMask | StructureNotifyMask |
-		PointerMotionMask | ExposureMask | EnterWindowMask | LeaveWindowMask;
+		PointerMotionMask | ExposureMask;
+	if (xfi->grab_keyboard)
+		input_mask |= EnterWindowMask | LeaveWindowMask;
+
 	XSelectInput(xfi->display, xfi->wnd, input_mask);
 	XMapWindow(xfi->display, xfi->wnd);
 

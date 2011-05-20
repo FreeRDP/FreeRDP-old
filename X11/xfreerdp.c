@@ -83,6 +83,7 @@ set_default_params(xfInfo * xfi)
 #endif
 	xfi->fullscreen = xfi->fs_toggle = 0;
 	xfi->decoration = 1;
+	xfi->grab_keyboard = 1;
 #ifdef HAVE_XV
 	xfi->xv_port = -1;
 #endif
@@ -103,6 +104,7 @@ out_args(void)
 		"\t-p: password\n"
 		"\t-d: domain\n"
 		"\t-k: keyboard layout ID\n"
+		"\t-K: do not interfere with window manager bindings\n"
 		"\t--kbd-list: list all keyboard layout IDs\n"
 		"\t-s: shell\n"
 		"\t-c: directory\n"
@@ -239,6 +241,10 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 			}
 			sscanf(argv[*pindex], "%X", &(xfi->keyboard_layout_id));
 			DEBUG("keyboard layout ID: %X\n", xfi->keyboard_layout_id);
+		}
+		else if (strcmp("-K", argv[*pindex]) == 0)
+		{
+			xfi->grab_keyboard = 0;
 		}
 		else if (strcmp("--kbd-list", argv[*pindex]) == 0)
 		{

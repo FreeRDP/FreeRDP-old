@@ -52,6 +52,7 @@ struct xf_info
 	int percentscreen;
 	int keyboard_layout_id;
 	int decoration;
+	int grab_keyboard;
 	char window_title[64];
 
 	/* X11 stuff */
