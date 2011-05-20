@@ -148,14 +148,14 @@ rdpdr_send_client_name_request(rdpdrPlugin * plugin)
 	char * data;
 	int size;
 	uint32 error;
-	char computerName[256];
 	size_t computerNameLenW;
 	UNICONV * uniconv;
 	char * s;
 
 	uniconv = freerdp_uniconv_new();
-	gethostname(computerName, sizeof(computerName) - 1);
-	s = freerdp_uniconv_out(uniconv, computerName, &computerNameLenW);
+	if (!plugin->computerName[0])
+		gethostname(plugin->computerName, sizeof(plugin->computerName) - 1);
+	s = freerdp_uniconv_out(uniconv, plugin->computerName, &computerNameLenW);
 	size = 16 + computerNameLenW + 2;
 	data = malloc(size);
 	memset(data, 0, size);
@@ -1008,6 +1008,7 @@ VirtualChannelEntry(PCHANNEL_ENTRY_POINTS pEntryPoints)
 {
 	rdpdrPlugin * plugin;
 	void * data;
+	RD_PLUGIN_DATA *plugin_data;
 
 	LLOGLN(10, ("VirtualChannelEntry:"));
 
@@ -1043,6 +1044,19 @@ VirtualChannelEntry(PCHANNEL_ENTRY_POINTS pEntryPoints)
 	{
 		data = NULL;
 	}
+
+	plugin_data = (RD_PLUGIN_DATA *) data;
+	while (plugin_data && plugin_data->size > 0)
+	{
+		if (strcmp((char *) plugin_data->data[0], "clientname") == 0)
+		{
+			strcpy(plugin->computerName, (char *) plugin_data->data[1]);
+			break;
+		}
+
+		plugin_data = (RD_PLUGIN_DATA *) (((void *) plugin_data) + plugin_data->size);
+	}
+
 	plugin->devman = devman_new(data);
 	devman_load_device_service(plugin->devman, "disk");
 	devman_load_device_service(plugin->devman, "printer");
