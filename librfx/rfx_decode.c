@@ -26,6 +26,8 @@
 #include "rfx_dwt.h"
 #include "rfx_decode.h"
 
+#define MINMAX(_v,_l,_h) ((_v) < (_l) ? (_l) : ((_v) > (_h) ? (_h) : (_v)))
+
 static void
 rfx_decode_component(RLGR_MODE mode, const int * quantization_values, int half,
 	const unsigned char * data, int size, int * buffer)
@@ -52,32 +54,41 @@ rfx_decode_component(RLGR_MODE mode, const int * quantization_values, int half,
 }
 
 unsigned char *
-rfx_decode_yv12(RLGR_MODE mode,
+rfx_decode_rgb(RLGR_MODE mode,
 	const unsigned char * y_data, int y_size, const int * y_quants,
 	const unsigned char * cb_data, int cb_size, const int * cb_quants,
 	const unsigned char * cr_data, int cr_size, const int * cr_quants)
 {
 	unsigned char * output;
 	unsigned char * dst;
-	int buffer[4096];
+	int y_buffer[4096];
+	int cb_buffer[4096];
+	int cr_buffer[4096];
+	int y, cb, cr;
+	int r, g, b;
 	int i;
 
-	/* 64x64 YV12 image has Y=64x64=4096, U,V=32x32=1024 */
-	output = (unsigned char *) malloc(4096 + 1024 + 1024);
+	output = (unsigned char *) malloc(4096 * 3);
 	dst = output;
 
-	rfx_decode_component(mode, y_quants, 0, y_data, y_size, buffer);
+	rfx_decode_component(mode, y_quants, 0, y_data, y_size, y_buffer);
+	rfx_decode_component(mode, cb_quants, 0, cb_data, cb_size, cb_buffer);
+	rfx_decode_component(mode, cr_quants, 0, cr_data, cr_size, cr_buffer);
 	for (i = 0; i < 4096; i++)
-		*dst++ = (unsigned char) (buffer[i] + 128);
-
-	/* For Cb and Cr, we only need LL1 (which is half-size) to construct YV12 pixel format */
-	rfx_decode_component(mode, cb_quants, 1, cb_data, cb_size, buffer);
-	for (i = 3072; i < 4096; i++)
-		*dst++ = (unsigned char) (buffer[i]);
-
-	rfx_decode_component(mode, cr_quants, 1, cr_data, cr_size, buffer);
-	for (i = 3072; i < 4096; i++)
-		*dst++ = (unsigned char) (buffer[i]);
+	{
+		y = y_buffer[i] + 128;
+		cb = cb_buffer[i];
+		cr = cr_buffer[i];
+		r = (y + cr + (cr >> 2) + (cr >> 3) + (cr >> 5));
+		r = MINMAX(r, 0, 255);
+		g = (y - ((cb >> 2) + (cb >> 4) + (cb >> 5)) - ((cr >> 1) + (cr >> 3) + (cr >> 4) + (cr >> 5)));
+		g = MINMAX(g, 0, 255);
+		b = (y + cb + (cb >> 1) + (cb >> 2) + (cb >> 6));
+		b = MINMAX(b, 0, 255);
+		*dst++ = (unsigned char) (r);
+		*dst++ = (unsigned char) (g);
+		*dst++ = (unsigned char) (b);
+	}
 
 	return output;
 }

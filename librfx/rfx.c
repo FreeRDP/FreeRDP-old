@@ -217,7 +217,7 @@ rfx_process_message_tile(RFX_CONTEXT * context, RFX_TILE * tile, unsigned char *
 
 	tile->x = xIdx * 64;
 	tile->y = yIdx * 64;
-	tile->data = rfx_decode_yv12(context->mode,
+	tile->data = rfx_decode_rgb(context->mode,
 		data, YLen, context->quants + (quantIdxY * 10),
 		data + YLen, CbLen, context->quants + (quantIdxCb * 10),
 		data + YLen + CbLen, CrLen, context->quants + (quantIdxCr * 10));
