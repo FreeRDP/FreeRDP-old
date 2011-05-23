@@ -15,7 +15,7 @@ librfx_la_SOURCES = \
 	rfx_constants.h \
 	rfx.c
 
-librfx_la_CFLAGS =
+librfx_la_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include
 
 librfx_la_LDFLAGS =
 
