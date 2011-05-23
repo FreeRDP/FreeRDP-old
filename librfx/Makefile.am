@@ -13,6 +13,7 @@ librfx_la_SOURCES = \
 	rfx_dwt.c rfx_dwt.h \
 	rfx_decode.c rfx_decode.h \
 	rfx_constants.h \
+	rfx_private.h \
 	rfx.c
 
 librfx_la_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include

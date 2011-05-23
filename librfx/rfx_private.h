@@ -1,6 +1,6 @@
 /*
    FreeRDP: A Remote Desktop Protocol client.
-   RemoteFX Codec Library - Decode
+   RemoteFX Codec Library - Private Structures
 
    Copyright 2011 Vic Lee
 
@@ -17,16 +17,37 @@
    limitations under the License.
 */
 
-#ifndef __RFX_DECODE_H
-#define __RFX_DECODE_H
+#ifndef __RFX_PRIVATE_H
+#define __RFX_PRIVATE_H
 
+#include "rfx_rlgr.h"
 #include "rfx.h"
 
-unsigned char *
-rfx_decode_rgb(RFX_CONTEXT * context,
-	const unsigned char * y_data, int y_size, const int * y_quants,
-	const unsigned char * cb_data, int cb_size, const int * cb_quants,
-	const unsigned char * cr_data, int cr_size, const int * cr_quants);
+typedef struct _RFX_RECT
+{
+	unsigned int x;
+	unsigned int y;
+	unsigned int width;
+	unsigned int height;
+} RFX_RECT;
+
+struct _RFX_CONTEXT
+{
+	unsigned int version;
+	unsigned int codec_id;
+	unsigned int codec_version;
+	int width;
+	int height;
+	int flags;
+	RLGR_MODE mode;
+	RFX_PIXEL_FORMAT pixel_format;
+
+	/* temporary data within a frame */
+	int num_rects;
+	RFX_RECT * rects;
+	int num_quants;
+	int * quants;
+};
 
 #endif
 

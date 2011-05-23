@@ -22,33 +22,8 @@
 #include <string.h>
 #include <freerdp/utils.h>
 #include "rfx_constants.h"
+#include "rfx_private.h"
 #include "rfx_decode.h"
-#include "rfx.h"
-
-typedef struct _RFX_RECT
-{
-	unsigned int x;
-	unsigned int y;
-	unsigned int width;
-	unsigned int height;
-} RFX_RECT;
-
-struct _RFX_CONTEXT
-{
-	unsigned int version;
-	unsigned int codec_id;
-	unsigned int codec_version;
-	int width;
-	int height;
-	int flags;
-	RLGR_MODE mode;
-
-	/* temporary data within a frame */
-	int num_rects;
-	RFX_RECT * rects;
-	int num_quants;
-	int * quants;
-};
 
 RFX_CONTEXT *
 rfx_context_new(void)
@@ -68,6 +43,13 @@ rfx_context_free(RFX_CONTEXT * context)
 	if (context->quants)
 		free(context->quants);
 	free(context);
+}
+
+void
+rfx_context_set_pixel_format(RFX_CONTEXT * context,
+	RFX_PIXEL_FORMAT pixel_format)
+{
+	context->pixel_format = pixel_format;
 }
 
 static void
@@ -217,7 +199,7 @@ rfx_process_message_tile(RFX_CONTEXT * context, RFX_TILE * tile, unsigned char *
 
 	tile->x = xIdx * 64;
 	tile->y = yIdx * 64;
-	tile->data = rfx_decode_rgb(context->mode,
+	tile->data = rfx_decode_rgb(context,
 		data, YLen, context->quants + (quantIdxY * 10),
 		data + YLen, CbLen, context->quants + (quantIdxCb * 10),
 		data + YLen + CbLen, CrLen, context->quants + (quantIdxCr * 10));

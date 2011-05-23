@@ -24,6 +24,7 @@
 #include "rfx_differential.h"
 #include "rfx_quantization.h"
 #include "rfx_dwt.h"
+#include "rfx_private.h"
 #include "rfx_decode.h"
 
 #define MINMAX(_v,_l,_h) ((_v) < (_l) ? (_l) : ((_v) > (_h) ? (_h) : (_v)))
@@ -54,7 +55,7 @@ rfx_decode_component(RLGR_MODE mode, const int * quantization_values, int half,
 }
 
 unsigned char *
-rfx_decode_rgb(RLGR_MODE mode,
+rfx_decode_rgb(RFX_CONTEXT * context,
 	const unsigned char * y_data, int y_size, const int * y_quants,
 	const unsigned char * cb_data, int cb_size, const int * cb_quants,
 	const unsigned char * cr_data, int cr_size, const int * cr_quants)
@@ -68,12 +69,12 @@ rfx_decode_rgb(RLGR_MODE mode,
 	int r, g, b;
 	int i;
 
-	output = (unsigned char *) malloc(4096 * 3);
+	output = (unsigned char *) malloc(4096 * 4);
 	dst = output;
 
-	rfx_decode_component(mode, y_quants, 0, y_data, y_size, y_buffer);
-	rfx_decode_component(mode, cb_quants, 0, cb_data, cb_size, cb_buffer);
-	rfx_decode_component(mode, cr_quants, 0, cr_data, cr_size, cr_buffer);
+	rfx_decode_component(context->mode, y_quants, 0, y_data, y_size, y_buffer);
+	rfx_decode_component(context->mode, cb_quants, 0, cb_data, cb_size, cb_buffer);
+	rfx_decode_component(context->mode, cr_quants, 0, cr_data, cr_size, cr_buffer);
 	for (i = 0; i < 4096; i++)
 	{
 		y = y_buffer[i] + 128;
@@ -85,9 +86,33 @@ rfx_decode_rgb(RLGR_MODE mode,
 		g = MINMAX(g, 0, 255);
 		b = (y + cb + (cb >> 1) + (cb >> 2) + (cb >> 6));
 		b = MINMAX(b, 0, 255);
-		*dst++ = (unsigned char) (r);
-		*dst++ = (unsigned char) (g);
-		*dst++ = (unsigned char) (b);
+		switch (context->pixel_format)
+		{
+			case RFX_PIXEL_FORMAT_BGRA:
+				*dst++ = (unsigned char) (b);
+				*dst++ = (unsigned char) (g);
+				*dst++ = (unsigned char) (r);
+				*dst++ = 0xff;
+				break;
+			case RFX_PIXEL_FORMAT_RGBA:
+				*dst++ = (unsigned char) (r);
+				*dst++ = (unsigned char) (g);
+				*dst++ = (unsigned char) (b);
+				*dst++ = 0xff;
+				break;
+			case RFX_PIXEL_FORMAT_BGR:
+				*dst++ = (unsigned char) (b);
+				*dst++ = (unsigned char) (g);
+				*dst++ = (unsigned char) (r);
+				break;
+			case RFX_PIXEL_FORMAT_RGB:
+				*dst++ = (unsigned char) (r);
+				*dst++ = (unsigned char) (g);
+				*dst++ = (unsigned char) (b);
+				break;
+			default:
+				break;
+		}
 	}
 
 	return output;

@@ -37,10 +37,21 @@ struct _RFX_MESSAGE
 	RFX_TILE * tiles;
 };
 
+typedef enum
+{
+	RFX_PIXEL_FORMAT_BGRA,
+	RFX_PIXEL_FORMAT_RGBA,
+	RFX_PIXEL_FORMAT_BGR,
+	RFX_PIXEL_FORMAT_RGB
+} RFX_PIXEL_FORMAT;
+
 RFX_CONTEXT *
 rfx_context_new(void);
 void
 rfx_context_free(RFX_CONTEXT * context);
+void
+rfx_context_set_pixel_format(RFX_CONTEXT * context,
+	RFX_PIXEL_FORMAT pixel_format);
 
 RFX_MESSAGE *
 rfx_process_message(RFX_CONTEXT * context, unsigned char * data, int data_size);
