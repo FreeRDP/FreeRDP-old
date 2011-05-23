@@ -613,6 +613,7 @@ freerdp_new(rdpSet * settings)
 	inst->rdp_disconnect = l_rdp_disconnect;
 	inst->rdp_send_frame_ack = l_rdp_send_frame_ack;
 	inst->rdp = (void *) rdp_new(settings, inst);
+	inst->disc_reason = 0;
 	return inst;
 }
 
