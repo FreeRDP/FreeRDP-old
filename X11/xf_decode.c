@@ -50,12 +50,26 @@ static void
 xf_decode_frame(xfInfo * xfi, int x, int y, uint8 * bitmapData, uint32 bitmapDataLength)
 {
 	RFX_MESSAGE * message;
+	XImage * image;
+	int tx, ty, tw, th;
+	int i;
 
 	switch (xfi->codec)
 	{
 		case XF_CODEC_REMOTEFX:
-			//printf("xf_decode_frame: RemoteFX frame size %d.\n", bitmapDataLength);
 			message = rfx_process_message((RFX_CONTEXT *) xfi->rfx_context, bitmapData, bitmapDataLength);
+			for (i = 0; i < message->num_tiles; i++)
+			{
+				image = XCreateImage(xfi->display, xfi->visual, 24, ZPixmap, 0,
+					(char *) message->tiles[i].data, 64, 64, 32, 0);
+				tx = message->tiles[i].x + x;
+				ty = message->tiles[i].y + y;
+				tw = message->tiles[i].width;
+				th = message->tiles[i].height;
+				XPutImage(xfi->display, xfi->backstore, xfi->gc_default, image, 0, 0, tx, ty, tw, th);
+				XCopyArea(xfi->display, xfi->backstore, xfi->wnd, xfi->gc_default, tx, ty, tw, th, tx, ty);
+				XFree(image);
+			}
 			rfx_message_free(message);
 			break;
 
