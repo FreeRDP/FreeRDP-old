@@ -27,6 +27,8 @@ struct _RFX_TILE
 {
 	int x;
 	int y;
+	int width;
+	int height;
 	unsigned char * data;
 };
 

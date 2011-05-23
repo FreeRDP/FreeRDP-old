@@ -183,6 +183,7 @@ rfx_process_message_tile(RFX_CONTEXT * context, RFX_TILE * tile, unsigned char *
 	int quantIdxY, quantIdxCb, quantIdxCr;
 	int xIdx, yIdx;
 	int YLen, CbLen, CrLen;
+	int i;
 
 	quantIdxY = GET_UINT8(data, 0);
 	quantIdxCb = GET_UINT8(data, 1);
@@ -199,10 +200,26 @@ rfx_process_message_tile(RFX_CONTEXT * context, RFX_TILE * tile, unsigned char *
 
 	tile->x = xIdx * 64;
 	tile->y = yIdx * 64;
+	tile->width = 64;
+	tile->height = 64;
 	tile->data = rfx_decode_rgb(context,
 		data, YLen, context->quants + (quantIdxY * 10),
 		data + YLen, CbLen, context->quants + (quantIdxCb * 10),
 		data + YLen + CbLen, CrLen, context->quants + (quantIdxCr * 10));
+
+	for (i = 0; i < context->num_rects; i++)
+	{
+		if (tile->x >= context->rects[i].x &&
+			tile->x <= context->rects[i].x + context->rects[i].width - 1 &&
+			tile->y >= context->rects[i].y &&
+			tile->y <= context->rects[i].y + context->rects[i].height - 1)
+		{
+			if (tile->x + tile->width > context->rects[i].x + context->rects[i].width)
+				tile->width = context->rects[i].x + context->rects[i].width - tile->x;
+			if (tile->y + tile->height > context->rects[i].y + context->rects[i].height)
+				tile->height = context->rects[i].y + context->rects[i].height - tile->y;
+		}
+	}
 }
 
 static void
