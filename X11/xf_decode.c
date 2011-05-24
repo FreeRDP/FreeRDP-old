@@ -51,26 +51,38 @@ xf_decode_frame(xfInfo * xfi, int x, int y, uint8 * bitmapData, uint32 bitmapDat
 {
 	RFX_MESSAGE * message;
 	XImage * image;
-	int tx, ty, tw, th;
+	int tx, ty;
 	int i;
 
 	switch (xfi->codec)
 	{
 		case XF_CODEC_REMOTEFX:
+
 			message = rfx_process_message((RFX_CONTEXT *) xfi->rfx_context, bitmapData, bitmapDataLength);
+
+			XSetFunction(xfi->display, xfi->gc, GXcopy);
+			XSetFillStyle(xfi->display, xfi->gc, FillSolid);
+			XSetClipRectangles(xfi->display, xfi->gc, x, y, (XRectangle*)message->rects, message->num_rects, YXBanded);
+
 			for (i = 0; i < message->num_tiles; i++)
 			{
 				image = XCreateImage(xfi->display, xfi->visual, 24, ZPixmap, 0,
 					(char *) message->tiles[i].data, 64, 64, 32, 0);
 				tx = message->tiles[i].x + x;
 				ty = message->tiles[i].y + y;
-				tw = message->tiles[i].width;
-				th = message->tiles[i].height;
-				XPutImage(xfi->display, xfi->backstore, xfi->gc_default, image, 0, 0, tx, ty, tw, th);
-				XCopyArea(xfi->display, xfi->backstore, xfi->wnd, xfi->gc_default, tx, ty, tw, th, tx, ty);
+				XPutImage(xfi->display, xfi->backstore, xfi->gc, image, 0, 0, tx, ty, 64, 64);
 				XFree(image);
 			}
+
+			for (i = 0; i < message->num_rects; i++)
+			{
+				tx = message->rects[i].x + x;
+				ty = message->rects[i].y + y;
+				XCopyArea(xfi->display, xfi->backstore, xfi->wnd, xfi->gc_default,
+					tx, ty, message->rects[i].width, message->rects[i].height, tx, ty);
+			}
 			rfx_message_free(message);
+
 			break;
 
 		default:

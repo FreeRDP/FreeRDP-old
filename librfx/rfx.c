@@ -38,8 +38,6 @@ rfx_context_new(void)
 void
 rfx_context_free(RFX_CONTEXT * context)
 {
-	if (context->rects)
-		free(context->rects);
 	if (context->quants)
 		free(context->quants);
 	free(context);
@@ -148,29 +146,29 @@ rfx_process_message_context(RFX_CONTEXT * context, unsigned char * data, int dat
 }
 
 static void
-rfx_process_message_region(RFX_CONTEXT * context, unsigned char * data, int data_size)
+rfx_process_message_region(RFX_CONTEXT * context, RFX_MESSAGE * message, unsigned char * data, int data_size)
 {
 	int i;
 
-	context->num_rects = GET_UINT16(data, 3);
-	if (context->num_rects < 1)
+	message->num_rects = GET_UINT16(data, 3);
+	if (message->num_rects < 1)
 	{
 		printf("rfx_process_message_region: no rects.\n");
 		return;
 	}
-	if (context->rects)
-		free(context->rects);
-	context->rects = (RFX_RECT *) malloc(context->num_rects * sizeof(RFX_RECT));
+	if (message->rects)
+		free(message->rects);
+	message->rects = (RFX_RECT *) malloc(message->num_rects * sizeof(RFX_RECT));
 	data += 5;
 	data_size -= 5;
-	for (i = 0; i < context->num_rects && data_size > 0; i++)
+	for (i = 0; i < message->num_rects && data_size > 0; i++)
 	{
-		context->rects[i].x = GET_UINT16(data, 0);
-		context->rects[i].y = GET_UINT16(data, 2);
-		context->rects[i].width = GET_UINT16(data, 4);
-		context->rects[i].height = GET_UINT16(data, 6);
+		message->rects[i].x = GET_UINT16(data, 0);
+		message->rects[i].y = GET_UINT16(data, 2);
+		message->rects[i].width = GET_UINT16(data, 4);
+		message->rects[i].height = GET_UINT16(data, 6);
 		printf("rfx_process_message_region: rect %d (%d %d %d %d).\n",
-			i, context->rects[i].x, context->rects[i].y, context->rects[i].width, context->rects[i].height);
+			i, message->rects[i].x, message->rects[i].y, message->rects[i].width, message->rects[i].height);
 
 		data += 8;
 		data_size -= 8;
@@ -183,7 +181,6 @@ rfx_process_message_tile(RFX_CONTEXT * context, RFX_TILE * tile, unsigned char *
 	int quantIdxY, quantIdxCb, quantIdxCr;
 	int xIdx, yIdx;
 	int YLen, CbLen, CrLen;
-	int i;
 
 	quantIdxY = GET_UINT8(data, 0);
 	quantIdxCb = GET_UINT8(data, 1);
@@ -200,26 +197,10 @@ rfx_process_message_tile(RFX_CONTEXT * context, RFX_TILE * tile, unsigned char *
 
 	tile->x = xIdx * 64;
 	tile->y = yIdx * 64;
-	tile->width = 64;
-	tile->height = 64;
 	tile->data = rfx_decode_rgb(context,
 		data, YLen, context->quants + (quantIdxY * 10),
 		data + YLen, CbLen, context->quants + (quantIdxCb * 10),
 		data + YLen + CbLen, CrLen, context->quants + (quantIdxCr * 10));
-
-	for (i = 0; i < context->num_rects; i++)
-	{
-		if (tile->x >= context->rects[i].x &&
-			tile->x <= context->rects[i].x + context->rects[i].width - 1 &&
-			tile->y >= context->rects[i].y &&
-			tile->y <= context->rects[i].y + context->rects[i].height - 1)
-		{
-			if (tile->x + tile->width > context->rects[i].x + context->rects[i].width)
-				tile->width = context->rects[i].x + context->rects[i].width - tile->x;
-			if (tile->y + tile->height > context->rects[i].y + context->rects[i].height)
-				tile->height = context->rects[i].y + context->rects[i].height - tile->y;
-		}
-	}
 }
 
 static void
@@ -337,7 +318,7 @@ rfx_process_message(RFX_CONTEXT * context, unsigned char * data, int data_size)
 				break;
 
 			case WBT_REGION:
-				rfx_process_message_region(context, data + 6, blockLen - 6);
+				rfx_process_message_region(context, message, data + 6, blockLen - 6);
 				break;
 
 			case WBT_EXTENSION:
@@ -370,6 +351,8 @@ rfx_message_free(RFX_MESSAGE * message)
 {
 	int i;
 
+	if (message->rects)
+		free(message->rects);
 	if (message->tiles)
 	{
 		for (i = 0; i < message->num_tiles; i++)

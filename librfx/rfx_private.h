@@ -23,14 +23,6 @@
 #include "rfx_rlgr.h"
 #include "rfx.h"
 
-typedef struct _RFX_RECT
-{
-	unsigned int x;
-	unsigned int y;
-	unsigned int width;
-	unsigned int height;
-} RFX_RECT;
-
 struct _RFX_CONTEXT
 {
 	unsigned int version;
@@ -43,8 +35,6 @@ struct _RFX_CONTEXT
 	RFX_PIXEL_FORMAT pixel_format;
 
 	/* temporary data within a frame */
-	int num_rects;
-	RFX_RECT * rects;
 	int num_quants;
 	int * quants;
 };

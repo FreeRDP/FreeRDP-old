@@ -22,19 +22,25 @@
 
 typedef struct _RFX_CONTEXT RFX_CONTEXT;
 
+typedef struct _RFX_RECT RFX_RECT;
+struct _RFX_RECT
+{
+	short x, y;
+	unsigned short width, height;
+};
+
 typedef struct _RFX_TILE RFX_TILE;
 struct _RFX_TILE
 {
-	int x;
-	int y;
-	int width;
-	int height;
+	short x, y;
 	unsigned char * data;
 };
 
 typedef struct _RFX_MESSAGE RFX_MESSAGE;
 struct _RFX_MESSAGE
 {
+	int num_rects;
+	RFX_RECT * rects;
 	int num_tiles;
 	RFX_TILE * tiles;
 };
