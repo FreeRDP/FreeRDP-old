@@ -167,8 +167,8 @@ rfx_process_message_region(RFX_CONTEXT * context, RFX_MESSAGE * message, unsigne
 		message->rects[i].y = GET_UINT16(data, 2);
 		message->rects[i].width = GET_UINT16(data, 4);
 		message->rects[i].height = GET_UINT16(data, 6);
-		printf("rfx_process_message_region: rect %d (%d %d %d %d).\n",
-			i, message->rects[i].x, message->rects[i].y, message->rects[i].width, message->rects[i].height);
+		/*printf("rfx_process_message_region: rect %d (%d %d %d %d).\n",
+			i, message->rects[i].x, message->rects[i].y, message->rects[i].width, message->rects[i].height);*/
 
 		data += 8;
 		data_size -= 8;
@@ -190,8 +190,8 @@ rfx_process_message_tile(RFX_CONTEXT * context, RFX_TILE * tile, unsigned char *
 	YLen = GET_UINT16(data, 7);
 	CbLen = GET_UINT16(data, 9);
 	CrLen = GET_UINT16(data, 11);
-	printf("rfx_process_message_tile: %d %d %d %d %d %d %d %d\n",
-		quantIdxY, quantIdxCb, quantIdxCr, xIdx, yIdx, YLen, CbLen, CrLen);
+	/*printf("rfx_process_message_tile: %d %d %d %d %d %d %d %d\n",
+		quantIdxY, quantIdxCb, quantIdxCr, xIdx, yIdx, YLen, CbLen, CrLen);*/
 
 	data += 13;
 
@@ -243,12 +243,12 @@ rfx_process_message_tileset(RFX_CONTEXT * context, RFX_MESSAGE * message, unsign
 		context->quants[i * 10 + 7] = (data[3] >> 4);
 		context->quants[i * 10 + 8] = (data[4] & 0x0f);
 		context->quants[i * 10 + 9] = (data[4] >> 4);
-		printf("rfx_process_message_tileset: quant %d (%d %d %d %d %d %d %d %d %d %d).\n",
+		/*printf("rfx_process_message_tileset: quant %d (%d %d %d %d %d %d %d %d %d %d).\n",
 			i, context->quants[i * 10], context->quants[i * 10 + 1],
 			context->quants[i * 10 + 2], context->quants[i * 10 + 3],
 			context->quants[i * 10 + 4], context->quants[i * 10 + 5],
 			context->quants[i * 10 + 6], context->quants[i * 10 + 7],
-			context->quants[i * 10 + 8], context->quants[i * 10 + 9]);
+			context->quants[i * 10 + 8], context->quants[i * 10 + 9]);*/
 
 		data += 5;
 		data_size -= 5;
