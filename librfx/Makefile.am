@@ -27,7 +27,7 @@ includedir = $(prefix)/include/librfx
 include_HEADERS = rfx.h
 
 # extra
-EXTRA_DIST =
+EXTRA_DIST = rfx_test.c
 
 DISTCLEANFILES = 
 
