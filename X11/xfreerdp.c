@@ -355,7 +355,7 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 		{
 			settings->rfx_flags = 1;
 			settings->ui_decode_flags = 1;
-			settings->use_frame_ack = 1;
+			settings->use_frame_ack = 0;
 			settings->server_depth = 32;
 			settings->performanceflags = PERF_FLAG_NONE;
 			xfi->codec = XF_CODEC_REMOTEFX;
