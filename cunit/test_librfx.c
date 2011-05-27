@@ -1,6 +1,6 @@
 /*
    FreeRDP: A Remote Desktop Protocol client.
-   RemoteFX Codec Library - Unit Testing
+   RemoteFX Codec Library Unit Tests
 
    Copyright 2011 Vic Lee
 
@@ -37,6 +37,7 @@
 #include "rfx_dwt.h"
 #include "rfx_decode.h"
 #include "rfx_private.h"
+#include "test_librfx.h"
 
 static const unsigned char y_data[] =
 {
@@ -117,7 +118,32 @@ static const int test_quantization_values[] =
 	6, 6, 6, 6, 7, 7, 8, 8, 8, 9
 };
 
-static void
+
+int init_librfx_suite(void)
+{
+	return 0;
+}
+
+int clean_librfx_suite(void)
+{
+	return 0;
+}
+
+int add_librfx_suite(void)
+{
+	add_test_suite(librfx);
+
+	add_test_function(bitstream);
+	add_test_function(rlgr);
+	add_test_function(differential);
+	add_test_function(quantization);
+	add_test_function(dwt);
+	add_test_function(decode);
+
+	return 0;
+}
+
+void
 test_bitstream(void)
 {
 	RFX_BITSTREAM * bs;
@@ -149,7 +175,7 @@ dump_buffer(int * buf, int n)
 	printf("\n");
 }
 
-static void
+void
 test_rlgr(void)
 {
 	int n;
@@ -160,14 +186,14 @@ test_rlgr(void)
 	dump_buffer(buffer, n);
 }
 
-static void
+void
 test_differential(void)
 {
 	rfx_differential_decode(buffer + 4032, 64);
 	dump_buffer(buffer + 4032, 64);
 }
 
-static void
+void
 test_quantization(void)
 {
 	rfx_quantization_decode(buffer, 1024, test_quantization_values[0]); /* HL1 */
@@ -183,7 +209,7 @@ test_quantization(void)
 	dump_buffer(buffer, 4096);
 }
 
-static void
+void
 test_dwt(void)
 {
 	rfx_dwt_2d_decode(buffer + 3840, 8);
@@ -192,7 +218,7 @@ test_dwt(void)
 	dump_buffer(buffer, 4096);
 }
 
-static void
+void
 test_decode(void)
 {
 	RFX_CONTEXT * context;
@@ -225,6 +251,7 @@ test_decode(void)
 	free(decode_buffer);
 }
 
+#if 0
 int
 main(void)
 {
@@ -237,4 +264,5 @@ main(void)
 
 	return 0;
 }
+#endif
 
