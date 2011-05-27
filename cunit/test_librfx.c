@@ -18,13 +18,8 @@
 */
 
 /*
-   This file is only a simple unit testing program and is NOT part of librfx.
    The sample data comes from [MS-RDPRFX] 4.2.3, which is decoded into three
    vertical bands in red (21x64), green (23x64) and blue(20x64) color.
-
-   Compiles with:
-
-   gcc -Wall -o rfx_test rfx_test.c -lrfx
 */
 
 #include <stdio.h>
