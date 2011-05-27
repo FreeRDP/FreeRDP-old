@@ -60,10 +60,12 @@ xf_decode_frame(xfInfo * xfi, int x, int y, uint8 * bitmapData, uint32 bitmapDat
 
 			message = rfx_process_message((RFX_CONTEXT *) xfi->rfx_context, bitmapData, bitmapDataLength);
 
+			/* Clip the updated region based on the union of rects, so that pixels outside of the region will not be drawn. */
 			XSetFunction(xfi->display, xfi->gc, GXcopy);
 			XSetFillStyle(xfi->display, xfi->gc, FillSolid);
 			XSetClipRectangles(xfi->display, xfi->gc, x, y, (XRectangle*)message->rects, message->num_rects, YXBanded);
 
+			/* Draw the tiles to backstore, each is 64x64. */
 			for (i = 0; i < message->num_tiles; i++)
 			{
 				image = XCreateImage(xfi->display, xfi->visual, 24, ZPixmap, 0,
@@ -74,6 +76,7 @@ xf_decode_frame(xfInfo * xfi, int x, int y, uint8 * bitmapData, uint32 bitmapDat
 				XFree(image);
 			}
 
+			/* Copy the updated region from backstore to the window. */
 			for (i = 0; i < message->num_rects; i++)
 			{
 				tx = message->rects[i].x + x;

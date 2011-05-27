@@ -39,8 +39,14 @@ struct _RFX_TILE
 typedef struct _RFX_MESSAGE RFX_MESSAGE;
 struct _RFX_MESSAGE
 {
+	/* The rects array represents the updated region of the frame. The UI
+	   requires to clip drawing destination base on the union of the rects. */
 	int num_rects;
 	RFX_RECT * rects;
+	/* The tiles array represents the actual frame data. Each tile is always
+	   64x64. Note that only pixels inside the updated region (represented as
+	   rects described above) are valid. Pixels outside of the region may
+	   contain arbitrary data. */
 	int num_tiles;
 	RFX_TILE * tiles;
 };
