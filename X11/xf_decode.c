@@ -103,11 +103,9 @@ xf_decode_data(xfInfo * xfi, uint8 * data, int data_size)
 	int destTop;
 	int size;
 
-	///printf("xf_decode_data: %d\n", data_size);
 	while (data_size > 0)
 	{
 		cmdType = GET_UINT16(data, 0);
-		//printf("xf_decode_data: cmdType %d\n", cmdType);
 		switch (cmdType)
 		{
 			case CMDTYPE_SET_SURFACE_BITS:
