@@ -37,6 +37,10 @@
 #include "xf_win.h"
 #include "gdi_color.h"
 
+#ifdef HAVE_LIBXINERAMA
+#include <X11/extensions/Xinerama.h>
+#endif
+
 #define MWM_HINTS_DECORATIONS   (1L << 1)
 #define PROP_MOTIF_WM_HINTS_ELEMENTS    5
 
@@ -1178,6 +1182,12 @@ xf_get_pixmap_info(xfInfo * xfi)
 int
 xf_pre_connect(xfInfo * xfi)
 {
+#ifdef HAVE_LIBXINERAMA
+	XineramaScreenInfo * screen_info = NULL;
+	int ignored, ignored2;
+	int n;
+#endif
+
 	int i1;
 
 	xf_assign_callbacks(xfi->inst);
@@ -1206,8 +1216,34 @@ xf_pre_connect(xfInfo * xfi)
 
 	if (xfi->fs_toggle)
 	{
-		xfi->settings->width = WidthOfScreen(xfi->screen);
-		xfi->settings->height = HeightOfScreen(xfi->screen);
+        	xfi->settings->num_monitors = 0;
+ 		xfi->settings->width = WidthOfScreen(xfi->screen);
+ 		xfi->settings->height = HeightOfScreen(xfi->screen);
+
+#ifdef HAVE_LIBXINERAMA
+		if (XineramaQueryExtension(xfi->display, &ignored, &ignored2))
+		{
+			if (XineramaIsActive(xfi->display))
+			{
+				screen_info = XineramaQueryScreens(xfi->display, &xfi->settings->num_monitors);
+				if (xfi->settings->num_monitors > 16)
+					xfi->settings->num_monitors = 0;
+
+				if (xfi->settings->num_monitors)
+				{
+					for (n = 0; n < xfi->settings->num_monitors; n++)
+					{
+						xfi->settings->monitors[n].x = screen_info[n].x_org;
+						xfi->settings->monitors[n].y = screen_info[n].y_org;
+						xfi->settings->monitors[n].width = screen_info[n].width;
+						xfi->settings->monitors[n].height = screen_info[n].height;
+						xfi->settings->monitors[n].is_primary = screen_info[n].x_org == 0 && screen_info[n].y_org == 0;
+					}
+				}
+				XFree(screen_info);
+			}
+		}
+#endif
 	}
 
 	i1 = xfi->settings->width;
@@ -1219,6 +1255,7 @@ xf_pre_connect(xfInfo * xfi)
 		printf("xf_init: invalid dimensions %d %d\n", xfi->settings->width, xfi->settings->height);
 		return 1;
 	}
+
 
 	return 0;
 }

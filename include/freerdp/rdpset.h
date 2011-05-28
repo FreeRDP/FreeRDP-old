@@ -34,6 +34,15 @@ struct rdp_ext_set
 	void * data; /* plugin data */
 };
 
+struct rdp_monitor
+{
+	int x;
+	int y;
+	int width;
+	int height;
+	int is_primary;
+};
+
 struct rdp_set
 {
 	int width;
@@ -79,6 +88,8 @@ struct rdp_set
 	int num_channels;
 	struct rdp_chan channels[16];
 	struct rdp_ext_set extensions[16];
+	int num_monitors;
+	struct rdp_monitor monitors[16];
 };
 
 #endif

@@ -504,6 +504,33 @@ sec_out_client_cluster_data(rdpSec * sec, rdpSet * settings, STREAM s)
 	out_uint32_le(s, sec->rdp->redirect_session_id); /* RedirectedSessionID */
 }
 
+static void
+sec_out_client_monitor_data(rdpSec * sec, rdpSet * settings, STREAM s)
+{
+	int length, n;
+	printf("Setting monitor data... num_monitors: %d\n", settings->num_monitors);
+	if (settings->num_monitors <= 1)
+		return;
+
+	DEBUG("Setting monitor data...\n");
+	out_uint16_le(s, UDH_CS_MONITOR);	/* User Data Header type */
+
+	length = 12 + (20 * settings->num_monitors);
+	out_uint16_le(s, length);
+	out_uint32_le(s, 0); /* flags (unused) */
+	out_uint32_le(s, settings->num_monitors); /* monitorCount */
+	for (n = 0; n < settings->num_monitors; n++)
+	{
+		out_uint32_le(s, settings->monitors[n].x); /* left */
+		out_uint32_le(s, settings->monitors[n].y); /* top */
+		out_uint32_le(s, settings->monitors[n].x + 
+						 settings->monitors[n].width-1); /* right */
+		out_uint32_le(s, settings->monitors[n].y +
+						 settings->monitors[n].height-1); /* bottom */
+		out_uint32_le(s, settings->monitors[n].is_primary ? 1 : 0); /* isPrimary */
+	}
+}
+
 void
 sec_out_gcc_conference_create_request(rdpSec * sec, STREAM s)
 {
@@ -518,6 +545,7 @@ sec_out_gcc_conference_create_request(rdpSec * sec, STREAM s)
 	sec_out_client_cluster_data(sec, settings, s);
 	sec_out_client_security_data(sec, settings, s);
 	sec_out_client_network_data(sec, settings, s);
+	sec_out_client_monitor_data(sec, settings, s);
 	length = (s->p - s->data) - 23;
 	s->p = s->data;
 

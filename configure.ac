@@ -999,6 +999,19 @@ AS_IF([test "x$with_xkbfile" != xno], [
 ])
 
 #
+# Xinerama
+#
+xinerama="yes"
+AM_CONDITIONAL(WITH_XINERAMA, true)
+AC_PATH_XTRA
+if test "$no_x" = "yes"; then
+	xinerama="no"
+	AM_CONDITIONAL(WITH_XINERAMA, false)
+else
+	AC_CHECK_LIB(Xinerama, XineramaIsActive)
+fi
+
+#
 # DirectFB (optionally built when --with-dfb specified)
 #
 dfb="no"
@@ -1081,4 +1094,5 @@ echo "X11          : $x11"
 echo "XVideo       : $xv"
 echo "xkbfile      : $xkbfile"
 echo "DirectFB     : $dfb"
+echo "Xinerama     : $xinerama"
 echo "Smart card   : $smartcard"
