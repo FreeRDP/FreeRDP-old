@@ -24,6 +24,7 @@
 #include <freerdp/freerdp.h>
 #include "gdi.h"
 
+#include "gdi_decode.h"
 #include "gdi_color.h"
 #include "gdi_window.h"
 
@@ -1068,6 +1069,14 @@ gdi_ui_destroy_surface(struct rdp_inst * inst, RD_HBITMAP surface)
 	}
 }
 
+static int
+gdi_ui_decode(struct rdp_inst * inst, uint8 * data, int size)
+{
+	GDI *gdi = GET_GDI(inst);
+	gdi_decode_data(gdi, data, size);
+	return 0;
+}
+
 /**
  * Register GDI callbacks with libfreerdp.
  * @param inst current instance
@@ -1104,6 +1113,7 @@ gdi_register_callbacks(rdpInst * inst)
 	inst->ui_create_surface = gdi_ui_create_surface;
 	inst->ui_set_surface = gdi_ui_switch_surface;
 	inst->ui_destroy_surface = gdi_ui_destroy_surface;
+	inst->ui_decode = gdi_ui_decode;
 	return 0;
 }
 
@@ -1156,6 +1166,9 @@ gdi_init(rdpInst * inst, uint32 flags)
 	gdi->primary->hdc->hwnd = (HWND) malloc(sizeof(WND));
 	gdi->primary->hdc->hwnd->invalid = CreateRectRgn(0, 0, 0, 0);
 	gdi->primary->hdc->hwnd->invalid->null = 1;
+
+	gdi->rfx_context = rfx_context_new();
+	gdi->tile = gdi_bitmap_new(gdi, 64, 64, 32, NULL);
 
 	gdi_register_callbacks(inst);
 

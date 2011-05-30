@@ -21,13 +21,15 @@ libgdi_la_SOURCES = \
 	gdi_32bpp.c gdi_32bpp.h \
 	gdi_16bpp.c gdi_16bpp.h \
 	gdi_8bpp.c gdi_8bpp.h \
+	gdi_decode.c gdi_decode.h \
 	gdi.c gdi.h
 
-libgdi_la_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include
+libgdi_la_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include -I$(top_srcdir)/librfx
 
 libgdi_la_LDFLAGS =
 
-libgdi_la_LIBDADD =
+libgdi_la_LIBDADD = \
+	../librfx/librfx.la
 
 # extra
 EXTRA_DIST =
