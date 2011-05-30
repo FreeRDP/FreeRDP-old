@@ -33,6 +33,12 @@
 #define SET_XFI(_inst, _xfi) (_inst)->param1 = _xfi
 #define GET_XFI(_inst) ((xfInfo *) ((_inst)->param1))
 
+enum
+{
+	XF_CODEC_NONE,
+	XF_CODEC_REMOTEFX
+};
+
 struct xf_km
 {
 	int scancode;
@@ -92,6 +98,10 @@ struct xf_info
 	int xv_shmid;
 	char * xv_shmaddr;
 	uint32 * xv_pixfmts;
+
+	/* RemoteFX */
+	int codec;
+	void * rfx_context;
 };
 typedef struct xf_info xfInfo;
 

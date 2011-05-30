@@ -35,6 +35,7 @@
 #include "xf_event.h"
 #include "xf_keyboard.h"
 #include "xf_win.h"
+#include "xf_decode.h"
 #include "gdi_color.h"
 
 #ifdef HAVE_LIBXINERAMA
@@ -1052,7 +1053,10 @@ l_ui_authenticate(struct rdp_inst * inst)
 static int
 l_ui_decode(struct rdp_inst * inst, uint8 * data, int data_size)
 {
-	printf("l_ui_decode: size %d\n", data_size);
+	xfInfo * xfi;
+
+	xfi = GET_XFI(inst);
+	xf_decode_data(xfi, data, data_size);
 	return 0;
 }
 

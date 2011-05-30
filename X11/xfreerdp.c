@@ -39,6 +39,7 @@
 #include "xf_keyboard.h"
 #include "xf_event.h"
 #include "xf_video.h"
+#include "xf_decode.h"
 
 #define MAX_PLUGIN_DATA 20
 
@@ -359,8 +360,11 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 		else if (strcmp("--rfx", argv[*pindex]) == 0)
 		{
 			settings->rfx_flags = 1;
-			settings->ui_decode_flags = 0;
-			settings->use_frame_ack = 1;
+			settings->ui_decode_flags = 1;
+			settings->use_frame_ack = 0;
+			settings->server_depth = 32;
+			settings->performanceflags = PERF_FLAG_NONE;
+			xfi->codec = XF_CODEC_REMOTEFX;
 		}
 #ifdef HAVE_XV
 		else if (strcmp("--xv-port", argv[*pindex]) == 0)
@@ -645,6 +649,7 @@ run_xfreerdp(xfInfo * xfi)
 		return XF_EXIT_CONN_FAILED;
 	}
 	xf_video_init(xfi);
+	xf_decode_init(xfi);
 
 	/* program main loop */
 	while (1)
@@ -749,6 +754,7 @@ run_xfreerdp(xfInfo * xfi)
 	g_disconnect_reason = inst->disc_reason;
 
 	/* cleanup */
+	xf_decode_uninit(xfi);
 	xf_video_uninit(xfi);
 	freerdp_chanman_close(xfi->chan_man, inst);
 	inst->rdp_disconnect(inst);

@@ -9,6 +9,7 @@ xfreerdp_SOURCES = \
 	xf_types.h \
 	xf_win.h xf_win.c \
 	xf_video.h xf_video.c \
+	xf_decode.h xf_decode.c \
 	xfreerdp.c
 
 xfreerdp_CFLAGS = \
@@ -23,7 +24,9 @@ xfreerdp_CFLAGS = \
 xfreerdp_LDADD = \
 	../libfreerdp/libfreerdp.la \
 	../libgdi/libgdi.la \
+	../librfx/librfx.la \
 	../libfreerdpkbd/libfreerdpkbd.la \
 	../libfreerdputils/libfreerdputils.la \
 	../libfreerdpchanman/libfreerdpchanman.la \
 	@XCURSOR_LIBS@ @XV_LIBS@ @X_LIBS@ @X_EXTRA_LIBS@
+
