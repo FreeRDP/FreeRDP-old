@@ -1265,25 +1265,25 @@ xf_pre_connect(xfInfo * xfi)
 }
 
 static void
-mwm_hide_decorations(xfInfo * xfi)
+xf_hide_decorations(xfInfo * xfi)
 {
-	PropMotifWmHints motif_hints;
-	Atom hintsatom;
+	Atom atom;
+	PropMotifWmHints hints;
 
-	/* setup the property */
-	motif_hints.flags = MWM_HINTS_DECORATIONS;
-	motif_hints.decorations = 0;
+	hints.decorations = 0;
+	hints.flags = MWM_HINTS_DECORATIONS;
 
-	/* get the atom for the property */
-	hintsatom = XInternAtom(xfi->display, "_MOTIF_WM_HINTS", False);
-	if (!hintsatom)
+	atom = XInternAtom(xfi->display, "_MOTIF_WM_HINTS", False);
+
+	if (!atom)
 	{
-		printf("xf_post_connect: Failed to get atom _MOTIF_WM_HINTS: probably your window manager does not support MWM hints\n");
-		return;
+		printf("xf_hide_decorations: failed to obtain atom _MOTIF_WM_HINTS\n");
 	}
-
-	XChangeProperty(xfi->display, xfi->wnd, hintsatom, hintsatom, 32, PropModeReplace,
-			(unsigned char *) &motif_hints, PROP_MOTIF_WM_HINTS_ELEMENTS);
+	else
+	{
+		XChangeProperty(xfi->display, xfi->wnd, atom, atom, 32, PropModeReplace,
+			(unsigned char *) &hints, PROP_MOTIF_WM_HINTS_ELEMENTS);
+	}
 }
 
 int
@@ -1363,12 +1363,12 @@ xf_post_connect(xfInfo * xfi)
 
 	if (fullscreen)
 	{
-		mwm_hide_decorations(xfi);
+		xf_hide_decorations(xfi);
 		XSetInputFocus(xfi->display, xfi->wnd, RevertToParent, CurrentTime);
 	}
 	else if (xfi->decoration == 0)
 	{
-		mwm_hide_decorations(xfi);
+		xf_hide_decorations(xfi);
 	}
 
 	/* wait for VisibilityNotify */
