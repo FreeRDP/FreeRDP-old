@@ -19,7 +19,6 @@
 
 #include <freerdp/freerdp.h>
 #include "gdi.h"
-#include "gdi_color.h"
 
 typedef void (*pSetPixel16_ROP2)(uint16 *pixel, uint16 *pen);
 

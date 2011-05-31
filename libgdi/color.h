@@ -17,8 +17,8 @@
    limitations under the License.
 */
 
-#ifndef __GDI_COLOR_H
-#define __GDI_COLOR_H
+#ifndef __COLOR_H
+#define __COLOR_H
 
 #include <freerdp/freerdp.h>
 
@@ -26,7 +26,7 @@
 extern "C" {
 #endif
 
-/* GDI Color Space Conversions: http://msdn.microsoft.com/en-us/library/ff566496/ */
+/* Color Space Conversions: http://msdn.microsoft.com/en-us/library/ff566496/ */
 
 /* Color Space Conversion */
  
@@ -244,4 +244,4 @@ int gdi_alpha_cursor_convert(uint8* alphaData, uint8* xorMask, uint8* andMask, i
 }
 #endif
 
-#endif /* __GDI_COLOR_H */
+#endif /* __COLOR_H */

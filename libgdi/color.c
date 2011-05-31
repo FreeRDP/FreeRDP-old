@@ -22,7 +22,7 @@
 #include <stdlib.h>
 #include <freerdp/freerdp.h>
 
-#include "gdi_color.h"
+#include "color.h"
 
 int gdi_get_pixel(uint8 * data, int x, int y, int width, int height, int bpp)
 {

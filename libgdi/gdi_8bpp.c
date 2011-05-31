@@ -20,10 +20,16 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-
 #include <freerdp/freerdp.h>
+
 #include "gdi.h"
-#include "gdi_color.h"
+#include "color.h"
+#include "gdi_pen.h"
+#include "gdi_bitmap.h"
+#include "gdi_region.h"
+#include "gdi_clipping.h"
+#include "gdi_drawing.h"
+
 #include "gdi_8bpp.h"
 
 int FillRect_8bpp(HDC hdc, HRECT rect, HBRUSH hbr)

@@ -36,7 +36,8 @@
 #include "xf_keyboard.h"
 #include "xf_win.h"
 #include "xf_decode.h"
-#include "gdi_color.h"
+#include "color.h"
+#include "gdi_palette.h"
 
 #ifdef HAVE_LIBXINERAMA
 #include <X11/extensions/Xinerama.h>

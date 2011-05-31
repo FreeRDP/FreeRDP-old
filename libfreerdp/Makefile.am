@@ -59,7 +59,11 @@ if ENABLE_TLS
 libfreerdp_la_SOURCES += tls.h credssp.c credssp.h ntlmssp.c ntlmssp.h
 endif
 
-libfreerdp_la_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include \
+libfreerdp_la_CFLAGS = \
+	-I$(top_srcdir) \
+	-I$(top_srcdir)/libgdi \
+	-I$(top_srcdir)/librfx \
+	-I$(top_srcdir)/include \
 	@CRYPTO_CFLAGS@ -DFREERDP_EXPORTS \
 	-DPLUGIN_PATH=\"$(PLUGIN_PATH)\" \
 	-DEXT_PATH=\"$(EXT_PATH)\"
@@ -68,6 +72,8 @@ libfreerdp_la_LDFLAGS =
 
 libfreerdp_la_LIBADD = \
 	../asn1/libasn1.la \
+	../libgdi/libgdi.la \
+	../librfx/librfx.la \
 	../libfreerdputils/libfreerdputils.la \
 	@CRYPTO_LIBS@ @LIBICONV@
 

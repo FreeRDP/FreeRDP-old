@@ -6,8 +6,6 @@ libgdidir = $(libdir)
 libgdi_LTLIBRARIES = libgdi.la
 
 libgdi_la_SOURCES = \
-	gdi_color.c gdi_color.h \
-	gdi_window.c gdi_window.h \
 	gdi_bitmap.c gdi_bitmap.h \
 	gdi_region.c gdi_region.h \
 	gdi_drawing.c gdi_drawing.h \
@@ -21,7 +19,8 @@ libgdi_la_SOURCES = \
 	gdi_32bpp.c gdi_32bpp.h \
 	gdi_16bpp.c gdi_16bpp.h \
 	gdi_8bpp.c gdi_8bpp.h \
-	gdi_decode.c gdi_decode.h \
+	color.c color.h \
+	decode.c decode.h \
 	gdi.c gdi.h
 
 libgdi_la_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include -I$(top_srcdir)/librfx

@@ -21,23 +21,11 @@
 #include "config.h"
 #endif
 
-#include <freerdp/freerdp.h>
-
-#include "gdi_color.h"
-#include "gdi_window.h"
-#include "gdi_bitmap.h"
-#include "gdi_region.h"
-#include "gdi_drawing.h"
-#include "gdi_clipping.h"
-#include "gdi_palette.h"
-#include "gdi_shape.h"
-#include "gdi_line.h"
-#include "gdi_brush.h"
-#include "gdi_pen.h"
-#include "gdi_dc.h"
-
 #ifndef __GDI_H
 #define __GDI_H
+
+#include "color.h"
+#include <freerdp/freerdp.h>
 
 /* For more information, see [MS-RDPEGDI] */
 
@@ -229,6 +217,45 @@ struct _DC
 };
 typedef struct _DC DC;
 typedef DC* HDC;
+
+struct _gdi_bitmap
+{
+	HDC hdc;
+	HBITMAP bitmap;
+	HBITMAP org_bitmap;
+};
+typedef struct _gdi_bitmap gdi_bitmap;
+
+struct _GDI
+{
+	int width;
+	int height;
+	int dstBpp;
+	int srcBpp;
+	int cursor_x;
+	int cursor_y;
+	int bytesPerPixel;
+
+	HDC hdc;
+	HCLRCONV clrconv;
+	gdi_bitmap *primary;
+	gdi_bitmap *drawing;
+	uint8* primary_buffer;
+	COLORREF textColor;
+	void * rfx_context;
+	gdi_bitmap *tile;
+};
+typedef struct _GDI GDI;
+
+unsigned int gdi_rop3_code(unsigned char code);
+void gdi_copy_mem(uint8 *d, uint8 *s, int n);
+void gdi_copy_memb(uint8 *d, uint8 *s, int n);
+uint8* gdi_get_bitmap_pointer(HDC hdcBmp, int x, int y);
+uint8* gdi_get_brush_pointer(HDC hdcBrush, int x, int y);
+int gdi_is_mono_pixel_set(uint8* data, int x, int y, int width);
+int gdi_init(rdpInst * inst, uint32 flags);
+gdi_bitmap* gdi_bitmap_new(GDI *gdi, int width, int height, int bpp, uint8* data);
+void gdi_bitmap_free(gdi_bitmap *gdi_bmp);
 
 #define SET_GDI(_inst, _gdi) (_inst)->param2 = _gdi
 #define GET_GDI(_inst) ((GDI*) ((_inst)->param2))

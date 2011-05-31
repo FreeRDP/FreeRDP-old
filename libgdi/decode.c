@@ -17,14 +17,18 @@
    limitations under the License.
 */
 
-#include <freerdp/utils.h>
-#include <freerdp/freerdp.h>
-#include "rfx.h"
-#include "gdi.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <freerdp/utils.h>
+#include <freerdp/freerdp.h>
 
-#include "gdi_decode.h"
+#include "gdi.h"
+#include "rfx.h"
+#include "gdi_bitmap.h"
+#include "gdi_region.h"
+#include "gdi_clipping.h"
+
+#include "decode.h"
 
 void gdi_decode_frame(GDI *gdi, int x, int y, uint8 * data, uint32 length)
 {
