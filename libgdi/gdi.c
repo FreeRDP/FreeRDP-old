@@ -1143,15 +1143,35 @@ gdi_init(rdpInst * inst, uint32 flags)
 	gdi->height = inst->settings->height;
 	gdi->srcBpp = inst->settings->server_depth;
 
+	/* default internal buffer format */
+	gdi->dstBpp = 32;
+	gdi->bytesPerPixel = 4;
+
 	if (gdi->srcBpp > 16)
 	{
-		gdi->dstBpp = 32;
-		gdi->bytesPerPixel = 4;
+		if (flags & CLRBUF_32BPP)
+		{
+			gdi->dstBpp = 32;
+			gdi->bytesPerPixel = 4;
+		}
+		else if (flags & CLRBUF_16BPP)
+		{
+			gdi->dstBpp = 16;
+			gdi->bytesPerPixel = 2;
+		}
 	}
 	else
 	{
-		gdi->dstBpp = 16;
-		gdi->bytesPerPixel = 2;
+		if (flags & CLRBUF_16BPP)
+		{
+			gdi->dstBpp = 16;
+			gdi->bytesPerPixel = 2;
+		}
+		else if (flags & CLRBUF_32BPP)
+		{
+			gdi->dstBpp = 32;
+			gdi->bytesPerPixel = 4;
+		}
 	}
 	
 	gdi->hdc = GetDC();

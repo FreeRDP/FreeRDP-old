@@ -217,6 +217,10 @@ extern "C" {
 /* if defined RGB555 format is used when rendering with a 16-bit frame buffer */
 #define CLRCONV_RGB555		4
 
+/* Supported Internal Buffer Formats */
+#define CLRBUF_16BPP		8
+#define	CLRBUF_32BPP		16
+
 struct _CLRCONV
 {
 	int alpha;

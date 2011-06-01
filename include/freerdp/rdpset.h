@@ -86,6 +86,7 @@ struct rdp_set
 	int ui_decode_flags;
 	int use_frame_ack;
 	int num_channels;
+	int software_gdi;
 	struct rdp_chan channels[16];
 	struct rdp_ext_set extensions[16];
 	int num_monitors;

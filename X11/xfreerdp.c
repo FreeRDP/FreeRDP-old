@@ -75,6 +75,7 @@ set_default_params(xfInfo * xfi)
 	settings->off_screen_bitmaps = 1;
 	settings->polygon_ellipse_orders = 1;
 	settings->triblt = 0;
+	settings->software_gdi = 0;
 	settings->new_cursors = 1;
 	settings->rdp_version = 5;
 	settings->rdp_security = 1;
@@ -128,6 +129,7 @@ out_args(void)
 #endif
 		"\t--plugin: load a virtual channel plugin\n"
 		"\t--no-osb: disable off screen bitmaps, default on\n"
+		"\t--sw-gdi: force software rendering of GDI\n"
 		"\t--rfx: ask for RemoteFX session\n"
 #ifdef HAVE_XV
 		"\t--xv-port: choose XVideo adaptor port number.\n"
@@ -356,6 +358,10 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 		else if (strcmp("--no-osb", argv[*pindex]) == 0)
 		{
 			settings->off_screen_bitmaps = 0;
+		}
+		else if (strcmp("--sw-gdi", argv[*pindex]) == 0)
+		{
+			settings->software_gdi = 1;
 		}
 		else if (strcmp("--rfx", argv[*pindex]) == 0)
 		{
@@ -629,9 +635,11 @@ run_xfreerdp(xfInfo * xfi)
 		printf("run_xfreerdp: freerdp_chanman_pre_connect failed\n");
 		return XF_EXIT_CONN_FAILED;
 	}
+
 	xf_kb_init(xfi->display, xfi->keyboard_layout_id);
 	xf_kb_inst_init(xfi);
 	printf("keyboard_layout: 0x%X\n", inst->settings->keyboard_layout);
+
 	/* call connect */
 	if (inst->rdp_connect(inst) != 0)
 	{
