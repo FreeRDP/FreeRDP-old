@@ -19,11 +19,10 @@
 
 #include "CUnit/Basic.h"
 
-#include "test_credssp.h"
-#include "test_ntlmssp.h"
+#include "test_color.h"
 #include "test_libgdi.h"
 #include "test_librfx.h"
-#include "test_gdi_color.h"
+#include "test_ntlmssp.h"
 #include "test_freerdp.h"
 
 void dump_data(unsigned char * p, int len, int width, char* name)
@@ -54,13 +53,43 @@ void dump_data(unsigned char * p, int len, int width, char* name)
 
 int main(int argc, char* argv[])
 {
+	int index = 1;
+	int *pindex = &index;
+
 	if (CU_initialize_registry() != CUE_SUCCESS)
 		return CU_get_error();
 
-	//add_credssp_suite();
-	//add_ntlmssp_suite();
-	//add_libgdi_suite();
-	add_librfx_suite();
+	if (argc < *pindex + 1)
+	{
+		add_color_suite();
+		add_libgdi_suite();
+		add_librfx_suite();
+		add_ntlmssp_suite();
+	}
+	else
+	{
+		while (*pindex < argc)
+		{
+			if (strcmp("color", argv[*pindex]) == 0)
+			{
+				add_color_suite();
+			}
+			else if (strcmp("libgdi", argv[*pindex]) == 0)
+			{
+				add_libgdi_suite();
+			}
+			else if (strcmp("librfx", argv[*pindex]) == 0)
+			{
+				add_librfx_suite();
+			}
+			else if (strcmp("ntlmssp", argv[*pindex]) == 0)
+			{
+				add_ntlmssp_suite();
+			}
+
+			*pindex = *pindex + 1;
+		}
+	}
 
 	CU_basic_set_mode(CU_BRM_VERBOSE);
 	CU_basic_run_tests();
