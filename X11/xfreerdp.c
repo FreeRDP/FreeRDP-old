@@ -119,6 +119,7 @@ out_args(void)
 		"\t-f: fullscreen mode\n"
 		"\t-D: hide window decorations\n"
 		"\t-z: enable bulk compression\n"
+		"\t--gdi: GDI rendering (sw or hw, for software or hardware)\n"
 		"\t-x: performance flags (m, b or l for modem, broadband or lan)\n"
 		"\t-X: embed into another window with a given XID.\n"
 #ifndef DISABLE_TLS
@@ -129,7 +130,6 @@ out_args(void)
 #endif
 		"\t--plugin: load a virtual channel plugin\n"
 		"\t--no-osb: disable off screen bitmaps, default on\n"
-		"\t--sw-gdi: force software rendering of GDI\n"
 		"\t--rfx: ask for RemoteFX session\n"
 #ifdef HAVE_XV
 		"\t--xv-port: choose XVideo adaptor port number.\n"
@@ -355,13 +355,31 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 		{
 			settings->bulk_compression = 1;
 		}
+		else if (strcmp("--gdi", argv[*pindex]) == 0)
+		{
+			*pindex = *pindex + 1;
+			if (*pindex == argc)
+			{
+				printf("missing GDI rendering\n");
+				return 1;
+			}
+			if (strncmp("sw", argv[*pindex], 1) == 0) /* Software */
+			{
+				settings->software_gdi = 1;
+			}
+			else if (strncmp("hw", argv[*pindex], 1) == 0) /* Hardware */
+			{
+				settings->software_gdi = 0;
+			}
+			else
+			{
+				printf("unknown GDI rendering\n");
+				return 1;
+			}
+		}
 		else if (strcmp("--no-osb", argv[*pindex]) == 0)
 		{
 			settings->off_screen_bitmaps = 0;
-		}
-		else if (strcmp("--sw-gdi", argv[*pindex]) == 0)
-		{
-			settings->software_gdi = 1;
 		}
 		else if (strcmp("--rfx", argv[*pindex]) == 0)
 		{

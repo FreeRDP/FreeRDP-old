@@ -1,15 +1,15 @@
 ## Process this file with automake to produce Makefile.in
 REQUIRED_SUBDIRS = \
 	asn1 \
+	libgdi \
+	librfx \
 	libfreerdputils \
 	libfreerdp \
 	docs \
 	contrib \
 	include \
-	libfreerdpkbd \
 	keymaps \
-	libgdi \
-	librfx \
+	libfreerdpkbd \
 	libfreerdpchanman \
 	channels/rdpsnd \
 	channels/drdynvc \
