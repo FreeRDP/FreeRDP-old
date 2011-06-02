@@ -30,6 +30,9 @@
 #include <errno.h>
 #include <fnmatch.h>
 #include <utime.h>
+#include <freerdp/utils/stream.h>
+#include <freerdp/utils/memory.h>
+#include <freerdp/utils/unicode.h>
 
 #include "config.h"
 

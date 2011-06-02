@@ -53,6 +53,7 @@ set_default_params(rdpSet * settings)
 	settings->performanceflags = PERF_DISABLE_FULLWINDOWDRAG | PERF_DISABLE_MENUANIMATIONS | PERF_DISABLE_WALLPAPER;
 	settings->off_screen_bitmaps = 1;
 	settings->triblt = 0;
+	settings->software_gdi = 0;
 	settings->new_cursors = 1;
 	settings->rdp_version = 5;
 	settings->rdp_security = 1;
@@ -69,9 +70,9 @@ out_args(void)
 	char help[] =
 		"\n"
 		"FreeRDP - A Free Remote Desktop Protocol Client\n"
-		"See http://freerdp.sourceforge.net for more information\n"
+		"See www.freerdp.com for more information\n"
 		"\n"
-		"Usage: xfreerdp [options] server:port\n"
+		"Usage: dfbfreerdp [options] server:port\n"
 		"\t-a: color depth (8, 15, 16, 24 or 32)\n"
 		"\t-u: username\n"
 		"\t-p: password\n"
@@ -88,6 +89,7 @@ out_args(void)
 		"\t-f: fullscreen mode\n"
 		"\t-D: hide window decorations\n"
 		"\t-z: enable bulk compression\n"
+		"\t--gdi: GDI rendering (sw or hw, for software or hardware)\n"
 		"\t-x: performance flags (m, b or l for modem, broadband or lan)\n"
 		"\t-X: embed into another window with a given XID.\n"
 #ifndef DISABLE_TLS
@@ -99,6 +101,9 @@ out_args(void)
 		"\t--plugin: load a virtual channel plugin\n"
 		"\t--no-osb: disable off screen bitmaps, default on\n"
 		"\t--rfx: ask for RemoteFX session\n"
+#ifdef HAVE_XV
+		"\t--xv-port: choose XVideo adaptor port number.\n"
+#endif
 		"\t--version: Print out the version and exit\n"
 		"\t-h: show this help\n";
 	printf("%s\n", help);
@@ -108,22 +113,34 @@ out_args(void)
 static int
 process_params(rdpSet * settings, rdpChanMan * chan_man, int argc, char ** argv, int * pindex)
 {
-	char * p;
-	struct passwd * pw;
-	RD_PLUGIN_DATA plugin_data[MAX_PLUGIN_DATA + 1];
 	int index;
 	int i, j;
+	char * p;
+	struct passwd * pw;
+	int num_extensions;
+	RD_PLUGIN_DATA plugin_data[MAX_PLUGIN_DATA + 1];
 
+	num_extensions = 0;
 	set_default_params(settings);
-	pw = getpwuid(getuid());
-	if (pw != 0)
+
+	p = getlogin();
+	i = sizeof(settings->username) - 1;
+	if (p != 0)
 	{
-		if (pw->pw_name != 0)
+		strncpy(settings->username, p, i);
+	}
+	else
+	{
+		pw = getpwuid(getuid());
+		if (pw != 0)
 		{
-			strncpy(settings->username, pw->pw_name, sizeof(settings->username) - 1);
+			if (pw->pw_name != 0)
+			{
+				strncpy(settings->username, pw->pw_name, i);
+			}
 		}
 	}
-	printf("process_params\n");
+
 	if (argc < *pindex + 1)
 	{
 		if (*pindex == 1)
@@ -251,6 +268,28 @@ process_params(rdpSet * settings, rdpChanMan * chan_man, int argc, char ** argv,
 		{
 			settings->bulk_compression = 1;
 		}
+		else if (strcmp("--gdi", argv[*pindex]) == 0)
+		{
+			*pindex = *pindex + 1;
+			if (*pindex == argc)
+			{
+				printf("missing GDI rendering\n");
+				return 1;
+			}
+			if (strncmp("sw", argv[*pindex], 1) == 0) /* Software */
+			{
+				settings->software_gdi = 1;
+			}
+			else if (strncmp("hw", argv[*pindex], 1) == 0) /* Hardware */
+			{
+				settings->software_gdi = 0;
+			}
+			else
+			{
+				printf("unknown GDI rendering\n");
+				return 1;
+			}
+		}
 		else if (strcmp("--no-osb", argv[*pindex]) == 0)
 		{
 			settings->off_screen_bitmaps = 0;
@@ -341,7 +380,7 @@ process_params(rdpSet * settings, rdpChanMan * chan_man, int argc, char ** argv,
 			}
 		}
 #endif
-		else if (strcmp("-plugin", argv[*pindex]) == 0)
+		else if (strcmp("--plugin", argv[*pindex]) == 0)
 		{
 			*pindex = *pindex + 1;
 			if (*pindex == argc)
@@ -351,7 +390,7 @@ process_params(rdpSet * settings, rdpChanMan * chan_man, int argc, char ** argv,
 			}
 			index = *pindex;
 			memset(plugin_data, 0, sizeof(plugin_data));
-			if (*pindex < argc - 1 && strcmp("-data", argv[*pindex + 1]) == 0)
+			if (*pindex < argc - 1 && strcmp("--data", argv[*pindex + 1]) == 0)
 			{
 				*pindex = *pindex + 2;
 				i = 0;
@@ -374,20 +413,82 @@ process_params(rdpSet * settings, rdpChanMan * chan_man, int argc, char ** argv,
 			}
 			freerdp_chanman_load_plugin(chan_man, settings, argv[index], plugin_data);
 		}
-		else
+		else if (strcmp("--ext", argv[*pindex]) == 0)
 		{
-			strncpy(settings->server, argv[*pindex], sizeof(settings->server) - 1);
-			settings->server[sizeof(settings->server) - 1] = 0;
-			p = strchr(settings->server, ':');
-			if (p)
+			*pindex = *pindex + 1;
+			if (*pindex == argc)
 			{
-				*p = 0;
-				settings->tcp_port_rdp = atoi(p + 1);
+				printf("missing extension name\n");
+				return 1;
+			}
+			if (num_extensions >= sizeof(settings->extensions) / sizeof(struct rdp_ext_set))
+			{
+				printf("maximum extensions reached\n");
+				return 1;
+			}
+			index = *pindex;
+			snprintf(settings->extensions[num_extensions].name,
+				sizeof(settings->extensions[num_extensions].name),
+				"%s", argv[index]);
+			settings->extensions[num_extensions].data = NULL;
+			if (*pindex < argc - 1 && strcmp("--data", argv[*pindex + 1]) == 0)
+			{
+				*pindex = *pindex + 2;
+				settings->extensions[num_extensions].data = argv[*pindex];
+				i = 0;
+				while (*pindex < argc && strcmp("--", argv[*pindex]) != 0)
+				{
+					*pindex = *pindex + 1;
+					i++;
+				}
+			}
+			num_extensions++;
+		}
+		else if ((strcmp("-h", argv[*pindex]) == 0) || strcmp("--help", argv[*pindex]) == 0)
+		{
+			out_args();
+			return 1;
+		}
+		else if (strcmp("--version", argv[*pindex]) == 0)
+		{
+			printf("This is FreeRDP version %s\n", PACKAGE_VERSION);
+			return 1;
+		}
+		else if (argv[*pindex][0] != '-')
+		{
+			settings->server[sizeof(settings->server) - 1] = 0;
+			if (argv[*pindex][0] == '[' && (p = strchr(argv[*pindex], ']'))
+				&& (p[1] == 0 || (p[1] == ':' && !strchr(p + 2, ':'))))
+			{
+				/* Either "[...]" or "[...]:..." with at most one : after the brackets */
+				strncpy(settings->server, argv[*pindex] + 1, sizeof(settings->server) - 1);
+				if ((p = strchr(settings->server, ']')))
+				{
+					*p = 0;
+					if (p[1] == ':')
+						settings->tcp_port_rdp = atoi(p + 2);
+				}
+			}
+			else
+			{
+				/* Port number is cut off and used if exactly one : in the string */
+				strncpy(settings->server, argv[*pindex], sizeof(settings->server) - 1);
+				if ((p = strchr(settings->server, ':')) && !strchr(p + 1, ':'))
+				{
+					*p = 0;
+					settings->tcp_port_rdp = atoi(p + 1);
+				}
 			}
 			/* server is the last argument for the current session. arguments
 			   followed will be parsed for the next session. */
 			*pindex = *pindex + 1;
+
 			return 0;
+		}
+		else
+		{
+			printf("invalid option: %s\n", argv[*pindex]);
+			return 1;
 		}
 		*pindex = *pindex + 1;
 	}

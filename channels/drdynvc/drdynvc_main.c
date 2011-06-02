@@ -25,6 +25,10 @@
 #include <sys/time.h>
 #include "drdynvc_types.h"
 #include "dvcman.h"
+#include <freerdp/utils/stream.h>
+#include <freerdp/utils/chan_plugin.h>
+#include <freerdp/utils/wait_obj.h>
+
 #include "drdynvc_main.h"
 
 #define CREATE_REQUEST_PDU     0x01

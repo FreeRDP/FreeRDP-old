@@ -22,7 +22,6 @@
 
 #include <freerdp/types_ui.h>
 #include <freerdp/vchan.h>
-#include <freerdp/utils.h>
 
 #include "config.h"
 

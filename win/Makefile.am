@@ -2,7 +2,6 @@
 
 EXTRA_DIST = \
 	freerdp.sln \
-	libfreerdpchanman.vcproj \
 	wfreerdp/wf_win.cpp \
 	wfreerdp/wf_event.h \
 	wfreerdp/wf_win.h \
@@ -11,5 +10,7 @@ EXTRA_DIST = \
 	wfreerdp/wfreerdp.cpp \
 	wfreerdp/wf_color.cpp \
 	wfreerdp/wfreerdp.vcproj \
-	libasn1.vcproj \
-	libfreerdp.vcproj
+	libfreerdp-chanman.vcproj \
+	libfreerdp-utils.vcproj \
+	libfreerdp-asn1.vcproj \
+	libfreerdp-core.vcproj

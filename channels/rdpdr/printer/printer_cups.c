@@ -27,6 +27,9 @@
 #include "rdpdr_constants.h"
 #include "rdpdr_types.h"
 #include "devman.h"
+#include <freerdp/utils/stream.h>
+#include <freerdp/utils/unicode.h>
+
 #include "printer_main.h"
 
 struct _PRINTER_DEVICE_INFO

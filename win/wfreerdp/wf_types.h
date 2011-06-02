@@ -25,7 +25,7 @@
 #include <freerdp/chanman.h>
 #include <freerdp/types_ui.h>
 
-#include "gdi_color.h"
+#include "color.h"
 
 #define SET_WFI(_inst, _wfi) (_inst)->param1 = _wfi
 #define GET_WFI(_inst) ((wfInfo *) ((_inst)->param1))

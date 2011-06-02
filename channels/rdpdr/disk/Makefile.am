@@ -13,7 +13,8 @@ disk_la_CFLAGS = -I$(top_srcdir)/include \
 
 disk_la_LDFLAGS = -avoid-version -module
 
-disk_la_LIBADD = ../../../libfreerdputils/libfreerdputils.la
+disk_la_LIBADD = \
+	../../../libfreerdp-utils/libfreerdp-utils.la
 
 # extra
 EXTRA_DIST =

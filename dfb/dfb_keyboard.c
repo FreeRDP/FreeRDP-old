@@ -20,10 +20,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "libfreerdpkbd/keyboard.h"
+#include "keyboard.h"
 #include <freerdp/freerdp.h>
 #include <freerdp/kbd.h>
 #include "dfb_event.h"
+
 #include "dfb_keyboard.h"
 
 unsigned char keymap[256];

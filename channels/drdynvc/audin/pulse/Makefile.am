@@ -14,7 +14,9 @@ audin_pulse_la_CFLAGS = @PULSE_CFLAGS@ \
 
 audin_pulse_la_LDFLAGS = -avoid-version -module
 
-audin_pulse_la_LIBADD = @PULSE_LIBS@ ../../../../libfreerdputils/libfreerdputils.la
+audin_pulse_la_LIBADD = \
+	@PULSE_LIBS@ \
+	../../../../libfreerdp-utils/libfreerdp-utils.la
 
 # extra
 EXTRA_DIST =

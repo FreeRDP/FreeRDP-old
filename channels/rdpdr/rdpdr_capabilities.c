@@ -24,6 +24,11 @@
 
 #include "rdpdr_types.h"
 #include "rdpdr_constants.h"
+#include <freerdp/utils/stream.h>
+#include <freerdp/utils/chan_plugin.h>
+#include <freerdp/utils/unicode.h>
+#include <freerdp/utils/wait_obj.h>
+
 #include "rdpdr_capabilities.h"
 
 /* Output device redirection capability set header */

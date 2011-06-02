@@ -1,0 +1,168 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{97445561-CA2C-46A2-A1C4-C7311C558C10}</ProjectGuid>
+    <RootNamespace>libasn1</RootNamespace>
+    <Keyword>Win32Proj</Keyword>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(Configuration)\</IntDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_WIN32;WIN32;_DEBUG;_LIB;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>true</MinimalRebuild>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <AdditionalIncludeDirectories>..\asn1;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\libfreerdp-asn1\asn_codecs_prim.c" />
+    <ClCompile Include="..\libfreerdp-asn1\asn_SEQUENCE_OF.c" />
+    <ClCompile Include="..\libfreerdp-asn1\asn_SET_OF.c" />
+    <ClCompile Include="..\libfreerdp-asn1\ber_decoder.c" />
+    <ClCompile Include="..\libfreerdp-asn1\ber_tlv_length.c" />
+    <ClCompile Include="..\libfreerdp-asn1\ber_tlv_tag.c" />
+    <ClCompile Include="..\libfreerdp-asn1\BIT_STRING.c" />
+    <ClCompile Include="..\libfreerdp-asn1\constr_CHOICE.c" />
+    <ClCompile Include="..\libfreerdp-asn1\constr_SEQUENCE.c" />
+    <ClCompile Include="..\libfreerdp-asn1\constr_SEQUENCE_OF.c" />
+    <ClCompile Include="..\libfreerdp-asn1\constr_SET_OF.c" />
+    <ClCompile Include="..\libfreerdp-asn1\constr_TYPE.c" />
+    <ClCompile Include="..\libfreerdp-asn1\constraints.c" />
+    <ClCompile Include="..\libfreerdp-asn1\ContextFlags.c" />
+    <ClCompile Include="..\libfreerdp-asn1\der_encoder.c" />
+    <ClCompile Include="..\libfreerdp-asn1\GeneralString.c" />
+    <ClCompile Include="..\libfreerdp-asn1\INTEGER.c" />
+    <ClCompile Include="..\libfreerdp-asn1\MechType.c" />
+    <ClCompile Include="..\libfreerdp-asn1\MechTypeList.c" />
+    <ClCompile Include="..\libfreerdp-asn1\NativeEnumerated.c" />
+    <ClCompile Include="..\libfreerdp-asn1\NativeInteger.c" />
+    <ClCompile Include="..\libfreerdp-asn1\NegHints.c" />
+    <ClCompile Include="..\libfreerdp-asn1\NegoData.c" />
+    <ClCompile Include="..\libfreerdp-asn1\NegoDataItem.c" />
+    <ClCompile Include="..\libfreerdp-asn1\NegotiationToken.c" />
+    <ClCompile Include="..\libfreerdp-asn1\NegTokenInit.c" />
+    <ClCompile Include="..\libfreerdp-asn1\NegTokenInit2.c" />
+    <ClCompile Include="..\libfreerdp-asn1\NegTokenResp.c" />
+    <ClCompile Include="..\libfreerdp-asn1\OBJECT_IDENTIFIER.c" />
+    <ClCompile Include="..\libfreerdp-asn1\OCTET_STRING.c" />
+    <ClCompile Include="..\libfreerdp-asn1\per_decoder.c" />
+    <ClCompile Include="..\libfreerdp-asn1\per_encoder.c" />
+    <ClCompile Include="..\libfreerdp-asn1\per_opentype.c" />
+    <ClCompile Include="..\libfreerdp-asn1\per_support.c" />
+    <ClCompile Include="..\libfreerdp-asn1\TSCredentials.c" />
+    <ClCompile Include="..\libfreerdp-asn1\TSCspDataDetail.c" />
+    <ClCompile Include="..\libfreerdp-asn1\TSPasswordCreds.c" />
+    <ClCompile Include="..\libfreerdp-asn1\TSRequest.c" />
+    <ClCompile Include="..\libfreerdp-asn1\TSSmartCardCreds.c" />
+    <ClCompile Include="..\libfreerdp-asn1\xer_decoder.c" />
+    <ClCompile Include="..\libfreerdp-asn1\xer_encoder.c" />
+    <ClCompile Include="..\libfreerdp-asn1\xer_support.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\libfreerdp-asn1\asn_application.h" />
+    <ClInclude Include="..\libfreerdp-asn1\asn_codecs.h" />
+    <ClInclude Include="..\libfreerdp-asn1\asn_codecs_prim.h" />
+    <ClInclude Include="..\libfreerdp-asn1\asn_internal.h" />
+    <ClInclude Include="..\libfreerdp-asn1\asn_SEQUENCE_OF.h" />
+    <ClInclude Include="..\libfreerdp-asn1\asn_SET_OF.h" />
+    <ClInclude Include="..\libfreerdp-asn1\asn_system.h" />
+    <ClInclude Include="..\libfreerdp-asn1\ber_decoder.h" />
+    <ClInclude Include="..\libfreerdp-asn1\ber_tlv_length.h" />
+    <ClInclude Include="..\libfreerdp-asn1\ber_tlv_tag.h" />
+    <ClInclude Include="..\libfreerdp-asn1\BIT_STRING.h" />
+    <ClInclude Include="..\libfreerdp-asn1\constr_CHOICE.h" />
+    <ClInclude Include="..\libfreerdp-asn1\constr_SEQUENCE.h" />
+    <ClInclude Include="..\libfreerdp-asn1\constr_SEQUENCE_OF.h" />
+    <ClInclude Include="..\libfreerdp-asn1\constr_SET_OF.h" />
+    <ClInclude Include="..\libfreerdp-asn1\constr_TYPE.h" />
+    <ClInclude Include="..\libfreerdp-asn1\constraints.h" />
+    <ClInclude Include="..\libfreerdp-asn1\ContextFlags.h" />
+    <ClInclude Include="..\libfreerdp-asn1\der_encoder.h" />
+    <ClInclude Include="..\libfreerdp-asn1\GeneralString.h" />
+    <ClInclude Include="..\libfreerdp-asn1\INTEGER.h" />
+    <ClInclude Include="..\libfreerdp-asn1\MechType.h" />
+    <ClInclude Include="..\libfreerdp-asn1\MechTypeList.h" />
+    <ClInclude Include="..\libfreerdp-asn1\NativeEnumerated.h" />
+    <ClInclude Include="..\libfreerdp-asn1\NativeInteger.h" />
+    <ClInclude Include="..\libfreerdp-asn1\NegHints.h" />
+    <ClInclude Include="..\libfreerdp-asn1\NegoData.h" />
+    <ClInclude Include="..\libfreerdp-asn1\NegoDataItem.h" />
+    <ClInclude Include="..\libfreerdp-asn1\NegotiationToken.h" />
+    <ClInclude Include="..\libfreerdp-asn1\NegTokenInit.h" />
+    <ClInclude Include="..\libfreerdp-asn1\NegTokenInit2.h" />
+    <ClInclude Include="..\libfreerdp-asn1\NegTokenResp.h" />
+    <ClInclude Include="..\libfreerdp-asn1\OBJECT_IDENTIFIER.h" />
+    <ClInclude Include="..\libfreerdp-asn1\OCTET_STRING.h" />
+    <ClInclude Include="..\libfreerdp-asn1\per_decoder.h" />
+    <ClInclude Include="..\libfreerdp-asn1\per_encoder.h" />
+    <ClInclude Include="..\libfreerdp-asn1\per_opentype.h" />
+    <ClInclude Include="..\libfreerdp-asn1\per_support.h" />
+    <ClInclude Include="..\libfreerdp-asn1\TSCredentials.h" />
+    <ClInclude Include="..\libfreerdp-asn1\TSCspDataDetail.h" />
+    <ClInclude Include="..\libfreerdp-asn1\TSPasswordCreds.h" />
+    <ClInclude Include="..\libfreerdp-asn1\TSRequest.h" />
+    <ClInclude Include="..\libfreerdp-asn1\TSSmartCardCreds.h" />
+    <ClInclude Include="..\libfreerdp-asn1\xer_decoder.h" />
+    <ClInclude Include="..\libfreerdp-asn1\xer_encoder.h" />
+    <ClInclude Include="..\libfreerdp-asn1\xer_support.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

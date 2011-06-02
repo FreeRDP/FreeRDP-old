@@ -43,6 +43,7 @@
 #include "rdpdr_types.h"
 #include "rdpdr_constants.h"
 #include "devman.h"
+#include <freerdp/utils/stream.h>
 
 #define FILE_DEVICE_SERIAL_PORT		0x1b
 

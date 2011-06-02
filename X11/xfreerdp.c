@@ -31,9 +31,9 @@
 #include <semaphore.h>
 #include <freerdp/freerdp.h>
 #include <freerdp/chanman.h>
-#include <freerdp/utils.h>
 #include <freerdp/kbd.h>
 #include <freerdp/errinfo.h>
+#include <freerdp/utils/semaphore.h>
 #include "xf_types.h"
 #include "xf_win.h"
 #include "xf_keyboard.h"
@@ -75,6 +75,7 @@ set_default_params(xfInfo * xfi)
 	settings->off_screen_bitmaps = 1;
 	settings->polygon_ellipse_orders = 1;
 	settings->triblt = 0;
+	settings->software_gdi = 0;
 	settings->new_cursors = 1;
 	settings->rdp_version = 5;
 	settings->rdp_security = 1;
@@ -118,6 +119,7 @@ out_args(void)
 		"\t-f: fullscreen mode\n"
 		"\t-D: hide window decorations\n"
 		"\t-z: enable bulk compression\n"
+		"\t--gdi: GDI rendering (sw or hw, for software or hardware)\n"
 		"\t-x: performance flags (m, b or l for modem, broadband or lan)\n"
 		"\t-X: embed into another window with a given XID.\n"
 #ifndef DISABLE_TLS
@@ -352,6 +354,28 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 		else if (strcmp("-z", argv[*pindex]) == 0)
 		{
 			settings->bulk_compression = 1;
+		}
+		else if (strcmp("--gdi", argv[*pindex]) == 0)
+		{
+			*pindex = *pindex + 1;
+			if (*pindex == argc)
+			{
+				printf("missing GDI rendering\n");
+				return 1;
+			}
+			if (strncmp("sw", argv[*pindex], 1) == 0) /* Software */
+			{
+				settings->software_gdi = 1;
+			}
+			else if (strncmp("hw", argv[*pindex], 1) == 0) /* Hardware */
+			{
+				settings->software_gdi = 0;
+			}
+			else
+			{
+				printf("unknown GDI rendering\n");
+				return 1;
+			}
 		}
 		else if (strcmp("--no-osb", argv[*pindex]) == 0)
 		{
@@ -629,9 +653,11 @@ run_xfreerdp(xfInfo * xfi)
 		printf("run_xfreerdp: freerdp_chanman_pre_connect failed\n");
 		return XF_EXIT_CONN_FAILED;
 	}
+
 	xf_kb_init(xfi->display, xfi->keyboard_layout_id);
 	xf_kb_inst_init(xfi);
 	printf("keyboard_layout: 0x%X\n", inst->settings->keyboard_layout);
+
 	/* call connect */
 	if (inst->rdp_connect(inst) != 0)
 	{
