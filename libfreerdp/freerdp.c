@@ -17,8 +17,6 @@
 */
 
 #include <stdarg.h>
-#include <freerdp/utils.h>
-#include <freerdp/freerdp.h>
 #include "frdp.h"
 #include "rdp.h"
 #include "secure.h"
@@ -27,6 +25,8 @@
 #include "tcp.h"
 #include "chan.h"
 #include "ext.h"
+#include <freerdp/freerdp.h>
+#include <freerdp/utils/memory.h>
 
 #define RDP_FROM_INST(_inst) ((rdpRdp *) (_inst->rdp))
 

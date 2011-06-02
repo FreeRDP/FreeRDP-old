@@ -17,31 +17,17 @@
    limitations under the License.
 */
 
-#include <freerdp/utils/memory.h>
+#ifndef __DATABLOB_UTILS_H
+#define __DATABLOB_UTILS_H
 
-#include <freerdp/utils/datablob.h>
-
-/**
- * Allocate memory for data blob.
- * @param datablob datablob structure
- * @param length memory length
- */
-
-void datablob_alloc(DATABLOB *datablob, int length)
+struct _DATABLOB
 {
-	datablob->data = xmalloc(length);
-	datablob->length = length;
-}
+	void* data;
+	int length;
+};
+typedef struct _DATABLOB DATABLOB;
 
-/**
- * Free memory allocated for data blob.
- * @param datablob
- */
+void datablob_alloc(DATABLOB *datablob, int length);
+void datablob_free(DATABLOB *datablob);
 
-void datablob_free(DATABLOB *datablob)
-{
-	if (datablob->data)
-		xfree(datablob->data);
-	
-	datablob->length = 0;
-}
+#endif /* __DATABLOB_UTILS_H */

@@ -17,8 +17,6 @@
    limitations under the License.
 */
 
-#include <freerdp/utils.h>
-#include <freerdp/rdpset.h>
 #include "frdp.h"
 #include "rdp.h"
 #include "tls.h"
@@ -40,8 +38,10 @@
 #include "asn1/TSPasswordCreds.h"
 
 #include <time.h>
-
 #include "ntlmssp.h"
+#include <freerdp/rdpset.h>
+#include <freerdp/utils/memory.h>
+
 #include "credssp.h"
 
 static int

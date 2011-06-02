@@ -22,14 +22,11 @@
 #include <errno.h>
 #include <unistd.h>
 #endif
-#include <freerdp/utils.h>
-#include <freerdp/freerdp.h>
 #include "frdp.h"
 #include "iso.h"
 #include "tcp.h"
 #include "mcs.h"
 #include "secure.h"
-#include "rdp.h"
 #include "rail.h"
 #include "capabilities.h"
 #include "orders.h"
@@ -39,6 +36,9 @@
 #include "debug.h"
 #include "ext.h"
 #include "surface.h"
+#include <freerdp/freerdp.h>
+
+#include "rdp.h"
 
 RD_BOOL
 rdp_global_init(void)

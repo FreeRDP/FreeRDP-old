@@ -25,15 +25,20 @@
 #include <sys/select.h>
 
 #include "rdpdr_types.h"
-#include "rdpdr_main.h"
+#include "rdpdr_scard.h"
 #include "rdpdr_constants.h"
 #include "rdpdr_capabilities.h"
 #include "devman.h"
 #include "irp.h"
 #include "irp_queue.h"
 #include "config.h"
+#include <freerdp/utils/stream.h>
+#include <freerdp/utils/memory.h>
+#include <freerdp/utils/chan_plugin.h>
+#include <freerdp/utils/unicode.h>
+#include <freerdp/utils/wait_obj.h>
 
-#include "rdpdr_scard.h"
+#include "rdpdr_main.h"
 
 #define MAX(x,y)             (((x) > (y)) ? (x) : (y))
 

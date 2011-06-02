@@ -17,16 +17,16 @@
    limitations under the License.
 */
 
-#include <freerdp/utils.h>
-#include <freerdp/rdpset.h>
 #include "frdp.h"
 #include "orderstypes.h"
-#include "orders.h"
 #include "rdp.h"
 #include "pstcache.h"
 #include "cache.h"
 #include "bitmap.h"
 #include "debug.h"
+#include <freerdp/rdpset.h>
+
+#include "orders.h"
 
 /* Read field indicating which parameters are present */
 static void

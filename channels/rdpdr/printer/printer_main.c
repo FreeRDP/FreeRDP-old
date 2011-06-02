@@ -25,6 +25,10 @@
 #include "rdpdr_constants.h"
 #include "rdpdr_types.h"
 #include "devman.h"
+#include <freerdp/utils/stream.h>
+#include <freerdp/utils/unicode.h>
+#include <freerdp/utils/memory.h>
+
 #include "printer_main.h"
 
 static char *

@@ -78,8 +78,8 @@
 #endif
 #include <freerdp/freerdp.h>
 #include <freerdp/chanman.h>
-#include <freerdp/utils.h>
 #include <freerdp/vchan.h>
+#include <freerdp/utils/chan_plugin.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"

@@ -17,23 +17,24 @@
    limitations under the License.
 */
 
-#include <freerdp/utils.h>
-#include <freerdp/rdpset.h>
 #include "frdp.h"
 #include "mcs.h"
 #include "chan.h"
-#include "secure.h"
 #include "licence.h"
 #include "rdp.h"
 #include "iso.h"
 #include "debug.h"
 #include "tcp.h"
 #include "types.h"
+#include <freerdp/rdpset.h>
+#include <freerdp/utils/memory.h>
 
 #ifndef DISABLE_TLS
 #include "tls.h"
 #include "credssp.h"
 #endif
+
+#include "secure.h"
 
 static RD_BOOL sec_global_initialized = False;
 

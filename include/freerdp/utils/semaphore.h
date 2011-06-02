@@ -1,6 +1,6 @@
 /*
    FreeRDP: A Remote Desktop Protocol client.
-   DATABLOB Utils
+   Semaphore Utils
 
    Copyright 2011 Marc-Andre Moreau <marcandre.moreau@gmail.com>
 
@@ -17,31 +17,11 @@
    limitations under the License.
 */
 
-#include <freerdp/utils/memory.h>
+#ifndef __SEMAPHORE_UTILS_H
+#define __SEMAPHORE_UTILS_H
 
-#include <freerdp/utils/datablob.h>
+void freerdp_sem_create(void * sem_struct, int iv);
+void freerdp_sem_signal(void * sem_struct);
+void freerdp_sem_wait(void * sem_struct);
 
-/**
- * Allocate memory for data blob.
- * @param datablob datablob structure
- * @param length memory length
- */
-
-void datablob_alloc(DATABLOB *datablob, int length)
-{
-	datablob->data = xmalloc(length);
-	datablob->length = length;
-}
-
-/**
- * Free memory allocated for data blob.
- * @param datablob
- */
-
-void datablob_free(DATABLOB *datablob)
-{
-	if (datablob->data)
-		xfree(datablob->data);
-	
-	datablob->length = 0;
-}
+#endif /* __SEMAPHORE_UTILS_H */

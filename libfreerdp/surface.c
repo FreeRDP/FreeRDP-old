@@ -17,11 +17,12 @@
    limitations under the License.
 */
 
-#include <freerdp/utils.h>
-#include <freerdp/freerdp.h>
 #include "frdp.h"
 #include "rdp.h"
 #include "stream.h"
+#include <freerdp/freerdp.h>
+
+#include "surface.h"
 
 /* CODEC_GUID_REMOTEFX
    0x76772F12BD724463AFB3B73C9C6F7886 */

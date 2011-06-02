@@ -17,13 +17,13 @@
    limitations under the License.
 */
 
-#include <freerdp/utils.h>
-#include <freerdp/rdpset.h>
 #include "frdp.h"
-#include "pstcache.h"
 #include "rdp.h"
 #include "cache.h"
 #include "debug.h"
+#include <freerdp/rdpset.h>
+
+#include "pstcache.h"
 
 #define MAX_CELL_SIZE		0x1000	/* pixels */
 

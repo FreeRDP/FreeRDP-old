@@ -21,6 +21,8 @@
 #define __CACHE_H
 
 #include "types.h"
+#include <freerdp/utils/memory.h>
+#include <freerdp/utils/datablob.h>
 
 struct bmpcache_entry
 {

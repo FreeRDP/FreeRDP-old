@@ -17,8 +17,9 @@
    limitations under the License.
 */
 
-#include <freerdp/utils.h>
 #include "frdp.h"
+#include <freerdp/utils/memory.h>
+
 #include "stream.h"
 
 int

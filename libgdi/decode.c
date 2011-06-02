@@ -19,8 +19,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <freerdp/utils.h>
 #include <freerdp/freerdp.h>
+#include <freerdp/utils/stream.h>
 
 #include "gdi.h"
 #include "rfx.h"

@@ -1,6 +1,6 @@
 /*
    FreeRDP: A Remote Desktop Protocol client.
-   Memory Utils
+   Wait Object
 
    Copyright (C) Jay Sorg 2009-2011
 
@@ -17,63 +17,9 @@
    limitations under the License.
 */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include <freerdp/utils/memory.h>
-
-void *
-xmalloc(size_t size)
-{
-	void * mem;
-
-	if (size < 1)
-	{
-		size = 1;
-	}
-	mem = malloc(size);
-	if (mem == NULL)
-	{
-		perror("xmalloc");
-	}
-	return mem;
-}
-
-void *
-xrealloc(void * oldmem, size_t size)
-{
-	void * mem;
-
-	if (size < 1)
-	{
-		size = 1;
-	}
-	mem = realloc(oldmem, size);
-	if (mem == NULL)
-	{
-		perror("xrealloc");
-	}
-	return mem;
-}
-
-void
-xfree(void * mem)
-{
-	if (mem != NULL)
-	{
-		free(mem);
-	}
-}
-
-char *
-xstrdup(const char * s)
-{
-	char * mem = strdup(s);
-
-	if (mem == NULL)
-	{
-		perror("strdup");
-	}
-	return mem;
-}
+struct wait_obj * wait_obj_new(const char * name);
+int wait_obj_free(struct wait_obj * obj);
+int wait_obj_is_set(struct wait_obj * obj);
+int wait_obj_set(struct wait_obj * obj);
+int wait_obj_clear(struct wait_obj * obj);
+int wait_obj_select(struct wait_obj ** listobj, int numobj, int * listr, int numr, int timeout);

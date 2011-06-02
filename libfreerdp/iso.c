@@ -18,14 +18,15 @@
 */
 
 #include "tcp.h"
-#include "iso.h"
 #include "mcs.h"
 #include "nego.h"
 #include "secure.h"
 #include "credssp.h"
 #include "rdp.h"
-#include <freerdp/utils.h>
 #include <freerdp/rdpset.h>
+#include <freerdp/utils/memory.h>
+
+#include "iso.h"
 
 /* TPKT from T123 - aka ISO DP 8073 */
 

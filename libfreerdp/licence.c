@@ -17,14 +17,15 @@
    limitations under the License.
 */
 
-#include <freerdp/utils.h>
-#include <freerdp/rdpset.h>
 #include "frdp.h"
 #include "crypto.h"
 #include "secure.h"
-#include "licence.h"
 #include "rdp.h"
 #include "debug.h"
+#include <freerdp/rdpset.h>
+#include <freerdp/utils/memory.h>
+
+#include "licence.h"
 
 /* Generate a session key and RC4 keys, given client and server randoms */
 static void

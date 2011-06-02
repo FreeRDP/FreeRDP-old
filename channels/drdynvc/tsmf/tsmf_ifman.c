@@ -24,6 +24,8 @@
 #include "tsmf_constants.h"
 #include "tsmf_media.h"
 #include "tsmf_codec.h"
+#include <freerdp/utils/stream.h>
+
 #include "tsmf_ifman.h"
 
 int

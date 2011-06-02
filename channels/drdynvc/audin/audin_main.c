@@ -23,6 +23,7 @@
 #include "drdynvc_types.h"
 #include "audin_types.h"
 #include "audin_dsp.h"
+#include <freerdp/utils/stream.h>
 
 #ifdef _WIN32
 #define DLOPEN(f) LoadLibraryA(f)

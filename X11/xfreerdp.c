@@ -31,9 +31,9 @@
 #include <semaphore.h>
 #include <freerdp/freerdp.h>
 #include <freerdp/chanman.h>
-#include <freerdp/utils.h>
 #include <freerdp/kbd.h>
 #include <freerdp/errinfo.h>
+#include <freerdp/utils/semaphore.h>
 #include "xf_types.h"
 #include "xf_win.h"
 #include "xf_keyboard.h"

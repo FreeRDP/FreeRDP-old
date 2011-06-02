@@ -17,63 +17,14 @@
    limitations under the License.
 */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#ifndef __MEMORY_UTILS_H
+#define __MEMORY_UTILS_H
 
-#include <freerdp/utils/memory.h>
+#include <stddef.h>
 
-void *
-xmalloc(size_t size)
-{
-	void * mem;
+void* xmalloc(size_t size);
+void* xrealloc(void * oldmem, size_t size);
+void xfree(void * mem);
+char* xstrdup(const char * s);
 
-	if (size < 1)
-	{
-		size = 1;
-	}
-	mem = malloc(size);
-	if (mem == NULL)
-	{
-		perror("xmalloc");
-	}
-	return mem;
-}
-
-void *
-xrealloc(void * oldmem, size_t size)
-{
-	void * mem;
-
-	if (size < 1)
-	{
-		size = 1;
-	}
-	mem = realloc(oldmem, size);
-	if (mem == NULL)
-	{
-		perror("xrealloc");
-	}
-	return mem;
-}
-
-void
-xfree(void * mem)
-{
-	if (mem != NULL)
-	{
-		free(mem);
-	}
-}
-
-char *
-xstrdup(const char * s)
-{
-	char * mem = strdup(s);
-
-	if (mem == NULL)
-	{
-		perror("strdup");
-	}
-	return mem;
-}
+#endif /* __MEMORY_UTILS_H */

@@ -23,6 +23,9 @@
 
 #include "rdpdr_types.h"
 #include "rdpdr_constants.h"
+#include <freerdp/utils/stream.h>
+#include <freerdp/utils/unicode.h>
+
 #include "irp.h"
 
 char *

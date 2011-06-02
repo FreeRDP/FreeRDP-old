@@ -19,6 +19,7 @@
 
 #include <pthread.h>
 #include <semaphore.h>
+#include <freerdp/utils/semaphore.h>
 
 #ifdef __APPLE__
 #include <mach/mach.h>

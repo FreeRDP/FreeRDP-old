@@ -17,11 +17,12 @@
    limitations under the License.
 */
 
-#include <freerdp/utils.h>
-#include <freerdp/rdpset.h>
 #include "frdp.h"
 #include "rdp.h"
 #include "secure.h"
+#include <freerdp/rdpset.h>
+#include <freerdp/utils/memory.h>
+
 #include "rail.h"
 
 void

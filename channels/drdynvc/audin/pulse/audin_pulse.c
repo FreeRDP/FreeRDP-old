@@ -23,6 +23,7 @@
 #include <pulse/pulseaudio.h>
 #include "drdynvc_types.h"
 #include "audin_types.h"
+#include <freerdp/utils/stream.h>
 
 struct pulse_device_data
 {
@@ -327,7 +328,7 @@ audin_pulse_stream_request_callback(pa_stream * stream, size_t length, void * us
 
 	pa_stream_peek(stream, &data, &length);
 	frames = length / pulse_data->bytes_per_frame;
-	LLOGLN(10, ("audin_pulse_stream_request_callback: length %d frames %d", length, frames));
+	LLOGLN(10, ("audin_pulse_stream_request_callback: length %d frames %d", (int) length, frames));
 
 	src = (const char *) data;
 	while (frames > 0)

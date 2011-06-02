@@ -1,6 +1,6 @@
 /*
    FreeRDP: A Remote Desktop Protocol client.
-   Virtual Channel
+   Virtual Channel Plugin Utils
 
    Copyright 2010-2011 Vic Lee
 
@@ -23,7 +23,7 @@
 #include <pthread.h>
 #include <freerdp/types_ui.h>
 #include <freerdp/vchan.h>
-#include <freerdp/utils.h>
+#include <freerdp/utils/chan_plugin.h>
 
 /* The list of all plugin instances. */
 typedef struct rdp_chan_plugin_list rdpChanPluginList;

@@ -17,8 +17,6 @@
    limitations under the License.
 */
 
-#include <freerdp/utils.h>
-
 #include "frdp.h"
 #include "iso.h"
 #include "mcs.h"

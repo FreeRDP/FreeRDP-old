@@ -17,9 +17,10 @@
    limitations under the License.
 */
 
-#include <freerdp/utils.h>
 #include "frdp.h"
 #include "crypto.h"
+#include <freerdp/utils/memory.h>
+
 #include "crypto_openssl.h"
 
 RD_BOOL

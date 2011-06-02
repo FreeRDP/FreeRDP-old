@@ -17,11 +17,11 @@
    limitations under the License.
 */
 
-#include <freerdp/utils.h>
 #include "frdp.h"
 #include "rdp.h"
 #include "tcp.h"
 #include "stream.h"
+#include <freerdp/utils/memory.h>
 
 #include "nego.h"
 

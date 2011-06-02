@@ -17,7 +17,6 @@
    limitations under the License.
 */
 
-#include <freerdp/utils.h>
 #include "frdp.h"
 #include "secure.h"
 #include "mcs.h"
@@ -26,6 +25,8 @@
 #include "rdp.h"
 #include "crypto.h"
 #include "crypto_openssl.h"
+#include <freerdp/utils/memory.h>
+
 #include "tls.h"
 
 struct rdp_tls

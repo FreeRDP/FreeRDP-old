@@ -17,14 +17,14 @@
    limitations under the License.
 */
 
-#include <freerdp/utils.h>
-#include <freerdp/rdpset.h>
-#include <freerdp/constants_vchan.h>
 #include "frdp.h"
 #include "chan.h"
 #include "mcs.h"
 #include "secure.h"
 #include "rdp.h"
+#include <freerdp/rdpset.h>
+#include <freerdp/utils/memory.h>
+#include <freerdp/constants_vchan.h>
 
 int
 vchan_send(rdpChannels * chan, int mcs_id, char * data, int total_length)

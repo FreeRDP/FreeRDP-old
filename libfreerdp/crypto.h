@@ -21,8 +21,8 @@
 #define __CRYPTO_H
 
 #include <stdio.h>
-#include <freerdp/utils.h>
 #include <freerdp/types_ui.h>
+#include <freerdp/utils/datablob.h>
 
 RD_BOOL
 crypto_global_init(void);	/* returns True on success */

@@ -17,7 +17,6 @@
    limitations under the License.
 */
 
-#include <freerdp/utils.h>
 #include "types.h"
 
 #include <time.h>
@@ -26,6 +25,7 @@
 #include <openssl/hmac.h>
 #include <openssl/rand.h>
 #include <openssl/engine.h>
+#include <freerdp/utils/memory.h>
 
 #include "ntlmssp.h"
 

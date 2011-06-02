@@ -17,8 +17,10 @@
    limitations under the License.
 */
 
-#include <freerdp/utils.h>
 #include <errno.h>
+#include <freerdp/utils/memory.h>
+
+#include <freerdp/utils/unicode.h>
 
 /* Convert pin/in_len from WINDOWS_CODEPAGE - return like xstrdup, 0-terminated */
 

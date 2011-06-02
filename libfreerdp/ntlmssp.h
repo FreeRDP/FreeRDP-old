@@ -20,10 +20,11 @@
 #ifndef __NTLMSSP_H
 #define __NTLMSSP_H
 
-#include <freerdp/utils.h>
 #include "secure.h"
 #include "credssp.h"
 #include "types.h"
+
+#include <freerdp/utils/unicode.h>
 
 struct _AV_PAIR
 {
