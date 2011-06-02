@@ -113,13 +113,11 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="wf_color.cpp" />
     <ClCompile Include="wf_event.cpp" />
     <ClCompile Include="wf_win.cpp" />
     <ClCompile Include="wfreerdp.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="wf_color.h" />
     <ClInclude Include="wf_event.h" />
     <ClInclude Include="wf_types.h" />
     <ClInclude Include="wf_win.h" />
