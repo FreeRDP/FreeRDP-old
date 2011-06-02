@@ -1,0 +1,201 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{3D13BDCD-2E1D-45C0-AA5B-61A6330DED81}</ProjectGuid>
+    <RootNamespace>freerdp</RootNamespace>
+    <Keyword>Win32Proj</Keyword>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(Configuration)\</IntDir>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</LinkIncremental>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(Configuration)\</IntDir>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</LinkIncremental>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>..\include;..\libfreerdp-asn1;C:\OpenSSL\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;FREERDP_EXPORTS;_CRT_SECURE_NO_WARNINGS;L_ENDIAN;EXT_PATH="extensions";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>true</MinimalRebuild>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>ws2_32.lib;libeay32.lib;ssleay32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:\OpenSSL\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <TargetMachine>MachineX86</TargetMachine>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <AdditionalIncludeDirectories>..\include;..;C:\OpenSSL\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;FREERDP_EXPORTS;_CRT_SECURE_NO_WARNINGS;L_ENDIAN;EXT_PATH="extensions";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>ws2_32.lib;libeay32.lib;ssleay32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:\OpenSSL\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <TargetMachine>MachineX86</TargetMachine>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\libfreerdp-core\asn1.c" />
+    <ClCompile Include="..\libfreerdp-core\bitmap.c" />
+    <ClCompile Include="..\libfreerdp-core\cache.c" />
+    <ClCompile Include="..\libfreerdp-core\capabilities.c" />
+    <ClCompile Include="..\libfreerdp-core\chan.c" />
+    <ClCompile Include="..\libfreerdp-core\credssp.c" />
+    <ClCompile Include="..\libfreerdp-core\crypto_openssl.c" />
+    <ClCompile Include="..\libfreerdp-core\ext.c" />
+    <ClCompile Include="..\libfreerdp-core\freerdp.c" />
+    <ClCompile Include="..\libfreerdp-core\iso.c" />
+    <ClCompile Include="..\libfreerdp-core\licence.c" />
+    <ClCompile Include="..\libfreerdp-core\mcs.c" />
+    <ClCompile Include="..\libfreerdp-core\mppc.c" />
+    <ClCompile Include="..\libfreerdp-core\nego.c" />
+    <ClCompile Include="..\libfreerdp-core\ntlmssp.c" />
+    <ClCompile Include="..\libfreerdp-core\orders.c" />
+    <ClCompile Include="..\libfreerdp-core\pstcache.c" />
+    <ClCompile Include="..\libfreerdp-core\rail.c" />
+    <ClCompile Include="..\libfreerdp-core\rdp.c" />
+    <ClCompile Include="..\libfreerdp-core\secure.c" />
+    <ClCompile Include="..\libfreerdp-core\stream.c" />
+    <ClCompile Include="..\libfreerdp-core\surface.c" />
+    <ClCompile Include="..\libfreerdp-core\tcp.c" />
+    <ClCompile Include="..\libfreerdp-core\tls_openssl.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\libfreerdp-core\asn1.h" />
+    <ClInclude Include="..\libfreerdp-core\bitmap.h" />
+    <ClInclude Include="..\libfreerdp-core\cache.h" />
+    <ClInclude Include="..\libfreerdp-core\capabilities.h" />
+    <ClInclude Include="..\libfreerdp-core\chan.h" />
+    <ClInclude Include="..\include\freerdp\chanman.h" />
+    <ClInclude Include="..\libfreerdp-core\constants.h" />
+    <ClInclude Include="..\libfreerdp-core\constants_capabilities.h" />
+    <ClInclude Include="..\libfreerdp-core\constants_core.h" />
+    <ClInclude Include="..\libfreerdp-core\constants_crypto.h" />
+    <ClInclude Include="..\libfreerdp-core\constants_license.h" />
+    <ClInclude Include="..\libfreerdp-core\constants_pdu.h" />
+    <ClInclude Include="..\libfreerdp-core\constants_rail.h" />
+    <ClInclude Include="..\include\freerdp\constants_vchan.h" />
+    <ClInclude Include="..\libfreerdp-core\constants_window.h" />
+    <ClInclude Include="..\libfreerdp-core\credssp.h" />
+    <ClInclude Include="..\libfreerdp-core\crypto.h" />
+    <ClInclude Include="..\libfreerdp-core\crypto_openssl.h" />
+    <ClInclude Include="..\libfreerdp-core\debug.h" />
+    <ClInclude Include="..\include\freerdp\dvc.h" />
+    <ClInclude Include="..\libfreerdp-core\ext.h" />
+    <ClInclude Include="..\libfreerdp-core\frdp.h" />
+    <ClInclude Include="..\libfreerdp-core\iso.h" />
+    <ClInclude Include="..\include\freerdp\kbd.h" />
+    <ClInclude Include="..\libfreerdp-core\licence.h" />
+    <ClInclude Include="..\libfreerdp-core\mcs.h" />
+    <ClInclude Include="..\libfreerdp-core\nego.h" />
+    <ClInclude Include="..\libfreerdp-core\ntlmssp.h" />
+    <ClInclude Include="..\libfreerdp-core\orders.h" />
+    <ClInclude Include="..\libfreerdp-core\orderstypes.h" />
+    <ClInclude Include="..\libfreerdp-core\pstcache.h" />
+    <ClInclude Include="..\libfreerdp-core\rail.h" />
+    <ClInclude Include="..\libfreerdp-core\rdp.h" />
+    <ClInclude Include="..\include\freerdp\rdpext.h" />
+    <ClInclude Include="..\libfreerdp-core\secure.h" />
+    <ClInclude Include="..\libfreerdp-core\stream.h" />
+    <ClInclude Include="..\libfreerdp-core\surface.h" />
+    <ClInclude Include="..\libfreerdp-core\tcp.h" />
+    <ClInclude Include="..\libfreerdp-core\tls.h" />
+    <ClInclude Include="..\libfreerdp-core\types.h" />
+    <ClInclude Include="..\include\freerdp\constants.h" />
+    <ClInclude Include="..\include\freerdp\constants_capabilities.h" />
+    <ClInclude Include="..\include\freerdp\constants_core.h" />
+    <ClInclude Include="..\include\freerdp\constants_crypto.h" />
+    <ClInclude Include="..\include\freerdp\constants_license.h" />
+    <ClInclude Include="..\include\freerdp\constants_pdu.h" />
+    <ClInclude Include="..\include\freerdp\constants_rail.h" />
+    <ClInclude Include="..\include\freerdp\constants_rdpdr.h" />
+    <ClInclude Include="..\include\freerdp\constants_ui.h" />
+    <ClInclude Include="..\include\freerdp\constants_window.h" />
+    <ClInclude Include="..\include\freerdp\freerdp.h" />
+    <ClInclude Include="..\include\freerdp\rdpset.h" />
+    <ClInclude Include="..\include\freerdp\types_ui.h" />
+    <ClInclude Include="..\include\freerdp\vchan.h" />
+    <ClInclude Include="..\include\freerdp\utils\chan_plugin.h" />
+    <ClInclude Include="..\include\freerdp\utils\datablob.h" />
+    <ClInclude Include="..\include\freerdp\utils\memory.h" />
+    <ClInclude Include="..\include\freerdp\utils\semaphore.h" />
+    <ClInclude Include="..\include\freerdp\utils\stream.h" />
+    <ClInclude Include="..\include\freerdp\utils\unicode.h" />
+    <ClInclude Include="..\include\freerdp\utils\wait_obj.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="libfreerdp-asn1.vcxproj">
+      <Project>{97445561-ca2c-46a2-a1c4-c7311c558c10}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="libfreerdp-chanman.vcxproj">
+      <Project>{b64c0469-b9e5-4712-9800-d0f4a8df20f9}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="libfreerdp-gdi.vcxproj">
+      <Project>{65b0c0ee-55cf-417a-b4bd-a3f3e036dec1}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="libfreerdp-utils.vcxproj">
+      <Project>{e4be093e-f3df-4dee-b228-00b065320a18}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
