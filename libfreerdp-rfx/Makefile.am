@@ -1,11 +1,11 @@
 ## Process this file with automake to produce Makefile.in
 
-# librfx
-librfxdir = $(libdir)
+# libfreerdp-rfx
+libfreerdp_rfxdir = $(libdir)
 
-librfx_LTLIBRARIES = librfx.la
+libfreerdp_rfx_LTLIBRARIES = libfreerdp-rfx.la
 
-librfx_la_SOURCES = \
+libfreerdp_rfx_la_SOURCES = \
 	rfx_bitstream.c rfx_bitstream.h \
 	rfx_rlgr.c rfx_rlgr.h \
 	rfx_differential.c rfx_differential.h \
@@ -16,14 +16,16 @@ librfx_la_SOURCES = \
 	rfx_private.h \
 	rfx.c
 
-librfx_la_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include
+libfreerdp_rfx_la_CFLAGS = \
+	-I$(top_srcdir) \
+	-I$(top_srcdir)/include
 
-librfx_la_LDFLAGS =
+libfreerdp_rfx_la_LDFLAGS =
 
-librfx_la_LIBDADD =
+libfreerdp_rfx_la_LIBDADD =
 
-# librfx headers
-includedir = $(prefix)/include/librfx
+# libfreerdp-rfx headers
+includedir = $(prefix)/include/rfx
 include_HEADERS = rfx.h
 
 # extra

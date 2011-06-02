@@ -16,7 +16,7 @@ audin_alsa_la_LDFLAGS = -avoid-version -module
 
 audin_alsa_la_LIBADD = \
 	@ALSA_LIBS@ \
-	../../../../libutils/libutils.la
+	../../../../libfreerdp-utils/libfreerdp-utils.la
 
 # extra
 EXTRA_DIST =

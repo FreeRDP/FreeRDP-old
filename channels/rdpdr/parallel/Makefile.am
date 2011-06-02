@@ -14,7 +14,7 @@ parallel_la_CFLAGS = -I$(top_srcdir)/include \
 parallel_la_LDFLAGS = -avoid-version -module
 
 parallel_la_LIBADD = \
-	../../../libutils/libutils.la
+	../../../libfreerdp-utils/libfreerdp-utils.la
 
 # extra
 EXTRA_DIST =

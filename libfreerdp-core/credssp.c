@@ -31,11 +31,11 @@
 #include <unistd.h>
 #endif
 
-#include "asn1/TSRequest.h"
-#include "asn1/NegoData.h"
-#include "asn1/NegotiationToken.h"
-#include "asn1/TSCredentials.h"
-#include "asn1/TSPasswordCreds.h"
+#include "TSRequest.h"
+#include "NegoData.h"
+#include "NegotiationToken.h"
+#include "TSCredentials.h"
+#include "TSPasswordCreds.h"
 
 #include <time.h>
 #include "ntlmssp.h"

@@ -10,15 +10,19 @@ scard_la_SOURCES = \
 	scard_queue.c scard_queue.h \
 	scard_operations.c
 
-scard_la_CFLAGS = @PCSCLITE_CFLAGS@ \
-	-I$(top_srcdir)/include -I$(srcdir)/../../common \
-	-I$(srcdir)/.. -DPLUGIN_PATH=\"$(PLUGIN_PATH)\"
+scard_la_CFLAGS = \
+	-I$(srcdir)/.. \
+	@PCSCLITE_CFLAGS@ \
+	-I$(top_srcdir)/include \
+	-I$(srcdir)/../../common \
+	-I$(top_srcdir)/libfreerdp-core \
+	-DPLUGIN_PATH=\"$(PLUGIN_PATH)\"
 
 scard_la_LDFLAGS = -avoid-version -module
 
 scard_la_LIBADD = \
 	@PCSCLITE_LIBS@ \
-	../../../libutils/libutils.la
+	../../../libfreerdp-utils/libfreerdp-utils.la
 
 # extra
 EXTRA_DIST =

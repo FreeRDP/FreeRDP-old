@@ -1,11 +1,11 @@
 ## Process this file with automake to produce Makefile.in
 
-# libkbd
-libkbddir = $(libdir)
+# libfreerdp-kbd
+libfreerdp_kbddir = $(libdir)
 
-libkbd_LTLIBRARIES = libkbd.la
+libfreerdp_kbd_LTLIBRARIES = libfreerdp-kbd.la
 
-libkbd_la_SOURCES = \
+libfreerdp_kbd_la_SOURCES = \
 	debug.h \
 	keyboard.h \
 	layout_ids.c layout_ids.h \
@@ -14,10 +14,12 @@ libkbd_la_SOURCES = \
 	layouts_xkb.c layouts_xkb.h \
 	libkbd.c
 
-libkbd_la_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include \
+libfreerdp_kbd_la_CFLAGS = \
+	-I$(top_srcdir) \
+	-I$(top_srcdir)/include \
 	-DKEYMAP_PATH=\"$(KEYMAP_PATH)\"
 
-libkbd_la_LDFLAGS = @XKBFILE_LIBS@
+libfreerdp_kbd_la_LDFLAGS = @XKBFILE_LIBS@
 
 # extra
 EXTRA_DIST =

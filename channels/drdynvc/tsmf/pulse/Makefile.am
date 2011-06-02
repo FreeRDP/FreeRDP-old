@@ -16,7 +16,7 @@ tsmf_pulse_la_LDFLAGS = -avoid-version -module
 
 tsmf_pulse_la_LIBADD = \
 	@PULSE_LIBS@ \
-	../../../../libutils/libutils.la
+	../../../../libfreerdp-utils/libfreerdp-utils.la
 
 # extra
 EXTRA_DIST =

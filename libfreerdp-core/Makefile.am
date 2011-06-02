@@ -1,11 +1,11 @@
 ## Process this file with automake to produce Makefile.in
 
-# libfreerdp
-libfreerdpdir = $(libdir)
+# libfreerdp-core
+libfreerdp_coredir = $(libdir)
 
-libfreerdp_LTLIBRARIES = libfreerdp.la
+libfreerdp_core_LTLIBRARIES = libfreerdp-core.la
 
-libfreerdp_la_SOURCES = \
+libfreerdp_core_la_SOURCES = \
 	asn1.c asn1.h \
 	bitmap.c bitmap.h \
 	cache.c cache.h \
@@ -40,41 +40,42 @@ libfreerdp_la_SOURCES = \
 	surface.c surface.h
 
 if CRYPTO_NSS
-libfreerdp_la_SOURCES += crypto_nss.c
+libfreerdp_core_la_SOURCES += crypto_nss.c
 endif
 
 if CRYPTO_GNUTLS
-libfreerdp_la_SOURCES += crypto_gnutls.c
+libfreerdp_core_la_SOURCES += crypto_gnutls.c
 endif
 
 if CRYPTO_OPENSSL
-libfreerdp_la_SOURCES += crypto_openssl.c crypto_openssl.h tls_openssl.c
+libfreerdp_core_la_SOURCES += crypto_openssl.c crypto_openssl.h tls_openssl.c
 endif
 
 if CRYPTO_POLARSSL
-libfreerdp_la_SOURCES += crypto_polarssl.c
+libfreerdp_core_la_SOURCES += crypto_polarssl.c
 endif
 
 if ENABLE_TLS
-libfreerdp_la_SOURCES += tls.h credssp.c credssp.h ntlmssp.c ntlmssp.h
+libfreerdp_core_la_SOURCES += tls.h credssp.c credssp.h ntlmssp.c ntlmssp.h
 endif
 
-libfreerdp_la_CFLAGS = \
+libfreerdp_core_la_CFLAGS = \
 	-I$(top_srcdir) \
-	-I$(top_srcdir)/libgdi \
-	-I$(top_srcdir)/librfx \
 	-I$(top_srcdir)/include \
+	-I$(top_srcdir)/libfreerdp-gdi \
+	-I$(top_srcdir)/libfreerdp-rfx \
+	-I$(top_srcdir)/libfreerdp-asn1 \
 	@CRYPTO_CFLAGS@ -DFREERDP_EXPORTS \
 	-DPLUGIN_PATH=\"$(PLUGIN_PATH)\" \
 	-DEXT_PATH=\"$(EXT_PATH)\"
 
-libfreerdp_la_LDFLAGS =
+libfreerdp_core_la_LDFLAGS =
 
-libfreerdp_la_LIBADD = \
-	../asn1/libasn1.la \
-	../libgdi/libgdi.la \
-	../librfx/librfx.la \
-	../libutils/libutils.la \
+libfreerdp_core_la_LIBADD = \
+	../libfreerdp-gdi/libfreerdp-gdi.la \
+	../libfreerdp-rfx/libfreerdp-rfx.la \
+	../libfreerdp-asn1/libfreerdp-asn1.la \
+	../libfreerdp-utils/libfreerdp-utils.la \
 	@CRYPTO_LIBS@ @LIBICONV@
 
 # extra

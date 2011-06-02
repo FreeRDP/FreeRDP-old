@@ -1,6 +1,6 @@
 ## Process this file with automake to produce Makefile.in
 
-noinst_LTLIBRARIES = libasn1.la
+noinst_LTLIBRARIES = libfreerdp-asn1.la
 
 shared_sources = \
 	asn_application.h \
@@ -254,17 +254,17 @@ mcs_sources = \
 	UserId.c \
 	UserId.h
 
-libasn1_la_SOURCES = \
+libfreerdp_asn1_la_SOURCES = \
 	$(shared_sources) \
 	$(credssp_sources) \
 	$(spnego_sources)
 #	$(mcs_sources)
 
-libasn1_la_CFLAGS = -O2 -w
+libfreerdp_asn1_la_CFLAGS = -O2 -w
 
-libasn1_la_LDFLAGS = -avoid-version -module
+libfreerdp_asn1_la_LDFLAGS = -avoid-version -module
 
-libasn1_la_LIBADD =
+libfreerdp_asn1_la_LIBADD =
 
 ASN1_MODULES_BER = credssp.asn1 spnego.asn1
 ASN1_MODULES_PER = mcs.asn1

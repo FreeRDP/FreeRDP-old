@@ -13,7 +13,7 @@ rdpdbg_la_CFLAGS = -I$(top_srcdir)/include
 rdpdbg_la_LDFLAGS = -avoid-version -module
 
 rdpdbg_la_LIBADD = \
-	../../libutils/libutils.la
+	../../libfreerdp-utils/libfreerdp-utils.la
 
 # extra
 EXTRA_DIST =

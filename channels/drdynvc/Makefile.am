@@ -16,7 +16,7 @@ drdynvc_la_CFLAGS = -I$(top_srcdir)/include \
 drdynvc_la_LDFLAGS = -avoid-version -module
 
 drdynvc_la_LIBADD = \
-	../../libutils/libutils.la
+	../../libfreerdp-utils/libfreerdp-utils.la
 
 # extra
 EXTRA_DIST =

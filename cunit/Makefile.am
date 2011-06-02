@@ -13,17 +13,17 @@ test_freerdp_SOURCES = \
 test_freerdp_CFLAGS = \
 	-I$(top_srcdir) \
 	-I$(top_srcdir)/include \
-	-I$(top_srcdir)/libgdi \
-	-I$(top_srcdir)/librfx \
-	-I$(top_srcdir)/libfreerdp \
+	-I$(top_srcdir)/libfreerdp-gdi \
+	-I$(top_srcdir)/libfreerdp-rfx \
+	-I$(top_srcdir)/libfreerdp-core \
 	-pthread
 
 test_freerdp_LDADD = \
-	../libgdi/libgdi.la \
-	../librfx/librfx.la \
-	../libkbd/libkbd.la \
-	../libchanman/libchanman.la \
-	../libfreerdp/libfreerdp.la \
+	../libfreerdp-gdi/libfreerdp-gdi.la \
+	../libfreerdp-rfx/libfreerdp-rfx.la \
+	../libfreerdp-kbd/libfreerdp-kbd.la \
+	../libfreerdp-chanman/libfreerdp-chanman.la \
+	../libfreerdp-core/libfreerdp-core.la \
 	-lfusion -ldirect -lz -lcunit -lncurses
 
 
