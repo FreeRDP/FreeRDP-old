@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <conio.h>
-#include "gdi_color.h"
+#include "color.h"
 #include "wf_color.h"
 #include "wf_win.h"
 

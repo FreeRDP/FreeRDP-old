@@ -2,7 +2,7 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9.00"
-	Name="libasn1"
+	Name="libfreerdp-asn1"
 	ProjectGUID="{97445561-CA2C-46A2-A1C4-C7311C558C10}"
 	RootNamespace="libasn1"
 	Keyword="Win32Proj"
@@ -41,7 +41,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\asn1"
+				AdditionalIncludeDirectories=""
 				PreprocessorDefinitions="WIN32;_DEBUG;_LIB;_CRT_SECURE_NO_WARNINGS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -151,171 +151,171 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\asn1\asn_codecs_prim.c"
+				RelativePath="..\libfreerdp-asn1\asn_codecs_prim.c"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\asn_SEQUENCE_OF.c"
+				RelativePath="..\libfreerdp-asn1\asn_SEQUENCE_OF.c"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\asn_SET_OF.c"
+				RelativePath="..\libfreerdp-asn1\asn_SET_OF.c"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\ber_decoder.c"
+				RelativePath="..\libfreerdp-asn1\ber_decoder.c"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\ber_tlv_length.c"
+				RelativePath="..\libfreerdp-asn1\ber_tlv_length.c"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\ber_tlv_tag.c"
+				RelativePath="..\libfreerdp-asn1\ber_tlv_tag.c"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\BIT_STRING.c"
+				RelativePath="..\libfreerdp-asn1\BIT_STRING.c"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\constr_CHOICE.c"
+				RelativePath="..\libfreerdp-asn1\constr_CHOICE.c"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\constr_SEQUENCE.c"
+				RelativePath="..\libfreerdp-asn1\constr_SEQUENCE.c"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\constr_SEQUENCE_OF.c"
+				RelativePath="..\libfreerdp-asn1\constr_SEQUENCE_OF.c"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\constr_SET_OF.c"
+				RelativePath="..\libfreerdp-asn1\constr_SET_OF.c"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\constr_TYPE.c"
+				RelativePath="..\libfreerdp-asn1\constr_TYPE.c"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\constraints.c"
+				RelativePath="..\libfreerdp-asn1\constraints.c"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\ContextFlags.c"
+				RelativePath="..\libfreerdp-asn1\ContextFlags.c"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\der_encoder.c"
+				RelativePath="..\libfreerdp-asn1\der_encoder.c"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\GeneralString.c"
+				RelativePath="..\libfreerdp-asn1\GeneralString.c"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\INTEGER.c"
+				RelativePath="..\libfreerdp-asn1\INTEGER.c"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\MechType.c"
+				RelativePath="..\libfreerdp-asn1\MechType.c"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\MechTypeList.c"
+				RelativePath="..\libfreerdp-asn1\MechTypeList.c"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\NativeEnumerated.c"
+				RelativePath="..\libfreerdp-asn1\NativeEnumerated.c"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\NativeInteger.c"
+				RelativePath="..\libfreerdp-asn1\NativeInteger.c"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\NegHints.c"
+				RelativePath="..\libfreerdp-asn1\NegHints.c"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\NegoData.c"
+				RelativePath="..\libfreerdp-asn1\NegoData.c"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\NegoDataItem.c"
+				RelativePath="..\libfreerdp-asn1\NegoDataItem.c"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\NegotiationToken.c"
+				RelativePath="..\libfreerdp-asn1\NegotiationToken.c"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\NegTokenInit.c"
+				RelativePath="..\libfreerdp-asn1\NegTokenInit.c"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\NegTokenInit2.c"
+				RelativePath="..\libfreerdp-asn1\NegTokenInit2.c"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\NegTokenResp.c"
+				RelativePath="..\libfreerdp-asn1\NegTokenResp.c"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\OBJECT_IDENTIFIER.c"
+				RelativePath="..\libfreerdp-asn1\OBJECT_IDENTIFIER.c"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\OCTET_STRING.c"
+				RelativePath="..\libfreerdp-asn1\OCTET_STRING.c"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\per_decoder.c"
+				RelativePath="..\libfreerdp-asn1\per_decoder.c"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\per_encoder.c"
+				RelativePath="..\libfreerdp-asn1\per_encoder.c"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\per_opentype.c"
+				RelativePath="..\libfreerdp-asn1\per_opentype.c"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\per_support.c"
+				RelativePath="..\libfreerdp-asn1\per_support.c"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\TSCredentials.c"
+				RelativePath="..\libfreerdp-asn1\TSCredentials.c"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\TSCspDataDetail.c"
+				RelativePath="..\libfreerdp-asn1\TSCspDataDetail.c"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\TSPasswordCreds.c"
+				RelativePath="..\libfreerdp-asn1\TSPasswordCreds.c"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\TSRequest.c"
+				RelativePath="..\libfreerdp-asn1\TSRequest.c"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\TSSmartCardCreds.c"
+				RelativePath="..\libfreerdp-asn1\TSSmartCardCreds.c"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\xer_decoder.c"
+				RelativePath="..\libfreerdp-asn1\xer_decoder.c"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\xer_encoder.c"
+				RelativePath="..\libfreerdp-asn1\xer_encoder.c"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\xer_support.c"
+				RelativePath="..\libfreerdp-asn1\xer_support.c"
 				>
 			</File>
 		</Filter>
@@ -325,187 +325,187 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath="..\asn1\asn_application.h"
+				RelativePath="..\libfreerdp-asn1\asn_application.h"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\asn_codecs.h"
+				RelativePath="..\libfreerdp-asn1\asn_codecs.h"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\asn_codecs_prim.h"
+				RelativePath="..\libfreerdp-asn1\asn_codecs_prim.h"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\asn_internal.h"
+				RelativePath="..\libfreerdp-asn1\asn_internal.h"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\asn_SEQUENCE_OF.h"
+				RelativePath="..\libfreerdp-asn1\asn_SEQUENCE_OF.h"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\asn_SET_OF.h"
+				RelativePath="..\libfreerdp-asn1\asn_SET_OF.h"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\asn_system.h"
+				RelativePath="..\libfreerdp-asn1\asn_system.h"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\ber_decoder.h"
+				RelativePath="..\libfreerdp-asn1\ber_decoder.h"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\ber_tlv_length.h"
+				RelativePath="..\libfreerdp-asn1\ber_tlv_length.h"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\ber_tlv_tag.h"
+				RelativePath="..\libfreerdp-asn1\ber_tlv_tag.h"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\BIT_STRING.h"
+				RelativePath="..\libfreerdp-asn1\BIT_STRING.h"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\constr_CHOICE.h"
+				RelativePath="..\libfreerdp-asn1\constr_CHOICE.h"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\constr_SEQUENCE.h"
+				RelativePath="..\libfreerdp-asn1\constr_SEQUENCE.h"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\constr_SEQUENCE_OF.h"
+				RelativePath="..\libfreerdp-asn1\constr_SEQUENCE_OF.h"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\constr_SET_OF.h"
+				RelativePath="..\libfreerdp-asn1\constr_SET_OF.h"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\constr_TYPE.h"
+				RelativePath="..\libfreerdp-asn1\constr_TYPE.h"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\constraints.h"
+				RelativePath="..\libfreerdp-asn1\constraints.h"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\ContextFlags.h"
+				RelativePath="..\libfreerdp-asn1\ContextFlags.h"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\der_encoder.h"
+				RelativePath="..\libfreerdp-asn1\der_encoder.h"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\GeneralString.h"
+				RelativePath="..\libfreerdp-asn1\GeneralString.h"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\INTEGER.h"
+				RelativePath="..\libfreerdp-asn1\INTEGER.h"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\MechType.h"
+				RelativePath="..\libfreerdp-asn1\MechType.h"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\MechTypeList.h"
+				RelativePath="..\libfreerdp-asn1\MechTypeList.h"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\NativeEnumerated.h"
+				RelativePath="..\libfreerdp-asn1\NativeEnumerated.h"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\NativeInteger.h"
+				RelativePath="..\libfreerdp-asn1\NativeInteger.h"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\NegHints.h"
+				RelativePath="..\libfreerdp-asn1\NegHints.h"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\NegoData.h"
+				RelativePath="..\libfreerdp-asn1\NegoData.h"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\NegoDataItem.h"
+				RelativePath="..\libfreerdp-asn1\NegoDataItem.h"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\NegotiationToken.h"
+				RelativePath="..\libfreerdp-asn1\NegotiationToken.h"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\NegTokenInit.h"
+				RelativePath="..\libfreerdp-asn1\NegTokenInit.h"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\NegTokenInit2.h"
+				RelativePath="..\libfreerdp-asn1\NegTokenInit2.h"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\NegTokenResp.h"
+				RelativePath="..\libfreerdp-asn1\NegTokenResp.h"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\OBJECT_IDENTIFIER.h"
+				RelativePath="..\libfreerdp-asn1\OBJECT_IDENTIFIER.h"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\OCTET_STRING.h"
+				RelativePath="..\libfreerdp-asn1\OCTET_STRING.h"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\per_decoder.h"
+				RelativePath="..\libfreerdp-asn1\per_decoder.h"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\per_encoder.h"
+				RelativePath="..\libfreerdp-asn1\per_encoder.h"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\per_opentype.h"
+				RelativePath="..\libfreerdp-asn1\per_opentype.h"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\per_support.h"
+				RelativePath="..\libfreerdp-asn1\per_support.h"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\TSCredentials.h"
+				RelativePath="..\libfreerdp-asn1\TSCredentials.h"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\TSCspDataDetail.h"
+				RelativePath="..\libfreerdp-asn1\TSCspDataDetail.h"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\TSPasswordCreds.h"
+				RelativePath="..\libfreerdp-asn1\TSPasswordCreds.h"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\TSRequest.h"
+				RelativePath="..\libfreerdp-asn1\TSRequest.h"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\TSSmartCardCreds.h"
+				RelativePath="..\libfreerdp-asn1\TSSmartCardCreds.h"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\xer_decoder.h"
+				RelativePath="..\libfreerdp-asn1\xer_decoder.h"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\xer_encoder.h"
+				RelativePath="..\libfreerdp-asn1\xer_encoder.h"
 				>
 			</File>
 			<File
-				RelativePath="..\asn1\xer_support.h"
+				RelativePath="..\libfreerdp-asn1\xer_support.h"
 				>
 			</File>
 		</Filter>

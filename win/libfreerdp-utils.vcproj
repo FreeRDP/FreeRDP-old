@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9.00"
-	Name="libgdi"
-	ProjectGUID="{65B0C0EE-55CF-417A-B4BD-A3F3E036DEC1}"
-	RootNamespace="libgdi"
+	Name="libfreerdp-utils"
+	ProjectGUID="{E4BE093E-F3DF-4DEE-B228-00B065320A18}"
+	RootNamespace="libfreerdputils"
 	Keyword="Win32Proj"
 	TargetFrameworkVersion="196613"
 	>
@@ -42,7 +42,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\include"
-				PreprocessorDefinitions="WIN32;_DEBUG;_LIB;_WINDOWS;_CRT_SECURE_NO_WARNINGS;L_ENDIAN"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;FREERDP_EXPORTS;_CRT_SECURE_NO_WARNINGS;L_ENDIAN"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="2"
@@ -106,7 +106,7 @@
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
 				AdditionalIncludeDirectories="..\include"
-				PreprocessorDefinitions="WIN32;NDEBUG;_LIB"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;FREERDP_EXPORTS;_CRT_SECURE_NO_WARNINGS;L_ENDIAN"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
@@ -151,7 +151,15 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\libgdi\gdi_color.c"
+				RelativePath="..\libfreerdp-utils\datablob.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libfreerdp-utils\memory.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libfreerdp-utils\unicode.c"
 				>
 			</File>
 		</Filter>
@@ -160,10 +168,14 @@
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
-			<File
-				RelativePath="..\libgdi\gdi_color.h"
+			<Filter
+				Name="include"
 				>
-			</File>
+				<File
+					RelativePath="..\include\freerdp\datablob.h"
+					>
+				</File>
+			</Filter>
 		</Filter>
 	</Files>
 	<Globals>

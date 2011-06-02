@@ -2,7 +2,7 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9.00"
-	Name="libfreerdp"
+	Name="libfreerdp-core"
 	ProjectGUID="{3D13BDCD-2E1D-45C0-AA5B-61A6330DED81}"
 	RootNamespace="freerdp"
 	Keyword="Win32Proj"
@@ -41,7 +41,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\include;..;C:\OpenSSL\include"
+				AdditionalIncludeDirectories="..\include;..\libfreerdp-asn1;C:\OpenSSL\include"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;FREERDP_EXPORTS;_CRT_SECURE_NO_WARNINGS;L_ENDIAN;EXT_PATH=\&quot;extensions\&quot;"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -177,103 +177,99 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\libfreerdp\asn1.c"
+				RelativePath="..\libfreerdp-core\asn1.c"
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\bitmap.c"
+				RelativePath="..\libfreerdp-core\bitmap.c"
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\cache.c"
+				RelativePath="..\libfreerdp-core\cache.c"
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\capabilities.c"
+				RelativePath="..\libfreerdp-core\capabilities.c"
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\chan.c"
+				RelativePath="..\libfreerdp-core\chan.c"
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\credssp.c"
+				RelativePath="..\libfreerdp-core\credssp.c"
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\crypto_openssl.c"
+				RelativePath="..\libfreerdp-core\crypto_openssl.c"
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\ext.c"
+				RelativePath="..\libfreerdp-core\ext.c"
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\freerdp.c"
+				RelativePath="..\libfreerdp-core\freerdp.c"
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\iso.c"
+				RelativePath="..\libfreerdp-core\iso.c"
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\licence.c"
+				RelativePath="..\libfreerdp-core\licence.c"
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\mcs.c"
+				RelativePath="..\libfreerdp-core\mcs.c"
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\mppc.c"
+				RelativePath="..\libfreerdp-core\mppc.c"
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\nego.c"
+				RelativePath="..\libfreerdp-core\nego.c"
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\ntlmssp.c"
+				RelativePath="..\libfreerdp-core\ntlmssp.c"
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\orders.c"
+				RelativePath="..\libfreerdp-core\orders.c"
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\pstcache.c"
+				RelativePath="..\libfreerdp-core\pstcache.c"
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\rail.c"
+				RelativePath="..\libfreerdp-core\rail.c"
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\rdp.c"
+				RelativePath="..\libfreerdp-core\rdp.c"
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\secure.c"
+				RelativePath="..\libfreerdp-core\secure.c"
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\ssl.c"
+				RelativePath="..\libfreerdp-core\stream.c"
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\stream.c"
+				RelativePath="..\libfreerdp-core\surface.c"
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\surface.c"
+				RelativePath="..\libfreerdp-core\tcp.c"
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\tcp.c"
-				>
-			</File>
-			<File
-				RelativePath="..\libfreerdp\tls_openssl.c"
+				RelativePath="..\libfreerdp-core\tls_openssl.c"
 				>
 			</File>
 		</Filter>
@@ -283,23 +279,23 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath="..\libfreerdp\asn1.h"
+				RelativePath="..\libfreerdp-core\asn1.h"
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\bitmap.h"
+				RelativePath="..\libfreerdp-core\bitmap.h"
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\cache.h"
+				RelativePath="..\libfreerdp-core\cache.h"
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\capabilities.h"
+				RelativePath="..\libfreerdp-core\capabilities.h"
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\chan.h"
+				RelativePath="..\libfreerdp-core\chan.h"
 				>
 			</File>
 			<File
@@ -307,31 +303,31 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\constants.h"
+				RelativePath="..\libfreerdp-core\constants.h"
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\constants_capabilities.h"
+				RelativePath="..\libfreerdp-core\constants_capabilities.h"
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\constants_core.h"
+				RelativePath="..\libfreerdp-core\constants_core.h"
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\constants_crypto.h"
+				RelativePath="..\libfreerdp-core\constants_crypto.h"
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\constants_license.h"
+				RelativePath="..\libfreerdp-core\constants_license.h"
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\constants_pdu.h"
+				RelativePath="..\libfreerdp-core\constants_pdu.h"
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\constants_rail.h"
+				RelativePath="..\libfreerdp-core\constants_rail.h"
 				>
 			</File>
 			<File
@@ -339,23 +335,23 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\constants_window.h"
+				RelativePath="..\libfreerdp-core\constants_window.h"
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\credssp.h"
+				RelativePath="..\libfreerdp-core\credssp.h"
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\crypto.h"
+				RelativePath="..\libfreerdp-core\crypto.h"
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\crypto_openssl.h"
+				RelativePath="..\libfreerdp-core\crypto_openssl.h"
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\debug.h"
+				RelativePath="..\libfreerdp-core\debug.h"
 				>
 			</File>
 			<File
@@ -363,15 +359,15 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\ext.h"
+				RelativePath="..\libfreerdp-core\ext.h"
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\frdp.h"
+				RelativePath="..\libfreerdp-core\frdp.h"
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\iso.h"
+				RelativePath="..\libfreerdp-core\iso.h"
 				>
 			</File>
 			<File
@@ -379,39 +375,39 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\licence.h"
+				RelativePath="..\libfreerdp-core\licence.h"
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\mcs.h"
+				RelativePath="..\libfreerdp-core\mcs.h"
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\nego.h"
+				RelativePath="..\libfreerdp-core\nego.h"
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\ntlmssp.h"
+				RelativePath="..\libfreerdp-core\ntlmssp.h"
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\orders.h"
+				RelativePath="..\libfreerdp-core\orders.h"
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\orderstypes.h"
+				RelativePath="..\libfreerdp-core\orderstypes.h"
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\pstcache.h"
+				RelativePath="..\libfreerdp-core\pstcache.h"
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\rail.h"
+				RelativePath="..\libfreerdp-core\rail.h"
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\rdp.h"
+				RelativePath="..\libfreerdp-core\rdp.h"
 				>
 			</File>
 			<File
@@ -419,31 +415,27 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\secure.h"
+				RelativePath="..\libfreerdp-core\secure.h"
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\ssl.h"
+				RelativePath="..\libfreerdp-core\stream.h"
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\stream.h"
+				RelativePath="..\libfreerdp-core\surface.h"
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\surface.h"
+				RelativePath="..\libfreerdp-core\tcp.h"
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\tcp.h"
+				RelativePath="..\libfreerdp-core\tls.h"
 				>
 			</File>
 			<File
-				RelativePath="..\libfreerdp\tls.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libfreerdp\types.h"
+				RelativePath="..\libfreerdp-core\types.h"
 				>
 			</File>
 			<Filter
@@ -498,7 +490,7 @@
 					>
 				</File>
 				<File
-					RelativePath="..\libfreerdp\tls.h"
+					RelativePath="..\libfreerdp-core\tls.h"
 					>
 				</File>
 				<File
@@ -509,6 +501,38 @@
 					RelativePath="..\include\freerdp\vchan.h"
 					>
 				</File>
+				<Filter
+					Name="utils"
+					>
+					<File
+						RelativePath="..\include\freerdp\utils\chan_plugin.h"
+						>
+					</File>
+					<File
+						RelativePath="..\include\freerdp\utils\datablob.h"
+						>
+					</File>
+					<File
+						RelativePath="..\include\freerdp\utils\memory.h"
+						>
+					</File>
+					<File
+						RelativePath="..\include\freerdp\utils\semaphore.h"
+						>
+					</File>
+					<File
+						RelativePath="..\include\freerdp\utils\stream.h"
+						>
+					</File>
+					<File
+						RelativePath="..\include\freerdp\utils\unicode.h"
+						>
+					</File>
+					<File
+						RelativePath="..\include\freerdp\utils\wait_obj.h"
+						>
+					</File>
+				</Filter>
 			</Filter>
 		</Filter>
 	</Files>
