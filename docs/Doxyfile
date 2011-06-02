@@ -598,7 +598,7 @@ RECURSIVE              = YES
 # excluded from the INPUT source files. This way you can easily exclude a
 # subdirectory from a directory tree whose root is specified with the INPUT tag.
 
-EXCLUDE                = ../wireshark ../asn1 ../build-aux ../contrib ../cunit ../doc ../keymaps ../m4
+EXCLUDE                = ../asn1 ../build-aux ../contrib ../cunit ../docs ../keymaps ../m4
 
 # The EXCLUDE_SYMLINKS tag can be used select whether or not files or
 # directories that are symbolic links (a Unix filesystem feature) are excluded

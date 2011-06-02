@@ -24,6 +24,8 @@
 #include "tsmf_constants.h"
 #include "tsmf_ifman.h"
 #include "tsmf_media.h"
+#include <freerdp/utils/stream.h>
+
 #include "tsmf_main.h"
 
 typedef struct _TSMF_LISTENER_CALLBACK TSMF_LISTENER_CALLBACK;

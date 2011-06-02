@@ -22,11 +22,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "rdpdr_scard.h"
 #include "irp.h"
 #include "rdpdr_constants.h"
 #include "rdpdr_types.h"
 #include "devman.h"
+#include <freerdp/utils/stream.h>
+#include <freerdp/utils/chan_plugin.h>
+#include <freerdp/utils/wait_obj.h>
+
+#include "rdpdr_scard.h"
 
 pthread_t scard_thread;
 

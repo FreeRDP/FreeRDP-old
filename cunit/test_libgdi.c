@@ -18,9 +18,22 @@
 */
 
 #include <stdio.h>
+#include <string.h>
 #include <stdlib.h>
 #include <freerdp/freerdp.h>
+
 #include "gdi.h"
+#include "gdi_dc.h"
+#include "gdi_pen.h"
+#include "gdi_line.h"
+#include "gdi_shape.h"
+#include "gdi_brush.h"
+#include "gdi_region.h"
+#include "gdi_bitmap.h"
+#include "gdi_palette.h"
+#include "gdi_drawing.h"
+#include "gdi_clipping.h"
+
 #include "test_libgdi.h"
 
 int init_libgdi_suite(void)
@@ -1902,7 +1915,7 @@ void test_FillRect(void)
 	memset(hBitmap->data, 0, width * height * hdc->bytesPerPixel);
 	SelectObject(hdc, (HGDIOBJ) hBitmap);
 
-	color = (COLORREF) RGB32(0xAA, 0xBB, 0xCC);
+	color = (COLORREF) ARGB32(0xFF, 0xAA, 0xBB, 0xCC);
 	hBrush = CreateSolidBrush(color);
 
 	FillRect(hdc, hRect, hBrush);
@@ -1920,6 +1933,7 @@ void test_FillRect(void)
 					goodPixels++;
 				}
 				else {
+					printf("actual:%04X expected:%04X\n", GetPixel(hdc, x, y), color);
 					badPixels++;
 				}
 			}

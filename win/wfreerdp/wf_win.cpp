@@ -21,8 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <conio.h>
-#include "gdi_color.h"
-#include "wf_color.h"
+#include "color.h"
 #include "wf_win.h"
 
 extern LPCTSTR g_wnd_class_name;
@@ -333,7 +332,7 @@ wf_invalidate_region(wfInfo * wfi, int x1, int y1, int x2, int y2)
 }
 
 static HBITMAP
-wf_create_dib(wfInfo * wfi, int width, int height, int bpp, int reverse, uint8 * data)
+wf_create_dib(wfInfo * wfi, int width, int height, int bpp, uint8 * data)
 {
 	HDC hdc;
 	int negHeight;
@@ -365,6 +364,85 @@ wf_create_dib(wfInfo * wfi, int width, int height, int bpp, int reverse, uint8 *
 	ReleaseDC(NULL, hdc);
 	GdiFlush();
 	return bitmap;
+}
+
+static HBITMAP
+wf_create_cursor_dib(wfInfo * wfi, int width, int height, int bpp, uint8 * data)
+{
+	HDC hdc;
+	HBITMAP bitmap;
+	BITMAPINFO bmi;
+	uint8* cdata = NULL;
+
+	hdc = GetDC(NULL);
+	bmi.bmiHeader.biSize = sizeof(BITMAPINFO);
+	bmi.bmiHeader.biWidth = width;
+	bmi.bmiHeader.biHeight = height;
+	bmi.bmiHeader.biPlanes = 1;
+	bmi.bmiHeader.biBitCount = 24;
+	bmi.bmiHeader.biCompression = BI_RGB;
+	bitmap = CreateDIBSection (hdc, &bmi, DIB_RGB_COLORS, (void**)&cdata, NULL, 0);
+
+	if (data != NULL)
+		gdi_image_convert(data, cdata, width, height, bpp, 24, wfi->clrconv);
+
+	ReleaseDC(NULL, hdc);
+	GdiFlush();
+	return bitmap;
+}
+
+static uint8 *
+wf_cursor_mask_convert(uint8* data, int width, int height)
+{
+	int y;
+	uint8 * srcp;
+	uint8 * dstp;
+	uint8 * cdata;
+
+	cdata = (uint8 *) malloc(width * height / 8);
+
+	srcp = data;
+	for (y = height - 1; y >= 0; y--)
+	{
+		dstp = cdata + (y * width / 8);
+		memcpy(dstp, srcp, width / 8);
+		srcp += width / 8;
+	}
+
+	return cdata;
+}
+
+static uint8 *
+wf_glyph_convert(wfInfo * wfi, int width, int height, uint8 * data)
+{
+	uint8 * cdata;
+	uint8 * src;
+	uint8 * dst;
+	int src_bytes_per_row;
+	int dst_bytes_per_row;
+	int indexx;
+	int indexy;
+
+	src_bytes_per_row = (width + 7) / 8;
+	dst_bytes_per_row = src_bytes_per_row + (src_bytes_per_row % 2);
+	cdata = (uint8 *) malloc(dst_bytes_per_row * height);
+	src = data;
+	for (indexy = 0; indexy < height; indexy++)
+	{
+		dst = cdata + indexy * dst_bytes_per_row;
+		for (indexx = 0; indexx < dst_bytes_per_row; indexx++)
+		{
+			if (indexx < src_bytes_per_row)
+			{
+				*dst++ = *src++;
+			}
+			else
+			{
+				*dst++ = 0;
+			}
+		}
+	}
+	return cdata;
 }
 
 static HBRUSH
@@ -404,7 +482,7 @@ wf_create_brush(wfInfo * wfi, RD_BRUSH * brush, int color, int bpp)
 		}
 		else if (brush->bd->color_code > 1)	/* > 1 bpp */
 		{
-			pattern = wf_create_dib(wfi, 8, 8, bpp, 1, brush->bd->data);
+			pattern = wf_create_dib(wfi, 8, 8, bpp, brush->bd->data);
 			lbr.lbHatch = (ULONG_PTR)pattern;
 		}
 		else
@@ -434,7 +512,7 @@ wf_create_brush(wfInfo * wfi, RD_BRUSH * brush, int color, int bpp)
 }
 
 static struct wf_bitmap *
-wf_bitmap_new(wfInfo * wfi, int width, int height, int bpp, int reverse, uint8 * data)
+wf_bitmap_new(wfInfo * wfi, int width, int height, int bpp, uint8 * data)
 {
 	struct wf_bitmap *bm;
 	HDC hdc;
@@ -448,7 +526,7 @@ wf_bitmap_new(wfInfo * wfi, int width, int height, int bpp, int reverse, uint8 *
 	}
 	else
 	{
-		bm->bitmap = wf_create_dib(wfi, width, height, bpp, reverse, data);
+		bm->bitmap = wf_create_dib(wfi, width, height, bpp, data);
 	}
 	bm->org_bitmap = (HBITMAP)SelectObject(bm->hdc, bm->bitmap);
 	ReleaseDC(NULL, hdc);
@@ -544,7 +622,7 @@ l_ui_create_bitmap(struct rdp_inst * inst, int width, int height, uint8 * data)
 	struct wf_bitmap * bm;
 
 	wfi = GET_WFI(inst);
-	bm = wf_bitmap_new(wfi, width, height, inst->settings->server_depth, 1, data);
+	bm = wf_bitmap_new(wfi, width, height, inst->settings->server_depth, data);
 	return (RD_HBITMAP) bm;
 }
 
@@ -885,13 +963,11 @@ l_ui_destroy_cursor(struct rdp_inst * inst, RD_HCURSOR cursor)
 }
 
 static RD_HCURSOR
-l_ui_create_cursor(struct rdp_inst * inst, uint32 x, uint32 y,
-	int width, int height, uint8 * andmask, uint8 * xormask, int bpp)
+l_ui_create_cursor(struct rdp_inst * inst, uint32 x, uint32 y, int width, int height, uint8 * andmask, uint8 * xormask, int bpp)
 {
 	wfInfo * wfi;
 	HCURSOR cursor;
 	ICONINFO iconinfo;
-	uint8 * cdata;
 
 	wfi = GET_WFI(inst);
 	if (bpp == 1)
@@ -903,13 +979,12 @@ l_ui_create_cursor(struct rdp_inst * inst, uint32 x, uint32 y,
 		iconinfo.fIcon = FALSE;
 		iconinfo.xHotspot = x;
 		iconinfo.yHotspot = y;
-		cdata = wf_cursor_mask_convert(wfi, width, height, andmask);
-		iconinfo.hbmMask = CreateBitmap(width, height, 1, 1, cdata);
-		iconinfo.hbmColor = wf_create_dib(wfi, width, height, bpp, 0, xormask);
+		andmask = wf_cursor_mask_convert(andmask, width, height);
+		iconinfo.hbmMask = CreateBitmap(width, height, 1, 1, andmask);
+		iconinfo.hbmColor = wf_create_cursor_dib(wfi, width, height, bpp, xormask);
 		cursor = CreateIconIndirect(&iconinfo);
 		DeleteObject(iconinfo.hbmMask);
 		DeleteObject(iconinfo.hbmColor);
-		free(cdata);
 	}
 	return (RD_HCURSOR)cursor;
 }
@@ -973,7 +1048,7 @@ l_ui_create_surface(struct rdp_inst * inst, int width, int height, RD_HBITMAP ol
 	struct wf_bitmap * old_bm;
 
 	wfi = GET_WFI(inst);
-	bm = wf_bitmap_new(wfi, width, height, 0, 0, NULL);
+	bm = wf_bitmap_new(wfi, width, height, 0, NULL);
 	old_bm = (struct wf_bitmap *) old_surface;
 	if (old_bm != 0)
 	{
@@ -1226,7 +1301,7 @@ wf_post_connect(wfInfo * wfi)
 
 	if (!wfi->backstore)
 	{
-		wfi->backstore = wf_bitmap_new(wfi, width, height, 0, 0, NULL);
+		wfi->backstore = wf_bitmap_new(wfi, width, height, 0, NULL);
 		BitBlt(wfi->backstore->hdc, 0, 0, width, height, NULL, 0, 0, BLACKNESS);
 	}
 	wfi->drw = wfi->backstore;

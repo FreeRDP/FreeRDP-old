@@ -24,7 +24,10 @@
 #include <unistd.h>
 #include <freerdp/types_ui.h>
 #include <freerdp/vchan.h>
-#include <freerdp/utils.h>
+#include <freerdp/utils/stream.h>
+#include <freerdp/utils/chan_plugin.h>
+#include <freerdp/utils/wait_obj.h>
+
 #include "rdpdbg_main.h"
 
 #define LOG_LEVEL 11

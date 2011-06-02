@@ -22,9 +22,8 @@
 
 #include <pthread.h>
 #include <sys/select.h>
-#include <freerdp/utils.h>
-
 #include "rdpdr_types.h"
+#include <freerdp/utils/chan_plugin.h>
 
 struct data_in_item
 {

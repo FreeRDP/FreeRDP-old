@@ -7,6 +7,6 @@ Name: FreeRDP
 Description: A free remote desktop protocol client
 Version: @VERSION@
 Requires: 
-Libs: -L${libdir} -lfreerdpkbd -lfreerdpchanman -lfreerdp
+Libs: -L${libdir} -lfreerdp-kbd -lfreerdp-gdi -lfreerdp-rfx -lfreerdp-chanman -lfreerdp-core
 Cflags: -I${includedir}
 

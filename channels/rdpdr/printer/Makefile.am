@@ -13,7 +13,8 @@ printer_la_CFLAGS = -I$(top_srcdir)/include \
 
 printer_la_LDFLAGS = -avoid-version -module
 
-printer_la_LIBADD = ../../../libfreerdputils/libfreerdputils.la
+printer_la_LIBADD = \
+	../../../libfreerdp-utils/libfreerdp-utils.la
 
 if RDPDR_PRINTER_CUPS
 printer_la_SOURCES += printer_cups.c

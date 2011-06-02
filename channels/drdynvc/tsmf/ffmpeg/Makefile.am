@@ -14,7 +14,9 @@ tsmf_ffmpeg_la_CFLAGS = @FFMPEG_CFLAGS@ \
 
 tsmf_ffmpeg_la_LDFLAGS = -avoid-version -module
 
-tsmf_ffmpeg_la_LIBADD = @FFMPEG_LIBS@ ../../../../libfreerdputils/libfreerdputils.la
+tsmf_ffmpeg_la_LIBADD = \
+	@FFMPEG_LIBS@ \
+	../../../../libfreerdp-utils/libfreerdp-utils.la
 
 # extra
 EXTRA_DIST =

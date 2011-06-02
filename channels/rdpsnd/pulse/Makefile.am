@@ -14,7 +14,9 @@ rdpsnd_pulse_la_CFLAGS = @PULSE_CFLAGS@ \
 
 rdpsnd_pulse_la_LDFLAGS = -avoid-version -module
 
-rdpsnd_pulse_la_LIBADD = @PULSE_LIBS@ ../../../libfreerdputils/libfreerdputils.la
+rdpsnd_pulse_la_LIBADD = \
+	@PULSE_LIBS@ \
+	../../../libfreerdp-utils/libfreerdp-utils.la
 
 # extra
 EXTRA_DIST =

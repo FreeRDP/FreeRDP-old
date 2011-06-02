@@ -47,15 +47,17 @@ l_ui_unimpl(struct rdp_inst * inst, const char * text)
 	printf("ui_unimpl: %s\n", text);
 }
 
+/* GDI callbacks registered in libfreerdp */
+
 static void
-l_ui_begin_update(struct rdp_inst * inst)
+l_ui_gdi_begin_update(struct rdp_inst * inst)
 {
 	GDI *gdi = GET_GDI(inst);
 	gdi->primary->hdc->hwnd->invalid->null = 1;
 }
 
 static void
-l_ui_end_update(struct rdp_inst * inst)
+l_ui_gdi_end_update(struct rdp_inst * inst)
 {
 	dfbInfo *dfbi = GET_DFBI(inst);
 	GDI *gdi = GET_GDI(inst);
@@ -69,6 +71,187 @@ l_ui_end_update(struct rdp_inst * inst)
 	dfbi->update_rect.h = gdi->primary->hdc->hwnd->invalid->h;
 
 	dfbi->primary->Blit(dfbi->primary, dfbi->surface, &(dfbi->update_rect), dfbi->update_rect.x, dfbi->update_rect.y);
+}
+
+static void
+l_ui_begin_update(struct rdp_inst * inst)
+{
+
+}
+
+static void
+l_ui_end_update(struct rdp_inst * inst)
+{
+
+}
+
+static void
+l_ui_desktop_save(struct rdp_inst * inst, int offset, int x, int y, int cx, int cy)
+{
+
+}
+
+static void
+l_ui_desktop_restore(struct rdp_inst * inst, int offset, int x, int y, int cx, int cy)
+{
+
+}
+
+static RD_HGLYPH
+l_ui_create_glyph(struct rdp_inst * inst, int width, int height, uint8 * data)
+{
+	return (RD_HGLYPH) NULL;
+}
+
+static void
+l_ui_destroy_glyph(struct rdp_inst * inst, RD_HGLYPH glyph)
+{
+
+}
+
+static RD_HBITMAP
+l_ui_create_bitmap(struct rdp_inst * inst, int width, int height, uint8* data)
+{
+	return (RD_HBITMAP) NULL;
+}
+
+static void
+l_ui_paint_bitmap(struct rdp_inst * inst, int x, int y, int cx, int cy, int width, int height, uint8 * data)
+{
+
+}
+
+static void
+l_ui_destroy_bitmap(struct rdp_inst * inst, RD_HBITMAP bmp)
+{
+
+}
+
+static void
+l_ui_line(struct rdp_inst * inst, uint8 opcode, int startx, int starty, int endx, int endy, RD_PEN * pen)
+{
+
+}
+
+static void
+l_ui_rect(struct rdp_inst * inst, int x, int y, int cx, int cy, uint32 color)
+{
+
+}
+
+static void
+l_ui_polygon(struct rdp_inst * inst, uint8 opcode, uint8 fillmode, RD_POINT * point, int npoints, RD_BRUSH * brush, uint32 bgcolor, uint32 fgcolor)
+{
+
+}
+
+static void
+l_ui_polyline(struct rdp_inst * inst, uint8 opcode, RD_POINT * points, int npoints, RD_PEN * pen)
+{
+
+}
+
+static void
+l_ui_ellipse(struct rdp_inst * inst, uint8 opcode, uint8 fillmode, int x, int y, int cx, int cy, RD_BRUSH * brush, uint32 bgcolor, uint32 fgcolor)
+{
+
+}
+
+static void
+l_ui_start_draw_glyphs(struct rdp_inst * inst, uint32 bgcolor, uint32 fgcolor)
+{
+
+}
+
+static void
+l_ui_draw_glyph(struct rdp_inst * inst, int x, int y, int cx, int cy, RD_HGLYPH glyph)
+{
+
+}
+
+static void
+l_ui_end_draw_glyphs(struct rdp_inst * inst, int x, int y, int cx, int cy)
+{
+
+}
+
+static void
+l_ui_destblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy)
+{
+
+}
+
+static void
+l_ui_patblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy, RD_BRUSH * brush, uint32 bgcolor, uint32 fgcolor)
+{
+
+}
+
+static void
+l_ui_screenblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy, int srcx, int srcy)
+{
+
+}
+
+static void
+l_ui_memblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy, RD_HBITMAP src, int srcx, int srcy)
+{
+
+}
+
+static void
+l_ui_mem3blt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy,
+	RD_HBITMAP src, int srcx, int srcy, RD_BRUSH * brush, uint32 bgcolor, uint32 fgcolor)
+{
+
+}
+
+static RD_HPALETTE
+l_ui_create_palette(struct rdp_inst * inst, RD_PALETTE * palette)
+{
+	return (RD_HPALETTE) NULL;
+}
+
+static void
+l_ui_set_palette(struct rdp_inst * inst, RD_HPALETTE palette)
+{
+
+}
+
+static void
+l_ui_set_clipping_region(struct rdp_inst * inst, int x, int y, int cx, int cy)
+{
+
+}
+
+static void
+l_ui_reset_clipping_region(struct rdp_inst * inst)
+{
+
+}
+
+static RD_HBITMAP
+l_ui_create_surface(struct rdp_inst * inst, int width, int height, RD_HBITMAP old_surface)
+{
+	return (RD_HBITMAP) NULL;
+}
+
+static void
+l_ui_switch_surface(struct rdp_inst * inst, RD_HBITMAP surface)
+{
+
+}
+
+static void
+l_ui_destroy_surface(struct rdp_inst * inst, RD_HBITMAP surface)
+{
+
+}
+
+static int
+l_ui_decode(struct rdp_inst * inst, uint8 * data, int size)
+{
+	return 0;
 }
 
 static uint32
@@ -243,13 +426,6 @@ l_ui_authenticate(struct rdp_inst * inst)
 	return 1;
 }
 
-static int
-l_ui_decode(struct rdp_inst * inst, uint8 * data, int data_size)
-{
-	printf("l_ui_decode: size %d\n", data_size);
-	return 0;
-}
-
 RD_BOOL
 l_ui_check_certificate(rdpInst * inst, const char * fingerprint,
 	const char * subject, const char * issuer, RD_BOOL verified)
@@ -270,6 +446,33 @@ dfb_register_callbacks(rdpInst * inst)
 {
 	inst->ui_begin_update = l_ui_begin_update;
 	inst->ui_end_update = l_ui_end_update;
+	inst->ui_desktop_save = l_ui_desktop_save;
+	inst->ui_desktop_restore = l_ui_desktop_restore;
+	inst->ui_create_bitmap = l_ui_create_bitmap;
+	inst->ui_paint_bitmap = l_ui_paint_bitmap;
+	inst->ui_destroy_bitmap = l_ui_destroy_bitmap;
+	inst->ui_line = l_ui_line;
+	inst->ui_rect = l_ui_rect;
+	inst->ui_polygon = l_ui_polygon;
+	inst->ui_polyline = l_ui_polyline;
+	inst->ui_ellipse = l_ui_ellipse;
+	inst->ui_start_draw_glyphs = l_ui_start_draw_glyphs;
+	inst->ui_draw_glyph = l_ui_draw_glyph;
+	inst->ui_end_draw_glyphs = l_ui_end_draw_glyphs;
+	inst->ui_destblt = l_ui_destblt;
+	inst->ui_patblt = l_ui_patblt;
+	inst->ui_screenblt = l_ui_screenblt;
+	inst->ui_memblt = l_ui_memblt;
+	inst->ui_triblt = l_ui_mem3blt;
+	inst->ui_create_palette = l_ui_create_palette;
+	inst->ui_set_palette = l_ui_set_palette;
+	inst->ui_create_glyph = l_ui_create_glyph;
+	inst->ui_destroy_glyph = l_ui_destroy_glyph;
+	inst->ui_set_clip = l_ui_set_clipping_region;
+	inst->ui_reset_clip = l_ui_reset_clipping_region;
+	inst->ui_create_surface = l_ui_create_surface;
+	inst->ui_set_surface = l_ui_switch_surface;
+	inst->ui_destroy_surface = l_ui_destroy_surface;
 	inst->ui_error = l_ui_error;
 	inst->ui_warning = l_ui_warning;
 	inst->ui_unimpl = l_ui_unimpl;
@@ -311,42 +514,52 @@ dfb_pre_connect(rdpInst * inst)
 int
 dfb_post_connect(rdpInst * inst)
 {
-	GDI *gdi;
 	dfbInfo *dfbi = GET_DFBI(inst);
 
-	gdi_init(inst, CLRCONV_ALPHA);
-	gdi = GET_GDI(inst);
+	if (inst->settings->software_gdi == 1)
+	{
+		GDI *gdi;
+		gdi_init(inst, CLRCONV_ALPHA | CLRBUF_16BPP | CLRBUF_32BPP);
+		gdi = GET_GDI(inst);
 
-	dfbi->err = DirectFBCreate(&(dfbi->dfb));
+		dfbi->err = DirectFBCreate(&(dfbi->dfb));
 
-	dfbi->dsc.flags = DSDESC_CAPS;
-	dfbi->dsc.caps = DSCAPS_PRIMARY;
-	dfbi->err = dfbi->dfb->CreateSurface(dfbi->dfb, &(dfbi->dsc), &(dfbi->primary));
-	dfbi->err = dfbi->primary->GetSize(dfbi->primary, &(gdi->width), &(gdi->height));
-	dfbi->dfb->SetVideoMode(dfbi->dfb, gdi->width, gdi->height, gdi->dstBpp);
-	dfbi->dfb->CreateInputEventBuffer(dfbi->dfb, DICAPS_ALL, DFB_TRUE, &(dfbi->event_buffer));
-	dfbi->event_buffer->CreateFileDescriptor(dfbi->event_buffer, &(dfbi->read_fds));
+		dfbi->dsc.flags = DSDESC_CAPS;
+		dfbi->dsc.caps = DSCAPS_PRIMARY;
+		dfbi->err = dfbi->dfb->CreateSurface(dfbi->dfb, &(dfbi->dsc), &(dfbi->primary));
+		dfbi->err = dfbi->primary->GetSize(dfbi->primary, &(gdi->width), &(gdi->height));
+		dfbi->dfb->SetVideoMode(dfbi->dfb, gdi->width, gdi->height, gdi->dstBpp);
+		dfbi->dfb->CreateInputEventBuffer(dfbi->dfb, DICAPS_ALL, DFB_TRUE, &(dfbi->event_buffer));
+		dfbi->event_buffer->CreateFileDescriptor(dfbi->event_buffer, &(dfbi->read_fds));
 
-	dfbi->dfb->GetDisplayLayer(dfbi->dfb, 0, &(dfbi->layer));
-	dfbi->layer->EnableCursor(dfbi->layer, 1);
+		dfbi->dfb->GetDisplayLayer(dfbi->dfb, 0, &(dfbi->layer));
+		dfbi->layer->EnableCursor(dfbi->layer, 1);
 
-	dfbi->dsc.flags = DSDESC_CAPS | DSDESC_WIDTH | DSDESC_HEIGHT | DSDESC_PREALLOCATED | DSDESC_PIXELFORMAT;
-	dfbi->dsc.caps = DSCAPS_SYSTEMONLY;
-	dfbi->dsc.width = gdi->width;
-	dfbi->dsc.height = gdi->height;
+		dfbi->dsc.flags = DSDESC_CAPS | DSDESC_WIDTH | DSDESC_HEIGHT | DSDESC_PREALLOCATED | DSDESC_PIXELFORMAT;
+		dfbi->dsc.caps = DSCAPS_SYSTEMONLY;
+		dfbi->dsc.width = gdi->width;
+		dfbi->dsc.height = gdi->height;
 
-	if (gdi->dstBpp == 32 || gdi->dstBpp == 24)
-		dfbi->dsc.pixelformat = DSPF_AiRGB;
-	else if (gdi->dstBpp == 16 || gdi->dstBpp == 15)
-		dfbi->dsc.pixelformat = DSPF_RGB16;
-	else if (gdi->dstBpp == 8)
-		dfbi->dsc.pixelformat = DSPF_RGB332;
+		if (gdi->dstBpp == 32 || gdi->dstBpp == 24)
+			dfbi->dsc.pixelformat = DSPF_AiRGB;
+		else if (gdi->dstBpp == 16 || gdi->dstBpp == 15)
+			dfbi->dsc.pixelformat = DSPF_RGB16;
+		else if (gdi->dstBpp == 8)
+			dfbi->dsc.pixelformat = DSPF_RGB332;
+		else
+			dfbi->dsc.pixelformat = DSPF_AiRGB;
+
+		dfbi->dsc.preallocated[0].data = gdi->primary_buffer;
+		dfbi->dsc.preallocated[0].pitch = gdi->width * gdi->bytesPerPixel;
+		dfbi->dfb->CreateSurface(dfbi->dfb, &(dfbi->dsc), &(dfbi->surface));
+
+		inst->ui_begin_update = l_ui_gdi_begin_update;
+		inst->ui_end_update = l_ui_gdi_end_update;
+	}
 	else
-		dfbi->dsc.pixelformat = DSPF_AiRGB;
-
-	dfbi->dsc.preallocated[0].data = gdi->primary_buffer;
-	dfbi->dsc.preallocated[0].pitch = gdi->width * gdi->bytesPerPixel;
-	dfbi->dfb->CreateSurface(dfbi->dfb, &(dfbi->dsc), &(dfbi->surface));
+	{
+		/* DirectFB-specific GDI Implementation */
+	}
 
 	return 0;
 }

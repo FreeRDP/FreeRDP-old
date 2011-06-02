@@ -3,7 +3,7 @@ AC_INIT(freerdp, m4_esyscmd([build-aux/git-version-gen .tarball-version]),
 AM_INIT_AUTOMAKE([1.11 dist-xz color-tests parallel-tests])
 AM_SILENT_RULES([yes]) # make --enable-silent-rules the default.
 AM_CONFIG_HEADER([config.h])
-AC_CONFIG_SRCDIR([libfreerdp/freerdp.c])
+AC_CONFIG_SRCDIR([libfreerdp-core/freerdp.c])
 
 AC_PROG_CC
 AM_PROG_CC_C_O
@@ -1038,17 +1038,17 @@ AC_SUBST(EXTRA_SUBDIRS)
 AC_CONFIG_FILES([
 Makefile
 freerdp.pc
-asn1/Makefile
-libfreerdputils/Makefile
-libfreerdp/Makefile
+libfreerdp-asn1/Makefile
+libfreerdp-gdi/Makefile
+libfreerdp-rfx/Makefile
+libfreerdp-utils/Makefile
+libfreerdp-core/Makefile
 docs/Makefile
 include/Makefile
-libfreerdpkbd/Makefile
+libfreerdp-kbd/Makefile
 keymaps/Makefile
 cunit/Makefile
-libgdi/Makefile
-librfx/Makefile
-libfreerdpchanman/Makefile
+libfreerdp-chanman/Makefile
 X11/Makefile
 dfb/Makefile
 win/Makefile

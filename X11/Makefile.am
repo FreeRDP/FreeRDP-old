@@ -15,18 +15,18 @@ xfreerdp_SOURCES = \
 xfreerdp_CFLAGS = \
 	-I$(top_srcdir) \
 	-I$(top_srcdir)/include \
-	-I$(top_srcdir)/libgdi \
+	-I$(top_srcdir)/libfreerdp-gdi \
 	-pthread \
 	@XCURSOR_CFLAGS@ \
 	@XV_CFLAGS@ \
 	@X_CFLAGS@
 
 xfreerdp_LDADD = \
-	../libfreerdp/libfreerdp.la \
-	../libgdi/libgdi.la \
-	../librfx/librfx.la \
-	../libfreerdpkbd/libfreerdpkbd.la \
-	../libfreerdputils/libfreerdputils.la \
-	../libfreerdpchanman/libfreerdpchanman.la \
+	../libfreerdp-gdi/libfreerdp-gdi.la \
+	../libfreerdp-rfx/libfreerdp-rfx.la \
+	../libfreerdp-kbd/libfreerdp-kbd.la \
+	../libfreerdp-utils/libfreerdp-utils.la \
+	../libfreerdp-chanman/libfreerdp-chanman.la \
+	../libfreerdp-core/libfreerdp-core.la \
 	@XCURSOR_LIBS@ @XV_LIBS@ @X_LIBS@ @X_EXTRA_LIBS@
 

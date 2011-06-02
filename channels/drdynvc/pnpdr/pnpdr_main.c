@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "drdynvc_types.h"
+#include <freerdp/utils/stream.h>
 
 #define IRPDR_ID_VERSION            0x00000065
 #define IRPDR_ID_REDIRECT_DEVICES   0x00000066

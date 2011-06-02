@@ -191,7 +191,7 @@ tsmf_pulse_stream_request_callback(pa_stream * stream, size_t length, void * use
 {
 	TSMFPulseAudioDevice * pulse = (TSMFPulseAudioDevice *) userdata;
 
-	LLOGLN(10, ("tsmf_pulse_stream_request_callback: %d", length));
+	LLOGLN(10, ("tsmf_pulse_stream_request_callback: %d", (int) length));
 
 	pa_threaded_mainloop_signal(pulse->mainloop, 0);
 }

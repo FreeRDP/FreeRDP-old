@@ -23,8 +23,9 @@
 #include <string.h>
 #include <alsa/asoundlib.h>
 #include <freerdp/types_ui.h>
-#include <freerdp/utils.h>
 #include "rdpsnd_types.h"
+#include <freerdp/utils/stream.h>
+#include <freerdp/utils/wait_obj.h>
 
 #define LOG_LEVEL 1
 #define LLOG(_level, _args) \

@@ -12,7 +12,11 @@ include_HEADERS = \
 	freerdp/types_base.h \
 	freerdp/types_ui.h \
 	freerdp/vchan.h \
-	freerdp/utils.h \
 	freerdp/errinfo.h \
-	freerdp/dvc.h
-
+	freerdp/dvc.h \
+	freerdp/utils/chan_plugin.h \
+	freerdp/utils/datablob.h \
+	freerdp/utils/memory.h \
+	freerdp/utils/semaphore.h \
+	freerdp/utils/unicode.h \
+	freerdp/utils/wait_obj.h

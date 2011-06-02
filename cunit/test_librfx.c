@@ -141,22 +141,24 @@ int add_librfx_suite(void)
 void
 test_bitstream(void)
 {
+	unsigned int b;
 	RFX_BITSTREAM * bs;
 
 	bs = rfx_bitstream_new();
 	rfx_bitstream_put_bytes(bs, y_data, sizeof(y_data));
 	while (!rfx_bitstream_eos(bs))
 	{
-		printf("%u ", rfx_bitstream_get_bits(bs, 3));
+		b = rfx_bitstream_get_bits(bs, 3);
+		//printf("%u ", b);
 	}
 	rfx_bitstream_free(bs);
 
-	printf("\n");
+	//printf("\n");
 }
 
 static int buffer[4096];
 
-static void
+void
 dump_buffer(int * buf, int n)
 {
 	int i;
@@ -175,17 +177,17 @@ test_rlgr(void)
 {
 	int n;
 
-	n = rfx_rlgr_decode(RLGR1, y_data, sizeof(y_data),
-		buffer, sizeof(buffer) / sizeof(int));
-	printf("RLGR decode %d bytes to %d values.", sizeof(y_data), n);
-	dump_buffer(buffer, n);
+	n = rfx_rlgr_decode(RLGR1, y_data, sizeof(y_data), buffer, sizeof(buffer) / sizeof(int));
+
+	//printf("RLGR decode %d bytes to %d values.", sizeof(y_data), n);
+	//dump_buffer(buffer, n);
 }
 
 void
 test_differential(void)
 {
 	rfx_differential_decode(buffer + 4032, 64);
-	dump_buffer(buffer + 4032, 64);
+	//dump_buffer(buffer + 4032, 64);
 }
 
 void
@@ -201,7 +203,7 @@ test_quantization(void)
 	rfx_quantization_decode(buffer + 3904, 64, test_quantization_values[7]); /* LH3 */
 	rfx_quantization_decode(buffer + 3868, 64, test_quantization_values[8]); /* HH3 */
 	rfx_quantization_decode(buffer + 4032, 64, test_quantization_values[9]); /* LL3 */
-	dump_buffer(buffer, 4096);
+	//dump_buffer(buffer, 4096);
 }
 
 void
@@ -210,7 +212,7 @@ test_dwt(void)
 	rfx_dwt_2d_decode(buffer + 3840, 8);
 	rfx_dwt_2d_decode(buffer + 3072, 16);
 	rfx_dwt_2d_decode(buffer, 32);
-	dump_buffer(buffer, 4096);
+	//dump_buffer(buffer, 4096);
 }
 
 void
@@ -246,18 +248,4 @@ test_decode(void)
 	free(decode_buffer);
 }
 
-#if 0
-int
-main(void)
-{
-	test_bitstream();
-	test_rlgr();
-	test_differential();
-	test_quantization();
-	test_dwt();
-	test_decode();
-
-	return 0;
-}
-#endif
 
