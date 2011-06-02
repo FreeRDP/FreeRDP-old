@@ -1,23 +1,23 @@
 ## Process this file with automake to produce Makefile.in
 
-# libfreerdpkbd
-libfreerdpkbddir = $(libdir)
+# libkbd
+libkbddir = $(libdir)
 
-libfreerdpkbd_LTLIBRARIES = libfreerdpkbd.la
+libkbd_LTLIBRARIES = libkbd.la
 
-libfreerdpkbd_la_SOURCES = \
+libkbd_la_SOURCES = \
 	debug.h \
 	keyboard.h \
 	layout_ids.c layout_ids.h \
 	locales.c locales.h \
 	x_layout_id_table.c x_layout_id_table.h \
 	layouts_xkb.c layouts_xkb.h \
-	libfreerdpkbd.c
+	libkbd.c
 
-libfreerdpkbd_la_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include \
+libkbd_la_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include \
 	-DKEYMAP_PATH=\"$(KEYMAP_PATH)\"
 
-libfreerdpkbd_la_LDFLAGS = @XKBFILE_LIBS@
+libkbd_la_LDFLAGS = @XKBFILE_LIBS@
 
 # extra
 EXTRA_DIST =

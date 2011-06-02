@@ -20,7 +20,8 @@ tsmf_la_CFLAGS = -I$(top_srcdir)/include \
 
 tsmf_la_LDFLAGS = -avoid-version -module
 
-tsmf_la_LIBADD = ../../../libfreerdputils/libfreerdputils.la
+tsmf_la_LIBADD = \
+	../../../libutils/libutils.la
 
 # extra
 EXTRA_DIST =

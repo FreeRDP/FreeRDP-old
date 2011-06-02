@@ -21,9 +21,9 @@ test_freerdp_CFLAGS = \
 test_freerdp_LDADD = \
 	../libgdi/libgdi.la \
 	../librfx/librfx.la \
+	../libkbd/libkbd.la \
+	../libchanman/libchanman.la \
 	../libfreerdp/libfreerdp.la \
-	../libfreerdpkbd/libfreerdpkbd.la \
-	../libfreerdpchanman/libfreerdpchanman.la \
 	-lfusion -ldirect -lz -lcunit -lncurses
 
 

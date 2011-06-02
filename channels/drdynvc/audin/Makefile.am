@@ -15,7 +15,8 @@ audin_la_CFLAGS = -I$(top_srcdir)/include \
 
 audin_la_LDFLAGS = -avoid-version -module
 
-audin_la_LIBADD = ../../../libfreerdputils/libfreerdputils.la
+audin_la_LIBADD = \
+	../../../libutils/libutils.la
 
 # extra
 EXTRA_DIST =

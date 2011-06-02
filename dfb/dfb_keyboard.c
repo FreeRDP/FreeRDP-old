@@ -20,7 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "libfreerdpkbd/keyboard.h"
+#include "libkbd/keyboard.h"
 #include <freerdp/freerdp.h>
 #include <freerdp/kbd.h>
 #include "dfb_event.h"

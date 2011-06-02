@@ -22,11 +22,11 @@ xfreerdp_CFLAGS = \
 	@X_CFLAGS@
 
 xfreerdp_LDADD = \
-	../libfreerdp/libfreerdp.la \
 	../libgdi/libgdi.la \
 	../librfx/librfx.la \
-	../libfreerdpkbd/libfreerdpkbd.la \
-	../libfreerdputils/libfreerdputils.la \
-	../libfreerdpchanman/libfreerdpchanman.la \
+	../libkbd/libkbd.la \
+	../libutils/libutils.la \
+	../libchanman/libchanman.la \
+	../libfreerdp/libfreerdp.la \
 	@XCURSOR_LIBS@ @XV_LIBS@ @X_LIBS@ @X_EXTRA_LIBS@
 

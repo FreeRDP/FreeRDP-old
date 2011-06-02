@@ -16,7 +16,9 @@ scard_la_CFLAGS = @PCSCLITE_CFLAGS@ \
 
 scard_la_LDFLAGS = -avoid-version -module
 
-scard_la_LIBADD = @PCSCLITE_LIBS@ ../../../libfreerdputils/libfreerdputils.la
+scard_la_LIBADD = \
+	@PCSCLITE_LIBS@ \
+	../../../libutils/libutils.la
 
 # extra
 EXTRA_DIST =

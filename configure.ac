@@ -1041,14 +1041,14 @@ freerdp.pc
 asn1/Makefile
 libgdi/Makefile
 librfx/Makefile
-libfreerdputils/Makefile
+libutils/Makefile
 libfreerdp/Makefile
 docs/Makefile
 include/Makefile
-libfreerdpkbd/Makefile
+libkbd/Makefile
 keymaps/Makefile
 cunit/Makefile
-libfreerdpchanman/Makefile
+libchanman/Makefile
 X11/Makefile
 dfb/Makefile
 win/Makefile

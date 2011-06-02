@@ -14,7 +14,9 @@ tsmf_alsa_la_CFLAGS = @ALSA_CFLAGS@ \
 
 tsmf_alsa_la_LDFLAGS = -avoid-version -module
 
-tsmf_alsa_la_LIBADD = @ALSA_LIBS@ ../../../../libfreerdputils/libfreerdputils.la
+tsmf_alsa_la_LIBADD = \
+	@ALSA_LIBS@ \
+	../../../../libutils/libutils.la
 
 # extra
 EXTRA_DIST =

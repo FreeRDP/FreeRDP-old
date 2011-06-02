@@ -3,14 +3,14 @@ REQUIRED_SUBDIRS = \
 	asn1 \
 	libgdi \
 	librfx \
-	libfreerdputils \
+	libutils \
 	libfreerdp \
 	docs \
 	contrib \
 	include \
 	keymaps \
-	libfreerdpkbd \
-	libfreerdpchanman \
+	libkbd \
+	libchanman \
 	channels/rdpsnd \
 	channels/drdynvc \
 	channels/drdynvc/pnpdr \

@@ -74,7 +74,7 @@ libfreerdp_la_LIBADD = \
 	../asn1/libasn1.la \
 	../libgdi/libgdi.la \
 	../librfx/librfx.la \
-	../libfreerdputils/libfreerdputils.la \
+	../libutils/libutils.la \
 	@CRYPTO_LIBS@ @LIBICONV@
 
 # extra

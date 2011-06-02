@@ -19,9 +19,9 @@ dfbfreerdp_CFLAGS = \
 dfbfreerdp_LDADD = \
 	../libgdi/libgdi.la \
 	../librfx/librfx.la \
+	../libkbd/libkbd.la \
+	../libchanman/libchanman.la \
 	../libfreerdp/libfreerdp.la \
-	../libfreerdpkbd/libfreerdpkbd.la \
-	../libfreerdpchanman/libfreerdpchanman.la \
 	@DFB_LIBS@ -lfusion -ldirect -lz
 
 

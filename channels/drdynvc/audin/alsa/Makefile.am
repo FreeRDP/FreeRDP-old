@@ -14,7 +14,9 @@ audin_alsa_la_CFLAGS = @ALSA_CFLAGS@ \
 
 audin_alsa_la_LDFLAGS = -avoid-version -module
 
-audin_alsa_la_LIBADD = @ALSA_LIBS@ ../../../../libfreerdputils/libfreerdputils.la
+audin_alsa_la_LIBADD = \
+	@ALSA_LIBS@ \
+	../../../../libutils/libutils.la
 
 # extra
 EXTRA_DIST =

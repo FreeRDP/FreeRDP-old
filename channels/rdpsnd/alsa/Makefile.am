@@ -14,7 +14,9 @@ rdpsnd_alsa_la_CFLAGS = @ALSA_CFLAGS@ \
 
 rdpsnd_alsa_la_LDFLAGS = -avoid-version -module
 
-rdpsnd_alsa_la_LIBADD = @ALSA_LIBS@ ../../../libfreerdputils/libfreerdputils.la
+rdpsnd_alsa_la_LIBADD = \
+	@ALSA_LIBS@ \
+	../../../libutils/libutils.la
 
 # extra
 EXTRA_DIST =

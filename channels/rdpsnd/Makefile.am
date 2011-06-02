@@ -17,7 +17,9 @@ rdpsnd_la_CFLAGS = \
 
 rdpsnd_la_LDFLAGS = -avoid-version -module
 
-rdpsnd_la_LIBADD = ../../libfreerdputils/libfreerdputils.la -ldl
+rdpsnd_la_LIBADD = \
+	 -ldl \
+	../../libutils/libutils.la
 
 # extra
 EXTRA_DIST =

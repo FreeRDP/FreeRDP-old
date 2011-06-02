@@ -12,7 +12,8 @@ cliprdr_la_CFLAGS = -I$(top_srcdir)/include
 
 cliprdr_la_LDFLAGS = -avoid-version -module
 
-cliprdr_la_LIBADD = ../../libfreerdputils/libfreerdputils.la
+cliprdr_la_LIBADD = \
+	../../libutils/libutils.la
 
 if WITH_X11
 cliprdr_la_SOURCES += cliprdr_x11.c
