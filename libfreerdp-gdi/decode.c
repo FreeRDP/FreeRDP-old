@@ -21,9 +21,9 @@
 #include <stdlib.h>
 #include <freerdp/freerdp.h>
 #include <freerdp/utils/stream.h>
+#include <freerdp/rfx.h>
 
 #include "gdi.h"
-#include "rfx.h"
 #include "gdi_bitmap.h"
 #include "gdi_region.h"
 #include "gdi_clipping.h"

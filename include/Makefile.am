@@ -14,6 +14,7 @@ nobase_include_HEADERS = \
 	freerdp/vchan.h \
 	freerdp/errinfo.h \
 	freerdp/dvc.h \
+	freerdp/rfx.h \
 	freerdp/utils/chan_plugin.h \
 	freerdp/utils/datablob.h \
 	freerdp/utils/memory.h \

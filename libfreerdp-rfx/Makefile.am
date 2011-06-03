@@ -24,10 +24,6 @@ libfreerdp_rfx_la_LDFLAGS =
 
 libfreerdp_rfx_la_LIBDADD =
 
-# libfreerdp-rfx headers
-includedir = $(prefix)/include/rfx
-include_HEADERS = rfx.h
-
 # extra
 EXTRA_DIST =
 
