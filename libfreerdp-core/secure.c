@@ -24,7 +24,6 @@
 #include "rdp.h"
 #include "iso.h"
 #include "tcp.h"
-#include "types.h"
 #include <freerdp/rdpset.h>
 #include <freerdp/utils/debug.h>
 #include <freerdp/utils/memory.h>

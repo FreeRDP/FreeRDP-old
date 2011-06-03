@@ -24,7 +24,28 @@
 #include <freerdp/utils/debug.h>
 #include <freerdp/types/ui.h>
 #include "stream.h"
-#include "types.h"
+
+typedef struct _BOUNDS
+{
+	sint16 left;
+	sint16 top;
+	sint16 right;
+	sint16 bottom;
+} BOUNDS;
+
+typedef struct _FONTGLYPH
+{
+	sint16 offset;
+	sint16 baseline;
+	uint16 width;
+	uint16 height;
+	RD_HBITMAP pixmap;
+} FONTGLYPH;
+
+typedef struct _RECTANGLE
+{
+	sint16 l, t, w, h;
+} RECTANGLE;
 
 struct rdp_orders
 {
@@ -459,6 +480,7 @@ RDP_CACHE_BITMAP_COMPRESSED_ORDER;
 #define BUFSIZE_MASK		0x3FFF	/* or 0x1FFF? */
 
 #define MAX_GLYPH 32
+#define MAX_GLYPHS 256
 
 typedef struct _RDP_GLYPH
 {
@@ -471,8 +493,6 @@ typedef struct _RDP_GLYPH
 
 }
 RDP_GLYPH;
-
-#define MAX_GLYPHS 256
 
 typedef struct _RDP_CACHE_GLYPH_ORDER
 {

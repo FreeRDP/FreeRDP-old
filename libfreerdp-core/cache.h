@@ -20,7 +20,7 @@
 #ifndef __CACHE_H
 #define __CACHE_H
 
-#include "types.h"
+#include "orders.h"
 #include <freerdp/utils/debug.h>
 #include <freerdp/utils/memory.h>
 #include <freerdp/utils/datablob.h>

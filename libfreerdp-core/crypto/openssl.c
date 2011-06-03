@@ -20,6 +20,7 @@
 #include "frdp.h"
 #include "crypto.h"
 #include <freerdp/utils/memory.h>
+#include <freerdp/constants/constants.h>
 
 #include "tls.h"
 #include "crypto/openssl.h"

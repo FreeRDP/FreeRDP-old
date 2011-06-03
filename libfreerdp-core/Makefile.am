@@ -18,7 +18,6 @@ libfreerdp_core_la_SOURCES = \
 	mcs.c mcs.h \
 	mppc.c \
 	orders.c orders.h \
-	orderstypes.h \
 	stream.c stream.h \
 	pstcache.c pstcache.h \
 	rail.c rail.h \
@@ -27,7 +26,7 @@ libfreerdp_core_la_SOURCES = \
 	crypto.h \
 	tcp.c tcp.h \
 	nego.c nego.h \
-	types.h frdp.h \
+	frdp.h \
 	errinfo.c \
 	surface.c surface.h
 

@@ -22,12 +22,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <freerdp/types/ui.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
-
-#include "types.h"
 
 #ifdef _WIN32
 #include "winsock2.h"

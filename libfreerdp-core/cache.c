@@ -20,6 +20,7 @@
 
 #include "frdp.h"
 #include "rdp.h"
+#include "orders.h"
 #include "pstcache.h"
 
 #include "cache.h"

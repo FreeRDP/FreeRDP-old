@@ -23,7 +23,6 @@
 typedef struct rdp_tls rdpTls;
 
 #include "tcp.h"
-#include "types.h"
 #include "crypto.h"
 
 rdpTls *

@@ -22,7 +22,6 @@
 
 #include "secure.h"
 #include "credssp.h"
-#include "types.h"
 
 #include <freerdp/utils/debug.h>
 #include <freerdp/utils/unicode.h>

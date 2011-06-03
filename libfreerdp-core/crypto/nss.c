@@ -19,6 +19,7 @@
 
 #include <freerdp/utils/debug.h>
 #include <freerdp/utils/memory.h>
+#include <freerdp/constants/constants.h>
 #include "frdp.h"
 #include "crypto.h"
 
