@@ -20,7 +20,7 @@
 #ifndef __TYPES_H
 #define __TYPES_H
 
-#include <freerdp/types_ui.h>
+#include <freerdp/types/ui.h>
 #include <freerdp/constants/constants.h>
 #include "stream.h"
 

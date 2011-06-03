@@ -21,7 +21,7 @@
 #ifndef __CLIPRDR_MAIN_H
 #define __CLIPRDR_MAIN_H
 
-#include <freerdp/types_ui.h>
+#include <freerdp/types/ui.h>
 
 /* CLIPRDR_HEADER.msgType */
 #define CB_MONITOR_READY           1

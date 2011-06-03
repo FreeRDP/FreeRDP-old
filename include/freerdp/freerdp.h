@@ -21,7 +21,7 @@
 #define __FREERDP_H
 
 #include "rdpset.h"
-#include "types_ui.h"
+#include "types/ui.h"
 #include "constants/ui.h"
 #include "rdpext.h"
 

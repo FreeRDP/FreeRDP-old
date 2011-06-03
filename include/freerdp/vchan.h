@@ -20,7 +20,7 @@
 #ifndef __VCHAN_H
 #define __VCHAN_H
 
-#include "types_ui.h"
+#include "types/ui.h"
 #include "constants/vchan.h"
 
 #ifdef _WIN32

@@ -23,7 +23,7 @@
 
 #include <windows.h>
 #include <freerdp/chanman.h>
-#include <freerdp/types_ui.h>
+#include <freerdp/types/ui.h>
 
 #include "color.h"
 

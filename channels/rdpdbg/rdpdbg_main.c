@@ -22,7 +22,7 @@
 #include <string.h>
 #include <pthread.h>
 #include <unistd.h>
-#include <freerdp/types_ui.h>
+#include <freerdp/types/ui.h>
 #include <freerdp/vchan.h>
 #include <freerdp/utils/stream.h>
 #include <freerdp/utils/chan_plugin.h>

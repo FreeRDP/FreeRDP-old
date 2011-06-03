@@ -20,7 +20,7 @@
 #ifndef __RDPEXT_H
 #define __RDPEXT_H
 
-#include <freerdp/types_ui.h>
+#include <freerdp/types/ui.h>
 
 #ifdef _WIN32
 #define RDPEXT_CC __stdcall

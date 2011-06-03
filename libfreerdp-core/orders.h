@@ -21,7 +21,7 @@
 #define __ORDERS_H
 
 #include <stddef.h>
-#include <freerdp/types_ui.h>
+#include <freerdp/types/ui.h>
 #include "stream.h"
 
 struct rdp_orders

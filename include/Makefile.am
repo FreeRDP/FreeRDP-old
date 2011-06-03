@@ -7,11 +7,11 @@ include_HEADERS = \
 	freerdp/kbd.h \
 	freerdp/rdpext.h \
 	freerdp/rdpset.h \
-	freerdp/types_base.h \
-	freerdp/types_ui.h \
 	freerdp/vchan.h \
 	freerdp/errinfo.h \
 	freerdp/dvc.h \
+	freerdp/types/ui.h \
+	freerdp/types/base.h \
 	freerdp/utils/chan_plugin.h \
 	freerdp/utils/datablob.h \
 	freerdp/utils/memory.h \

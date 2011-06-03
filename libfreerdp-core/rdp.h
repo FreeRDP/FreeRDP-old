@@ -22,7 +22,7 @@
 
 #include <time.h>
 #include "types.h"
-#include <freerdp/types_ui.h>
+#include <freerdp/types/ui.h>
 #include <freerdp/utils/unicode.h>
 
 RD_BOOL

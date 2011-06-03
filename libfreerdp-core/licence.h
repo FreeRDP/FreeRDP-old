@@ -20,7 +20,7 @@
 #ifndef __LICENCE_H
 #define __LICENCE_H
 
-#include <freerdp/types_ui.h>
+#include <freerdp/types/ui.h>
 #include "stream.h"
 
 struct rdp_licence
