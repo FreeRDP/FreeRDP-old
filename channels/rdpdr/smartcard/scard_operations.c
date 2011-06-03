@@ -30,7 +30,7 @@
 #include <PCSC/reader.h>
 #include <PCSC/winscard.h>
 
-#include "debug.h"
+#include <freerdp/debug.h>
 #include <freerdp/utils/stream.h>
 #include <freerdp/utils/semaphore.h>
 

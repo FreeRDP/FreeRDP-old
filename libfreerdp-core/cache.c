@@ -21,7 +21,7 @@
 #include "frdp.h"
 #include "rdp.h"
 #include "pstcache.h"
-#include "debug.h"
+#include <freerdp/debug.h>
 
 #include "cache.h"
 

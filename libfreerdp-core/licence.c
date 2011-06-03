@@ -21,7 +21,7 @@
 #include "crypto.h"
 #include "secure.h"
 #include "rdp.h"
-#include "debug.h"
+#include <freerdp/debug.h>
 #include <freerdp/rdpset.h>
 #include <freerdp/utils/memory.h>
 

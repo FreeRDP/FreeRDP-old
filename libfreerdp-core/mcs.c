@@ -23,8 +23,8 @@
 #include "secure.h"
 #include "rdp.h"
 #include "asn1.h"
-#include "debug.h"
 #include "tcp.h"
+#include <freerdp/debug.h>
 #include <freerdp/rdpset.h>
 #include <freerdp/utils/memory.h>
 

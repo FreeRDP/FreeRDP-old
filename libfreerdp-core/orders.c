@@ -23,7 +23,7 @@
 #include "pstcache.h"
 #include "cache.h"
 #include "bitmap.h"
-#include "debug.h"
+#include <freerdp/debug.h>
 #include <freerdp/rdpset.h>
 
 #include "orders.h"

@@ -5,6 +5,7 @@ include_HEADERS = \
 	freerdp/freerdp.h \
 	freerdp/chanman.h \
 	freerdp/kbd.h \
+	freerdp/debug.h \
 	freerdp/rdpext.h \
 	freerdp/rdpset.h \
 	freerdp/vchan.h \

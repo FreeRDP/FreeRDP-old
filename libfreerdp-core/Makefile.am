@@ -27,7 +27,7 @@ libfreerdp_core_la_SOURCES = \
 	crypto.h \
 	tcp.c tcp.h \
 	nego.c nego.h \
-	types.h debug.h frdp.h \
+	types.h frdp.h \
 	errinfo.c \
 	surface.c surface.h
 

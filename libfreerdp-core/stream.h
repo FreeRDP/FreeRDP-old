@@ -22,7 +22,7 @@
 
 #include <stddef.h>
 #include "frdp.h"
-#include "debug.h"
+#include <freerdp/debug.h>
 
 #if !(defined(L_ENDIAN) || defined(B_ENDIAN))
 #warning no endian defined

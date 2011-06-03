@@ -33,9 +33,9 @@
 #include "pstcache.h"
 #include "cache.h"
 #include "bitmap.h"
-#include "debug.h"
 #include "ext.h"
 #include "surface.h"
+#include <freerdp/debug.h>
 #include <freerdp/freerdp.h>
 
 #include "rdp.h"
