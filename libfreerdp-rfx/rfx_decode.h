@@ -20,7 +20,7 @@
 #ifndef __RFX_DECODE_H
 #define __RFX_DECODE_H
 
-#include "rfx.h"
+#include <freerdp/rfx.h>
 
 unsigned char *
 rfx_decode_rgb(RFX_CONTEXT * context,

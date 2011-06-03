@@ -21,7 +21,7 @@
 #define __RFX_PRIVATE_H
 
 #include "rfx_rlgr.h"
-#include "rfx.h"
+#include <freerdp/rfx.h>
 
 struct _RFX_CONTEXT
 {

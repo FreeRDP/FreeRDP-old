@@ -21,9 +21,9 @@
 #define __DECODE_H
 
 #include <freerdp/freerdp.h>
+#include <freerdp/rfx.h>
 
 #include "gdi.h"
-#include "rfx.h"
 
 void gdi_decode_frame(GDI *gdi, int x, int y, uint8 * data, uint32 length);
 void gdi_decode_data(GDI *gdi, uint8 * data, int data_size);

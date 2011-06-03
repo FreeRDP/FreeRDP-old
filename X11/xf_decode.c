@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "xf_types.h"
-#include <librfx/rfx.h>
+#include <freerdp/rfx.h>
 #include <freerdp/utils/stream.h>
 
 #include "xf_decode.h"
