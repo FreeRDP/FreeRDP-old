@@ -21,7 +21,7 @@
 #define __ORDERS_H
 
 #include <stddef.h>
-#include <freerdp/debug.h>
+#include <freerdp/utils/debug.h>
 #include <freerdp/types/ui.h>
 #include "stream.h"
 #include "types.h"

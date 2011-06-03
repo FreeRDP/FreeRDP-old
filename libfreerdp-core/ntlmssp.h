@@ -24,7 +24,7 @@
 #include "credssp.h"
 #include "types.h"
 
-#include <freerdp/debug.h>
+#include <freerdp/utils/debug.h>
 #include <freerdp/utils/unicode.h>
 
 struct _AV_PAIR

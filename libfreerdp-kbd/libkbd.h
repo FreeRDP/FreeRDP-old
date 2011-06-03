@@ -17,7 +17,7 @@
    limitations under the License.
 */
 
-#include <freerdp/debug.h>
+#include <freerdp/utils/debug.h>
 
 #ifdef WITH_DEBUG_KBD
 #define DEBUG_KBD(fmt, ...) DEBUG_CLASS(KBD, fmt, ...)

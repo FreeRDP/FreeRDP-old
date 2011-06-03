@@ -26,7 +26,7 @@
 #include "devman.h"
 #include "rdpdr_types.h"
 #include "scard_queue.h"
-#include <freerdp/debug.h>
+#include <freerdp/utils/debug.h>
 
 struct _SCARD_DEVICE_INFO
 {

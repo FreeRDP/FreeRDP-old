@@ -22,8 +22,8 @@
 
 #include <time.h>
 #include "types.h"
-#include <freerdp/debug.h>
 #include <freerdp/types/ui.h>
+#include <freerdp/utils/debug.h>
 #include <freerdp/utils/unicode.h>
 
 RD_BOOL

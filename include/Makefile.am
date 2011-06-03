@@ -6,7 +6,6 @@ include_HEADERS = \
 	freerdp/chanman.h \
 	freerdp/kbd.h \
 	freerdp/rfx.h \
-	freerdp/debug.h \
 	freerdp/rdpext.h \
 	freerdp/rdpset.h \
 	freerdp/vchan.h \
@@ -14,6 +13,7 @@ include_HEADERS = \
 	freerdp/dvc.h \
 	freerdp/types/ui.h \
 	freerdp/types/base.h \
+	freerdp/utils/debug.h \
 	freerdp/utils/chan_plugin.h \
 	freerdp/utils/datablob.h \
 	freerdp/utils/memory.h \

@@ -21,7 +21,7 @@
 #define __MCS_H
 
 #include "iso.h"
-#include <freerdp/debug.h>
+#include <freerdp/utils/debug.h>
 
 struct rdp_mcs
 {

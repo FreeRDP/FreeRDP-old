@@ -20,7 +20,7 @@
 #ifndef __LICENCE_H
 #define __LICENCE_H
 
-#include <freerdp/debug.h>
+#include <freerdp/utils/debug.h>
 #include <freerdp/types/ui.h>
 #include "stream.h"
 
