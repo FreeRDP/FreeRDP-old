@@ -18,7 +18,6 @@
 */
 
 #include "frdp.h"
-#include "orderstypes.h"
 #include "rdp.h"
 #include "pstcache.h"
 #include "cache.h"
