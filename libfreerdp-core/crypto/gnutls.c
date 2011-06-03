@@ -17,10 +17,10 @@
    limitations under the License.
 */
 
-#include <freerdp/utils.h>
+#include <freerdp/debug.h>
+#include <freerdp/utils/memory.h>
 #include "frdp.h"
 #include "crypto.h"
-#include "debug.h"
 
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>

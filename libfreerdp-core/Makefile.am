@@ -32,19 +32,19 @@ libfreerdp_core_la_SOURCES = \
 	surface.c surface.h
 
 if CRYPTO_NSS
-libfreerdp_core_la_SOURCES += crypto_nss.c
+libfreerdp_core_la_SOURCES += crypto/nss.c
 endif
 
 if CRYPTO_GNUTLS
-libfreerdp_core_la_SOURCES += crypto_gnutls.c
+libfreerdp_core_la_SOURCES += crypto/gnutls.c
 endif
 
 if CRYPTO_OPENSSL
-libfreerdp_core_la_SOURCES += crypto_openssl.c crypto_openssl.h tls_openssl.c
+libfreerdp_core_la_SOURCES += crypto/openssl.c crypto/openssl.h
 endif
 
 if CRYPTO_POLARSSL
-libfreerdp_core_la_SOURCES += crypto_polarssl.c
+libfreerdp_core_la_SOURCES += crypto/polarssl.c
 endif
 
 if ENABLE_TLS
