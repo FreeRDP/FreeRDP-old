@@ -22,10 +22,11 @@
 #include <string.h>
 
 #include "config.h"
-#include "debug.h"
-#include "layouts_xkb.h"
-#include "x_layout_id_table.h"
+#include "libkbd.h"
 #include "keyboard.h"
+#include "x_layout_id_table.h"
+
+#include "layouts_xkb.h"
 
 #ifdef WITH_XKBFILE
 

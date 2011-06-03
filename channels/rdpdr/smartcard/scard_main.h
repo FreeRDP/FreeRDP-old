@@ -26,6 +26,7 @@
 #include "devman.h"
 #include "rdpdr_types.h"
 #include "scard_queue.h"
+#include <freerdp/debug.h>
 
 struct _SCARD_DEVICE_INFO
 {
@@ -54,5 +55,11 @@ sc_next_finished();
 
 void
 sc_wait_finished_ready();
+
+#ifdef WITH_DEBUG_SCARD
+#define DEBUG_SCARD(fmt, ...) DEBUG_CLASS(SCARD, fmt, ...)
+#else
+#define DEBUG_SCARD(fmt, ...) DEBUG_NULL(fmt, ...)
+#endif
 
 #endif

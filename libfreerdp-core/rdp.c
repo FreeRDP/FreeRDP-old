@@ -35,7 +35,6 @@
 #include "bitmap.h"
 #include "ext.h"
 #include "surface.h"
-#include <freerdp/debug.h>
 #include <freerdp/freerdp.h>
 
 #include "rdp.h"
@@ -110,7 +109,7 @@ rdp_recv(rdpRdp * rdp, enum RDP_PDU_TYPE * type, uint16 * source)
 	/* Undocumented!(?): 32k packets are keepalive packages of length 8: */
 	if (totalLength == 0x8000)
 	{
-		DEBUG("keepalive\n");
+		DEBUG_RDP("keepalive\n");
 		rdp->next_packet += 8;
 		return rdp->rdp_s;
 	}
@@ -122,7 +121,7 @@ rdp_recv(rdpRdp * rdp, enum RDP_PDU_TYPE * type, uint16 * source)
 
 	if (pduType == RDP_PDU_SERVER_REDIR_PKT)
 	{
-		DEBUG("Enhanced Security Server Redirection PDU\n");
+		DEBUG_RDP("Enhanced Security Server Redirection PDU\n");
 		in_uint8s(rdp->rdp_s, 2);
 		process_redirect_pdu(rdp, rdp->rdp_s);
 		if (rdp->rdp_s->p == rdp->next_packet - 1)
@@ -137,7 +136,7 @@ rdp_recv(rdpRdp * rdp, enum RDP_PDU_TYPE * type, uint16 * source)
 	}
 	*type = pduType & 0xF; /* type is in 4 lower bits, version in high bits */
 
-#if WITH_DEBUG
+#if WITH_DEBUG_RDP
 	DEBUG("Share Control Data PDU #%d, (type %x)\n", ++(rdp->packetno), *type);
 	hexdump(rdp->next_packet - totalLength, totalLength);
 #endif
@@ -1132,7 +1131,7 @@ process_bitmap_updates(rdpRdp * rdp, STREAM s)
 		cx = right - left + 1;
 		cy = bottom - top + 1;
 
-		DEBUG_DRAW("BITMAP_UPDATE(l=%d,t=%d,r=%d,b=%d,w=%d,h=%d,Bpp=%d,cmp=%d)\n",
+		DEBUG_RDP("BITMAP_UPDATE(l=%d,t=%d,r=%d,b=%d,w=%d,h=%d,Bpp=%d,cmp=%d)\n",
 		       left, top, right, bottom, width, height, Bpp, compress);
 
 		buffer_size = width * height * Bpp;
@@ -1184,7 +1183,7 @@ process_bitmap_updates(rdpRdp * rdp, STREAM s)
 		}
 		else
 		{
-			DEBUG_DRAW("Failed to decompress data\n");
+			DEBUG_RDP("Failed to decompress data\n");
 		}
 	}
 }
@@ -1213,7 +1212,7 @@ process_palette(rdpRdp * rdp, STREAM s)
 
 	pal.entries = (RD_PALETTEENTRY *) rdp->buffer;
 
-	DEBUG_DRAW("PALETTE(c=%d)\n", pal.count);
+	DEBUG_RDP("PALETTE(c=%d)\n", pal.count);
 
 	for (i = 0; i < pal.count; i++)
 	{
@@ -1268,7 +1267,7 @@ static void
 process_set_error_info_pdu(STREAM s, struct rdp_inst *inst)
 {
 	in_uint32_le(s, inst->disc_reason); /* Note: reason 0 is _not_ an error */
-	DEBUG("Received Set Error Information PDU with reason %x\n", inst->disc_reason);
+	DEBUG_RDP("Received Set Error Information PDU with reason %x\n", inst->disc_reason);
 }
 
 /* Process Data PDU */
@@ -1322,11 +1321,11 @@ process_data_pdu(rdpRdp * rdp, STREAM s)
 			break;
 
 		case RDP_DATA_PDU_CONTROL:
-			DEBUG("Received Control PDU\n");
+			DEBUG_RDP("Received Control PDU\n");
 			break;
 
 		case RDP_DATA_PDU_SYNCHRONIZE:
-			DEBUG("Received Sync PDU\n");
+			DEBUG_RDP("Received Sync PDU\n");
 			break;
 
 		case RDP_DATA_PDU_POINTER:
@@ -1340,12 +1339,12 @@ process_data_pdu(rdpRdp * rdp, STREAM s)
 			break;
 
 		case RDP_DATA_PDU_SAVE_SESSION_INFO:
-			DEBUG("Received Logon PDU\n");
+			DEBUG_RDP("Received Logon PDU\n");
 			/* User logged on */
 			break;
 
 		case RDP_DATA_PDU_FONTMAP:
-			DEBUG("Received Font Map PDU\n");
+			DEBUG_RDP("Received Font Map PDU\n");
 			break;
 
 		case RDP_DATA_PDU_SET_ERROR_INFO:
@@ -1626,7 +1625,7 @@ rdp_loop(rdpRdp * rdp, RD_BOOL * deactivated)
 				*deactivated = False;
 				break;
 			case RDP_PDU_DEACTIVATE_ALL:
-				DEBUG("RDP_PDU_DEACTIVATE_ALL\n");
+				DEBUG_RDP("RDP_PDU_DEACTIVATE_ALL\n");
 				*deactivated = True;
 				s->p = rdp->next_packet;	/* FIXME: This is cheating */
 				break;
@@ -1634,7 +1633,7 @@ rdp_loop(rdpRdp * rdp, RD_BOOL * deactivated)
 				disc = process_data_pdu(rdp, s);
 				break;
 			case RDP_PDU_NULL:
-				/* DEBUG("PDU already processed\n"); */
+				/* DEBUG_RDP("PDU already processed\n"); */
 				break;
 			default:
 				ui_unimpl(rdp->inst, "Unknown PDU type 0x%x", type);

@@ -30,13 +30,8 @@
 #include <PCSC/reader.h>
 #include <PCSC/winscard.h>
 
-#include <freerdp/debug.h>
 #include <freerdp/utils/stream.h>
 #include <freerdp/utils/semaphore.h>
-
-#ifdef WITH_DEBUG_SCARD
-#include <libfreerdp/frdp.h>
-#endif
 
 #include "rdpdr_types.h"
 #include "rdpdr_constants.h"

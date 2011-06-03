@@ -21,7 +21,6 @@
 #include "crypto.h"
 #include "secure.h"
 #include "rdp.h"
-#include <freerdp/debug.h>
 #include <freerdp/rdpset.h>
 #include <freerdp/utils/memory.h>
 
@@ -362,36 +361,36 @@ licence_process(rdpLicence * licence, STREAM s)
 	switch (tag)
 	{
 		case LICENSE_REQUEST:
-			DEBUG("LICENSE_REQUEST\n");
+			DEBUG_LICENSE("LICENSE_REQUEST\n");
 			licence_process_request(licence, s);
 			ASSERT(s->p == license_start + wMsgSize);
 			break;
 
 		case LICENSE_PLATFORM_CHALLENGE:
-			DEBUG("LICENCE PLATFORM_CHALLENGE\n");
+			DEBUG_LICENSE("LICENCE PLATFORM_CHALLENGE\n");
 			licence_process_platform_challenge(licence, s);
 			break;
 
 		case NEW_LICENSE:
-			DEBUG("NEW_LICENSE\n");
+			DEBUG_LICENSE("NEW_LICENSE\n");
 			licence_process_new_license(licence, s);
 			break;
 
 		case UPGRADE_LICENSE:
-			DEBUG("UPGRADE_LICENSE\n");
+			DEBUG_LICENSE("UPGRADE_LICENSE\n");
 			break;
 
 		case LICENCE_ERROR_ALERT:
-			DEBUG("LICENCE ERROR_ALERT - assuming it is a license grant\n");
+			DEBUG_LICENSE("LICENCE ERROR_ALERT - assuming it is a license grant\n");
 			{
 				uint32 dwErrorCode, dwStateTransition;
 				uint32 wBlobType, wBlobLen;
 				in_uint32_le(s, dwErrorCode);
 				in_uint32_le(s, dwStateTransition);
-				DEBUG("dwErrorCode %x dwStateTransition %x\n", dwErrorCode, dwStateTransition);
+				DEBUG_LICENSE("dwErrorCode %x dwStateTransition %x\n", dwErrorCode, dwStateTransition);
 				in_uint16_le(s, wBlobType);
 				in_uint16_le(s, wBlobLen);
-				DEBUG("bbErrorInfo: wBlobType %x wBlobLen %x\n", wBlobType, wBlobLen);
+				DEBUG_LICENSE("bbErrorInfo: wBlobType %x wBlobLen %x\n", wBlobType, wBlobLen);
 				/* hexdump(s->p, wBlobLen); */
 			}
 			licence->licence_issued = True;	/* TODO ... */

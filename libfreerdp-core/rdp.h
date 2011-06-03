@@ -22,6 +22,7 @@
 
 #include <time.h>
 #include "types.h"
+#include <freerdp/debug.h>
 #include <freerdp/types/ui.h>
 #include <freerdp/utils/unicode.h>
 
@@ -128,5 +129,11 @@ rdpRdp *
 rdp_new(rdpSet * settings, rdpInst * inst);
 void
 rdp_free(rdpRdp * rdp);
+
+#ifdef WITH_DEBUG_RDP
+#define DEBUG_RDP(fmt, ...) DEBUG_CLASS(RDP, fmt, ...)
+#else
+#define DEBUG_RDP(fmt, ...) DEBUG_NULL(fmt, ...)
+#endif
 
 #endif

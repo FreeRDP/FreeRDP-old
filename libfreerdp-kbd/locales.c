@@ -20,8 +20,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "libkbd.h"
 
-#include "debug.h"
 #include "locales.h"
 
 typedef struct

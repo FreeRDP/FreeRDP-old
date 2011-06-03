@@ -21,7 +21,6 @@
 #include "frdp.h"
 #include "rdp.h"
 #include "pstcache.h"
-#include <freerdp/debug.h>
 
 #include "cache.h"
 
@@ -96,7 +95,7 @@ cache_bump_bitmap(rdpCache * cache, uint8 id, uint16 idx, int bump)
 	if (cache->bmpcache_mru[id] == idx)
 		return;
 
-	DEBUG_DRAW("bump bitmap: id=%d, idx=%d, bump=%d\n", id, idx, bump);
+	DEBUG_CACHE("bump bitmap: id=%d, idx=%d, bump=%d\n", id, idx, bump);
 
 	n_idx = cache->bmpcache[id][idx].next;
 	p_idx = cache->bmpcache[id][idx].previous;
@@ -162,7 +161,7 @@ cache_evict_bitmap(rdpCache * cache, uint8 id)
 
 	idx = cache->bmpcache_lru[id];
 	n_idx = cache->bmpcache[id][idx].next;
-/*	DEBUG_DRAW("evict bitmap: id=%d idx=%d n_idx=%d bmp=0x%x\n", id, idx, n_idx,
+/*	DEBUG_CACHE("evict bitmap: id=%d idx=%d n_idx=%d bmp=0x%x\n", id, idx, n_idx,
 		    cache->bmpcache[id][idx].bitmap); */
 
 	ui_destroy_bitmap(cache->rdp->inst, cache->bmpcache[id][idx].bitmap);
@@ -253,14 +252,14 @@ cache_save_state(rdpCache * cache)
 	for (id = 0; id < NUM_ELEMENTS(cache->bmpcache); id++)
 		if (IS_PERSISTENT(id))
 		{
-			DEBUG_DRAW("Saving cache state for bitmap cache %d...", id);
+			DEBUG_CACHE("Saving cache state for bitmap cache %d...", id);
 			idx = cache->bmpcache_lru[id];
 			while (idx >= 0)
 			{
 				pstcache_touch_bitmap(cache->rdp->pcache, id, idx, ++t);
 				idx = cache->bmpcache[id][idx].next;
 			}
-			DEBUG_DRAW(" %d stamps written.\n", t);
+			DEBUG_CACHE(" %d stamps written.\n", t);
 		}
 }
 

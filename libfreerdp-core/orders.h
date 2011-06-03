@@ -21,6 +21,7 @@
 #define __ORDERS_H
 
 #include <stddef.h>
+#include <freerdp/debug.h>
 #include <freerdp/types/ui.h>
 #include "stream.h"
 #include "types.h"
@@ -493,5 +494,11 @@ void process_orders(rdpOrders * orders, STREAM s, uint16 num_orders);
 void reset_order_state(rdpOrders * orders);
 rdpOrders *orders_new(struct rdp_rdp *rdp);
 void orders_free(rdpOrders * orders);
+
+#ifdef WITH_DEBUG_ORDERS
+#define DEBUG_ORDERS(fmt, ...) DEBUG_CLASS(ORDERS, fmt, ...)
+#else
+#define DEBUG_ORDERS(fmt, ...) DEBUG_NULL(fmt, ...)
+#endif
 
 #endif

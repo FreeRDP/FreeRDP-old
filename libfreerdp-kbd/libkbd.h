@@ -1,6 +1,6 @@
 /*
    FreeRDP: A Remote Desktop Protocol client.
-   Microsoft Locale Definitions and Conversion Tables
+   XKB-based Keyboard Mapping to Microsoft Keyboard System
 
    Copyright 2009 Marc-Andre Moreau <marcandre.moreau@gmail.com>
 
@@ -17,15 +17,10 @@
    limitations under the License.
 */
 
-#ifndef __DEBUG_H
-#define __DEBUG_H
-
-#include "config.h"
+#include <freerdp/debug.h>
 
 #ifdef WITH_DEBUG_KBD
-#define DEBUG_KBD(fmt, ...) printf("DBG (KBD) %s (%d): " fmt, __FUNCTION__, __LINE__, ## __VA_ARGS__)
+#define DEBUG_KBD(fmt, ...) DEBUG_CLASS(KBD, fmt, ...)
 #else
-#define DEBUG_KBD(fmt, ...) do { } while (0)
-#endif
-
+#define DEBUG_KBD(fmt, ...) DEBUG_NULL(fmt, ...)
 #endif

@@ -20,6 +20,7 @@
 #ifndef __LICENCE_H
 #define __LICENCE_H
 
+#include <freerdp/debug.h>
 #include <freerdp/types/ui.h>
 #include "stream.h"
 
@@ -38,5 +39,11 @@ rdpLicence *
 licence_new(struct rdp_sec * secure);
 void
 licence_free(rdpLicence * licence);
+
+#ifdef WITH_DEBUG_LICENSE
+#define DEBUG_LICENSE(fmt, ...) DEBUG_CLASS(LICENSE, fmt, ...)
+#else
+#define DEBUG_LICENSE(fmt, ...) DEBUG_NULL(fmt, ...)
+#endif
 
 #endif

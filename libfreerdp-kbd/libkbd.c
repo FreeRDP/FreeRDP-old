@@ -24,11 +24,12 @@
 #include <freerdp/freerdp.h>
 #include <freerdp/kbd.h>
 #include "config.h"
-#include "debug.h"
 #include "locales.h"
 #include "layout_ids.h"
 #include "layouts_xkb.h"
 #include "keyboard.h"
+
+#include "libkbd.h"
 
 /* The actual mapping from X keycodes to RDP keycodes,
    initialized from xkb keycodes or similar.
