@@ -2,8 +2,6 @@
 
 includedir = $(prefix)/include/freerdp
 include_HEADERS = \
-	freerdp/constants_ui.h \
-	freerdp/constants_vchan.h \
 	freerdp/freerdp.h \
 	freerdp/chanman.h \
 	freerdp/kbd.h \
@@ -19,4 +17,14 @@ include_HEADERS = \
 	freerdp/utils/memory.h \
 	freerdp/utils/semaphore.h \
 	freerdp/utils/unicode.h \
-	freerdp/utils/wait_obj.h
+	freerdp/utils/wait_obj.h \
+	freerdp/constants/constants.h \
+	freerdp/constants/capabilities.h \
+	freerdp/constants/core.h \
+	freerdp/constants/crypto.h \
+	freerdp/constants/license.h \
+	freerdp/constants/pdu.h \
+	freerdp/constants/rail.h \
+	freerdp/constants/ui.h \
+	freerdp/constants/vchan.h \
+	freerdp/constants/window.h
