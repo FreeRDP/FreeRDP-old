@@ -1,0 +1,4 @@
+*.sdf
+*.filters
+ipch/*
+*.ipch
