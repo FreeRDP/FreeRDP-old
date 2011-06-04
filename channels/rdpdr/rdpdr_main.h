@@ -63,6 +63,7 @@ struct rdpdr_plugin
 	int nfds;
 	struct timeval tv;
 	uint32 select_timeout;
+	uint32 timeout_fd;
 };
 
 #endif /* __RDPDR_MAIN_H */

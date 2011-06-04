@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
+#include <errno.h>
 #include <unistd.h>
 #include <sys/time.h>
 #include <sys/select.h>
@@ -269,49 +270,79 @@ rdpdr_send_device_list_announce_request(rdpdrPlugin * plugin)
 static void
 rdpdr_add_async_irp(rdpdrPlugin * plugin, IRP * irp, char * data, int data_size)
 {
-	fd_set *fds = NULL;
 	uint32 timeout = 0, itv_timeout = 0;
+
+	LLOGLN(10, ("rdpdr_add_async_irp: adding async irp fd %d major %d", irp_file_descriptor(irp), irp->majorFunction));
 
 	irp->length = GET_UINT32(data, 0); /* length */
 	irp->offset = GET_UINT64(data, 4); /* offset */
-	irp->inputBuffer = NULL;
 
-	if (irp->majorFunction == IRP_MJ_WRITE)
+	switch (irp->majorFunction)
 	{
-		fds = &plugin->writefds;
-		irp->inputBuffer = malloc(data_size - 32);
-		memcpy(irp->inputBuffer, data + 32, data_size - 32);
-		irp->inputBufferLength = irp->length;
-	}
-	else
-		fds = &plugin->readfds;
+		case IRP_MJ_WRITE:
+			irp->inputBuffer = malloc(data_size - 32);
+			memcpy(irp->inputBuffer, data + 32, data_size - 32);
+			irp->inputBufferLength = irp->length;
+			break;
 
-	if (irp->dev->service->type == RDPDR_DTYP_SERIAL)
-		irp_get_timeouts(irp, &timeout, &itv_timeout);
+		case IRP_MJ_READ:
+			if (irp->dev->service->type == RDPDR_DTYP_SERIAL)
+				irp_get_timeouts(irp, &timeout, &itv_timeout);
 
-	/* Check if io request timeout is smaller than current (but not 0). */
-	if (timeout && (plugin->select_timeout == 0 || timeout < plugin->select_timeout))
-	{
-		plugin->select_timeout = timeout;
-		plugin->tv.tv_sec = plugin->select_timeout / 1000;
-		plugin->tv.tv_usec = (plugin->select_timeout % 1000) * 1000;
-	}
-	if (itv_timeout && (plugin->select_timeout == 0 || itv_timeout < plugin->select_timeout))
-	{
-		plugin->select_timeout = itv_timeout;
-		plugin->tv.tv_sec = plugin->select_timeout / 1000;
-		plugin->tv.tv_usec = (plugin->select_timeout % 1000) * 1000;
+			/* Check if io request timeout is smaller than current (but not 0). */
+			if (timeout && (plugin->select_timeout == 0 || timeout < plugin->select_timeout))
+			{
+				plugin->select_timeout = timeout;
+				plugin->tv.tv_sec = plugin->select_timeout / 1000;
+				plugin->tv.tv_usec = (plugin->select_timeout % 1000) * 1000;
+				plugin->timeout_fd = irp_file_descriptor(irp);
+			}
+			if (itv_timeout && (plugin->select_timeout == 0 || itv_timeout < plugin->select_timeout))
+			{
+				plugin->select_timeout = itv_timeout;
+				plugin->tv.tv_sec = plugin->select_timeout / 1000;
+				plugin->tv.tv_usec = (plugin->select_timeout % 1000) * 1000;
+				plugin->timeout_fd = irp_file_descriptor(irp);
+			}
+			break;
+
+		default:
+			LLOGLN(10, ("rdpdr_add_async_irp: called with an unexpected major, aborting"));
+			return;
 	}
 
-	LLOGLN(10, ("RDPDR adding async irp fd %d", irp_file_descriptor(irp)));
 	irp->ioStatus = RD_STATUS_PENDING;
 	irp_queue_push(plugin->queue, irp);
 	wait_obj_set(plugin->plugin_in_event);
+}
 
-	if (irp_file_descriptor(irp) >= 0)
+static void
+rdpdr_set_fds(rdpdrPlugin * plugin)
+{
+	fd_set *fds = NULL;
+	IRP * pending = NULL;
+
+	for (pending = irp_queue_first(plugin->queue); pending; pending = irp_queue_next(plugin->queue, pending))
 	{
-		FD_SET(irp_file_descriptor(irp), fds);
-		plugin->nfds = MAX(plugin->nfds, irp_file_descriptor(irp));
+		switch (pending->majorFunction)
+		{
+			case IRP_MJ_WRITE:
+				fds = &plugin->writefds;
+				break;
+
+			case IRP_MJ_READ:
+				fds = &plugin->readfds;
+				break;
+
+			case IRP_MJ_DEVICE_CONTROL:
+				break;
+		}
+
+		if (fds && irp_file_descriptor(pending) >= 0)
+		{
+			FD_SET(irp_file_descriptor(pending), fds);
+			plugin->nfds = MAX(plugin->nfds, irp_file_descriptor(pending));
+		}
 	}
 }
 
@@ -398,16 +429,13 @@ rdpdr_check_for_events(rdpdrPlugin * plugin)
 	}
 }
 
-static int
-rdpdr_check_fds(rdpdrPlugin * plugin)
+static void
+__rdpdr_check_fds(rdpdrPlugin * plugin)
 {
 	IRP * pending = NULL, * prev = NULL;
 	char * out;
 	int out_size, error;
-	uint32 result;
-
-	if (select(plugin->nfds + 1, &plugin->readfds, &plugin->writefds, NULL, &plugin->tv) <= 0)
-		return 0;
+	uint32 result = 0;
 
 	memset(&plugin->tv, 0, sizeof(struct timeval));
 
@@ -464,6 +492,36 @@ rdpdr_check_fds(rdpdrPlugin * plugin)
 		if (isset)
 			irp_queue_remove(plugin->queue, prev);
 	}
+}
+
+static int
+rdpdr_check_fds(rdpdrPlugin * plugin)
+{
+	if (irp_queue_size(plugin->queue) == 0)
+		return 1;
+
+	rdpdr_set_fds(plugin);
+
+	switch (select(plugin->nfds + 1, &plugin->readfds, &plugin->writefds, NULL, &plugin->tv))
+	{
+		case -1:
+			LLOGLN(0, ("rdpdr_check_fds: select has returned -1 with error: %s", strerror(errno)));
+			return 0;
+
+		case 0:
+			if (plugin->select_timeout)
+			{
+				rdpdr_abort_single_io(plugin, plugin->timeout_fd, RDPDR_ABORT_IO_NONE, RD_STATUS_TIMEOUT);
+				rdpdr_abort_single_io(plugin, plugin->timeout_fd, RDPDR_ABORT_IO_READ, RD_STATUS_TIMEOUT);
+				rdpdr_abort_single_io(plugin, plugin->timeout_fd, RDPDR_ABORT_IO_WRITE, RD_STATUS_TIMEOUT);
+			}
+			return 0;
+
+		default:
+			break;
+	}
+
+	__rdpdr_check_fds(plugin);
 
 	return 1;
 }
