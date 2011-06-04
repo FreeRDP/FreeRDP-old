@@ -24,7 +24,7 @@
 #include "color.h"
 #include "wfreerdp.h"
 
-#include "wf_win.h"
+#include "wf_window.h"
 
 extern LPCTSTR g_wnd_class_name;
 extern HINSTANCE g_hInstance;
@@ -1276,9 +1276,8 @@ wf_post_connect(wfInfo * wfi)
 
 	if (!wfi->hwnd)
 	{
-		wfi->hwnd = CreateWindowEx(NULL, g_wnd_class_name, win_title,
-				0, 0, 0, 0, 0,
-				NULL, NULL, g_hInstance, NULL);
+		wfi->hwnd = CreateWindowEx((DWORD) NULL, g_wnd_class_name, win_title,
+				0, 0, 0, 0, 0, NULL, NULL, g_hInstance, NULL);
 		SetWindowLongPtr(wfi->hwnd, GWLP_USERDATA, (LONG_PTR)wfi);
 	}
 	if (wfi->fullscreen)

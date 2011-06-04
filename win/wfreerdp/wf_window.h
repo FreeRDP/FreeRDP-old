@@ -17,8 +17,8 @@
    limitations under the License.
 */
 
-#ifndef __WF_WIN_H
-#define __WF_WIN_H
+#ifndef __WF_WINDOW_H
+#define __WF_WINDOW_H
 
 #include "wfreerdp.h"
 

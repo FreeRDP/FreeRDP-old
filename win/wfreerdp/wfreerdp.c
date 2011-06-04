@@ -30,7 +30,7 @@
 #include <freerdp/freerdp.h>
 #include <freerdp/chanman.h>
 #include "wf_event.h"
-#include "wf_win.h"
+#include "wf_window.h"
 
 #include "wfreerdp.h"
 
@@ -585,9 +585,8 @@ run_wfreerdp(wfInfo * wfi)
 static DWORD WINAPI
 thread_func(LPVOID lpParam)
 {
-	wfInfo * wfi;
+	wfInfo * wfi = (wfInfo *) lpParam;
 
-	wfi = (wfInfo *) lpParam;
 	run_wfreerdp(wfi);
 	g_thread_count--;
 	DEBUG("thread terminated - count now %d\n", g_thread_count);
@@ -595,15 +594,16 @@ thread_func(LPVOID lpParam)
 	{
 		SetEvent(g_done_event);
 	}
-	return NULL;
+
+	return (DWORD) NULL;
 }
 
 static DWORD WINAPI
 kbd_thread_func(LPVOID lpParam)
 {
-	HHOOK hook_handle;
 	MSG msg;
 	BOOL bRet;
+	HHOOK hook_handle;
 
 	DEBUG("keyboard thread started\n");
 
@@ -629,7 +629,7 @@ kbd_thread_func(LPVOID lpParam)
 	else
 		printf("failed to install keyboard hook\n");
 
-	return NULL;
+	return (DWORD) NULL;
 }
 
 INT WINAPI
