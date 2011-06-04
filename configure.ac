@@ -1095,6 +1095,10 @@ libfreerdp-utils/Makefile
 libfreerdp-core/Makefile
 docs/Makefile
 include/Makefile
+include/freerdp/Makefile
+include/freerdp/utils/Makefile
+include/freerdp/types/Makefile
+include/freerdp/constants/Makefile
 libfreerdp-kbd/Makefile
 keymaps/Makefile
 cunit/Makefile
