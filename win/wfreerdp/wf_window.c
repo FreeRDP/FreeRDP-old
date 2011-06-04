@@ -1157,8 +1157,7 @@ l_ui_decode(struct rdp_inst * inst, uint8 * data, int data_size)
 }
 
 RD_BOOL
-l_ui_check_certificate(rdpInst * inst, const char * fingerprint,
-	const char * subject, const char * issuer, RD_BOOL verified)
+l_ui_check_certificate(rdpInst * inst, const char * fingerprint, const char * subject, const char * issuer, RD_BOOL verified)
 {
 	printf("certificate details:\n");
 	printf("  Subject:\n    %s\n", subject);
@@ -1168,7 +1167,7 @@ l_ui_check_certificate(rdpInst * inst, const char * fingerprint,
 	if (!verified)
 		printf("The server could not be authenticated. Connection security may be compromised!\n");
 
-	return TRUE;
+	return True;
 }
 
 static int
@@ -1267,6 +1266,7 @@ wf_post_connect(wfInfo * wfi)
 
 	width = wfi->inst->settings->width;
 	height = wfi->inst->settings->height;
+
 	if (strlen(wfi->window_title) > 0)
 		_snwprintf(win_title, sizeof(win_title), L"%S", wfi->window_title);
 	else if (wfi->settings->tcp_port_rdp == 3389)

@@ -1016,13 +1016,14 @@ sec_recv(rdpSec * sec, secRecvType * type)
 static RD_BOOL
 sec_verify_tls(rdpSec * sec, const char * server)
 {
-	RD_BOOL verified = False;
-	CryptoCert cert;
-	char * fingerprint;
-	char * subject;
 	char * issuer;
+	char * subject;
+	char * fingerprint;
+	CryptoCert cert;
+	RD_BOOL verified = False;
 
 	cert = tls_get_certificate(sec->tls);
+
 	if (!cert)
 	{
 		goto exit;
@@ -1033,15 +1034,15 @@ sec_verify_tls(rdpSec * sec, const char * server)
 	fingerprint = crypto_cert_get_fingerprint(cert);
 
 	verified = tls_verify(sec->tls, server);
-	if (verified)
-	{
+
+	if (verified != False)
 		verified = crypto_cert_verify_peer_identity(cert, server);
-	}
+
 	verified = ui_check_certificate(sec->rdp->inst, fingerprint, subject, issuer, verified);
 
-	free(subject);
-	free(issuer);
-	free(fingerprint);
+	xfree(fingerprint);
+	xfree(subject);
+	xfree(issuer);
 
 exit:
 	if (cert)
