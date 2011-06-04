@@ -20,7 +20,7 @@
 #ifndef __WF_WIN_H
 #define __WF_WIN_H
 
-#include "wf_types.h"
+#include "wfreerdp.h"
 
 int
 wf_pre_connect(wfInfo * wfif);

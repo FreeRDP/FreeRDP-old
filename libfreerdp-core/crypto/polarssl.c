@@ -17,10 +17,10 @@
    limitations under the License.
 */
 
-#include <freerdp/utils.h>
+#include <freerdp/utils/memory.h>
+#include <freerdp/constants/constants.h>
 #include "frdp.h"
 #include "crypto.h"
-#include "debug.h"
 
 #include <polarssl/sha1.h>
 #include <polarssl/md5.h>

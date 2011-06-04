@@ -21,8 +21,8 @@
 #define __FREERDP_H
 
 #include "rdpset.h"
-#include "types_ui.h"
-#include "constants_ui.h"
+#include "types/ui.h"
+#include "constants/ui.h"
 #include "rdpext.h"
 
 #define FREERDP_INTERFACE_VERSION 4

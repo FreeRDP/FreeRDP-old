@@ -1,8 +1,8 @@
 /*
    FreeRDP: A Remote Desktop Protocol client.
-   GDI Shape Functions
+   XKB-based Keyboard Mapping to Microsoft Keyboard System
 
-   Copyright 2010-2011 Marc-Andre Moreau <marcandre.moreau@gmail.com>
+   Copyright 2009 Marc-Andre Moreau <marcandre.moreau@gmail.com>
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -17,17 +17,15 @@
    limitations under the License.
 */
 
-#ifndef __GDI_SHAPE_H
-#define __GDI_SHAPE_H
+#ifndef __LIBKBD_H
+#define __LIBKBD_H
 
-#include "gdi.h"
+#include <freerdp/utils/debug.h>
 
-int gdi_Ellipse(HDC hdc, int nLeftRect, int nTopRect, int nRightRect, int nBottomRect);
-int gdi_FillRect(HDC hdc, HRECT rect, HBRUSH hbr);
-int gdi_Polygon(HDC hdc, POINT *lpPoints, int nCount);
-int gdi_PolyPolygon(HDC hdc, POINT *lpPoints, int *lpPolyCounts, int nCount);
-int gdi_Rectangle(HDC hdc, int nLeftRect, int nTopRect, int nRightRect, int nBottomRect);
+#ifdef WITH_DEBUG_KBD
+#define DEBUG_KBD(fmt, ...) DEBUG_CLASS(KBD, fmt, ...)
+#else
+#define DEBUG_KBD(fmt, ...) DEBUG_NULL(fmt, ...)
+#endif
 
-typedef int (*pFillRect)(HDC hdc, HRECT rect, HBRUSH hbr);
-
-#endif /* __GDI_SHAPE_H */
+#endif /* __LIBKBD_H */

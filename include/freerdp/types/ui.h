@@ -23,7 +23,7 @@
 #ifndef __TYPES_UI_H
 #define __TYPES_UI_H
 
-#include <freerdp/types_base.h>
+#include <freerdp/types/base.h>
 
 typedef int RD_BOOL;
 typedef void *RD_HBITMAP;

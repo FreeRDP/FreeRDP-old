@@ -17,12 +17,12 @@
    limitations under the License.
 */
 
-#include "layout_ids.h"
-#include "debug.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "libkbd.h"
+
+#include "layout_ids.h"
 
 typedef struct
 {

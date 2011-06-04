@@ -41,7 +41,7 @@ void gdi_decode_frame(GDI *gdi, int x, int y, uint8 * data, uint32 length)
 	{
 		tx = message->rects[i].x + x;
 		ty = message->rects[i].y + y;
-		SetClipRgn(gdi->primary->hdc, tx, ty, message->rects[i].width, message->rects[i].height);
+		gdi_SetClipRgn(gdi->primary->hdc, tx, ty, message->rects[i].width, message->rects[i].height);
 	}
 
 	for (i = 0; i < message->num_tiles; i++)
@@ -51,9 +51,9 @@ void gdi_decode_frame(GDI *gdi, int x, int y, uint8 * data, uint32 length)
 		data = message->tiles[i].data;
 
 		gdi_image_convert(data, gdi->tile->bitmap->data, 64, 64, 32, 32, gdi->clrconv);
-		BitBlt(gdi->primary->hdc, tx, ty, 64, 64, gdi->tile->hdc, 0, 0, SRCCOPY);
+		gdi_BitBlt(gdi->primary->hdc, tx, ty, 64, 64, gdi->tile->hdc, 0, 0, SRCCOPY);
 
-		InvalidateRegion(gdi->primary->hdc, tx, ty, 64, 64);
+		gdi_InvalidateRegion(gdi->primary->hdc, tx, ty, 64, 64);
 	}
 
 	rfx_message_free(message);

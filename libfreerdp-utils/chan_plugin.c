@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
-#include <freerdp/types_ui.h>
+#include <freerdp/types/ui.h>
 #include <freerdp/vchan.h>
 #include <freerdp/utils/chan_plugin.h>
 

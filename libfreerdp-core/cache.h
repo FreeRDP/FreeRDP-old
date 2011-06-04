@@ -20,7 +20,8 @@
 #ifndef __CACHE_H
 #define __CACHE_H
 
-#include "types.h"
+#include "orders.h"
+#include <freerdp/utils/debug.h>
 #include <freerdp/utils/memory.h>
 #include <freerdp/utils/datablob.h>
 
@@ -80,5 +81,11 @@ rdpCache *
 cache_new(struct rdp_rdp * rdp);
 void
 cache_free(rdpCache * cache);
+
+#ifdef WITH_DEBUG_CACHE
+#define DEBUG_CACHE(fmt, ...) DEBUG_CLASS(CACHE, fmt, ...)
+#else
+#define DEBUG_CACHE(fmt, ...) DEBUG_NULL(fmt, ...)
+#endif
 
 #endif

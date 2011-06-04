@@ -23,7 +23,6 @@
 #include "secure.h"
 #include "rdp.h"
 #include "asn1.h"
-#include "debug.h"
 #include "tcp.h"
 #include <freerdp/rdpset.h>
 #include <freerdp/utils/memory.h>
@@ -197,7 +196,7 @@ mcs_send_cjrq(rdpMcs * mcs, uint16 chanid)
 {
 	STREAM s;
 
-	DEBUG("Sending CJRQ for channel #%d\n", chanid);
+	DEBUG_MCS("Sending CJRQ for channel #%d", chanid);
 
 	s = iso_init(mcs->iso, 5);
 

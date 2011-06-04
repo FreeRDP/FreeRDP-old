@@ -20,7 +20,7 @@
 #ifndef __RDPDR_TYPES_H
 #define __RDPDR_TYPES_H
 
-#include <freerdp/types_ui.h>
+#include <freerdp/types/ui.h>
 #include <freerdp/vchan.h>
 
 #include "config.h"

@@ -11,22 +11,13 @@ libfreerdp_core_la_SOURCES = \
 	cache.c cache.h \
 	capabilities.c capabilities.h \
 	chan.c chan.h \
-	constants.h \
-	constants_capabilities.h \
-	constants_core.h \
-	constants_crypto.h \
-	constants_license.h \
-	constants_pdu.h \
-	constants_rail.h \
-	constants_window.h \
 	ext.c ext.h \
 	freerdp.c \
 	iso.c iso.h \
-	licence.c licence.h \
+	license.c license.h \
 	mcs.c mcs.h \
 	mppc.c \
 	orders.c orders.h \
-	orderstypes.h \
 	stream.c stream.h \
 	pstcache.c pstcache.h \
 	rail.c rail.h \
@@ -35,24 +26,24 @@ libfreerdp_core_la_SOURCES = \
 	crypto.h \
 	tcp.c tcp.h \
 	nego.c nego.h \
-	types.h debug.h frdp.h \
+	frdp.h \
 	errinfo.c \
 	surface.c surface.h
 
 if CRYPTO_NSS
-libfreerdp_core_la_SOURCES += crypto_nss.c
+libfreerdp_core_la_SOURCES += crypto/nss.c
 endif
 
 if CRYPTO_GNUTLS
-libfreerdp_core_la_SOURCES += crypto_gnutls.c
+libfreerdp_core_la_SOURCES += crypto/gnutls.c
 endif
 
 if CRYPTO_OPENSSL
-libfreerdp_core_la_SOURCES += crypto_openssl.c crypto_openssl.h tls_openssl.c
+libfreerdp_core_la_SOURCES += crypto/openssl.c crypto/openssl.h
 endif
 
 if CRYPTO_POLARSSL
-libfreerdp_core_la_SOURCES += crypto_polarssl.c
+libfreerdp_core_la_SOURCES += crypto/polarssl.c
 endif
 
 if ENABLE_TLS

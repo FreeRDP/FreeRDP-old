@@ -35,13 +35,13 @@
  * @return current device context
  */
 
-HDC GetDC()
+HDC gdi_GetDC()
 {
 	HDC hDC = (HDC) malloc(sizeof(DC));
 	hDC->bytesPerPixel = 4;
 	hDC->bitsPerPixel = 32;
 	hDC->drawMode = R2_BLACK;
-	hDC->clip = CreateRectRgn(0, 0, 0, 0);
+	hDC->clip = gdi_CreateRectRgn(0, 0, 0, 0);
 	hDC->clip->null = 1;
 	hDC->hwnd = NULL;
 	return hDC;
@@ -54,13 +54,13 @@ HDC GetDC()
  * @return new compatible device context
  */
 
-HDC CreateCompatibleDC(HDC hdc)
+HDC gdi_CreateCompatibleDC(HDC hdc)
 {
 	HDC hDC = (HDC) malloc(sizeof(DC));
 	hDC->bytesPerPixel = hdc->bytesPerPixel;
 	hDC->bitsPerPixel = hdc->bitsPerPixel;
 	hDC->drawMode = hdc->drawMode;
-	hDC->clip = CreateRectRgn(0, 0, 0, 0);
+	hDC->clip = gdi_CreateRectRgn(0, 0, 0, 0);
 	hDC->clip->null = 1;
 	hDC->hwnd = NULL;
 	hDC->alpha = hdc->alpha;
@@ -77,7 +77,7 @@ HDC CreateCompatibleDC(HDC hdc)
  * @return previous selected GDI object
  */
 
-HGDIOBJ SelectObject(HDC hdc, HGDIOBJ hgdiobj)
+HGDIOBJ gdi_SelectObject(HDC hdc, HGDIOBJ hgdiobj)
 {
 	if (hgdiobj == NULL)
 		return NULL;
@@ -122,7 +122,7 @@ HGDIOBJ SelectObject(HDC hdc, HGDIOBJ hgdiobj)
  * @return 1 if successful, 0 otherwise
  */
 
-int DeleteObject(HGDIOBJ hgdiobj)
+int gdi_DeleteObject(HGDIOBJ hgdiobj)
 {
 	if (hgdiobj == NULL)
 		return 0;
@@ -171,7 +171,7 @@ int DeleteObject(HGDIOBJ hgdiobj)
  * @return 1 if successful, 0 otherwise
  */
 
-int DeleteDC(HDC hdc)
+int gdi_DeleteDC(HDC hdc)
 {
 	free(hdc);
 	return 1;

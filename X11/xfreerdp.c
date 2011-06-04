@@ -243,7 +243,7 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 				exit(XF_EXIT_WRONG_PARAM);
 			}
 			sscanf(argv[*pindex], "%X", &(xfi->keyboard_layout_id));
-			DEBUG("keyboard layout ID: %X\n", xfi->keyboard_layout_id);
+			DEBUG_X11("keyboard layout ID: %X", xfi->keyboard_layout_id);
 		}
 		else if (strcmp("-K", argv[*pindex]) == 0)
 		{
@@ -748,7 +748,7 @@ run_xfreerdp(xfInfo * xfi)
 		if (xf_check_fds(xfi) != 0)
 		{
 			/* xfreerdp is usually terminated by this failing because the X windows has been closed */
-			DEBUG("xf_check_fds failed\n");
+			DEBUG_X11("xf_check_fds failed");
 			break;
 		}
 		/* check channel fds */
@@ -796,7 +796,7 @@ exit_code_from_disconnect_reason(uint32 reason)
 	if (reason == 0)
 		return XF_EXIT_SUCCESS;
 
-	/* Licence error set */
+	/* License error set */
 	else if (reason >= ERRINFO_LICENSE_INTERNAL &&
 		reason <= ERRINFO_LICENSE_NO_REMOTE_CONNECTIONS)
 		reason -= ERRINFO_LICENSE_INTERNAL + XF_EXIT_LICENSE_INTERNAL;
@@ -877,7 +877,7 @@ main(int argc, char ** argv)
 			break;
 		}
 
-		DEBUG("starting thread %d to %s:%d\n", g_thread_count,
+		DEBUG_X11("starting thread %d to %s:%d", g_thread_count,
 			xfi->settings->server, xfi->settings->tcp_port_rdp);
 		if (pthread_create(&thread, 0, thread_func, xfi) == 0)
 		{
@@ -887,9 +887,9 @@ main(int argc, char ** argv)
 
 	if (g_thread_count > 0)
 	{
-		DEBUG("main thread, waiting for all threads to exit\n");
+		DEBUG_X11("main thread, waiting for all threads to exit");
 		freerdp_sem_wait(&g_sem);
-		DEBUG("main thread, all threads did exit\n");
+		DEBUG_X11("main thread, all threads did exit");
 	}
 
 	freerdp_chanman_uninit();

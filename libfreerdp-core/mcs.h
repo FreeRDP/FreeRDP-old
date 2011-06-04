@@ -21,6 +21,7 @@
 #define __MCS_H
 
 #include "iso.h"
+#include <freerdp/utils/debug.h>
 
 struct rdp_mcs
 {
@@ -51,5 +52,11 @@ rdpMcs *
 mcs_new(struct rdp_sec * secure);
 void
 mcs_free(rdpMcs * mcs);
+
+#ifdef WITH_DEBUG_MCS
+#define DEBUG_MCS(fmt, ...) DEBUG_CLASS(MCS, fmt, ...)
+#else
+#define DEBUG_MCS(fmt, ...) DEBUG_NULL(fmt, ...)
+#endif
 
 #endif

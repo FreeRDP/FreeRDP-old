@@ -47,15 +47,15 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>..\include;..\libfreerdp-asn1;C:\OpenSSL\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;FREERDP_EXPORTS;_CRT_SECURE_NO_WARNINGS;L_ENDIAN;EXT_PATH="extensions";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\include;C:\OpenSSL\include;..\libfreerdp-asn1;..\libfreerdp-core</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;FREERDP_EXPORTS;FREERDP_CHANMAN_EXPORTS;WIN32_LEAN_AND_MEAN;_CRT_SECURE_NO_WARNINGS;L_ENDIAN;EXT_PATH="extensions";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <PrecompiledHeader>
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
-      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Link>
       <AdditionalDependencies>ws2_32.lib;libeay32.lib;ssleay32.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -95,11 +95,11 @@
     <ClCompile Include="..\libfreerdp-core\capabilities.c" />
     <ClCompile Include="..\libfreerdp-core\chan.c" />
     <ClCompile Include="..\libfreerdp-core\credssp.c" />
-    <ClCompile Include="..\libfreerdp-core\crypto_openssl.c" />
+    <ClCompile Include="..\libfreerdp-core\crypto\openssl.c" />
     <ClCompile Include="..\libfreerdp-core\ext.c" />
     <ClCompile Include="..\libfreerdp-core\freerdp.c" />
     <ClCompile Include="..\libfreerdp-core\iso.c" />
-    <ClCompile Include="..\libfreerdp-core\licence.c" />
+    <ClCompile Include="..\libfreerdp-core\license.c" />
     <ClCompile Include="..\libfreerdp-core\mcs.c" />
     <ClCompile Include="..\libfreerdp-core\mppc.c" />
     <ClCompile Include="..\libfreerdp-core\nego.c" />
@@ -112,70 +112,57 @@
     <ClCompile Include="..\libfreerdp-core\stream.c" />
     <ClCompile Include="..\libfreerdp-core\surface.c" />
     <ClCompile Include="..\libfreerdp-core\tcp.c" />
-    <ClCompile Include="..\libfreerdp-core\tls_openssl.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\include\freerdp\chanman.h" />
+    <ClInclude Include="..\include\freerdp\constants\capabilities.h" />
+    <ClInclude Include="..\include\freerdp\constants\constants.h" />
+    <ClInclude Include="..\include\freerdp\constants\core.h" />
+    <ClInclude Include="..\include\freerdp\constants\crypto.h" />
+    <ClInclude Include="..\include\freerdp\constants\license.h" />
+    <ClInclude Include="..\include\freerdp\constants\pdu.h" />
+    <ClInclude Include="..\include\freerdp\constants\rail.h" />
+    <ClInclude Include="..\include\freerdp\constants\ui.h" />
+    <ClInclude Include="..\include\freerdp\constants\vchan.h" />
+    <ClInclude Include="..\include\freerdp\constants\window.h" />
+    <ClInclude Include="..\include\freerdp\dvc.h" />
+    <ClInclude Include="..\include\freerdp\errinfo.h" />
+    <ClInclude Include="..\include\freerdp\freerdp.h" />
+    <ClInclude Include="..\include\freerdp\kbd.h" />
+    <ClInclude Include="..\include\freerdp\rdpext.h" />
+    <ClInclude Include="..\include\freerdp\rdpset.h" />
+    <ClInclude Include="..\include\freerdp\rfx.h" />
+    <ClInclude Include="..\include\freerdp\types\base.h" />
+    <ClInclude Include="..\include\freerdp\types\ui.h" />
+    <ClInclude Include="..\include\freerdp\utils\datablob.h" />
+    <ClInclude Include="..\include\freerdp\utils\debug.h" />
+    <ClInclude Include="..\include\freerdp\utils\memory.h" />
+    <ClInclude Include="..\include\freerdp\utils\stream.h" />
+    <ClInclude Include="..\include\freerdp\utils\unicode.h" />
     <ClInclude Include="..\libfreerdp-core\asn1.h" />
     <ClInclude Include="..\libfreerdp-core\bitmap.h" />
     <ClInclude Include="..\libfreerdp-core\cache.h" />
     <ClInclude Include="..\libfreerdp-core\capabilities.h" />
     <ClInclude Include="..\libfreerdp-core\chan.h" />
-    <ClInclude Include="..\include\freerdp\chanman.h" />
-    <ClInclude Include="..\libfreerdp-core\constants.h" />
-    <ClInclude Include="..\libfreerdp-core\constants_capabilities.h" />
-    <ClInclude Include="..\libfreerdp-core\constants_core.h" />
-    <ClInclude Include="..\libfreerdp-core\constants_crypto.h" />
-    <ClInclude Include="..\libfreerdp-core\constants_license.h" />
-    <ClInclude Include="..\libfreerdp-core\constants_pdu.h" />
-    <ClInclude Include="..\libfreerdp-core\constants_rail.h" />
-    <ClInclude Include="..\include\freerdp\constants_vchan.h" />
-    <ClInclude Include="..\libfreerdp-core\constants_window.h" />
     <ClInclude Include="..\libfreerdp-core\credssp.h" />
     <ClInclude Include="..\libfreerdp-core\crypto.h" />
-    <ClInclude Include="..\libfreerdp-core\crypto_openssl.h" />
-    <ClInclude Include="..\libfreerdp-core\debug.h" />
-    <ClInclude Include="..\include\freerdp\dvc.h" />
+    <ClInclude Include="..\libfreerdp-core\crypto\openssl.h" />
     <ClInclude Include="..\libfreerdp-core\ext.h" />
     <ClInclude Include="..\libfreerdp-core\frdp.h" />
     <ClInclude Include="..\libfreerdp-core\iso.h" />
-    <ClInclude Include="..\include\freerdp\kbd.h" />
-    <ClInclude Include="..\libfreerdp-core\licence.h" />
+    <ClInclude Include="..\libfreerdp-core\license.h" />
     <ClInclude Include="..\libfreerdp-core\mcs.h" />
     <ClInclude Include="..\libfreerdp-core\nego.h" />
     <ClInclude Include="..\libfreerdp-core\ntlmssp.h" />
     <ClInclude Include="..\libfreerdp-core\orders.h" />
-    <ClInclude Include="..\libfreerdp-core\orderstypes.h" />
     <ClInclude Include="..\libfreerdp-core\pstcache.h" />
     <ClInclude Include="..\libfreerdp-core\rail.h" />
     <ClInclude Include="..\libfreerdp-core\rdp.h" />
-    <ClInclude Include="..\include\freerdp\rdpext.h" />
     <ClInclude Include="..\libfreerdp-core\secure.h" />
     <ClInclude Include="..\libfreerdp-core\stream.h" />
     <ClInclude Include="..\libfreerdp-core\surface.h" />
     <ClInclude Include="..\libfreerdp-core\tcp.h" />
     <ClInclude Include="..\libfreerdp-core\tls.h" />
-    <ClInclude Include="..\libfreerdp-core\types.h" />
-    <ClInclude Include="..\include\freerdp\constants.h" />
-    <ClInclude Include="..\include\freerdp\constants_capabilities.h" />
-    <ClInclude Include="..\include\freerdp\constants_core.h" />
-    <ClInclude Include="..\include\freerdp\constants_crypto.h" />
-    <ClInclude Include="..\include\freerdp\constants_license.h" />
-    <ClInclude Include="..\include\freerdp\constants_pdu.h" />
-    <ClInclude Include="..\include\freerdp\constants_rail.h" />
-    <ClInclude Include="..\include\freerdp\constants_rdpdr.h" />
-    <ClInclude Include="..\include\freerdp\constants_ui.h" />
-    <ClInclude Include="..\include\freerdp\constants_window.h" />
-    <ClInclude Include="..\include\freerdp\freerdp.h" />
-    <ClInclude Include="..\include\freerdp\rdpset.h" />
-    <ClInclude Include="..\include\freerdp\types_ui.h" />
-    <ClInclude Include="..\include\freerdp\vchan.h" />
-    <ClInclude Include="..\include\freerdp\utils\chan_plugin.h" />
-    <ClInclude Include="..\include\freerdp\utils\datablob.h" />
-    <ClInclude Include="..\include\freerdp\utils\memory.h" />
-    <ClInclude Include="..\include\freerdp\utils\semaphore.h" />
-    <ClInclude Include="..\include\freerdp\utils\stream.h" />
-    <ClInclude Include="..\include\freerdp\utils\unicode.h" />
-    <ClInclude Include="..\include\freerdp\utils\wait_obj.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="libfreerdp-asn1.vcxproj">

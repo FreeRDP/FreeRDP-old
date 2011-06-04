@@ -6,13 +6,12 @@ libfreerdp_kbddir = $(libdir)
 libfreerdp_kbd_LTLIBRARIES = libfreerdp-kbd.la
 
 libfreerdp_kbd_la_SOURCES = \
-	debug.h \
 	keyboard.h \
 	layout_ids.c layout_ids.h \
 	locales.c locales.h \
 	x_layout_id_table.c x_layout_id_table.h \
 	layouts_xkb.c layouts_xkb.h \
-	libkbd.c
+	libkbd.c libkbd.h
 
 libfreerdp_kbd_la_CFLAGS = \
 	-I$(top_srcdir) \

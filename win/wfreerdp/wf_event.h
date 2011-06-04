@@ -20,7 +20,7 @@
 #ifndef __WF_EVENT_H
 #define __WF_EVENT_H
 
-#include <windows.h>
+#include "wfreerdp.h"
 
 LRESULT CALLBACK
 wf_ll_kbd_proc(int nCode, WPARAM wParam, LPARAM lParam);

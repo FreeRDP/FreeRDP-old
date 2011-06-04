@@ -20,7 +20,7 @@
 #ifndef __TCP_H
 #define __TCP_H
 
-#include <freerdp/types_ui.h>
+#include <freerdp/types/ui.h>
 #include "frdp.h"
 #include "stream.h"
 

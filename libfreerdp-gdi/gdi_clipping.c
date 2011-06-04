@@ -27,9 +27,9 @@
 
 #include "gdi_clipping.h"
 
-int SetClipRgn(HDC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight)
+int gdi_SetClipRgn(HDC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight)
 {
-	return SetRgn(hdc->clip, nXLeft, nYLeft, nWidth, nHeight);
+	return gdi_SetRgn(hdc->clip, nXLeft, nYLeft, nWidth, nHeight);
 }
 
 /**
@@ -39,7 +39,7 @@ int SetClipRgn(HDC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight)
  * @return clipping region
  */
 
-HRGN GetClipRgn(HDC hdc)
+HRGN gdi_GetClipRgn(HDC hdc)
 {
 	return hdc->clip;
 }
@@ -50,9 +50,9 @@ HRGN GetClipRgn(HDC hdc)
  * @return
  */
 
-int SetNullClipRgn(HDC hdc)
+int gdi_SetNullClipRgn(HDC hdc)
 {
-	SetClipRgn(hdc, 0, 0, 0, 0);
+	gdi_SetClipRgn(hdc, 0, 0, 0, 0);
 	hdc->clip->null = 1;
 	return 0;
 }
@@ -69,7 +69,7 @@ int SetNullClipRgn(HDC hdc)
  * @return 1 if there is something to draw, 0 otherwise
  */
 
-int ClipCoords(HDC hdc, int *x, int *y, int *w, int *h, int *srcx, int *srcy)
+int gdi_ClipCoords(HDC hdc, int *x, int *y, int *w, int *h, int *srcx, int *srcy)
 {
 	RECT bmp;
 	RECT clip;
@@ -89,12 +89,12 @@ int ClipCoords(HDC hdc, int *x, int *y, int *w, int *h, int *srcx, int *srcy)
 	{
 		if (hdc->clip->null)
 		{
-			CRgnToRect(0, 0, hBmp->width, hBmp->height, &clip);
+			gdi_CRgnToRect(0, 0, hBmp->width, hBmp->height, &clip);
 		}
 		else
 		{
-			RgnToRect(hdc->clip, &clip);
-			CRgnToRect(0, 0, hBmp->width, hBmp->height, &bmp);
+			gdi_RgnToRect(hdc->clip, &clip);
+			gdi_CRgnToRect(0, 0, hBmp->width, hBmp->height, &bmp);
 
 			if (clip.left < bmp.left)
 				clip.left = bmp.left;
@@ -111,10 +111,10 @@ int ClipCoords(HDC hdc, int *x, int *y, int *w, int *h, int *srcx, int *srcy)
 	}
 	else
 	{
-		RgnToRect(hdc->clip, &clip);
+		gdi_RgnToRect(hdc->clip, &clip);
 	}
 
-	CRgnToRect(*x, *y, *w, *h, &coords);
+	gdi_CRgnToRect(*x, *y, *w, *h, &coords);
 
 	if (coords.right >= clip.left && coords.left <= clip.right &&
 		coords.bottom >= clip.top && coords.top <= clip.bottom)
@@ -166,7 +166,7 @@ int ClipCoords(HDC hdc, int *x, int *y, int *w, int *h, int *srcx, int *srcy)
 		}
 	}
 
-	RectToCRgn(&coords, x, y, w, h);
+	gdi_RectToCRgn(&coords, x, y, w, h);
 
 	return draw;
 }

@@ -17,7 +17,7 @@
    limitations under the License.
 */
 
-#include <freerdp/types_ui.h>
+#include <freerdp/types/ui.h>
 #include "stream.h"
 #include "nego.h"
 

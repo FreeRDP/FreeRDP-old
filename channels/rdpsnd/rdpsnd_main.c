@@ -24,7 +24,7 @@
 #include <unistd.h>
 #include <sys/time.h>
 #include <freerdp/vchan.h>
-#include <freerdp/types_ui.h>
+#include <freerdp/types/ui.h>
 #include "rdpsnd_types.h"
 #include "rdpsnd_dsp.h"
 #include <freerdp/utils/stream.h>

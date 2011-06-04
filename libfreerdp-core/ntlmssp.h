@@ -22,8 +22,8 @@
 
 #include "secure.h"
 #include "credssp.h"
-#include "types.h"
 
+#include <freerdp/utils/debug.h>
 #include <freerdp/utils/unicode.h>
 
 struct _AV_PAIR
@@ -154,5 +154,11 @@ int ntlmssp_send(NTLMSSP *ntlmssp, STREAM s);
 NTLMSSP* ntlmssp_new();
 void ntlmssp_init(NTLMSSP *ntlmssp);
 void ntlmssp_free(NTLMSSP *ntlmssp);
+
+#ifdef WITH_DEBUG_NLA
+#define DEBUG_NLA(fmt, ...) DEBUG_CLASS(NLA, fmt, ...)
+#else
+#define DEBUG_NLA(fmt, ...) DEBUG_NULL(fmt, ...)
+#endif
 
 #endif /* __NTLMSSP_H */

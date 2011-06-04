@@ -21,9 +21,31 @@
 #define __RDP_H
 
 #include <time.h>
-#include "types.h"
-#include <freerdp/types_ui.h>
+#include "stream.h"
+#include <freerdp/types/ui.h>
+#include <freerdp/utils/debug.h>
 #include <freerdp/utils/unicode.h>
+#include <freerdp/constants/constants.h>
+
+typedef struct _systemTime
+{
+	uint16 wYear;
+	uint16 wMonth;
+	uint16 wDayOfWeek;
+	uint16 wDay;
+	uint16 wHour;
+	uint16 wMinute;
+	uint16 wSecond;
+	uint16 wMilliseconds;
+
+} systemTime;
+
+typedef struct _RDPCOMP
+{
+	uint32 roff;
+	uint8 hist[RDP_MPPC_DICT_SIZE];
+	struct stream ns;
+} RDPCOMP;
 
 RD_BOOL
 rdp_global_init(void);
@@ -128,5 +150,11 @@ rdpRdp *
 rdp_new(rdpSet * settings, rdpInst * inst);
 void
 rdp_free(rdpRdp * rdp);
+
+#ifdef WITH_DEBUG_RDP
+#define DEBUG_RDP(fmt, ...) DEBUG_CLASS(RDP, fmt, ...)
+#else
+#define DEBUG_RDP(fmt, ...) DEBUG_NULL(fmt, ...)
+#endif
 
 #endif

@@ -81,14 +81,10 @@
 #include <freerdp/vchan.h>
 #include <freerdp/utils/chan_plugin.h>
 
+#include "libchanman.h"
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
-
-#ifdef WITH_DEBUG
-#define DEBUG(fmt, ...)	printf("DBG %s (%d): " fmt, __FUNCTION__, __LINE__, ## __VA_ARGS__)
-#else
-#define DEBUG(fmt, ...) do { } while (0)
 #endif
 
 /* The current channel manager reference passes from VirtualChannelEntry to
@@ -319,42 +315,42 @@ MyVirtualChannelInit(void ** ppInitHandle, PCHANNEL_DEF pChannel,
 	*ppInitHandle = &chan_man->init_handles[chan_man->num_init_handles];
 	chan_man->num_init_handles++;
 
-	DEBUG("MyVirtualChannelInit:\n");
+	DEBUG_CHANMAN("MyVirtualChannelInit:");
 	if (!chan_man->can_call_init)
 	{
-		printf("MyVirtualChannelInit: error not in entry\n");
+		DEBUG_CHANMAN("MyVirtualChannelInit: error not in entry");
 		return CHANNEL_RC_NOT_IN_VIRTUALCHANNELENTRY;
 	}
 	if (ppInitHandle == 0)
 	{
-		printf("MyVirtualChannelInit: error bad pphan\n");
+		DEBUG_CHANMAN("MyVirtualChannelInit: error bad pphan");
 		return CHANNEL_RC_BAD_INIT_HANDLE;
 	}
 	if (chan_man->num_chans + channelCount >= CHANNEL_MAX_COUNT)
 	{
-		printf("MyVirtualChannelInit: error too many channels\n");
+		DEBUG_CHANMAN("MyVirtualChannelInit: error too many channels");
 		return CHANNEL_RC_TOO_MANY_CHANNELS;
 	}
 	if (pChannel == 0)
 	{
-		printf("MyVirtualChannelInit: error bad pchan\n");
+		DEBUG_CHANMAN("MyVirtualChannelInit: error bad pchan");
 		return CHANNEL_RC_BAD_CHANNEL;
 	}
 	if (chan_man->is_connected)
 	{
-		printf("MyVirtualChannelInit: error already connected\n");
+		DEBUG_CHANMAN("MyVirtualChannelInit: error already connected");
 		return CHANNEL_RC_ALREADY_CONNECTED;
 	}
 	if (versionRequested != VIRTUAL_CHANNEL_VERSION_WIN2000)
 	{
-		printf("MyVirtualChannelInit: warning version\n");
+		DEBUG_CHANMAN("MyVirtualChannelInit: warning version");
 	}
 	for (index = 0; index < channelCount; index++)
 	{
 		lchan_def = pChannel + index;
 		if (freerdp_chanman_find_chan_data_by_name(chan_man, lchan_def->name, 0) != 0)
 		{
-			printf("MyVirtualChannelInit: error channel already used\n");
+			DEBUG_CHANMAN("MyVirtualChannelInit: error channel already used");
 			return CHANNEL_RC_BAD_CHANNEL;
 		}
 	}
@@ -383,7 +379,7 @@ MyVirtualChannelInit(void ** ppInitHandle, PCHANNEL_DEF pChannel,
 		}
 		else
 		{
-			printf("MyVirtualChannelInit: warning more than 16 channels\n");
+			DEBUG_CHANMAN("MyVirtualChannelInit: warning more than 16 channels");
 		}
 		chan_man->num_chans++;
 	}
@@ -400,32 +396,32 @@ MyVirtualChannelOpen(void * pInitHandle, uint32 * pOpenHandle,
 	int index;
 	struct chan_data * lchan;
 
-	DEBUG("MyVirtualChannelOpen:\n");
+	DEBUG_CHANMAN("MyVirtualChannelOpen:");
 	chan_man = ((rdpInitHandle *) pInitHandle)->chan_man;
 	if (pOpenHandle == 0)
 	{
-		printf("MyVirtualChannelOpen: error bad chanhan\n");
+		DEBUG_CHANMAN("MyVirtualChannelOpen: error bad chanhan");
 		return CHANNEL_RC_BAD_CHANNEL_HANDLE;
 	}
 	if (pChannelOpenEventProc == 0)
 	{
-		printf("MyVirtualChannelOpen: error bad proc\n");
+		DEBUG_CHANMAN("MyVirtualChannelOpen: error bad proc");
 		return CHANNEL_RC_BAD_PROC;
 	}
 	if (!chan_man->is_connected)
 	{
-		printf("MyVirtualChannelOpen: error not connected\n");
+		DEBUG_CHANMAN("MyVirtualChannelOpen: error not connected");
 		return CHANNEL_RC_NOT_CONNECTED;
 	}
 	lchan = freerdp_chanman_find_chan_data_by_name(chan_man, pChannelName, &index);
 	if (lchan == 0)
 	{
-		printf("MyVirtualChannelOpen: error chan name\n");
+		DEBUG_CHANMAN("MyVirtualChannelOpen: error chan name");
 		return CHANNEL_RC_UNKNOWN_CHANNEL_NAME;
 	}
 	if (lchan->flags == 2)
 	{
-		printf("MyVirtualChannelOpen: error chan already open\n");
+		DEBUG_CHANMAN("MyVirtualChannelOpen: error chan already open\n");
 		return CHANNEL_RC_ALREADY_OPEN;
 	}
 
@@ -447,18 +443,18 @@ MyVirtualChannelClose(uint32 openHandle)
 	chan_man = freerdp_chanman_find_by_open_handle(openHandle, &index);
 	if ((chan_man == NULL) || (index < 0) || (index >= CHANNEL_MAX_COUNT))
 	{
-		printf("MyVirtualChannelClose: error bad chanhan\n");
+		DEBUG_CHANMAN("MyVirtualChannelClose: error bad chanhan\n");
 		return CHANNEL_RC_BAD_CHANNEL_HANDLE;
 	}
 	if (!chan_man->is_connected)
 	{
-		printf("MyVirtualChannelClose: error not connected\n");
+		DEBUG_CHANMAN("MyVirtualChannelClose: error not connected\n");
 		return CHANNEL_RC_NOT_CONNECTED;
 	}
 	lchan = chan_man->chans + index;
 	if (lchan->flags != 2)
 	{
-		printf("MyVirtualChannelClose: error not open\n");
+		DEBUG_CHANMAN("MyVirtualChannelClose: error not open\n");
 		return CHANNEL_RC_NOT_OPEN;
 	}
 	lchan->flags = 0;
@@ -498,7 +494,7 @@ freerdp_chanman_set_ev(rdpChanMan * chan_man)
 	len = write(chan_man->pipe_fd[1], "sig", 4);
 	if (len != 4)
 	{
-		printf("freerdp_chanman_set_ev: error\n");
+		DEBUG_CHANMAN("freerdp_chanman_set_ev: error\n");
 	}
 #endif
 }
@@ -516,7 +512,7 @@ freerdp_chanman_clear_ev(rdpChanMan * chan_man)
 		len = read(chan_man->pipe_fd[0], &len, 4);
 		if (len != 4)
 		{
-			printf("freerdp_chanman_clear_ev: error\n");
+			DEBUG_CHANMAN("freerdp_chanman_clear_ev: error");
 		}
 	}
 #endif
@@ -534,35 +530,35 @@ MyVirtualChannelWrite(uint32 openHandle, void * pData, uint32 dataLength,
 	chan_man = freerdp_chanman_find_by_open_handle(openHandle, &index);
 	if ((chan_man == NULL) || (index < 0) || (index >= CHANNEL_MAX_COUNT))
 	{
-		printf("MyVirtualChannelWrite: error bad chanhan\n");
+		DEBUG_CHANMAN("MyVirtualChannelWrite: error bad chanhan");
 		return CHANNEL_RC_BAD_CHANNEL_HANDLE;
 	}
 	if (!chan_man->is_connected)
 	{
-		printf("MyVirtualChannelWrite: error not connected\n");
+		DEBUG_CHANMAN("MyVirtualChannelWrite: error not connected");
 		return CHANNEL_RC_NOT_CONNECTED;
 	}
 	if (pData == 0)
 	{
-		printf("MyVirtualChannelWrite: error bad pData\n");
+		DEBUG_CHANMAN("MyVirtualChannelWrite: error bad pData");
 		return CHANNEL_RC_NULL_DATA;
 	}
 	if (dataLength == 0)
 	{
-		printf("MyVirtualChannelWrite: error bad dataLength\n");
+		DEBUG_CHANMAN("MyVirtualChannelWrite: error bad dataLength");
 		return CHANNEL_RC_ZERO_LENGTH;
 	}
 	lchan = chan_man->chans + index;
 	if (lchan->flags != 2)
 	{
-		printf("MyVirtualChannelWrite: error not open\n");
+		DEBUG_CHANMAN("MyVirtualChannelWrite: error not open");
 		return CHANNEL_RC_NOT_OPEN;
 	}
 	SEMAPHORE_WAIT(chan_man->sem); /* lock chan_man->sync* vars */
 	if (!chan_man->is_connected)
 	{
 		SEMAPHORE_POST(chan_man->sem);
-		printf("MyVirtualChannelWrite: error not connected\n");
+		DEBUG_CHANMAN("MyVirtualChannelWrite: error not connected");
 		return CHANNEL_RC_NOT_CONNECTED;
 	}
 	chan_man->sync_data = pData;
@@ -585,30 +581,30 @@ MyVirtualChannelEventPush(uint32 openHandle,
 	chan_man = freerdp_chanman_find_by_open_handle(openHandle, &index);
 	if ((chan_man == NULL) || (index < 0) || (index >= CHANNEL_MAX_COUNT))
 	{
-		printf("MyVirtualChannelEventPush: error bad chanhan\n");
+		DEBUG_CHANMAN("MyVirtualChannelEventPush: error bad chanhan");
 		return CHANNEL_RC_BAD_CHANNEL_HANDLE;
 	}
 	if (!chan_man->is_connected)
 	{
-		printf("MyVirtualChannelEventPush: error not connected\n");
+		DEBUG_CHANMAN("MyVirtualChannelEventPush: error not connected");
 		return CHANNEL_RC_NOT_CONNECTED;
 	}
 	if (event == NULL)
 	{
-		printf("MyVirtualChannelEventPush: error bad event\n");
+		DEBUG_CHANMAN("MyVirtualChannelEventPush: error bad event");
 		return CHANNEL_RC_NULL_DATA;
 	}
 	lchan = chan_man->chans + index;
 	if (lchan->flags != 2)
 	{
-		printf("MyVirtualChannelEventPush: error not open\n");
+		DEBUG_CHANMAN("MyVirtualChannelEventPush: error not open");
 		return CHANNEL_RC_NOT_OPEN;
 	}
 	SEMAPHORE_WAIT(chan_man->sem_event); /* lock chan_man->event */
 	if (!chan_man->is_connected)
 	{
 		SEMAPHORE_POST(chan_man->sem_event);
-		printf("MyVirtualChannelEventPush: error not connected\n");
+		DEBUG_CHANMAN("MyVirtualChannelEventPush: error not connected");
 		return CHANNEL_RC_NOT_CONNECTED;
 	}
 	chan_man->event = event;
@@ -664,7 +660,7 @@ freerdp_chanman_new(void)
 	chan_man->pipe_fd[1] = -1;
 	if (pipe(chan_man->pipe_fd) < 0)
 	{
-		printf("freerdp_chanman_init: pipe failed\n");
+		DEBUG_CHANMAN("freerdp_chanman_init: pipe failed");
 	}
 #endif
 
@@ -744,10 +740,10 @@ freerdp_chanman_load_plugin(rdpChanMan * chan_man, rdpSet * settings,
 	int ok;
 	CHR path[255];
 
-	DEBUG("input filename %s\n", filename);
+	DEBUG_CHANMAN("input filename %s", filename);
 	if (chan_man->num_libs + 1 >= CHANNEL_MAX_COUNT)
 	{
-		printf("freerdp_chanman_load_plugin: too many channels\n");
+		DEBUG_CHANMAN("freerdp_chanman_load_plugin: too many channels");
 		return 1;
 	}
 	lib = chan_man->libs + chan_man->num_libs;
@@ -767,18 +763,18 @@ freerdp_chanman_load_plugin(rdpChanMan * chan_man, rdpSet * settings,
 		strncpy(path, filename, sizeof(path));
 #endif
 	}
-	printf("freerdp_chanman_load_plugin %s: %s\n", filename, path);
+	DEBUG_CHANMAN("freerdp_chanman_load_plugin %s: %s", filename, path);
 	lib->han = DLOPEN(path);
 	if (lib->han == 0)
 	{
-		printf("freerdp_chanman_load_plugin: failed to load library\n");
+		DEBUG_CHANMAN("freerdp_chanman_load_plugin: failed to load library");
 		return 1;
 	}
 	lib->entry = (PVIRTUALCHANNELENTRY)
 		DLSYM(lib->han, CHANNEL_EXPORT_FUNC_NAME);
 	if (lib->entry == 0)
 	{
-		printf("freerdp_chanman_load_plugin: failed to find export function\n");
+		DEBUG_CHANMAN("freerdp_chanman_load_plugin: failed to find export function");
 		DLCLOSE(lib->han);
 		return 1;
 	}
@@ -806,7 +802,7 @@ freerdp_chanman_load_plugin(rdpChanMan * chan_man, rdpSet * settings,
 	chan_man->can_call_init = 0;
 	if (!ok)
 	{
-		printf("freerdp_chanman_load_plugin: export function call failed\n");
+		DEBUG_CHANMAN("freerdp_chanman_load_plugin: export function call failed");
 		DLCLOSE(lib->han);
 		return 1;
 	}
@@ -823,7 +819,7 @@ freerdp_chanman_pre_connect(rdpChanMan * chan_man, rdpInst * inst)
 	CHANNEL_DEF lchannel_def;
 	void * dummy;
 
-	DEBUG("freerdp_chanman_pre_connect:\n");
+	DEBUG_CHANMAN("freerdp_chanman_pre_connect:");
 	chan_man->inst = inst;
 
 	/* If rdpsnd is registered but not rdpdr, it's necessary to register a fake
@@ -845,7 +841,7 @@ freerdp_chanman_pre_connect(rdpChanMan * chan_man, rdpInst * inst)
 		MUTEX_UNLOCK(g_mutex_init);
 		chan_man->can_call_init = 0;
 		chan_man->settings = 0;
-		DEBUG("freerdp_chanman_pre_connect: registered fake rdpdr for rdpsnd.\n");
+		DEBUG_CHANMAN("freerdp_chanman_pre_connect: registered fake rdpdr for rdpsnd.");
 	}
 
 	for (index = 0; index < chan_man->num_libs; index++)
@@ -874,7 +870,7 @@ freerdp_chanman_post_connect(rdpChanMan * chan_man, rdpInst * inst)
 	chan_man->is_connected = 1;
 	server_name = inst->settings->server;
 	server_name_len = strlen(server_name);
-	DEBUG("freerdp_chanman_post_connect: server name [%s] chan_man->num_libs [%d]\n",
+	DEBUG_CHANMAN("freerdp_chanman_post_connect: server name [%s] chan_man->num_libs [%d]",
 		server_name, chan_man->num_libs);
 	for (index = 0; index < chan_man->num_libs; index++)
 	{
@@ -902,23 +898,22 @@ freerdp_chanman_data(rdpInst * inst, int chan_id, char * data, int data_size,
 	chan_man = freerdp_chanman_find_by_rdp_inst(inst);
 	if (chan_man == 0)
 	{
-		printf("freerdp_chanman_data: could not find channel manager\n");
+		DEBUG_CHANMAN("freerdp_chanman_data: could not find channel manager");
 		return 1;
 	}
 
-	//printf("freerdp_chanman_data:\n");
 	lrdp_chan = freerdp_chanman_find_rdp_chan_by_id(chan_man, inst->settings,
 		chan_id, &index);
 	if (lrdp_chan == 0)
 	{
-		printf("freerdp_chanman_data: could not find channel id\n");
+		DEBUG_CHANMAN("freerdp_chanman_data: could not find channel id");
 		return 1;
 	}
 	lchan_data = freerdp_chanman_find_chan_data_by_name(chan_man, lrdp_chan->name,
 		&index);
 	if (lchan_data == 0)
 	{
-		printf("freerdp_chanman_data: could not find channel name\n");
+		DEBUG_CHANMAN("freerdp_chanman_data: could not find channel name");
 		return 1;
 	}
 	if (lchan_data->open_event_proc != 0)
@@ -1000,7 +995,6 @@ freerdp_chanman_check_fds(rdpChanMan * chan_man, rdpInst * inst)
 	}
 	if (freerdp_chanman_is_ev_set(chan_man))
 	{
-		//printf("freerdp_chanman_check_fds: 1\n");
 		freerdp_chanman_clear_ev(chan_man);
 		freerdp_chanman_process_sync(chan_man, inst);
 	}

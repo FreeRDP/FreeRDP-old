@@ -20,7 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <freerdp/types_ui.h>
+#include <freerdp/types/ui.h>
 #include "rdpsnd_types.h"
 #include "rdpsnd_dsp.h"
 

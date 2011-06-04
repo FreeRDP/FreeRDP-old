@@ -22,23 +22,23 @@
 
 #include "gdi.h"
 
-HRGN CreateRectRgn(int nLeftRect, int nTopRect, int nRightRect, int nBottomRect);
-HRECT CreateRect(int xLeft, int yTop, int xRight, int yBottom);
-void RectToRgn(HRECT rect, HRGN rgn);
-void CRectToRgn(int left, int top, int right, int bottom, HRGN rgn);
-void RectToCRgn(HRECT rect, int *x, int *y, int *w, int *h);
-void CRectToCRgn(int left, int top, int right, int bottom, int *x, int *y, int *w, int *h);
-void RgnToRect(HRGN rgn, HRECT rect);
-void CRgnToRect(int x, int y, int w, int h, HRECT rect);
-void RgnToCRect(HRGN rgn, int *left, int *top, int *right, int *bottom);
-void CRgnToCRect(int x, int y, int w, int h, int *left, int *top, int *right, int *bottom);
-int CopyOverlap(int x, int y, int width, int height, int srcx, int srcy);
-int SetRect(HRECT rc, int xLeft, int yTop, int xRight, int yBottom);
-int SetRgn(HRGN hRgn, int nXLeft, int nYLeft, int nWidth, int nHeight);
-int SetRectRgn(HRGN hRgn, int nLeftRect, int nTopRect, int nRightRect, int nBottomRect);
-int EqualRgn(HRGN hSrcRgn1, HRGN hSrcRgn2);
-int CopyRect(HRECT dst, HRECT src);
-int PtInRect(HRECT rc, int x, int y);
-int InvalidateRegion(HDC hdc, int x, int y, int w, int h);
+HRGN gdi_CreateRectRgn(int nLeftRect, int nTopRect, int nRightRect, int nBottomRect);
+HRECT gdi_CreateRect(int xLeft, int yTop, int xRight, int yBottom);
+void gdi_RectToRgn(HRECT rect, HRGN rgn);
+void gdi_CRectToRgn(int left, int top, int right, int bottom, HRGN rgn);
+void gdi_RectToCRgn(HRECT rect, int *x, int *y, int *w, int *h);
+void gdi_CRectToCRgn(int left, int top, int right, int bottom, int *x, int *y, int *w, int *h);
+void gdi_RgnToRect(HRGN rgn, HRECT rect);
+void gdi_CRgnToRect(int x, int y, int w, int h, HRECT rect);
+void gdi_RgnToCRect(HRGN rgn, int *left, int *top, int *right, int *bottom);
+void gdi_CRgnToCRect(int x, int y, int w, int h, int *left, int *top, int *right, int *bottom);
+int gdi_CopyOverlap(int x, int y, int width, int height, int srcx, int srcy);
+int gdi_SetRect(HRECT rc, int xLeft, int yTop, int xRight, int yBottom);
+int gdi_SetRgn(HRGN hRgn, int nXLeft, int nYLeft, int nWidth, int nHeight);
+int gdi_SetRectRgn(HRGN hRgn, int nLeftRect, int nTopRect, int nRightRect, int nBottomRect);
+int gdi_EqualRgn(HRGN hSrcRgn1, HRGN hSrcRgn2);
+int gdi_CopyRect(HRECT dst, HRECT src);
+int gdi_PtInRect(HRECT rc, int x, int y);
+int gdi_InvalidateRegion(HDC hdc, int x, int y, int w, int h);
 
 #endif /* __GDI_REGION_H */

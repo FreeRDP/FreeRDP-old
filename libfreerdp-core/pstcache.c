@@ -20,7 +20,6 @@
 #include "frdp.h"
 #include "rdp.h"
 #include "cache.h"
-#include "debug.h"
 #include <freerdp/rdpset.h>
 
 #include "pstcache.h"
@@ -67,8 +66,8 @@ pstcache_load_bitmap(rdpPcache * pcache, uint8 cache_id, uint16 cache_idx)
 	rd_read_file(fd, celldata, cellhdr.length);
 
 	bitmap = ui_create_bitmap(pcache->rdp->inst, cellhdr.width, cellhdr.height, celldata);
-	DEBUG_DRAW("Load bitmap from disk: id=%d, idx=%d, bmp=0x%x)\n", cache_id, cache_idx,
-	       (unsigned int) bitmap);
+	DEBUG_CACHE("Load bitmap from disk: id=%d, idx=%d, bmp=0x%x)",
+			cache_id, cache_idx, (unsigned int) bitmap);
 	cache_put_bitmap(pcache->rdp->cache, cache_id, cache_idx, bitmap);
 
 	xfree(celldata);
@@ -120,7 +119,7 @@ pstcache_enumerate(rdpPcache * pcache, uint8 id, HASH_KEY * keylist)
 	if (pcache->pstcache_enumerated)
 		return 0;
 
-	DEBUG_DRAW("Persistent bitmap cache enumeration... ");
+	DEBUG_CACHE("Persistent bitmap cache enumeration... ");
 	for (idx = 0; idx < BMPCACHE2_NUM_PSTCELLS; idx++)
 	{
 		fd = pcache->pstcache_fd[id];
@@ -154,7 +153,7 @@ pstcache_enumerate(rdpPcache * pcache, uint8 id, HASH_KEY * keylist)
 		}
 	}
 
-	DEBUG_DRAW("%d cached bitmaps.\n", idx);
+	DEBUG_CACHE("%d cached bitmaps.", idx);
 
 	cache_rebuild_bmpcache_linked_list(pcache->rdp->cache, id, mru_idx, idx);
 	pcache->pstcache_enumerated = True;
@@ -179,13 +178,13 @@ pstcache_init(rdpPcache * pcache, uint8 cache_id)
 
 	if (!rd_pstcache_mkdir())
 	{
-		DEBUG_DRAW("failed to get/make cache directory!\n");
+		DEBUG_CACHE("failed to get/make cache directory!");
 		return False;
 	}
 
 	pcache->pstcache_Bpp = (pcache->rdp->settings->server_depth + 7) / 8;
 	sprintf(filename, "cache/pstcache_%d_%d", cache_id, pcache->pstcache_Bpp);
-	DEBUG_DRAW("persistent bitmap cache file: %s\n", filename);
+	DEBUG_CACHE("persistent bitmap cache file: %s", filename);
 
 	fd = rd_open_file(filename);
 	if (fd == -1)
