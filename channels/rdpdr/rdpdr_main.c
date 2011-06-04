@@ -315,36 +315,49 @@ rdpdr_add_async_irp(rdpdrPlugin * plugin, IRP * irp, char * data, int data_size)
 }
 
 static void
-rdpdr_abort_single_io(rdpdrPlugin * plugin, uint32 fd, uint8 abortCode)
+rdpdr_abort_single_io(rdpdrPlugin * plugin, uint32 fd, uint8 abortType, uint32 ioStatus)
 {
 	IRP * pending = NULL;
 	char * out;
 	int out_size, error;
 	int major = 0;
 
-	if (abortCode == RDPDR_ABORT_IO_READ)
-		major = IRP_MJ_READ;
-	else if (abortCode == RDPDR_ABORT_IO_WRITE)
-		major = IRP_MJ_WRITE;
-
-	pending = irp_queue_first(plugin->queue);
-	while (pending)
+	switch (abortType)
 	{
-		if (irp_file_descriptor(pending) == fd && pending->majorFunction == major)
-		{
-			pending->ioStatus = RD_STATUS_CANCELLED;
-			out = irp_output_device_io_completion(pending, &out_size);
-			error = plugin->ep.pVirtualChannelWrite(plugin->open_handle, out, out_size, out);
-			if (error != CHANNEL_RC_OK)
-				LLOGLN(0, ("rdpdr_check_fds: VirtualChannelWrite failed %d", error));
-			if (pending->outputBuffer)
-				free(pending->outputBuffer);
-			irp_queue_remove(plugin->queue, pending);
+		case RDPDR_ABORT_IO_NONE:
+			major = 0;
+			break;
 
+		case RDPDR_ABORT_IO_READ:
+			major = IRP_MJ_READ;
+			break;
+
+		case RDPDR_ABORT_IO_WRITE:
+			major = IRP_MJ_WRITE;
+			break;
+
+		default:
+			LLOGLN(10, ("rdpdr_abort_single_io: called with an unexpected aborting type '%d'", abortType));
 			return;
-		}
+	}
 
-		pending = irp_queue_next(plugin->queue, pending);
+	for (pending = irp_queue_first(plugin->queue); pending; pending = irp_queue_next(plugin->queue, pending))
+	{
+		if (irp_file_descriptor(pending) != fd || pending->majorFunction != major)
+			continue;
+
+		/* Process the specific fd and majorFunction */
+		pending->ioStatus = ioStatus;
+		out = irp_output_device_io_completion(pending, &out_size);
+		error = plugin->ep.pVirtualChannelWrite(plugin->open_handle, out, out_size, out);
+		if (error != CHANNEL_RC_OK)
+			LLOGLN(0, ("rdpdr_check_fds: VirtualChannelWrite failed %d", error));
+
+		if (pending->outputBuffer)
+			free(pending->outputBuffer);
+		irp_queue_remove(plugin->queue, pending);
+
+		break;
 	}
 }
 
@@ -561,9 +574,9 @@ rdpdr_process_irp(rdpdrPlugin * plugin, char* data, int data_size)
 	if (irp.abortIO)
 	{
 		if (irp.abortIO & RDPDR_ABORT_IO_WRITE)
-			rdpdr_abort_single_io(plugin, irp_file_descriptor(&irp), RDPDR_ABORT_IO_WRITE);
+			rdpdr_abort_single_io(plugin, irp_file_descriptor(&irp), RDPDR_ABORT_IO_WRITE, RD_STATUS_CANCELLED);
 		if (irp.abortIO & RDPDR_ABORT_IO_READ)
-			rdpdr_abort_single_io(plugin, irp_file_descriptor(&irp), RDPDR_ABORT_IO_READ);
+			rdpdr_abort_single_io(plugin, irp_file_descriptor(&irp), RDPDR_ABORT_IO_READ, RD_STATUS_CANCELLED);
 	}
 
 	if (irp.ioStatus == RD_STATUS_PENDING && irp.rwBlocking)
