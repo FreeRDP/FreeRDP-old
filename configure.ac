@@ -20,8 +20,13 @@ AH_TEMPLATE(NEED_ALIGN, [Alignment])
 AH_TEMPLATE(DISABLE_TLS, [Disable TLS encryption])
 AH_TEMPLATE(WITH_XKBFILE, [Use xkbfile for keyboard handling])
 AH_TEMPLATE(WITH_DEBUG, [Turn on debugging messages])
+AH_TEMPLATE(WITH_DEBUG_RDP, [Turn on debugging messages])
 AH_TEMPLATE(WITH_DEBUG_GDI, [Turn on debugging messages])
 AH_TEMPLATE(WITH_DEBUG_NLA, [Turn on debugging messages])
+AH_TEMPLATE(WITH_DEBUG_MCS, [Turn on debugging messages])
+AH_TEMPLATE(WITH_DEBUG_CACHE, [Turn on debugging messages])
+AH_TEMPLATE(WITH_DEBUG_ORDERS, [Turn on debugging messages])
+AH_TEMPLATE(WITH_DEBUG_LICENSE, [Turn on debugging messages])
 AH_TEMPLATE(WITH_DEBUG_CHANNEL, [Turn on debugging messages])
 AH_TEMPLATE(WITH_DEBUG_KBD, [Turn on debugging messages])
 AH_TEMPLATE(WITH_DEBUG_DRAW, [Turn on debugging messages])
@@ -780,6 +785,15 @@ AC_ARG_WITH(debug,
         fi
     ])
 
+AC_ARG_WITH(debug-rdp,
+    [  --with-debug-rdp        enable debugging of core RDP],
+    [
+        if test $withval != "no";
+        then
+            AC_DEFINE(WITH_DEBUG_RDP,1)
+	fi
+    ])
+
 AC_ARG_WITH(debug-gdi,
     [  --with-debug-gdi        enable debugging of GDI],
     [
@@ -795,6 +809,42 @@ AC_ARG_WITH(debug-nla,
         if test $withval != "no";
         then
             AC_DEFINE(WITH_DEBUG_NLA,1)
+	fi
+    ])
+
+AC_ARG_WITH(debug-cache,
+    [  --with-debug-cache        enable debugging of bitmap cache],
+    [
+        if test $withval != "no";
+        then
+            AC_DEFINE(WITH_DEBUG_CACHE,1)
+	fi
+    ])
+
+AC_ARG_WITH(debug-mcs,
+    [  --with-debug-mcs        enable debugging of MCS],
+    [
+        if test $withval != "no";
+        then
+            AC_DEFINE(WITH_DEBUG_MCS,1)
+	fi
+    ])
+
+AC_ARG_WITH(debug-orders,
+    [  --with-debug-orders        enable debugging of orders],
+    [
+        if test $withval != "no";
+        then
+            AC_DEFINE(WITH_DEBUG_ORDERS,1)
+	fi
+    ])
+
+AC_ARG_WITH(debug-license,
+    [  --with-debug-license        enable debugging of license],
+    [
+        if test $withval != "no";
+        then
+            AC_DEFINE(WITH_DEBUG_LICENSE,1)
 	fi
     ])
 

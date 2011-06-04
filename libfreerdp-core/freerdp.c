@@ -119,7 +119,7 @@ hexdump(unsigned char * p, int len)
 }
 
 int
-load_licence(unsigned char ** data)
+load_license(unsigned char ** data)
 {
 	return 0;
 }
@@ -179,7 +179,7 @@ generate_random(uint8 * random)
 }
 
 void
-save_licence(unsigned char * data, int length)
+save_license(unsigned char * data, int length)
 {
 }
 

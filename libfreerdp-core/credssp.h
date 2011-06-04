@@ -22,7 +22,6 @@
 
 #include "secure.h"
 #include "ntlmssp.h"
-#include "types.h"
 
 struct rdp_credssp
 {

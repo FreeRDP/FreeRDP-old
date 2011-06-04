@@ -23,7 +23,6 @@
 #include "asn1.h"
 #include "secure.h"
 #include "stream.h"
-#include "types.h"
 #include "tcp.h"
 #include "mcs.h"
 #include "iso.h"

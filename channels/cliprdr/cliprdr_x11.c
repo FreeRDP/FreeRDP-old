@@ -37,7 +37,7 @@
 #include <semaphore.h>
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
-#include <freerdp/types_ui.h>
+#include <freerdp/types/ui.h>
 #include <freerdp/utils/stream.h>
 #include <freerdp/utils/chan_plugin.h>
 #include <freerdp/utils/wait_obj.h>

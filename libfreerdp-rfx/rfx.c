@@ -20,7 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <freerdp/types_base.h>
+#include <freerdp/types/base.h>
 #include <freerdp/utils/stream.h>
 
 #include "rfx_constants.h"

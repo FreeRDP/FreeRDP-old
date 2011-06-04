@@ -17,26 +17,33 @@
    limitations under the License.
 */
 
-#ifndef __LICENCE_H
-#define __LICENCE_H
+#ifndef __LICENSE_H
+#define __LICENSE_H
 
-#include <freerdp/types_ui.h>
+#include <freerdp/utils/debug.h>
+#include <freerdp/types/ui.h>
 #include "stream.h"
 
-struct rdp_licence
+struct rdp_license
 {
 	struct rdp_sec * sec;
-	uint8 licence_key[16];
-	uint8 licence_sign_key[16];
-	RD_BOOL licence_issued;
+	uint8 license_key[16];
+	uint8 license_sign_key[16];
+	RD_BOOL license_issued;
 };
-typedef struct rdp_licence rdpLicence;
+typedef struct rdp_license rdpLicense;
 
 void
-licence_process(rdpLicence * licence, STREAM s);
-rdpLicence *
-licence_new(struct rdp_sec * secure);
+license_process(rdpLicense * license, STREAM s);
+rdpLicense *
+license_new(struct rdp_sec * secure);
 void
-licence_free(rdpLicence * licence);
+license_free(rdpLicense * license);
+
+#ifdef WITH_DEBUG_LICENSE
+#define DEBUG_LICENSE(fmt, ...) DEBUG_CLASS(LICENSE, fmt, ...)
+#else
+#define DEBUG_LICENSE(fmt, ...) DEBUG_NULL(fmt, ...)
+#endif
 
 #endif

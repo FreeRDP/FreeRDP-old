@@ -23,7 +23,8 @@
 typedef struct rdp_sec rdpSec;
 
 #include "crypto.h"
-#include "constants.h"
+#include <freerdp/utils/debug.h>
+#include <freerdp/constants/constants.h>
 
 #ifndef DISABLE_TLS
 #include "tls.h"
@@ -51,7 +52,7 @@ struct rdp_sec
 	int sec_encrypt_use_count;
 	int sec_decrypt_use_count;
 	struct rdp_mcs * mcs;
-	struct rdp_licence * licence;
+	struct rdp_license * license;
 	int tls_connected;
 #ifndef DISABLE_TLS
 	struct rdp_tls * tls;
@@ -102,5 +103,11 @@ rdpSec *
 sec_new(struct rdp_rdp * rdp);
 void
 sec_free(rdpSec * sec);
+
+#ifdef WITH_DEBUG_SEC
+#define DEBUG_SEC(fmt, ...) DEBUG_CLASS(SEC, fmt, ...)
+#else
+#define DEBUG_SEC(fmt, ...) DEBUG_NULL(fmt, ...)
+#endif
 
 #endif

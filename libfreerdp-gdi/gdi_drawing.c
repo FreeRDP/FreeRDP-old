@@ -35,7 +35,7 @@
  * @return draw mode
  */
 
-int GetROP2(HDC hdc)
+int gdi_GetROP2(HDC hdc)
 {
 	return hdc->drawMode;
 }
@@ -48,7 +48,7 @@ int GetROP2(HDC hdc)
  * @return previous draw mode
  */
 
-int SetROP2(HDC hdc, int fnDrawMode)
+int gdi_SetROP2(HDC hdc, int fnDrawMode)
 {
 	int prevDrawMode = hdc->drawMode;
 
@@ -65,7 +65,7 @@ int SetROP2(HDC hdc, int fnDrawMode)
  * @return background color
  */
 
-COLORREF GetBkColor(HDC hdc)
+COLORREF gdi_GetBkColor(HDC hdc)
 {
 	return hdc->bkColor;
 }
@@ -78,7 +78,7 @@ COLORREF GetBkColor(HDC hdc)
  * @return previous background color
  */
 
-COLORREF SetBkColor(HDC hdc, COLORREF crColor)
+COLORREF gdi_SetBkColor(HDC hdc, COLORREF crColor)
 {
 	COLORREF previousBkColor = hdc->bkColor;
 	hdc->bkColor = crColor;
@@ -92,7 +92,7 @@ COLORREF SetBkColor(HDC hdc, COLORREF crColor)
  * @return background mode
  */
 
-int GetBkMode(HDC hdc)
+int gdi_GetBkMode(HDC hdc)
 {
 	return hdc->bkMode;
 }
@@ -105,7 +105,7 @@ int GetBkMode(HDC hdc)
  * @return
  */
 
-int SetBkMode(HDC hdc, int iBkMode)
+int gdi_SetBkMode(HDC hdc, int iBkMode)
 {
 	if (iBkMode == OPAQUE || iBkMode == TRANSPARENT)
 		hdc->bkMode = iBkMode;
@@ -123,7 +123,7 @@ int SetBkMode(HDC hdc, int iBkMode)
  * @return previous text color
  */
 
-COLORREF SetTextColor(HDC hdc, COLORREF crColor)
+COLORREF gdi_SetTextColor(HDC hdc, COLORREF crColor)
 {
 	COLORREF previousTextColor = hdc->textColor;
 	hdc->textColor = crColor;

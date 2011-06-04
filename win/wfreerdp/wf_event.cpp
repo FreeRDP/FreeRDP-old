@@ -19,9 +19,10 @@
 
 #include <stdio.h>
 #include <freerdp/freerdp.h>
-#include "wf_types.h"
-#include "wf_event.h"
+#include "wfreerdp.h"
 #include "wf_win.h"
+
+#include "wf_event.h"
 
 extern HCURSOR g_default_cursor;
 static HWND g_focus_hWnd;	/* set to hWnd when wfreerdp has focus so the low level keyboard hook can use it */

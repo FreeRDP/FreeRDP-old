@@ -20,7 +20,7 @@
 #ifndef __FREERDP_KBD_H
 #define __FREERDP_KBD_H
 
-#include "types_ui.h"
+#include "types/ui.h"
 
 #define RDP_KEYBOARD_LAYOUT_TYPE_STANDARD   1
 #define RDP_KEYBOARD_LAYOUT_TYPE_VARIANT    2

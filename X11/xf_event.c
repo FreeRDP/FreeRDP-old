@@ -222,7 +222,7 @@ xf_handle_event_ClientMessage(xfInfo * xfi, XEvent * xevent)
 	if ((xevent->xclient.message_type == protocol_atom)
 	    && ((Atom) xevent->xclient.data.l[0] == kill_atom))
 	{
-		DEBUG("ClientMessage user quit received\n");
+		DEBUG_X11("ClientMessage user quit received");
 		return 1;
 	}
 
@@ -293,19 +293,19 @@ xf_handle_event(xfInfo * xfi, XEvent * xevent)
 			rv = xf_handle_event_LeaveNotify(xfi, xevent);
 			break;
 		case NoExpose:
-			DEBUG("xf_handle_event: NoExpose\n");
+			DEBUG_X11("xf_handle_event: NoExpose");
 			break;
 		case GraphicsExpose:
-			DEBUG("xf_handle_event: GraphicsExpose\n");
+			DEBUG_X11("xf_handle_event: GraphicsExpose");
 			break;
 		case ConfigureNotify:
-			DEBUG("xf_handle_event: ConfigureNotify\n");
+			DEBUG_X11("xf_handle_event: ConfigureNotify");
 			break;
 		case MapNotify:
-			DEBUG("xf_handle_event: MapNotify\n");
+			DEBUG_X11("xf_handle_event: MapNotify");
 			break;
 		case ReparentNotify:
-			DEBUG("xf_handle_event: ReparentNotify\n");
+			DEBUG_X11("xf_handle_event: ReparentNotify");
 			break;
 		case MappingNotify:
 			rv = xf_handle_event_MappingNotify(xfi, xevent);

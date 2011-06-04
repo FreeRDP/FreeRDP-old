@@ -22,12 +22,12 @@
 
 #include "gdi.h"
 
-int GetROP2(HDC hdc);
-int SetROP2(HDC hdc, int fnDrawMode);
-COLORREF GetBkColor(HDC hdc);
-COLORREF SetBkColor(HDC hdc, COLORREF crColor);
-int GetBkMode(HDC hdc);
-int SetBkMode(HDC hdc, int iBkMode);
-COLORREF SetTextColor(HDC hdc, COLORREF crColor);
+int gdi_GetROP2(HDC hdc);
+int gdi_SetROP2(HDC hdc, int fnDrawMode);
+COLORREF gdi_GetBkColor(HDC hdc);
+COLORREF gdi_SetBkColor(HDC hdc, COLORREF crColor);
+int gdi_GetBkMode(HDC hdc);
+int gdi_SetBkMode(HDC hdc, int iBkMode);
+COLORREF gdi_SetTextColor(HDC hdc, COLORREF crColor);
 
 #endif /* __GDI_DRAWING_H */

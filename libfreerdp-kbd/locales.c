@@ -20,236 +20,238 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "libkbd.h"
 
-#include "debug.h"
 #include "locales.h"
 
 typedef struct
 {
-	// Two or three letter language code
+	/* Two or three letter language code */
 	char language[4];
 
-	// Two or three letter country code (Sometimes with Cyrl_ prefix)
+	/* Two or three letter country code (Sometimes with Cyrl_ prefix) */
 	char country[10];
 
-	// 32-bit unsigned integer corresponding to the locale
+	/* 32-bit unsigned integer corresponding to the locale */
 	unsigned int code;
 
 } locale;
 
-// Refer to MSDN article "Locale Identifier Constants and Strings"
-// http://msdn.microsoft.com/en-us/library/ms776260.aspx
+/*
+ * Refer to MSDN article "Locale Identifier Constants and Strings":
+ * http://msdn.microsoft.com/en-us/library/ms776260.aspx
+ */
 
 static const locale locales[] =
 {
-	{  "af", "ZA", AFRIKAANS }, // Afrikaans (South Africa)
-	{  "sq", "AL", ALBANIAN }, // Albanian (Albania)
-	{ "gsw", "FR", ALSATIAN }, // Windows Vista and later: Alsatian (France)
-	{  "am", "ET", AMHARIC }, // Windows Vista and later: Amharic (Ethiopia)
-	{  "ar", "DZ", ARABIC_ALGERIA }, // Arabic (Algeria)
-	{  "ar", "BH", ARABIC_BAHRAIN }, // Arabic (Bahrain)
-	{  "ar", "EG", ARABIC_EGYPT }, // Arabic (Egypt)
-	{  "ar", "IQ", ARABIC_IRAQ }, // Arabic (Iraq)
-	{  "ar", "JO", ARABIC_JORDAN }, // Arabic (Jordan)
-	{  "ar", "KW", ARABIC_KUWAIT }, // Arabic (Kuwait)
-	{  "ar", "LB", ARABIC_LEBANON }, // Arabic (Lebanon)
-	{  "ar", "LY", ARABIC_LIBYA }, // Arabic (Libya)
-	{  "ar", "MA", ARABIC_MOROCCO }, // Arabic (Morocco)
-	{  "ar", "OM", ARABIC_OMAN }, // Arabic (Oman)
-	{  "ar", "QA", ARABIC_QATAR }, // Arabic (Qatar)
-	{  "ar", "SA", ARABIC_SAUDI_ARABIA }, // Arabic (Saudi Arabia)
-	{  "ar", "SY", ARABIC_SYRIA }, // Arabic (Syria)
-	{  "ar", "TN", ARABIC_TUNISIA }, // Arabic (Tunisia)
-	{  "ar", "AE", ARABIC_UAE }, // Arabic (U.A.E.)
-	{  "ar", "YE", ARABIC_YEMEN }, // Arabic (Yemen)
-	{  "az", "AZ", AZERI_LATIN }, // Azeri (Latin)
-	{  "az", "Cyrl_AZ", AZERI_CYRILLIC }, // Azeri (Cyrillic)
-	{  "hy", "AM", ARMENIAN }, // Windows 2000 and later: Armenian (Armenia)
-	{  "as", "IN", ASSAMESE }, // Windows Vista and later: Assamese (India)
-	{  "ba", "RU", BASHKIR }, // Windows Vista and later: Bashkir (Russia)
-	{  "eu", "ES", BASQUE }, // Basque (Basque)
-	{  "be", "BY", BELARUSIAN }, // Belarusian (Belarus)
-	{  "bn", "IN", BENGALI_INDIA }, // Windows XP SP2 and later: Bengali (India)
-	{  "br", "FR", BRETON }, // Breton (France)
-	{  "bs", "BA", BOSNIAN_LATIN }, // Bosnian (Latin)
-	{  "bg", "BG", BULGARIAN }, // Bulgarian (Bulgaria)
-	{  "ca", "ES", CATALAN }, // Catalan (Catalan)
-	{  "zh", "HK", CHINESE_HONG_KONG }, // Chinese (Hong Kong SAR, PRC)
-	{  "zh", "MO", CHINESE_MACAU }, // Windows 98/Me, Windows XP and later: Chinese (Macao SAR)
-	{  "zh", "CN", CHINESE_PRC }, // Chinese (PRC)
-	{  "zh", "SG", CHINESE_SINGAPORE }, // Chinese (Singapore)
-	{  "zh", "TW", CHINESE_TAIWAN }, // Chinese (Taiwan)
-	{  "hr", "BA", CROATIAN_BOSNIA_HERZEGOVINA }, // Windows XP SP2 and later: Croatian (Bosnia and Herzegovina, Latin)
-	{  "hr", "HR", CROATIAN }, // Croatian (Croatia)
-	{  "cs", "CZ", CZECH }, // Czech (Czech Republic)
-	{  "da", "DK", DANISH }, // Danish (Denmark)
-	{ "prs", "AF", DARI }, // Windows XP and later: Dari (Afghanistan)
-	{  "dv", "MV", DIVEHI }, // Windows XP and later: Divehi (Maldives)
-	{  "nl", "BE", DUTCH_BELGIAN }, // Dutch (Belgium)
-	{  "nl", "NL", DUTCH_STANDARD }, // Dutch (Netherlands)
-	{  "en", "AU", ENGLISH_AUSTRALIAN }, // English (Australia)
-	{  "en", "BZ", ENGLISH_BELIZE }, // English (Belize)
-	{  "en", "CA", ENGLISH_CANADIAN }, // English (Canada)
-	{  "en", "CB", ENGLISH_CARIBBEAN }, // English (Carribean)
-	{  "en", "IN", ENGLISH_INDIA }, // Windows Vista and later: English (India)
-	{  "en", "IE", ENGLISH_IRELAND }, // English (Ireland)
-	{  "en", "JM", ENGLISH_JAMAICA }, // English (Jamaica)
-	{  "en", "MY", ENGLISH_MALAYSIA }, // Windows Vista and later: English (Malaysia)
-	{  "en", "NZ", ENGLISH_NEW_ZEALAND }, // English (New Zealand)
-	{  "en", "PH", ENGLISH_PHILIPPINES }, // Windows 98/Me, Windows 2000 and later: English (Philippines)
-	{  "en", "SG", ENGLISH_SINGAPORE }, // Windows Vista and later: English (Singapore)
-	{  "en", "ZA", ENGLISH_SOUTH_AFRICA }, // English (South Africa)
-	{  "en", "TT", ENGLISH_TRINIDAD }, // English (Trinidad and Tobago)
-	{  "en", "GB", ENGLISH_UNITED_KINGDOM }, // English (United Kingdom)
-	{  "en", "US", ENGLISH_UNITED_STATES }, // English (United States)
-	{  "en", "ZW", ENGLISH_ZIMBABWE }, // Windows 98/Me, Windows 2000 and later: English (Zimbabwe)
-	{  "et", "EE", ESTONIAN }, // Estonian (Estonia)
-	{  "fo", "FO", FAEROESE }, // Faroese (Faroe Islands)
-	{ "fil", "PH", FILIPINO }, // Windows XP SP2 and later (downloadable); Windows Vista and later: Filipino (Philippines)
-	{  "fi", "FI", FINNISH }, // Finnish (Finland)
-	{  "fr", "BE", FRENCH_BELGIAN }, // French (Belgium)
-	{  "fr", "CA", FRENCH_CANADIAN }, // French (Canada)
-	{  "fr", "FR", FRENCH_STANDARD }, // French (France)
-	{  "fr", "LU", FRENCH_LUXEMBOURG }, // French (Luxembourg)
-	{  "fr", "MC", FRENCH_MONACO }, // French (Monaco)
-	{  "fr", "CH", FRENCH_SWISS }, // French (Switzerland)
-	{  "fy", "NL", FRISIAN }, // Windows XP SP2 and later (downloadable); Windows Vista and later: Frisian (Netherlands)
-	{  "gl", "ES", GALICIAN }, // Windows XP and later: Galician (Spain)
-	{  "ka", "GE", GEORGIAN }, // Windows 2000 and later: Georgian (Georgia)
-	{  "de", "AT", GERMAN_AUSTRIAN }, // German (Austria)
-	{  "de", "DE", GERMAN_STANDARD }, // German (Germany)
-	{  "de", "LI", GERMAN_LIECHTENSTEIN }, // German (Liechtenstein)
-	{  "de", "LU", GERMAN_LUXEMBOURG }, // German (Luxembourg)
-	{  "de", "CH", GERMAN_SWISS }, // German (Switzerland)
-	{  "el", "GR", GREEK }, // Greek (Greece)
-	{  "kl", "GL", GREENLANDIC }, // Windows Vista and later: Greenlandic (Greenland)
-	{  "gu", "IN", GUJARATI }, // Windows XP and later: Gujarati (India)
-	{  "he", "IL", HEBREW }, // Hebrew (Israel)
-	{  "hi", "IN", HINDI }, // Windows 2000 and later: Hindi (India)
-	{  "hu", "HU", HUNGARIAN }, // Hungarian (Hungary)
-	{  "is", "IS", ICELANDIC }, // Icelandic (Iceland)
-	{  "ig", "NG", IGBO }, // Igbo (Nigeria)
-	{  "id", "ID", INDONESIAN }, // Indonesian (Indonesia)
-	{  "ga", "IE", IRISH }, // Windows XP SP2 and later (downloadable); Windows Vista and later: Irish (Ireland)
-	{  "it", "IT", ITALIAN_STANDARD }, // Italian (Italy)
-	{  "it", "CH", ITALIAN_SWISS }, // Italian (Switzerland)
-	{  "ja", "JP", JAPANESE }, // Japanese (Japan)
-	{  "kn", "IN", KANNADA }, // Windows XP and later: Kannada (India)
-	{  "kk", "KZ", KAZAKH }, // Windows 2000 and later: Kazakh (Kazakhstan)
-	{  "kh", "KH", KHMER }, // Windows Vista and later: Khmer (Cambodia)
-	{ "qut", "GT", KICHE }, // Windows Vista and later: K'iche (Guatemala)
-	{  "rw", "RW", KINYARWANDA }, // Windows Vista and later: Kinyarwanda (Rwanda)
-	{ "kok", "IN", KONKANI }, // Windows 2000 and later: Konkani (India)
-	{  "ko", "KR", KOREAN }, // Korean (Korea)
-	{  "ky", "KG", KYRGYZ }, // Windows XP and later: Kyrgyz (Kyrgyzstan)
-	{  "lo", "LA", LAO }, // Windows Vista and later: Lao (Lao PDR)
-	{  "lv", "LV", LATVIAN }, // Latvian (Latvia)
-	{  "lt", "LT", LITHUANIAN }, // Lithuanian (Lithuania)
-	{ "dsb", "DE", LOWER_SORBIAN }, // Windows Vista and later: Lower Sorbian (Germany)
-	{  "lb", "LU", LUXEMBOURGISH }, // Windows XP SP2 and later (downloadable); Windows Vista and later: Luxembourgish (Luxembourg)
-	{  "mk", "MK", MACEDONIAN }, // Windows 2000 and later: Macedonian (Macedonia, FYROM)
-	{  "ms", "BN", MALAY_BRUNEI_DARUSSALAM }, // Windows 2000 and later: Malay (Brunei Darussalam)
-	{  "ms", "MY", MALAY_MALAYSIA }, // Windows 2000 and later: Malay (Malaysia)
-	{  "ml", "IN", MALAYALAM }, // Windows XP SP2 and later: Malayalam (India)
-	{  "mt", "MT", MALTESE }, // Windows XP SP2 and later: Maltese (Malta)
-	{  "mi", "NZ", MAORI }, // Windows XP SP2 and later: Maori (New Zealand)
-	{ "arn", "CL", MAPUDUNGUN }, // Windows XP SP2 and later (downloadable); Windows Vista and later: Mapudungun (Chile)
-	{  "mr", "IN", MARATHI }, // Windows 2000 and later: Marathi (India)
-	{ "moh", "CA", MOHAWK }, // Windows XP SP2 and later (downloadable); Windows Vista and later: Mohawk (Canada)
-	{  "mn", "MN", MONGOLIAN }, // Mongolian
-	{  "ne", "NP", NEPALI }, // Windows XP SP2 and later (downloadable); Windows Vista and later: Nepali (Nepal)
-	{  "nb", "NO", NORWEGIAN_BOKMAL }, // Norwegian (Bokmal, Norway)
-	{  "nn", "NO", NORWEGIAN_NYNORSK }, // Norwegian (Nynorsk, Norway)
-	{  "oc", "FR", OCCITAN }, // Occitan (France)
-	{  "or", "IN", ORIYA }, // Oriya (India)
-	{  "ps", "AF", PASHTO }, // Windows XP SP2 and later (downloadable); Windows Vista and later: Pashto (Afghanistan)
-	{  "fa", "IR", FARSI }, // Persian (Iran)
-	{  "pl", "PL", POLISH }, // Polish (Poland)
-	{  "pt", "BR", PORTUGUESE_BRAZILIAN }, // Portuguese (Brazil)
-	{  "pt", "PT", PORTUGUESE_STANDARD }, // Portuguese (Portugal)
-	{  "pa", "IN", PUNJABI }, // Windows XP and later: Punjabi (India)
-	{ "quz", "BO", QUECHUA_BOLIVIA }, // Windows XP SP2 and later: Quechua (Bolivia)
-	{ "quz", "EC", QUECHUA_ECUADOR }, // Windows XP SP2 and later: Quechua (Ecuador)
-	{ "quz", "PE", QUECHUA_PERU }, // Windows XP SP2 and later: Quechua (Peru)
-	{  "ro", "RO", ROMANIAN }, // Romanian (Romania)
-	{  "rm", "CH", ROMANSH }, // Windows XP SP2 and later (downloadable); Windows Vista and later: Romansh (Switzerland)
-	{  "ru", "RU", RUSSIAN }, // Russian (Russia)
-	{ "smn", "FI", SAMI_INARI }, // Windows XP SP2 and later: Sami (Inari, Finland)
-	{ "smj", "NO", SAMI_LULE_NORWAY }, // Windows XP SP2 and later: Sami (Lule, Norway)
-	{ "smj", "SE", SAMI_LULE_SWEDEN }, // Windows XP SP2 and later: Sami (Lule, Sweden)
-	{  "se", "FI", SAMI_NORTHERN_FINLAND }, // Windows XP SP2 and later: Sami (Northern, Finland)
-	{  "se", "NO", SAMI_NORTHERN_NORWAY }, // Windows XP SP2 and later: Sami (Northern, Norway)
-	{  "se", "SE", SAMI_NORTHERN_SWEDEN }, // Windows XP SP2 and later: Sami (Northern, Sweden)
-	{ "sms", "FI", SAMI_SKOLT }, // Windows XP SP2 and later: Sami (Skolt, Finland)
-	{ "sma", "NO", SAMI_SOUTHERN_NORWAY }, // Windows XP SP2 and later: Sami (Southern, Norway)
-	{ "sma", "SE", SAMI_SOUTHERN_SWEDEN }, // Windows XP SP2 and later: Sami (Southern, Sweden)
-	{  "sa", "IN", SANSKRIT }, // Windows 2000 and later: Sanskrit (India)
-	{  "sr", "SP", SERBIAN_LATIN }, // Serbian (Latin)
-	{  "sr", "SIH", SERBIAN_LATIN_BOSNIA_HERZEGOVINA }, // Serbian (Latin) (Bosnia and Herzegovina)
-	{  "sr", "Cyrl_SP", SERBIAN_CYRILLIC }, // Serbian (Cyrillic)
-	{  "sr", "Cyrl_SIH", SERBIAN_CYRILLIC_BOSNIA_HERZEGOVINA }, // Serbian (Cyrillic) (Bosnia and Herzegovina)
-	{  "ns", "ZA", SESOTHO_SA_LEBOA }, // Windows XP SP2 and later: Sesotho sa Leboa/Northern Sotho (South Africa)
-	{  "tn", "ZA", TSWANA }, // Windows XP SP2 and later: Setswana/Tswana (South Africa)
-	{  "si", "LK", SINHALA }, // Windows Vista and later: Sinhala (Sri Lanka)
-	{  "sk", "SK", SLOVAK }, // Slovak (Slovakia)
-	{  "sl", "SI", SLOVENIAN }, // Slovenian (Slovenia)
-	{  "es", "AR", SPANISH_ARGENTINA }, // Spanish (Argentina)
-	{  "es", "BO", SPANISH_BOLIVIA }, // Spanish (Bolivia)
-	{  "es", "CL", SPANISH_CHILE }, // Spanish (Chile)
-	{  "es", "CO", SPANISH_COLOMBIA }, // Spanish (Colombia)
-	{  "es", "CR", SPANISH_COSTA_RICA }, // Spanish (Costa Rica)
-	{  "es", "DO", SPANISH_DOMINICAN_REPUBLIC }, // Spanish (Dominican Republic)
-	{  "es", "EC", SPANISH_ECUADOR }, // Spanish (Ecuador)
-	{  "es", "SV", SPANISH_EL_SALVADOR }, // Spanish (El Salvador)
-	{  "es", "GT", SPANISH_GUATEMALA }, // Spanish (Guatemala)
-	{  "es", "HN", SPANISH_HONDURAS }, // Spanish (Honduras)
-	{  "es", "MX", SPANISH_MEXICAN }, // Spanish (Mexico)
-	{  "es", "NI", SPANISH_NICARAGUA }, // Spanish (Nicaragua)
-	{  "es", "PA", SPANISH_PANAMA }, // Spanish (Panama)
-	{  "es", "PY", SPANISH_PARAGUAY }, // Spanish (Paraguay)
-	{  "es", "PE", SPANISH_PERU }, // Spanish (Peru)
-	{  "es", "PR", SPANISH_PUERTO_RICO }, // Spanish (Puerto Rico)
-	{  "es", "ES", SPANISH_MODERN_SORT }, // Spanish (Spain)
-	{  "es", "ES", SPANISH_TRADITIONAL_SORT }, // Spanish (Spain, Traditional Sort)
-	{  "es", "US", SPANISH_UNITED_STATES }, // Windows Vista and later: Spanish (United States)
-	{  "es", "UY", SPANISH_URUGUAY }, // Spanish (Uruguay)
-	{  "es", "VE", SPANISH_VENEZUELA }, // Spanish (Venezuela)
-	{  "sw", "KE", SWAHILI }, // Windows 2000 and later: Swahili (Kenya)
-	{  "sv", "FI", SWEDISH_FINLAND }, // Swedish (Finland)
-	{  "sv", "SE", SWEDISH }, // Swedish (Sweden)
-	{ "syr", "SY", SYRIAC }, // Windows XP and later: Syriac (Syria)
-	{  "ta", "IN", TAMIL }, // Windows 2000 and later: Tamil (India)
-	{  "tt", "RU", TATAR }, // Windows XP and later: Tatar (Russia)
-	{  "te", "IN", TELUGU }, // Windows XP and later: Telugu (India)
-	{  "th", "TH", THAI }, // Thai (Thailand)
-	{  "bo", "BT", TIBETAN_BHUTAN }, // Windows Vista and later: Tibetan (Bhutan)
-	{  "bo", "CN", TIBETAN_PRC }, // Windows Vista and later: Tibetan (PRC)
-	{  "tr", "TR", TURKISH }, // Turkish (Turkey)
-	{  "tk", "TM", TURKMEN }, // Windows Vista and later: Turkmen (Turkmenistan)
-	{  "ug", "CN", UIGHUR }, // Windows Vista and later: Uighur (PRC)
-	{  "uk", "UA", UKRAINIAN }, // Ukrainian (Ukraine)
-	{ "wen", "DE", UPPER_SORBIAN }, // Windows Vista and later: Upper Sorbian (Germany)
-	{  "tr", "IN", URDU_INDIA }, // Urdu (India)
-	{  "ur", "PK", URDU }, // Windows 98/Me, Windows 2000 and later: Urdu (Pakistan)
-	{  "uz", "UZ", UZBEK_LATIN }, // Uzbek (Latin)
-	{  "uz", "Cyrl_UZ", UZBEK_CYRILLIC }, // Uzbek (Cyrillic)
-	{  "vi", "VN", VIETNAMESE }, // Windows 98/Me, Windows NT 4.0 and later: Vietnamese (Vietnam)
-	{  "cy", "GB", WELSH }, // Windows XP SP2 and later: Welsh (United Kingdom)
-	{  "wo", "SN", WOLOF }, // Windows Vista and later: Wolof (Senegal)
-	{  "xh", "ZA", XHOSA }, // Windows XP SP2 and later: Xhosa/isiXhosa (South Africa)
-	{ "sah", "RU", YAKUT }, // Windows Vista and later: Yakut (Russia)
-	{  "ii", "CN", YI }, // Windows Vista and later: Yi (PRC)
-	{  "yo", "NG", YORUBA }, // Windows Vista and later: Yoruba (Nigeria)
-	{  "zu", "ZA", ZULU } // Windows XP SP2 and later: Zulu/isiZulu (South Africa)
+	{  "af", "ZA", AFRIKAANS }, /* Afrikaans (South Africa) */
+	{  "sq", "AL", ALBANIAN }, /* Albanian (Albania) */
+	{ "gsw", "FR", ALSATIAN }, /* Windows Vista and later: Alsatian (France) */
+	{  "am", "ET", AMHARIC }, /* Windows Vista and later: Amharic (Ethiopia) */
+	{  "ar", "DZ", ARABIC_ALGERIA }, /* Arabic (Algeria) */
+	{  "ar", "BH", ARABIC_BAHRAIN }, /* Arabic (Bahrain) */
+	{  "ar", "EG", ARABIC_EGYPT }, /* Arabic (Egypt) */
+	{  "ar", "IQ", ARABIC_IRAQ }, /* Arabic (Iraq) */
+	{  "ar", "JO", ARABIC_JORDAN }, /* Arabic (Jordan) */
+	{  "ar", "KW", ARABIC_KUWAIT }, /* Arabic (Kuwait) */
+	{  "ar", "LB", ARABIC_LEBANON }, /* Arabic (Lebanon) */
+	{  "ar", "LY", ARABIC_LIBYA }, /* Arabic (Libya) */
+	{  "ar", "MA", ARABIC_MOROCCO }, /* Arabic (Morocco) */
+	{  "ar", "OM", ARABIC_OMAN }, /* Arabic (Oman) */
+	{  "ar", "QA", ARABIC_QATAR }, /* Arabic (Qatar) */
+	{  "ar", "SA", ARABIC_SAUDI_ARABIA }, /* Arabic (Saudi Arabia) */
+	{  "ar", "SY", ARABIC_SYRIA }, /* Arabic (Syria) */
+	{  "ar", "TN", ARABIC_TUNISIA }, /* Arabic (Tunisia) */
+	{  "ar", "AE", ARABIC_UAE }, /* Arabic (U.A.E.) */
+	{  "ar", "YE", ARABIC_YEMEN }, /* Arabic (Yemen) */
+	{  "az", "AZ", AZERI_LATIN }, /* Azeri (Latin) */
+	{  "az", "Cyrl_AZ", AZERI_CYRILLIC }, /* Azeri (Cyrillic) */
+	{  "hy", "AM", ARMENIAN }, /* Windows 2000 and later: Armenian (Armenia) */
+	{  "as", "IN", ASSAMESE }, /* Windows Vista and later: Assamese (India) */
+	{  "ba", "RU", BASHKIR }, /* Windows Vista and later: Bashkir (Russia) */
+	{  "eu", "ES", BASQUE }, /* Basque (Basque) */
+	{  "be", "BY", BELARUSIAN }, /* Belarusian (Belarus) */
+	{  "bn", "IN", BENGALI_INDIA }, /* Windows XP SP2 and later: Bengali (India) */
+	{  "br", "FR", BRETON }, /* Breton (France) */
+	{  "bs", "BA", BOSNIAN_LATIN }, /* Bosnian (Latin) */
+	{  "bg", "BG", BULGARIAN }, /* Bulgarian (Bulgaria) */
+	{  "ca", "ES", CATALAN }, /* Catalan (Catalan) */
+	{  "zh", "HK", CHINESE_HONG_KONG }, /* Chinese (Hong Kong SAR, PRC) */
+	{  "zh", "MO", CHINESE_MACAU }, /* Windows 98/Me, Windows XP and later: Chinese (Macao SAR) */
+	{  "zh", "CN", CHINESE_PRC }, /* Chinese (PRC) */
+	{  "zh", "SG", CHINESE_SINGAPORE }, /* Chinese (Singapore) */
+	{  "zh", "TW", CHINESE_TAIWAN }, /* Chinese (Taiwan) */
+	{  "hr", "BA", CROATIAN_BOSNIA_HERZEGOVINA }, /* Windows XP SP2 and later: Croatian (Bosnia and Herzegovina, Latin) */
+	{  "hr", "HR", CROATIAN }, /* Croatian (Croatia) */
+	{  "cs", "CZ", CZECH }, /* Czech (Czech Republic) */
+	{  "da", "DK", DANISH }, /* Danish (Denmark) */
+	{ "prs", "AF", DARI }, /* Windows XP and later: Dari (Afghanistan) */
+	{  "dv", "MV", DIVEHI }, /* Windows XP and later: Divehi (Maldives) */
+	{  "nl", "BE", DUTCH_BELGIAN }, /* Dutch (Belgium) */
+	{  "nl", "NL", DUTCH_STANDARD }, /* Dutch (Netherlands) */
+	{  "en", "AU", ENGLISH_AUSTRALIAN }, /* English (Australia) */
+	{  "en", "BZ", ENGLISH_BELIZE }, /* English (Belize) */
+	{  "en", "CA", ENGLISH_CANADIAN }, /* English (Canada) */
+	{  "en", "CB", ENGLISH_CARIBBEAN }, /* English (Carribean) */
+	{  "en", "IN", ENGLISH_INDIA }, /* Windows Vista and later: English (India) */
+	{  "en", "IE", ENGLISH_IRELAND }, /* English (Ireland) */
+	{  "en", "JM", ENGLISH_JAMAICA }, /* English (Jamaica) */
+	{  "en", "MY", ENGLISH_MALAYSIA }, /* Windows Vista and later: English (Malaysia) */
+	{  "en", "NZ", ENGLISH_NEW_ZEALAND }, /* English (New Zealand) */
+	{  "en", "PH", ENGLISH_PHILIPPINES }, /* Windows 98/Me, Windows 2000 and later: English (Philippines) */
+	{  "en", "SG", ENGLISH_SINGAPORE }, /* Windows Vista and later: English (Singapore) */
+	{  "en", "ZA", ENGLISH_SOUTH_AFRICA }, /* English (South Africa) */
+	{  "en", "TT", ENGLISH_TRINIDAD }, /* English (Trinidad and Tobago) */
+	{  "en", "GB", ENGLISH_UNITED_KINGDOM }, /* English (United Kingdom) */
+	{  "en", "US", ENGLISH_UNITED_STATES }, /* English (United States) */
+	{  "en", "ZW", ENGLISH_ZIMBABWE }, /* Windows 98/Me, Windows 2000 and later: English (Zimbabwe) */
+	{  "et", "EE", ESTONIAN }, /* Estonian (Estonia) */
+	{  "fo", "FO", FAEROESE }, /* Faroese (Faroe Islands) */
+	{ "fil", "PH", FILIPINO }, /* Windows XP SP2 and later (downloadable); Windows Vista and later: Filipino (Philippines) */
+	{  "fi", "FI", FINNISH }, /* Finnish (Finland) */
+	{  "fr", "BE", FRENCH_BELGIAN }, /* French (Belgium) */
+	{  "fr", "CA", FRENCH_CANADIAN }, /* French (Canada) */
+	{  "fr", "FR", FRENCH_STANDARD }, /* French (France) */
+	{  "fr", "LU", FRENCH_LUXEMBOURG }, /* French (Luxembourg) */
+	{  "fr", "MC", FRENCH_MONACO }, /* French (Monaco) */
+	{  "fr", "CH", FRENCH_SWISS }, /* French (Switzerland) */
+	{  "fy", "NL", FRISIAN }, /* Windows XP SP2 and later (downloadable); Windows Vista and later: Frisian (Netherlands) */
+	{  "gl", "ES", GALICIAN }, /* Windows XP and later: Galician (Spain) */
+	{  "ka", "GE", GEORGIAN }, /* Windows 2000 and later: Georgian (Georgia) */
+	{  "de", "AT", GERMAN_AUSTRIAN }, /* German (Austria) */
+	{  "de", "DE", GERMAN_STANDARD }, /* German (Germany) */
+	{  "de", "LI", GERMAN_LIECHTENSTEIN }, /* German (Liechtenstein) */
+	{  "de", "LU", GERMAN_LUXEMBOURG }, /* German (Luxembourg) */
+	{  "de", "CH", GERMAN_SWISS }, /* German (Switzerland) */
+	{  "el", "GR", GREEK }, /* Greek (Greece) */
+	{  "kl", "GL", GREENLANDIC }, /* Windows Vista and later: Greenlandic (Greenland) */
+	{  "gu", "IN", GUJARATI }, /* Windows XP and later: Gujarati (India) */
+	{  "he", "IL", HEBREW }, /* Hebrew (Israel) */
+	{  "hi", "IN", HINDI }, /* Windows 2000 and later: Hindi (India) */
+	{  "hu", "HU", HUNGARIAN }, /* Hungarian (Hungary) */
+	{  "is", "IS", ICELANDIC }, /* Icelandic (Iceland) */
+	{  "ig", "NG", IGBO }, /* Igbo (Nigeria) */
+	{  "id", "ID", INDONESIAN }, /* Indonesian (Indonesia) */
+	{  "ga", "IE", IRISH }, /* Windows XP SP2 and later (downloadable); Windows Vista and later: Irish (Ireland) */
+	{  "it", "IT", ITALIAN_STANDARD }, /* Italian (Italy) */
+	{  "it", "CH", ITALIAN_SWISS }, /* Italian (Switzerland) */
+	{  "ja", "JP", JAPANESE }, /* Japanese (Japan) */
+	{  "kn", "IN", KANNADA }, /* Windows XP and later: Kannada (India) */
+	{  "kk", "KZ", KAZAKH }, /* Windows 2000 and later: Kazakh (Kazakhstan) */
+	{  "kh", "KH", KHMER }, /* Windows Vista and later: Khmer (Cambodia) */
+	{ "qut", "GT", KICHE }, /* Windows Vista and later: K'iche (Guatemala) */
+	{  "rw", "RW", KINYARWANDA }, /* Windows Vista and later: Kinyarwanda (Rwanda) */
+	{ "kok", "IN", KONKANI }, /* Windows 2000 and later: Konkani (India) */
+	{  "ko", "KR", KOREAN }, /* Korean (Korea) */
+	{  "ky", "KG", KYRGYZ }, /* Windows XP and later: Kyrgyz (Kyrgyzstan) */
+	{  "lo", "LA", LAO }, /* Windows Vista and later: Lao (Lao PDR) */
+	{  "lv", "LV", LATVIAN }, /* Latvian (Latvia) */
+	{  "lt", "LT", LITHUANIAN }, /* Lithuanian (Lithuania) */
+	{ "dsb", "DE", LOWER_SORBIAN }, /* Windows Vista and later: Lower Sorbian (Germany) */
+	{  "lb", "LU", LUXEMBOURGISH }, /* Windows XP SP2 and later (downloadable); Windows Vista and later: Luxembourgish (Luxembourg) */
+	{  "mk", "MK", MACEDONIAN }, /* Windows 2000 and later: Macedonian (Macedonia, FYROM) */
+	{  "ms", "BN", MALAY_BRUNEI_DARUSSALAM }, /* Windows 2000 and later: Malay (Brunei Darussalam) */
+	{  "ms", "MY", MALAY_MALAYSIA }, /* Windows 2000 and later: Malay (Malaysia) */
+	{  "ml", "IN", MALAYALAM }, /* Windows XP SP2 and later: Malayalam (India) */
+	{  "mt", "MT", MALTESE }, /* Windows XP SP2 and later: Maltese (Malta) */
+	{  "mi", "NZ", MAORI }, /* Windows XP SP2 and later: Maori (New Zealand) */
+	{ "arn", "CL", MAPUDUNGUN }, /* Windows XP SP2 and later (downloadable); Windows Vista and later: Mapudungun (Chile) */
+	{  "mr", "IN", MARATHI }, /* Windows 2000 and later: Marathi (India) */
+	{ "moh", "CA", MOHAWK }, /* Windows XP SP2 and later (downloadable); Windows Vista and later: Mohawk (Canada) */
+	{  "mn", "MN", MONGOLIAN }, /* Mongolian */
+	{  "ne", "NP", NEPALI }, /* Windows XP SP2 and later (downloadable); Windows Vista and later: Nepali (Nepal) */
+	{  "nb", "NO", NORWEGIAN_BOKMAL }, /* Norwegian (Bokmal, Norway) */
+	{  "nn", "NO", NORWEGIAN_NYNORSK }, /* Norwegian (Nynorsk, Norway) */
+	{  "oc", "FR", OCCITAN }, /* Occitan (France) */
+	{  "or", "IN", ORIYA }, /* Oriya (India) */
+	{  "ps", "AF", PASHTO }, /* Windows XP SP2 and later (downloadable); Windows Vista and later: Pashto (Afghanistan) */
+	{  "fa", "IR", FARSI }, /* Persian (Iran) */
+	{  "pl", "PL", POLISH }, /* Polish (Poland) */
+	{  "pt", "BR", PORTUGUESE_BRAZILIAN }, /* Portuguese (Brazil) */
+	{  "pt", "PT", PORTUGUESE_STANDARD }, /* Portuguese (Portugal) */
+	{  "pa", "IN", PUNJABI }, /* Windows XP and later: Punjabi (India) */
+	{ "quz", "BO", QUECHUA_BOLIVIA }, /* Windows XP SP2 and later: Quechua (Bolivia) */
+	{ "quz", "EC", QUECHUA_ECUADOR }, /* Windows XP SP2 and later: Quechua (Ecuador) */
+	{ "quz", "PE", QUECHUA_PERU }, /* Windows XP SP2 and later: Quechua (Peru) */
+	{  "ro", "RO", ROMANIAN }, /* Romanian (Romania) */
+	{  "rm", "CH", ROMANSH }, /* Windows XP SP2 and later (downloadable); Windows Vista and later: Romansh (Switzerland) */
+	{  "ru", "RU", RUSSIAN }, /* Russian (Russia) */
+	{ "smn", "FI", SAMI_INARI }, /* Windows XP SP2 and later: Sami (Inari, Finland) */
+	{ "smj", "NO", SAMI_LULE_NORWAY }, /* Windows XP SP2 and later: Sami (Lule, Norway) */
+	{ "smj", "SE", SAMI_LULE_SWEDEN }, /* Windows XP SP2 and later: Sami (Lule, Sweden) */
+	{  "se", "FI", SAMI_NORTHERN_FINLAND }, /* Windows XP SP2 and later: Sami (Northern, Finland) */
+	{  "se", "NO", SAMI_NORTHERN_NORWAY }, /* Windows XP SP2 and later: Sami (Northern, Norway) */
+	{  "se", "SE", SAMI_NORTHERN_SWEDEN }, /* Windows XP SP2 and later: Sami (Northern, Sweden) */
+	{ "sms", "FI", SAMI_SKOLT }, /* Windows XP SP2 and later: Sami (Skolt, Finland) */
+	{ "sma", "NO", SAMI_SOUTHERN_NORWAY }, /* Windows XP SP2 and later: Sami (Southern, Norway) */
+	{ "sma", "SE", SAMI_SOUTHERN_SWEDEN }, /* Windows XP SP2 and later: Sami (Southern, Sweden) */
+	{  "sa", "IN", SANSKRIT }, /* Windows 2000 and later: Sanskrit (India) */
+	{  "sr", "SP", SERBIAN_LATIN }, /* Serbian (Latin) */
+	{  "sr", "SIH", SERBIAN_LATIN_BOSNIA_HERZEGOVINA }, /* Serbian (Latin) (Bosnia and Herzegovina) */
+	{  "sr", "Cyrl_SP", SERBIAN_CYRILLIC }, /* Serbian (Cyrillic) */
+	{  "sr", "Cyrl_SIH", SERBIAN_CYRILLIC_BOSNIA_HERZEGOVINA }, /* Serbian (Cyrillic) (Bosnia and Herzegovina) */
+	{  "ns", "ZA", SESOTHO_SA_LEBOA }, /* Windows XP SP2 and later: Sesotho sa Leboa/Northern Sotho (South Africa) */
+	{  "tn", "ZA", TSWANA }, /* Windows XP SP2 and later: Setswana/Tswana (South Africa) */
+	{  "si", "LK", SINHALA }, /* Windows Vista and later: Sinhala (Sri Lanka) */
+	{  "sk", "SK", SLOVAK }, /* Slovak (Slovakia) */
+	{  "sl", "SI", SLOVENIAN }, /* Slovenian (Slovenia) */
+	{  "es", "AR", SPANISH_ARGENTINA }, /* Spanish (Argentina) */
+	{  "es", "BO", SPANISH_BOLIVIA }, /* Spanish (Bolivia) */
+	{  "es", "CL", SPANISH_CHILE }, /* Spanish (Chile) */
+	{  "es", "CO", SPANISH_COLOMBIA }, /* Spanish (Colombia) */
+	{  "es", "CR", SPANISH_COSTA_RICA }, /* Spanish (Costa Rica) */
+	{  "es", "DO", SPANISH_DOMINICAN_REPUBLIC }, /* Spanish (Dominican Republic) */
+	{  "es", "EC", SPANISH_ECUADOR }, /* Spanish (Ecuador) */
+	{  "es", "SV", SPANISH_EL_SALVADOR }, /* Spanish (El Salvador) */
+	{  "es", "GT", SPANISH_GUATEMALA }, /* Spanish (Guatemala) */
+	{  "es", "HN", SPANISH_HONDURAS }, /* Spanish (Honduras) */
+	{  "es", "MX", SPANISH_MEXICAN }, /* Spanish (Mexico) */
+	{  "es", "NI", SPANISH_NICARAGUA }, /* Spanish (Nicaragua) */
+	{  "es", "PA", SPANISH_PANAMA }, /* Spanish (Panama) */
+	{  "es", "PY", SPANISH_PARAGUAY }, /* Spanish (Paraguay) */
+	{  "es", "PE", SPANISH_PERU }, /* Spanish (Peru) */
+	{  "es", "PR", SPANISH_PUERTO_RICO }, /* Spanish (Puerto Rico) */
+	{  "es", "ES", SPANISH_MODERN_SORT }, /* Spanish (Spain) */
+	{  "es", "ES", SPANISH_TRADITIONAL_SORT }, /* Spanish (Spain, Traditional Sort) */
+	{  "es", "US", SPANISH_UNITED_STATES }, /* Windows Vista and later: Spanish (United States) */
+	{  "es", "UY", SPANISH_URUGUAY }, /* Spanish (Uruguay) */
+	{  "es", "VE", SPANISH_VENEZUELA }, /* Spanish (Venezuela) */
+	{  "sw", "KE", SWAHILI }, /* Windows 2000 and later: Swahili (Kenya) */
+	{  "sv", "FI", SWEDISH_FINLAND }, /* Swedish (Finland) */
+	{  "sv", "SE", SWEDISH }, /* Swedish (Sweden) */
+	{ "syr", "SY", SYRIAC }, /* Windows XP and later: Syriac (Syria) */
+	{  "ta", "IN", TAMIL }, /* Windows 2000 and later: Tamil (India) */
+	{  "tt", "RU", TATAR }, /* Windows XP and later: Tatar (Russia) */
+	{  "te", "IN", TELUGU }, /* Windows XP and later: Telugu (India) */
+	{  "th", "TH", THAI }, /* Thai (Thailand) */
+	{  "bo", "BT", TIBETAN_BHUTAN }, /* Windows Vista and later: Tibetan (Bhutan) */
+	{  "bo", "CN", TIBETAN_PRC }, /* Windows Vista and later: Tibetan (PRC) */
+	{  "tr", "TR", TURKISH }, /* Turkish (Turkey) */
+	{  "tk", "TM", TURKMEN }, /* Windows Vista and later: Turkmen (Turkmenistan) */
+	{  "ug", "CN", UIGHUR }, /* Windows Vista and later: Uighur (PRC) */
+	{  "uk", "UA", UKRAINIAN }, /* Ukrainian (Ukraine) */
+	{ "wen", "DE", UPPER_SORBIAN }, /* Windows Vista and later: Upper Sorbian (Germany) */
+	{  "tr", "IN", URDU_INDIA }, /* Urdu (India) */
+	{  "ur", "PK", URDU }, /* Windows 98/Me, Windows 2000 and later: Urdu (Pakistan) */
+	{  "uz", "UZ", UZBEK_LATIN }, /* Uzbek (Latin) */
+	{  "uz", "Cyrl_UZ", UZBEK_CYRILLIC }, /* Uzbek (Cyrillic) */
+	{  "vi", "VN", VIETNAMESE }, /* Windows 98/Me, Windows NT 4.0 and later: Vietnamese (Vietnam) */
+	{  "cy", "GB", WELSH }, /* Windows XP SP2 and later: Welsh (United Kingdom) */
+	{  "wo", "SN", WOLOF }, /* Windows Vista and later: Wolof (Senegal) */
+	{  "xh", "ZA", XHOSA }, /* Windows XP SP2 and later: Xhosa/isiXhosa (South Africa) */
+	{ "sah", "RU", YAKUT }, /* Windows Vista and later: Yakut (Russia) */
+	{  "ii", "CN", YI }, /* Windows Vista and later: Yi (PRC) */
+	{  "yo", "NG", YORUBA }, /* Windows Vista and later: Yoruba (Nigeria) */
+	{  "zu", "ZA", ZULU } /* Windows XP SP2 and later: Zulu/isiZulu (South Africa) */
 };
 
 
 typedef struct
 {
-	// Locale ID
+	/* Locale ID */
 	unsigned int locale;
 
-	// Array of associated keyboard layouts
+	/* Array of associated keyboard layouts */
 	unsigned int keyboardLayouts[5];
 
 } localeAndKeyboardLayout;
@@ -431,39 +433,41 @@ detect_keyboard_layout_from_locale()
 	char language[4];
 	char country[10];
 
-	// LANG = <language>_<country>.<encoding>
-	char* envLang = getenv("LANG"); // Get locale from environment variable LANG
+	/* LANG = <language>_<country>.<encoding> */
+	char* envLang = getenv("LANG"); /* Get locale from environment variable LANG */
 
 	if(envLang == NULL)
-		return 0; // LANG environment variable was not set
+		return 0; /* LANG environment variable was not set */
 
 	underscore = strcspn(envLang, "_");
 
 	if(underscore > 3)
-		return 0; // The language name should not be more than 3 letters long
+		return 0; /* The language name should not be more than 3 letters long */
 	else
 	{
-		// Get language code
+		/* Get language code */
 		strncpy(language, envLang, underscore);
 		language[underscore] = '\0';
 	}
 
-	// There is always the special case of "C" or "POSIX" as locale name
-	// In this case, use a U.S. keyboard and a U.S. keyboard layout
+	/*
+	 * There is always the special case of "C" or "POSIX" as locale name
+	 * In this case, use a U.S. keyboard and a U.S. keyboard layout
+	 */
 
 	if((strcmp(language, "C") == 0) || (strcmp(language, "POSIX") == 0))
-		return ENGLISH_UNITED_STATES; // U.S. Keyboard Layout
+		return ENGLISH_UNITED_STATES; /* U.S. Keyboard Layout */
 
 	dot = strcspn(envLang, ".");
 
-	// Get country code
+	/* Get country code */
 	if(dot > underscore)
 	{
 		strncpy(country, &envLang[underscore + 1], dot - underscore - 1);
 		country[dot - underscore - 1] = '\0';
 	}
 	else
-		return 0; // Invalid locale
+		return 0; /* Invalid locale */
 
 	for(i = 0; i < sizeof(locales) / sizeof(locale); i++)
 	{
@@ -471,22 +475,22 @@ detect_keyboard_layout_from_locale()
 			break;
 	}
 
-	DEBUG_KBD("Found locale : %s_%s\n", locales[i].language, locales[i].country);
+	DEBUG_KBD("Found locale : %s_%s", locales[i].language, locales[i].country);
 
 	for(j = 0; j < sizeof(defaultKeyboardLayouts) / sizeof(localeAndKeyboardLayout); j++)
 	{
 		if(defaultKeyboardLayouts[j].locale == locales[i].code)
 		{
-			// Locale found in list of default keyboard layouts
+			/* Locale found in list of default keyboard layouts */
 			for(k = 0; k < 5; k++)
 			{
 				if(defaultKeyboardLayouts[j].keyboardLayouts[k] == ENGLISH_UNITED_STATES)
 				{
-					continue; // Skip, try to get a more localized keyboard layout
+					continue; /* Skip, try to get a more localized keyboard layout */
 				}
 				else if(defaultKeyboardLayouts[j].keyboardLayouts[k] == 0)
 				{
-					break; // No more keyboard layouts
+					break; /* No more keyboard layouts */
 				}
 				else
 				{
@@ -494,8 +498,10 @@ detect_keyboard_layout_from_locale()
 				}
 			}
 
-			// If we skip the ENGLISH_UNITED_STATES keyboard layout but there are no
-			// other possible keyboard layout for the locale, we end up here with k > 1
+			/*
+			 * If we skip the ENGLISH_UNITED_STATES keyboard layout but there are no
+			 * other possible keyboard layout for the locale, we end up here with k > 1
+			 */
 
 			if(k >= 1)
 				return ENGLISH_UNITED_STATES;
@@ -504,5 +510,5 @@ detect_keyboard_layout_from_locale()
 		}
 	}
 
-	return 0; // Could not detect the current keyboard layout from locale
+	return 0; /* Could not detect the current keyboard layout from locale */
 }

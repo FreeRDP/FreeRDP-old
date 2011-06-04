@@ -99,30 +99,30 @@ static void Ellipse_Bresenham(HDC hdc, int x1, int y1, int x2, int y2)
 	{
 		if (bpp == 32)
 		{
-			SetPixel_32bpp(bmp, x2, y1, pixel32);
-			SetPixel_32bpp(bmp, x1, y1, pixel32);
-			SetPixel_32bpp(bmp, x1, y2, pixel32);
-			SetPixel_32bpp(bmp, x2, y2, pixel32);
+			gdi_SetPixel_32bpp(bmp, x2, y1, pixel32);
+			gdi_SetPixel_32bpp(bmp, x1, y1, pixel32);
+			gdi_SetPixel_32bpp(bmp, x1, y2, pixel32);
+			gdi_SetPixel_32bpp(bmp, x2, y2, pixel32);
 		}
 		else if (bpp == 16)
 		{
-			SetPixel_16bpp(bmp, x2, y1, pixel16);
-			SetPixel_16bpp(bmp, x1, y1, pixel16);
-			SetPixel_16bpp(bmp, x1, y2, pixel16);
-			SetPixel_16bpp(bmp, x2, y2, pixel16);
+			gdi_SetPixel_16bpp(bmp, x2, y1, pixel16);
+			gdi_SetPixel_16bpp(bmp, x1, y1, pixel16);
+			gdi_SetPixel_16bpp(bmp, x1, y2, pixel16);
+			gdi_SetPixel_16bpp(bmp, x2, y2, pixel16);
 		}
 		else if (bpp == 8)
 		{
 			for (i = x1; i < x2; i++)
 			{
-				SetPixel_8bpp(bmp, i, y1, pixel8);
-				SetPixel_8bpp(bmp, i, y2, pixel8);
+				gdi_SetPixel_8bpp(bmp, i, y1, pixel8);
+				gdi_SetPixel_8bpp(bmp, i, y2, pixel8);
 			}
 
 			for (i = y1; i < y2; i++)
 			{
-				SetPixel_8bpp(bmp, x1, i, pixel8);
-				SetPixel_8bpp(bmp, x2, i, pixel8);
+				gdi_SetPixel_8bpp(bmp, x1, i, pixel8);
+				gdi_SetPixel_8bpp(bmp, x2, i, pixel8);
 			}
 		}
 
@@ -148,18 +148,18 @@ static void Ellipse_Bresenham(HDC hdc, int x1, int y1, int x2, int y2)
 	{
 		if (bpp == 32)
 		{
-			SetPixel_32bpp(bmp, x1 - 1, ++y1, pixel32);
-			SetPixel_32bpp(bmp, x1 - 1, --y2, pixel32);
+			gdi_SetPixel_32bpp(bmp, x1 - 1, ++y1, pixel32);
+			gdi_SetPixel_32bpp(bmp, x1 - 1, --y2, pixel32);
 		}
 		else if (bpp == 16)
 		{
-			SetPixel_16bpp(bmp, x1 - 1, ++y1, pixel16);
-			SetPixel_16bpp(bmp, x1 - 1, --y2, pixel16);
+			gdi_SetPixel_16bpp(bmp, x1 - 1, ++y1, pixel16);
+			gdi_SetPixel_16bpp(bmp, x1 - 1, --y2, pixel16);
 		}
 		else if (bpp == 8)
 		{
-			SetPixel_8bpp(bmp, x1 - 1, ++y1, pixel8);
-			SetPixel_8bpp(bmp, x1 - 1, --y2, pixel8);
+			gdi_SetPixel_8bpp(bmp, x1 - 1, ++y1, pixel8);
+			gdi_SetPixel_8bpp(bmp, x1 - 1, --y2, pixel8);
 		}
 	}
 }
@@ -173,7 +173,7 @@ static void Ellipse_Bresenham(HDC hdc, int x1, int y1, int x2, int y2)
  * @param nBottomRect y2
  * @return
  */
-int Ellipse(HDC hdc, int nLeftRect, int nTopRect, int nRightRect, int nBottomRect)
+int gdi_Ellipse(HDC hdc, int nLeftRect, int nTopRect, int nRightRect, int nBottomRect)
 {
 	Ellipse_Bresenham(hdc, nLeftRect, nTopRect, nRightRect, nBottomRect);
 	return 1;
@@ -188,7 +188,7 @@ int Ellipse(HDC hdc, int nLeftRect, int nTopRect, int nRightRect, int nBottomRec
  * @return 1 if successful, 0 otherwise
  */
 
-int FillRect(HDC hdc, HRECT rect, HBRUSH hbr)
+int gdi_FillRect(HDC hdc, HRECT rect, HBRUSH hbr)
 {
 	pFillRect _FillRect = FillRect_[IBPP(hdc->bitsPerPixel)];
 
@@ -205,7 +205,7 @@ int FillRect(HDC hdc, HRECT rect, HBRUSH hbr)
  * @param nCount number of points
  * @return
  */
-int Polygon(HDC hdc, POINT *lpPoints, int nCount)
+int gdi_Polygon(HDC hdc, POINT *lpPoints, int nCount)
 {
 	return 1;
 }
@@ -218,7 +218,7 @@ int Polygon(HDC hdc, POINT *lpPoints, int nCount)
  * @param nCount count of number of points in lpPolyCounts
  * @return
  */
-int PolyPolygon(HDC hdc, POINT *lpPoints, int *lpPolyCounts, int nCount)
+int gdi_PolyPolygon(HDC hdc, POINT *lpPoints, int *lpPolyCounts, int nCount)
 {
 	return 1;
 }
@@ -232,7 +232,7 @@ int PolyPolygon(HDC hdc, POINT *lpPoints, int *lpPolyCounts, int nCount)
  * @param nBottomRect y2
  * @return
  */
-int Rectangle(HDC hdc, int nLeftRect, int nTopRect, int nRightRect, int nBottomRect)
+int gdi_Rectangle(HDC hdc, int nLeftRect, int nTopRect, int nRightRect, int nBottomRect)
 {
 	return 1;
 }

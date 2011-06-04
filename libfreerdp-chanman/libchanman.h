@@ -1,8 +1,9 @@
 /*
    FreeRDP: A Remote Desktop Protocol client.
-   Microsoft Locale Definitions and Conversion Tables
+   Virtual Channel Manager
 
-   Copyright 2009 Marc-Andre Moreau <marcandre.moreau@gmail.com>
+   Copyright 2009-2011 Jay Sorg
+   Copyright 2010-2011 Vic Lee
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -17,15 +18,15 @@
    limitations under the License.
 */
 
-#ifndef __DEBUG_H
-#define __DEBUG_H
+#ifndef __LIBCHANMAN_H
+#define __LIBCHANMAN_H
 
-#include "config.h"
+#include <freerdp/utils/debug.h>
 
-#ifdef WITH_DEBUG_KBD
-#define DEBUG_KBD(fmt, ...) printf("DBG (KBD) %s (%d): " fmt, __FUNCTION__, __LINE__, ## __VA_ARGS__)
+#ifdef WITH_DEBUG_CHANMAN
+#define DEBUG_CHANMAN(fmt, ...) DEBUG_CLASS(CHANMAN, fmt, ...)
 #else
-#define DEBUG_KBD(fmt, ...) do { } while (0)
+#define DEBUG_CHANMAN(fmt, ...) DEBUG_NULL(fmt, ...)
 #endif
 
-#endif
+#endif /* __LIBCHANMAN_H */

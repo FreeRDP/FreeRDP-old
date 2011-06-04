@@ -22,11 +22,11 @@
 
 #include "gdi.h"
 
-int LineTo(HDC hdc, int nXEnd, int nYEnd);
-int PolylineTo(HDC hdc, POINT *lppt, int cCount);
-int Polyline(HDC hdc, POINT *lppt, int cPoints);
-int PolyPolyline(HDC hdc, POINT *lppt, int *lpdwPolyPoints, int cCount);
-int MoveToEx(HDC hdc, int X, int Y, HPOINT lpPoint);
+int gdi_LineTo(HDC hdc, int nXEnd, int nYEnd);
+int gdi_PolylineTo(HDC hdc, POINT *lppt, int cCount);
+int gdi_Polyline(HDC hdc, POINT *lppt, int cPoints);
+int gdi_PolyPolyline(HDC hdc, POINT *lppt, int *lpdwPolyPoints, int cCount);
+int gdi_MoveToEx(HDC hdc, int X, int Y, HPOINT lpPoint);
 
 typedef int (*pLineTo)(HDC hdc, int nXEnd, int nYEnd);
 

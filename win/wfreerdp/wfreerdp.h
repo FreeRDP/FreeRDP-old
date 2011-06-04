@@ -1,6 +1,5 @@
 /*
    FreeRDP: A Remote Desktop Protocol client.
-   UI types
 
    Copyright (c) 2009-2011 Jay Sorg
    Copyright (c) 2010-2011 Vic Lee
@@ -18,12 +17,19 @@
    limitations under the License.
 */
 
-#ifndef __WF_TYPES_H
-#define __WF_TYPES_H
+#ifndef __WFREERDP_H
+#define __WFREERDP_H
 
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+
+#include <winsock2.h>
 #include <windows.h>
+
 #include <freerdp/chanman.h>
-#include <freerdp/types_ui.h>
+#include <freerdp/types/ui.h>
+//#include <freerdp/utils/debug.h>
 
 #include "color.h"
 

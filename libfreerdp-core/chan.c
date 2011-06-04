@@ -24,7 +24,7 @@
 #include "rdp.h"
 #include <freerdp/rdpset.h>
 #include <freerdp/utils/memory.h>
-#include <freerdp/constants_vchan.h>
+#include <freerdp/constants/vchan.h>
 
 int
 vchan_send(rdpChannels * chan, int mcs_id, char * data, int total_length)

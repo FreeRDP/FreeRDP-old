@@ -23,7 +23,7 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <sys/time.h>
-#include <freerdp/constants_ui.h>
+#include <freerdp/constants/ui.h>
 #include "drdynvc_types.h"
 #include "tsmf_constants.h"
 #include "tsmf_types.h"

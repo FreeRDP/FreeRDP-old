@@ -6,7 +6,7 @@ libfreerdp_chanmandir = $(libdir)
 libfreerdp_chanman_LTLIBRARIES = libfreerdp-chanman.la
 
 libfreerdp_chanman_la_SOURCES = \
-	libchanman.c
+	libchanman.c libchanman.h
 
 libfreerdp_chanman_la_CFLAGS = \
 	-I$(top_srcdir) \

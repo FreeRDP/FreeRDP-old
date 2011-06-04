@@ -30,13 +30,8 @@
 #include <PCSC/reader.h>
 #include <PCSC/winscard.h>
 
-#include "debug.h"
 #include <freerdp/utils/stream.h>
 #include <freerdp/utils/semaphore.h>
-
-#ifdef WITH_DEBUG_SCARD
-#include <libfreerdp/frdp.h>
-#endif
 
 #include "rdpdr_types.h"
 #include "rdpdr_constants.h"
@@ -324,7 +319,6 @@ sc_create()
 void
 sc_wait_finished_ready()
 {
-	DEBUG_SCARD("\n");
 	freerdp_sem_wait(&finished_ready);
 }
 
@@ -332,8 +326,6 @@ IRP *
 sc_next_pending()
 {
 	IRP * irp = NULL;
-
-	DEBUG_SCARD("\n");
 
 	pthread_mutex_lock(&pending_guard);
 	while (scard_queue_empty(pending_queue))
@@ -353,8 +345,6 @@ sc_handle_async_request(IRP * irp)
 	int result = 0;
 	int c = 0;
 	PThreadListElement cur;
-
-	DEBUG_SCARD("\n");
 
 	for (cur = threadList; cur != NULL; cur = cur->next)
 	{
@@ -399,13 +389,13 @@ sc_handle_async_request(IRP * irp)
 static void
 sc_enqueue_finished(IRP * irp)
 {
-	DEBUG_SCARD("storing irp %p\n", irp);
+	DEBUG_SCARD("storing irp %p", irp);
 
 	pthread_mutex_lock(&finished_guard);
 	if (!finished_queue)
 		finished_queue = scard_queue_new();
 
-	DEBUG_SCARD("finished size %d\n", scard_queue_size(finished_queue));
+	DEBUG_SCARD("finished size %d", scard_queue_size(finished_queue));
 
 	scard_queue_push(finished_queue, irp);
 	freerdp_sem_signal(&finished_ready);
@@ -427,7 +417,7 @@ sc_next_finished()
 
 	pthread_mutex_unlock(&finished_guard);
 
-	DEBUG_SCARD("returning %p\n", done);
+	DEBUG_SCARD("returning %p", done);
 
 	return done;
 }
@@ -436,8 +426,6 @@ static void *
 sc_process_request(void *arg)
 {
 	PThreadListElement listElement = (PThreadListElement) arg;
-
-	DEBUG_SCARD("\n");
 
 	pthread_mutex_lock(&listElement->busy);
 	while (1)
@@ -457,7 +445,7 @@ sc_process_request(void *arg)
 static void
 scard_device_control(IRP * irp)
 {
-	DEBUG_SCARD("irp %p\n", irp);
+	DEBUG_SCARD("irp %p", irp);
 
 	if (irp)
 	{
@@ -473,8 +461,6 @@ sc_device_control(IRP * irp)
 	uint32 result = 0;
 	uint32 append = 0;
 	struct io_wrapper io;
-
-	DEBUG_SCARD("\n");
 
 	io.inbuf = irp->inputBuffer;
 	io.iffset = 0;
@@ -589,7 +575,7 @@ sc_device_control(IRP * irp)
 	append = (io.offset - 16) % 16;
 	if (append < 16 && append > 0)
 	{
-		DEBUG_SCARD("appending %d\n", append);
+		DEBUG_SCARD("appending %d", append);
 		SET_UINT8V(io.outbuf, io.offset, 0, append);
 		io.offset += append;
 	}
@@ -608,8 +594,6 @@ IRP *
 sc_enqueue_pending(IRP * pending)
 {
 	IRP * irp = NULL;
-
-	DEBUG_SCARD("\n");
 
 	irp = malloc(sizeof(IRP));
 	if (!irp)
@@ -640,8 +624,6 @@ static void *
 pending_requests_handler(void *data)
 {
 	IRP * irp = NULL;
-
-	DEBUG_SCARD("\n");
 
 	pthread_detach(pthread_self());
 
@@ -677,9 +659,9 @@ handle_EstablishContext(struct io_wrapper *io)
 
 	rv = SCardEstablishContext(SCARD_SCOPE_SYSTEM, NULL, NULL, &hContext);
 	if (rv)
-		DEBUG_SCARD("failure: %s (0x%08x)\n", pcsc_stringify_error(rv), (unsigned) rv);
+		DEBUG_SCARD("failure: %s (0x%08x)", pcsc_stringify_error(rv), (unsigned) rv);
 	else
-		DEBUG_SCARD("success 0x%08lx\n", hContext);
+		DEBUG_SCARD("success 0x%08lx", hContext);
 
 	SET_UINT32(io->outbuf, io->offset, 0x00000004);
 	SET_UINT32(io->outbuf, io->offset + 4, hContext);
@@ -703,9 +685,9 @@ handle_ReleaseContext(struct io_wrapper *io)
 
 	rv = SCardReleaseContext(hContext);
 	if (rv)
-		DEBUG_SCARD("%s (0x%08x)\n", pcsc_stringify_error(rv), (unsigned) rv);
+		DEBUG_SCARD("%s (0x%08x)", pcsc_stringify_error(rv), (unsigned) rv);
 	else
-		DEBUG_SCARD("success 0x%08lx\n", hContext);
+		DEBUG_SCARD("success 0x%08lx", hContext);
 
 	return rv;
 }
@@ -723,9 +705,9 @@ handle_IsValidContext(struct io_wrapper *io)
 	rv = SCardIsValidContext(hContext);
 
 	if (rv)
-		DEBUG_SCARD("Failure: %s (0x%08x)\n", pcsc_stringify_error(rv), (unsigned) rv);
+		DEBUG_SCARD("Failure: %s (0x%08x)", pcsc_stringify_error(rv), (unsigned) rv);
 	else
-		DEBUG_SCARD("Success context: 0x%08x\n", (unsigned) hContext);
+		DEBUG_SCARD("Success context: 0x%08x", (unsigned) hContext);
 
 	SET_UINT32(io->outbuf, io->offset, rv);
 	io->offset += 4;
@@ -768,11 +750,11 @@ handle_ListReaders(struct io_wrapper *io, RD_BOOL wide)
 	rv = SCardListReaders(hContext, NULL, (LPSTR) &readerList, &cchReaders);
 	if (rv != SCARD_S_SUCCESS)
 	{
-		DEBUG_SCARD("Failure: %s (0x%08x)\n", pcsc_stringify_error(rv), (unsigned) rv);
+		DEBUG_SCARD("Failure: %s (0x%08x)", pcsc_stringify_error(rv), (unsigned) rv);
 		return rv;
 	}
 
-	DEBUG_SCARD("Success 0x%08x %d %d\n", (unsigned) hContext, (unsigned) cchReaders, strlen(readerList));
+	DEBUG_SCARD("Success 0x%08x %d %d", (unsigned) hContext, (unsigned) cchReaders, strlen(readerList));
 
 	walker = readerList;
 	elemLength = strlen(walker);
@@ -784,7 +766,7 @@ handle_ListReaders(struct io_wrapper *io, RD_BOOL wide)
 	{
 		while (elemLength > 0)
 		{
-			DEBUG_SCARD("    \"%s\"\n", walker);
+			DEBUG_SCARD("    \"%s\"", walker);
 			dataLength += sc_output_string(io, walker, wide);
 			walker = walker + elemLength + 1;
 			elemLength = strlen(walker);
@@ -815,7 +797,7 @@ sc_output_alignment(struct io_wrapper *io, unsigned int seed)
 		io->offset += add;
 	}
 
-	DEBUG_SCARD("add %d\n", add);
+	DEBUG_SCARD("add %d", add);
 }
 
 static LONG
@@ -832,8 +814,6 @@ sc_output_string(struct io_wrapper *io, char *source, RD_BOOL wide)
 {
 	int dataLength;
 	int realLength;
-
-	DEBUG_SCARD("\n");
 
 	dataLength = strlen(source) + 1; /* \0 */
 	realLength = wide ? (2 * dataLength) : dataLength;
@@ -902,7 +882,7 @@ handle_Connect(struct io_wrapper *io, RD_BOOL wide)
 	hContext = GET_UINT32(io->inbuf, io->iffset);
 	io->iffset += 4;
 
-	DEBUG_SCARD("(context: 0x%08x, share: 0x%08x, proto: 0x%08x, reader: \"%s\")\n",
+	DEBUG_SCARD("(context: 0x%08x, share: 0x%08x, proto: 0x%08x, reader: \"%s\")",
 		(unsigned) hContext, (unsigned) dwShareMode,
 		(unsigned) dwPreferredProtocol, readerName ? readerName : "NULL");
 
@@ -910,9 +890,9 @@ handle_Connect(struct io_wrapper *io, RD_BOOL wide)
 		(DWORD) dwPreferredProtocol, &hCard, (DWORD *) &dwActiveProtocol);
 
 	if (rv != SCARD_S_SUCCESS)
-		DEBUG_SCARD("Failure: %s 0x%08x\n", pcsc_stringify_error(rv), (unsigned) rv);
+		DEBUG_SCARD("Failure: %s 0x%08x", pcsc_stringify_error(rv), (unsigned) rv);
 	else
-		DEBUG_SCARD("Success 0x%08x\n", (unsigned) hCard);
+		DEBUG_SCARD("Success 0x%08x", (unsigned) hCard);
 
 	SET_UINT32(io->outbuf, io->offset, 0x00000000);
 	SET_UINT32(io->outbuf, io->offset + 4, 0x00000000);
@@ -937,7 +917,7 @@ sc_input_reader_name(struct io_wrapper *io, char **destination, RD_BOOL wide)
 	dataLength = GET_UINT32(io->inbuf, io->iffset);
 	io->iffset += 4;
 
-	DEBUG_SCARD("datalength %d\n", dataLength);
+	DEBUG_SCARD("datalength %d", dataLength);
 	sc_input_repos(io, sc_input_string(io, destination, dataLength, wide));
 }
 
@@ -949,7 +929,7 @@ sc_input_repos(struct io_wrapper *io, unsigned int read)
 	if (add < 4 && add > 0)
 		io->iffset += add;
 
-	DEBUG_SCARD("add %d\n", add);
+	DEBUG_SCARD("add %d", add);
 }
 
 static uint32
@@ -961,7 +941,7 @@ sc_input_string(struct io_wrapper *io, char **destination, uint32 dataLength, RD
 	bufferSize = wide ? (2 * dataLength) : dataLength;
 	buffer = malloc(bufferSize + 2); /* reserve 2 bytes for the '\0' */
 
-	DEBUG_SCARD("wide %d datalen %d\n", wide, dataLength);
+	DEBUG_SCARD("wide %d datalen %d", wide, dataLength);
 
 	if (wide)
 	{
@@ -1017,7 +997,7 @@ handle_Reconnect(struct io_wrapper *io)
 	hCard = GET_UINT32(io->inbuf, io->iffset);
 	io->iffset += 4;
 
-	DEBUG_SCARD("(context: 0x%08x, hcard: 0x%08x, share: 0x%08x, proto: 0x%08x, init: 0x%08x)\n",
+	DEBUG_SCARD("(context: 0x%08x, hcard: 0x%08x, share: 0x%08x, proto: 0x%08x, init: 0x%08x)",
 		(unsigned) hContext, (unsigned) hCard,
 		(unsigned) dwShareMode, (unsigned) dwPreferredProtocol, (unsigned) dwInitialization);
 
@@ -1025,9 +1005,9 @@ handle_Reconnect(struct io_wrapper *io)
 	    (DWORD) dwInitialization, (LPDWORD) &dwActiveProtocol);
 
 	if (rv != SCARD_S_SUCCESS)
-		DEBUG_SCARD("Failure: %s (0x%08x)\n", pcsc_stringify_error(rv), (unsigned) rv);
+		DEBUG_SCARD("Failure: %s (0x%08x)", pcsc_stringify_error(rv), (unsigned) rv);
 	else
-		DEBUG_SCARD("Success (proto: 0x%08x)\n", (unsigned) dwActiveProtocol);
+		DEBUG_SCARD("Success (proto: 0x%08x)", (unsigned) dwActiveProtocol);
 
 	sc_output_alignment(io, 8);
 
@@ -1057,15 +1037,15 @@ handle_Disconnect(struct io_wrapper *io)
 	hCard = GET_UINT32(io->inbuf, io->iffset);
 	io->iffset += 4;
 
-	DEBUG_SCARD("(context: 0x%08x, hcard: 0x%08x, disposition: 0x%08x)\n",
+	DEBUG_SCARD("(context: 0x%08x, hcard: 0x%08x, disposition: 0x%08x)",
 		(unsigned) hContext, (unsigned) hCard, (unsigned) dwDisposition);
 
 	rv = SCardDisconnect(hCard, (DWORD) dwDisposition);
 
 	if (rv != SCARD_S_SUCCESS)
-		DEBUG_SCARD("Failure: %s (0x%08x)\n", pcsc_stringify_error(rv), (unsigned) rv);
+		DEBUG_SCARD("Failure: %s (0x%08x)", pcsc_stringify_error(rv), (unsigned) rv);
 	else
-		DEBUG_SCARD("Success\n");
+		DEBUG_SCARD("Success");
 
 	sc_output_alignment(io, 8);
 
@@ -1091,7 +1071,7 @@ handle_GetStatusChange(struct io_wrapper *io, RD_BOOL wide)
 	hContext = GET_UINT32(io->inbuf, io->iffset);
 	io->iffset += 0x04 + 4;
 
-	DEBUG_SCARD("context: 0x%08x, timeout: 0x%08x, count: %d\n",
+	DEBUG_SCARD("context: 0x%08x, timeout: 0x%08x, count: %d",
 		     (unsigned) hContext, (unsigned) dwTimeout, (int) readerCount);
 
 	if (readerCount > 0)
@@ -1138,11 +1118,11 @@ handle_GetStatusChange(struct io_wrapper *io, RD_BOOL wide)
 			if (strcmp(cur->szReader, "\\\\?PnP?\\Notification") == 0)
 				cur->dwCurrentState |= SCARD_STATE_IGNORE;
 
-			DEBUG_SCARD("   \"%s\"\n", cur->szReader ? cur->szReader : "NULL");
-			DEBUG_SCARD("       user: 0x%08x, state: 0x%08x, event: 0x%08x\n",
+			DEBUG_SCARD("   \"%s\"", cur->szReader ? cur->szReader : "NULL");
+			DEBUG_SCARD("       user: 0x%08x, state: 0x%08x, event: 0x%08x",
 				(unsigned) cur->pvUserData, (unsigned) cur->dwCurrentState,
 				(unsigned) cur->dwEventState);
-			DEBUG_SCARD("           current state: 0x%08x\n", (unsigned) *curState);
+			DEBUG_SCARD("           current state: 0x%08x", (unsigned) *curState);
 		}
 	}
 	else
@@ -1161,9 +1141,9 @@ handle_GetStatusChange(struct io_wrapper *io, RD_BOOL wide)
 	sc_readerstate_pcsc_to_server(scReaderStates, readerStates, readerCount);
 
 	if (rv != SCARD_S_SUCCESS)
-		DEBUG_SCARD("Failure: %s (0x%08x)\n", pcsc_stringify_error(rv), (unsigned) rv);
+		DEBUG_SCARD("Failure: %s (0x%08x)", pcsc_stringify_error(rv), (unsigned) rv);
 	else
-		DEBUG_SCARD("Success\n");
+		DEBUG_SCARD("Success");
 
 	SET_UINT32(io->outbuf, io->offset, readerCount);
 	SET_UINT32(io->outbuf, io->offset + 4, 0x00084dd8);
@@ -1176,7 +1156,7 @@ handle_GetStatusChange(struct io_wrapper *io, RD_BOOL wide)
 		cur->dwEventState |= *curState & 0xFFFF0000;
 		cur->dwEventState = sc_inc_status(cur->dwEventState, 0);
 
-		DEBUG_SCARD("   \"%s\"\n", cur->szReader ? cur->szReader : "NULL");
+		DEBUG_SCARD("   \"%s\"", cur->szReader ? cur->szReader : "NULL");
 		DEBUG_SCARD("       user: 0x%08x, state: 0x%08x, event: 0x%08x\n",
 			(unsigned) cur->pvUserData, (unsigned) cur->dwCurrentState,
 			(unsigned) cur->dwEventState);
@@ -1205,8 +1185,6 @@ sc_readerstate_server_to_pcsc(SERVER_READERSTATE * src, SCARD_READERSTATE * dst,
 {
 	int i;
 
-	DEBUG_SCARD("\n");
-
 	for (i = 0; i < readerCount; i++)
 	{
 		dst[i].szReader = src[i].szReader;
@@ -1222,8 +1200,6 @@ static void
 sc_readerstate_pcsc_to_server(SCARD_READERSTATE * src, SERVER_READERSTATE * dst, uint32 readerCount)
 {
 	int i;
-
-	DEBUG_SCARD("\n");
 
 	for (i = 0; i < readerCount; i++)
 	{
@@ -1327,8 +1303,8 @@ handle_LocateCardsByATR(struct io_wrapper *io, RD_BOOL wide)
 		rsCur->cbAtr = little_endian_read_32(rsCur->cbAtr);
 
 		sc_input_reader_name(io, (char **) &rsCur->szReader, wide);
-		DEBUG_SCARD("   \"%s\"\n", rsCur->szReader ? rsCur->szReader : "NULL");
-		DEBUG_SCARD("       user: 0x%08x, state: 0x%08x, event: 0x%08x\n",
+		DEBUG_SCARD("   \"%s\"", rsCur->szReader ? rsCur->szReader : "NULL");
+		DEBUG_SCARD("       user: 0x%08x, state: 0x%08x, event: 0x%08x",
 			     (unsigned) rsCur->pvUserData, (unsigned) rsCur->dwCurrentState,
 			     (unsigned) rsCur->dwEventState);
 	}
@@ -1343,13 +1319,13 @@ handle_LocateCardsByATR(struct io_wrapper *io, RD_BOOL wide)
 	sc_readerstate_pcsc_to_server(scReaderStates, readerStates, readerCount);
 	if (rv != SCARD_S_SUCCESS)
 	{
-		DEBUG_SCARD("Failure: %s (0x%08x)\n",
+		DEBUG_SCARD("Failure: %s (0x%08x)",
 			pcsc_stringify_error(rv), (unsigned) rv);
 
 		return sc_output_return(rv, io);
 	}
 
-	DEBUG_SCARD("Success\n");
+	DEBUG_SCARD("Success");
 	cur = pAtrMasks;
 	for (i = 0, cur = pAtrMasks; i < atrMaskCount; i++, cur++)
 	{
@@ -1412,9 +1388,9 @@ handle_BeginTransaction(struct io_wrapper *io)
 	rv = SCardBeginTransaction(hCard);
 
 	if (rv != SCARD_S_SUCCESS)
-		DEBUG_SCARD("Failure: %s (0x%08x)\n", pcsc_stringify_error(rv), (unsigned) rv);
+		DEBUG_SCARD("Failure: %s (0x%08x)", pcsc_stringify_error(rv), (unsigned) rv);
 	else
-		DEBUG_SCARD("Success hcard: 0x%08x\n", (unsigned) hCard);
+		DEBUG_SCARD("Success hcard: 0x%08x", (unsigned) hCard);
 
 	sc_output_alignment(io, 8);
 
@@ -1436,9 +1412,9 @@ handle_EndTransaction(struct io_wrapper *io)
 
 	rv = SCardEndTransaction(hCard, dwDisposition);
 	if (rv != SCARD_S_SUCCESS)
-		DEBUG_SCARD("Failure: %s (0x%08x)\n", pcsc_stringify_error(rv), (unsigned) rv);
+		DEBUG_SCARD("Failure: %s (0x%08x)", pcsc_stringify_error(rv), (unsigned) rv);
 	else
-		DEBUG_SCARD("Success hcard: 0x%08x\n", (unsigned) hCard);
+		DEBUG_SCARD("Success hcard: 0x%08x", (unsigned) hCard);
 
 	sc_output_alignment(io, 8);
 	return rv;
@@ -1470,7 +1446,7 @@ handle_Transmit(struct io_wrapper *io)
 	GET_UINT8A(pioSendPci, io->inbuf, io->iffset, sizeof(SERVER_IO_REQUEST));
 	io->iffset += sizeof(SERVER_IO_REQUEST);
 
-	DEBUG_SCARD("pioSendPci protocol read 0x%x\n", pioSendPci->dwProtocol);
+	DEBUG_SCARD("pioSendPci protocol read 0x%x", pioSendPci->dwProtocol);
 
 	map[2] = GET_UINT32(io->inbuf, io->iffset);
 	cbSendLength = GET_UINT32(io->inbuf, io->iffset + 4);
@@ -1504,7 +1480,7 @@ handle_Transmit(struct io_wrapper *io)
 		free(pioSendPci);
 		pioSendPci = tmp;
 
-		DEBUG_SCARD("pioSendPci tmp protocol 0x%x\n", pioSendPci->dwProtocol);
+		DEBUG_SCARD("pioSendPci tmp protocol 0x%x", pioSendPci->dwProtocol);
 
 		tmp = NULL;
 	}
@@ -1569,7 +1545,7 @@ handle_Transmit(struct io_wrapper *io)
 	else
 		pioRecvPci = NULL;
 
-	DEBUG_SCARD("SCardTransmit(hcard: 0x%08lx, send: %d bytes, recv: %d bytes)\n",
+	DEBUG_SCARD("SCardTransmit(hcard: 0x%08lx, send: %d bytes, recv: %d bytes)",
 		(long unsigned) hCard, (int) cbSendLength, (int) cbRecvLength);
 
 	myCbRecvLength = cbRecvLength;
@@ -1599,8 +1575,8 @@ handle_Transmit(struct io_wrapper *io)
 	/* FIXME: handle responses with length > 448 bytes */
 	if (cbRecvLength > 448)
 	{
-		DEBUG_SCARD("card response limited from %d to 448 bytes!\n", cbRecvLength);
-		DEBUG_SCARD("truncated %d to %d\n", (unsigned) cbRecvLength, 448);
+		DEBUG_SCARD("card response limited from %d to 448 bytes!", cbRecvLength);
+		DEBUG_SCARD("truncated %d to %d", (unsigned) cbRecvLength, 448);
 		cbRecvLength = 448;
 	}
 
@@ -1616,11 +1592,11 @@ handle_Transmit(struct io_wrapper *io)
 
 	if (rv != SCARD_S_SUCCESS)
 	{
-		DEBUG_SCARD("Failure: %s (0x%08x)\n", pcsc_stringify_error(rv), (unsigned) rv);
+		DEBUG_SCARD("Failure: %s (0x%08x)", pcsc_stringify_error(rv), (unsigned) rv);
 	}
 	else
 	{
-		DEBUG_SCARD("Success (%d bytes)\n", (int) cbRecvLength);
+		DEBUG_SCARD("Success (%d bytes)", (int) cbRecvLength);
 
 		SET_UINT32(io->outbuf, io->offset, 0);	/* pioRecvPci 0x00; */
 		io->offset += 4;
@@ -1672,8 +1648,6 @@ sc_output_buffer_start_limit(struct io_wrapper *io, int length, int highLimit)
 {
 	int header = (length < 0) ? (0) : ((length > highLimit) ? (highLimit) : (length));
 
-	DEBUG_SCARD("\n");
-
 	SET_UINT32(io->outbuf, io->offset, header);
 	SET_UINT32(io->outbuf, io->offset + 4, 0x00000001);	/* Magic DWORD - any non zero */
 	io->offset += 8;
@@ -1691,8 +1665,6 @@ sc_io_request_server_to_pcsc(SERVER_IO_REQUEST * src, SCARD_IO_REQUEST * dst)
 	unsigned char *srcBytes, *dstBytes;
 	size_t bytesToCopy = src->cbPciLength - sizeof(SERVER_IO_REQUEST);
 
-	DEBUG_SCARD("\n");
-
 	srcBytes = ((unsigned char *) src + sizeof(SERVER_IO_REQUEST));
 	dstBytes = ((unsigned char *) dst + sizeof(SCARD_IO_REQUEST));
 
@@ -1709,8 +1681,6 @@ sc_io_request_pcsc_to_server(SCARD_IO_REQUEST * src, SERVER_IO_REQUEST * dst)
 	unsigned char *srcBytes, *dstBytes;
 	size_t bytesToCopy = src->cbPciLength - sizeof(SCARD_IO_REQUEST);
 
-	DEBUG_SCARD("\n");
-
 	srcBytes = ((unsigned char *) src + sizeof(SCARD_IO_REQUEST));
 	dstBytes = ((unsigned char *) dst + sizeof(SERVER_IO_REQUEST));
 	dst->dwProtocol = little_endian_read_32((uint32_t) src->dwProtocol);
@@ -1724,8 +1694,6 @@ static void
 sc_output_buffer_limit(struct io_wrapper *io, char *buffer, unsigned int length, unsigned int highLimit)
 {
 	int header = (length < 0) ? (0) : ((length > highLimit) ? (highLimit) : (length));
-
-	DEBUG_SCARD("\n");
 
 	SET_UINT32(io->outbuf, io->offset, header);
 	io->offset += 4;
@@ -1807,9 +1775,9 @@ handle_Control(struct io_wrapper *io)
 		sendBuffer, (DWORD) outBufferSize, &nBytesReturned);
 
 	if (rv != SCARD_S_SUCCESS)
-		DEBUG_SCARD("Failure: %s (0x%08x)\n", pcsc_stringify_error(rv), (unsigned) rv);
+		DEBUG_SCARD("Failure: %s (0x%08x)", pcsc_stringify_error(rv), (unsigned) rv);
 	else
-		DEBUG_SCARD("Success (out: %u bytes)\n", (unsigned) nBytesReturned);
+		DEBUG_SCARD("Success (out: %u bytes)", (unsigned) nBytesReturned);
 
 	SET_UINT32(io->outbuf, io->offset, (uint32) nBytesReturned);
 	SET_UINT32(io->outbuf, io->offset + 4, 0x00000004);
@@ -1859,12 +1827,12 @@ handle_Status(struct io_wrapper *io, RD_BOOL wide)
 
 	if (rv != SCARD_S_SUCCESS)
 	{
-		DEBUG_SCARD("Failure: %s (0x%08x)\n", pcsc_stringify_error(rv), (unsigned) rv);
+		DEBUG_SCARD("Failure: %s (0x%08x)", pcsc_stringify_error(rv), (unsigned) rv);
 		return sc_output_return(rv, io);
 	}
 
-	DEBUG_SCARD("Success (state: 0x%08x, proto: 0x%08x)\n", (unsigned) state, (unsigned) protocol);
-	DEBUG_SCARD("       Reader: \"%s\"\n", readerName ? readerName : "NULL");
+	DEBUG_SCARD("Success (state: 0x%08x, proto: 0x%08x)", (unsigned) state, (unsigned) protocol);
+	DEBUG_SCARD("       Reader: \"%s\"", readerName ? readerName : "NULL");
 
 #ifdef WITH_DEBUG_SCARD
 	printf("       ATR: ");
@@ -1950,11 +1918,11 @@ handle_State(struct io_wrapper *io)
 
 	if (rv != SCARD_S_SUCCESS)
 	{
-		DEBUG_SCARD("Failure: %s (0x%08x)\n", pcsc_stringify_error(rv), (unsigned) rv);
+		DEBUG_SCARD("Failure: %s (0x%08x)", pcsc_stringify_error(rv), (unsigned) rv);
 		return sc_output_return(rv, io);
 	}
 
-	DEBUG_SCARD("Success (hcard: 0x%08x len: %d state: 0x%08x, proto: 0x%08x)\n",
+	DEBUG_SCARD("Success (hcard: 0x%08x len: %d state: 0x%08x, proto: 0x%08x)",
 		(unsigned) hCard, (int) atrLen, (unsigned) state, (unsigned) protocol);
 
 #ifdef WITH_DEBUG_SCARD
@@ -2047,13 +2015,13 @@ handle_GetAttrib(struct io_wrapper *io)
 
 	if (rv != SCARD_S_SUCCESS)
 	{
-		DEBUG_SCARD("Failure: %s (0x%08x)\n", pcsc_stringify_error(rv), (unsigned int) rv);
+		DEBUG_SCARD("Failure: %s (0x%08x)", pcsc_stringify_error(rv), (unsigned int) rv);
 		free(pbAttr);
 		return sc_output_return(rv, io);
 	}
 	else
 	{
-		DEBUG_SCARD("Success (%d bytes)\n", (int) dwAttrLen);
+		DEBUG_SCARD("Success (%d bytes)", (int) dwAttrLen);
 
 		SET_UINT32(io->outbuf, io->offset, dwAttrLen);
 		SET_UINT32(io->outbuf, io->offset+4, 0x00000200);

@@ -20,7 +20,7 @@
 #ifndef __DRDYNVC_MAIN_H
 #define __DRDYNVC_MAIN_H
 
-#include <freerdp/types_ui.h>
+#include <freerdp/types/ui.h>
 
 typedef struct drdynvc_plugin drdynvcPlugin;
 

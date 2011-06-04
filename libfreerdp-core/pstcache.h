@@ -20,7 +20,16 @@
 #ifndef __PSTCACHE_H
 #define __PSTCACHE_H
 
-#include "types.h"
+typedef uint8 HASH_KEY[8];
+
+/* Header for an entry in the persistent bitmap cache file */
+typedef struct _PSTCACHE_CELLHEADER
+{
+	HASH_KEY key;
+	uint8 width, height;
+	uint16 length;
+	uint32 stamp;
+} CELLHEADER;
 
 struct rdp_pcache
 {

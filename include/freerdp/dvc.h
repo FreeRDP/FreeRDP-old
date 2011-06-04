@@ -51,7 +51,7 @@
 #ifndef __FREERDP_DVC_H
 #define __FREERDP_DVC_H
 
-#include "types_ui.h"
+#include "types/ui.h"
 
 typedef struct _IWTSVirtualChannelManager IWTSVirtualChannelManager;
 typedef struct _IWTSListener IWTSListener;

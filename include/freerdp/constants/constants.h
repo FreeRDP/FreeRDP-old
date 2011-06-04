@@ -20,13 +20,14 @@
 #ifndef __CONSTANTS_H
 #define __CONSTANTS_H
 
-#include <freerdp/constants_ui.h>
-#include "constants_pdu.h"
-#include "constants_core.h"
-#include "constants_rail.h"
-#include "constants_crypto.h"
-#include "constants_license.h"
-#include "constants_capabilities.h"
+#include <freerdp/constants/ui.h>
+#include <freerdp/constants/core.h>
+#include <freerdp/constants/crypto.h>
+#include <freerdp/constants/license.h>
+#include <freerdp/constants/pdu.h>
+#include <freerdp/constants/rail.h>
+#include <freerdp/constants/window.h>
+#include <freerdp/constants/capabilities.h>
 
 /* MCSPDU choice connect-initial, Application tag 101 */
 #define MCS_CONNECT_INITIAL	0x7f65

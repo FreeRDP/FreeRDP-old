@@ -23,7 +23,7 @@
 #include <unistd.h>
 #include <directfb.h>
 #include <freerdp/chanman.h>
-#include <freerdp/types_ui.h>
+#include <freerdp/types/ui.h>
 #include "gdi.h"
 #include "dfbfreerdp.h"
 #include "dfb_win.h"

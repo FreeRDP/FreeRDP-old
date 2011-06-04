@@ -26,6 +26,7 @@
 
 #include "color.h"
 #include <freerdp/freerdp.h>
+#include <freerdp/utils/debug.h>
 
 /* For more information, see [MS-RDPEGDI] */
 
@@ -261,9 +262,9 @@ void gdi_bitmap_free(gdi_bitmap *gdi_bmp);
 #define GET_GDI(_inst) ((GDI*) ((_inst)->param2))
 
 #ifdef WITH_DEBUG_GDI
-#define DEBUG_GDI(fmt, ...) printf("DBG (GDI) %s (%d): " fmt, __FUNCTION__, __LINE__, ## __VA_ARGS__)
+#define DEBUG_GDI(fmt, ...) DEBUG_CLASS(GDI, fmt, ...)
 #else
-#define DEBUG_GDI(fmt, ...) do { } while (0)
+#define DEBUG_GDI(fmt, ...) DEBUG_NULL(fmt, ...)
 #endif
 
 #endif /* __GDI_H */

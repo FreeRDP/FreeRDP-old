@@ -22,20 +22,20 @@
 
 #include "gdi.h"
 
-COLORREF GetPixel(HDC hdc, int nXPos, int nYPos);
-COLORREF SetPixel(HDC hdc, int X, int Y, COLORREF crColor);
-uint8 GetPixel_8bpp(HBITMAP hBmp, int X, int Y);
-uint16 GetPixel_16bpp(HBITMAP hBmp, int X, int Y);
-uint32 GetPixel_32bpp(HBITMAP hBmp, int X, int Y);
-uint8* GetPointer_8bpp(HBITMAP hBmp, int X, int Y);
-uint16* GetPointer_16bpp(HBITMAP hBmp, int X, int Y);
-uint32* GetPointer_32bpp(HBITMAP hBmp, int X, int Y);
-void SetPixel_8bpp(HBITMAP hBmp, int X, int Y, uint8 pixel);
-void SetPixel_16bpp(HBITMAP hBmp, int X, int Y, uint16 pixel);
-void SetPixel_32bpp(HBITMAP hBmp, int X, int Y, uint32 pixel);
-HBITMAP CreateBitmap(int nWidth, int nHeight, int cBitsPerPixel, uint8* data);
-HBITMAP CreateCompatibleBitmap(HDC hdc, int nWidth, int nHeight);
-int BitBlt(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc, int rop);
+COLORREF gdi_GetPixel(HDC hdc, int nXPos, int nYPos);
+COLORREF gdi_SetPixel(HDC hdc, int X, int Y, COLORREF crColor);
+uint8 gdi_GetPixel_8bpp(HBITMAP hBmp, int X, int Y);
+uint16 gdi_GetPixel_16bpp(HBITMAP hBmp, int X, int Y);
+uint32 gdi_GetPixel_32bpp(HBITMAP hBmp, int X, int Y);
+uint8* gdi_GetPointer_8bpp(HBITMAP hBmp, int X, int Y);
+uint16* gdi_GetPointer_16bpp(HBITMAP hBmp, int X, int Y);
+uint32* gdi_GetPointer_32bpp(HBITMAP hBmp, int X, int Y);
+void gdi_SetPixel_8bpp(HBITMAP hBmp, int X, int Y, uint8 pixel);
+void gdi_SetPixel_16bpp(HBITMAP hBmp, int X, int Y, uint16 pixel);
+void gdi_SetPixel_32bpp(HBITMAP hBmp, int X, int Y, uint32 pixel);
+HBITMAP gdi_CreateBitmap(int nWidth, int nHeight, int cBitsPerPixel, uint8* data);
+HBITMAP gdi_CreateCompatibleBitmap(HDC hdc, int nWidth, int nHeight);
+int gdi_BitBlt(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc, int rop);
 
 typedef int (*pBitBlt)(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc, int rop);
 

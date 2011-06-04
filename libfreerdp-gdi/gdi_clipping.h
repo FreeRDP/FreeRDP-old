@@ -22,9 +22,9 @@
 
 #include "gdi.h"
 
-int SetClipRgn(HDC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight);
-HRGN GetClipRgn(HDC hdc);
-int SetNullClipRgn(HDC hdc);
-int ClipCoords(HDC hdc, int *x, int *y, int *w, int *h, int *srcx, int *srcy);
+int gdi_SetClipRgn(HDC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight);
+HRGN gdi_GetClipRgn(HDC hdc);
+int gdi_SetNullClipRgn(HDC hdc);
+int gdi_ClipCoords(HDC hdc, int *x, int *y, int *w, int *h, int *srcx, int *srcy);
 
 #endif /* __GDI_CLIPPING_H */

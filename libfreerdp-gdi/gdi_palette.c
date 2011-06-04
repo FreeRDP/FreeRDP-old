@@ -64,7 +64,7 @@ static const PALETTEENTRY default_system_palette[20] =
  * @return new palette
  */
 
-HPALETTE CreatePalette(HPALETTE palette)
+HPALETTE gdi_CreatePalette(HPALETTE palette)
 {
 	HPALETTE hPalette = (HPALETTE) malloc(sizeof(PALETTE));
 	hPalette->count = palette->count;
@@ -97,7 +97,7 @@ HPALETTE CreateSystemPalette()
  * @return system palette
  */
 
-HPALETTE GetSystemPalette()
+HPALETTE gdi_GetSystemPalette()
 {
 	if (hSystemPalette == NULL)
 		hSystemPalette = CreateSystemPalette();

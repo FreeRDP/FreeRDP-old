@@ -22,8 +22,8 @@
 #include <stdio.h>
 #include <string.h>
 
-/* Returns the message that maches given reason
-   based on the Error Info PDU set */
+/* Returns the message that matches given reason based on the Error Info PDU set */
+
 char *
 freerdp_str_disconnect_reason(unsigned int reason, char *msgbuf, size_t buflen)
 {

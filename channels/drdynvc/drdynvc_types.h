@@ -20,7 +20,7 @@
 #ifndef __DRDYNVC_TYPES_H
 #define __DRDYNVC_TYPES_H
 
-#include <freerdp/types_ui.h>
+#include <freerdp/types/ui.h>
 #include <freerdp/vchan.h>
 #include <freerdp/dvc.h>
 
