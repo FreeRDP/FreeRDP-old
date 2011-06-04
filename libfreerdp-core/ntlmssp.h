@@ -132,7 +132,7 @@ void ntlmssp_init_rc4_seal_states(NTLMSSP *ntlmssp);
 
 void ntlmssp_compute_lm_hash(char* password, char* hash);
 void ntlmssp_compute_ntlm_hash(DATABLOB* password, char* hash);
-void ntlmssp_compute_ntlm_v2_hash(DATABLOB *password, DATABLOB *username, DATABLOB *domain, char* hash);
+void ntlmssp_compute_ntlm_v2_hash(NTLMSSP *ntlmssp, char* hash);
 
 void ntlmssp_compute_lm_response(char* password, char* challenge, char* response);
 void ntlmssp_compute_lm_v2_response(NTLMSSP *ntlmssp);

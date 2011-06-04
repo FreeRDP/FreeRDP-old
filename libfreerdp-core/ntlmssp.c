@@ -435,28 +435,24 @@ void ntlmssp_compute_ntlm_hash(DATABLOB* password, char* hash)
 	MD4_Final((void*) hash, &md4_ctx);
 }
 
-void ntlmssp_compute_ntlm_v2_hash(DATABLOB *password, DATABLOB *username, DATABLOB *domain, char* hash)
+void ntlmssp_compute_ntlm_v2_hash(NTLMSSP *ntlmssp, char* hash)
 {
 	int i;
 	char* p;
 	DATABLOB blob;
 	char ntlm_hash[16];
 
-	datablob_alloc(&blob, username->length + domain->length);
+	datablob_alloc(&blob, ntlmssp->username.length + ntlmssp->domain.length);
 	p = (char*) blob.data;
 
 	/* First, compute the NTLMv1 hash of the password */
-	ntlmssp_compute_ntlm_hash(password, ntlm_hash);
+	ntlmssp_compute_ntlm_hash(&ntlmssp->password, ntlm_hash);
 
 	/* Concatenate(Uppercase(username),domain)*/
-	memcpy(p, username->data, username->length);
-	for (i = 0; i < username->length; i += 2)
-	{
-		if (p[i] >= 'a' && p[i] <= 'z')
-			p[i] = p[i] - 32;
-	}
+	memcpy(p, ntlmssp->username.data, ntlmssp->username.length);
+	freerdp_uniconv_uppercase(ntlmssp->uniconv, p, ntlmssp->username.length / 2);
 
-	memcpy(&p[username->length], domain->data, domain->length);
+	memcpy(&p[ntlmssp->username.length], ntlmssp->domain.data, ntlmssp->domain.length);
 
 	/* Compute the HMAC-MD5 hash of the above value using the NTLMv1 hash as the key, the result is the NTLMv2 hash */
 	HMAC(EVP_md5(), (void*) ntlm_hash, 16, blob.data, blob.length, (void*) hash, NULL);
@@ -499,7 +495,7 @@ void ntlmssp_compute_lm_v2_response(NTLMSSP *ntlmssp)
 	char ntlm_v2_hash[16];
 
 	/* Compute the NTLMv2 hash */
-	ntlmssp_compute_ntlm_v2_hash(&ntlmssp->password, &ntlmssp->username, &ntlmssp->domain, ntlm_v2_hash);
+	ntlmssp_compute_ntlm_v2_hash(ntlmssp, ntlm_v2_hash);
 
 	/* Concatenate the server and client challenges */
 	memcpy(value, ntlmssp->server_challenge, 8);
@@ -536,8 +532,7 @@ void ntlmssp_compute_ntlm_v2_response(NTLMSSP *ntlmssp)
 	blob = (uint8*) ntlm_v2_temp.data;
 
 	/* Compute the NTLMv2 hash */
-	ntlmssp_compute_ntlm_v2_hash(&ntlmssp->password,
-		&ntlmssp->username, &ntlmssp->domain, (char*) ntlm_v2_hash);
+	ntlmssp_compute_ntlm_v2_hash(ntlmssp, (char*) ntlm_v2_hash);
 
 #ifdef WITH_DEBUG_NLA
 	printf("Password (length = %d)\n", ntlmssp->password.length);

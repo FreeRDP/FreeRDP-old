@@ -114,7 +114,7 @@ void test_ntlmssp_compute_ntlm_v2_hash(void)
 	ntlmssp_set_username(ntlmssp, username);
 	ntlmssp_set_domain(ntlmssp, domain);
 
-	ntlmssp_compute_ntlm_v2_hash(&ntlmssp->password, &ntlmssp->username, &ntlmssp->domain, ntlm_v2_hash);
+	ntlmssp_compute_ntlm_v2_hash(ntlmssp, ntlm_v2_hash);
 
 	ntlm_v2_hash_good = 1;
 	for (i = 0; i < 16; i++) {

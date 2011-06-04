@@ -48,5 +48,6 @@ UNICONV* freerdp_uniconv_new();
 void freerdp_uniconv_free(UNICONV *uniconv);
 char* freerdp_uniconv_in(UNICONV *uniconv, unsigned char* pin, size_t in_len);
 char* freerdp_uniconv_out(UNICONV *uniconv, char *str, size_t *pout_len);
+void freerdp_uniconv_uppercase(UNICONV *uniconv, char *wstr, int length);
 
 #endif /* __UNICODE_UTILS_H */
