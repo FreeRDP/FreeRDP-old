@@ -47,32 +47,32 @@ detect_keyboard(void *dpy, unsigned int keyboardLayoutID, char *xkbfile, size_t 
 	xkbfile[0] = '\0';
 
 	if (keyboardLayoutID != 0)
-		DEBUG_KBD("keyboard layout configuration: %X\n", keyboardLayoutID);
+		DEBUG_KBD("keyboard layout configuration: %X", keyboardLayoutID);
 
 #if defined(sun)
 	if(keyboardLayoutID == 0)
 	{
 		keyboardLayoutID = detect_keyboard_type_and_layout_sunos(xkbfile, xkbfilelength);
-		DEBUG_KBD("detect_keyboard_type_and_layout_sunos: %X %s\n", keyboardLayoutID, xkbfile);
+		DEBUG_KBD("detect_keyboard_type_and_layout_sunos: %X %s", keyboardLayoutID, xkbfile);
 	}
 #endif
 
 	if(keyboardLayoutID == 0)
 	{
 		keyboardLayoutID = detect_keyboard_layout_from_locale();
-		DEBUG_KBD("detect_keyboard_layout_from_locale: %X\n", keyboardLayoutID);
+		DEBUG_KBD("detect_keyboard_layout_from_locale: %X", keyboardLayoutID);
 	}
 
 	if (keyboardLayoutID == 0)
 	{
 		keyboardLayoutID = 0x0409;
-		DEBUG_KBD("using default keyboard layout: %X\n", keyboardLayoutID);
+		DEBUG_KBD("using default keyboard layout: %X", keyboardLayoutID);
 	}
 
 	if (xkbfile[0] == '\0')
 	{
 		strncpy(xkbfile, "base", xkbfilelength);
-		DEBUG_KBD("using default keyboard layout: %s\n", xkbfile);
+		DEBUG_KBD("using default keyboard layout: %s", xkbfile);
 	}
 
 	return keyboardLayoutID;
@@ -88,13 +88,13 @@ freerdp_kbd_init(void *dpy, unsigned int keyboard_layout_id)
 #ifdef WITH_XKBFILE
 	if (!init_xkb(dpy))
 	{
-		printf("Error initializing xkb\n");
+		DEBUG_KBD("Error initializing xkb");
 		return 0;
 	}
 	if (!keyboard_layout_id)
 	{
 		keyboard_layout_id = detect_keyboard_layout_from_xkb(dpy);
-		DEBUG_KBD("detect_keyboard_layout_from_xkb: %X\n", keyboard_layout_id);
+		DEBUG_KBD("detect_keyboard_layout_from_xkb: %X", keyboard_layout_id);
 	}
 	init_keycodes_from_xkb(dpy, x_keycode_to_rdp_keycode);
 #else
@@ -103,7 +103,7 @@ freerdp_kbd_init(void *dpy, unsigned int keyboard_layout_id)
 	int keycode;
 
 	keyboard_layout_id = detect_keyboard(dpy, keyboard_layout_id, xkbfile, sizeof(xkbfile));
-	printf("Using keyboard layout 0x%X with xkb name %s and xkbfile %s\n",
+	DEBUG_KBD("Using keyboard layout 0x%X with xkb name %s and xkbfile %s",
 			keyboard_layout_id, get_layout_name(keyboard_layout_id), xkbfile);
 
 	load_keyboard_map(keycodeToVkcode, xkbfile);
@@ -112,7 +112,7 @@ freerdp_kbd_init(void *dpy, unsigned int keyboard_layout_id)
 	{
 		int vkcode;
 		vkcode = keycodeToVkcode[keycode];
-		DEBUG_KBD("X key code %3d VK %3d %-19s-> RDP keycode %d/%d\n",
+		DEBUG_KBD("X key code %3d VK %3d %-19s-> RDP keycode %d/%d",
 				keycode, vkcode, virtualKeyboard[vkcode].name,
 				virtualKeyboard[vkcode].extended, virtualKeyboard[vkcode].scancode);
 		x_keycode_to_rdp_keycode[keycode].keycode = virtualKeyboard[vkcode].scancode;
@@ -135,7 +135,7 @@ freerdp_kbd_get_layouts(int types)
 uint8
 freerdp_kbd_get_scancode_by_keycode(uint8 keycode, RD_BOOL * extended)
 {
-	DEBUG_KBD("%2x %4s -> %d/%d\n", keycode, x_keycode_to_rdp_keycode[keycode].keyname,
+	DEBUG_KBD("%2x %4s -> %d/%d", keycode, x_keycode_to_rdp_keycode[keycode].keyname,
 			x_keycode_to_rdp_keycode[keycode].extended, x_keycode_to_rdp_keycode[keycode].keycode);
 	*extended = x_keycode_to_rdp_keycode[keycode].extended;
 	return x_keycode_to_rdp_keycode[keycode].keycode;

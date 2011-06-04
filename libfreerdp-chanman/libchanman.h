@@ -1,8 +1,9 @@
 /*
    FreeRDP: A Remote Desktop Protocol client.
-   RDP licensing negotiation
+   Virtual Channel Manager
 
-   Copyright (C) Jay Sorg 2009
+   Copyright 2009-2011 Jay Sorg
+   Copyright 2010-2011 Vic Lee
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -17,33 +18,15 @@
    limitations under the License.
 */
 
-#ifndef __LICENCE_H
-#define __LICENCE_H
+#ifndef __LIBCHANMAN_H
+#define __LIBCHANMAN_H
 
 #include <freerdp/utils/debug.h>
-#include <freerdp/types/ui.h>
-#include "stream.h"
 
-struct rdp_licence
-{
-	struct rdp_sec * sec;
-	uint8 licence_key[16];
-	uint8 licence_sign_key[16];
-	RD_BOOL licence_issued;
-};
-typedef struct rdp_licence rdpLicence;
-
-void
-licence_process(rdpLicence * licence, STREAM s);
-rdpLicence *
-licence_new(struct rdp_sec * secure);
-void
-licence_free(rdpLicence * licence);
-
-#ifdef WITH_DEBUG_LICENSE
-#define DEBUG_LICENSE(fmt, ...) DEBUG_CLASS(LICENSE, fmt, ...)
+#ifdef WITH_DEBUG_CHANMAN
+#define DEBUG_CHANMAN(fmt, ...) DEBUG_CLASS(CHANMAN, fmt, ...)
 #else
-#define DEBUG_LICENSE(fmt, ...) DEBUG_NULL(fmt, ...)
+#define DEBUG_CHANMAN(fmt, ...) DEBUG_NULL(fmt, ...)
 #endif
 
-#endif
+#endif /* __LIBCHANMAN_H */

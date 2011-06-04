@@ -51,7 +51,7 @@ ui_unimpl(rdpInst * inst, char * format, ...);
 void
 hexdump(unsigned char * p, int len);
 int
-load_licence(unsigned char ** data);
+load_license(unsigned char ** data);
 RD_BOOL
 rd_lock_file(int fd, int start, int len);
 int
@@ -69,7 +69,7 @@ rd_open_file(char * filename);
 void
 generate_random(uint8 * random);
 void
-save_licence(unsigned char * data, int length);
+save_license(unsigned char * data, int length);
 void
 ui_begin_update(rdpInst * inst);
 void

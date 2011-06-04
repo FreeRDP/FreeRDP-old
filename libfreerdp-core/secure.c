@@ -20,12 +20,11 @@
 #include "frdp.h"
 #include "mcs.h"
 #include "chan.h"
-#include "licence.h"
+#include "license.h"
 #include "rdp.h"
 #include "iso.h"
 #include "tcp.h"
 #include <freerdp/rdpset.h>
-#include <freerdp/utils/debug.h>
 #include <freerdp/utils/memory.h>
 
 #ifndef DISABLE_TLS
@@ -150,7 +149,7 @@ sec_generate_keys(rdpSec * sec, uint8 * client_random, uint8 * server_random, in
 
 	if (rc4_key_size == 1)
 	{
-		DEBUG("40-bit encryption enabled\n");
+		DEBUG_SEC("40-bit encryption enabled");
 		sec_make_40bit(sec->sec_sign_key);
 		sec_make_40bit(sec->sec_decrypt_key);
 		sec_make_40bit(sec->sec_encrypt_key);
@@ -158,7 +157,7 @@ sec_generate_keys(rdpSec * sec, uint8 * client_random, uint8 * server_random, in
 	}
 	else
 	{
-		DEBUG("rc_4_key_size == %d, 128-bit encryption enabled\n", rc4_key_size);
+		DEBUG_SEC("rc_4_key_size == %d, 128-bit encryption enabled", rc4_key_size);
 		sec->rc4_key_len = 16;
 	}
 
@@ -166,7 +165,7 @@ sec_generate_keys(rdpSec * sec, uint8 * client_random, uint8 * server_random, in
 	memcpy(sec->sec_decrypt_update_key, sec->sec_decrypt_key, 16);
 	memcpy(sec->sec_encrypt_update_key, sec->sec_encrypt_key, 16);
 
-	/* Initialise RC4 state arrays */
+	/* Initialize RC4 state arrays */
 	sec->rc4_decrypt_key = crypto_rc4_init(sec->sec_decrypt_key, sec->rc4_key_len);
 	sec->rc4_encrypt_key = crypto_rc4_init(sec->sec_encrypt_key, sec->rc4_key_len);
 }
@@ -275,7 +274,7 @@ sec_decrypt(rdpSec * sec, uint8 * data, int length)
 	sec->sec_decrypt_use_count++;
 }
 
-/* Initialise secure transport packet */
+/* Initialize secure transport packet */
 STREAM
 sec_init(rdpSec * sec, uint32 flags, int maxlen)
 {
@@ -284,7 +283,7 @@ sec_init(rdpSec * sec, uint32 flags, int maxlen)
 
 	if (flags)
 	{
-		if (!(sec->licence->licence_issued))
+		if (!(sec->license->license_issued))
 			hdrlen = (flags & SEC_ENCRYPT) ? 12 : 4;
 		else
 			hdrlen = (flags & SEC_ENCRYPT) ? 12 : 0;
@@ -322,7 +321,7 @@ sec_send_to_channel(rdpSec * sec, STREAM s, uint32 flags, uint16 channel)
 	if (flags)
 	{
 		/* Basic Security Header */
-		if (!(sec->licence->licence_issued) || (flags & SEC_ENCRYPT))
+		if (!(sec->license->license_issued) || (flags & SEC_ENCRYPT))
 			out_uint32_le(s, flags); /* flags */
 
 		if (flags & SEC_ENCRYPT)
@@ -331,7 +330,7 @@ sec_send_to_channel(rdpSec * sec, STREAM s, uint32 flags, uint16 channel)
 			datalen = s->end - s->p - 8;
 
 #if WITH_DEBUG
-			DEBUG("Sending encrypted packet:\n");
+			DEBUG_SEC("Sending encrypted packet:");
 			hexdump(s->p + 8, datalen);
 #endif
 
@@ -475,7 +474,7 @@ sec_out_client_network_data(rdpSec * sec, rdpSet * settings, STREAM s)
 {
 	int i;
 
-	DEBUG("num_channels is %d\n", settings->num_channels);
+	DEBUG_SEC("num_channels is %d", settings->num_channels);
 	if (settings->num_channels > 0)
 	{
 		out_uint16_le(s, UDH_CS_NET);	/* User Data Header type */
@@ -484,7 +483,7 @@ sec_out_client_network_data(rdpSec * sec, rdpSet * settings, STREAM s)
 		out_uint32_le(s, settings->num_channels);	/* channelCount */
 		for (i = 0; i < settings->num_channels; i++)
 		{
-			DEBUG("Requesting channel %s\n", settings->channels[i].name);
+			DEBUG_SEC("Requesting channel %s", settings->channels[i].name);
 			out_uint8a(s, settings->channels[i].name, 8); /* name (8 bytes) 7 characters with null terminator */
 			out_uint32_le(s, settings->channels[i].flags); /* options (4 bytes) */
 		}
@@ -508,11 +507,11 @@ static void
 sec_out_client_monitor_data(rdpSec * sec, rdpSet * settings, STREAM s)
 {
 	int length, n;
-	printf("Setting monitor data... num_monitors: %d\n", settings->num_monitors);
+	DEBUG_SEC("Setting monitor data... num_monitors: %d", settings->num_monitors);
 	if (settings->num_monitors <= 1)
 		return;
 
-	DEBUG("Setting monitor data...\n");
+	DEBUG_SEC("Setting monitor data...");
 	out_uint16_le(s, UDH_CS_MONITOR);	/* User Data Header type */
 
 	length = 12 + (20 * settings->num_monitors);
@@ -666,7 +665,7 @@ sec_parse_server_security_data(rdpSec * sec, STREAM s, uint32 * encryptionMethod
 		uint16 wPublicKeyBlobType, wPublicKeyBlobLen;
 		uint16 wSignatureBlobType, wSignatureBlobLen;
 
-		DEBUG("We're going for a Server Proprietary Certificate (no TS license)\n");
+		DEBUG_SEC("We're going for a Server Proprietary Certificate (no TS license)");
 		in_uint8s(s, 4);	/* dwSigAlgId must be 1 (SIGNATURE_ALG_RSA) */
 		in_uint8s(s, 4);	/* dwKeyAlgId must be 1 (KEY_EXCHANGE_ALG_RSA ) */
 
@@ -693,9 +692,9 @@ sec_parse_server_security_data(rdpSec * sec, STREAM s, uint32 * encryptionMethod
 		uint32 license_cert_len, ts_cert_len;
 		CryptoCert license_cert, ts_cert;
 
-		DEBUG("We're going for a X.509 Certificate (TS license)\n");
+		DEBUG_SEC("We're going for a X.509 Certificate (TS license)");
 		in_uint32_le(s, cert_total_count);	/* Number of certificates */
-		DEBUG("Cert chain length: %d\n", cert_total_count);
+		DEBUG_SEC("Cert chain length: %d", cert_total_count);
 		if (cert_total_count < 2)
 		{
 			ui_error(sec->rdp->inst, "Server didn't send enough X509 certificates\n");
@@ -708,9 +707,9 @@ sec_parse_server_security_data(rdpSec * sec, STREAM s, uint32 * encryptionMethod
 			uint32 ignorelen;
 			CryptoCert ignorecert;
 
-			DEBUG("Ignoring cert: %d\n", cert_counter);
+			DEBUG_SEC("Ignoring cert: %d", cert_counter);
 			in_uint32_le(s, ignorelen);
-			DEBUG("Ignored Certificate length is %d\n", ignorelen);
+			DEBUG_SEC("Ignored Certificate length is %d", ignorelen);
 			ignorecert = crypto_cert_read(s->p, ignorelen);
 			in_uint8s(s, ignorelen);
 			if (ignorecert == NULL)
@@ -719,8 +718,8 @@ sec_parse_server_security_data(rdpSec * sec, STREAM s, uint32 * encryptionMethod
 				return False;
 			}
 
-#ifdef WITH_DEBUG
-			DEBUG("cert #%d (ignored):\n", cert_counter);
+#ifdef WITH_DEBUG_SEC
+			DEBUG_SEC("cert #%d (ignored):", cert_counter);
 			crypto_cert_print_fp(stdout, ignorecert);
 #endif
 			/* TODO: Verify the certificate chain all the way from CA root to prevent MITM attacks */
@@ -728,7 +727,7 @@ sec_parse_server_security_data(rdpSec * sec, STREAM s, uint32 * encryptionMethod
 		}
 		/* The second to last certificate is the license server */
 		in_uint32_le(s, license_cert_len);
-		DEBUG("License Server Certificate length is %d\n", license_cert_len);
+		DEBUG_SEC("License Server Certificate length is %d", license_cert_len);
 		license_cert = crypto_cert_read(s->p, license_cert_len);
 		in_uint8s(s, license_cert_len);
 		if (NULL == license_cert)
@@ -736,12 +735,12 @@ sec_parse_server_security_data(rdpSec * sec, STREAM s, uint32 * encryptionMethod
 			ui_error(sec->rdp->inst, "Couldn't load License Server Certificate from server\n");
 			return False;
 		}
-#ifdef WITH_DEBUG
+#ifdef WITH_DEBUG_SEC
 		crypto_cert_print_fp(stdout, license_cert);
 #endif
 		/* The last certificate is the Terminal Server */
 		in_uint32_le(s, ts_cert_len);
-		DEBUG("TS Certificate length is %d\n", ts_cert_len);
+		DEBUG_SEC("TS Certificate length is %d", ts_cert_len);
 		ts_cert = crypto_cert_read(s->p, ts_cert_len);
 		in_uint8s(s, ts_cert_len);
 		if (NULL == ts_cert)
@@ -750,7 +749,7 @@ sec_parse_server_security_data(rdpSec * sec, STREAM s, uint32 * encryptionMethod
 			ui_error(sec->rdp->inst, "Couldn't load TS Certificate from server\n");
 			return False;
 		}
-#ifdef WITH_DEBUG
+#ifdef WITH_DEBUG_SEC
 		crypto_cert_print_fp(stdout, ts_cert);
 #endif
 		if (!crypto_cert_verify(ts_cert, license_cert))
@@ -807,12 +806,12 @@ sec_process_server_security_data(rdpSec * sec, STREAM s)
 		/* encryptionMethod (rc4_key_size) = 0 means TLS */
 		if (rc4_key_size > 0)
 		{
-			DEBUG("Failed to parse crypt info\n");
+			DEBUG_SEC("Failed to parse crypt info");
 		}
 		return;
 	}
 
-	DEBUG("Generating client random\n");
+	DEBUG_SEC("Generating client random");
 	generate_random(client_random);
 	revcpy(client_random_rev, client_random, SEC_RANDOM_SIZE);
 	crypto_rsa_encrypt(SEC_RANDOM_SIZE, client_random_rev, crypted_random_rev,
@@ -842,7 +841,7 @@ sec_process_server_core_data(rdpSec * sec, STREAM s, uint16 length)
 		ui_error(sec->rdp->inst, "Invalid server rdp version %ul\n", server_rdp_version);
 	}
 
-	DEBUG("Server RDP version is %d\n", sec->rdp->settings->rdp_version);
+	DEBUG_SEC("Server RDP version is %d", sec->rdp->settings->rdp_version);
 	if (length >= 12)
 	{
 		in_uint32_le(s, clientRequestedProtocols);
@@ -969,7 +968,7 @@ sec_recv(rdpSec * sec, secRecvType * type)
 			ui_error(sec->rdp->inst, "expected ISO_RECV_X224, got %d\n", iso_type);
 			return NULL;
 		}
-		if (sec->rdp->settings->encryption || !sec->licence->licence_issued)
+		if (sec->rdp->settings->encryption || !sec->license->license_issued)
 		{
 			/* basicSecurityHeader: */
 			in_uint32_le(s, sec_flags);
@@ -983,7 +982,7 @@ sec_recv(rdpSec * sec, secRecvType * type)
 			if (sec_flags & SEC_LICENSE_PKT)
 			{
 				*type = SEC_RECV_LICENSE;
-				licence_process(sec->licence, s);
+				license_process(sec->license, s);
 				continue;
 			}
 
@@ -1061,7 +1060,7 @@ sec_connect(rdpSec * sec, char *server, char *username, int port)
 {
 	NEGO *nego = sec->mcs->iso->nego;
 
-	sec->licence->licence_issued = 0;
+	sec->license->license_issued = 0;
 	if (sec->rdp->settings->nla_security)
 		nego->enabled_protocols[PROTOCOL_NLA] = 1;
 	if (sec->rdp->settings->tls_security)
@@ -1170,7 +1169,7 @@ sec_new(struct rdp_rdp * rdp)
 		memset(self, 0, sizeof(rdpSec));
 		self->rdp = rdp;
 		self->mcs = mcs_new(self);
-		self->licence = licence_new(self);
+		self->license = license_new(self);
 		self->rc4_decrypt_key = NULL;
 		self->rc4_encrypt_key = NULL;
 	}
@@ -1182,7 +1181,7 @@ sec_free(rdpSec * sec)
 {
 	if (sec != NULL)
 	{
-		licence_free(sec->licence);
+		license_free(sec->license);
 		mcs_free(sec->mcs);
 		xfree(sec);
 	}

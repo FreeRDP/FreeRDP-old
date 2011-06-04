@@ -96,7 +96,7 @@ cache_bump_bitmap(rdpCache * cache, uint8 id, uint16 idx, int bump)
 	if (cache->bmpcache_mru[id] == idx)
 		return;
 
-	DEBUG_CACHE("bump bitmap: id=%d, idx=%d, bump=%d\n", id, idx, bump);
+	DEBUG_CACHE("bump bitmap: id=%d, idx=%d, bump=%d", id, idx, bump);
 
 	n_idx = cache->bmpcache[id][idx].next;
 	p_idx = cache->bmpcache[id][idx].previous;
@@ -162,8 +162,6 @@ cache_evict_bitmap(rdpCache * cache, uint8 id)
 
 	idx = cache->bmpcache_lru[id];
 	n_idx = cache->bmpcache[id][idx].next;
-/*	DEBUG_CACHE("evict bitmap: id=%d idx=%d n_idx=%d bmp=0x%x\n", id, idx, n_idx,
-		    cache->bmpcache[id][idx].bitmap); */
 
 	ui_destroy_bitmap(cache->rdp->inst, cache->bmpcache[id][idx].bitmap);
 	--(cache->bmpcache_count[id]);
@@ -260,7 +258,7 @@ cache_save_state(rdpCache * cache)
 				pstcache_touch_bitmap(cache->rdp->pcache, id, idx, ++t);
 				idx = cache->bmpcache[id][idx].next;
 			}
-			DEBUG_CACHE(" %d stamps written.\n", t);
+			DEBUG_CACHE(" %d stamps written.", t);
 		}
 }
 

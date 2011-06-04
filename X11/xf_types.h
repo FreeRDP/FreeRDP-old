@@ -22,6 +22,7 @@
 
 #include <freerdp/freerdp.h>
 #include <freerdp/chanman.h>
+#include <freerdp/utils/debug.h>
 #include <X11/Xlib.h>
 
 #include "gdi.h"
@@ -122,7 +123,7 @@ enum XF_EXIT_CODE
 	XF_EXIT_FRESH_CREDENTIALS_REQUIRED = 10,
 	XF_EXIT_DISCONNECT_BY_USER = 11,
 
-	/* section 16-31: licence error set */
+	/* section 16-31: license error set */
 	XF_EXIT_LICENSE_INTERNAL = 16,
 	XF_EXIT_LICENSE_NO_LICENSE_SERVER = 17,
 	XF_EXIT_LICENSE_NO_LICENSE = 18,
@@ -147,16 +148,16 @@ enum XF_EXIT_CODE
 	XF_EXIT_UNKNOWN = 255,
 };
 
-#ifdef WITH_DEBUG
-#define DEBUG(fmt, ...)	printf("DBG (X) %s (%d): " fmt, __FUNCTION__, __LINE__, ## __VA_ARGS__)
+#ifdef WITH_DEBUG_X11
+#define DEBUG_X11(fmt, ...) DEBUG_CLASS(X11, fmt, ...)
 #else
-#define DEBUG(fmt, ...) do { } while (0)
+#define DEBUG_X11(fmt, ...) DEBUG_NULL(fmt, ...)
 #endif
 
-#ifdef WITH_DEBUG_KBD
-#define DEBUG_KBD(fmt, ...) printf("DBG (X-KBD) %s (%d): " fmt, __FUNCTION__, __LINE__, ## __VA_ARGS__)
+#ifdef WITH_DEBUG_X11_KBD
+#define DEBUG_X11_KBD(fmt, ...) DEBUG_CLASS(X11_KBD, fmt, ...)
 #else
-#define DEBUG_KBD(fmt, ...) do { } while (0)
+#define DEBUG_X11_KBD(fmt, ...) DEBUG_NULL(fmt, ...)
 #endif
 
 #endif

@@ -21,9 +21,9 @@
 #define __CONSTANTS_LICENSE_H
 
 /* RDP licensing constants */
-#define LICENCE_TOKEN_SIZE     10
-#define LICENCE_HWID_SIZE      20
-#define LICENCE_SIGNATURE_SIZE 16
+#define LICENSE_TOKEN_SIZE     10
+#define LICENSE_HWID_SIZE      20
+#define LICENSE_SIGNATURE_SIZE 16
 
 #define LICENSE_REQUEST             0x01
 #define LICENSE_PLATFORM_CHALLENGE  0x02
@@ -32,9 +32,9 @@
 #define LICENSE_INFO                0x12
 #define NEW_LICENSE_REQUEST         0x13
 #define PLATFORM_CHALLENGE_RESPONSE 0x15
-#define LICENCE_ERROR_ALERT         0xff
+#define LICENSE_ERROR_ALERT         0xff
 
-#define LICENCE_TAG_USER    0x000f
-#define LICENCE_TAG_HOST    0x0010
+#define LICENSE_TAG_USER    0x000f
+#define LICENSE_TAG_HOST    0x0010
 
 #endif /* __CONSTANTS_LICENSE_H */

@@ -17,7 +17,6 @@
    limitations under the License.
 */
 
-#include <freerdp/utils/debug.h>
 #include <freerdp/utils/memory.h>
 #include <freerdp/constants/constants.h>
 #include "frdp.h"

@@ -430,7 +430,7 @@ gdi_bitmap_new(GDI *gdi, int width, int height, int bpp, uint8* data)
 	gdi_bmp = (gdi_bitmap*) malloc(sizeof(gdi_bitmap));
 	gdi_bmp->hdc = CreateCompatibleDC(gdi->hdc);
 	
-	DEBUG_GDI("gdi_bitmap_new: width:%d height:%d bpp:%d\n", width, height, bpp);
+	DEBUG_GDI("gdi_bitmap_new: width:%d height:%d bpp:%d", width, height, bpp);
 
 	if (data == NULL)
 	{
@@ -464,13 +464,13 @@ gdi_bitmap_free(gdi_bitmap *gdi_bmp)
 static void
 gdi_ui_desktop_save(struct rdp_inst * inst, int offset, int x, int y, int cx, int cy)
 {
-	DEBUG_GDI("gdi_ui_desktop_save\n");
+	DEBUG_GDI("gdi_ui_desktop_save");
 }
 
 static void
 gdi_ui_desktop_restore(struct rdp_inst * inst, int offset, int x, int y, int cx, int cy)
 {
-	DEBUG_GDI("gdi_ui_desktop_restore\n");
+	DEBUG_GDI("gdi_ui_desktop_restore");
 }
 
 /**
@@ -488,7 +488,7 @@ gdi_ui_create_glyph(struct rdp_inst * inst, int width, int height, uint8 * data)
 	uint8* glyph;
 	gdi_bitmap *gdi_bmp;
 
-	//DEBUG_GDI("gdi_ui_create_glyph: width:%d height:%d\n", width, height);
+	//DEBUG_GDI("gdi_ui_create_glyph: width:%d height:%d", width, height);
 
 	gdi_bmp = (gdi_bitmap*) malloc(sizeof(gdi_bitmap));
 	
@@ -532,7 +532,7 @@ gdi_ui_create_bitmap(struct rdp_inst * inst, int width, int height, uint8* data)
 	gdi_bitmap *gdi_bmp;
 	GDI *gdi = GET_GDI(inst);
 
-	//DEBUG_GDI("gdi_ui_create_bitmap: width:%d height:%d\n", width, height);
+	//DEBUG_GDI("gdi_ui_create_bitmap: width:%d height:%d", width, height);
 
 	gdi_bmp = gdi_bitmap_new(gdi, width, height, gdi->dstBpp, data);
 	
@@ -557,7 +557,7 @@ gdi_ui_paint_bitmap(struct rdp_inst * inst, int x, int y, int cx, int cy, int wi
 	gdi_bitmap *gdi_bmp;
 	GDI *gdi = GET_GDI(inst);
 
-	DEBUG_GDI("ui_paint_bitmap: x:%d y:%d cx:%d cy:%d\n", x, y, cx, cy);
+	DEBUG_GDI("ui_paint_bitmap: x:%d y:%d cx:%d cy:%d", x, y, cx, cy);
 
 	gdi_bmp = (gdi_bitmap*) inst->ui_create_bitmap(inst, width, height, data);
 	BitBlt(gdi->primary->hdc, x, y, cx, cy, gdi_bmp->hdc, 0, 0, SRCCOPY);
@@ -596,7 +596,7 @@ gdi_ui_line(struct rdp_inst * inst, uint8 opcode, int startx, int starty, int en
 	uint32 color;
 	GDI *gdi = GET_GDI(inst);
 
-	DEBUG_GDI("ui_line opcode:0x%02X startx:%d starty:%d endx:%d endy:%d\n", opcode, startx, starty, endx, endy);
+	DEBUG_GDI("ui_line opcode:0x%02X startx:%d starty:%d endx:%d endy:%d", opcode, startx, starty, endx, endy);
 
 	cx = endx - startx + 1;
 	cy = endy - starty + 1;
@@ -630,7 +630,7 @@ gdi_ui_rect(struct rdp_inst * inst, int x, int y, int cx, int cy, uint32 color)
 	uint32 brush_color;
 	GDI *gdi = GET_GDI(inst);
 
-	//DEBUG_GDI("ui_rect: x:%d y:%d cx:%d cy:%d\n", x, y, cx, cy);
+	//DEBUG_GDI("ui_rect: x:%d y:%d cx:%d cy:%d", x, y, cx, cy);
 
 	CRgnToRect(x, y, cx, cy, &rect);
 	brush_color = gdi_color_convert(color, gdi->srcBpp, 32, gdi->clrconv);
@@ -656,7 +656,7 @@ gdi_ui_rect(struct rdp_inst * inst, int x, int y, int cx, int cy, uint32 color)
 static void
 gdi_ui_polygon(struct rdp_inst * inst, uint8 opcode, uint8 fillmode, RD_POINT * point, int npoints, RD_BRUSH * brush, uint32 bgcolor, uint32 fgcolor)
 {
-	DEBUG_GDI("ui_polygon\n");
+	DEBUG_GDI("ui_polygon");
 }
 
 /**
@@ -678,7 +678,7 @@ gdi_ui_polyline(struct rdp_inst * inst, uint8 opcode, RD_POINT * points, int npo
 	uint32 color;
 	GDI *gdi = GET_GDI(inst);
 
-	DEBUG_GDI("ui_polyline: opcode:%d npoints:%d\n", opcode, npoints);
+	DEBUG_GDI("ui_polyline: opcode:%d npoints:%d", opcode, npoints);
 
 	color = gdi_color_convert(pen->color, gdi->srcBpp, 32, gdi->clrconv);
 
@@ -718,7 +718,7 @@ gdi_ui_polyline(struct rdp_inst * inst, uint8 opcode, RD_POINT * points, int npo
 static void
 gdi_ui_ellipse(struct rdp_inst * inst, uint8 opcode, uint8 fillmode, int x, int y, int cx, int cy, RD_BRUSH * brush, uint32 bgcolor, uint32 fgcolor)
 {
-	DEBUG_GDI("ui_ellipse\n");
+	DEBUG_GDI("ui_ellipse");
 }
 
 /**
@@ -789,7 +789,7 @@ gdi_ui_destblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int c
 {
 	GDI *gdi = GET_GDI(inst);
 
-	DEBUG_GDI("ui_destblt: x: %d y: %d cx: %d cy: %d rop: 0x%X\n", x, y, cx, cy, rop3_code_table[opcode]);
+	DEBUG_GDI("ui_destblt: x: %d y: %d cx: %d cy: %d rop: 0x%X", x, y, cx, cy, rop3_code_table[opcode]);
 	BitBlt(gdi->drawing->hdc, x, y, cx, cy, NULL, 0, 0, gdi_rop3_code(opcode));
 }
 
@@ -813,7 +813,7 @@ gdi_ui_patblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy
 	HBRUSH originalBrush;
 	GDI *gdi = GET_GDI(inst);
 	
-	DEBUG_GDI("ui_patblt: x: %d y: %d cx: %d cy: %d rop: 0x%X\n", x, y, cx, cy, gdi_rop3_code(opcode));
+	DEBUG_GDI("ui_patblt: x: %d y: %d cx: %d cy: %d rop: 0x%X", x, y, cx, cy, gdi_rop3_code(opcode));
 	
 	if (brush->style == BS_PATTERN)
 	{
@@ -882,7 +882,7 @@ gdi_ui_screenblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int
 {
 	GDI *gdi = GET_GDI(inst);
 	
-	DEBUG_GDI("gdi_ui_screenblt x:%d y:%d cx:%d cy:%d srcx:%d srcy:%d rop:0x%X\n",
+	DEBUG_GDI("gdi_ui_screenblt x:%d y:%d cx:%d cy:%d srcx:%d srcy:%d rop:0x%X",
 	          x, y, cx, cy, srcx, srcy, rop3_code_table[opcode]);
 	
 	BitBlt(gdi->drawing->hdc, x, y, cx, cy, gdi->primary->hdc, srcx, srcy, gdi_rop3_code(opcode));
@@ -908,7 +908,7 @@ gdi_ui_memblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy
 	gdi_bitmap *gdi_bmp;
 	GDI *gdi = GET_GDI(inst);
 
-	//DEBUG_GDI("gdi_ui_memblt: x:%d y:%d cx:%d cy:%d srcx:%d, srcy:%d rop:0x%X\n",
+	//DEBUG_GDI("gdi_ui_memblt: x:%d y:%d cx:%d cy:%d srcx:%d, srcy:%d rop:0x%X",
 	//          x, y, cx, cy, srcx, srcy, gdi_rop3_code(opcode));
 
 	gdi_bmp = (gdi_bitmap*) src;
@@ -936,7 +936,7 @@ static void
 gdi_ui_mem3blt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy,
 	RD_HBITMAP src, int srcx, int srcy, RD_BRUSH * brush, uint32 bgcolor, uint32 fgcolor)
 {
-	DEBUG_GDI("gdi_ui_mem3blt opcode: 0x%X\n", rop3_code_table[opcode]);
+	DEBUG_GDI("gdi_ui_mem3blt opcode: 0x%X", rop3_code_table[opcode]);
 }
 
 /**
@@ -950,7 +950,7 @@ gdi_ui_mem3blt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int c
 static RD_HPALETTE
 gdi_ui_create_palette(struct rdp_inst * inst, RD_PALETTE * palette)
 {
-	DEBUG_GDI("gdi_ui_create_palette\n");
+	DEBUG_GDI("gdi_ui_create_palette");
 	return (RD_HPALETTE) CreatePalette((HPALETTE) palette);
 }
 
@@ -964,7 +964,7 @@ static void
 gdi_ui_set_palette(struct rdp_inst * inst, RD_HPALETTE palette)
 {
 	GDI *gdi = GET_GDI(inst);
-	DEBUG_GDI("gdi_ui_set_palette\n");
+	DEBUG_GDI("gdi_ui_set_palette");
 	gdi->clrconv->palette = (RD_PALETTE*) palette;
 }
 
@@ -1025,7 +1025,7 @@ gdi_ui_create_surface(struct rdp_inst * inst, int width, int height, RD_HBITMAP 
 		gdi->drawing = gdi_bmp;
 	}
 	
-	//DEBUG_GDI("ui_create_surface\n");
+	//DEBUG_GDI("ui_create_surface");
 	
 	return (RD_HBITMAP) gdi_bmp;
 }
@@ -1042,7 +1042,7 @@ gdi_ui_switch_surface(struct rdp_inst * inst, RD_HBITMAP surface)
 {
 	GDI *gdi = GET_GDI(inst);
 
-	//DEBUG_GDI("ui_switch_surface\n");
+	//DEBUG_GDI("ui_switch_surface");
 	
 	if (surface != 0)
 	{
@@ -1065,7 +1065,7 @@ gdi_ui_destroy_surface(struct rdp_inst * inst, RD_HBITMAP surface)
 {
 	GDI *gdi = GET_GDI(inst);
 
-	DEBUG_GDI("ui_destroy_surface\n");
+	DEBUG_GDI("ui_destroy_surface");
 	
 	if (gdi->drawing == surface)
 	{

@@ -1,6 +1,6 @@
 /*
    FreeRDP: A Remote Desktop Protocol client.
-   Debug Macros
+   Debug Utils
 
    Copyright 2011 Marc-Andre Moreau <marcandre.moreau@gmail.com>
 
@@ -32,11 +32,11 @@
 #endif
 
 #define DEBUG_NULL(fmt, ...) do { } while (0)
-#define DEBUG_PRINT(str, fmt, ...) printf(str fmt, __FUNCTION__, __LINE__, ## __VA_ARGS__)
+#define DEBUG_PRINT(str, fmt, ...) printf(str fmt "\n", __FUNCTION__, __LINE__, ## __VA_ARGS__)
 #define DEBUG_CLASS(class, fmt, ...) DEBUG_PRINT("DBG_##class %s (%d): ", fmt, ...)
 
 #ifdef WITH_DEBUG
-#define DEBUG(fmt, ...)	printf("DBG %s (%d): " fmt, __FUNCTION__, __LINE__, ## __VA_ARGS__)
+#define DEBUG(fmt, ...)	printf("DBG %s (%d): " fmt "\n", __FUNCTION__, __LINE__, ## __VA_ARGS__)
 #else
 #define DEBUG(fmt, ...) DEBUG_NULL(fmt, ...)
 #endif

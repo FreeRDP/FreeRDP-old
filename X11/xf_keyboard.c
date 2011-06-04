@@ -61,7 +61,7 @@ void
 xf_kb_init(Display *dpy, unsigned int keyboard_layout_id)
 {
 	xf_kb_keyboard_layout = freerdp_kbd_init(dpy, keyboard_layout_id);
-	DEBUG_KBD("freerdp_kbd_init: %X\n", xf_kb_keyboard_layout);
+	DEBUG_X11_KBD("freerdp_kbd_init: %X", xf_kb_keyboard_layout);
 }
 
 void
@@ -88,7 +88,7 @@ xf_kb_send_key(xfInfo * xfi, RD_BOOL up, uint8 keycode)
 		/* Pause without Ctrl has to be sent as Ctrl + NumLock. */
 		if (!up)
 		{
-			DEBUG_KBD("down keycode=%d (X keysym=0x%04X) is Pause down, sent as Ctrl+NumLock sequence\n",
+			DEBUG_X11_KBD("down keycode=%d (X keysym=0x%04X) is Pause down, sent as Ctrl+NumLock sequence",
 				keycode, (unsigned int)XKeycodeToKeysym(xfi->display, keycode, 0));
 			xfi->inst->rdp_send_input_scancode(xfi->inst, 0, 0, 0x1D); /* Ctrl down */
 			xfi->inst->rdp_send_input_scancode(xfi->inst, 0, 0, 0x45); /* NumLock down */
@@ -96,12 +96,12 @@ xf_kb_send_key(xfInfo * xfi, RD_BOOL up, uint8 keycode)
 			xfi->inst->rdp_send_input_scancode(xfi->inst, 1, 0, 0x45); /* NumLock up */
 		}
 		else
-			DEBUG_KBD("up keycode=%d (X keysym=0x%04X) is Pause up\n",
+			DEBUG_X11_KBD("up keycode=%d (X keysym=0x%04X) is Pause up",
 				keycode, (unsigned int)XKeycodeToKeysym(xfi->display, keycode, 0));
 	}
 	else
 	{
-		DEBUG_KBD("%s keycode=%d (X keysym=0x%04X) as extended=%d scancode=%d\n",
+		DEBUG_X11_KBD("%s keycode=%d (X keysym=0x%04X) as extended=%d scancode=%d",
 			up ? "up" : "down", keycode, (unsigned int)XKeycodeToKeysym(xfi->display, keycode, 0),
 			!!extended, scancode);
 
@@ -110,7 +110,7 @@ xf_kb_send_key(xfInfo * xfi, RD_BOOL up, uint8 keycode)
 		if ((scancode == 0x3A) && up) /* caps lock was released */
 		{
 			/* caps lock state haven't necessarily been toggled locally - better set remote state explicitly */
-			DEBUG_KBD("sending extra caps lock synchronization\n");
+			DEBUG_X11_KBD("sending extra caps lock synchronization");
 			xfi->inst->rdp_sync_input(xfi->inst, xf_kb_get_toggle_keys_state(xfi));
 		}
 	}

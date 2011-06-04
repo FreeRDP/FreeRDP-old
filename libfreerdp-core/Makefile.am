@@ -14,7 +14,7 @@ libfreerdp_core_la_SOURCES = \
 	ext.c ext.h \
 	freerdp.c \
 	iso.c iso.h \
-	licence.c licence.h \
+	license.c license.h \
 	mcs.c mcs.h \
 	mppc.c \
 	orders.c orders.h \

@@ -196,7 +196,7 @@ mcs_send_cjrq(rdpMcs * mcs, uint16 chanid)
 {
 	STREAM s;
 
-	DEBUG_MCS("Sending CJRQ for channel #%d\n", chanid);
+	DEBUG_MCS("Sending CJRQ for channel #%d", chanid);
 
 	s = iso_init(mcs->iso, 5);
 
