@@ -38,7 +38,7 @@
 #include "gdi_clipping.h"
 
 /* Ternary Raster Operation Table */
-const unsigned int rop3_code_table[] =
+const uint32 rop3_code_table[] =
 {
 	0x00000042, // 0
 	0x00010289, // DPSoon
@@ -300,8 +300,8 @@ const unsigned int rop3_code_table[] =
 
 /* GDI Helper Functions */
 
-unsigned int
-gdi_rop3_code(unsigned char code)
+uint32
+gdi_rop3_code(uint8 code)
 {
 	return rop3_code_table[code];
 }
@@ -441,7 +441,7 @@ gdi_bitmap_new(GDI *gdi, int width, int height, int bpp, uint8* data)
 		gdi_bmp->bitmap = gdi_create_bitmap(gdi, width, height, bpp, data);
 	}
 	
-	gdi_SelectObject(gdi_bmp->hdc, (HGDIOBJ) gdi_bmp->bitmap);
+	gdi_SelectObject(gdi_bmp->hdc, (HGDIOBJECT) gdi_bmp->bitmap);
 	gdi_bmp->org_bitmap = NULL;
 
 	return gdi_bmp;
@@ -452,8 +452,8 @@ gdi_bitmap_free(gdi_bitmap *gdi_bmp)
 {
 	if (gdi_bmp != 0)
 	{
-		gdi_SelectObject(gdi_bmp->hdc, (HGDIOBJ) gdi_bmp->org_bitmap);
-		gdi_DeleteObject((HGDIOBJ) gdi_bmp->bitmap);
+		gdi_SelectObject(gdi_bmp->hdc, (HGDIOBJECT) gdi_bmp->org_bitmap);
+		gdi_DeleteObject((HGDIOBJECT) gdi_bmp->bitmap);
 		gdi_DeleteDC(gdi_bmp->hdc);
 		free(gdi_bmp);
 	}
@@ -499,7 +499,7 @@ gdi_ui_create_glyph(struct rdp_inst * inst, int width, int height, uint8 * data)
 	gdi_bmp->bitmap = gdi_CreateBitmap(width, height, 1, glyph);
 	gdi_bmp->bitmap->bytesPerPixel = 1;
 	gdi_bmp->bitmap->bitsPerPixel = 1;
-	gdi_SelectObject(gdi_bmp->hdc, (HGDIOBJ) gdi_bmp->bitmap);
+	gdi_SelectObject(gdi_bmp->hdc, (HGDIOBJECT) gdi_bmp->bitmap);
 	gdi_bmp->org_bitmap = NULL;
 
 	return (RD_HGLYPH) gdi_bmp;
@@ -603,13 +603,13 @@ gdi_ui_line(struct rdp_inst * inst, uint8 opcode, int startx, int starty, int en
 	
 	color = gdi_color_convert(pen->color, gdi->srcBpp, 32, gdi->clrconv);
 	hPen = gdi_CreatePen(pen->style, pen->width, (COLORREF) color);
-	gdi_SelectObject(gdi->drawing->hdc, (HGDIOBJ) hPen);
+	gdi_SelectObject(gdi->drawing->hdc, (HGDIOBJECT) hPen);
 	gdi_SetROP2(gdi->drawing->hdc, opcode);
 
 	gdi_MoveToEx(gdi->drawing->hdc, startx, starty, NULL);
 	gdi_LineTo(gdi->drawing->hdc, endx, endy);
 	
-	gdi_DeleteObject((HGDIOBJ) hPen);
+	gdi_DeleteObject((HGDIOBJECT) hPen);
 }
 
 /**
@@ -683,7 +683,7 @@ gdi_ui_polyline(struct rdp_inst * inst, uint8 opcode, RD_POINT * points, int npo
 	color = gdi_color_convert(pen->color, gdi->srcBpp, 32, gdi->clrconv);
 
 	hPen = gdi_CreatePen(pen->style, pen->width, (COLORREF) color);
-	gdi_SelectObject(gdi->drawing->hdc, (HGDIOBJ) hPen);
+	gdi_SelectObject(gdi->drawing->hdc, (HGDIOBJECT) hPen);
 	gdi_SetROP2(gdi->drawing->hdc, opcode);
 
 	cx = points[0].x;
@@ -696,7 +696,7 @@ gdi_ui_polyline(struct rdp_inst * inst, uint8 opcode, RD_POINT * points, int npo
 		gdi_LineTo(gdi->drawing->hdc, cx, cy);
 	}
 
-	gdi_DeleteObject((HGDIOBJ) hPen);
+	gdi_DeleteObject((HGDIOBJECT) hPen);
 }
 
 /**
@@ -841,7 +841,7 @@ gdi_ui_patblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy
 
 			gdi_PatBlt(gdi->drawing->hdc, x, y, cx, cy, gdi_rop3_code(opcode));
 
-			gdi_DeleteObject((HGDIOBJ) gdi->drawing->hdc->brush);
+			gdi_DeleteObject((HGDIOBJECT) gdi->drawing->hdc->brush);
 			gdi->drawing->hdc->brush = originalBrush;
 		}
 	}
@@ -855,7 +855,7 @@ gdi_ui_patblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy
 
 		gdi_PatBlt(gdi->drawing->hdc, x, y, cx, cy, gdi_rop3_code(opcode));
 
-		gdi_DeleteObject((HGDIOBJ) gdi->drawing->hdc->brush);
+		gdi_DeleteObject((HGDIOBJECT) gdi->drawing->hdc->brush);
 		gdi->drawing->hdc->brush = originalBrush;
 	}
 	else

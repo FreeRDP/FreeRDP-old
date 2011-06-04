@@ -77,7 +77,9 @@ static void Ellipse_Bresenham(HDC hdc, int x1, int y1, int x2, int y2)
 	a *= 8 * a;
 	c = 8 * b * b;
 
-	pixel8 = pixel16 = pixel32 = 0;
+	pixel8 = 0;
+	pixel16 = 0;
+	pixel32 = 0;
 	bmp = (HBITMAP) hdc->selectedObject;
 
 	if (hdc->clip->null)

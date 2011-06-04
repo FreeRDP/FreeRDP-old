@@ -24,8 +24,8 @@
 
 HDC gdi_GetDC();
 HDC gdi_CreateCompatibleDC(HDC hdc);
-HGDIOBJ gdi_SelectObject(HDC hdc, HGDIOBJ hgdiobj);
-int gdi_DeleteObject(HGDIOBJ hgdiobj);
+HGDIOBJECT gdi_SelectObject(HDC hdc, HGDIOBJECT hgdiobject);
+int gdi_DeleteObject(HGDIOBJECT hgdiobject);
 int gdi_DeleteDC(HDC hdc);
 
 #endif /* __GDI_DC_H */

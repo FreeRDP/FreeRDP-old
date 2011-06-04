@@ -99,12 +99,12 @@
 #define OPAQUE			0x00000001
 #define TRANSPARENT		0x00000002
 
-struct _GDIOBJ
+struct _GDIOBJECT
 {
-	unsigned char objectType;
+	uint8 objectType;
 };
-typedef struct _GDIOBJ GDIOBJ;
-typedef GDIOBJ* HGDIOBJ;
+typedef struct _GDIOBJECT GDIOBJECT;
+typedef GDIOBJECT* HGDIOBJECT;
 
 /* RGB encoded as 0x00BBGGRR */
 typedef unsigned int COLORREF;
@@ -112,18 +112,18 @@ typedef COLORREF* LPCOLORREF;
 
 struct _RECT
 {
-	unsigned char objectType;
-	unsigned int left;
-	unsigned int top;
-	unsigned int right;
-	unsigned int bottom;
+	uint8 objectType;
+	int left;
+	int top;
+	int right;
+	int bottom;
 };
 typedef struct _RECT RECT;
 typedef RECT* HRECT;
 
 struct _RGN
 {
-	unsigned char objectType;
+	uint8 objectType;
 	int x; /* left */
 	int y; /* top */
 	int w; /* width */
@@ -135,12 +135,12 @@ typedef RGN* HRGN;
 
 struct _BITMAP
 {
-	unsigned char objectType;
-	unsigned int bytesPerPixel;
-	unsigned int bitsPerPixel;
-	unsigned int width;
-	unsigned int height;
-	unsigned int scanline;
+	uint8 objectType;
+	int bytesPerPixel;
+	int bitsPerPixel;
+	int width;
+	int height;
+	int scanline;
 	uint8* data;
 };
 typedef struct _BITMAP BITMAP;
@@ -148,11 +148,11 @@ typedef BITMAP* HBITMAP;
 
 struct _PEN
 {
-	unsigned char objectType;
-	unsigned int style;
-	unsigned int width;
-	unsigned int posX;
-	unsigned int posY;
+	uint8 objectType;
+	int style;
+	int width;
+	int posX;
+	int posY;
 	COLORREF color;
 };
 typedef struct _PEN PEN;
@@ -176,16 +176,16 @@ typedef PALETTE* HPALETTE;
 
 struct _POINT
 {
-	unsigned int x;
-	unsigned int y;
+	int x;
+	int y;
 };
 typedef struct _POINT POINT;
 typedef POINT* HPOINT;
 
 struct _BRUSH
 {
-	unsigned char objectType;
-	unsigned int style;
+	uint8 objectType;
+	int style;
 	HBITMAP pattern;
 	COLORREF color;
 };
@@ -201,9 +201,9 @@ typedef WND* HWND;
 
 struct _DC
 {
-	HGDIOBJ selectedObject;
-	unsigned int bytesPerPixel;
-	unsigned int bitsPerPixel;
+	HGDIOBJECT selectedObject;
+	int bytesPerPixel;
+	int bitsPerPixel;
 	COLORREF bkColor;
 	COLORREF textColor;
 	HBRUSH brush;
@@ -248,7 +248,7 @@ struct _GDI
 };
 typedef struct _GDI GDI;
 
-unsigned int gdi_rop3_code(unsigned char code);
+uint32 gdi_rop3_code(uint8 code);
 void gdi_copy_mem(uint8 *d, uint8 *s, int n);
 void gdi_copy_memb(uint8 *d, uint8 *s, int n);
 uint8* gdi_get_bitmap_pointer(HDC hdcBmp, int x, int y);
