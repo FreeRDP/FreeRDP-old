@@ -48,7 +48,7 @@ pLineTo LineTo_[5] =
  * @return 1 if successful, 0 otherwise
  */
 
-int LineTo(HDC hdc, int nXEnd, int nYEnd)
+int gdi_LineTo(HDC hdc, int nXEnd, int nYEnd)
 {
 	pLineTo _LineTo = LineTo_[IBPP(hdc->bitsPerPixel)];
 
@@ -65,13 +65,13 @@ int LineTo(HDC hdc, int nXEnd, int nYEnd)
  * @param cCount number of points
  * @return
  */
-int PolylineTo(HDC hdc, POINT *lppt, int cCount)
+int gdi_PolylineTo(HDC hdc, POINT *lppt, int cCount)
 {
 	int i;
 	for (i = 0; i < cCount; i++)
 	{
-		LineTo(hdc, lppt[i].x, lppt[i].y);
-		MoveToEx(hdc, lppt[i].x, lppt[i].y, NULL);
+		gdi_LineTo(hdc, lppt[i].x, lppt[i].y);
+		gdi_MoveToEx(hdc, lppt[i].x, lppt[i].y, NULL);
 	}
 
 	return 1;
@@ -84,22 +84,22 @@ int PolylineTo(HDC hdc, POINT *lppt, int cCount)
  * @param cPoints number of points
  * @return
  */
-int Polyline(HDC hdc, POINT *lppt, int cPoints)
+int gdi_Polyline(HDC hdc, POINT *lppt, int cPoints)
 {
 	if (cPoints > 0)
 	{
 		int i;
 		POINT pt;
 
-		MoveToEx(hdc, lppt[0].x, lppt[0].y, &pt);
+		gdi_MoveToEx(hdc, lppt[0].x, lppt[0].y, &pt);
 
 		for (i = 0; i < cPoints; i++)
 		{
-			LineTo(hdc, lppt[i].x, lppt[i].y);
-			MoveToEx(hdc, lppt[i].x, lppt[i].y, NULL);
+			gdi_LineTo(hdc, lppt[i].x, lppt[i].y);
+			gdi_MoveToEx(hdc, lppt[i].x, lppt[i].y, NULL);
 		}
 
-		MoveToEx(hdc, pt.x, pt.y, NULL);
+		gdi_MoveToEx(hdc, pt.x, pt.y, NULL);
 	}
 
 	return 1;
@@ -113,7 +113,7 @@ int Polyline(HDC hdc, POINT *lppt, int cPoints)
  * @param cCount count of entries in lpdwPolyPoints
  * @return
  */
-int PolyPolyline(HDC hdc, POINT *lppt, int *lpdwPolyPoints, int cCount)
+int gdi_PolyPolyline(HDC hdc, POINT *lppt, int *lpdwPolyPoints, int cCount)
 {
 	int cPoints;
 	int i, j = 0;
@@ -121,7 +121,7 @@ int PolyPolyline(HDC hdc, POINT *lppt, int *lpdwPolyPoints, int cCount)
 	for (i = 0; i < cCount; i++)
 	{
 		cPoints = lpdwPolyPoints[i];
-		Polyline(hdc, &lppt[j], cPoints);
+		gdi_Polyline(hdc, &lppt[j], cPoints);
 		j += cPoints;
 	}
 
@@ -136,7 +136,7 @@ int PolyPolyline(HDC hdc, POINT *lppt, int *lpdwPolyPoints, int cCount)
  * @return 1 if successful, 0 otherwise
  */
 
-int MoveToEx(HDC hdc, int X, int Y, HPOINT lpPoint)
+int gdi_MoveToEx(HDC hdc, int X, int Y, HPOINT lpPoint)
 {
 	if (lpPoint != NULL)
 	{

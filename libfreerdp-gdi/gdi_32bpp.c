@@ -60,9 +60,9 @@ int FillRect_32bpp(HDC hdc, HRECT rect, HBRUSH hbr)
 	int nXDest, nYDest;
 	int nWidth, nHeight;
 
-	RectToCRgn(rect, &nXDest, &nYDest, &nWidth, &nHeight);
+	gdi_RectToCRgn(rect, &nXDest, &nYDest, &nWidth, &nHeight);
 	
-	if (ClipCoords(hdc, &nXDest, &nYDest, &nWidth, &nHeight, NULL, NULL) == 0)
+	if (gdi_ClipCoords(hdc, &nXDest, &nYDest, &nWidth, &nHeight, NULL, NULL) == 0)
 		return 0;
 
 	color32 = gdi_get_color_32bpp(hdc, hbr->color);
@@ -81,7 +81,7 @@ int FillRect_32bpp(HDC hdc, HRECT rect, HBRUSH hbr)
 		}
 	}
 
-	InvalidateRegion(hdc, nXDest, nYDest, nWidth, nHeight);
+	gdi_InvalidateRegion(hdc, nXDest, nYDest, nWidth, nHeight);
 	return 0;
 }
 
@@ -155,7 +155,7 @@ static int BitBlt_SRCCOPY_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth,
 	uint8 *dstp;
 
 	if ((hdcDest->selectedObject != hdcSrc->selectedObject) ||
-	    CopyOverlap(nXDest, nYDest, nWidth, nHeight, nXSrc, nYSrc) == 0)
+	    gdi_CopyOverlap(nXDest, nYDest, nWidth, nHeight, nXSrc, nYSrc) == 0)
 	{
 		for (y = 0; y < nHeight; y++)
 		{
@@ -792,16 +792,16 @@ int BitBlt_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, H
 {
 	if (hdcSrc != NULL)
 	{
-		if (ClipCoords(hdcDest, &nXDest, &nYDest, &nWidth, &nHeight, &nXSrc, &nYSrc) == 0)
+		if (gdi_ClipCoords(hdcDest, &nXDest, &nYDest, &nWidth, &nHeight, &nXSrc, &nYSrc) == 0)
 			return 0;
 	}
 	else
 	{
-		if (ClipCoords(hdcDest, &nXDest, &nYDest, &nWidth, &nHeight, NULL, NULL) == 0)
+		if (gdi_ClipCoords(hdcDest, &nXDest, &nYDest, &nWidth, &nHeight, NULL, NULL) == 0)
 			return 0;
 	}
 	
-	InvalidateRegion(hdcDest, nXDest, nYDest, nWidth, nHeight);
+	gdi_InvalidateRegion(hdcDest, nXDest, nYDest, nWidth, nHeight);
 	
 	switch (rop)
 	{
@@ -884,10 +884,10 @@ int BitBlt_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, H
 
 int PatBlt_32bpp(HDC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight, int rop)
 {
-	if (ClipCoords(hdc, &nXLeft, &nYLeft, &nWidth, &nHeight, NULL, NULL) == 0)
+	if (gdi_ClipCoords(hdc, &nXLeft, &nYLeft, &nWidth, &nHeight, NULL, NULL) == 0)
 		return 0;
 	
-	InvalidateRegion(hdc, nXLeft, nYLeft, nWidth, nHeight);
+	gdi_InvalidateRegion(hdc, nXLeft, nYLeft, nWidth, nHeight);
 
 	switch (rop)
 	{
@@ -1063,7 +1063,7 @@ int LineTo_32bpp(HDC hdc, int nXEnd, int nYEnd)
 	x = x1;
 	y = y1;
 
-	irop2 = GetROP2(hdc) - 1;
+	irop2 = gdi_GetROP2(hdc) - 1;
 	bmp = (HBITMAP) hdc->selectedObject;
 
 	if (hdc->clip->null)
@@ -1081,7 +1081,7 @@ int LineTo_32bpp(HDC hdc, int nXEnd, int nYEnd)
 		by2 = by1 + hdc->clip->h - 1;
 	}
 
-	pen = GetPenColor_32bpp(hdc->pen);
+	pen = gdi_GetPenColor_32bpp(hdc->pen);
 
 	while (1)
 	{
@@ -1089,7 +1089,7 @@ int LineTo_32bpp(HDC hdc, int nXEnd, int nYEnd)
 		{
 			if ((x >= bx1 && x <= bx2) && (y >= by1 && y <= by2))
 			{
-				pixel = GetPointer_32bpp(bmp, x, y);
+				pixel = gdi_GetPointer_32bpp(bmp, x, y);
 				SetPixel32_ROP2_[irop2](pixel, &pen);
 			}
 		}
