@@ -17,7 +17,6 @@
    limitations under the License.
 */
 
-#include <windows.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -30,9 +29,10 @@
 
 #include <freerdp/freerdp.h>
 #include <freerdp/chanman.h>
-#include "wf_types.h"
 #include "wf_event.h"
 #include "wf_win.h"
+
+#include "wfreerdp.h"
 
 LPCTSTR g_wnd_class_name = L"wfreerdp";
 HINSTANCE g_hInstance;

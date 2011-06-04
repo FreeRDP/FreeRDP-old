@@ -22,6 +22,8 @@
 #include <string.h>
 #include <conio.h>
 #include "color.h"
+#include "wfreerdp.h"
+
 #include "wf_win.h"
 
 extern LPCTSTR g_wnd_class_name;
