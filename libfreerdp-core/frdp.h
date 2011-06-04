@@ -34,8 +34,9 @@
 #endif
 #include <winsock2.h>
 #include <windows.h>
+#ifndef snprintf
 #define snprintf sprintf_s
-#define strdup _strdup
+#endif
 #endif
 
 #ifndef MIN

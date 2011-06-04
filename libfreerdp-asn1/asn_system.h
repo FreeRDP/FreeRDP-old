@@ -24,7 +24,11 @@
 #ifdef	WIN32
 
 #include <malloc.h>
-#define	 snprintf	_snprintf
+
+#ifndef snprintf
+#define snprintf sprintf_s
+#endif
+
 #define	 vsnprintf	_vsnprintf
 
 /* To avoid linking with ws2_32.lib, here's the definition of ntohl() */
