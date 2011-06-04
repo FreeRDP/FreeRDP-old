@@ -254,19 +254,22 @@ crypto_cert_get_issuer(CryptoCert cert)
 char *
 crypto_cert_get_fingerprint(CryptoCert cert)
 {
-	char * fp;
+	char *fp, *p;
 	unsigned int i;
 	unsigned int fp_len = 0;
 	unsigned char fp_buf[EVP_MAX_MD_SIZE];
 
 	X509_digest(cert->px509, EVP_sha1(), fp_buf, &fp_len);
-	fp = (char*) xmalloc(fp_len * 3 + 1);
+	fp = (char*) xmalloc(fp_len * 3);
+	memset(fp, '\0', fp_len * 3);
 
-	for (i = 0; i < fp_len; i++)
+	p = fp;
+	for (i = 0; i < fp_len - 1; i++)
 	{
-		snprintf(&fp[i * 3], 3, "%02x:", fp_buf[i]);
+		sprintf(p, "%02x:", fp_buf[i]);
+		p = (char*) &fp[i * 3];
 	}
-	fp[fp_len] = '\0';
+	sprintf(p, "%02x", fp_buf[i]);
 
 	return fp;
 }
