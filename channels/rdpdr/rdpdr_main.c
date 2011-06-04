@@ -306,6 +306,7 @@ rdpdr_add_async_irp(rdpdrPlugin * plugin, IRP * irp, char * data, int data_size)
 	LLOGLN(10, ("RDPDR adding async irp fd %d", irp_file_descriptor(irp)));
 	irp->ioStatus = RD_STATUS_PENDING;
 	irp_queue_push(plugin->queue, irp);
+	wait_obj_set(plugin->plugin_in_event);
 
 	if (irp_file_descriptor(irp) >= 0)
 	{
@@ -358,27 +359,6 @@ rdpdr_abort_single_io(rdpdrPlugin * plugin, uint32 fd, uint8 abortType, uint32 i
 		irp_queue_remove(plugin->queue, pending);
 
 		break;
-	}
-}
-
-static void
-rdpdr_abort_ios(rdpdrPlugin * plugin)
-{
-	IRP * pending = NULL;
-	char * out;
-	int out_size, error;
-
-	while (!irp_queue_empty(plugin->queue))
-	{
-		pending = irp_queue_first(plugin->queue);
-		pending->ioStatus = RD_STATUS_SUCCESS;
-		out = irp_output_device_io_completion(pending, &out_size);
-		error = plugin->ep.pVirtualChannelWrite(plugin->open_handle, out, out_size, out);
-		if (error != CHANNEL_RC_OK)
-				LLOGLN(0, ("rdpdr_check_fds: VirtualChannelWrite failed %d", error));
-		if (pending->outputBuffer)
-			free(pending->outputBuffer);
-		irp_queue_pop(plugin->queue);
 	}
 }
 
@@ -575,12 +555,7 @@ rdpdr_process_irp(rdpdrPlugin * plugin, char* data, int data_size)
 			rdpdr_abort_single_io(plugin, irp_file_descriptor(&irp), RDPDR_ABORT_IO_READ, RD_STATUS_CANCELLED);
 	}
 
-	if (irp.ioStatus == RD_STATUS_PENDING && irp.rwBlocking)
-	{
-		LLOGLN(10, ("IRP enqueue event"));
-		irp_queue_push(plugin->queue, &irp);
-	}
-	else if (irp.ioStatus == (RD_STATUS_PENDING | 0xC0000000)) /* smart card */
+	if (irp.ioStatus == (RD_STATUS_PENDING | 0xC0000000)) /* smart card */
 	{
 		irp.ioStatus = RD_STATUS_PENDING; /* this is going to be handled by the smart card plugin */
 		LLOGLN(10, ("smart card irp must not be stored into plgugin->queue"));
@@ -812,7 +787,7 @@ static void *
 thread_func(void * arg)
 {
 	rdpdrPlugin * plugin;
-	struct wait_obj * listobj[2];
+	struct wait_obj * listobj[3];
 	int numobj;
 	SERVICE * scard_srv;
 
@@ -841,7 +816,8 @@ thread_func(void * arg)
 	{
 		listobj[0] = plugin->term_event;
 		listobj[1] = plugin->data_in_event;
-		numobj = 2;
+		listobj[2] = plugin->plugin_in_event;
+		numobj = 3;
 		wait_obj_select(listobj, numobj, NULL, 0, -1);
 
 		plugin->nfds = 1;
@@ -863,16 +839,10 @@ thread_func(void * arg)
 			/* process data in */
 			thread_process_data(plugin);
 		}
-
-		if (!scard_srv)
+		if (wait_obj_is_set(plugin->plugin_in_event))
 		{
-			rdpdr_check_fds(plugin);
-
-			if (irp_queue_size(plugin->queue))
-			{
-				rdpdr_abort_ios(plugin);
-/*				wait_obj_set(plugin->data_in_event);*/
-			}
+			if (rdpdr_check_fds(plugin) == 1)
+				wait_obj_clear(plugin->plugin_in_event);
 		}
 	}
 
@@ -983,6 +953,7 @@ InitEventProcessTerminated(void * pInitHandle)
 	}
 	wait_obj_free(plugin->term_event);
 	wait_obj_free(plugin->data_in_event);
+	wait_obj_free(plugin->plugin_in_event);
 	pthread_mutex_destroy(plugin->mutex);
 	free(plugin->mutex);
 
@@ -1047,6 +1018,7 @@ VirtualChannelEntry(PCHANNEL_ENTRY_POINTS pEntryPoints)
 
 	plugin->term_event = wait_obj_new("freerdprdpdrterm");
 	plugin->data_in_event = wait_obj_new("freerdprdpdrdatain");
+	plugin->plugin_in_event = wait_obj_new("freerdprdpdrpluginin");
 
 	plugin->thread_status = 0;
 

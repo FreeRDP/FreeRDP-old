@@ -45,6 +45,7 @@ struct rdpdr_plugin
 	int data_in_read;
 	struct wait_obj * term_event;
 	struct wait_obj * data_in_event;
+	struct wait_obj * plugin_in_event;
 	struct data_in_item * list_head;
 	struct data_in_item * list_tail;
 	/* for locking the linked list */
