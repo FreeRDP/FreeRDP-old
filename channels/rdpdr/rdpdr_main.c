@@ -423,11 +423,7 @@ rdpdr_check_fds(rdpdrPlugin * plugin)
 				if (irp_get_event(pending, &result))
 				{
 					pending->ioStatus = RD_STATUS_SUCCESS;
-					out = irp_output_device_io_completion(pending, &out_size);
-					error = plugin->ep.pVirtualChannelWrite(plugin->open_handle, out, out_size, out);
-					if (pending->outputBuffer)
-						free(pending->outputBuffer);
-					isset = 2;
+					isset = 1;
 				}
 				break;
 
@@ -436,7 +432,7 @@ rdpdr_check_fds(rdpdrPlugin * plugin)
 				break;
 		}
 
-		if (isset == 1)
+		if (isset)
 		{
 			out = irp_output_device_io_completion(pending, &out_size);
 			error = plugin->ep.pVirtualChannelWrite(plugin->open_handle, out, out_size, out);
