@@ -437,7 +437,6 @@ void ntlmssp_compute_ntlm_hash(DATABLOB* password, char* hash)
 
 void ntlmssp_compute_ntlm_v2_hash(NTLMSSP *ntlmssp, char* hash)
 {
-	int i;
 	char* p;
 	DATABLOB blob;
 	char ntlm_hash[16];
