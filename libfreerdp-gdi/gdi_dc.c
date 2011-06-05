@@ -144,6 +144,10 @@ int gdi_DeleteObject(HGDIOBJECT hgdiobject)
 	else if (hgdiobject->objectType == GDIOBJ_BRUSH)
 	{
 		HBRUSH hBrush = (HBRUSH) hgdiobject;
+
+		if(hBrush->style == BS_PATTERN)
+			gdi_DeleteObject((HGDIOBJECT) hBrush->pattern);
+
 		free(hBrush);
 	}
 	else if (hgdiobject->objectType == GDIOBJ_REGION)
@@ -173,6 +177,9 @@ int gdi_DeleteObject(HGDIOBJECT hgdiobject)
 
 int gdi_DeleteDC(HDC hdc)
 {
+	if (hdc->hwnd)
+		free(hdc->hwnd);
+	free(hdc->clip);
 	free(hdc);
 	return 1;
 }

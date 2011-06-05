@@ -469,6 +469,12 @@ cache_free(rdpCache * cache)
 						ui_destroy_bitmap(cache->rdp->inst, bmp);
 				}
 			}
+			for (cache_id = 0; cache_id < NUM_ELEMENTS(cache->volatile_bc); cache_id++)
+			{
+				bmp = cache->volatile_bc[cache_id];
+				if (bmp)
+					ui_destroy_bitmap(cache->rdp->inst, bmp);
+			}
 			for (cache_id = 0; cache_id < NUM_ELEMENTS(cache->drawing_surface); cache_id++)
 			{
 				bmp = cache->drawing_surface[cache_id];

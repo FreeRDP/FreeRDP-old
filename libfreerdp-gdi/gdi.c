@@ -637,6 +637,7 @@ gdi_ui_rect(struct rdp_inst * inst, int x, int y, int cx, int cy, uint32 color)
 
 	hBrush = gdi_CreateSolidBrush(brush_color);
 	gdi_FillRect(gdi->drawing->hdc, &rect, hBrush);
+	gdi_DeleteObject((HGDIOBJECT) hBrush);
 }
 
 /**
@@ -1202,4 +1203,17 @@ gdi_init(rdpInst * inst, uint32 flags)
 	gdi_register_callbacks(inst);
 
 	return 0;
+}
+
+void gdi_free(rdpInst* inst)
+{
+	GDI *gdi = GET_GDI(inst);
+
+	if (gdi)
+	{
+		gdi_bitmap_free(gdi->primary);
+		gdi_DeleteObject((HGDIOBJECT) gdi->hdc);
+		free(gdi->clrconv);
+		free(gdi);
+	}
 }

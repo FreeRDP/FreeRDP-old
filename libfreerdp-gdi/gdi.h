@@ -257,6 +257,7 @@ int gdi_is_mono_pixel_set(uint8* data, int x, int y, int width);
 int gdi_init(rdpInst * inst, uint32 flags);
 gdi_bitmap* gdi_bitmap_new(GDI *gdi, int width, int height, int bpp, uint8* data);
 void gdi_bitmap_free(gdi_bitmap *gdi_bmp);
+void gdi_free(rdpInst* inst);
 
 #define SET_GDI(_inst, _gdi) (_inst)->param2 = _gdi
 #define GET_GDI(_inst) ((GDI*) ((_inst)->param2))
