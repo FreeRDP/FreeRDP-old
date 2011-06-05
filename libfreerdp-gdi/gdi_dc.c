@@ -178,8 +178,13 @@ int gdi_DeleteObject(HGDIOBJECT hgdiobject)
 int gdi_DeleteDC(HDC hdc)
 {
 	if (hdc->hwnd)
+	{
+		free(hdc->hwnd->invalid);
 		free(hdc->hwnd);
+	}
+
 	free(hdc->clip);
 	free(hdc);
+
 	return 1;
 }
