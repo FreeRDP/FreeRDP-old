@@ -29,6 +29,7 @@
 #include <pthread.h>
 #include <freerdp/freerdp.h>
 #include <freerdp/chanman.h>
+#include <freerdp/utils/memory.h>
 #include "dfbfreerdp.h"
 #include "dfb_win.h"
 #include "dfb_keyboard.h"
@@ -696,8 +697,8 @@ main(int argc, char ** argv)
 
 	while (1)
 	{
-		data = (struct thread_data *) malloc(sizeof(struct thread_data));
-		data->settings = (rdpSet *) malloc(sizeof(rdpSet));
+		data = (struct thread_data *) xmalloc(sizeof(struct thread_data));
+		data->settings = (rdpSet *) xmalloc(sizeof(rdpSet));
 		data->chan_man = freerdp_chanman_new();
 		rv = process_params(data->settings, data->chan_man, argc, argv, &index);
 		if (rv == 0)

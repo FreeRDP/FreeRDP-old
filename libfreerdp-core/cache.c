@@ -281,8 +281,7 @@ cache_get_font(rdpCache * cache, uint8 font, uint16 character)
 
 /* Store a glyph in the font cache */
 void
-cache_put_font(rdpCache * cache, uint8 font, uint16 character, uint16 offset,
-	       uint16 baseline, uint16 width, uint16 height, RD_HGLYPH pixmap)
+cache_put_font(rdpCache * cache, uint8 font, uint16 character, uint16 offset, uint16 baseline, uint16 width, uint16 height, RD_HGLYPH pixmap)
 {
 	FONTGLYPH *glyph;
 
