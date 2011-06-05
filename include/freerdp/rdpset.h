@@ -67,6 +67,7 @@ struct rdp_set
 	int encryption;
 	int rdp_version;
 	int remote_app;
+	char app_name[64];
 	int console_session;
 	int server_depth;
 	int bitmap_cache;

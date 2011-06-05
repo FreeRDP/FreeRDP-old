@@ -297,7 +297,7 @@ sec_init(rdpSec * sec, uint32 flags, int maxlen)
 	return s;
 }
 
-/* Initialise fast path secure transport packet */
+/* Initialize fast path secure transport packet */
 STREAM
 sec_fp_init(rdpSec * sec, uint32 flags, int maxlen)
 {
