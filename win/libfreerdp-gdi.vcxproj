@@ -73,39 +73,9 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\libfreerdp-gdi\color.c" />
-    <ClCompile Include="..\libfreerdp-gdi\decode.c" />
-    <ClCompile Include="..\libfreerdp-gdi\gdi.c" />
-    <ClCompile Include="..\libfreerdp-gdi\gdi_16bpp.c" />
-    <ClCompile Include="..\libfreerdp-gdi\gdi_32bpp.c" />
-    <ClCompile Include="..\libfreerdp-gdi\gdi_8bpp.c" />
-    <ClCompile Include="..\libfreerdp-gdi\gdi_bitmap.c" />
-    <ClCompile Include="..\libfreerdp-gdi\gdi_brush.c" />
-    <ClCompile Include="..\libfreerdp-gdi\gdi_clipping.c" />
-    <ClCompile Include="..\libfreerdp-gdi\gdi_dc.c" />
-    <ClCompile Include="..\libfreerdp-gdi\gdi_drawing.c" />
-    <ClCompile Include="..\libfreerdp-gdi\gdi_line.c" />
-    <ClCompile Include="..\libfreerdp-gdi\gdi_palette.c" />
-    <ClCompile Include="..\libfreerdp-gdi\gdi_pen.c" />
-    <ClCompile Include="..\libfreerdp-gdi\gdi_region.c" />
-    <ClCompile Include="..\libfreerdp-gdi\gdi_shape.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\libfreerdp-gdi\color.h" />
-    <ClInclude Include="..\libfreerdp-gdi\decode.h" />
-    <ClInclude Include="..\libfreerdp-gdi\gdi.h" />
-    <ClInclude Include="..\libfreerdp-gdi\gdi_16bpp.h" />
-    <ClInclude Include="..\libfreerdp-gdi\gdi_32bpp.h" />
-    <ClInclude Include="..\libfreerdp-gdi\gdi_8bpp.h" />
-    <ClInclude Include="..\libfreerdp-gdi\gdi_bitmap.h" />
-    <ClInclude Include="..\libfreerdp-gdi\gdi_brush.h" />
-    <ClInclude Include="..\libfreerdp-gdi\gdi_clipping.h" />
-    <ClInclude Include="..\libfreerdp-gdi\gdi_dc.h" />
-    <ClInclude Include="..\libfreerdp-gdi\gdi_drawing.h" />
-    <ClInclude Include="..\libfreerdp-gdi\gdi_line.h" />
-    <ClInclude Include="..\libfreerdp-gdi\gdi_palette.h" />
-    <ClInclude Include="..\libfreerdp-gdi\gdi_pen.h" />
-    <ClInclude Include="..\libfreerdp-gdi\gdi_region.h" />
-    <ClInclude Include="..\libfreerdp-gdi\gdi_shape.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

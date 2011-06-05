@@ -26,7 +26,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include "rfx_bitstream.h"
+
 #include "rfx_rlgr.h"
+
+#ifdef _WIN32
+#define inline __inline
+#endif
 
 /* Constants used within the RLGR1/RLGR3 algorithm */
 #define KPMAX  (80)  /* max value for kp or krp */
@@ -62,24 +67,23 @@
 	}
 
 /* Returns the least number of bits required to represent a given value */
-static unsigned int
-GetMinBits(unsigned int val)
-{
-	int nBits = 0;
-	while (val)
-	{
-		val >>= 1;
-		nBits++;
-	}
-	return nBits;
-}
+#define GetMinBits(val, nbits) \
+{ \
+	nbits = 0; \
+	while (val) \
+	{ \
+		val >>= 1; \
+		nbits++; \
+	} \
+	return nbits; \
+} \
 
 /* Converts from (2 * magnitude - sign) to integer */
 #define GetIntFrom2MagSign(twoMs) (((twoMs) & 1) ? -1 * (int)(((twoMs) + 1) >> 1) : (int)((twoMs) >> 1))
 
 /* Update the passed parameter and clamp it to the range [0,KPMAX]
    Return the value of parameter right-shifted by LSGR */
-static int
+static inline int
 UpdateParam(
 	int * param,  /* parameter to update */
 	int   deltaP  /* update delta */
@@ -198,7 +202,7 @@ rfx_rlgr_decode(RLGR_MODE mode,
 				   sum of two (2 * mag - sign) values */
 
 				/* maximum possible bits for first term */
-				nIdx = GetMinBits(mag);
+				GetMinBits(mag, nIdx);
 
 				/* decode val1 is first term's (2 * mag - sign) value */
 				val1 = GetBits(nIdx);

@@ -830,7 +830,7 @@ l_ui_destblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy)
 {
 	wfInfo * wfi = GET_WFI(inst);
 
-	BitBlt(wfi->drw->hdc, x, y, cx, cy, NULL, 0, 0, gdi_rop3_code(opcode));
+	BitBlt(wfi->drw->hdc, x, y, cx, cy, NULL, 0, 0, rop3_code_table[opcode]);
 	if (wfi->drw == wfi->backstore)
 	{
 		wf_invalidate_region(wfi, x, y, x + cx, y + cy);
