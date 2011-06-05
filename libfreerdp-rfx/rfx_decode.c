@@ -117,4 +117,3 @@ rfx_decode_rgb(RFX_CONTEXT * context,
 
 	return output;
 }
-

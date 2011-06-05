@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <freerdp/rfx.h>
 #include <freerdp/freerdp.h>
 
 #include "color.h"

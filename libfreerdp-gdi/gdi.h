@@ -25,6 +25,7 @@
 #define __GDI_H
 
 #include "color.h"
+#include <freerdp/rfx.h>
 #include <freerdp/freerdp.h>
 #include <freerdp/utils/debug.h>
 

@@ -62,7 +62,7 @@
 	}
 
 /* Returns the least number of bits required to represent a given value */
-static inline unsigned int
+static unsigned int
 GetMinBits(unsigned int val)
 {
 	int nBits = 0;
@@ -79,7 +79,7 @@ GetMinBits(unsigned int val)
 
 /* Update the passed parameter and clamp it to the range [0,KPMAX]
    Return the value of parameter right-shifted by LSGR */
-static inline int
+static int
 UpdateParam(
 	int * param,  /* parameter to update */
 	int   deltaP  /* update delta */

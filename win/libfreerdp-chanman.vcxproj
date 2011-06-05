@@ -83,6 +83,7 @@
     <ClCompile Include="..\libfreerdp-chanman\libchanman.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\include\freerdp\chanman.h" />
     <ClInclude Include="..\libfreerdp-chanman\libchanman.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

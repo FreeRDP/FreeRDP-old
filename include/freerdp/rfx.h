@@ -20,6 +20,10 @@
 #ifndef __RFX_H
 #define __RFX_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct _RFX_CONTEXT RFX_CONTEXT;
 
 typedef struct _RFX_RECT RFX_RECT;
@@ -59,18 +63,16 @@ typedef enum
 	RFX_PIXEL_FORMAT_RGB
 } RFX_PIXEL_FORMAT;
 
-RFX_CONTEXT *
-rfx_context_new(void);
-void
-rfx_context_free(RFX_CONTEXT * context);
-void
-rfx_context_set_pixel_format(RFX_CONTEXT * context,
-	RFX_PIXEL_FORMAT pixel_format);
+RFX_CONTEXT* rfx_context_new(void);
+void rfx_context_free(RFX_CONTEXT * context);
+void rfx_context_set_pixel_format(RFX_CONTEXT * context, RFX_PIXEL_FORMAT pixel_format);
 
-RFX_MESSAGE *
-rfx_process_message(RFX_CONTEXT * context, unsigned char * data, int data_size);
-void
-rfx_message_free(RFX_MESSAGE * message);
+RFX_MESSAGE* rfx_process_message(RFX_CONTEXT * context, unsigned char * data, int data_size);
+void rfx_message_free(RFX_MESSAGE * message);
 
+#ifdef __cplusplus
+}
 #endif
+
+#endif /* __RFX_H */
 
