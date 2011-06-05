@@ -21,6 +21,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <conio.h>
+
+#include "gdi.h"
 #include "color.h"
 #include "wfreerdp.h"
 
@@ -828,7 +830,7 @@ l_ui_destblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy)
 {
 	wfInfo * wfi = GET_WFI(inst);
 
-	BitBlt(wfi->drw->hdc, x, y, cx, cy, NULL, 0, 0, rop3_code_table[opcode]);
+	BitBlt(wfi->drw->hdc, x, y, cx, cy, NULL, 0, 0, gdi_rop3_code(opcode));
 	if (wfi->drw == wfi->backstore)
 	{
 		wf_invalidate_region(wfi, x, y, x + cx, y + cy);

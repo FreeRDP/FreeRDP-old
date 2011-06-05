@@ -74,6 +74,7 @@ set_default_params(wfInfo * wfi)
 		PERF_DISABLE_WALLPAPER | PERF_DISABLE_FULLWINDOWDRAG | PERF_DISABLE_MENUANIMATIONS;
 	settings->off_screen_bitmaps = 1;
 	settings->triblt = 0;
+	settings->software_gdi = 0;
 	settings->new_cursors = 1;
 	settings->rdp_version = 5;
 	settings->rdp_security = 1;
@@ -93,7 +94,7 @@ out_args(void)
 		"FreeRDP - A Free Remote Desktop Protocol Client\n"
 		"See http://freerdp.sourceforge.net for more information\n"
 		"\n"
-		"Usage: xfreerdp [options] server:port\n"
+		"Usage: wfreerdp [options] server:port\n"
 		"\t-a: color depth (8, 15, 16, 24 or 32)\n"
 		"\t-u: username\n"
 		"\t-p: password\n"
@@ -108,6 +109,8 @@ out_args(void)
 		"\t-0: console session\n"
 		"\t-f: fullscreen mode\n"
 		"\t-z: enable bulk compression\n"
+		"\t--rfx: ask for RemoteFX session\n"
+		"\t--gdi: GDI rendering (sw or hw, for software or hardware)\n"
 		"\t-x: performance flags (m, b or l for modem, broadband or lan)\n"
 #ifndef DISABLE_TLS
 		"\t--no-rdp: disable Standard RDP encryption\n"
@@ -289,6 +292,36 @@ process_params(wfInfo * wfi, int argc, char ** argv, int * pindex)
 		else if (strcmp("-z", argv[*pindex]) == 0)
 		{
 			settings->bulk_compression = 1;
+		}
+		else if (strcmp("--rfx", argv[*pindex]) == 0)
+		{
+			settings->rfx_flags = 1;
+			settings->ui_decode_flags = 1;
+			settings->use_frame_ack = 0;
+			settings->server_depth = 32;
+			settings->performanceflags = PERF_FLAG_NONE;
+		}
+		else if (strcmp("--gdi", argv[*pindex]) == 0)
+		{
+			*pindex = *pindex + 1;
+			if (*pindex == argc)
+			{
+				printf("missing GDI rendering\n");
+				return 1;
+			}
+			if (strncmp("sw", argv[*pindex], 1) == 0) /* Software */
+			{
+				settings->software_gdi = 1;
+			}
+			else if (strncmp("hw", argv[*pindex], 1) == 0) /* Hardware */
+			{
+				settings->software_gdi = 0;
+			}
+			else
+			{
+				printf("unknown GDI rendering\n");
+				return 1;
+			}
 		}
 		else if (strcmp("--no-osb", argv[*pindex]) == 0)
 		{
