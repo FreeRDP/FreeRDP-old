@@ -564,6 +564,15 @@ l_rdp_channel_data(rdpInst * inst, int chan_id, char * data, int data_size)
 }
 
 static void
+l_rdp_suppress_output(rdpInst * inst, int allow_display_updates)
+{
+	rdpRdp * rdp;
+
+	rdp = RDP_FROM_INST(inst);
+	rdp_send_client_window_status(rdp, allow_display_updates);
+}
+
+static void
 l_rdp_disconnect(rdpInst * inst)
 {
 	rdpRdp * rdp;
@@ -610,6 +619,7 @@ freerdp_new(rdpSet * settings)
 	inst->rdp_send_input_mouse = l_rdp_send_input_mouse;
 	inst->rdp_sync_input = l_rdp_sync_input;
 	inst->rdp_channel_data = l_rdp_channel_data;
+	inst->rdp_suppress_output = l_rdp_suppress_output;
 	inst->rdp_disconnect = l_rdp_disconnect;
 	inst->rdp_send_frame_ack = l_rdp_send_frame_ack;
 	inst->rdp = (void *) rdp_new(settings, inst);
