@@ -510,11 +510,20 @@ dfb_pre_connect(rdpInst * inst)
 	memset(dfbi, 0, sizeof(dfbInfo));
 	dfb_register_callbacks(inst);
 	SET_DFBI(inst, dfbi);
-	gdi_init(inst, CLRCONV_ALPHA | CLRBUF_16BPP | CLRBUF_32BPP);
+
+	return 0;
+}
+
+int
+dfb_post_connect(rdpInst * inst)
+{
+	dfbInfo *dfbi = GET_DFBI(inst);
 
 	if (inst->settings->software_gdi == 1)
 	{
-		GDI *gdi = GET_GDI(inst);
+		GDI *gdi;
+		gdi_init(inst, CLRCONV_ALPHA | CLRBUF_16BPP | CLRBUF_32BPP);
+		gdi = GET_GDI(inst);
 
 		dfbi->err = DirectFBCreate(&(dfbi->dfb));
 
@@ -555,12 +564,6 @@ dfb_pre_connect(rdpInst * inst)
 		/* DirectFB-specific GDI Implementation */
 	}
 
-	return 0;
-}
-
-int
-dfb_post_connect(rdpInst * inst)
-{
 	return 0;
 }
 

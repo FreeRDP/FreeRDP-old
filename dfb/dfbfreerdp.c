@@ -54,7 +54,7 @@ set_default_params(rdpSet * settings)
 	settings->performanceflags = PERF_DISABLE_FULLWINDOWDRAG | PERF_DISABLE_MENUANIMATIONS | PERF_DISABLE_WALLPAPER;
 	settings->off_screen_bitmaps = 1;
 	settings->triblt = 0;
-	settings->software_gdi = 0;
+	settings->software_gdi = 1;
 	settings->new_cursors = 1;
 	settings->rdp_version = 5;
 	settings->rdp_security = 1;
