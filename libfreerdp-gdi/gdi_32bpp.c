@@ -32,7 +32,7 @@
 
 #include "gdi_32bpp.h"
 
-uint32 gdi_get_color_32bpp(HDC hdc, COLORREF color)
+uint32 gdi_get_color_32bpp(HGDI_DC hdc, GDI_COLOR color)
 {
 	uint32 color32;
 	uint8 a, r, g, b;
@@ -52,7 +52,7 @@ uint32 gdi_get_color_32bpp(HDC hdc, COLORREF color)
 	return color32;
 }
 
-int FillRect_32bpp(HDC hdc, HRECT rect, HBRUSH hbr)
+int FillRect_32bpp(HGDI_DC hdc, HGDI_RECT rect, HGDI_BRUSH hbr)
 {
 	int x, y;
 	uint32 *dstp;
@@ -85,7 +85,7 @@ int FillRect_32bpp(HDC hdc, HRECT rect, HBRUSH hbr)
 	return 0;
 }
 
-static int BitBlt_BLACKNESS_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight)
+static int BitBlt_BLACKNESS_32bpp(HGDI_DC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight)
 {
 	if (hdcDest->alpha)
 	{
@@ -132,7 +132,7 @@ static int BitBlt_BLACKNESS_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidt
 	return 0;
 }
 
-static int BitBlt_WHITENESS_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight)
+static int BitBlt_WHITENESS_32bpp(HGDI_DC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight)
 {
 	int y;
 	uint8 *dstp;
@@ -148,7 +148,7 @@ static int BitBlt_WHITENESS_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidt
 	return 0;
 }
 
-static int BitBlt_SRCCOPY_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc)
+static int BitBlt_SRCCOPY_32bpp(HGDI_DC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HGDI_DC hdcSrc, int nXSrc, int nYSrc)
 {
 	int y;
 	uint8 *srcp;
@@ -217,7 +217,7 @@ static int BitBlt_SRCCOPY_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth,
 	return 0;
 }
 
-static int BitBlt_NOTSRCCOPY_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc)
+static int BitBlt_NOTSRCCOPY_32bpp(HGDI_DC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HGDI_DC hdcSrc, int nXSrc, int nYSrc)
 {
 	int x, y;
 	uint8 *srcp;
@@ -250,7 +250,7 @@ static int BitBlt_NOTSRCCOPY_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWid
 	return 0;
 }
 
-static int BitBlt_DSTINVERT_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight)
+static int BitBlt_DSTINVERT_32bpp(HGDI_DC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight)
 {
 	int x, y;
 	uint8 *dstp;
@@ -278,7 +278,7 @@ static int BitBlt_DSTINVERT_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidt
 	return 0;
 }
 
-static int BitBlt_SRCERASE_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc)
+static int BitBlt_SRCERASE_32bpp(HGDI_DC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HGDI_DC hdcSrc, int nXSrc, int nYSrc)
 {
 	int x, y;
 	uint8 *srcp;
@@ -311,7 +311,7 @@ static int BitBlt_SRCERASE_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth
 	return 0;
 }
 
-static int BitBlt_NOTSRCERASE_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc)
+static int BitBlt_NOTSRCERASE_32bpp(HGDI_DC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HGDI_DC hdcSrc, int nXSrc, int nYSrc)
 {
 	int x, y;
 	uint8 *srcp;
@@ -344,7 +344,7 @@ static int BitBlt_NOTSRCERASE_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWi
 	return 0;
 }
 
-static int BitBlt_SRCINVERT_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc)
+static int BitBlt_SRCINVERT_32bpp(HGDI_DC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HGDI_DC hdcSrc, int nXSrc, int nYSrc)
 {
 	int x, y;
 	uint8 *srcp;
@@ -377,7 +377,7 @@ static int BitBlt_SRCINVERT_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidt
 	return 0;
 }
 
-static int BitBlt_SRCAND_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc)
+static int BitBlt_SRCAND_32bpp(HGDI_DC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HGDI_DC hdcSrc, int nXSrc, int nYSrc)
 {
 	int x, y;
 	uint8 *srcp;
@@ -410,7 +410,7 @@ static int BitBlt_SRCAND_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, 
 	return 0;
 }
 
-static int BitBlt_SRCPAINT_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc)
+static int BitBlt_SRCPAINT_32bpp(HGDI_DC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HGDI_DC hdcSrc, int nXSrc, int nYSrc)
 {
 	int x, y;
 	uint8 *srcp;
@@ -443,21 +443,21 @@ static int BitBlt_SRCPAINT_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth
 	return 0;
 }
 
-static int BitBlt_DSPDxax_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc)
+static int BitBlt_DSPDxax_32bpp(HGDI_DC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HGDI_DC hdcSrc, int nXSrc, int nYSrc)
 {	
 	int x, y;
 	uint8 *srcp;
 	uint8 *dstp;
 	uint8 *patp;
 	uint32 color32;
-	HBITMAP hSrcBmp;
+	HGDI_BITMAP hSrcBmp;
 
 	/* D = (S & P) | (~S & D) */
 	/* DSPDxax, used to draw glyphs */
 
 	color32 = gdi_get_color_32bpp(hdcDest, hdcDest->textColor);
 
-	hSrcBmp = (HBITMAP) hdcSrc->selectedObject;
+	hSrcBmp = (HGDI_BITMAP) hdcSrc->selectedObject;
 	srcp = hSrcBmp->data;
 
 	if (hdcSrc->bytesPerPixel != 1)
@@ -495,7 +495,7 @@ static int BitBlt_DSPDxax_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth,
 	return 0;
 }
 
-static int BitBlt_SPna_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc)
+static int BitBlt_SPna_32bpp(HGDI_DC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HGDI_DC hdcSrc, int nXSrc, int nYSrc)
 {
 	int x, y;
 	uint8 *srcp;
@@ -533,7 +533,7 @@ static int BitBlt_SPna_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, in
 	return 0;
 }
 
-static int BitBlt_DSna_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc)
+static int BitBlt_DSna_32bpp(HGDI_DC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HGDI_DC hdcSrc, int nXSrc, int nYSrc)
 {
 	int x, y;
 	uint8 *srcp;
@@ -567,7 +567,7 @@ static int BitBlt_DSna_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, in
 }
 
 
-static int BitBlt_MERGECOPY_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc)
+static int BitBlt_MERGECOPY_32bpp(HGDI_DC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HGDI_DC hdcSrc, int nXSrc, int nYSrc)
 {
 	int x, y;
 	uint8 *srcp;
@@ -605,7 +605,7 @@ static int BitBlt_MERGECOPY_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidt
 	return 0;
 }
 
-static int BitBlt_MERGEPAINT_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc)
+static int BitBlt_MERGEPAINT_32bpp(HGDI_DC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HGDI_DC hdcSrc, int nXSrc, int nYSrc)
 {
 	int x, y;
 	uint8 *srcp;
@@ -638,7 +638,7 @@ static int BitBlt_MERGEPAINT_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWid
 	return 0;
 }
 
-static int BitBlt_PATCOPY_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight)
+static int BitBlt_PATCOPY_32bpp(HGDI_DC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight)
 {
 	int x, y;
 	uint8 *dstp;
@@ -646,7 +646,7 @@ static int BitBlt_PATCOPY_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth,
 	uint32 color32;
 	uint32 *dstp32;
 
-	if(hdcDest->brush->style == BS_SOLID)
+	if(hdcDest->brush->style == GDI_BS_SOLID)
 	{
 		color32 = gdi_get_color_32bpp(hdcDest, hdcDest->brush->color);
 
@@ -694,7 +694,7 @@ static int BitBlt_PATCOPY_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth,
 	return 0;
 }
 
-static int BitBlt_PATINVERT_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight)
+static int BitBlt_PATINVERT_32bpp(HGDI_DC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight)
 {
 	int x, y;
 	uint8 *dstp;
@@ -702,7 +702,7 @@ static int BitBlt_PATINVERT_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidt
 	uint32 color32;
 	uint32 *dstp32;
 		
-	if(hdcDest->brush->style == BS_SOLID)
+	if(hdcDest->brush->style == GDI_BS_SOLID)
 	{
 		color32 = gdi_get_color_32bpp(hdcDest, hdcDest->brush->color);
 
@@ -750,7 +750,7 @@ static int BitBlt_PATINVERT_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidt
 	return 0;
 }
 
-static int BitBlt_PATPAINT_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc)
+static int BitBlt_PATPAINT_32bpp(HGDI_DC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HGDI_DC hdcSrc, int nXSrc, int nYSrc)
 {
 	int x, y;
 	uint8 *srcp;
@@ -788,7 +788,7 @@ static int BitBlt_PATPAINT_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth
 	return 0;
 }
 
-int BitBlt_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc, int rop)
+int BitBlt_32bpp(HGDI_DC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HGDI_DC hdcSrc, int nXSrc, int nYSrc, int rop)
 {
 	if (hdcSrc != NULL)
 	{
@@ -805,75 +805,75 @@ int BitBlt_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, H
 	
 	switch (rop)
 	{
-		case BLACKNESS:
+		case GDI_BLACKNESS:
 			return BitBlt_BLACKNESS_32bpp(hdcDest, nXDest, nYDest, nWidth, nHeight);
 			break;
 
-		case WHITENESS:
+		case GDI_WHITENESS:
 			return BitBlt_WHITENESS_32bpp(hdcDest, nXDest, nYDest, nWidth, nHeight);
 			break;
 
-		case SRCCOPY:
+		case GDI_SRCCOPY:
 			return BitBlt_SRCCOPY_32bpp(hdcDest, nXDest, nYDest, nWidth, nHeight, hdcSrc, nXSrc, nYSrc);
 			break;
 
-		case SPna:
+		case GDI_SPna:
 			return BitBlt_SPna_32bpp(hdcDest, nXDest, nYDest, nWidth, nHeight, hdcSrc, nXSrc, nYSrc);
 			break;
 
-		case DSna:
+		case GDI_DSna:
 			return BitBlt_DSna_32bpp(hdcDest, nXDest, nYDest, nWidth, nHeight, hdcSrc, nXSrc, nYSrc);
 			break;
 
-		case DSPDxax:
+		case GDI_DSPDxax:
 			return BitBlt_DSPDxax_32bpp(hdcDest, nXDest, nYDest, nWidth, nHeight, hdcSrc, nXSrc, nYSrc);
 			break;
 			
-		case NOTSRCCOPY:
+		case GDI_NOTSRCCOPY:
 			return BitBlt_NOTSRCCOPY_32bpp(hdcDest, nXDest, nYDest, nWidth, nHeight, hdcSrc, nXSrc, nYSrc);
 			break;
 
-		case DSTINVERT:
+		case GDI_DSTINVERT:
 			return BitBlt_DSTINVERT_32bpp(hdcDest, nXDest, nYDest, nWidth, nHeight);
 			break;
 
-		case SRCERASE:
+		case GDI_SRCERASE:
 			return BitBlt_SRCERASE_32bpp(hdcDest, nXDest, nYDest, nWidth, nHeight, hdcSrc, nXSrc, nYSrc);
 			break;
 
-		case NOTSRCERASE:
+		case GDI_NOTSRCERASE:
 			return BitBlt_NOTSRCERASE_32bpp(hdcDest, nXDest, nYDest, nWidth, nHeight, hdcSrc, nXSrc, nYSrc);
 			break;
 
-		case SRCINVERT:
+		case GDI_SRCINVERT:
 			return BitBlt_SRCINVERT_32bpp(hdcDest, nXDest, nYDest, nWidth, nHeight, hdcSrc, nXSrc, nYSrc);
 			break;
 
-		case SRCAND:
+		case GDI_SRCAND:
 			return BitBlt_SRCAND_32bpp(hdcDest, nXDest, nYDest, nWidth, nHeight, hdcSrc, nXSrc, nYSrc);
 			break;
 
-		case SRCPAINT:
+		case GDI_SRCPAINT:
 			return BitBlt_SRCPAINT_32bpp(hdcDest, nXDest, nYDest, nWidth, nHeight, hdcSrc, nXSrc, nYSrc);
 			break;
 
-		case MERGECOPY:
+		case GDI_MERGECOPY:
 			return BitBlt_MERGECOPY_32bpp(hdcDest, nXDest, nYDest, nWidth, nHeight, hdcSrc, nXSrc, nYSrc);
 			break;
 
-		case MERGEPAINT:
+		case GDI_MERGEPAINT:
 			return BitBlt_MERGEPAINT_32bpp(hdcDest, nXDest, nYDest, nWidth, nHeight, hdcSrc, nXSrc, nYSrc);
 			break;
 
-		case PATCOPY:
+		case GDI_PATCOPY:
 			return BitBlt_PATCOPY_32bpp(hdcDest, nXDest, nYDest, nWidth, nHeight);
 			break;
 
-		case PATINVERT:
+		case GDI_PATINVERT:
 			return BitBlt_PATINVERT_32bpp(hdcDest, nXDest, nYDest, nWidth, nHeight);
 			break;
 
-		case PATPAINT:
+		case GDI_PATPAINT:
 			return BitBlt_PATPAINT_32bpp(hdcDest, nXDest, nYDest, nWidth, nHeight, hdcSrc, nXSrc, nYSrc);
 			break;
 	}
@@ -882,7 +882,7 @@ int BitBlt_32bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, H
 	return 1;
 }
 
-int PatBlt_32bpp(HDC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight, int rop)
+int PatBlt_32bpp(HGDI_DC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight, int rop)
 {
 	if (gdi_ClipCoords(hdc, &nXLeft, &nYLeft, &nWidth, &nHeight, NULL, NULL) == 0)
 		return 0;
@@ -891,23 +891,23 @@ int PatBlt_32bpp(HDC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight, int r
 
 	switch (rop)
 	{
-		case PATCOPY:
+		case GDI_PATCOPY:
 			return BitBlt_PATCOPY_32bpp(hdc, nXLeft, nYLeft, nWidth, nHeight);
 			break;
 
-		case PATINVERT:
+		case GDI_PATINVERT:
 			return BitBlt_PATINVERT_32bpp(hdc, nXLeft, nYLeft, nWidth, nHeight);
 			break;
 			
-		case DSTINVERT:
+		case GDI_DSTINVERT:
 			return BitBlt_DSTINVERT_32bpp(hdc, nXLeft, nYLeft, nWidth, nHeight);
 			break;
 
-		case BLACKNESS:
+		case GDI_BLACKNESS:
 			return BitBlt_BLACKNESS_32bpp(hdc, nXLeft, nYLeft, nWidth, nHeight);
 			break;
 
-		case WHITENESS:
+		case GDI_WHITENESS:
 			return BitBlt_WHITENESS_32bpp(hdc, nXLeft, nYLeft, nWidth, nHeight);
 			break;
 	}
@@ -1031,7 +1031,7 @@ pSetPixel32_ROP2 SetPixel32_ROP2_[32] =
 	SetPixel_WHITE_32bpp
 };
 
-int LineTo_32bpp(HDC hdc, int nXEnd, int nYEnd)
+int LineTo_32bpp(HGDI_DC hdc, int nXEnd, int nYEnd)
 {
 	int x, y;
 	int x1, y1;
@@ -1039,7 +1039,7 @@ int LineTo_32bpp(HDC hdc, int nXEnd, int nYEnd)
 	int e, e2;
 	int dx, dy;
 	int sx, sy;
-	HBITMAP bmp;
+	HGDI_BITMAP bmp;
 	int bx1, by1;
 	int bx2, by2;
 
@@ -1064,7 +1064,7 @@ int LineTo_32bpp(HDC hdc, int nXEnd, int nYEnd)
 	y = y1;
 
 	irop2 = gdi_GetROP2(hdc) - 1;
-	bmp = (HBITMAP) hdc->selectedObject;
+	bmp = (HGDI_BITMAP) hdc->selectedObject;
 
 	if (hdc->clip->null)
 	{

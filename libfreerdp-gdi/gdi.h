@@ -31,73 +31,73 @@
 /* For more information, see [MS-RDPEGDI] */
 
 /* Binary Raster Operations (ROP2) */
-#define R2_BLACK		0x01  /* D = 0 */
-#define R2_NOTMERGEPEN		0x02  /* D = ~(D | P) */
-#define R2_MASKNOTPEN		0x03  /* D = D & ~P */
-#define R2_NOTCOPYPEN		0x04  /* D = ~P */
-#define R2_MASKPENNOT		0x05  /* D = P & ~D */
-#define R2_NOT			0x06  /* D = ~D */
-#define R2_XORPEN		0x07  /* D = D ^ P */
-#define R2_NOTMASKPEN		0x08  /* D = ~(D & P) */
-#define R2_MASKPEN		0x09  /* D = D & P */
-#define R2_NOTXORPEN		0x0A  /* D = ~(D ^ P) */
-#define R2_NOP			0x0B  /* D = D */
-#define R2_MERGENOTPEN		0x0C  /* D = D | ~P */
-#define R2_COPYPEN		0x0D  /* D = P */
-#define R2_MERGEPENNOT		0x0E  /* D = P | ~D */
-#define R2_MERGEPEN		0x0F  /* D = P | D */
-#define R2_WHITE		0x10  /* D = 1 */
+#define GDI_R2_BLACK			0x01  /* D = 0 */
+#define GDI_R2_NOTMERGEPEN		0x02  /* D = ~(D | P) */
+#define GDI_R2_MASKNOTPEN		0x03  /* D = D & ~P */
+#define GDI_R2_NOTCOPYPEN		0x04  /* D = ~P */
+#define GDI_R2_MASKPENNOT		0x05  /* D = P & ~D */
+#define GDI_R2_NOT			0x06  /* D = ~D */
+#define GDI_R2_XORPEN			0x07  /* D = D ^ P */
+#define GDI_R2_NOTMASKPEN		0x08  /* D = ~(D & P) */
+#define GDI_R2_MASKPEN			0x09  /* D = D & P */
+#define GDI_R2_NOTXORPEN		0x0A  /* D = ~(D ^ P) */
+#define GDI_R2_NOP			0x0B  /* D = D */
+#define GDI_R2_MERGENOTPEN		0x0C  /* D = D | ~P */
+#define GDI_R2_COPYPEN			0x0D  /* D = P */
+#define GDI_R2_MERGEPENNOT		0x0E  /* D = P | ~D */
+#define GDI_R2_MERGEPEN			0x0F  /* D = P | D */
+#define GDI_R2_WHITE			0x10  /* D = 1 */
 
 /* Ternary Raster Operations (ROP3) */
-#define SRCCOPY			0x00CC0020 /* D = S */
-#define SRCPAINT		0x00EE0086 /* D = S | D	*/
-#define SRCAND			0x008800C6 /* D = S & D	*/
-#define SRCINVERT		0x00660046 /* D = S ^ D	*/
-#define SRCERASE		0x00440328 /* D = S & ~D */
-#define NOTSRCCOPY		0x00330008 /* D = ~S */
-#define NOTSRCERASE		0x001100A6 /* D = ~S & ~D */
-#define MERGECOPY		0x00C000CA /* D = S & P	*/
-#define MERGEPAINT		0x00BB0226 /* D = ~S | D */
-#define PATCOPY			0x00F00021 /* D = P */
-#define PATPAINT		0x00FB0A09 /* D = D | (P | ~S) */
-#define PATINVERT		0x005A0049 /* D = P ^ D	*/
-#define DSTINVERT		0x00550009 /* D = ~D */
-#define BLACKNESS		0x00000042 /* D = 0 */
-#define WHITENESS		0x00FF0062 /* D = 1 */
-#define DSPDxax			0x00E20746 /* D = (S & P) | (~S & D) */
-#define SPna			0x000C0324 /* D = S & ~P */
-#define DSna			0x00220326 /* D = D & ~S */
+#define GDI_SRCCOPY			0x00CC0020 /* D = S */
+#define GDI_SRCPAINT			0x00EE0086 /* D = S | D	*/
+#define GDI_SRCAND			0x008800C6 /* D = S & D	*/
+#define GDI_SRCINVERT			0x00660046 /* D = S ^ D	*/
+#define GDI_SRCERASE			0x00440328 /* D = S & ~D */
+#define GDI_NOTSRCCOPY			0x00330008 /* D = ~S */
+#define GDI_NOTSRCERASE			0x001100A6 /* D = ~S & ~D */
+#define GDI_MERGECOPY			0x00C000CA /* D = S & P	*/
+#define GDI_MERGEPAINT			0x00BB0226 /* D = ~S | D */
+#define GDI_PATCOPY			0x00F00021 /* D = P */
+#define GDI_PATPAINT			0x00FB0A09 /* D = D | (P | ~S) */
+#define GDI_PATINVERT			0x005A0049 /* D = P ^ D	*/
+#define GDI_DSTINVERT			0x00550009 /* D = ~D */
+#define GDI_BLACKNESS			0x00000042 /* D = 0 */
+#define GDI_WHITENESS			0x00FF0062 /* D = 1 */
+#define GDI_DSPDxax			0x00E20746 /* D = (S & P) | (~S & D) */
+#define GDI_SPna			0x000C0324 /* D = S & ~P */
+#define GDI_DSna			0x00220326 /* D = D & ~S */
 
 /* Brush Styles */
-#define BS_SOLID		0x00
-#define BS_NULL			0x01
-#define BS_HATCHED		0x02
-#define BS_PATTERN		0x03
+#define GDI_BS_SOLID			0x00
+#define GDI_BS_NULL			0x01
+#define GDI_BS_HATCHED			0x02
+#define GDI_BS_PATTERN			0x03
 
 /* Hatch Patterns */
-#define HS_HORIZONTAL		0x00
-#define HS_VERTICAL		0x01
-#define HS_FDIAGONAL		0x02
-#define HS_BDIAGONAL		0x03
-#define HS_CROSS		0x04
-#define HS_DIAGCROSS		0x05
+#define GDI_HS_HORIZONTAL		0x00
+#define GDI_HS_VERTICAL			0x01
+#define GDI_HS_FDIAGONAL		0x02
+#define GDI_HS_BDIAGONAL		0x03
+#define GDI_HS_CROSS			0x04
+#define GDI_HS_DIAGCROSS		0x05
 
 /* Pen Styles */
-#define PS_SOLID		0x00
-#define PS_DASH			0x01
-#define PS_NULL			0x05
-
-/* GDI Object Types */
-#define GDIOBJ_BITMAP		0x00
-#define GDIOBJ_PEN		0x01
-#define GDIOBJ_PALETTE		0x02
-#define GDIOBJ_BRUSH		0x03
-#define GDIOBJ_RECT		0x04
-#define GDIOBJ_REGION		0x04
+#define GDI_PS_SOLID			0x00
+#define GDI_PS_DASH			0x01
+#define GDI_PS_NULL			0x05
 
 /* Background Modes */
-#define OPAQUE			0x00000001
-#define TRANSPARENT		0x00000002
+#define GDI_OPAQUE			0x00000001
+#define GDI_TRANSPARENT			0x00000002
+
+/* GDI Object Types */
+#define GDIOBJECT_BITMAP		0x00
+#define GDIOBJECT_PEN			0x01
+#define GDIOBJECT_PALETTE		0x02
+#define GDIOBJECT_BRUSH			0x03
+#define GDIOBJECT_RECT			0x04
+#define GDIOBJECT_REGION		0x04
 
 struct _GDIOBJECT
 {
@@ -107,10 +107,10 @@ typedef struct _GDIOBJECT GDIOBJECT;
 typedef GDIOBJECT* HGDIOBJECT;
 
 /* RGB encoded as 0x00BBGGRR */
-typedef unsigned int COLORREF;
-typedef COLORREF* LPCOLORREF;
+typedef unsigned int GDI_COLOR;
+typedef GDI_COLOR* LPGDI_COLOR;
 
-struct _RECT
+struct _GDI_RECT
 {
 	uint8 objectType;
 	int left;
@@ -118,10 +118,10 @@ struct _RECT
 	int right;
 	int bottom;
 };
-typedef struct _RECT RECT;
-typedef RECT* HRECT;
+typedef struct _GDI_RECT GDI_RECT;
+typedef GDI_RECT* HGDI_RECT;
 
-struct _RGN
+struct _GDI_RGN
 {
 	uint8 objectType;
 	int x; /* left */
@@ -130,10 +130,10 @@ struct _RGN
 	int h; /* height */
 	int null; /* null region */
 };
-typedef struct _RGN RGN;
-typedef RGN* HRGN;
+typedef struct _GDI_RGN GDI_RGN;
+typedef GDI_RGN* HGDI_RGN;
 
-struct _BITMAP
+struct _GDI_BITMAP
 {
 	uint8 objectType;
 	int bytesPerPixel;
@@ -143,89 +143,90 @@ struct _BITMAP
 	int scanline;
 	uint8* data;
 };
-typedef struct _BITMAP BITMAP;
-typedef BITMAP* HBITMAP;
+typedef struct _GDI_BITMAP GDI_BITMAP;
+typedef GDI_BITMAP* HGDI_BITMAP;
 
-struct _PEN
+struct _GDI_PEN
 {
 	uint8 objectType;
 	int style;
 	int width;
 	int posX;
 	int posY;
-	COLORREF color;
+	GDI_COLOR color;
 };
-typedef struct _PEN PEN;
-typedef PEN* HPEN;
+typedef struct _GDI_PEN GDI_PEN;
+typedef GDI_PEN* HGDI_PEN;
 
-struct _PALETTEENTRY
+struct _GDI_PALETTEENTRY
 {
 	uint8 red;
 	uint8 green;
 	uint8 blue;
 };
-typedef struct _PALETTEENTRY PALETTEENTRY;
+typedef struct _GDI_PALETTEENTRY GDI_PALETTEENTRY;
 
-struct _PALETTE
+struct _GDI_PALETTE
 {
 	uint16 count;
-	PALETTEENTRY *entries;
+	GDI_PALETTEENTRY *entries;
 };
-typedef struct _PALETTE PALETTE;
-typedef PALETTE* HPALETTE;
+typedef struct _GDI_PALETTE GDI_PALETTE;
+typedef GDI_PALETTE* HGDI_PALETTE;
 
-struct _POINT
+struct _GDI_POINT
 {
 	int x;
 	int y;
 };
-typedef struct _POINT POINT;
-typedef POINT* HPOINT;
+typedef struct _GDI_POINT GDI_POINT;
+typedef GDI_POINT* HGDI_POINT;
 
-struct _BRUSH
+struct _GDI_BRUSH
 {
 	uint8 objectType;
 	int style;
-	HBITMAP pattern;
-	COLORREF color;
+	HGDI_BITMAP pattern;
+	GDI_COLOR color;
 };
-typedef struct _BRUSH BRUSH;
-typedef BRUSH* HBRUSH;
+typedef struct _GDI_BRUSH GDI_BRUSH;
+typedef GDI_BRUSH* HGDI_BRUSH;
 
-struct _WND
+struct _GDI_WND
 {
-	HRGN invalid;
+	HGDI_RGN invalid;
 };
-typedef struct _WND WND;
-typedef WND* HWND;
+typedef struct _GDI_WND GDI_WND;
+typedef GDI_WND* HGDI_WND;
 
-struct _DC
+struct _GDI_DC
 {
 	HGDIOBJECT selectedObject;
 	int bytesPerPixel;
 	int bitsPerPixel;
-	COLORREF bkColor;
-	COLORREF textColor;
-	HBRUSH brush;
-	HRGN clip;
-	HPEN pen;
-	HWND hwnd;
+	GDI_COLOR bkColor;
+	GDI_COLOR textColor;
+	HGDI_BRUSH brush;
+	HGDI_RGN clip;
+	HGDI_PEN pen;
+	HGDI_WND hwnd;
 	int drawMode;
 	int bkMode;
 	int alpha;
 	int invert;
 	int rgb555;
 };
-typedef struct _DC DC;
-typedef DC* HDC;
+typedef struct _GDI_DC GDI_DC;
+typedef GDI_DC* HGDI_DC;
 
-struct _gdi_bitmap
+struct _GDI_IMAGE
 {
-	HDC hdc;
-	HBITMAP bitmap;
-	HBITMAP org_bitmap;
+	HGDI_DC hdc;
+	HGDI_BITMAP bitmap;
+	HGDI_BITMAP org_bitmap;
 };
-typedef struct _gdi_bitmap gdi_bitmap;
+typedef struct _GDI_IMAGE GDI_IMAGE;
+typedef GDI_IMAGE* HGDI_IMAGE;
 
 struct _GDI
 {
@@ -237,26 +238,26 @@ struct _GDI
 	int cursor_y;
 	int bytesPerPixel;
 
-	HDC hdc;
+	HGDI_DC hdc;
 	HCLRCONV clrconv;
-	gdi_bitmap *primary;
-	gdi_bitmap *drawing;
+	GDI_IMAGE *primary;
+	GDI_IMAGE *drawing;
 	uint8* primary_buffer;
-	COLORREF textColor;
+	GDI_COLOR textColor;
 	void * rfx_context;
-	gdi_bitmap *tile;
+	GDI_IMAGE *tile;
 };
 typedef struct _GDI GDI;
 
 uint32 gdi_rop3_code(uint8 code);
 void gdi_copy_mem(uint8 *d, uint8 *s, int n);
 void gdi_copy_memb(uint8 *d, uint8 *s, int n);
-uint8* gdi_get_bitmap_pointer(HDC hdcBmp, int x, int y);
-uint8* gdi_get_brush_pointer(HDC hdcBrush, int x, int y);
+uint8* gdi_get_bitmap_pointer(HGDI_DC hdcBmp, int x, int y);
+uint8* gdi_get_brush_pointer(HGDI_DC hdcBrush, int x, int y);
 int gdi_is_mono_pixel_set(uint8* data, int x, int y, int width);
 int gdi_init(rdpInst * inst, uint32 flags);
-gdi_bitmap* gdi_bitmap_new(GDI *gdi, int width, int height, int bpp, uint8* data);
-void gdi_bitmap_free(gdi_bitmap *gdi_bmp);
+GDI_IMAGE* gdi_bitmap_new(GDI *gdi, int width, int height, int bpp, uint8* data);
+void gdi_bitmap_free(GDI_IMAGE *gdi_bmp);
 void gdi_free(rdpInst* inst);
 
 #define SET_GDI(_inst, _gdi) (_inst)->param2 = _gdi

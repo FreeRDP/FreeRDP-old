@@ -1157,7 +1157,7 @@ unsigned char polygon_case_2[256] =
 	"\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF"
 };
 
-int CompareBitmaps(HBITMAP hBmp1, HBITMAP hBmp2)
+int CompareBitmaps(HGDI_BITMAP hBmp1, HGDI_BITMAP hBmp2)
 {
 	int x, y;
 	uint8 *p1, *p2;
@@ -1234,12 +1234,12 @@ int CompareBitmaps(HBITMAP hBmp1, HBITMAP hBmp2)
 	return 1;
 }
 
-void dump_bitmap(HBITMAP hBmp, char* name)
+void dump_bitmap(HGDI_BITMAP hBmp, char* name)
 {
 	dump_data(hBmp->data, hBmp->width * hBmp->height * hBmp->bytesPerPixel, hBmp->width * hBmp->bytesPerPixel, name);
 }
 
-void assertBitmapsEqual(HBITMAP hBmpActual, HBITMAP hBmpExpected, char *name)
+void assertBitmapsEqual(HGDI_BITMAP hBmpActual, HGDI_BITMAP hBmpExpected, char *name)
 {
 	int bitmapsEqual = CompareBitmaps(hBmpActual, hBmpExpected);
 
@@ -1255,21 +1255,21 @@ void assertBitmapsEqual(HBITMAP hBmpActual, HBITMAP hBmpExpected, char *name)
 
 void test_gdi_GetDC(void)
 {
-	HDC hdc = gdi_GetDC();
+	HGDI_DC hdc = gdi_GetDC();
 	CU_ASSERT(hdc->bytesPerPixel == 4);
 	CU_ASSERT(hdc->bitsPerPixel == 32);
-	CU_ASSERT(hdc->drawMode == R2_BLACK);
+	CU_ASSERT(hdc->drawMode == GDI_R2_BLACK);
 }
 
 void test_gdi_CreateCompatibleDC(void)
 {
-	HDC hdc;
-	HDC chdc;
+	HGDI_DC hdc;
+	HGDI_DC chdc;
  
 	hdc = gdi_GetDC();
 	hdc->bytesPerPixel = 2;
 	hdc->bitsPerPixel = 16;
-	hdc->drawMode = R2_XORPEN;
+	hdc->drawMode = GDI_R2_XORPEN;
 
 	chdc = gdi_CreateCompatibleDC(hdc);
 
@@ -1284,7 +1284,7 @@ void test_gdi_CreateBitmap(void)
 	int width;
 	int height;
 	uint8* data;
-	HBITMAP hBitmap;
+	HGDI_BITMAP hBitmap;
 	
 	bpp = 32;
 	width = 32;
@@ -1292,7 +1292,7 @@ void test_gdi_CreateBitmap(void)
 	data = (uint8*) malloc(width * height * 4);
 	hBitmap = gdi_CreateBitmap(width, height, bpp, data);
 
-	CU_ASSERT(hBitmap->objectType == GDIOBJ_BITMAP);
+	CU_ASSERT(hBitmap->objectType == GDIOBJECT_BITMAP);
 	CU_ASSERT(hBitmap->bitsPerPixel == bpp);
 	CU_ASSERT(hBitmap->width == width);
 	CU_ASSERT(hBitmap->height == height);
@@ -1303,10 +1303,10 @@ void test_gdi_CreateBitmap(void)
 
 void test_gdi_CreateCompatibleBitmap(void)
 {
-	HDC hdc;
+	HGDI_DC hdc;
 	int width;
 	int height;
-	HBITMAP hBitmap;
+	HGDI_BITMAP hBitmap;
 	
 	hdc = gdi_GetDC();
 	hdc->bytesPerPixel = 4;
@@ -1316,7 +1316,7 @@ void test_gdi_CreateCompatibleBitmap(void)
 	height = 16;
 	hBitmap = gdi_CreateCompatibleBitmap(hdc, width, height);
 
-	CU_ASSERT(hBitmap->objectType == GDIOBJ_BITMAP);
+	CU_ASSERT(hBitmap->objectType == GDIOBJECT_BITMAP);
 	CU_ASSERT(hBitmap->bytesPerPixel == hdc->bytesPerPixel);
 	CU_ASSERT(hBitmap->bitsPerPixel == hdc->bitsPerPixel);
 	CU_ASSERT(hBitmap->width == width);
@@ -1328,8 +1328,8 @@ void test_gdi_CreateCompatibleBitmap(void)
 
 void test_gdi_CreatePen(void)
 {
-	HPEN hPen = gdi_CreatePen(PS_SOLID, 8, 0xAABBCCDD);
-	CU_ASSERT(hPen->style == PS_SOLID);
+	HGDI_PEN hPen = gdi_CreatePen(GDI_PS_SOLID, 8, 0xAABBCCDD);
+	CU_ASSERT(hPen->style == GDI_PS_SOLID);
 	CU_ASSERT(hPen->width == 8);
 	CU_ASSERT(hPen->color == 0xAABBCCDD);
 	gdi_DeleteObject((HGDIOBJECT) hPen);
@@ -1337,23 +1337,23 @@ void test_gdi_CreatePen(void)
 
 void test_gdi_CreateSolidBrush(void)
 {
-	HBRUSH hBrush = gdi_CreateSolidBrush(0xAABBCCDD);
-	CU_ASSERT(hBrush->objectType == GDIOBJ_BRUSH);
-	CU_ASSERT(hBrush->style == BS_SOLID);
+	HGDI_BRUSH hBrush = gdi_CreateSolidBrush(0xAABBCCDD);
+	CU_ASSERT(hBrush->objectType == GDIOBJECT_BRUSH);
+	CU_ASSERT(hBrush->style == GDI_BS_SOLID);
 	CU_ASSERT(hBrush->color == 0xAABBCCDD);
 	gdi_DeleteObject((HGDIOBJECT) hBrush);
 }
 
 void test_gdi_CreatePatternBrush(void)
 {
-	HBRUSH hBrush;
-	HBITMAP hBitmap;
+	HGDI_BRUSH hBrush;
+	HGDI_BITMAP hBitmap;
 
 	hBitmap = gdi_CreateBitmap(64, 64, 32, NULL);
 	hBrush = gdi_CreatePatternBrush(hBitmap);
 
-	CU_ASSERT(hBrush->objectType == GDIOBJ_BRUSH);
-	CU_ASSERT(hBrush->style == BS_PATTERN);
+	CU_ASSERT(hBrush->objectType == GDIOBJECT_BRUSH);
+	CU_ASSERT(hBrush->style == GDI_BS_PATTERN);
 	CU_ASSERT(hBrush->pattern == hBitmap);
 
 	gdi_DeleteObject((HGDIOBJECT) hBrush);
@@ -1367,9 +1367,9 @@ void test_gdi_CreateRectRgn(void)
 	int x2 = 128;
 	int y2 = 256;
 
-	HRGN hRegion = gdi_CreateRectRgn(x1, y1, x2, y2);
+	HGDI_RGN hRegion = gdi_CreateRectRgn(x1, y1, x2, y2);
 
-	CU_ASSERT(hRegion->objectType == GDIOBJ_REGION);
+	CU_ASSERT(hRegion->objectType == GDIOBJECT_REGION);
 	CU_ASSERT(hRegion->x == x1);
 	CU_ASSERT(hRegion->y == y1);
 	CU_ASSERT(hRegion->w == x2 - x1 + 1);
@@ -1386,9 +1386,9 @@ void test_gdi_CreateRect(void)
 	int x2 = 128;
 	int y2 = 256;
 
-	HRECT hRect = gdi_CreateRect(x1, y1, x2, y2);
+	HGDI_RECT hRect = gdi_CreateRect(x1, y1, x2, y2);
 
-	CU_ASSERT(hRect->objectType == GDIOBJ_RECT);
+	CU_ASSERT(hRect->objectType == GDIOBJECT_RECT);
 	CU_ASSERT(hRect->left == x1);
 	CU_ASSERT(hRect->top == y1);
 	CU_ASSERT(hRect->right == x2);
@@ -1399,10 +1399,10 @@ void test_gdi_CreateRect(void)
 
 void test_gdi_GetPixel(void)
 {
-	HDC hdc;
+	HGDI_DC hdc;
 	int width = 128;
 	int height = 64;
-	HBITMAP hBitmap;
+	HGDI_BITMAP hBitmap;
 
 	hdc = gdi_GetDC();
 	hdc->bytesPerPixel = 4;
@@ -1423,10 +1423,10 @@ void test_gdi_GetPixel(void)
 
 void test_gdi_SetPixel(void)
 {
-	HDC hdc;
+	HGDI_DC hdc;
 	int width = 128;
 	int height = 64;
-	HBITMAP hBitmap;
+	HGDI_BITMAP hBitmap;
 
 	hdc = gdi_GetDC();
 	hdc->bytesPerPixel = 4;
@@ -1446,27 +1446,27 @@ void test_gdi_SetPixel(void)
 
 void test_gdi_SetROP2(void)
 {
-	HDC hdc = gdi_GetDC();
-	gdi_SetROP2(hdc, R2_BLACK);
-	CU_ASSERT(hdc->drawMode == R2_BLACK);
+	HGDI_DC hdc = gdi_GetDC();
+	gdi_SetROP2(hdc, GDI_R2_BLACK);
+	CU_ASSERT(hdc->drawMode == GDI_R2_BLACK);
 }
 
 void test_gdi_MoveToEx(void)
 {
-	HDC hdc;
-	HPEN hPen;
-	HPOINT prevPoint;
+	HGDI_DC hdc;
+	HGDI_PEN hPen;
+	HGDI_POINT prevPoint;
 
 	hdc = gdi_GetDC();
-	hPen = gdi_CreatePen(PS_SOLID, 8, 0xAABBCCDD);
+	hPen = gdi_CreatePen(GDI_PS_SOLID, 8, 0xAABBCCDD);
 	gdi_SelectObject(hdc, (HGDIOBJECT) hPen);
 	gdi_MoveToEx(hdc, 128, 256, NULL);
 
 	CU_ASSERT(hdc->pen->posX == 128);
 	CU_ASSERT(hdc->pen->posY == 256);
 
-	prevPoint = (HPOINT) malloc(sizeof(POINT));
-	memset(prevPoint, '\0', sizeof(POINT));
+	prevPoint = (HGDI_POINT) malloc(sizeof(GDI_POINT));
+	memset(prevPoint, '\0', sizeof(GDI_POINT));
 
 	gdi_MoveToEx(hdc, 64, 128, prevPoint);
 
@@ -1478,37 +1478,37 @@ void test_gdi_MoveToEx(void)
 
 void test_gdi_LineTo(void)
 {
-	HDC hdc;
-	HPEN pen;
+	HGDI_DC hdc;
+	HGDI_PEN pen;
 	uint8* data;
-	HBITMAP hBmp;
-	HBITMAP hBmp_LineTo_1;
-	HBITMAP hBmp_LineTo_2;
-	HBITMAP hBmp_LineTo_3;
-	HBITMAP hBmp_LineTo_4;
-	HBITMAP hBmp_LineTo_5;
-	HBITMAP hBmp_LineTo_6;
-	HBITMAP hBmp_LineTo_7;
-	HBITMAP hBmp_LineTo_8;
-	HBITMAP hBmp_LineTo_9;
-	HBITMAP hBmp_LineTo_10;
-	HBITMAP hBmp_LineTo_11;
-	HBITMAP hBmp_LineTo_R2_BLACK;
-	HBITMAP hBmp_LineTo_R2_NOTMERGEPEN;
-	HBITMAP hBmp_LineTo_R2_MASKNOTPEN;
-	HBITMAP hBmp_LineTo_R2_NOTCOPYPEN;
-	HBITMAP hBmp_LineTo_R2_MASKPENNOT;
-	HBITMAP hBmp_LineTo_R2_NOT;
-	HBITMAP hBmp_LineTo_R2_XORPEN;
-	HBITMAP hBmp_LineTo_R2_NOTMASKPEN;
-	HBITMAP hBmp_LineTo_R2_MASKPEN;
-	HBITMAP hBmp_LineTo_R2_NOTXORPEN;
-	HBITMAP hBmp_LineTo_R2_NOP;
-	HBITMAP hBmp_LineTo_R2_MERGENOTPEN;
-	HBITMAP hBmp_LineTo_R2_COPYPEN;
-	HBITMAP hBmp_LineTo_R2_MERGEPENNOT;
-	HBITMAP hBmp_LineTo_R2_MERGEPEN;
-	HBITMAP hBmp_LineTo_R2_WHITE;
+	HGDI_BITMAP hBmp;
+	HGDI_BITMAP hBmp_LineTo_1;
+	HGDI_BITMAP hBmp_LineTo_2;
+	HGDI_BITMAP hBmp_LineTo_3;
+	HGDI_BITMAP hBmp_LineTo_4;
+	HGDI_BITMAP hBmp_LineTo_5;
+	HGDI_BITMAP hBmp_LineTo_6;
+	HGDI_BITMAP hBmp_LineTo_7;
+	HGDI_BITMAP hBmp_LineTo_8;
+	HGDI_BITMAP hBmp_LineTo_9;
+	HGDI_BITMAP hBmp_LineTo_10;
+	HGDI_BITMAP hBmp_LineTo_11;
+	HGDI_BITMAP hBmp_LineTo_R2_BLACK;
+	HGDI_BITMAP hBmp_LineTo_R2_NOTMERGEPEN;
+	HGDI_BITMAP hBmp_LineTo_R2_MASKNOTPEN;
+	HGDI_BITMAP hBmp_LineTo_R2_NOTCOPYPEN;
+	HGDI_BITMAP hBmp_LineTo_R2_MASKPENNOT;
+	HGDI_BITMAP hBmp_LineTo_R2_NOT;
+	HGDI_BITMAP hBmp_LineTo_R2_XORPEN;
+	HGDI_BITMAP hBmp_LineTo_R2_NOTMASKPEN;
+	HGDI_BITMAP hBmp_LineTo_R2_MASKPEN;
+	HGDI_BITMAP hBmp_LineTo_R2_NOTXORPEN;
+	HGDI_BITMAP hBmp_LineTo_R2_NOP;
+	HGDI_BITMAP hBmp_LineTo_R2_MERGENOTPEN;
+	HGDI_BITMAP hBmp_LineTo_R2_COPYPEN;
+	HGDI_BITMAP hBmp_LineTo_R2_MERGEPENNOT;
+	HGDI_BITMAP hBmp_LineTo_R2_MERGEPEN;
+	HGDI_BITMAP hBmp_LineTo_R2_WHITE;
 	RD_PALETTE* hPalette;
 	HCLRCONV clrconv;
 	int bitsPerPixel = 8;
@@ -1617,216 +1617,216 @@ void test_gdi_LineTo(void)
 	hBmp_LineTo_R2_WHITE = gdi_CreateBitmap(16, 16, bitsPerPixel, data);
 
 	/* Test Case 1: (0,0) -> (15, 15) */
-	gdi_BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, WHITENESS);
+	gdi_BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, GDI_WHITENESS);
 	gdi_MoveToEx(hdc, 0, 0, NULL);
 	gdi_LineTo(hdc, 15, 15);
 	assertBitmapsEqual(hBmp, hBmp_LineTo_1, "Case 1");
 
 	/* Test Case 2: (15,15) -> (0,0) */
-	gdi_BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, WHITENESS);
+	gdi_BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, GDI_WHITENESS);
 	gdi_MoveToEx(hdc, 15, 15, NULL);
 	gdi_LineTo(hdc, 0, 0);
 	assertBitmapsEqual(hBmp, hBmp_LineTo_2, "Case 2");
 
 	/* Test Case 3: (15,0) -> (0,15) */
-	gdi_BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, WHITENESS);
+	gdi_BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, GDI_WHITENESS);
 	gdi_MoveToEx(hdc, 15, 0, NULL);
 	gdi_LineTo(hdc, 0, 15);
 	assertBitmapsEqual(hBmp, hBmp_LineTo_3, "Case 3");
 
 	/* Test Case 4: (0,15) -> (15,0) */
-	gdi_BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, WHITENESS);
+	gdi_BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, GDI_WHITENESS);
 	gdi_MoveToEx(hdc, 0, 15, NULL);
 	gdi_LineTo(hdc, 15, 0);
 	assertBitmapsEqual(hBmp, hBmp_LineTo_4, "Case 4");
 
 	/* Test Case 4: (0,15) -> (15,0) */
-	gdi_BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, WHITENESS);
+	gdi_BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, GDI_WHITENESS);
 	gdi_MoveToEx(hdc, 0, 15, NULL);
 	gdi_LineTo(hdc, 15, 0);
 	assertBitmapsEqual(hBmp, hBmp_LineTo_4, "Case 4");
 
 	/* Test Case 5: (0,8) -> (15,8) */
-	gdi_BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, WHITENESS);
+	gdi_BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, GDI_WHITENESS);
 	gdi_MoveToEx(hdc, 0, 8, NULL);
 	gdi_LineTo(hdc, 15, 8);
 	assertBitmapsEqual(hBmp, hBmp_LineTo_5, "Case 5");
 
 	/* Test Case 6: (15,8) -> (0,8) */
-	gdi_BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, WHITENESS);
+	gdi_BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, GDI_WHITENESS);
 	gdi_MoveToEx(hdc, 15, 8, NULL);
 	gdi_LineTo(hdc, 0, 8);
 	assertBitmapsEqual(hBmp, hBmp_LineTo_6, "Case 6");
 
 	/* Test Case 7: (8,0) -> (8,15) */
-	gdi_BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, WHITENESS);
+	gdi_BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, GDI_WHITENESS);
 	gdi_MoveToEx(hdc, 8, 0, NULL);
 	gdi_LineTo(hdc, 8, 15);
 	assertBitmapsEqual(hBmp, hBmp_LineTo_7, "Case 7");
 
 	/* Test Case 8: (8,15) -> (8,0) */
-	gdi_BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, WHITENESS);
+	gdi_BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, GDI_WHITENESS);
 	gdi_MoveToEx(hdc, 8, 15, NULL);
 	gdi_LineTo(hdc, 8, 0);
 	assertBitmapsEqual(hBmp, hBmp_LineTo_8, "Case 8");
 
 	/* Test Case 9: (4,4) -> (12,12) */
-	gdi_BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, WHITENESS);
+	gdi_BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, GDI_WHITENESS);
 	gdi_MoveToEx(hdc, 4, 4, NULL);
 	gdi_LineTo(hdc, 12, 12);
 	assertBitmapsEqual(hBmp, hBmp_LineTo_9, "Case 9");
 
 	/* Test Case 10: (12,12) -> (4,4) */
-	gdi_BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, WHITENESS);
+	gdi_BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, GDI_WHITENESS);
 	gdi_MoveToEx(hdc, 12, 12, NULL);
 	gdi_LineTo(hdc, 4, 4);
 	assertBitmapsEqual(hBmp, hBmp_LineTo_10, "Case 10");
 
 	/* Test Case 11: (0,0) -> (+10,+10) */
-	gdi_BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, WHITENESS);
+	gdi_BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, GDI_WHITENESS);
 	gdi_SetClipRgn(hdc, 0, 0, 16, 16);
 	gdi_MoveToEx(hdc, 0, 0, NULL);
 	gdi_LineTo(hdc, 16 + 10, 16 + 10);
 	assertBitmapsEqual(hBmp, hBmp_LineTo_11, "Case 11");
 
 	/* Test Case 12: (0,0) -> (16,16), R2_BLACK */
-	gdi_BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, WHITENESS);
+	gdi_BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, GDI_WHITENESS);
 	gdi_SetClipRgn(hdc, 0, 0, 16, 16);
 	gdi_MoveToEx(hdc, 0, 0, NULL);
-	gdi_SetROP2(hdc, R2_BLACK);
+	gdi_SetROP2(hdc, GDI_R2_BLACK);
 	gdi_LineTo(hdc, 16, 16);
 	assertBitmapsEqual(hBmp, hBmp_LineTo_R2_BLACK, "Case 12");
 
 	/* Test Case 13: (0,0) -> (16,16), R2_NOTMERGEPEN */
-	gdi_BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, WHITENESS);
+	gdi_BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, GDI_WHITENESS);
 	gdi_SetClipRgn(hdc, 0, 0, 16, 16);
 	gdi_MoveToEx(hdc, 0, 0, NULL);
-	gdi_SetROP2(hdc, R2_NOTMERGEPEN);
+	gdi_SetROP2(hdc, GDI_R2_NOTMERGEPEN);
 	gdi_LineTo(hdc, 16, 16);
 	assertBitmapsEqual(hBmp, hBmp_LineTo_R2_NOTMERGEPEN, "Case 13");
 
 	/* Test Case 14: (0,0) -> (16,16), R2_MASKNOTPEN */
-	gdi_BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, WHITENESS);
+	gdi_BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, GDI_WHITENESS);
 	gdi_SetClipRgn(hdc, 0, 0, 16, 16);
 	gdi_MoveToEx(hdc, 0, 0, NULL);
-	gdi_SetROP2(hdc, R2_MASKNOTPEN);
+	gdi_SetROP2(hdc, GDI_R2_MASKNOTPEN);
 	gdi_LineTo(hdc, 16, 16);
 	assertBitmapsEqual(hBmp, hBmp_LineTo_R2_MASKNOTPEN, "Case 14");
 
 	/* Test Case 15: (0,0) -> (16,16), R2_NOTCOPYPEN */
-	gdi_BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, WHITENESS);
+	gdi_BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, GDI_WHITENESS);
 	gdi_SetClipRgn(hdc, 0, 0, 16, 16);
 	gdi_MoveToEx(hdc, 0, 0, NULL);
-	gdi_SetROP2(hdc, R2_NOTCOPYPEN);
+	gdi_SetROP2(hdc, GDI_R2_NOTCOPYPEN);
 	gdi_LineTo(hdc, 16, 16);
 	assertBitmapsEqual(hBmp, hBmp_LineTo_R2_NOTCOPYPEN, "Case 15");
 
 	/* Test Case 16: (0,0) -> (16,16), R2_MASKPENNOT */
-	gdi_BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, WHITENESS);
+	gdi_BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, GDI_WHITENESS);
 	gdi_SetClipRgn(hdc, 0, 0, 16, 16);
 	gdi_MoveToEx(hdc, 0, 0, NULL);
-	gdi_SetROP2(hdc, R2_MASKPENNOT);
+	gdi_SetROP2(hdc, GDI_R2_MASKPENNOT);
 	gdi_LineTo(hdc, 16, 16);
 	assertBitmapsEqual(hBmp, hBmp_LineTo_R2_MASKPENNOT, "Case 16");
 
 	/* Test Case 17: (0,0) -> (16,16), R2_NOT */
-	gdi_BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, WHITENESS);
+	gdi_BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, GDI_WHITENESS);
 	gdi_SetClipRgn(hdc, 0, 0, 16, 16);
 	gdi_MoveToEx(hdc, 0, 0, NULL);
-	gdi_SetROP2(hdc, R2_NOT);
+	gdi_SetROP2(hdc, GDI_R2_NOT);
 	gdi_LineTo(hdc, 16, 16);
 	assertBitmapsEqual(hBmp, hBmp_LineTo_R2_NOT, "Case 17");
 
 	/* Test Case 18: (0,0) -> (16,16), R2_XORPEN */
-	gdi_BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, WHITENESS);
+	gdi_BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, GDI_WHITENESS);
 	gdi_SetClipRgn(hdc, 0, 0, 16, 16);
 	gdi_MoveToEx(hdc, 0, 0, NULL);
-	gdi_SetROP2(hdc, R2_XORPEN);
+	gdi_SetROP2(hdc, GDI_R2_XORPEN);
 	gdi_LineTo(hdc, 16, 16);
 	assertBitmapsEqual(hBmp, hBmp_LineTo_R2_XORPEN, "Case 18");
 
 	/* Test Case 19: (0,0) -> (16,16), R2_NOTMASKPEN */
-	gdi_BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, WHITENESS);
+	gdi_BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, GDI_WHITENESS);
 	gdi_SetClipRgn(hdc, 0, 0, 16, 16);
 	gdi_MoveToEx(hdc, 0, 0, NULL);
-	gdi_SetROP2(hdc, R2_NOTMASKPEN);
+	gdi_SetROP2(hdc, GDI_R2_NOTMASKPEN);
 	gdi_LineTo(hdc, 16, 16);
 	assertBitmapsEqual(hBmp, hBmp_LineTo_R2_NOTMASKPEN, "Case 19");
 
 	/* Test Case 20: (0,0) -> (16,16), R2_MASKPEN */
-	gdi_BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, WHITENESS);
+	gdi_BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, GDI_WHITENESS);
 	gdi_SetClipRgn(hdc, 0, 0, 16, 16);
 	gdi_MoveToEx(hdc, 0, 0, NULL);
-	gdi_SetROP2(hdc, R2_MASKPEN);
+	gdi_SetROP2(hdc, GDI_R2_MASKPEN);
 	gdi_LineTo(hdc, 16, 16);
 	assertBitmapsEqual(hBmp, hBmp_LineTo_R2_MASKPEN, "Case 20");
 
 	/* Test Case 21: (0,0) -> (16,16), R2_NOTXORPEN */
-	gdi_BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, WHITENESS);
+	gdi_BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, GDI_WHITENESS);
 	gdi_SetClipRgn(hdc, 0, 0, 16, 16);
 	gdi_MoveToEx(hdc, 0, 0, NULL);
-	gdi_SetROP2(hdc, R2_NOTXORPEN);
+	gdi_SetROP2(hdc, GDI_R2_NOTXORPEN);
 	gdi_LineTo(hdc, 16, 16);
 	assertBitmapsEqual(hBmp, hBmp_LineTo_R2_NOTXORPEN, "Case 21");
 
 	/* Test Case 22: (0,0) -> (16,16), R2_NOP */
-	gdi_BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, WHITENESS);
+	gdi_BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, GDI_WHITENESS);
 	gdi_SetClipRgn(hdc, 0, 0, 16, 16);
 	gdi_MoveToEx(hdc, 0, 0, NULL);
-	gdi_SetROP2(hdc, R2_NOP);
+	gdi_SetROP2(hdc, GDI_R2_NOP);
 	gdi_LineTo(hdc, 16, 16);
 	assertBitmapsEqual(hBmp, hBmp_LineTo_R2_NOP, "Case 22");
 
 	/* Test Case 23: (0,0) -> (16,16), R2_MERGENOTPEN */
-	gdi_BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, WHITENESS);
+	gdi_BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, GDI_WHITENESS);
 	gdi_SetClipRgn(hdc, 0, 0, 16, 16);
 	gdi_MoveToEx(hdc, 0, 0, NULL);
-	gdi_SetROP2(hdc, R2_MERGENOTPEN);
+	gdi_SetROP2(hdc, GDI_R2_MERGENOTPEN);
 	gdi_LineTo(hdc, 16, 16);
 	assertBitmapsEqual(hBmp, hBmp_LineTo_R2_MERGENOTPEN, "Case 23");
 
 	/* Test Case 24: (0,0) -> (16,16), R2_COPYPEN */
-	gdi_BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, WHITENESS);
+	gdi_BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, GDI_WHITENESS);
 	gdi_SetClipRgn(hdc, 0, 0, 16, 16);
 	gdi_MoveToEx(hdc, 0, 0, NULL);
-	gdi_SetROP2(hdc, R2_COPYPEN);
+	gdi_SetROP2(hdc, GDI_R2_COPYPEN);
 	gdi_LineTo(hdc, 16, 16);
 	assertBitmapsEqual(hBmp, hBmp_LineTo_R2_COPYPEN, "Case 24");
 
 	/* Test Case 25: (0,0) -> (16,16), R2_MERGEPENNOT */
-	gdi_BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, WHITENESS);
+	gdi_BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, GDI_WHITENESS);
 	gdi_SetClipRgn(hdc, 0, 0, 16, 16);
 	gdi_MoveToEx(hdc, 0, 0, NULL);
-	gdi_SetROP2(hdc, R2_MERGEPENNOT);
+	gdi_SetROP2(hdc, GDI_R2_MERGEPENNOT);
 	gdi_LineTo(hdc, 16, 16);
 	assertBitmapsEqual(hBmp, hBmp_LineTo_R2_MERGEPENNOT, "Case 25");
 
 	/* Test Case 26: (0,0) -> (16,16), R2_MERGEPEN */
-	gdi_BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, WHITENESS);
+	gdi_BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, GDI_WHITENESS);
 	gdi_SetClipRgn(hdc, 0, 0, 16, 16);
 	gdi_MoveToEx(hdc, 0, 0, NULL);
-	gdi_SetROP2(hdc, R2_MERGEPEN);
+	gdi_SetROP2(hdc, GDI_R2_MERGEPEN);
 	gdi_LineTo(hdc, 16, 16);
 	assertBitmapsEqual(hBmp, hBmp_LineTo_R2_MERGEPEN, "Case 26");
 
 	/* Test Case 27: (0,0) -> (16,16), R2_WHITE */
-	gdi_BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, WHITENESS);
+	gdi_BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, GDI_WHITENESS);
 	gdi_SetClipRgn(hdc, 0, 0, 16, 16);
 	gdi_MoveToEx(hdc, 0, 0, NULL);
-	gdi_SetROP2(hdc, R2_WHITE);
+	gdi_SetROP2(hdc, GDI_R2_WHITE);
 	gdi_LineTo(hdc, 16, 16);
 	assertBitmapsEqual(hBmp, hBmp_LineTo_R2_WHITE, "Case 27");
 }
 
 void test_gdi_Ellipse(void)
 {
-	HDC hdc;
-	HPEN pen;
+	HGDI_DC hdc;
+	HGDI_PEN pen;
 	uint8* data;
-	HBITMAP hBmp;
-	HBITMAP hBmp_Ellipse_1;
-	HBITMAP hBmp_Ellipse_2;
-	HBITMAP hBmp_Ellipse_3;
+	HGDI_BITMAP hBmp;
+	HGDI_BITMAP hBmp_Ellipse_1;
+	HGDI_BITMAP hBmp_Ellipse_2;
+	HGDI_BITMAP hBmp_Ellipse_3;
 	RD_PALETTE* hPalette;
 	HCLRCONV clrconv;
 	int bitsPerPixel = 8;
@@ -1860,14 +1860,14 @@ void test_gdi_Ellipse(void)
 	hBmp_Ellipse_3 = gdi_CreateBitmap(16, 16, bitsPerPixel, data);
 
 	/* Test Case 1: (0,0) -> (16, 16) */
-	gdi_BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, WHITENESS);
+	gdi_BitBlt(hdc, 0, 0, 16, 16, hdc, 0, 0, GDI_WHITENESS);
 	gdi_Ellipse(hdc, 0, 0, 16, 16);
 	//assertBitmapsEqual(hBmp, hBmp_Ellipse_1, "Case 1");
 }
 
 void test_gdi_PtInRect(void)
 {
-	HRECT hRect;
+	HGDI_RECT hRect;
 	int left = 20;
 	int top = 40;
 	int right = 60;
@@ -1888,11 +1888,11 @@ void test_gdi_PtInRect(void)
 
 void test_gdi_FillRect(void)
 {
-	HDC hdc;
-	HRECT hRect;
-	HBRUSH hBrush;
-	HBITMAP hBitmap;
-	COLORREF color;
+	HGDI_DC hdc;
+	HGDI_RECT hRect;
+	HGDI_BRUSH hBrush;
+	HGDI_BITMAP hBitmap;
+	GDI_COLOR color;
 
 	int x, y;
 	int badPixels;
@@ -1915,7 +1915,7 @@ void test_gdi_FillRect(void)
 	memset(hBitmap->data, 0, width * height * hdc->bytesPerPixel);
 	gdi_SelectObject(hdc, (HGDIOBJECT) hBitmap);
 
-	color = (COLORREF) ARGB32(0xFF, 0xAA, 0xBB, 0xCC);
+	color = (GDI_COLOR) ARGB32(0xFF, 0xAA, 0xBB, 0xCC);
 	hBrush = gdi_CreateSolidBrush(color);
 
 	gdi_FillRect(hdc, hRect, hBrush);
@@ -1959,29 +1959,29 @@ void test_gdi_FillRect(void)
 void test_gdi_BitBlt_32bpp(void)
 {
 	uint8* data;
-	HDC hdcSrc;
-	HDC hdcDst;
-	HBRUSH hBrush;
-	HBITMAP hBmpSrc;
-	HBITMAP hBmpDst;
-	HBITMAP hBmpPat;
-	HBITMAP hBmp_SPna;
-	HBITMAP hBmp_BLACKNESS;
-	HBITMAP hBmp_WHITENESS;
-	HBITMAP hBmp_SRCCOPY;
-	HBITMAP hBmp_SRCAND;
-	HBITMAP hBmp_SRCPAINT;
-	HBITMAP hBmp_SRCINVERT;
-	HBITMAP hBmp_SRCERASE;
-	HBITMAP hBmp_NOTSRCCOPY;
-	HBITMAP hBmp_NOTSRCERASE;
-	HBITMAP hBmp_DSTINVERT;
-	HBITMAP hBmp_MERGECOPY;
-	HBITMAP hBmp_MERGEPAINT;
-	HBITMAP hBmp_PATCOPY;
-	HBITMAP hBmp_PATPAINT;
-	HBITMAP hBmp_PATINVERT;
-	HBITMAP hBmpDstOriginal;
+	HGDI_DC hdcSrc;
+	HGDI_DC hdcDst;
+	HGDI_BRUSH hBrush;
+	HGDI_BITMAP hBmpSrc;
+	HGDI_BITMAP hBmpDst;
+	HGDI_BITMAP hBmpPat;
+	HGDI_BITMAP hBmp_SPna;
+	HGDI_BITMAP hBmp_BLACKNESS;
+	HGDI_BITMAP hBmp_WHITENESS;
+	HGDI_BITMAP hBmp_SRCCOPY;
+	HGDI_BITMAP hBmp_SRCAND;
+	HGDI_BITMAP hBmp_SRCPAINT;
+	HGDI_BITMAP hBmp_SRCINVERT;
+	HGDI_BITMAP hBmp_SRCERASE;
+	HGDI_BITMAP hBmp_NOTSRCCOPY;
+	HGDI_BITMAP hBmp_NOTSRCERASE;
+	HGDI_BITMAP hBmp_DSTINVERT;
+	HGDI_BITMAP hBmp_MERGECOPY;
+	HGDI_BITMAP hBmp_MERGEPAINT;
+	HGDI_BITMAP hBmp_PATCOPY;
+	HGDI_BITMAP hBmp_PATPAINT;
+	HGDI_BITMAP hBmp_PATINVERT;
+	HGDI_BITMAP hBmpDstOriginal;
 	RD_PALETTE* hPalette;
 	HCLRCONV clrconv;
 
@@ -2067,88 +2067,88 @@ void test_gdi_BitBlt_32bpp(void)
 	gdi_SelectObject(hdcDst, (HGDIOBJECT) hBmpDst);
 
 	/* SRCCOPY */
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, SRCCOPY);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_SRCCOPY);
 	CU_ASSERT(CompareBitmaps(hBmpDst, hBmp_SRCCOPY) == 1)
 
 	/* restore original destination bitmap */
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpDstOriginal);
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, SRCCOPY);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_SRCCOPY);
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpSrc);
 		
 	/* BLACKNESS */
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, BLACKNESS);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_BLACKNESS);
 	CU_ASSERT(CompareBitmaps(hBmpDst, hBmp_BLACKNESS) == 1);
 
 	/* restore original destination bitmap */
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpDstOriginal);
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, SRCCOPY);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_SRCCOPY);
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpSrc);
 	
 	/* WHITENESS */
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, WHITENESS);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_WHITENESS);
 	CU_ASSERT(CompareBitmaps(hBmpDst, hBmp_WHITENESS) == 1);
 
 	/* restore original destination bitmap */
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpDstOriginal);
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, SRCCOPY);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_SRCCOPY);
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpSrc);
 
 	/* SRCAND */
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, SRCAND);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_SRCAND);
 	CU_ASSERT(CompareBitmaps(hBmpDst, hBmp_SRCAND) == 1);
 
 	/* restore original destination bitmap */
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpDstOriginal);
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, SRCCOPY);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_SRCCOPY);
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpSrc);
 	
 	/* SRCPAINT */
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, SRCPAINT);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_SRCPAINT);
 	CU_ASSERT(CompareBitmaps(hBmpDst, hBmp_SRCPAINT) == 1);
 
 	/* restore original destination bitmap */
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpDstOriginal);
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, SRCCOPY);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_SRCCOPY);
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpSrc);
 	
 	/* SRCINVERT */
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, SRCINVERT);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_SRCINVERT);
 	CU_ASSERT(CompareBitmaps(hBmpDst, hBmp_SRCINVERT) == 1);
 
 	/* restore original destination bitmap */
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpDstOriginal);
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, SRCCOPY);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_SRCCOPY);
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpSrc);
 	
 	/* SRCERASE */
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, SRCERASE);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_SRCERASE);
 	CU_ASSERT(CompareBitmaps(hBmpDst, hBmp_SRCERASE) == 1);
 
 	/* restore original destination bitmap */
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpDstOriginal);
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, SRCCOPY);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_SRCCOPY);
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpSrc);
 	
 	/* NOTSRCCOPY */
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, NOTSRCCOPY);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_NOTSRCCOPY);
 	CU_ASSERT(CompareBitmaps(hBmpDst, hBmp_NOTSRCCOPY) == 1);
 
 	/* restore original destination bitmap */
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpDstOriginal);
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, SRCCOPY);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_SRCCOPY);
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpSrc);
 	
 	/* NOTSRCERASE */
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, NOTSRCERASE);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_NOTSRCERASE);
 	CU_ASSERT(CompareBitmaps(hBmpDst, hBmp_NOTSRCERASE) == 1);
 
 	/* restore original destination bitmap */
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpDstOriginal);
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, SRCCOPY);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_SRCCOPY);
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpSrc);
 	
 	/* DSTINVERT */
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, DSTINVERT);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_DSTINVERT);
 	CU_ASSERT(CompareBitmaps(hBmpDst, hBmp_DSTINVERT) == 1);
 
 	/* select a brush for operations using a pattern */
@@ -2157,85 +2157,85 @@ void test_gdi_BitBlt_32bpp(void)
 
 	/* restore original destination bitmap */
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpDstOriginal);
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, SRCCOPY);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_SRCCOPY);
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpSrc);
 	
 	/* MERGECOPY */
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, MERGECOPY);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_MERGECOPY);
 	CU_ASSERT(CompareBitmaps(hBmpDst, hBmp_MERGECOPY) == 1);
 
 	/* restore original destination bitmap */
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpDstOriginal);
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, SRCCOPY);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_SRCCOPY);
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpSrc);
 	
 	/* MERGEPAINT */
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, MERGEPAINT);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_MERGEPAINT);
 	CU_ASSERT(CompareBitmaps(hBmpDst, hBmp_MERGEPAINT) == 1);
 	
 	/* restore original destination bitmap */
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpDstOriginal);
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, SRCCOPY);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_SRCCOPY);
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpSrc);
 	
 	/* PATCOPY */
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, PATCOPY);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_PATCOPY);
 	CU_ASSERT(CompareBitmaps(hBmpDst, hBmp_PATCOPY) == 1);
 
 	/* restore original destination bitmap */
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpDstOriginal);
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, SRCCOPY);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_SRCCOPY);
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpSrc);
 	
 	/* PATINVERT */
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, PATINVERT);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_PATINVERT);
 	CU_ASSERT(CompareBitmaps(hBmpDst, hBmp_PATINVERT) == 1);
 
 	/* restore original destination bitmap */
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpDstOriginal);
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, SRCCOPY);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_SRCCOPY);
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpSrc);
 	
 	/* PATPAINT */
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, PATPAINT);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_PATPAINT);
 	CU_ASSERT(CompareBitmaps(hBmpDst, hBmp_PATPAINT) == 1);
 	
 	/* restore original destination bitmap */
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpDstOriginal);
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, SRCCOPY);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_SRCCOPY);
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpSrc);
 	
 	/* SPna */
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, SPna);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_SPna);
 	CU_ASSERT(CompareBitmaps(hBmpDst, hBmp_SPna) == 1)
 }
 
 void test_gdi_BitBlt_16bpp(void)
 {
 	uint8* data;
-	HDC hdcSrc;
-	HDC hdcDst;
-	HBRUSH hBrush;
-	HBITMAP hBmpSrc;
-	HBITMAP hBmpDst;
-	HBITMAP hBmpPat;
-	HBITMAP hBmp_SPna;
-	HBITMAP hBmp_BLACKNESS;
-	HBITMAP hBmp_WHITENESS;
-	HBITMAP hBmp_SRCCOPY;
-	HBITMAP hBmp_SRCAND;
-	HBITMAP hBmp_SRCPAINT;
-	HBITMAP hBmp_SRCINVERT;
-	HBITMAP hBmp_SRCERASE;
-	HBITMAP hBmp_NOTSRCCOPY;
-	HBITMAP hBmp_NOTSRCERASE;
-	HBITMAP hBmp_DSTINVERT;
-	HBITMAP hBmp_MERGECOPY;
-	HBITMAP hBmp_MERGEPAINT;
-	HBITMAP hBmp_PATCOPY;
-	HBITMAP hBmp_PATPAINT;
-	HBITMAP hBmp_PATINVERT;
-	HBITMAP hBmpDstOriginal;
+	HGDI_DC hdcSrc;
+	HGDI_DC hdcDst;
+	HGDI_BRUSH hBrush;
+	HGDI_BITMAP hBmpSrc;
+	HGDI_BITMAP hBmpDst;
+	HGDI_BITMAP hBmpPat;
+	HGDI_BITMAP hBmp_SPna;
+	HGDI_BITMAP hBmp_BLACKNESS;
+	HGDI_BITMAP hBmp_WHITENESS;
+	HGDI_BITMAP hBmp_SRCCOPY;
+	HGDI_BITMAP hBmp_SRCAND;
+	HGDI_BITMAP hBmp_SRCPAINT;
+	HGDI_BITMAP hBmp_SRCINVERT;
+	HGDI_BITMAP hBmp_SRCERASE;
+	HGDI_BITMAP hBmp_NOTSRCCOPY;
+	HGDI_BITMAP hBmp_NOTSRCERASE;
+	HGDI_BITMAP hBmp_DSTINVERT;
+	HGDI_BITMAP hBmp_MERGECOPY;
+	HGDI_BITMAP hBmp_MERGEPAINT;
+	HGDI_BITMAP hBmp_PATCOPY;
+	HGDI_BITMAP hBmp_PATPAINT;
+	HGDI_BITMAP hBmp_PATINVERT;
+	HGDI_BITMAP hBmpDstOriginal;
 	RD_PALETTE* hPalette;
 	HCLRCONV clrconv;
 
@@ -2321,88 +2321,88 @@ void test_gdi_BitBlt_16bpp(void)
 	gdi_SelectObject(hdcDst, (HGDIOBJECT) hBmpDst);
 
 	/* SRCCOPY */
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, SRCCOPY);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_SRCCOPY);
 	CU_ASSERT(CompareBitmaps(hBmpDst, hBmp_SRCCOPY) == 1)
 
 	/* restore original destination bitmap */
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpDstOriginal);
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, SRCCOPY);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_SRCCOPY);
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpSrc);
 		
 	/* BLACKNESS */
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, BLACKNESS);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_BLACKNESS);
 	CU_ASSERT(CompareBitmaps(hBmpDst, hBmp_BLACKNESS) == 1);
 
 	/* restore original destination bitmap */
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpDstOriginal);
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, SRCCOPY);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_SRCCOPY);
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpSrc);
 	
 	/* WHITENESS */
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, WHITENESS);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_WHITENESS);
 	CU_ASSERT(CompareBitmaps(hBmpDst, hBmp_WHITENESS) == 1);
 
 	/* restore original destination bitmap */
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpDstOriginal);
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, SRCCOPY);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_SRCCOPY);
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpSrc);
 
 	/* SRCAND */
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, SRCAND);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_SRCAND);
 	CU_ASSERT(CompareBitmaps(hBmpDst, hBmp_SRCAND) == 1);
 
 	/* restore original destination bitmap */
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpDstOriginal);
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, SRCCOPY);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_SRCCOPY);
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpSrc);
 	
 	/* SRCPAINT */
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, SRCPAINT);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_SRCPAINT);
 	CU_ASSERT(CompareBitmaps(hBmpDst, hBmp_SRCPAINT) == 1);
 
 	/* restore original destination bitmap */
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpDstOriginal);
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, SRCCOPY);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_SRCCOPY);
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpSrc);
 	
 	/* SRCINVERT */
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, SRCINVERT);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_SRCINVERT);
 	CU_ASSERT(CompareBitmaps(hBmpDst, hBmp_SRCINVERT) == 1);
 
 	/* restore original destination bitmap */
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpDstOriginal);
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, SRCCOPY);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_SRCCOPY);
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpSrc);
 	
 	/* SRCERASE */
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, SRCERASE);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_SRCERASE);
 	CU_ASSERT(CompareBitmaps(hBmpDst, hBmp_SRCERASE) == 1);
 
 	/* restore original destination bitmap */
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpDstOriginal);
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, SRCCOPY);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_SRCCOPY);
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpSrc);
 	
 	/* NOTSRCCOPY */
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, NOTSRCCOPY);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_NOTSRCCOPY);
 	CU_ASSERT(CompareBitmaps(hBmpDst, hBmp_NOTSRCCOPY) == 1);
 
 	/* restore original destination bitmap */
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpDstOriginal);
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, SRCCOPY);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_SRCCOPY);
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpSrc);
 	
 	/* NOTSRCERASE */
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, NOTSRCERASE);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_NOTSRCERASE);
 	CU_ASSERT(CompareBitmaps(hBmpDst, hBmp_NOTSRCERASE) == 1);
 
 	/* restore original destination bitmap */
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpDstOriginal);
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, SRCCOPY);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_SRCCOPY);
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpSrc);
 	
 	/* DSTINVERT */
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, DSTINVERT);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_DSTINVERT);
 	CU_ASSERT(CompareBitmaps(hBmpDst, hBmp_DSTINVERT) == 1);
 
 	/* select a brush for operations using a pattern */
@@ -2411,85 +2411,85 @@ void test_gdi_BitBlt_16bpp(void)
 
 	/* restore original destination bitmap */
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpDstOriginal);
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, SRCCOPY);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_SRCCOPY);
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpSrc);
 	
 	/* MERGECOPY */
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, MERGECOPY);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_MERGECOPY);
 	CU_ASSERT(CompareBitmaps(hBmpDst, hBmp_MERGECOPY) == 1);
 
 	/* restore original destination bitmap */
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpDstOriginal);
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, SRCCOPY);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_SRCCOPY);
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpSrc);
 	
 	/* MERGEPAINT */
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, MERGEPAINT);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_MERGEPAINT);
 	CU_ASSERT(CompareBitmaps(hBmpDst, hBmp_MERGEPAINT) == 1);
 	
 	/* restore original destination bitmap */
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpDstOriginal);
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, SRCCOPY);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_SRCCOPY);
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpSrc);
 	
 	/* PATCOPY */
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, PATCOPY);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_PATCOPY);
 	CU_ASSERT(CompareBitmaps(hBmpDst, hBmp_PATCOPY) == 1);
 
 	/* restore original destination bitmap */
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpDstOriginal);
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, SRCCOPY);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_SRCCOPY);
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpSrc);
 	
 	/* PATINVERT */
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, PATINVERT);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_PATINVERT);
 	CU_ASSERT(CompareBitmaps(hBmpDst, hBmp_PATINVERT) == 1);
 
 	/* restore original destination bitmap */
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpDstOriginal);
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, SRCCOPY);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_SRCCOPY);
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpSrc);
 	
 	/* PATPAINT */
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, PATPAINT);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_PATPAINT);
 	CU_ASSERT(CompareBitmaps(hBmpDst, hBmp_PATPAINT) == 1);
 	
 	/* restore original destination bitmap */
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpDstOriginal);
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, SRCCOPY);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_SRCCOPY);
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpSrc);
 	
 	/* SPna */
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, SPna);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_SPna);
 	CU_ASSERT(CompareBitmaps(hBmpDst, hBmp_SPna) == 1)
 }
 
 void test_gdi_BitBlt_8bpp(void)
 {
 	uint8* data;
-	HDC hdcSrc;
-	HDC hdcDst;
-	HBRUSH hBrush;
-	HBITMAP hBmpSrc;
-	HBITMAP hBmpDst;
-	HBITMAP hBmpPat;
-	HBITMAP hBmp_SPna;
-	HBITMAP hBmp_BLACKNESS;
-	HBITMAP hBmp_WHITENESS;
-	HBITMAP hBmp_SRCCOPY;
-	HBITMAP hBmp_SRCAND;
-	HBITMAP hBmp_SRCPAINT;
-	HBITMAP hBmp_SRCINVERT;
-	HBITMAP hBmp_SRCERASE;
-	HBITMAP hBmp_NOTSRCCOPY;
-	HBITMAP hBmp_NOTSRCERASE;
-	HBITMAP hBmp_DSTINVERT;
-	HBITMAP hBmp_MERGECOPY;
-	HBITMAP hBmp_MERGEPAINT;
-	HBITMAP hBmp_PATCOPY;
-	HBITMAP hBmp_PATPAINT;
-	HBITMAP hBmp_PATINVERT;
-	HBITMAP hBmpDstOriginal;
+	HGDI_DC hdcSrc;
+	HGDI_DC hdcDst;
+	HGDI_BRUSH hBrush;
+	HGDI_BITMAP hBmpSrc;
+	HGDI_BITMAP hBmpDst;
+	HGDI_BITMAP hBmpPat;
+	HGDI_BITMAP hBmp_SPna;
+	HGDI_BITMAP hBmp_BLACKNESS;
+	HGDI_BITMAP hBmp_WHITENESS;
+	HGDI_BITMAP hBmp_SRCCOPY;
+	HGDI_BITMAP hBmp_SRCAND;
+	HGDI_BITMAP hBmp_SRCPAINT;
+	HGDI_BITMAP hBmp_SRCINVERT;
+	HGDI_BITMAP hBmp_SRCERASE;
+	HGDI_BITMAP hBmp_NOTSRCCOPY;
+	HGDI_BITMAP hBmp_NOTSRCERASE;
+	HGDI_BITMAP hBmp_DSTINVERT;
+	HGDI_BITMAP hBmp_MERGECOPY;
+	HGDI_BITMAP hBmp_MERGEPAINT;
+	HGDI_BITMAP hBmp_PATCOPY;
+	HGDI_BITMAP hBmp_PATPAINT;
+	HGDI_BITMAP hBmp_PATINVERT;
+	HGDI_BITMAP hBmpDstOriginal;
 	RD_PALETTE* hPalette;
 	HCLRCONV clrconv;
 
@@ -2575,88 +2575,88 @@ void test_gdi_BitBlt_8bpp(void)
 	gdi_SelectObject(hdcDst, (HGDIOBJECT) hBmpDst);
 
 	/* SRCCOPY */
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, SRCCOPY);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_SRCCOPY);
 	CU_ASSERT(CompareBitmaps(hBmpDst, hBmp_SRCCOPY) == 1)
 
 	/* restore original destination bitmap */
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpDstOriginal);
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, SRCCOPY);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_SRCCOPY);
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpSrc);
 
 	/* BLACKNESS */
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, BLACKNESS);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_BLACKNESS);
 	CU_ASSERT(CompareBitmaps(hBmpDst, hBmp_BLACKNESS) == 1);
 
 	/* restore original destination bitmap */
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpDstOriginal);
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, SRCCOPY);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_SRCCOPY);
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpSrc);
 
 	/* WHITENESS */
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, WHITENESS);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_WHITENESS);
 	CU_ASSERT(CompareBitmaps(hBmpDst, hBmp_WHITENESS) == 1);
 
 	/* restore original destination bitmap */
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpDstOriginal);
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, SRCCOPY);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_SRCCOPY);
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpSrc);
 
 	/* SRCAND */
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, SRCAND);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_SRCAND);
 	CU_ASSERT(CompareBitmaps(hBmpDst, hBmp_SRCAND) == 1);
 
 	/* restore original destination bitmap */
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpDstOriginal);
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, SRCCOPY);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_SRCCOPY);
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpSrc);
 
 	/* SRCPAINT */
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, SRCPAINT);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_SRCPAINT);
 	CU_ASSERT(CompareBitmaps(hBmpDst, hBmp_SRCPAINT) == 1);
 
 	/* restore original destination bitmap */
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpDstOriginal);
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, SRCCOPY);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_SRCCOPY);
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpSrc);
 
 	/* SRCINVERT */
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, SRCINVERT);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_SRCINVERT);
 	CU_ASSERT(CompareBitmaps(hBmpDst, hBmp_SRCINVERT) == 1);
 
 	/* restore original destination bitmap */
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpDstOriginal);
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, SRCCOPY);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_SRCCOPY);
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpSrc);
 
 	/* SRCERASE */
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, SRCERASE);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_SRCERASE);
 	CU_ASSERT(CompareBitmaps(hBmpDst, hBmp_SRCERASE) == 1);
 
 	/* restore original destination bitmap */
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpDstOriginal);
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, SRCCOPY);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_SRCCOPY);
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpSrc);
 
 	/* NOTSRCCOPY */
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, NOTSRCCOPY);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_NOTSRCCOPY);
 	CU_ASSERT(CompareBitmaps(hBmpDst, hBmp_NOTSRCCOPY) == 1);
 
 	/* restore original destination bitmap */
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpDstOriginal);
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, SRCCOPY);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_SRCCOPY);
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpSrc);
 
 	/* NOTSRCERASE */
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, NOTSRCERASE);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_NOTSRCERASE);
 	CU_ASSERT(CompareBitmaps(hBmpDst, hBmp_NOTSRCERASE) == 1);
 
 	/* restore original destination bitmap */
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpDstOriginal);
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, SRCCOPY);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_SRCCOPY);
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpSrc);
 
 	/* DSTINVERT */
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, DSTINVERT);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_DSTINVERT);
 	CU_ASSERT(CompareBitmaps(hBmpDst, hBmp_DSTINVERT) == 1);
 
 	/* select a brush for operations using a pattern */
@@ -2665,65 +2665,65 @@ void test_gdi_BitBlt_8bpp(void)
 
 	/* restore original destination bitmap */
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpDstOriginal);
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, SRCCOPY);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_SRCCOPY);
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpSrc);
 
 	/* MERGECOPY */
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, MERGECOPY);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_MERGECOPY);
 	CU_ASSERT(CompareBitmaps(hBmpDst, hBmp_MERGECOPY) == 1);
 
 	/* restore original destination bitmap */
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpDstOriginal);
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, SRCCOPY);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_SRCCOPY);
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpSrc);
 
 	/* MERGEPAINT */
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, MERGEPAINT);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_MERGEPAINT);
 	CU_ASSERT(CompareBitmaps(hBmpDst, hBmp_MERGEPAINT) == 1);
 
 	/* restore original destination bitmap */
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpDstOriginal);
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, SRCCOPY);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_SRCCOPY);
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpSrc);
 
 	/* PATCOPY */
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, PATCOPY);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_PATCOPY);
 	CU_ASSERT(CompareBitmaps(hBmpDst, hBmp_PATCOPY) == 1);
 
 	/* restore original destination bitmap */
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpDstOriginal);
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, SRCCOPY);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_SRCCOPY);
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpSrc);
 
 	/* PATINVERT */
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, PATINVERT);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_PATINVERT);
 	CU_ASSERT(CompareBitmaps(hBmpDst, hBmp_PATINVERT) == 1);
 
 	/* restore original destination bitmap */
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpDstOriginal);
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, SRCCOPY);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_SRCCOPY);
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpSrc);
 
 	/* PATPAINT */
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, PATPAINT);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_PATPAINT);
 	CU_ASSERT(CompareBitmaps(hBmpDst, hBmp_PATPAINT) == 1);
 
 	/* restore original destination bitmap */
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpDstOriginal);
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, SRCCOPY);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_SRCCOPY);
 	gdi_SelectObject(hdcSrc, (HGDIOBJECT) hBmpSrc);
 
 	/* SPna */
-	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, SPna);
+	gdi_BitBlt(hdcDst, 0, 0, 16, 16, hdcSrc, 0, 0, GDI_SPna);
 	CU_ASSERT(CompareBitmaps(hBmpDst, hBmp_SPna) == 1)
 }
 
 void test_gdi_ClipCoords(void)
 {
-	HDC hdc;
-	HRGN rgn1;
-	HRGN rgn2;
-	HBITMAP bmp;
+	HGDI_DC hdc;
+	HGDI_RGN rgn1;
+	HGDI_RGN rgn2;
+	HGDI_BITMAP bmp;
 	int draw;
 	
 	hdc = gdi_GetDC();
@@ -2845,11 +2845,11 @@ void test_gdi_ClipCoords(void)
 
 void test_gdi_InvalidateRegion(void)
 {
-	HDC hdc;
-	HRGN rgn1;
-	HRGN rgn2;
-	HRGN invalid;
-	HBITMAP bmp;
+	HGDI_DC hdc;
+	HGDI_RGN rgn1;
+	HGDI_RGN rgn2;
+	HGDI_RGN invalid;
+	HGDI_BITMAP bmp;
 	
 	hdc = gdi_GetDC();
 	hdc->bytesPerPixel = 4;
@@ -2858,7 +2858,7 @@ void test_gdi_InvalidateRegion(void)
 	gdi_SelectObject(hdc, (HGDIOBJECT) bmp);
 	gdi_SetNullClipRgn(hdc);
 
-	hdc->hwnd = (HWND) malloc(sizeof(WND));
+	hdc->hwnd = (HGDI_WND) malloc(sizeof(GDI_WND));
 	hdc->hwnd->invalid = gdi_CreateRectRgn(0, 0, 0, 0);
 	hdc->hwnd->invalid->null = 1;
 	invalid = hdc->hwnd->invalid;

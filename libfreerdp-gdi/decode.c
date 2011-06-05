@@ -51,7 +51,7 @@ void gdi_decode_frame(GDI *gdi, int x, int y, uint8 * data, uint32 length)
 		data = message->tiles[i].data;
 
 		gdi_image_convert(data, gdi->tile->bitmap->data, 64, 64, 32, 32, gdi->clrconv);
-		gdi_BitBlt(gdi->primary->hdc, tx, ty, 64, 64, gdi->tile->hdc, 0, 0, SRCCOPY);
+		gdi_BitBlt(gdi->primary->hdc, tx, ty, 64, 64, gdi->tile->hdc, 0, 0, GDI_SRCCOPY);
 
 		gdi_InvalidateRegion(gdi->primary->hdc, tx, ty, 64, 64);
 	}

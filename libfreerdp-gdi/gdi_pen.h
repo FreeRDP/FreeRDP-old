@@ -22,9 +22,9 @@
 
 #include "gdi.h"
 
-HPEN gdi_CreatePen(int fnPenStyle, int nWidth, int crColor);
-uint8 gdi_GetPenColor_8bpp(HPEN pen);
-uint16 gdi_GetPenColor_16bpp(HPEN pen);
-uint32 gdi_GetPenColor_32bpp(HPEN pen);
+HGDI_PEN gdi_CreatePen(int fnPenStyle, int nWidth, int crColor);
+uint8 gdi_GetPenColor_8bpp(HGDI_PEN pen);
+uint16 gdi_GetPenColor_16bpp(HGDI_PEN pen);
+uint32 gdi_GetPenColor_32bpp(HGDI_PEN pen);
 
 #endif /* __GDI_PEN_H */

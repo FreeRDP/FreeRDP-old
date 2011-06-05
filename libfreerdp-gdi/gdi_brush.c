@@ -48,11 +48,11 @@ pPatBlt PatBlt_[5] =
  * @return new brush
  */
 
-HBRUSH gdi_CreateSolidBrush(COLORREF crColor)
+HGDI_BRUSH gdi_CreateSolidBrush(GDI_COLOR crColor)
 {
-	HBRUSH hBrush = (HBRUSH) malloc(sizeof(BRUSH));
-	hBrush->objectType = GDIOBJ_BRUSH;
-	hBrush->style = BS_SOLID;
+	HGDI_BRUSH hBrush = (HGDI_BRUSH) malloc(sizeof(GDI_BRUSH));
+	hBrush->objectType = GDIOBJECT_BRUSH;
+	hBrush->style = GDI_BS_SOLID;
 	hBrush->color = crColor;
 	return hBrush;
 }
@@ -64,11 +64,11 @@ HBRUSH gdi_CreateSolidBrush(COLORREF crColor)
  * @return new brush
  */
 
-HBRUSH gdi_CreatePatternBrush(HBITMAP hbmp)
+HGDI_BRUSH gdi_CreatePatternBrush(HGDI_BITMAP hbmp)
 {
-	HBRUSH hBrush = (HBRUSH) malloc(sizeof(BRUSH));
-	hBrush->objectType = GDIOBJ_BRUSH;
-	hBrush->style = BS_PATTERN;
+	HGDI_BRUSH hBrush = (HGDI_BRUSH) malloc(sizeof(GDI_BRUSH));
+	hBrush->objectType = GDIOBJECT_BRUSH;
+	hBrush->style = GDI_BS_PATTERN;
 	hBrush->pattern = hbmp;
 	return hBrush;
 }
@@ -85,7 +85,7 @@ HBRUSH gdi_CreatePatternBrush(HBITMAP hbmp)
  * @return 1 if successful, 0 otherwise
  */
 
-int gdi_PatBlt(HDC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight, int rop)
+int gdi_PatBlt(HGDI_DC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight, int rop)
 {
 	pPatBlt _PatBlt = PatBlt_[IBPP(hdc->bitsPerPixel)];
 
