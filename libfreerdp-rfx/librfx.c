@@ -26,6 +26,8 @@
 
 #include "rfx_decode.h"
 
+#include "librfx.h"
+
 RFX_CONTEXT *
 rfx_context_new(void)
 {
@@ -33,20 +35,22 @@ rfx_context_new(void)
 
 	context = (RFX_CONTEXT *) malloc(sizeof(RFX_CONTEXT));
 	memset(context, 0, sizeof(RFX_CONTEXT));
+
 	return context;
 }
 
 void
 rfx_context_free(RFX_CONTEXT * context)
 {
-	if (context->quants)
+	if (context->quants != NULL)
 		free(context->quants);
-	free(context);
+
+	if (context != NULL)
+		free(context);
 }
 
 void
-rfx_context_set_pixel_format(RFX_CONTEXT * context,
-	RFX_PIXEL_FORMAT pixel_format)
+rfx_context_set_pixel_format(RFX_CONTEXT * context, RFX_PIXEL_FORMAT pixel_format)
 {
 	context->pixel_format = pixel_format;
 }
@@ -57,18 +61,22 @@ rfx_process_message_sync(RFX_CONTEXT * context, unsigned char * data, int data_s
 	unsigned int magic;
 
 	magic = GET_UINT32(data, 0);
+
 	if (magic != WF_MAGIC)
 	{
-		printf("rfx_process_message_sync: invalid magic number 0x%X\n", magic);
+		DEBUG_RFX("invalid magic number 0x%X", magic);
 		return;
 	}
+
 	context->version = GET_UINT16(data, 4);
+
 	if (context->version != WF_VERSION_1_0)
 	{
-		printf("rfx_process_message_sync: unknown version number 0x%X\n", context->version);
+		DEBUG_RFX("unknown version number 0x%X", context->version);
 		return;
 	}
-	printf("rfx_process_message_sync: version 0x%X\n", context->version);
+
+	DEBUG_RFX("version 0x%X", context->version);
 }
 
 static void
@@ -77,43 +85,49 @@ rfx_process_message_codec_versions(RFX_CONTEXT * context, unsigned char * data, 
 	int numCodecs;
 
 	numCodecs = GET_UINT8(data, 0);
+
 	if (numCodecs < 1)
 	{
-		printf("rfx_process_message_codec_versions: no version.\n");
+		DEBUG_RFX("no version.");
 		return;
 	}
+
 	context->codec_id = GET_UINT8(data, 1);
 	context->codec_version = GET_UINT16(data, 2);
-	printf("rfx_process_message_codec_versions: id %d version 0x%X.\n",
+
+	DEBUG_RFX("id %d version 0x%X.",
 		context->codec_id, context->codec_version);
 }
 
 static void
 rfx_process_message_channels(RFX_CONTEXT * context, unsigned char * data, int data_size)
 {
-	int numChannels;
 	int channelId;
+	int numChannels;
 
 	numChannels = GET_UINT8(data, 0);
+
 	if (numChannels < 1)
 	{
-		printf("rfx_process_message_channels: no channel.\n");
+		DEBUG_RFX("no channel.");
 		return;
 	}
+
 	channelId = GET_UINT8(data, 1);
 	context->width = GET_UINT16(data, 2);
 	context->height = GET_UINT16(data, 4);
-	printf("rfx_process_message_channels: numChannels %d id %d, %dx%d.\n",
+
+	DEBUG_RFX("numChannels %d id %d, %dx%d.",
 		numChannels, channelId, context->width, context->height);
 }
 
 static void
 rfx_process_message_context(RFX_CONTEXT * context, unsigned char * data, int data_size)
 {
-	int codecId;
-	int channelId;
 	int ctxId;
+	int codecId;
 	int tileSize;
+	int channelId;
 	unsigned int properties;
 
 	codecId = GET_UINT8(data, 0);
@@ -121,27 +135,31 @@ rfx_process_message_context(RFX_CONTEXT * context, unsigned char * data, int dat
 	ctxId = GET_UINT8(data, 2);
 	tileSize = GET_UINT16(data, 3);
 	properties = GET_UINT16(data, 5);
-	printf("rfx_process_message_context: codec %d channel %d ctx %d tileSize %d properties 0x%X.\n",
+
+	DEBUG_RFX("codec %d channel %d ctx %d tileSize %d properties 0x%X.",
 		codecId, channelId, ctxId, tileSize, properties);
 
 	context->flags = (properties & 0x0007);
+
 	if (context->flags == CODEC_MODE)
-		printf("rfx_process_message_context: codec in image mode.\n");
+		DEBUG_RFX("codec in image mode.");
 	else
-		printf("rfx_process_message_context: codec in video mode.\n");
+		DEBUG_RFX("codec in video mode.");
 
 	switch ((properties & 0x1e00) >> 9)
 	{
 		case CLW_ENTROPY_RLGR1:
 			context->mode = RLGR1;
-			printf("rfx_process_message_context: RLGR1.\n");
+			DEBUG_RFX("RLGR1.");
 			break;
+
 		case CLW_ENTROPY_RLGR3:
 			context->mode = RLGR3;
-			printf("rfx_process_message_context: RLGR3.\n");
+			DEBUG_RFX("RLGR3.");
 			break;
+
 		default:
-			printf("rfx_process_message_context: unknown RLGR algorithm.\n");
+			DEBUG_RFX("unknown RLGR algorithm.");
 			break;
 	}
 }
@@ -152,24 +170,29 @@ rfx_process_message_region(RFX_CONTEXT * context, RFX_MESSAGE * message, unsigne
 	int i;
 
 	message->num_rects = GET_UINT16(data, 3);
+
 	if (message->num_rects < 1)
 	{
-		printf("rfx_process_message_region: no rects.\n");
+		DEBUG_RFX("no rects.");
 		return;
 	}
-	if (message->rects)
+
+	if (message->rects != NULL)
 		free(message->rects);
-	message->rects = (RFX_RECT *) malloc(message->num_rects * sizeof(RFX_RECT));
+
 	data += 5;
 	data_size -= 5;
+	message->rects = (RFX_RECT *) malloc(message->num_rects * sizeof(RFX_RECT));
+
 	for (i = 0; i < message->num_rects && data_size > 0; i++)
 	{
 		message->rects[i].x = GET_UINT16(data, 0);
 		message->rects[i].y = GET_UINT16(data, 2);
 		message->rects[i].width = GET_UINT16(data, 4);
 		message->rects[i].height = GET_UINT16(data, 6);
-		/*printf("rfx_process_message_region: rect %d (%d %d %d %d).\n",
-			i, message->rects[i].x, message->rects[i].y, message->rects[i].width, message->rects[i].height);*/
+
+		DEBUG_RFX("rect %d (%d %d %d %d).",
+			i, message->rects[i].x, message->rects[i].y, message->rects[i].width, message->rects[i].height);
 
 		data += 8;
 		data_size -= 8;
@@ -179,7 +202,9 @@ rfx_process_message_region(RFX_CONTEXT * context, RFX_MESSAGE * message, unsigne
 static void
 rfx_process_message_tile(RFX_CONTEXT * context, RFX_TILE * tile, unsigned char * data, int data_size)
 {
-	int quantIdxY, quantIdxCb, quantIdxCr;
+	int quantIdxY;
+	int quantIdxCb;
+	int quantIdxCr;
 	int xIdx, yIdx;
 	int YLen, CbLen, CrLen;
 
@@ -191,13 +216,15 @@ rfx_process_message_tile(RFX_CONTEXT * context, RFX_TILE * tile, unsigned char *
 	YLen = GET_UINT16(data, 7);
 	CbLen = GET_UINT16(data, 9);
 	CrLen = GET_UINT16(data, 11);
-	/*printf("rfx_process_message_tile: %d %d %d %d %d %d %d %d\n",
-		quantIdxY, quantIdxCb, quantIdxCr, xIdx, yIdx, YLen, CbLen, CrLen);*/
+
+	DEBUG_RFX("quantIdxY:%d quantIdxCb:%d quantIdxCr:%d xIdx:%d yIdx:%d YLen:%d CbLen:%d CrLen:%d",
+		quantIdxY, quantIdxCb, quantIdxCr, xIdx, yIdx, YLen, CbLen, CrLen);
 
 	data += 13;
 
 	tile->x = xIdx * 64;
 	tile->y = yIdx * 64;
+
 	tile->data = rfx_decode_rgb(context,
 		data, YLen, context->quants + (quantIdxY * 10),
 		data + YLen, CbLen, context->quants + (quantIdxCb * 10),
@@ -207,31 +234,37 @@ rfx_process_message_tile(RFX_CONTEXT * context, RFX_TILE * tile, unsigned char *
 static void
 rfx_process_message_tileset(RFX_CONTEXT * context, RFX_MESSAGE * message, unsigned char * data, int data_size)
 {
-	unsigned int tileDataSize;
 	int i;
-	unsigned int blockType;
 	unsigned int blockLen;
+	unsigned int blockType;
+	unsigned int tileDataSize;
 
 	context->num_quants = GET_UINT8(data, 4);
+
 	if (context->num_quants < 1)
 	{
-		printf("rfx_process_message_tileset: no quantization value.\n");
+		DEBUG_RFX("no quantization value.");
 		return;
 	}
+
 	message->num_tiles = GET_UINT16(data, 6);
+
 	if (message->num_tiles < 1)
 	{
-		printf("rfx_process_message_tileset: no tiles.\n");
+		DEBUG_RFX("no tiles.");
 		return;
 	}
+
 	tileDataSize = GET_UINT32(data, 8);
 
 	data += 12;
 	data_size -= 12;
 
-	if (context->quants)
+	if (context->quants != NULL)
 		free(context->quants);
+
 	context->quants = (int *) malloc(context->num_quants * 10 * sizeof(int));
+
 	for (i = 0; i < context->num_quants && data_size > 0; i++)
 	{
 		context->quants[i * 10] = (data[0] & 0x0f);
@@ -244,12 +277,13 @@ rfx_process_message_tileset(RFX_CONTEXT * context, RFX_MESSAGE * message, unsign
 		context->quants[i * 10 + 7] = (data[3] >> 4);
 		context->quants[i * 10 + 8] = (data[4] & 0x0f);
 		context->quants[i * 10 + 9] = (data[4] >> 4);
-		/*printf("rfx_process_message_tileset: quant %d (%d %d %d %d %d %d %d %d %d %d).\n",
+
+		DEBUG_RFX("quant %d (%d %d %d %d %d %d %d %d %d %d).",
 			i, context->quants[i * 10], context->quants[i * 10 + 1],
 			context->quants[i * 10 + 2], context->quants[i * 10 + 3],
 			context->quants[i * 10 + 4], context->quants[i * 10 + 5],
 			context->quants[i * 10 + 6], context->quants[i * 10 + 7],
-			context->quants[i * 10 + 8], context->quants[i * 10 + 9]);*/
+			context->quants[i * 10 + 8], context->quants[i * 10 + 9]);
 
 		data += 5;
 		data_size -= 5;
@@ -269,7 +303,7 @@ rfx_process_message_tileset(RFX_CONTEXT * context, RFX_MESSAGE * message, unsign
 				break;
 
 			default:
-				printf("rfx_process_message_tileset: unknown block type 0x%X\n", blockType);
+				DEBUG_RFX("unknown block type 0x%X", blockType);
 				break;
 		}
 
@@ -293,7 +327,7 @@ rfx_process_message(RFX_CONTEXT * context, unsigned char * data, int data_size)
 	{
 		blockType = GET_UINT16(data, 0);
 		blockLen = GET_UINT32(data, 2);
-		//printf("rfx_process_message: blockType 0x%X blockLen %d\n", blockType, blockLen);
+		DEBUG_RFX("blockType 0x%X blockLen %d", blockType, blockLen);
 
 		switch (blockType)
 		{
@@ -330,13 +364,13 @@ rfx_process_message(RFX_CONTEXT * context, unsigned char * data, int data_size)
 						rfx_process_message_tileset(context, message, data + 10, blockLen - 10);
 						break;
 					default:
-						printf("rfx_process_message: unknown subtype 0x%X\n", subtype);
+						DEBUG_RFX("unknown subtype 0x%X", subtype);
 						break;
 				}
 				break;
 
 			default:
-				printf("rfx_process_message: unknown blockType 0x%X\n", blockType);
+				DEBUG_RFX("unknown blockType 0x%X", blockType);
 				break;
 		}
 
@@ -350,19 +384,24 @@ rfx_process_message(RFX_CONTEXT * context, unsigned char * data, int data_size)
 void
 rfx_message_free(RFX_MESSAGE * message)
 {
-	int i;
-
-	if (message->rects)
-		free(message->rects);
-	if (message->tiles)
+	if (message != NULL)
 	{
-		for (i = 0; i < message->num_tiles; i++)
-		{
-			if (message->tiles[i].data)
-				free(message->tiles[i].data);
-		}
-		free(message->tiles);
-	}
-	free(message);
-}
+		if (message->rects != NULL)
+			free(message->rects);
 
+		if (message->tiles != NULL)
+		{
+			int i;
+
+			for (i = 0; i < message->num_tiles; i++)
+			{
+				if (message->tiles[i].data != NULL)
+					free(message->tiles[i].data);
+			}
+
+			free(message->tiles);
+		}
+
+		free(message);
+	}
+}

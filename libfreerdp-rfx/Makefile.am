@@ -12,7 +12,7 @@ libfreerdp_rfx_la_SOURCES = \
 	rfx_quantization.c rfx_quantization.h \
 	rfx_dwt.c rfx_dwt.h \
 	rfx_decode.c rfx_decode.h \
-	rfx.c
+	librfx.c librfx.h
 
 libfreerdp_rfx_la_CFLAGS = \
 	-I$(top_srcdir) \

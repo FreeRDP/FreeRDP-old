@@ -22,6 +22,7 @@ AH_TEMPLATE(WITH_XKBFILE, [Use xkbfile for keyboard handling])
 AH_TEMPLATE(WITH_DEBUG, [Turn on debugging messages])
 AH_TEMPLATE(WITH_DEBUG_RDP, [Turn on debugging messages])
 AH_TEMPLATE(WITH_DEBUG_GDI, [Turn on debugging messages])
+AH_TEMPLATE(WITH_DEBUG_RFX, [Turn on debugging messages])
 AH_TEMPLATE(WITH_DEBUG_NLA, [Turn on debugging messages])
 AH_TEMPLATE(WITH_DEBUG_MCS, [Turn on debugging messages])
 AH_TEMPLATE(WITH_DEBUG_CACHE, [Turn on debugging messages])
@@ -802,6 +803,16 @@ AC_ARG_WITH(debug-gdi,
         if test $withval != "no";
         then
             AC_DEFINE(WITH_DEBUG_GDI,1)
+            debug_support=yes
+		fi
+    ])
+    
+AC_ARG_WITH(debug-rfx,
+    [  --with-debug-rfx        enable debugging of RemoteFX],
+    [
+        if test $withval != "no";
+        then
+            AC_DEFINE(WITH_DEBUG_RFX,1)
             debug_support=yes
 		fi
     ])
