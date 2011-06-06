@@ -848,8 +848,8 @@ thread_func(void * arg)
 		FD_ZERO(&plugin->writefds);
 
 		/* default timeout */
-		plugin->tv.tv_sec = 0;
-		plugin->tv.tv_usec = 20;
+		plugin->tv.tv_sec = 60;
+		plugin->tv.tv_usec = 0;
 		plugin->select_timeout = 0;
 
 		if (wait_obj_is_set(plugin->term_event))
