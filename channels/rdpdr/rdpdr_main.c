@@ -439,6 +439,8 @@ rdpdr_check_fds(rdpdrPlugin * plugin)
 				if (irp_get_event(pending, &result))
 				{
 					pending->ioStatus = RD_STATUS_SUCCESS;
+					pending->outputBuffer = malloc(pending->outputBufferLength);
+					SET_UINT32(pending->outputBuffer, 0, result);
 					isset = 1;
 				}
 				break;
