@@ -17,10 +17,12 @@
    limitations under the License.
 */
 
+#include "rfx_quantization.h"
+
 void
-rfx_quantization_decode(int * buffer, int buffer_size, int factor)
+rfx_quantization_decode(uint32 * buffer, int buffer_size, uint32 factor)
 {
-	int * dst;
+	uint32 * dst;
 
 	if (factor <= 6)
 		return;

@@ -200,13 +200,13 @@ rfx_process_message_region(RFX_CONTEXT * context, RFX_MESSAGE * message, unsigne
 }
 
 static void
-rfx_process_message_tile(RFX_CONTEXT * context, RFX_TILE * tile, unsigned char * data, int data_size)
+rfx_process_message_tile(RFX_CONTEXT * context, RFX_TILE * tile, uint8 * data, int data_size)
 {
-	int quantIdxY;
-	int quantIdxCb;
-	int quantIdxCr;
-	int xIdx, yIdx;
-	int YLen, CbLen, CrLen;
+	uint8 quantIdxY;
+	uint8 quantIdxCb;
+	uint8 quantIdxCr;
+	uint16 xIdx, yIdx;
+	uint16 YLen, CbLen, CrLen;
 
 	quantIdxY = GET_UINT8(data, 0);
 	quantIdxCb = GET_UINT8(data, 1);
@@ -235,9 +235,9 @@ static void
 rfx_process_message_tileset(RFX_CONTEXT * context, RFX_MESSAGE * message, unsigned char * data, int data_size)
 {
 	int i;
-	unsigned int blockLen;
-	unsigned int blockType;
-	unsigned int tileDataSize;
+	uint32 blockLen;
+	uint32 blockType;
+	uint32 tileDataSize;
 
 	context->num_quants = GET_UINT8(data, 4);
 
@@ -263,7 +263,7 @@ rfx_process_message_tileset(RFX_CONTEXT * context, RFX_MESSAGE * message, unsign
 	if (context->quants != NULL)
 		free(context->quants);
 
-	context->quants = (int *) malloc(context->num_quants * 10 * sizeof(int));
+	context->quants = (uint32*) malloc(context->num_quants * 10 * sizeof(uint32));
 
 	for (i = 0; i < context->num_quants && data_size > 0; i++)
 	{

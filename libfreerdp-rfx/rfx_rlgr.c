@@ -125,13 +125,13 @@ rfx_rlgr_get_gr_code(RFX_BITSTREAM * bs, int * krp, int * kr)
 int
 rfx_rlgr_decode(RLGR_MODE mode,
 	const uint8 * data, int data_size,
-	int * buffer, int buffer_size)
+	uint32 * buffer, int buffer_size)
 {
 	int k;
 	int kp;
 	int kr;
 	int krp;
-	int * dst;
+	uint32 * dst;
 	RFX_BITSTREAM * bs;
 
 	bs = rfx_bitstream_new();

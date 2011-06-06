@@ -86,8 +86,8 @@ struct _RFX_CONTEXT
 	RFX_PIXEL_FORMAT pixel_format;
 
 	/* temporary data within a frame */
-	int num_quants;
-	int * quants;
+	uint8 num_quants;
+	uint32 * quants;
 };
 typedef struct _RFX_CONTEXT RFX_CONTEXT;
 
@@ -114,7 +114,7 @@ struct _RFX_MESSAGE
 	 * The rects array represents the updated region of the frame. The UI
 	 * requires to clip drawing destination base on the union of the rects.
 	 */
-	int num_rects;
+	uint16 num_rects;
 	RFX_RECT * rects;
 
 	/* The tiles array represents the actual frame data. Each tile is always
@@ -122,7 +122,7 @@ struct _RFX_MESSAGE
 	 * rects described above) are valid. Pixels outside of the region may
 	 * contain arbitrary data.
 	 */
-	int num_tiles;
+	uint16 num_tiles;
 	RFX_TILE * tiles;
 };
 typedef struct _RFX_MESSAGE RFX_MESSAGE;
