@@ -88,6 +88,11 @@ struct _RFX_CONTEXT
 	/* temporary data within a frame */
 	uint8 num_quants;
 	uint32 * quants;
+
+	/* pre-allocated buffers */
+	uint32 y_buffer[4096]; /* 4096 = 64x64 */
+	uint32 cr_buffer[4096]; /* 4096 = 64x64 */
+	uint32 cb_buffer[4096]; /* 4096 = 64x64 */
 };
 typedef struct _RFX_CONTEXT RFX_CONTEXT;
 

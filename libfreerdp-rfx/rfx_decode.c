@@ -62,26 +62,23 @@ rfx_decode_rgb(RFX_CONTEXT * context,
 	const uint8 * cr_data, int cr_size, const uint32 * cr_quants)
 {
 	int i;
+	uint8 * dst;
 	int r, g, b;
 	int y, cb, cr;
-	uint8 * dst;
-	uint8 * output;
-	uint32 y_buffer[4096];
-	uint32 cr_buffer[4096];
-	uint32 cb_buffer[4096];
+	uint8* rgb_buffer;
 
-	output = (uint8 *) malloc(4096 * 4);
-	dst = output;
+	rgb_buffer = (uint8*) malloc(4096 * 4);
+	dst = rgb_buffer;
 
-	rfx_decode_component(context->mode, y_quants, 0, y_data, y_size, y_buffer);
-	rfx_decode_component(context->mode, cb_quants, 0, cb_data, cb_size, cb_buffer);
-	rfx_decode_component(context->mode, cr_quants, 0, cr_data, cr_size, cr_buffer);
+	rfx_decode_component(context->mode, y_quants, 0, y_data, y_size, context->y_buffer);
+	rfx_decode_component(context->mode, cb_quants, 0, cb_data, cb_size, context->cb_buffer);
+	rfx_decode_component(context->mode, cr_quants, 0, cr_data, cr_size, context->cr_buffer);
 
 	for (i = 0; i < 4096; i++)
 	{
-		y = y_buffer[i] + 128;
-		cb = cb_buffer[i];
-		cr = cr_buffer[i];
+		y = context->y_buffer[i] + 128;
+		cb = context->cb_buffer[i];
+		cr = context->cr_buffer[i];
 
 		r = (y + cr + (cr >> 2) + (cr >> 3) + (cr >> 5));
 		r = MINMAX(r, 0, 255);
@@ -93,31 +90,31 @@ rfx_decode_rgb(RFX_CONTEXT * context,
 		switch (context->pixel_format)
 		{
 			case RFX_PIXEL_FORMAT_BGRA:
-				*dst++ = (unsigned char) (b);
-				*dst++ = (unsigned char) (g);
-				*dst++ = (unsigned char) (r);
-				*dst++ = 0xff;
+				*dst++ = (uint8) (b);
+				*dst++ = (uint8) (g);
+				*dst++ = (uint8) (r);
+				*dst++ = 0xFF;
 				break;
 			case RFX_PIXEL_FORMAT_RGBA:
-				*dst++ = (unsigned char) (r);
-				*dst++ = (unsigned char) (g);
-				*dst++ = (unsigned char) (b);
-				*dst++ = 0xff;
+				*dst++ = (uint8) (r);
+				*dst++ = (uint8) (g);
+				*dst++ = (uint8) (b);
+				*dst++ = 0xFF;
 				break;
 			case RFX_PIXEL_FORMAT_BGR:
-				*dst++ = (unsigned char) (b);
-				*dst++ = (unsigned char) (g);
-				*dst++ = (unsigned char) (r);
+				*dst++ = (uint8) (b);
+				*dst++ = (uint8) (g);
+				*dst++ = (uint8) (r);
 				break;
 			case RFX_PIXEL_FORMAT_RGB:
-				*dst++ = (unsigned char) (r);
-				*dst++ = (unsigned char) (g);
-				*dst++ = (unsigned char) (b);
+				*dst++ = (uint8) (r);
+				*dst++ = (uint8) (g);
+				*dst++ = (uint8) (b);
 				break;
 			default:
 				break;
 		}
 	}
 
-	return output;
+	return rgb_buffer;
 }
