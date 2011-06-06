@@ -33,6 +33,15 @@ irp_output_device_io_completion(IRP* irp, int * data_size)
 {
 	char * data;
 
+	/* [MS-RDPEFS] said it's an optional padding, however it's *required* for this last query!!! */
+	if (irp->ioStatus == RD_STATUS_TIMEOUT)
+	{
+		irp->outputResult = 0;
+		irp->outputBuffer = malloc(1);
+		irp->outputBuffer[0] = 0;
+		irp->outputBufferLength = 1;
+	}
+
 	*data_size = 20 + irp->outputBufferLength;
 	data = malloc(*data_size);
 	memset(data, 0, *data_size);
