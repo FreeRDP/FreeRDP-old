@@ -74,28 +74,6 @@ enum _RFX_PIXEL_FORMAT
 };
 typedef enum _RFX_PIXEL_FORMAT RFX_PIXEL_FORMAT;
 
-struct _RFX_CONTEXT
-{
-	int flags;
-	uint16 width;
-	uint16 height;
-	RLGR_MODE mode;
-	uint32 version;
-	uint32 codec_id;
-	uint32 codec_version;
-	RFX_PIXEL_FORMAT pixel_format;
-
-	/* temporary data within a frame */
-	uint8 num_quants;
-	uint32 * quants;
-
-	/* pre-allocated buffers */
-	uint32 y_buffer[4096]; /* 4096 = 64x64 */
-	uint32 cr_buffer[4096]; /* 4096 = 64x64 */
-	uint32 cb_buffer[4096]; /* 4096 = 64x64 */
-};
-typedef struct _RFX_CONTEXT RFX_CONTEXT;
-
 struct _RFX_RECT
 {
 	uint16 x;
@@ -113,6 +91,14 @@ struct _RFX_TILE
 };
 typedef struct _RFX_TILE RFX_TILE;
 
+struct _RFX_POOL
+{
+	int size;
+	int count;
+	RFX_TILE **tiles;
+};
+typedef struct _RFX_POOL RFX_POOL;
+
 struct _RFX_MESSAGE
 {
 	/*
@@ -128,16 +114,39 @@ struct _RFX_MESSAGE
 	 * contain arbitrary data.
 	 */
 	uint16 num_tiles;
-	RFX_TILE * tiles;
+	RFX_TILE** tiles;
 };
 typedef struct _RFX_MESSAGE RFX_MESSAGE;
+
+struct _RFX_CONTEXT
+{
+	int flags;
+	uint16 width;
+	uint16 height;
+	RLGR_MODE mode;
+	uint32 version;
+	uint32 codec_id;
+	uint32 codec_version;
+	RFX_PIXEL_FORMAT pixel_format;
+
+	/* temporary data within a frame */
+	uint8 num_quants;
+	uint32 * quants;
+
+	/* pre-allocated buffers */
+	RFX_POOL* pool; /* memory pool */
+	uint32 y_buffer[4096]; /* 4096 = 64x64 */
+	uint32 cr_buffer[4096]; /* 4096 = 64x64 */
+	uint32 cb_buffer[4096]; /* 4096 = 64x64 */
+};
+typedef struct _RFX_CONTEXT RFX_CONTEXT;
 
 RFX_CONTEXT* rfx_context_new(void);
 void rfx_context_free(RFX_CONTEXT * context);
 void rfx_context_set_pixel_format(RFX_CONTEXT * context, RFX_PIXEL_FORMAT pixel_format);
 
 RFX_MESSAGE* rfx_process_message(RFX_CONTEXT * context, uint8 * data, int data_size);
-void rfx_message_free(RFX_MESSAGE * message);
+void rfx_message_free(RFX_CONTEXT * context, RFX_MESSAGE * message);
 
 #ifdef __cplusplus
 }

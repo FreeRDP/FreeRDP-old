@@ -24,6 +24,7 @@
 #include <freerdp/types/base.h>
 #include <freerdp/utils/stream.h>
 
+#include "rfx_pool.h"
 #include "rfx_decode.h"
 
 #include "librfx.h"
@@ -36,6 +37,8 @@ rfx_context_new(void)
 	context = (RFX_CONTEXT *) malloc(sizeof(RFX_CONTEXT));
 	memset(context, 0, sizeof(RFX_CONTEXT));
 
+	context->pool = rfx_pool_new();
+
 	return context;
 }
 
@@ -44,6 +47,8 @@ rfx_context_free(RFX_CONTEXT * context)
 {
 	if (context->quants != NULL)
 		free(context->quants);
+
+	rfx_pool_free(context->pool);
 
 	if (context != NULL)
 		free(context);
@@ -267,15 +272,15 @@ rfx_process_message_tileset(RFX_CONTEXT * context, RFX_MESSAGE * message, unsign
 
 	for (i = 0; i < context->num_quants && data_size > 0; i++)
 	{
-		context->quants[i * 10] = (data[0] & 0x0f);
+		context->quants[i * 10] = (data[0] & 0x0F);
 		context->quants[i * 10 + 1] = (data[0] >> 4);
-		context->quants[i * 10 + 2] = (data[1] & 0x0f);
+		context->quants[i * 10 + 2] = (data[1] & 0x0F);
 		context->quants[i * 10 + 3] = (data[1] >> 4);
-		context->quants[i * 10 + 4] = (data[2] & 0x0f);
+		context->quants[i * 10 + 4] = (data[2] & 0x0F);
 		context->quants[i * 10 + 5] = (data[2] >> 4);
-		context->quants[i * 10 + 6] = (data[3] & 0x0f);
+		context->quants[i * 10 + 6] = (data[3] & 0x0F);
 		context->quants[i * 10 + 7] = (data[3] >> 4);
-		context->quants[i * 10 + 8] = (data[4] & 0x0f);
+		context->quants[i * 10 + 8] = (data[4] & 0x0F);
 		context->quants[i * 10 + 9] = (data[4] >> 4);
 
 		DEBUG_RFX("quant %d (%d %d %d %d %d %d %d %d %d %d).",
@@ -289,7 +294,7 @@ rfx_process_message_tileset(RFX_CONTEXT * context, RFX_MESSAGE * message, unsign
 		data_size -= 5;
 	}
 
-	message->tiles = (RFX_TILE *) malloc(message->num_tiles * sizeof(RFX_TILE));
+	message->tiles = rfx_pool_get_tiles(context->pool, message->num_tiles);
 
 	for (i = 0; i < message->num_tiles && data_size > 0; i++)
 	{
@@ -299,7 +304,7 @@ rfx_process_message_tileset(RFX_CONTEXT * context, RFX_MESSAGE * message, unsign
 		switch (blockType)
 		{
 			case CBT_TILE:
-				rfx_process_message_tile(context, &message->tiles[i], data + 6, blockLen - 6);
+				rfx_process_message_tile(context, message->tiles[i], data + 6, blockLen - 6);
 				break;
 
 			default:
@@ -382,7 +387,7 @@ rfx_process_message(RFX_CONTEXT * context, unsigned char * data, int data_size)
 }
 
 void
-rfx_message_free(RFX_MESSAGE * message)
+rfx_message_free(RFX_CONTEXT * context, RFX_MESSAGE * message)
 {
 	if (message != NULL)
 	{
@@ -391,14 +396,7 @@ rfx_message_free(RFX_MESSAGE * message)
 
 		if (message->tiles != NULL)
 		{
-			int i;
-
-			for (i = 0; i < message->num_tiles; i++)
-			{
-				if (message->tiles[i].data != NULL)
-					free(message->tiles[i].data);
-			}
-
+			rfx_pool_put_tiles(context->pool, message->tiles, message->num_tiles);
 			free(message->tiles);
 		}
 
