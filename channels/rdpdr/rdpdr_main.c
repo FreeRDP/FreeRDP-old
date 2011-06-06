@@ -362,6 +362,42 @@ rdpdr_abort_single_io(rdpdrPlugin * plugin, uint32 fd, uint8 abortType, uint32 i
 	}
 }
 
+static void
+rdpdr_check_for_events(rdpdrPlugin * plugin)
+{
+	IRP * pending = NULL;
+	char * out;
+	int out_size;
+	int error;
+	uint32 result = 0;
+
+	for (pending = irp_queue_first(plugin->queue); pending; pending = irp_queue_next(plugin->queue, pending))
+	{
+		if (pending->majorFunction == IRP_MJ_DEVICE_CONTROL)
+		{
+			if (irp_get_event(pending, &result))
+			{
+				pending->ioStatus = RD_STATUS_SUCCESS;
+				pending->outputBuffer = malloc(pending->outputBufferLength);
+				SET_UINT32(pending->outputBuffer, 0, result);
+
+				out = irp_output_device_io_completion(pending, &out_size);
+				error = plugin->ep.pVirtualChannelWrite(plugin->open_handle, out, out_size, out);
+				if (error != CHANNEL_RC_OK)
+					LLOGLN(0, ("rdpdr_check_fds: VirtualChannelWrite failed %d", error));
+
+				if (pending->outputBuffer)
+					free(pending->outputBuffer);
+				irp_queue_remove(plugin->queue, pending);
+
+				wait_obj_set(plugin->plugin_in_event);
+			}
+
+			break;
+		}
+	}
+}
+
 static int
 rdpdr_check_fds(rdpdrPlugin * plugin)
 {
@@ -438,7 +474,6 @@ rdpdr_process_irp(rdpdrPlugin * plugin, char* data, int data_size)
 	char * out;
 	int out_size;
 	int error;
-	uint32 result;
 
 	memset((void*)&irp, '\0', sizeof(IRP));
 
@@ -577,21 +612,7 @@ rdpdr_process_irp(rdpdrPlugin * plugin, char* data, int data_size)
 		}
 	}
 
-	if (irp_get_event(&irp, &result) && irp.rwBlocking)
-	{
-		LLOGLN(10, ("IRP process pending events"));
-		IRP * pending = 0;
-		while (!irp_queue_empty(plugin->queue))
-		{
-			pending = irp_queue_first(plugin->queue);
-			pending->ioStatus = RD_STATUS_SUCCESS;
-			out = irp_output_device_io_completion(pending, &out_size);
-			error = plugin->ep.pVirtualChannelWrite(plugin->open_handle, out, out_size, out);
-			if (pending->outputBuffer)
-				free(pending->outputBuffer);
-			irp_queue_pop(plugin->queue);
-		}
-	}
+	rdpdr_check_for_events(plugin);
 }
 
 static int
