@@ -27,9 +27,10 @@ AH_TEMPLATE(WITH_DEBUG_MCS, [Turn on debugging messages])
 AH_TEMPLATE(WITH_DEBUG_CACHE, [Turn on debugging messages])
 AH_TEMPLATE(WITH_DEBUG_ORDERS, [Turn on debugging messages])
 AH_TEMPLATE(WITH_DEBUG_LICENSE, [Turn on debugging messages])
-AH_TEMPLATE(WITH_DEBUG_CHANNEL, [Turn on debugging messages])
 AH_TEMPLATE(WITH_DEBUG_KBD, [Turn on debugging messages])
-AH_TEMPLATE(WITH_DEBUG_DRAW, [Turn on debugging messages])
+AH_TEMPLATE(WITH_DEBUG_X11, [Turn on debugging messages])
+AH_TEMPLATE(WITH_DEBUG_X11_KBD, [Turn on debugging messages])
+AH_TEMPLATE(WITH_DEBUG_CHANMAN, [Turn on debugging messages])
 AH_TEMPLATE(WITH_DEBUG_SCARD, [Turn on debugging messages])
 AH_TEMPLATE(WITH_DEBUG_SERIAL, [Turn on debugging messages])
 AH_TEMPLATE(WITH_DEBUG_SOUND, [Turn on debugging messages])
@@ -791,7 +792,8 @@ AC_ARG_WITH(debug-rdp,
         if test $withval != "no";
         then
             AC_DEFINE(WITH_DEBUG_RDP,1)
-	fi
+            debug_support=yes
+		fi
     ])
 
 AC_ARG_WITH(debug-gdi,
@@ -800,7 +802,8 @@ AC_ARG_WITH(debug-gdi,
         if test $withval != "no";
         then
             AC_DEFINE(WITH_DEBUG_GDI,1)
-	fi
+            debug_support=yes
+		fi
     ])
 
 AC_ARG_WITH(debug-nla,
@@ -809,7 +812,8 @@ AC_ARG_WITH(debug-nla,
         if test $withval != "no";
         then
             AC_DEFINE(WITH_DEBUG_NLA,1)
-	fi
+            debug_support=yes
+		fi
     ])
 
 AC_ARG_WITH(debug-cache,
@@ -818,7 +822,8 @@ AC_ARG_WITH(debug-cache,
         if test $withval != "no";
         then
             AC_DEFINE(WITH_DEBUG_CACHE,1)
-	fi
+            debug_support=yes
+		fi
     ])
 
 AC_ARG_WITH(debug-mcs,
@@ -827,7 +832,8 @@ AC_ARG_WITH(debug-mcs,
         if test $withval != "no";
         then
             AC_DEFINE(WITH_DEBUG_MCS,1)
-	fi
+            debug_support=yes
+		fi
     ])
 
 AC_ARG_WITH(debug-orders,
@@ -836,7 +842,8 @@ AC_ARG_WITH(debug-orders,
         if test $withval != "no";
         then
             AC_DEFINE(WITH_DEBUG_ORDERS,1)
-	fi
+            debug_support=yes
+		fi
     ])
 
 AC_ARG_WITH(debug-license,
@@ -845,7 +852,8 @@ AC_ARG_WITH(debug-license,
         if test $withval != "no";
         then
             AC_DEFINE(WITH_DEBUG_LICENSE,1)
-	fi
+            debug_support=yes
+		fi
     ])
 
 AC_ARG_WITH(debug-kbd,
@@ -858,12 +866,32 @@ AC_ARG_WITH(debug-kbd,
         fi
     ])
 
-AC_ARG_WITH(debug-rdp5,
-    [  --with-debug-rdp5       enable debugging of drawing code],
+AC_ARG_WITH(debug-x11,
+    [  --with-debug-x11        enable debugging of X11],
     [
         if test $withval != "no";
         then
-            AC_DEFINE(WITH_DEBUG_DRAW,1)
+            AC_DEFINE(WITH_DEBUG_X11,1)
+            debug_support=yes
+        fi
+    ])
+
+AC_ARG_WITH(debug-x11-kbd,
+    [  --with-debug-x11-kbd        enable debugging of X11 keyboard handling],
+    [
+        if test $withval != "no";
+        then
+            AC_DEFINE(WITH_DEBUG_X11_KBD,1)
+            debug_support=yes
+        fi
+    ])
+
+AC_ARG_WITH(debug-chanman,
+    [  --with-debug-chanman        enable debugging of channel manager],
+    [
+        if test $withval != "no";
+        then
+            AC_DEFINE(WITH_DEBUG_CHANMAN,1)
             debug_support=yes
         fi
     ])
@@ -874,16 +902,6 @@ AC_ARG_WITH(debug-sound,
         if test $withval != "no";
         then
             AC_DEFINE(WITH_DEBUG_SOUND,1)
-            debug_support=yes
-        fi
-    ])
-
-AC_ARG_WITH(debug-channel,
-    [  --with-debug-channel    enable debugging of virtual channel code],
-    [
-        if test $withval != "no";
-        then
-            AC_DEFINE(WITH_DEBUG_CHANNEL,1)
             debug_support=yes
         fi
     ])

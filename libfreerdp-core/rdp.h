@@ -152,9 +152,9 @@ void
 rdp_free(rdpRdp * rdp);
 
 #ifdef WITH_DEBUG_RDP
-#define DEBUG_RDP(fmt, ...) DEBUG_CLASS(RDP, fmt, ...)
+#define DEBUG_RDP(fmt, ...) DEBUG_CLASS(RDP, fmt, ## __VA_ARGS__)
 #else
-#define DEBUG_RDP(fmt, ...) DEBUG_NULL(fmt, ...)
+#define DEBUG_RDP(fmt, ...) DEBUG_NULL(fmt, ## __VA_ARGS__)
 #endif
 
 #endif

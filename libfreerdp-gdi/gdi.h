@@ -265,9 +265,9 @@ void gdi_free(rdpInst* inst);
 #define GET_GDI(_inst) ((GDI*) ((_inst)->param2))
 
 #ifdef WITH_DEBUG_GDI
-#define DEBUG_GDI(fmt, ...) DEBUG_CLASS(GDI, fmt, ...)
+#define DEBUG_GDI(fmt, ...) DEBUG_CLASS(GDI, fmt, ## __VA_ARGS__)
 #else
-#define DEBUG_GDI(fmt, ...) DEBUG_NULL(fmt, ...)
+#define DEBUG_GDI(fmt, ...) DEBUG_NULL(fmt, ## __VA_ARGS__)
 #endif
 
 #endif /* __GDI_H */

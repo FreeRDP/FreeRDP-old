@@ -26,7 +26,6 @@
 #include "color.h"
 #include "decode.h"
 
-#include "gdi.h"
 #include "gdi_dc.h"
 #include "gdi_pen.h"
 #include "gdi_line.h"
@@ -37,6 +36,8 @@
 #include "gdi_palette.h"
 #include "gdi_drawing.h"
 #include "gdi_clipping.h"
+
+#include "gdi.h"
 
 /* Ternary Raster Operation Table */
 const uint32 rop3_code_table[] =
@@ -489,7 +490,7 @@ gdi_ui_create_glyph(struct rdp_inst * inst, int width, int height, uint8 * data)
 	uint8* glyph;
 	GDI_IMAGE *gdi_bmp;
 
-	//DEBUG_GDI("gdi_ui_create_glyph: width:%d height:%d", width, height);
+	DEBUG_GDI("gdi_ui_create_glyph: width:%d height:%d", width, height);
 
 	gdi_bmp = (GDI_IMAGE*) malloc(sizeof(GDI_IMAGE));
 	
@@ -533,7 +534,7 @@ gdi_ui_create_bitmap(struct rdp_inst * inst, int width, int height, uint8* data)
 	GDI_IMAGE *gdi_bmp;
 	GDI *gdi = GET_GDI(inst);
 
-	//DEBUG_GDI("gdi_ui_create_bitmap: width:%d height:%d", width, height);
+	DEBUG_GDI("gdi_ui_create_bitmap: width:%d height:%d", width, height);
 
 	gdi_bmp = gdi_bitmap_new(gdi, width, height, gdi->dstBpp, data);
 	
@@ -631,7 +632,7 @@ gdi_ui_rect(struct rdp_inst * inst, int x, int y, int cx, int cy, uint32 color)
 	uint32 brush_color;
 	GDI *gdi = GET_GDI(inst);
 
-	//DEBUG_GDI("ui_rect: x:%d y:%d cx:%d cy:%d", x, y, cx, cy);
+	DEBUG_GDI("ui_rect: x:%d y:%d cx:%d cy:%d", x, y, cx, cy);
 
 	gdi_CRgnToRect(x, y, cx, cy, &rect);
 	brush_color = gdi_color_convert(color, gdi->srcBpp, 32, gdi->clrconv);
@@ -910,8 +911,8 @@ gdi_ui_memblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy
 	GDI_IMAGE *gdi_bmp;
 	GDI *gdi = GET_GDI(inst);
 
-	//DEBUG_GDI("gdi_ui_memblt: x:%d y:%d cx:%d cy:%d srcx:%d, srcy:%d rop:0x%X",
-	//          x, y, cx, cy, srcx, srcy, gdi_rop3_code(opcode));
+	DEBUG_GDI("gdi_ui_memblt: x:%d y:%d cx:%d cy:%d srcx:%d, srcy:%d rop:0x%X",
+	          x, y, cx, cy, srcx, srcy, gdi_rop3_code(opcode));
 
 	gdi_bmp = (GDI_IMAGE*) src;
 	gdi_BitBlt(gdi->drawing->hdc, x, y, cx, cy, gdi_bmp->hdc, srcx, srcy, gdi_rop3_code(opcode));
@@ -1027,7 +1028,7 @@ gdi_ui_create_surface(struct rdp_inst * inst, int width, int height, RD_HBITMAP 
 		gdi->drawing = gdi_bmp;
 	}
 	
-	//DEBUG_GDI("ui_create_surface");
+	DEBUG_GDI("ui_create_surface");
 	
 	return (RD_HBITMAP) gdi_bmp;
 }
@@ -1044,7 +1045,7 @@ gdi_ui_switch_surface(struct rdp_inst * inst, RD_HBITMAP surface)
 {
 	GDI *gdi = GET_GDI(inst);
 
-	//DEBUG_GDI("ui_switch_surface");
+	DEBUG_GDI("ui_switch_surface");
 	
 	if (surface != 0)
 	{

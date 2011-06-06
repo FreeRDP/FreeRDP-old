@@ -54,9 +54,9 @@ void
 mcs_free(rdpMcs * mcs);
 
 #ifdef WITH_DEBUG_MCS
-#define DEBUG_MCS(fmt, ...) DEBUG_CLASS(MCS, fmt, ...)
+#define DEBUG_MCS(fmt, ...) DEBUG_CLASS(MCS, fmt, ## __VA_ARGS__)
 #else
-#define DEBUG_MCS(fmt, ...) DEBUG_NULL(fmt, ...)
+#define DEBUG_MCS(fmt, ...) DEBUG_NULL(fmt, ## __VA_ARGS__)
 #endif
 
 #endif

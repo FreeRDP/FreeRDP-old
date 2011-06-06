@@ -24,9 +24,9 @@
 #include <freerdp/utils/debug.h>
 
 #ifdef WITH_DEBUG_CHANMAN
-#define DEBUG_CHANMAN(fmt, ...) DEBUG_CLASS(CHANMAN, fmt, ...)
+#define DEBUG_CHANMAN(fmt, ...) DEBUG_CLASS(CHANMAN, fmt, ## __VA_ARGS__)
 #else
-#define DEBUG_CHANMAN(fmt, ...) DEBUG_NULL(fmt, ...)
+#define DEBUG_CHANMAN(fmt, ...) DEBUG_NULL(fmt, ## __VA_ARGS__)
 #endif
 
 #endif /* __LIBCHANMAN_H */
