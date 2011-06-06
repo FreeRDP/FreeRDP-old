@@ -542,15 +542,14 @@ serial_control(IRP * irp)
 		case IOCTL_SERIAL_WAIT_ON_MASK:
 			LLOGLN(10, ("serial_ioctl -> SERIAL_WAIT_ON_MASK %X", info->wait_mask));
 			info->event_pending = 1;
+			size = 4;
 			if (serial_get_event(irp, &result))
 			{
-				size = 4;
 				outbuf = malloc(size);
 				LLOGLN(10, ("WAIT end  event = %x", result));
 				SET_UINT32(outbuf, 0, result);
 				break;
 			}
-			irp->outputBufferLength = 4;
 			ret = RD_STATUS_PENDING;
 			break;
 		case IOCTL_SERIAL_SET_BREAK_ON:
