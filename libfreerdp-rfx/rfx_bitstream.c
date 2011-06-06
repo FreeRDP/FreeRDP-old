@@ -30,6 +30,7 @@ rfx_bitstream_new(void)
 
 	bs = (RFX_BITSTREAM *) malloc(sizeof(RFX_BITSTREAM));
 	memset(bs, 0, sizeof(RFX_BITSTREAM));
+
 	return bs;
 }
 
@@ -43,28 +44,33 @@ rfx_bitstream_put_bytes(RFX_BITSTREAM * bs, const unsigned char * bytes, int nby
 	bs->bits_left = 8;
 }
 
-unsigned int
+uint32
 rfx_bitstream_get_bits(RFX_BITSTREAM * bs, int nbits)
 {
-	unsigned int n = 0;
 	int b;
+	uint32 n = 0;
 
 	while (bs->byte_pos < bs->nbytes && nbits > 0)
 	{
 		b = nbits;
+
 		if (b > bs->bits_left)
 			b = bs->bits_left;
+
 		if (n)
 			n <<= b;
+
 		n |= (bs->bytes[bs->byte_pos] >> (bs->bits_left - b)) & ((1 << b) - 1);
 		bs->bits_left -= b;
 		nbits -= b;
+
 		if (bs->bits_left == 0)
 		{
 			bs->bits_left = 8;
 			bs->byte_pos++;
 		}
 	}
+
 	return n;
 }
 
@@ -79,14 +85,19 @@ rfx_bitstream_left(RFX_BITSTREAM * bs)
 {
 	if (bs->byte_pos >= bs->nbytes)
 		return 0;
+
 	return (bs->nbytes - bs->byte_pos - 1) * 8 + bs->bits_left;
 }
 
 void
 rfx_bitstream_free(RFX_BITSTREAM * bs)
 {
-	if (bs->bytes)
-		free(bs->bytes);
-	free(bs);
+	if (bs != NULL)
+	{
+		if (bs->bytes != NULL)
+			free(bs->bytes);
+
+		free(bs);
+	}
 }
 

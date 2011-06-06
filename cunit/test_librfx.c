@@ -25,13 +25,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <freerdp/rfx.h>
 #include "rfx_bitstream.h"
 #include "rfx_rlgr.h"
 #include "rfx_differential.h"
 #include "rfx_quantization.h"
 #include "rfx_dwt.h"
 #include "rfx_decode.h"
-#include "rfx_private.h"
+
 #include "test_librfx.h"
 
 static const unsigned char y_data[] =

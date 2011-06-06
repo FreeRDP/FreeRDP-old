@@ -24,7 +24,7 @@
 
 int
 rfx_rlgr_decode(RLGR_MODE mode,
-	const unsigned char * data, int data_size,
+	const uint8 * data, int data_size,
 	int * buffer, int buffer_size);
 
 #endif

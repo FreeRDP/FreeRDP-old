@@ -24,7 +24,7 @@
 
 struct _RFX_BITSTREAM
 {
-	unsigned char * bytes;
+	uint8 * bytes;
 	int nbytes;
 	int byte_pos;
 	int bits_left;
@@ -34,7 +34,7 @@ typedef struct _RFX_BITSTREAM RFX_BITSTREAM;
 RFX_BITSTREAM *
 rfx_bitstream_new(void);
 void
-rfx_bitstream_put_bytes(RFX_BITSTREAM * bs, const unsigned char * bytes, int nbytes);
+rfx_bitstream_put_bytes(RFX_BITSTREAM * bs, const uint8 * bytes, int nbytes);
 unsigned int
 rfx_bitstream_get_bits(RFX_BITSTREAM * bs, int nbits);
 int

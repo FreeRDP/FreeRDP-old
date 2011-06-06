@@ -20,6 +20,8 @@
 #ifndef __RFX_H
 #define __RFX_H
 
+#include "types/base.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -75,12 +77,12 @@ typedef enum _RFX_PIXEL_FORMAT RFX_PIXEL_FORMAT;
 struct _RFX_CONTEXT
 {
 	int flags;
-	int width;
-	int height;
+	uint16 width;
+	uint16 height;
 	RLGR_MODE mode;
-	unsigned int version;
-	unsigned int codec_id;
-	unsigned int codec_version;
+	uint32 version;
+	uint32 codec_id;
+	uint32 codec_version;
 	RFX_PIXEL_FORMAT pixel_format;
 
 	/* temporary data within a frame */
@@ -91,18 +93,18 @@ typedef struct _RFX_CONTEXT RFX_CONTEXT;
 
 struct _RFX_RECT
 {
-	short x;
-	short y;
-	unsigned short width;
-	unsigned short height;
+	uint16 x;
+	uint16 y;
+	uint16 width;
+	uint16 height;
 };
 typedef struct _RFX_RECT RFX_RECT;
 
 struct _RFX_TILE
 {
-	short x;
-	short y;
-	unsigned char * data;
+	uint16 x;
+	uint16 y;
+	uint8 * data;
 };
 typedef struct _RFX_TILE RFX_TILE;
 
@@ -129,7 +131,7 @@ RFX_CONTEXT* rfx_context_new(void);
 void rfx_context_free(RFX_CONTEXT * context);
 void rfx_context_set_pixel_format(RFX_CONTEXT * context, RFX_PIXEL_FORMAT pixel_format);
 
-RFX_MESSAGE* rfx_process_message(RFX_CONTEXT * context, unsigned char * data, int data_size);
+RFX_MESSAGE* rfx_process_message(RFX_CONTEXT * context, uint8 * data, int data_size);
 void rfx_message_free(RFX_MESSAGE * message);
 
 #ifdef __cplusplus

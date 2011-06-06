@@ -100,11 +100,11 @@ UpdateParam(
 /* Outputs the Golomb/Rice encoding of a non-negative integer */
 #define GetGRCode(krp, kr) rfx_rlgr_get_gr_code(bs, krp, kr)
 
-static unsigned int
+static uint32
 rfx_rlgr_get_gr_code(RFX_BITSTREAM * bs, int * krp, int * kr)
 {
 	int vk;
-	unsigned int mag;
+	uint32 mag;
 
 	/* chew up/count leading 1s and escape 0 */
 	for (vk = 0; GetBits(1) == 1;)
@@ -124,15 +124,15 @@ rfx_rlgr_get_gr_code(RFX_BITSTREAM * bs, int * krp, int * kr)
 
 int
 rfx_rlgr_decode(RLGR_MODE mode,
-	const unsigned char * data, int data_size,
+	const uint8 * data, int data_size,
 	int * buffer, int buffer_size)
 {
-	RFX_BITSTREAM * bs;
-	int * dst;
 	int k;
 	int kp;
 	int kr;
 	int krp;
+	int * dst;
+	RFX_BITSTREAM * bs;
 
 	bs = rfx_bitstream_new();
 	rfx_bitstream_put_bytes(bs, data, data_size);
@@ -226,13 +226,6 @@ rfx_rlgr_decode(RLGR_MODE mode,
 			}
 		}
 	}
-
-#if 0
-	if (buffer_size < 0)
-		printf("rfx_rlgr_decode: %d bytes exceed buffer size.\n", -buffer_size);
-	if (!rfx_bitstream_eos(bs))
-		printf("rfx_rlgr_decode: %d bits remain.\n", rfx_bitstream_left(bs));
-#endif
 
 	rfx_bitstream_free(bs);
 

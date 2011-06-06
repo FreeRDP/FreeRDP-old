@@ -31,7 +31,7 @@
 
 static void
 rfx_decode_component(RLGR_MODE mode, const int * quantization_values, int half,
-	const unsigned char * data, int size, int * buffer)
+	const uint8 * data, int size, int * buffer)
 {
 	rfx_rlgr_decode(mode, data, size, buffer, 4096);
 
@@ -50,24 +50,25 @@ rfx_decode_component(RLGR_MODE mode, const int * quantization_values, int half,
 
 	rfx_dwt_2d_decode(buffer + 3840, 8);
 	rfx_dwt_2d_decode(buffer + 3072, 16);
+
 	if (!half)
 		rfx_dwt_2d_decode(buffer, 32);
 }
 
-unsigned char *
+uint8 *
 rfx_decode_rgb(RFX_CONTEXT * context,
-	const unsigned char * y_data, int y_size, const int * y_quants,
-	const unsigned char * cb_data, int cb_size, const int * cb_quants,
-	const unsigned char * cr_data, int cr_size, const int * cr_quants)
+	const uint8 * y_data, int y_size, const int * y_quants,
+	const uint8 * cb_data, int cb_size, const int * cb_quants,
+	const uint8 * cr_data, int cr_size, const int * cr_quants)
 {
-	unsigned char * output;
-	unsigned char * dst;
+	int i;
+	int r, g, b;
+	int y, cb, cr;
+	uint8 * dst;
+	uint8 * output;
 	int y_buffer[4096];
 	int cb_buffer[4096];
 	int cr_buffer[4096];
-	int y, cb, cr;
-	int r, g, b;
-	int i;
 
 	output = (unsigned char *) malloc(4096 * 4);
 	dst = output;
@@ -75,17 +76,20 @@ rfx_decode_rgb(RFX_CONTEXT * context,
 	rfx_decode_component(context->mode, y_quants, 0, y_data, y_size, y_buffer);
 	rfx_decode_component(context->mode, cb_quants, 0, cb_data, cb_size, cb_buffer);
 	rfx_decode_component(context->mode, cr_quants, 0, cr_data, cr_size, cr_buffer);
+
 	for (i = 0; i < 4096; i++)
 	{
 		y = y_buffer[i] + 128;
 		cb = cb_buffer[i];
 		cr = cr_buffer[i];
+
 		r = (y + cr + (cr >> 2) + (cr >> 3) + (cr >> 5));
 		r = MINMAX(r, 0, 255);
 		g = (y - ((cb >> 2) + (cb >> 4) + (cb >> 5)) - ((cr >> 1) + (cr >> 3) + (cr >> 4) + (cr >> 5)));
 		g = MINMAX(g, 0, 255);
 		b = (y + cb + (cb >> 1) + (cb >> 2) + (cb >> 6));
 		b = MINMAX(b, 0, 255);
+
 		switch (context->pixel_format)
 		{
 			case RFX_PIXEL_FORMAT_BGRA:

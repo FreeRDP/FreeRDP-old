@@ -24,6 +24,7 @@ rfx_quantization_decode(int * buffer, int buffer_size, int factor)
 
 	if (factor <= 6)
 		return;
+
 	for (dst = buffer; buffer_size > 0; dst++, buffer_size--)
 	{
 		*dst <<= (factor - 6);
