@@ -12,8 +12,6 @@ libfreerdp_rfx_la_SOURCES = \
 	rfx_quantization.c rfx_quantization.h \
 	rfx_dwt.c rfx_dwt.h \
 	rfx_decode.c rfx_decode.h \
-	rfx_constants.h \
-	rfx_private.h \
 	rfx.c
 
 libfreerdp_rfx_la_CFLAGS = \

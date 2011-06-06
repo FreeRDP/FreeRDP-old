@@ -20,6 +20,15 @@
 #ifndef __RFX_BITSTREAM_H
 #define __RFX_BITSTREAM_H
 
+#include <freerdp/rfx.h>
+
+struct _RFX_BITSTREAM
+{
+	unsigned char * bytes;
+	int nbytes;
+	int byte_pos;
+	int bits_left;
+};
 typedef struct _RFX_BITSTREAM RFX_BITSTREAM;
 
 RFX_BITSTREAM *

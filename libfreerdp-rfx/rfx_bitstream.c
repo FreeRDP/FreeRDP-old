@@ -20,15 +20,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "rfx_bitstream.h"
 
-struct _RFX_BITSTREAM
-{
-	unsigned char * bytes;
-	int nbytes;
-	int byte_pos;
-	int bits_left;
-};
+#include "rfx_bitstream.h"
 
 RFX_BITSTREAM *
 rfx_bitstream_new(void)

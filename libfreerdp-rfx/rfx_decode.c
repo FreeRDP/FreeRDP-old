@@ -24,7 +24,7 @@
 #include "rfx_differential.h"
 #include "rfx_quantization.h"
 #include "rfx_dwt.h"
-#include "rfx_private.h"
+
 #include "rfx_decode.h"
 
 #define MINMAX(_v,_l,_h) ((_v) < (_l) ? (_l) : ((_v) > (_h) ? (_h) : (_v)))

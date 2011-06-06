@@ -24,44 +24,106 @@
 extern "C" {
 #endif
 
-typedef struct _RFX_CONTEXT RFX_CONTEXT;
+/* sync */
+#define WF_MAGIC		0xCACCACCA
+#define WF_VERSION_1_0		0x0100
 
-typedef struct _RFX_RECT RFX_RECT;
-struct _RFX_RECT
+/* blockType */
+#define WBT_SYNC		0xCCC0
+#define WBT_CODEC_VERSIONS	0xCCC1
+#define WBT_CHANNELS		0xCCC2
+#define WBT_CONTEXT		0xCCC3
+#define WBT_FRAME_BEGIN		0xCCC4
+#define WBT_FRAME_END		0xCCC5
+#define WBT_REGION		0xCCC6
+#define WBT_EXTENSION		0xCCC7
+#define CBT_TILESET		0xCAC2
+#define CBT_TILE		0xCAC3
+
+/* properties.flags */
+#define CODEC_MODE		0x02
+
+/* properties.cct */
+#define COL_CONV_ICT		0x1
+
+/* properties.xft */
+#define CLW_XFORM_DWT_53_A	0x1
+
+/* properties.et */
+#define CLW_ENTROPY_RLGR1	0x01
+#define CLW_ENTROPY_RLGR3	0x04
+
+/* properties.qt */
+#define SCALAR_QUANTIZATION	0x1
+
+enum _RLGR_MODE
 {
-	short x, y;
-	unsigned short width, height;
+	RLGR1,
+	RLGR3
 };
+typedef enum _RLGR_MODE RLGR_MODE;
 
-typedef struct _RFX_TILE RFX_TILE;
-struct _RFX_TILE
-{
-	short x, y;
-	unsigned char * data;
-};
-
-typedef struct _RFX_MESSAGE RFX_MESSAGE;
-struct _RFX_MESSAGE
-{
-	/* The rects array represents the updated region of the frame. The UI
-	   requires to clip drawing destination base on the union of the rects. */
-	int num_rects;
-	RFX_RECT * rects;
-	/* The tiles array represents the actual frame data. Each tile is always
-	   64x64. Note that only pixels inside the updated region (represented as
-	   rects described above) are valid. Pixels outside of the region may
-	   contain arbitrary data. */
-	int num_tiles;
-	RFX_TILE * tiles;
-};
-
-typedef enum
+enum _RFX_PIXEL_FORMAT
 {
 	RFX_PIXEL_FORMAT_BGRA,
 	RFX_PIXEL_FORMAT_RGBA,
 	RFX_PIXEL_FORMAT_BGR,
 	RFX_PIXEL_FORMAT_RGB
-} RFX_PIXEL_FORMAT;
+};
+typedef enum _RFX_PIXEL_FORMAT RFX_PIXEL_FORMAT;
+
+struct _RFX_CONTEXT
+{
+	int flags;
+	int width;
+	int height;
+	RLGR_MODE mode;
+	unsigned int version;
+	unsigned int codec_id;
+	unsigned int codec_version;
+	RFX_PIXEL_FORMAT pixel_format;
+
+	/* temporary data within a frame */
+	int num_quants;
+	int * quants;
+};
+typedef struct _RFX_CONTEXT RFX_CONTEXT;
+
+struct _RFX_RECT
+{
+	short x;
+	short y;
+	unsigned short width;
+	unsigned short height;
+};
+typedef struct _RFX_RECT RFX_RECT;
+
+struct _RFX_TILE
+{
+	short x;
+	short y;
+	unsigned char * data;
+};
+typedef struct _RFX_TILE RFX_TILE;
+
+struct _RFX_MESSAGE
+{
+	/*
+	 * The rects array represents the updated region of the frame. The UI
+	 * requires to clip drawing destination base on the union of the rects.
+	 */
+	int num_rects;
+	RFX_RECT * rects;
+
+	/* The tiles array represents the actual frame data. Each tile is always
+	 * 64x64. Note that only pixels inside the updated region (represented as
+	 * rects described above) are valid. Pixels outside of the region may
+	 * contain arbitrary data.
+	 */
+	int num_tiles;
+	RFX_TILE * tiles;
+};
+typedef struct _RFX_MESSAGE RFX_MESSAGE;
 
 RFX_CONTEXT* rfx_context_new(void);
 void rfx_context_free(RFX_CONTEXT * context);
