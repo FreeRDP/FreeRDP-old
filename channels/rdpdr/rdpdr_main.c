@@ -457,8 +457,8 @@ rdpdr_check_fds(rdpdrPlugin * plugin)
 			if (error != CHANNEL_RC_OK)
 				LLOGLN(0, ("rdpdr_check_fds: VirtualChannelWrite failed %d", error));
 
-			if (pending->inputBuffer)
-				free(pending->inputBuffer);
+			if (pending->outputBuffer)
+				free(pending->outputBuffer);
 		}
 		pending = irp_queue_next(plugin->queue, pending);
 		if (isset)
