@@ -133,11 +133,11 @@ rfx_process_message_channels(RFX_CONTEXT * context, unsigned char * data, int da
 static void
 rfx_process_message_context(RFX_CONTEXT * context, unsigned char * data, int data_size)
 {
-	int ctxId;
-	int codecId;
-	int tileSize;
-	int channelId;
-	unsigned int properties;
+	uint8 ctxId;
+	uint8 codecId;
+	uint8 channelId;
+	uint16 tileSize;
+	uint16 properties;
 
 	codecId = GET_UINT8(data, 0);
 	channelId = GET_UINT8(data, 1);
@@ -187,11 +187,12 @@ rfx_process_message_region(RFX_CONTEXT * context, RFX_MESSAGE * message, unsigne
 	}
 
 	if (message->rects != NULL)
-		free(message->rects);
+		message->rects = (RFX_RECT*) realloc((void*) message->rects, message->num_rects * sizeof(RFX_RECT));
+	else
+		message->rects = (RFX_RECT*) malloc(message->num_rects * sizeof(RFX_RECT));
 
 	data += 5;
 	data_size -= 5;
-	message->rects = (RFX_RECT *) malloc(message->num_rects * sizeof(RFX_RECT));
 
 	for (i = 0; i < message->num_rects && data_size > 0; i++)
 	{
@@ -270,9 +271,9 @@ rfx_process_message_tileset(RFX_CONTEXT * context, RFX_MESSAGE * message, unsign
 	data_size -= 12;
 
 	if (context->quants != NULL)
-		free(context->quants);
-
-	context->quants = (uint32*) malloc(context->num_quants * 10 * sizeof(uint32));
+		context->quants = (uint32*) realloc((void*) context->quants, context->num_quants * 10 * sizeof(uint32));
+	else
+		context->quants = (uint32*) malloc(context->num_quants * 10 * sizeof(uint32));
 
 	for (i = 0; i < context->num_quants && data_size > 0; i++)
 	{
