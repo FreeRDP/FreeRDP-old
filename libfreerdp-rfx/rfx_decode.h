@@ -26,7 +26,7 @@ unsigned char *
 rfx_decode_rgb(RFX_CONTEXT * context,
 	const uint8 * y_data, int y_size, const uint32 * y_quants,
 	const uint8 * cb_data, int cb_size, const uint32 * cb_quants,
-	const uint8 * cr_data, int cr_size, const uint32 * cr_quants);
+	const uint8 * cr_data, int cr_size, const uint32 * cr_quants, uint8* rgb_buffer);
 
 #endif
 

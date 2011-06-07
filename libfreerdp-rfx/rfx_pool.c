@@ -1,6 +1,6 @@
 /*
    FreeRDP: A Remote Desktop Protocol client.
-   RemoteFX Codec Library - Quantization
+   RemoteFX Codec Library - Memory Pool
 
    Copyright 2011 Marc-Andre Moreau <marcandre.moreau@gmail.com>
 
@@ -75,9 +75,14 @@ RFX_TILE* rfx_pool_get_tile(RFX_POOL* pool)
 	RFX_TILE* tile;
 
 	if (pool->count < 1)
+	{
 		tile = (RFX_TILE*) malloc(sizeof(RFX_TILE));
+		tile->data = (uint8*) malloc(4096 * 4); /* 64x64 * 4 */
+	}
 	else
+	{
 		tile = pool->tiles[--(pool->count)];
+	}
 
 	return tile;
 }

@@ -1,6 +1,6 @@
 /*
    FreeRDP: A Remote Desktop Protocol client.
-   RemoteFX Codec Library - Quantization
+   RemoteFX Codec Library - Memory Pool
 
    Copyright 2011 Marc-Andre Moreau <marcandre.moreau@gmail.com>
 

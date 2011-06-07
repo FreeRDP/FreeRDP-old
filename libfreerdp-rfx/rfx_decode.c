@@ -55,21 +55,18 @@ rfx_decode_component(RLGR_MODE mode, const uint32 * quantization_values, int hal
 		rfx_dwt_2d_decode((int*) buffer, 32);
 }
 
-uint8 *
+uint8*
 rfx_decode_rgb(RFX_CONTEXT * context,
 	const uint8 * y_data, int y_size, const uint32 * y_quants,
 	const uint8 * cb_data, int cb_size, const uint32 * cb_quants,
-	const uint8 * cr_data, int cr_size, const uint32 * cr_quants)
+	const uint8 * cr_data, int cr_size, const uint32 * cr_quants, uint8* rgb_buffer)
 {
 	int i;
 	uint8 * dst;
 	int r, g, b;
 	int y, cb, cr;
-	uint8* rgb_buffer;
 
-	rgb_buffer = (uint8*) malloc(4096 * 4);
 	dst = rgb_buffer;
-
 	rfx_decode_component(context->mode, y_quants, 0, y_data, y_size, context->y_buffer);
 	rfx_decode_component(context->mode, cb_quants, 0, cb_data, cb_size, context->cb_buffer);
 	rfx_decode_component(context->mode, cr_quants, 0, cr_data, cr_size, context->cr_buffer);
