@@ -20,8 +20,10 @@
 #ifndef __RFX_QUANTIZATION_H
 #define __RFX_QUANTIZATION_H
 
+#include <freerdp/rfx.h>
+
 void
-rfx_quantization_decode(int * buffer, int buffer_size, int factor);
+rfx_quantization_decode(uint32 * buffer, int buffer_size, uint32 factor);
 
 #endif
 

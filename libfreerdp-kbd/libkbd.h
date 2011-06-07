@@ -23,9 +23,9 @@
 #include <freerdp/utils/debug.h>
 
 #ifdef WITH_DEBUG_KBD
-#define DEBUG_KBD(fmt, ...) DEBUG_CLASS(KBD, fmt, ...)
+#define DEBUG_KBD(fmt, ...) DEBUG_CLASS(KBD, fmt, ## __VA_ARGS__)
 #else
-#define DEBUG_KBD(fmt, ...) DEBUG_NULL(fmt, ...)
+#define DEBUG_KBD(fmt, ...) DEBUG_NULL(fmt, ## __VA_ARGS__)
 #endif
 
 #endif /* __LIBKBD_H */

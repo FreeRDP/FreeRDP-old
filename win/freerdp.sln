@@ -2,6 +2,9 @@
 Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual C++ Express 2010
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "wfreerdp", "wfreerdp\wfreerdp.vcxproj", "{1BB89405-9CB0-4694-8E41-326238B14354}"
+	ProjectSection(ProjectDependencies) = postProject
+		{E58AAE35-B0A1-4805-9E46-69E43ECC5E33} = {E58AAE35-B0A1-4805-9E46-69E43ECC5E33}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libfreerdp-asn1", "libfreerdp-asn1.vcxproj", "{97445561-CA2C-46A2-A1C4-C7311C558C10}"
 EndProject
@@ -10,8 +13,13 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libfreerdp-core", "libfreerdp-core.vcxproj", "{3D13BDCD-2E1D-45C0-AA5B-61A6330DED81}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libfreerdp-gdi", "libfreerdp-gdi.vcxproj", "{65B0C0EE-55CF-417A-B4BD-A3F3E036DEC1}"
+	ProjectSection(ProjectDependencies) = postProject
+		{E58AAE35-B0A1-4805-9E46-69E43ECC5E33} = {E58AAE35-B0A1-4805-9E46-69E43ECC5E33}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libfreerdp-utils", "libfreerdp-utils.vcxproj", "{E4BE093E-F3DF-4DEE-B228-00B065320A18}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libfreerdp-rfx", "libfreerdp-rfx.vcxproj", "{E58AAE35-B0A1-4805-9E46-69E43ECC5E33}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -43,6 +51,10 @@ Global
 		{E4BE093E-F3DF-4DEE-B228-00B065320A18}.Debug|Win32.Build.0 = Debug|Win32
 		{E4BE093E-F3DF-4DEE-B228-00B065320A18}.Release|Win32.ActiveCfg = Release|Win32
 		{E4BE093E-F3DF-4DEE-B228-00B065320A18}.Release|Win32.Build.0 = Release|Win32
+		{E58AAE35-B0A1-4805-9E46-69E43ECC5E33}.Debug|Win32.ActiveCfg = Debug|Win32
+		{E58AAE35-B0A1-4805-9E46-69E43ECC5E33}.Debug|Win32.Build.0 = Debug|Win32
+		{E58AAE35-B0A1-4805-9E46-69E43ECC5E33}.Release|Win32.ActiveCfg = Release|Win32
+		{E58AAE35-B0A1-4805-9E46-69E43ECC5E33}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -20,7 +20,7 @@
 #include <stdio.h>
 #include <freerdp/freerdp.h>
 #include "wfreerdp.h"
-#include "wf_win.h"
+#include "wf_window.h"
 
 #include "wf_event.h"
 
@@ -33,11 +33,13 @@ static HWND g_focus_hWnd;	/* set to hWnd when wfreerdp has focus so the low leve
 LRESULT CALLBACK
 wf_ll_kbd_proc(int nCode, WPARAM wParam, LPARAM lParam)
 {
+	DWORD flags;
 	wfInfo * wfi;
 	uint8 scanCode;
-	DWORD flags;
+	PKBDLLHOOKSTRUCT p;
 
 	DEBUG_KBD("Low-level keyboard hook, hWnd %X nCode %X wParam %X\n", g_focus_hWnd, nCode, wParam);
+
 	if (g_focus_hWnd && (nCode == HC_ACTION)) {
 		switch (wParam) {
 		case WM_KEYDOWN:
@@ -45,7 +47,7 @@ wf_ll_kbd_proc(int nCode, WPARAM wParam, LPARAM lParam)
 		case WM_KEYUP:
 		case WM_SYSKEYUP:
 			wfi = (wfInfo *) GetWindowLongPtr(g_focus_hWnd, GWLP_USERDATA);
-			PKBDLLHOOKSTRUCT p = (PKBDLLHOOKSTRUCT) lParam;
+			p = (PKBDLLHOOKSTRUCT) lParam;
 			scanCode = (uint8)p->scanCode;
 			flags = p->flags;
 			DEBUG_KBD("keydown %d scanCode %04X flags %02X vkCode %02X\n",

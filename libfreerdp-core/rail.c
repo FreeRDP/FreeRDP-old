@@ -28,16 +28,21 @@
 void
 rdp_out_rail_pdu_header(STREAM s, uint16 orderType, uint16 orderLength)
 {
-	out_uint16_le(s, orderType); // orderType
-	out_uint16_le(s, orderLength); // orderLength
+	out_uint16_le(s, orderType); /* orderType */
+	out_uint16_le(s, orderLength); /* orderLength */
 }
 
 void
 rdp_send_client_execute_pdu(rdpRdp * rdp)
 {
 	STREAM s;
-	size_t application_name_len, working_directory_len, arguments_len;
-	char * application_name, * working_directory, * arguments;
+	uint16 flags;
+	char *arguments;
+	char *application_name;
+	char *working_directory;
+	size_t arguments_len;
+	size_t application_name_len;
+	size_t working_directory_len;
 
 	/* Still lacking proper packet initialization */
 	s = NULL;
@@ -50,15 +55,15 @@ rdp_send_client_execute_pdu(rdpRdp * rdp)
 	arguments = freerdp_uniconv_out(rdp->uniconv,
 			rdp->app->arguments, &arguments_len);
 
-	out_uint16_le(s,
-			RAIL_EXEC_FLAG_EXPAND_WORKINGDIRECTORY |
-			RAIL_EXEC_FLAG_EXPAND_ARGUMENTS); // flags
-	out_uint16_le(s, application_name_len); // ExeOrFileLength
-	out_uint16_le(s, working_directory_len); // WorkingDirLength
-	out_uint16_le(s, arguments_len); // ArgumentsLength
-	out_uint8a(s, application_name, application_name_len + 2); // ExeOrFile
-	out_uint8a(s, working_directory, working_directory_len + 2); // WorkingDir
-	out_uint8a(s, arguments, arguments_len + 2); // Arguments
+	flags = RAIL_EXEC_FLAG_EXPAND_WORKINGDIRECTORY | RAIL_EXEC_FLAG_EXPAND_ARGUMENTS;
+
+	out_uint16_le(s, flags); /* flags */
+	out_uint16_le(s, application_name_len); /* ExeOrFileLength */
+	out_uint16_le(s, working_directory_len); /* WorkingDirLength */
+	out_uint16_le(s, arguments_len); /* ArgumentsLength */
+	out_uint8a(s, application_name, application_name_len + 2); /* ExeOrFile */
+	out_uint8a(s, working_directory, working_directory_len + 2); /* WorkingDir */
+	out_uint8a(s, arguments, arguments_len + 2); /* Arguments */
 
 	xfree(application_name);
 	xfree(working_directory);

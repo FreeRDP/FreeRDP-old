@@ -20,8 +20,10 @@
 #ifndef __RFX_DIFFERENTIAL_H
 #define __RFX_DIFFERENTIAL_H
 
+#include <freerdp/rfx.h>
+
 void
-rfx_differential_decode(int * buffer, int buffer_size);
+rfx_differential_decode(uint32 * buffer, int buffer_size);
 
 #endif
 

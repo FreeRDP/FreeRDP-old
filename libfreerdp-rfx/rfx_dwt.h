@@ -20,8 +20,10 @@
 #ifndef __RFX_DWT_H
 #define __RFX_DWT_H
 
+#include <freerdp/rfx.h>
+
 void
-rfx_dwt_2d_decode(int * buffer, int subband_width);
+rfx_dwt_2d_decode(RFX_CONTEXT * context, int * buffer, int subband_width);
 
 #endif
 

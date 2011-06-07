@@ -1,8 +1,8 @@
 /*
    FreeRDP: A Remote Desktop Protocol client.
+   RemoteFX Codec Library
 
-   Copyright (c) 2009-2011 Jay Sorg
-   Copyright (c) 2010-2011 Vic Lee
+   Copyright 2011 Vic Lee
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -17,18 +17,15 @@
    limitations under the License.
 */
 
-#ifndef __WF_WIN_H
-#define __WF_WIN_H
+#ifndef __LIBRFX_H
+#define __LIBRFX_H
 
-#include "wfreerdp.h"
+#include <freerdp/utils/debug.h>
 
-int
-wf_pre_connect(wfInfo * wfif);
-int
-wf_post_connect(wfInfo * wfi);
-void
-wf_toggle_fullscreen(wfInfo * wfi);
-void
-wf_uninit(wfInfo * wfi);
-
+#ifdef WITH_DEBUG_RFX
+#define DEBUG_RFX(fmt, ...) DEBUG_CLASS(RFX, fmt, ## __VA_ARGS__)
+#else
+#define DEBUG_RFX(fmt, ...) DEBUG_NULL(fmt, ## __VA_ARGS__)
 #endif
+
+#endif /* __LIBRFX_H */

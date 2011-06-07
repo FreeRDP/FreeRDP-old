@@ -281,8 +281,7 @@ cache_get_font(rdpCache * cache, uint8 font, uint16 character)
 
 /* Store a glyph in the font cache */
 void
-cache_put_font(rdpCache * cache, uint8 font, uint16 character, uint16 offset,
-	       uint16 baseline, uint16 width, uint16 height, RD_HGLYPH pixmap)
+cache_put_font(rdpCache * cache, uint8 font, uint16 character, uint16 offset, uint16 baseline, uint16 width, uint16 height, RD_HGLYPH pixmap)
 {
 	FONTGLYPH *glyph;
 
@@ -468,6 +467,12 @@ cache_free(rdpCache * cache)
 					if (bmp != NULL)
 						ui_destroy_bitmap(cache->rdp->inst, bmp);
 				}
+			}
+			for (cache_id = 0; cache_id < NUM_ELEMENTS(cache->volatile_bc); cache_id++)
+			{
+				bmp = cache->volatile_bc[cache_id];
+				if (bmp)
+					ui_destroy_bitmap(cache->rdp->inst, bmp);
 			}
 			for (cache_id = 0; cache_id < NUM_ELEMENTS(cache->drawing_surface); cache_id++)
 			{

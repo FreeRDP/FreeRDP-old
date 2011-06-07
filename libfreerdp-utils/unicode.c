@@ -104,6 +104,21 @@ char* freerdp_uniconv_out(UNICONV *uniconv, char *str, size_t *pout_len)
 	return pout0;
 }
 
+/* Uppercase a unicode string */
+
+void freerdp_uniconv_uppercase(UNICONV *uniconv, char *wstr, int length)
+{
+	int i;
+	char* p;
+
+	p = wstr;
+	for (i = 0; i < length; i++)
+	{
+		if (p[i * 2] >= 'a' && p[i * 2] <= 'z')
+			p[i * 2] = p[i * 2] - 32;
+	}
+}
+
 UNICONV* freerdp_uniconv_new()
 {
 	UNICONV *uniconv = xmalloc(sizeof(UNICONV));

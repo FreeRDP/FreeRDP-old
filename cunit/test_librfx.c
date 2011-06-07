@@ -25,13 +25,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <freerdp/rfx.h>
 #include "rfx_bitstream.h"
 #include "rfx_rlgr.h"
 #include "rfx_differential.h"
 #include "rfx_quantization.h"
 #include "rfx_dwt.h"
 #include "rfx_decode.h"
-#include "rfx_private.h"
+
 #include "test_librfx.h"
 
 static const unsigned char y_data[] =
@@ -107,9 +108,9 @@ static const unsigned char cr_data[] =
 	0xe2, 0x71, 0xb8, 0x3c, 0x5a, 0x0f, 0x98, 0xc2, 0x2d, 0x71, 0x30, 0x83, 0xc0, 0x00
 };
 
-static const int test_quantization_values[] =
+/* HL1, LH1, HH1, HL2, LH2, HH2, HL3, LH3, HH3, LL3 */
+static const unsigned int test_quantization_values[] =
 {
-	/* HL1, LH1, HH1, HL2, LH2, HH2, HL3, LH3, HH3, LL3 */
 	6, 6, 6, 6, 7, 7, 8, 8, 8, 9
 };
 
@@ -156,7 +157,7 @@ test_bitstream(void)
 	//printf("\n");
 }
 
-static int buffer[4096];
+static unsigned int buffer[4096];
 
 void
 dump_buffer(int * buf, int n)
@@ -177,7 +178,7 @@ test_rlgr(void)
 {
 	int n;
 
-	n = rfx_rlgr_decode(RLGR1, y_data, sizeof(y_data), buffer, sizeof(buffer) / sizeof(int));
+	n = rfx_rlgr_decode(RLGR1, y_data, sizeof(y_data), buffer, sizeof(buffer) / sizeof(unsigned int));
 
 	//printf("RLGR decode %d bytes to %d values.", sizeof(y_data), n);
 	//dump_buffer(buffer, n);
@@ -209,9 +210,9 @@ test_quantization(void)
 void
 test_dwt(void)
 {
-	rfx_dwt_2d_decode(buffer + 3840, 8);
-	rfx_dwt_2d_decode(buffer + 3072, 16);
-	rfx_dwt_2d_decode(buffer, 32);
+	rfx_dwt_2d_decode((int*) buffer + 3840, 8);
+	rfx_dwt_2d_decode((int*) buffer + 3072, 16);
+	rfx_dwt_2d_decode((int*) buffer, 32);
 	//dump_buffer(buffer, 4096);
 }
 

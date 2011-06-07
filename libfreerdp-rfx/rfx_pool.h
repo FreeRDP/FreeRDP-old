@@ -1,8 +1,8 @@
 /*
    FreeRDP: A Remote Desktop Protocol client.
-   RemoteFX Codec Library - Differential Encoding
+   RemoteFX Codec Library - Memory Pool
 
-   Copyright 2011 Vic Lee
+   Copyright 2011 Marc-Andre Moreau <marcandre.moreau@gmail.com>
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -17,20 +17,17 @@
    limitations under the License.
 */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include "rfx_differential.h"
+#ifndef __RFX_POOL_H
+#define __RFX_POOL_H
 
-void
-rfx_differential_decode(uint32 * buffer, int buffer_size)
-{
-	uint32 * src;
-	uint32 * dst;
+#include <freerdp/rfx.h>
 
-	for (src = buffer, dst = buffer + 1; buffer_size > 1; src++, dst++, buffer_size--)
-	{
-		*dst += *src;
-	}
-}
+RFX_POOL* rfx_pool_new();
+void rfx_pool_free(RFX_POOL* pool);
+void rfx_pool_put_tile(RFX_POOL* pool, RFX_TILE* tile);
+RFX_TILE* rfx_pool_get_tile(RFX_POOL* pool);
+void rfx_pool_put_tiles(RFX_POOL* pool, RFX_TILE** tiles, int count);
+RFX_TILE** rfx_pool_get_tiles(RFX_POOL* pool, int count);
+
+#endif /* __RFX_POOL_H */
 

@@ -132,7 +132,7 @@ void ntlmssp_init_rc4_seal_states(NTLMSSP *ntlmssp);
 
 void ntlmssp_compute_lm_hash(char* password, char* hash);
 void ntlmssp_compute_ntlm_hash(DATABLOB* password, char* hash);
-void ntlmssp_compute_ntlm_v2_hash(DATABLOB *password, DATABLOB *username, DATABLOB *domain, char* hash);
+void ntlmssp_compute_ntlm_v2_hash(NTLMSSP *ntlmssp, char* hash);
 
 void ntlmssp_compute_lm_response(char* password, char* challenge, char* response);
 void ntlmssp_compute_lm_v2_response(NTLMSSP *ntlmssp);
@@ -156,9 +156,9 @@ void ntlmssp_init(NTLMSSP *ntlmssp);
 void ntlmssp_free(NTLMSSP *ntlmssp);
 
 #ifdef WITH_DEBUG_NLA
-#define DEBUG_NLA(fmt, ...) DEBUG_CLASS(NLA, fmt, ...)
+#define DEBUG_NLA(fmt, ...) DEBUG_CLASS(NLA, fmt, ## __VA_ARGS__)
 #else
-#define DEBUG_NLA(fmt, ...) DEBUG_NULL(fmt, ...)
+#define DEBUG_NLA(fmt, ...) DEBUG_NULL(fmt, ## __VA_ARGS__)
 #endif
 
 #endif /* __NTLMSSP_H */

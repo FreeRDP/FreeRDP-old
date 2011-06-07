@@ -50,10 +50,10 @@ xf_decode_uninit(xfInfo * xfi)
 static void
 xf_decode_frame(xfInfo * xfi, int x, int y, uint8 * bitmapData, uint32 bitmapDataLength)
 {
-	RFX_MESSAGE * message;
-	XImage * image;
-	int tx, ty;
 	int i;
+	int tx, ty;
+	XImage * image;
+	RFX_MESSAGE * message;
 
 	switch (xfi->codec)
 	{
@@ -70,9 +70,9 @@ xf_decode_frame(xfInfo * xfi, int x, int y, uint8 * bitmapData, uint32 bitmapDat
 			for (i = 0; i < message->num_tiles; i++)
 			{
 				image = XCreateImage(xfi->display, xfi->visual, 24, ZPixmap, 0,
-					(char *) message->tiles[i].data, 64, 64, 32, 0);
-				tx = message->tiles[i].x + x;
-				ty = message->tiles[i].y + y;
+					(char *) message->tiles[i]->data, 64, 64, 32, 0);
+				tx = message->tiles[i]->x + x;
+				ty = message->tiles[i]->y + y;
 				XPutImage(xfi->display, xfi->backstore, xfi->gc, image, 0, 0, tx, ty, 64, 64);
 				XFree(image);
 			}
@@ -85,7 +85,7 @@ xf_decode_frame(xfInfo * xfi, int x, int y, uint8 * bitmapData, uint32 bitmapDat
 				XCopyArea(xfi->display, xfi->backstore, xfi->wnd, xfi->gc_default,
 					tx, ty, message->rects[i].width, message->rects[i].height, tx, ty);
 			}
-			rfx_message_free(message);
+			rfx_message_free(xfi->rfx_context, message);
 
 			break;
 

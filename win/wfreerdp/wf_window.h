@@ -1,8 +1,8 @@
 /*
    FreeRDP: A Remote Desktop Protocol client.
-   RemoteFX Codec Library - Private Structures
 
-   Copyright 2011 Vic Lee
+   Copyright (c) 2009-2011 Jay Sorg
+   Copyright (c) 2010-2011 Vic Lee
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -17,27 +17,18 @@
    limitations under the License.
 */
 
-#ifndef __RFX_PRIVATE_H
-#define __RFX_PRIVATE_H
+#ifndef __WF_WINDOW_H
+#define __WF_WINDOW_H
 
-#include "rfx_rlgr.h"
-#include <freerdp/rfx.h>
+#include "wfreerdp.h"
 
-struct _RFX_CONTEXT
-{
-	unsigned int version;
-	unsigned int codec_id;
-	unsigned int codec_version;
-	int width;
-	int height;
-	int flags;
-	RLGR_MODE mode;
-	RFX_PIXEL_FORMAT pixel_format;
-
-	/* temporary data within a frame */
-	int num_quants;
-	int * quants;
-};
+int
+wf_pre_connect(wfInfo * wfif);
+int
+wf_post_connect(wfInfo * wfi);
+void
+wf_toggle_fullscreen(wfInfo * wfi);
+void
+wf_uninit(wfInfo * wfi);
 
 #endif
-

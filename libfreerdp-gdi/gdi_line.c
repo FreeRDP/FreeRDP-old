@@ -48,7 +48,7 @@ pLineTo LineTo_[5] =
  * @return 1 if successful, 0 otherwise
  */
 
-int gdi_LineTo(HDC hdc, int nXEnd, int nYEnd)
+int gdi_LineTo(HGDI_DC hdc, int nXEnd, int nYEnd)
 {
 	pLineTo _LineTo = LineTo_[IBPP(hdc->bitsPerPixel)];
 
@@ -65,7 +65,7 @@ int gdi_LineTo(HDC hdc, int nXEnd, int nYEnd)
  * @param cCount number of points
  * @return
  */
-int gdi_PolylineTo(HDC hdc, POINT *lppt, int cCount)
+int gdi_PolylineTo(HGDI_DC hdc, GDI_POINT *lppt, int cCount)
 {
 	int i;
 	for (i = 0; i < cCount; i++)
@@ -84,12 +84,12 @@ int gdi_PolylineTo(HDC hdc, POINT *lppt, int cCount)
  * @param cPoints number of points
  * @return
  */
-int gdi_Polyline(HDC hdc, POINT *lppt, int cPoints)
+int gdi_Polyline(HGDI_DC hdc, GDI_POINT *lppt, int cPoints)
 {
 	if (cPoints > 0)
 	{
 		int i;
-		POINT pt;
+		GDI_POINT pt;
 
 		gdi_MoveToEx(hdc, lppt[0].x, lppt[0].y, &pt);
 
@@ -113,7 +113,7 @@ int gdi_Polyline(HDC hdc, POINT *lppt, int cPoints)
  * @param cCount count of entries in lpdwPolyPoints
  * @return
  */
-int gdi_PolyPolyline(HDC hdc, POINT *lppt, int *lpdwPolyPoints, int cCount)
+int gdi_PolyPolyline(HGDI_DC hdc, GDI_POINT *lppt, int *lpdwPolyPoints, int cCount)
 {
 	int cPoints;
 	int i, j = 0;
@@ -136,7 +136,7 @@ int gdi_PolyPolyline(HDC hdc, POINT *lppt, int *lpdwPolyPoints, int cCount)
  * @return 1 if successful, 0 otherwise
  */
 
-int gdi_MoveToEx(HDC hdc, int X, int Y, HPOINT lpPoint)
+int gdi_MoveToEx(HGDI_DC hdc, int X, int Y, HGDI_POINT lpPoint)
 {
 	if (lpPoint != NULL)
 	{

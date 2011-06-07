@@ -20,16 +20,10 @@
 #ifndef __RFX_RLGR_H
 #define __RFX_RLGR_H
 
-typedef enum
-{
-	RLGR1,
-	RLGR3
-} RLGR_MODE;
+#include <freerdp/rfx.h>
 
 int
-rfx_rlgr_decode(RLGR_MODE mode,
-	const unsigned char * data, int data_size,
-	int * buffer, int buffer_size);
+rfx_rlgr_decode(RLGR_MODE mode, const uint8 * data, int data_size, uint32 * buffer, int buffer_size);
 
 #endif
 

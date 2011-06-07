@@ -22,10 +22,10 @@
 
 #include "gdi.h"
 
-HBRUSH gdi_CreateSolidBrush(COLORREF crColor);
-HBRUSH gdi_CreatePatternBrush(HBITMAP hbmp);
-int gdi_PatBlt(HDC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight, int rop);
+HGDI_BRUSH gdi_CreateSolidBrush(GDI_COLOR crColor);
+HGDI_BRUSH gdi_CreatePatternBrush(HGDI_BITMAP hbmp);
+int gdi_PatBlt(HGDI_DC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight, int rop);
 
-typedef int (*pPatBlt)(HDC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight, int rop);
+typedef int (*pPatBlt)(HGDI_DC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight, int rop);
 
 #endif /* __GDI_BRUSH_H */

@@ -24,6 +24,7 @@
 #include <directfb.h>
 #include <freerdp/chanman.h>
 #include <freerdp/types/ui.h>
+#include <freerdp/utils/memory.h>
 #include "gdi.h"
 #include "dfbfreerdp.h"
 #include "dfb_win.h"
@@ -311,12 +312,13 @@ l_ui_create_cursor(struct rdp_inst * inst, uint32 x, uint32 y, int width, int he
 	dfbInfo *dfbi = GET_DFBI(inst);
 	GDI *gdi = GET_GDI(inst);
 
-	cursor = malloc(sizeof(CursorInfo));
+	cursor = (CursorInfo*) xmalloc(sizeof(CursorInfo));
 	dsc.flags = DSDESC_CAPS | DSDESC_WIDTH | DSDESC_HEIGHT | DSDESC_PIXELFORMAT;
 	dsc.caps = DSCAPS_SYSTEMONLY;
 	dsc.width = width;
 	dsc.height = height;
 	dsc.pixelformat = DSPF_ARGB;
+
 	ret = dfbi->dfb->CreateSurface(dfbi->dfb, &dsc, &cursor->surface);
 
 	if (ret == DFB_OK)
@@ -504,10 +506,11 @@ dfb_init(int *argc, char *(*argv[]))
 int
 dfb_pre_connect(rdpInst * inst)
 {
-	dfbInfo *dfbi = (dfbInfo *) malloc(sizeof(dfbInfo));
+	dfbInfo *dfbi = (dfbInfo *) xmalloc(sizeof(dfbInfo));
 	memset(dfbi, 0, sizeof(dfbInfo));
 	dfb_register_callbacks(inst);
 	SET_DFBI(inst, dfbi);
+
 	return 0;
 }
 

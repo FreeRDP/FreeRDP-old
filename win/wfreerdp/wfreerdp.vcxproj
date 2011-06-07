@@ -47,7 +47,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>..\..\libfreerdp-gdi;..\..\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\libfreerdp-gdi;..\..\libfreerdp-rfx;..\..\include</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_WIN32;WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;PACKAGE_VERSION="unknown";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -56,6 +56,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <CompileAs>CompileAsC</CompileAs>
     </ClCompile>
     <Link>
       <AdditionalDependencies>ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -113,14 +114,14 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="wf_event.cpp" />
-    <ClCompile Include="wf_win.cpp" />
-    <ClCompile Include="wfreerdp.cpp" />
+    <ClCompile Include="wf_event.c" />
+    <ClCompile Include="wf_window.c" />
+    <ClCompile Include="wfreerdp.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="wfreerdp.h" />
     <ClInclude Include="wf_event.h" />
-    <ClInclude Include="wf_win.h" />
+    <ClInclude Include="wf_window.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

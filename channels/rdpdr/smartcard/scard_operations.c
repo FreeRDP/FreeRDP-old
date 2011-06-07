@@ -261,6 +261,36 @@ handle_State(struct io_wrapper *io);
 static LONG
 handle_GetAttrib(struct io_wrapper *io);
 
+#ifdef WITH_DEBUG_SCARD
+static void
+hexdump(unsigned char * p, int len)
+{
+	unsigned char *line = p;
+	int i, thisline, offset = 0;
+
+	while (offset < len)
+	{
+		printf("%04x ", offset);
+		thisline = len - offset;
+		if (thisline > 16)
+			thisline = 16;
+
+		for (i = 0; i < thisline; i++)
+			printf("%02x ", line[i]);
+
+		for (; i < 16; i++)
+			printf("   ");
+
+		for (i = 0; i < thisline; i++)
+			printf("%c", (line[i] >= 0x20 && line[i] < 0x7f) ? line[i] : '.');
+
+		printf("\n");
+		offset += thisline;
+		line += thisline;
+	}
+}
+#endif
+
 uint32
 sc_create()
 {
@@ -754,7 +784,7 @@ handle_ListReaders(struct io_wrapper *io, RD_BOOL wide)
 		return rv;
 	}
 
-	DEBUG_SCARD("Success 0x%08x %d %d", (unsigned) hContext, (unsigned) cchReaders, strlen(readerList));
+	DEBUG_SCARD("Success 0x%08x %d %d", (unsigned) hContext, (unsigned) cchReaders, (int) strlen(readerList));
 
 	walker = readerList;
 	elemLength = strlen(walker);
@@ -1085,7 +1115,7 @@ handle_GetStatusChange(struct io_wrapper *io, RD_BOOL wide)
 		if (!stateArray)
 			return sc_output_return(SCARD_E_NO_MEMORY, io);
 
-		/* skip those 2 pointers at the beggining of READERSTATE */
+		/* skip those 2 pointers at the beginning of READERSTATE */
 		cur = (SERVER_READERSTATE *) ((uint8 **) readerStates + 2);
 		for (i = 0; i < readerCount; i++, cur++)
 		{
@@ -1105,7 +1135,7 @@ handle_GetStatusChange(struct io_wrapper *io, RD_BOOL wide)
 			cur->dwEventState = little_endian_read_32(cur->dwEventState);
 			cur->cbAtr = little_endian_read_32(cur->cbAtr);
 
-			/* reset Current state hign bytes */
+			/* reset Current state high bytes */
 			*curState = cur->dwCurrentState;
 			cur->dwCurrentState &= 0x0000FFFF;
 			cur->dwEventState &= 0x0000FFFF;
