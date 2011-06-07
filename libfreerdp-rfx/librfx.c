@@ -65,9 +65,9 @@ rfx_context_set_pixel_format(RFX_CONTEXT * context, RFX_PIXEL_FORMAT pixel_forma
 }
 
 static void
-rfx_process_message_sync(RFX_CONTEXT * context, unsigned char * data, int data_size)
+rfx_process_message_sync(RFX_CONTEXT * context, uint8 * data, int data_size)
 {
-	unsigned int magic;
+	uint32 magic;
 
 	magic = GET_UINT32(data, 0);
 
@@ -89,7 +89,7 @@ rfx_process_message_sync(RFX_CONTEXT * context, unsigned char * data, int data_s
 }
 
 static void
-rfx_process_message_codec_versions(RFX_CONTEXT * context, unsigned char * data, int data_size)
+rfx_process_message_codec_versions(RFX_CONTEXT * context, uint8 * data, int data_size)
 {
 	int numCodecs;
 
@@ -104,12 +104,11 @@ rfx_process_message_codec_versions(RFX_CONTEXT * context, unsigned char * data, 
 	context->codec_id = GET_UINT8(data, 1);
 	context->codec_version = GET_UINT16(data, 2);
 
-	DEBUG_RFX("id %d version 0x%X.",
-		context->codec_id, context->codec_version);
+	DEBUG_RFX("id %d version 0x%X.", context->codec_id, context->codec_version);
 }
 
 static void
-rfx_process_message_channels(RFX_CONTEXT * context, unsigned char * data, int data_size)
+rfx_process_message_channels(RFX_CONTEXT * context, uint8 * data, int data_size)
 {
 	int channelId;
 	int numChannels;
@@ -131,7 +130,7 @@ rfx_process_message_channels(RFX_CONTEXT * context, unsigned char * data, int da
 }
 
 static void
-rfx_process_message_context(RFX_CONTEXT * context, unsigned char * data, int data_size)
+rfx_process_message_context(RFX_CONTEXT * context, uint8 * data, int data_size)
 {
 	uint8 ctxId;
 	uint8 codecId;
@@ -155,7 +154,7 @@ rfx_process_message_context(RFX_CONTEXT * context, unsigned char * data, int dat
 	else
 		DEBUG_RFX("codec in video mode.");
 
-	switch ((properties & 0x1e00) >> 9)
+	switch ((properties & 0x1E00) >> 9)
 	{
 		case CLW_ENTROPY_RLGR1:
 			context->mode = RLGR1;
@@ -174,7 +173,7 @@ rfx_process_message_context(RFX_CONTEXT * context, unsigned char * data, int dat
 }
 
 static void
-rfx_process_message_region(RFX_CONTEXT * context, RFX_MESSAGE * message, unsigned char * data, int data_size)
+rfx_process_message_region(RFX_CONTEXT * context, RFX_MESSAGE * message, uint8 * data, int data_size)
 {
 	int i;
 
@@ -242,7 +241,7 @@ rfx_process_message_tile(RFX_CONTEXT * context, RFX_TILE * tile, uint8 * data, i
 }
 
 static void
-rfx_process_message_tileset(RFX_CONTEXT * context, RFX_MESSAGE * message, unsigned char * data, int data_size)
+rfx_process_message_tileset(RFX_CONTEXT * context, RFX_MESSAGE * message, uint8 * data, int data_size)
 {
 	int i;
 	uint32 blockLen;
@@ -323,12 +322,12 @@ rfx_process_message_tileset(RFX_CONTEXT * context, RFX_MESSAGE * message, unsign
 }
 
 RFX_MESSAGE *
-rfx_process_message(RFX_CONTEXT * context, unsigned char * data, int data_size)
+rfx_process_message(RFX_CONTEXT * context, uint8 * data, int data_size)
 {
+	uint32 subtype;
+	uint32 blockLen;
+	uint32 blockType;
 	RFX_MESSAGE * message;
-	unsigned int blockType;
-	unsigned int blockLen;
-	unsigned int subtype;
 
 	message = (RFX_MESSAGE *) malloc(sizeof(RFX_MESSAGE));
 	memset(message, 0, sizeof(RFX_MESSAGE));

@@ -131,7 +131,7 @@ rfx_rlgr_decode(RLGR_MODE mode, const uint8 * data, int data_size, uint32 * buff
 	RFX_BITSTREAM * bs;
 
 	bs = rfx_bitstream_new();
-	rfx_bitstream_put_bytes(bs, data, data_size);
+	rfx_bitstream_put_buffer(bs, (uint8 *) data, data_size);
 	dst = buffer;
 
 	/* initialize the parameters */

@@ -35,10 +35,9 @@ rfx_bitstream_new(void)
 }
 
 void
-rfx_bitstream_put_bytes(RFX_BITSTREAM * bs, const uint8 * bytes, int nbytes)
+rfx_bitstream_put_buffer(RFX_BITSTREAM * bs, uint8 * buffer, int nbytes)
 {
-	bs->bytes = (uint8*) malloc(nbytes);
-	memcpy(bs->bytes, bytes, nbytes);
+	bs->buffer = buffer;
 	bs->nbytes = nbytes;
 	bs->byte_pos = 0;
 	bs->bits_left = 8;
@@ -60,7 +59,7 @@ rfx_bitstream_get_bits(RFX_BITSTREAM * bs, int nbits)
 		if (n)
 			n <<= b;
 
-		n |= (bs->bytes[bs->byte_pos] >> (bs->bits_left - b)) & ((1 << b) - 1);
+		n |= (bs->buffer[bs->byte_pos] >> (bs->bits_left - b)) & ((1 << b) - 1);
 		bs->bits_left -= b;
 		nbits -= b;
 
@@ -94,9 +93,6 @@ rfx_bitstream_free(RFX_BITSTREAM * bs)
 {
 	if (bs != NULL)
 	{
-		if (bs->bytes != NULL)
-			free(bs->bytes);
-
 		free(bs);
 	}
 }
