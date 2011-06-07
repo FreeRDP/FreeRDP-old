@@ -30,10 +30,10 @@
 #define MINMAX(_v,_l,_h) ((_v) < (_l) ? (_l) : ((_v) > (_h) ? (_h) : (_v)))
 
 static void
-rfx_decode_component(RLGR_MODE mode, const uint32 * quantization_values, int half,
+rfx_decode_component(RFX_CONTEXT * context, const uint32 * quantization_values, int half,
 	const uint8 * data, int size, uint32 * buffer)
 {
-	rfx_rlgr_decode(mode, data, size, buffer, 4096);
+	rfx_rlgr_decode(context->mode, data, size, buffer, 4096);
 
 	rfx_differential_decode(buffer + 4032, 64);
 
@@ -48,11 +48,11 @@ rfx_decode_component(RLGR_MODE mode, const uint32 * quantization_values, int hal
 	rfx_quantization_decode(buffer + 3868, 64, quantization_values[3]); /* HH3 */
 	rfx_quantization_decode(buffer + 4032, 64, quantization_values[0]); /* LL3 */
 
-	rfx_dwt_2d_decode((int*) buffer + 3840, 8);
-	rfx_dwt_2d_decode((int*) buffer + 3072, 16);
+	rfx_dwt_2d_decode(context, (int*) buffer + 3840, 8);
+	rfx_dwt_2d_decode(context, (int*) buffer + 3072, 16);
 
 	if (!half)
-		rfx_dwt_2d_decode((int*) buffer, 32);
+		rfx_dwt_2d_decode(context, (int*) buffer, 32);
 }
 
 uint8*
@@ -67,9 +67,9 @@ rfx_decode_rgb(RFX_CONTEXT * context,
 	int y, cb, cr;
 
 	dst = rgb_buffer;
-	rfx_decode_component(context->mode, y_quants, 0, y_data, y_size, context->y_buffer);
-	rfx_decode_component(context->mode, cb_quants, 0, cb_data, cb_size, context->cb_buffer);
-	rfx_decode_component(context->mode, cr_quants, 0, cr_data, cr_size, context->cr_buffer);
+	rfx_decode_component(context, y_quants, 0, y_data, y_size, context->y_buffer);
+	rfx_decode_component(context, cb_quants, 0, cb_data, cb_size, context->cb_buffer);
+	rfx_decode_component(context, cr_quants, 0, cr_data, cr_size, context->cr_buffer);
 
 	for (i = 0; i < 4096; i++)
 	{

@@ -39,6 +39,10 @@ rfx_context_new(void)
 
 	context->pool = rfx_pool_new();
 
+	context->idwt_buffers[1] = (uint32*) context->idwt_buffer_8;
+	context->idwt_buffers[2] = (uint32*) context->idwt_buffer_16;
+	context->idwt_buffers[4] = (uint32*) context->idwt_buffer_32;
+
 	return context;
 }
 

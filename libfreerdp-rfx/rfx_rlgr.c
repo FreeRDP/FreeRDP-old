@@ -123,9 +123,7 @@ rfx_rlgr_get_gr_code(RFX_BITSTREAM * bs, int * krp, int * kr)
 }
 
 int
-rfx_rlgr_decode(RLGR_MODE mode,
-	const uint8 * data, int data_size,
-	uint32 * buffer, int buffer_size)
+rfx_rlgr_decode(RLGR_MODE mode, const uint8 * data, int data_size, uint32 * buffer, int buffer_size)
 {
 	int k;
 	int kp;
@@ -149,7 +147,7 @@ rfx_rlgr_decode(RLGR_MODE mode,
 		int run;
 		if (k)
 		{
-			unsigned int sign;
+			uint32 sign;
 			int mag;
 
 			/* RL MODE */
@@ -167,8 +165,8 @@ rfx_rlgr_decode(RLGR_MODE mode,
 			/* get nonzero value, starting with sign bit and then GRCode for magnitude -1 */
 			sign = GetBits(1);
 
-			/* magnitude - 1 waas coded (because it was nonzero) */
-			mag = (int)GetGRCode(&krp, &kr) + 1;
+			/* magnitude - 1 was coded (because it was nonzero) */
+			mag = (int) GetGRCode(&krp, &kr) + 1;
 
 			WriteValue(sign ? -mag : mag);
 			k = UpdateParam(&kp, -DN_GR); /* lower k and kp because of nonzero term */

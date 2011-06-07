@@ -23,9 +23,7 @@
 #include <freerdp/rfx.h>
 
 int
-rfx_rlgr_decode(RLGR_MODE mode,
-	const uint8 * data, int data_size,
-	uint32 * buffer, int buffer_size);
+rfx_rlgr_decode(RLGR_MODE mode, const uint8 * data, int data_size, uint32 * buffer, int buffer_size);
 
 #endif
 

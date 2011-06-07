@@ -134,10 +134,17 @@ struct _RFX_CONTEXT
 	uint32 * quants;
 
 	/* pre-allocated buffers */
+
 	RFX_POOL* pool; /* memory pool */
+
 	uint32 y_buffer[4096]; /* 4096 = 64x64 */
 	uint32 cr_buffer[4096]; /* 4096 = 64x64 */
 	uint32 cb_buffer[4096]; /* 4096 = 64x64 */
+
+	uint32 idwt_buffer_8[256]; /* sub-band width 8 */
+	uint32 idwt_buffer_16[1024]; /* sub-band width 16 */
+	uint32 idwt_buffer_32[4096]; /* sub-band width 32 */
+	uint32* idwt_buffers[5]; /* sub-band buffer array */
 };
 typedef struct _RFX_CONTEXT RFX_CONTEXT;
 

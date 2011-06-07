@@ -37,7 +37,7 @@ rfx_bitstream_new(void)
 void
 rfx_bitstream_put_bytes(RFX_BITSTREAM * bs, const uint8 * bytes, int nbytes)
 {
-	bs->bytes = (unsigned char *) malloc(nbytes);
+	bs->bytes = (uint8*) malloc(nbytes);
 	memcpy(bs->bytes, bytes, nbytes);
 	bs->nbytes = nbytes;
 	bs->byte_pos = 0;
