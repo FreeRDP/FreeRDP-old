@@ -73,6 +73,30 @@ rfx_bitstream_get_bits(RFX_BITSTREAM * bs, int nbits)
 	return n;
 }
 
+void
+rfx_bitstream_put_bits(RFX_BITSTREAM * bs, unsigned int bits, int nbits)
+{
+	int b;
+
+	while (bs->byte_pos < bs->nbytes && nbits > 0)
+	{
+		b = nbits;
+
+		if (b > bs->bits_left)
+			b = bs->bits_left;
+
+		bs->buffer[bs->byte_pos] |= ((bits >> (nbits - b)) & ((1 << b) - 1)) << (bs->bits_left - b);
+		bs->bits_left -= b;
+		nbits -= b;
+
+		if (bs->bits_left == 0)
+		{
+			bs->bits_left = 8;
+			bs->byte_pos++;
+		}
+	}
+}
+
 int
 rfx_bitstream_eos(RFX_BITSTREAM * bs)
 {
