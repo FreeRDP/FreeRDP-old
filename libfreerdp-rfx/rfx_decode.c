@@ -29,6 +29,27 @@
 
 #define MINMAX(_v,_l,_h) ((_v) < (_l) ? (_l) : ((_v) > (_h) ? (_h) : (_v)))
 
+void
+rfx_decode_YCbCr_to_RGB(uint32 * y_r_buf, uint32 * cb_g_buf, uint32 * cr_b_buf)
+{
+	int y, cb, cr;
+	int r, g, b;
+
+	int i;
+	for (i = 0; i < 4096; i++)
+	{
+		y = y_r_buf[i] + 128;
+		cb = cb_g_buf[i];
+		cr = cr_b_buf[i];
+		r = (y + cr + (cr >> 2) + (cr >> 3) + (cr >> 5));
+		y_r_buf[i] = MINMAX(r, 0, 255);
+		g = (y - ((cb >> 2) + (cb >> 4) + (cb >> 5)) - ((cr >> 1) + (cr >> 3) + (cr >> 4) + (cr >> 5)));
+		cb_g_buf[i] = MINMAX(g, 0, 255);
+		b = (y + cb + (cb >> 1) + (cb >> 2) + (cb >> 6));
+		cr_b_buf[i] = MINMAX(b, 0, 255);
+	}
+}
+
 static void
 rfx_decode_component(RFX_CONTEXT * context, const uint32 * quantization_values, int half,
 	const uint8 * data, int size, uint32 * buffer)
@@ -64,26 +85,19 @@ rfx_decode_rgb(RFX_CONTEXT * context,
 	int i;
 	uint8 * dst;
 	int r, g, b;
-	int y, cb, cr;
 
 	dst = rgb_buffer;
-	rfx_decode_component(context, y_quants, 0, y_data, y_size, context->y_buffer);
-	rfx_decode_component(context, cb_quants, 0, cb_data, cb_size, context->cb_buffer);
-	rfx_decode_component(context, cr_quants, 0, cr_data, cr_size, context->cr_buffer);
+	rfx_decode_component(context, y_quants, 0, y_data, y_size, context->y_r_buffer);
+	rfx_decode_component(context, cb_quants, 0, cb_data, cb_size, context->cb_g_buffer);
+	rfx_decode_component(context, cr_quants, 0, cr_data, cr_size, context->cr_b_buffer);
+
+	context->decode_YCbCr_to_RGB(context->y_r_buffer, context->cb_g_buffer, context->cr_b_buffer);
 
 	for (i = 0; i < 4096; i++)
 	{
-		y = context->y_buffer[i] + 128;
-		cb = context->cb_buffer[i];
-		cr = context->cr_buffer[i];
-
-		r = (y + cr + (cr >> 2) + (cr >> 3) + (cr >> 5));
-		r = MINMAX(r, 0, 255);
-		g = (y - ((cb >> 2) + (cb >> 4) + (cb >> 5)) - ((cr >> 1) + (cr >> 3) + (cr >> 4) + (cr >> 5)));
-		g = MINMAX(g, 0, 255);
-		b = (y + cb + (cb >> 1) + (cb >> 2) + (cb >> 6));
-		b = MINMAX(b, 0, 255);
-
+		r = context->y_r_buffer[i];
+		g = context->cb_g_buffer[i];
+		b = context->cr_b_buffer[i];
 		switch (context->pixel_format)
 		{
 			case RFX_PIXEL_FORMAT_BGRA:
@@ -112,6 +126,5 @@ rfx_decode_rgb(RFX_CONTEXT * context,
 				break;
 		}
 	}
-
 	return rgb_buffer;
 }
