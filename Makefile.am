@@ -2,6 +2,7 @@
 REQUIRED_SUBDIRS = \
 	libfreerdp-asn1 \
 	libfreerdp-gdi \
+	libfreerdp-rfx/sse \
 	libfreerdp-rfx \
 	libfreerdp-utils \
 	libfreerdp-core \
@@ -33,7 +34,6 @@ OPTIONAL_SUBDIRS = \
 	channels/drdynvc/tsmf/ffmpeg \
 	channels/drdynvc/tsmf/alsa \
 	channels/drdynvc/tsmf/pulse \
-	libfreerdp-rfx/sse \
 	cunit \
 	X11 \
 	win \

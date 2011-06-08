@@ -17,12 +17,16 @@ libfreerdp_rfx_la_SOURCES = \
 
 libfreerdp_rfx_la_CFLAGS = \
 	-I$(top_srcdir) \
-	-I$(top_srcdir)/include \
-	-I./sse
+	-I$(top_srcdir)/include
 
 libfreerdp_rfx_la_LDFLAGS =
 
-libfreerdp_rfx_la_LIBADD = ./sse/libfreerdp-rfx-sse.la
+libfreerdp_rfx_la_LIBADD =
+
+if WITH_SSE
+libfreerdp_rfx_la_CFLAGS += -I./sse
+libfreerdp_rfx_la_LIBADD += ./sse/libfreerdp-rfx-sse.la
+endif
 
 # extra
 EXTRA_DIST =
