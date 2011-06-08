@@ -33,6 +33,7 @@ OPTIONAL_SUBDIRS = \
 	channels/drdynvc/tsmf/ffmpeg \
 	channels/drdynvc/tsmf/alsa \
 	channels/drdynvc/tsmf/pulse \
+	libfreerdp-rfx/sse \
 	cunit \
 	X11 \
 	win \

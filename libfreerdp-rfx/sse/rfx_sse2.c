@@ -21,21 +21,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "rfx_sse.h"
+
 #include "rfx_sse2.h"
-#include "rfx_sse2_private.h"
 
-void
-rfx_sse2_init(RFX_CONTEXT * context)
-{
-	if (1 /* TODO: how to best tell if sse2 is available and desired?*/)
-	{
-		printf("rfx_sse2: SSE2 optimized routines enabled\n");
-		context->decode_YCbCr_to_RGB = rfx_sse2_decode_YCbCr_to_RGB;
-	}
-}
-
-void
-rfx_sse2_decode_YCbCr_to_RGB(uint32 * y_r_buffer, uint32 * cb_g_buffer, uint32 * cr_b_buffer)
+void rfx_decode_YCbCr_to_RGB_SSE2(uint32 * y_r_buffer, uint32 * cb_g_buffer, uint32 * cr_b_buffer)
 {
 	__m128 y_add = _mm_set_ps1(128.0f);
 	__m128 r_cr_t = _mm_set_ps1(1.403f);
@@ -60,16 +50,16 @@ rfx_sse2_decode_YCbCr_to_RGB(uint32 * y_r_buffer, uint32 * cb_g_buffer, uint32 *
 		cb = _mm_cvtepi32_ps(*cb_g_buf);
 		cr = _mm_cvtepi32_ps(*cr_b_buf);
 
-		// y = y + 128
+		/* y = y + 128 */
 		y = _mm_add_ps(y, y_add);
 
-		// r = between(y + (cr * 1.403), 0, 255)
+		/* r = between(y + (cr * 1.403), 0, 255) */
 		r = _mm_mul_ps(cr, r_cr_t);
 		r = _mm_add_ps(r, y);
 		r = _mm_between_ps(r, min, max);
 		_mm_cvtps_epi32_and_store(y_r_buf, r);
 
-		// g = between(y + (cb * -0.344) + (cr * -0.714), 0, 255)
+		/* g = between(y + (cb * -0.344) + (cr * -0.714), 0, 255) */
 		g = _mm_mul_ps(cb, g_cb_t);
 		tmp = _mm_mul_ps(cr, g_cr_t);
 		g = _mm_add_ps(g, tmp);
@@ -77,7 +67,7 @@ rfx_sse2_decode_YCbCr_to_RGB(uint32 * y_r_buffer, uint32 * cb_g_buffer, uint32 *
 		g = _mm_between_ps(g, min, max);
 		_mm_cvtps_epi32_and_store(cb_g_buf, g);
 
-		// b = between(y + (cb * 1.77), 0, 255)
+		/* b = between(y + (cb * 1.77), 0, 255) */
 		b = _mm_mul_ps(cb, b_cb_t);
 		b = _mm_add_ps(b, y);
 		b = _mm_between_ps(b, min, max);
@@ -88,3 +78,4 @@ rfx_sse2_decode_YCbCr_to_RGB(uint32 * y_r_buffer, uint32 * cb_g_buffer, uint32 *
 		cr_b_buf++;
 	}
 }
+

@@ -15,17 +15,14 @@ libfreerdp_rfx_la_SOURCES = \
 	rfx_pool.c rfx_pool.h \
 	librfx.c librfx.h
 
-if WITH_SSE2
-libfreerdp_rfx_la_SOURCES += sse2/rfx_sse2.c sse2/rfx_sse2.h
-endif
-
 libfreerdp_rfx_la_CFLAGS = \
 	-I$(top_srcdir) \
-	-I$(top_srcdir)/include
+	-I$(top_srcdir)/include \
+	-I./sse
 
 libfreerdp_rfx_la_LDFLAGS =
 
-libfreerdp_rfx_la_LIBDADD =
+libfreerdp_rfx_la_LIBADD = ./sse/libfreerdp-rfx-sse.la
 
 # extra
 EXTRA_DIST =
