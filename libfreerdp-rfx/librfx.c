@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <inttypes.h>
 #include <freerdp/rfx.h>
 #include <freerdp/types/base.h>
 #include <freerdp/utils/stream.h>
@@ -28,6 +29,10 @@
 #include "rfx_decode.h"
 
 #include "librfx.h"
+
+#ifdef WITH_SSE2
+#include "sse2/rfx_sse2.h"
+#endif
 
 RFX_CONTEXT *
 rfx_context_new(void)
@@ -39,9 +44,22 @@ rfx_context_new(void)
 
 	context->pool = rfx_pool_new();
 
+	// align buffers to 16 byte boundary (needed for SSE/SSE2 instructions)
+	context->y_r_buffer = (uint32 *)(((uintptr_t)context->y_r_mem + 16) & ~ 0x0F);
+	context->cb_g_buffer = (uint32 *)(((uintptr_t)context->cb_g_mem + 16) & ~ 0x0F);
+	context->cr_b_buffer = (uint32 *)(((uintptr_t)context->cr_b_mem + 16) & ~ 0x0F);
+
 	context->idwt_buffers[1] = (uint32*) context->idwt_buffer_8;
 	context->idwt_buffers[2] = (uint32*) context->idwt_buffer_16;
 	context->idwt_buffers[4] = (uint32*) context->idwt_buffer_32;
+	
+
+	// set up default decoding routines
+	context->decode_YCbCr_to_RGB = rfx_decode_YCbCr_to_RGB;
+
+#ifdef WITH_SSE2
+	rfx_sse2_init(context);
+#endif
 
 	return context;
 }
