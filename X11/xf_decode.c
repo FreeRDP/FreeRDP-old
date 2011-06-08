@@ -87,6 +87,8 @@ xf_decode_frame(xfInfo * xfi, int x, int y, uint8 * bitmapData, uint32 bitmapDat
 			}
 			rfx_message_free(xfi->rfx_context, message);
 
+			XSetClipMask(xfi->display, xfi->gc, None);
+
 			break;
 
 		default:
