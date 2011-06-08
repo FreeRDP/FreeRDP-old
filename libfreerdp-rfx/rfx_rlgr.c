@@ -26,81 +26,78 @@
 #include <stdlib.h>
 #include <string.h>
 #include "rfx_bitstream.h"
+
 #include "rfx_rlgr.h"
 
 /* Constants used within the RLGR1/RLGR3 algorithm */
-#define KPMAX  (80)  /* max value for kp or krp */
-#define LSGR   (3)   /* shift count to convert kp to k */
-#define UP_GR  (4)   /* increase in kp after a zero run in RL mode */
-#define DN_GR  (6)   /* decrease in kp after a nonzero symbol in RL mode */
-#define UQ_GR  (3)   /* increase in kp after nonzero symbol in GR mode */
-#define DQ_GR  (3)   /* decrease in kp after zero symbol in GR mode */
+#define KPMAX	(80)  /* max value for kp or krp */
+#define LSGR	(3)   /* shift count to convert kp to k */
+#define UP_GR	(4)   /* increase in kp after a zero run in RL mode */
+#define DN_GR	(6)   /* decrease in kp after a nonzero symbol in RL mode */
+#define UQ_GR	(3)   /* increase in kp after nonzero symbol in GR mode */
+#define DQ_GR	(3)   /* decrease in kp after zero symbol in GR mode */
 
 /* Gets (returns) the next nBits from the bitstream */
 #define GetBits(nBits) rfx_bitstream_get_bits(bs, nBits)
 
 /* From current output pointer, write "value", check and update buffer_size */
 #define WriteValue(value) \
-	{ \
-		if (buffer_size > 0) \
-			*dst++ = (value); \
-		buffer_size--; \
-	}
+{ \
+	if (buffer_size > 0) \
+		*dst++ = (value); \
+	buffer_size--; \
+}
 
 /* From current output pointer, write next nZeroes terms with value 0, check and update buffer_size */
 #define WriteZeroes(nZeroes) \
+{ \
+	int nZeroesWritten = (nZeroes); \
+	if (nZeroesWritten > buffer_size) \
+		nZeroesWritten = buffer_size; \
+	if (nZeroesWritten > 0) \
 	{ \
-		int nZeroesWritten = (nZeroes); \
-		if (nZeroesWritten > buffer_size) \
-			nZeroesWritten = buffer_size; \
-		if (nZeroesWritten > 0) \
-		{ \
-			memset(dst, 0, nZeroesWritten * sizeof(int)); \
-			dst += nZeroesWritten; \
-		} \
-		buffer_size -= (nZeroes); \
-	}
+		memset(dst, 0, nZeroesWritten * sizeof(int)); \
+		dst += nZeroesWritten; \
+	} \
+	buffer_size -= (nZeroes); \
+}
 
 /* Returns the least number of bits required to represent a given value */
-static inline unsigned int
-GetMinBits(unsigned int val)
-{
-	int nBits = 0;
-	while (val)
-	{
-		val >>= 1;
-		nBits++;
-	}
-	return nBits;
-}
+#define GetMinBits(_val, _nbits) \
+{ \
+	_nbits = 0; \
+	while (_val) \
+	{ \
+		_val >>= 1; \
+		_nbits++; \
+	} \
+} \
 
 /* Converts from (2 * magnitude - sign) to integer */
 #define GetIntFrom2MagSign(twoMs) (((twoMs) & 1) ? -1 * (int)(((twoMs) + 1) >> 1) : (int)((twoMs) >> 1))
 
-/* Update the passed parameter and clamp it to the range [0,KPMAX]
-   Return the value of parameter right-shifted by LSGR */
-static inline int
-UpdateParam(
-	int * param,  /* parameter to update */
-	int   deltaP  /* update delta */
-	)
-{
-	*param += deltaP; /* adjust parameter */
-	if (*param > KPMAX)
-		*param = KPMAX; /* max clamp */
-	if (*param < 0)
-		*param = 0; /* min clamp */
-	return (*param >> LSGR);
+/*
+ * Update the passed parameter and clamp it to the range [0, KPMAX]
+ * Return the value of parameter right-shifted by LSGR
+ */
+#define UpdateParam(_param, _deltaP, _k) \
+{ \
+	_param += _deltaP; \
+	if (_param > KPMAX) \
+		_param = KPMAX; \
+	if (_param < 0) \
+		_param = 0; \
+	_k = (_param >> LSGR); \
 }
 
 /* Outputs the Golomb/Rice encoding of a non-negative integer */
 #define GetGRCode(krp, kr) rfx_rlgr_get_gr_code(bs, krp, kr)
 
-static unsigned int
+static uint32
 rfx_rlgr_get_gr_code(RFX_BITSTREAM * bs, int * krp, int * kr)
 {
 	int vk;
-	unsigned int mag;
+	uint32 mag;
 
 	/* chew up/count leading 1s and escape 0 */
 	for (vk = 0; GetBits(1) == 1;)
@@ -111,27 +108,30 @@ rfx_rlgr_get_gr_code(RFX_BITSTREAM * bs, int * krp, int * kr)
 
 	/* adjust krp and kr based on vk */
 	if (!vk)
-		*kr = UpdateParam(krp, -2);
-	else if (vk != 1) /* at 1, no change! */
-		*kr = UpdateParam(krp, vk);
+	{
+		UpdateParam(*krp, -2, *kr);
+	}
+	else if (vk != 1)
+	{
+		/* at 1, no change! */
+		UpdateParam(*krp, vk, *kr);
+	}
 
 	return mag;
 }
 
 int
-rfx_rlgr_decode(RLGR_MODE mode,
-	const unsigned char * data, int data_size,
-	int * buffer, int buffer_size)
+rfx_rlgr_decode(RLGR_MODE mode, const uint8 * data, int data_size, uint32 * buffer, int buffer_size)
 {
-	RFX_BITSTREAM * bs;
-	int * dst;
 	int k;
 	int kp;
 	int kr;
 	int krp;
+	uint32 * dst;
+	RFX_BITSTREAM * bs;
 
 	bs = rfx_bitstream_new();
-	rfx_bitstream_put_bytes(bs, data, data_size);
+	rfx_bitstream_put_buffer(bs, (uint8 *) data, data_size);
 	dst = buffer;
 
 	/* initialize the parameters */
@@ -145,15 +145,15 @@ rfx_rlgr_decode(RLGR_MODE mode,
 		int run;
 		if (k)
 		{
-			unsigned int sign;
 			int mag;
+			uint32 sign;
 
 			/* RL MODE */
 			while (!rfx_bitstream_eos(bs) && GetBits(1) == 0)
 			{
 				/* we have an RL escape "0", which translates to a run (1<<k) of zeros */
 				WriteZeroes(1 << k);
-				k = UpdateParam(&kp, UP_GR); /* raise k and kp up because of zero run */
+				UpdateParam(kp, UP_GR, k); /* raise k and kp up because of zero run */
 			}
 
 			/* next k bits will contain remaining run or zeros */
@@ -163,18 +163,18 @@ rfx_rlgr_decode(RLGR_MODE mode,
 			/* get nonzero value, starting with sign bit and then GRCode for magnitude -1 */
 			sign = GetBits(1);
 
-			/* magnitude - 1 waas coded (because it was nonzero) */
-			mag = (int)GetGRCode(&krp, &kr) + 1;
+			/* magnitude - 1 was coded (because it was nonzero) */
+			mag = (int) GetGRCode(&krp, &kr) + 1;
 
 			WriteValue(sign ? -mag : mag);
-			k = UpdateParam(&kp, -DN_GR); /* lower k and kp because of nonzero term */
+			UpdateParam(kp, -DN_GR, k); /* lower k and kp because of nonzero term */
 		}
 		else
 		{
-			unsigned int mag;
-			unsigned int nIdx;
-			unsigned int val1;
-			unsigned int val2;
+			uint32 mag;
+			uint32 nIdx;
+			uint32 val1;
+			uint32 val2;
 
 			/* GR (GOLOMB-RICE) MODE */
 			mag = GetGRCode(&krp, &kr); /* values coded are 2 * magnitude - sign */
@@ -184,21 +184,23 @@ rfx_rlgr_decode(RLGR_MODE mode,
 				if (!mag)
 				{
 					WriteValue(0);
-					k = UpdateParam(&kp, UQ_GR); /* raise k and kp due to zero */
+					UpdateParam(kp, UQ_GR, k); /* raise k and kp due to zero */
 				}
 				else
 				{
 					WriteValue(GetIntFrom2MagSign(mag));
-					k = UpdateParam(&kp, -DQ_GR); /* lower k and kp due to nonzero */
+					UpdateParam(kp, -DQ_GR, k); /* lower k and kp due to nonzero */
 				}
 			}
 			else /* mode == RLGR3 */
 			{
-				/* In GR mode FOR RLGR3, we have encoded the
-				   sum of two (2 * mag - sign) values */
+				/*
+				 * In GR mode FOR RLGR3, we have encoded the
+				 * sum of two (2 * mag - sign) values
+				 */
 
 				/* maximum possible bits for first term */
-				nIdx = GetMinBits(mag);
+				GetMinBits(mag, nIdx);
 
 				/* decode val1 is first term's (2 * mag - sign) value */
 				val1 = GetBits(nIdx);
@@ -209,12 +211,12 @@ rfx_rlgr_decode(RLGR_MODE mode,
 				if (val1 && val2)
 				{
 					/* raise k and kp if both terms nonzero */
-					k = UpdateParam(&kp, -2 * DQ_GR);
+					UpdateParam(kp, -2 * DQ_GR, k);
 				}
 				else if (!val1 && !val2)
 				{
 					/* lower k and kp if both terms zero */
-					k = UpdateParam(&kp, 2 * UQ_GR);
+					UpdateParam(kp, 2 * UQ_GR, k);
 				}
 
 				WriteValue(GetIntFrom2MagSign(val1));
@@ -223,15 +225,7 @@ rfx_rlgr_decode(RLGR_MODE mode,
 		}
 	}
 
-#if 0
-	if (buffer_size < 0)
-		printf("rfx_rlgr_decode: %d bytes exceed buffer size.\n", -buffer_size);
-	if (!rfx_bitstream_eos(bs))
-		printf("rfx_rlgr_decode: %d bits remain.\n", rfx_bitstream_left(bs));
-#endif
-
 	rfx_bitstream_free(bs);
 
-	return dst - buffer;
+	return (dst - buffer);
 }
-

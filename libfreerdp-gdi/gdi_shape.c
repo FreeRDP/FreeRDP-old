@@ -39,7 +39,7 @@ pFillRect FillRect_[5] =
 	FillRect_32bpp
 };
 
-static void Ellipse_Bresenham(HDC hdc, int x1, int y1, int x2, int y2)
+static void Ellipse_Bresenham(HGDI_DC hdc, int x1, int y1, int x2, int y2)
 {
 	int i;
 	long e, e2;
@@ -48,7 +48,7 @@ static void Ellipse_Bresenham(HDC hdc, int x1, int y1, int x2, int y2)
 	int bx1, by1;
 	int bx2, by2;
 
-	HBITMAP bmp;
+	HGDI_BITMAP bmp;
 	uint8 pixel8;
 	uint16 pixel16;
 	uint32 pixel32;
@@ -77,8 +77,10 @@ static void Ellipse_Bresenham(HDC hdc, int x1, int y1, int x2, int y2)
 	a *= 8 * a;
 	c = 8 * b * b;
 
-	pixel8 = pixel16 = pixel32 = 0;
-	bmp = (HBITMAP) hdc->selectedObject;
+	pixel8 = 0;
+	pixel16 = 0;
+	pixel32 = 0;
+	bmp = (HGDI_BITMAP) hdc->selectedObject;
 
 	if (hdc->clip->null)
 	{
@@ -173,7 +175,7 @@ static void Ellipse_Bresenham(HDC hdc, int x1, int y1, int x2, int y2)
  * @param nBottomRect y2
  * @return
  */
-int gdi_Ellipse(HDC hdc, int nLeftRect, int nTopRect, int nRightRect, int nBottomRect)
+int gdi_Ellipse(HGDI_DC hdc, int nLeftRect, int nTopRect, int nRightRect, int nBottomRect)
 {
 	Ellipse_Bresenham(hdc, nLeftRect, nTopRect, nRightRect, nBottomRect);
 	return 1;
@@ -188,7 +190,7 @@ int gdi_Ellipse(HDC hdc, int nLeftRect, int nTopRect, int nRightRect, int nBotto
  * @return 1 if successful, 0 otherwise
  */
 
-int gdi_FillRect(HDC hdc, HRECT rect, HBRUSH hbr)
+int gdi_FillRect(HGDI_DC hdc, HGDI_RECT rect, HGDI_BRUSH hbr)
 {
 	pFillRect _FillRect = FillRect_[IBPP(hdc->bitsPerPixel)];
 
@@ -205,7 +207,7 @@ int gdi_FillRect(HDC hdc, HRECT rect, HBRUSH hbr)
  * @param nCount number of points
  * @return
  */
-int gdi_Polygon(HDC hdc, POINT *lpPoints, int nCount)
+int gdi_Polygon(HGDI_DC hdc, GDI_POINT *lpPoints, int nCount)
 {
 	return 1;
 }
@@ -218,7 +220,7 @@ int gdi_Polygon(HDC hdc, POINT *lpPoints, int nCount)
  * @param nCount count of number of points in lpPolyCounts
  * @return
  */
-int gdi_PolyPolygon(HDC hdc, POINT *lpPoints, int *lpPolyCounts, int nCount)
+int gdi_PolyPolygon(HGDI_DC hdc, GDI_POINT *lpPoints, int *lpPolyCounts, int nCount)
 {
 	return 1;
 }
@@ -232,7 +234,7 @@ int gdi_PolyPolygon(HDC hdc, POINT *lpPoints, int *lpPolyCounts, int nCount)
  * @param nBottomRect y2
  * @return
  */
-int gdi_Rectangle(HDC hdc, int nLeftRect, int nTopRect, int nRightRect, int nBottomRect)
+int gdi_Rectangle(HGDI_DC hdc, int nLeftRect, int nTopRect, int nRightRect, int nBottomRect)
 {
 	return 1;
 }

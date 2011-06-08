@@ -56,6 +56,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <CompileAs>CompileAsC</CompileAs>
     </ClCompile>
     <Link>
       <AdditionalDependencies>ws2_32.lib;libeay32.lib;ssleay32.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -114,31 +115,9 @@
     <ClCompile Include="..\libfreerdp-core\tcp.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\include\freerdp\chanman.h" />
-    <ClInclude Include="..\include\freerdp\constants\capabilities.h" />
-    <ClInclude Include="..\include\freerdp\constants\constants.h" />
-    <ClInclude Include="..\include\freerdp\constants\core.h" />
     <ClInclude Include="..\include\freerdp\constants\crypto.h" />
-    <ClInclude Include="..\include\freerdp\constants\license.h" />
-    <ClInclude Include="..\include\freerdp\constants\pdu.h" />
     <ClInclude Include="..\include\freerdp\constants\rail.h" />
-    <ClInclude Include="..\include\freerdp\constants\ui.h" />
-    <ClInclude Include="..\include\freerdp\constants\vchan.h" />
-    <ClInclude Include="..\include\freerdp\constants\window.h" />
-    <ClInclude Include="..\include\freerdp\dvc.h" />
-    <ClInclude Include="..\include\freerdp\errinfo.h" />
     <ClInclude Include="..\include\freerdp\freerdp.h" />
-    <ClInclude Include="..\include\freerdp\kbd.h" />
-    <ClInclude Include="..\include\freerdp\rdpext.h" />
-    <ClInclude Include="..\include\freerdp\rdpset.h" />
-    <ClInclude Include="..\include\freerdp\rfx.h" />
-    <ClInclude Include="..\include\freerdp\types\base.h" />
-    <ClInclude Include="..\include\freerdp\types\ui.h" />
-    <ClInclude Include="..\include\freerdp\utils\datablob.h" />
-    <ClInclude Include="..\include\freerdp\utils\debug.h" />
-    <ClInclude Include="..\include\freerdp\utils\memory.h" />
-    <ClInclude Include="..\include\freerdp\utils\stream.h" />
-    <ClInclude Include="..\include\freerdp\utils\unicode.h" />
     <ClInclude Include="..\libfreerdp-core\asn1.h" />
     <ClInclude Include="..\libfreerdp-core\bitmap.h" />
     <ClInclude Include="..\libfreerdp-core\cache.h" />

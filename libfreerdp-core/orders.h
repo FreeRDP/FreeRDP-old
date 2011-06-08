@@ -516,9 +516,9 @@ rdpOrders *orders_new(struct rdp_rdp *rdp);
 void orders_free(rdpOrders * orders);
 
 #ifdef WITH_DEBUG_ORDERS
-#define DEBUG_ORDERS(fmt, ...) DEBUG_CLASS(ORDERS, fmt, ...)
+#define DEBUG_ORDERS(fmt, ...) DEBUG_CLASS(ORDERS, fmt, ## __VA_ARGS__)
 #else
-#define DEBUG_ORDERS(fmt, ...) DEBUG_NULL(fmt, ...)
+#define DEBUG_ORDERS(fmt, ...) DEBUG_NULL(fmt, ## __VA_ARGS__)
 #endif
 
 #endif

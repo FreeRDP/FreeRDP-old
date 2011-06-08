@@ -28,9 +28,9 @@
 
 #include "gdi_palette.h"
 
-static HPALETTE hSystemPalette = NULL;
+static HGDI_PALETTE hSystemPalette = NULL;
 
-static const PALETTEENTRY default_system_palette[20] =
+static const GDI_PALETTEENTRY default_system_palette[20] =
 {
 	/* First 10 entries */
 	{ 0x00, 0x00, 0x00 },
@@ -64,12 +64,12 @@ static const PALETTEENTRY default_system_palette[20] =
  * @return new palette
  */
 
-HPALETTE gdi_CreatePalette(HPALETTE palette)
+HGDI_PALETTE gdi_CreatePalette(HGDI_PALETTE palette)
 {
-	HPALETTE hPalette = (HPALETTE) malloc(sizeof(PALETTE));
+	HGDI_PALETTE hPalette = (HGDI_PALETTE) malloc(sizeof(GDI_PALETTE));
 	hPalette->count = palette->count;
-	hPalette->entries = (PALETTEENTRY*) malloc(sizeof(PALETTEENTRY) * hPalette->count);
-	memcpy(hPalette->entries, palette->entries, sizeof(PALETTEENTRY) * hPalette->count);
+	hPalette->entries = (GDI_PALETTEENTRY*) malloc(sizeof(GDI_PALETTEENTRY) * hPalette->count);
+	memcpy(hPalette->entries, palette->entries, sizeof(GDI_PALETTEENTRY) * hPalette->count);
 	return hPalette;
 }
 
@@ -78,16 +78,16 @@ HPALETTE gdi_CreatePalette(HPALETTE palette)
  * @return system palette
  */
 
-HPALETTE CreateSystemPalette()
+HGDI_PALETTE CreateSystemPalette()
 {
-	HPALETTE palette = (HPALETTE) malloc(sizeof(PALETTE));
+	HGDI_PALETTE palette = (HGDI_PALETTE) malloc(sizeof(GDI_PALETTE));
 
 	palette->count = 256;
-	palette->entries = (PALETTEENTRY*) malloc(sizeof(PALETTEENTRY) * 256);
-	memset(palette->entries, 0, sizeof(PALETTEENTRY) * 256);
+	palette->entries = (GDI_PALETTEENTRY*) malloc(sizeof(GDI_PALETTEENTRY) * 256);
+	memset(palette->entries, 0, sizeof(GDI_PALETTEENTRY) * 256);
 
-	memcpy(&palette->entries[0], &default_system_palette[0], 10 * sizeof(PALETTEENTRY));
-	memcpy(&palette->entries[256 - 10], &default_system_palette[10], 10 * sizeof(PALETTEENTRY));
+	memcpy(&palette->entries[0], &default_system_palette[0], 10 * sizeof(GDI_PALETTEENTRY));
+	memcpy(&palette->entries[256 - 10], &default_system_palette[10], 10 * sizeof(GDI_PALETTEENTRY));
 
 	return palette;
 }
@@ -97,7 +97,7 @@ HPALETTE CreateSystemPalette()
  * @return system palette
  */
 
-HPALETTE gdi_GetSystemPalette()
+HGDI_PALETTE gdi_GetSystemPalette()
 {
 	if (hSystemPalette == NULL)
 		hSystemPalette = CreateSystemPalette();

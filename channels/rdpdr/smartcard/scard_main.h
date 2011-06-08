@@ -57,9 +57,9 @@ void
 sc_wait_finished_ready();
 
 #ifdef WITH_DEBUG_SCARD
-#define DEBUG_SCARD(fmt, ...) DEBUG_CLASS(SCARD, fmt, ...)
+#define DEBUG_SCARD(fmt, ...) DEBUG_CLASS(SCARD, fmt, ## __VA_ARGS__)
 #else
-#define DEBUG_SCARD(fmt, ...) DEBUG_NULL(fmt, ...)
+#define DEBUG_SCARD(fmt, ...) DEBUG_NULL(fmt, ## __VA_ARGS__)
 #endif
 
 #endif

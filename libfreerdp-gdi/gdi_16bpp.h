@@ -22,7 +22,7 @@
 
 typedef void (*pSetPixel16_ROP2)(uint16 *pixel, uint16 *pen);
 
-int FillRect_16bpp(HDC hdc, HRECT rect, HBRUSH hbr);
-int BitBlt_16bpp(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc, int rop);
-int PatBlt_16bpp(HDC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight, int rop);
-int LineTo_16bpp(HDC hdc, int nXEnd, int nYEnd);
+int FillRect_16bpp(HGDI_DC hdc, HGDI_RECT rect, HGDI_BRUSH hbr);
+int BitBlt_16bpp(HGDI_DC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HGDI_DC hdcSrc, int nXSrc, int nYSrc, int rop);
+int PatBlt_16bpp(HGDI_DC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight, int rop);
+int LineTo_16bpp(HGDI_DC hdc, int nXEnd, int nYEnd);

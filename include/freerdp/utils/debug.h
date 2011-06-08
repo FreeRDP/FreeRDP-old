@@ -17,8 +17,8 @@
    limitations under the License.
 */
 
-#ifndef __DEBUG_H
-#define __DEBUG_H
+#ifndef __UTILS_DEBUG_H
+#define __UTILS_DEBUG_H
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -31,14 +31,16 @@
 #define ASSERT(a)	do { } while (0)
 #endif
 
+#include <stdio.h>
+
 #define DEBUG_NULL(fmt, ...) do { } while (0)
-#define DEBUG_PRINT(str, fmt, ...) printf(str fmt "\n", __FUNCTION__, __LINE__, ## __VA_ARGS__)
-#define DEBUG_CLASS(class, fmt, ...) DEBUG_PRINT("DBG_##class %s (%d): ", fmt, ...)
+#define DEBUG_PRINT(_dbg_str, fmt, ...) printf(_dbg_str fmt "\n" , __FUNCTION__, __LINE__, ## __VA_ARGS__)
+#define DEBUG_CLASS(_dbg_class, fmt, ...) DEBUG_PRINT("DBG_" #_dbg_class " %s (%d): ", fmt, ## __VA_ARGS__)
 
 #ifdef WITH_DEBUG
-#define DEBUG(fmt, ...)	printf("DBG %s (%d): " fmt "\n", __FUNCTION__, __LINE__, ## __VA_ARGS__)
+#define DEBUG(fmt, ...)	DEBUG_PRINT("DBG %s (%d): ", fmt, ## __VA_ARGS__)
 #else
-#define DEBUG(fmt, ...) DEBUG_NULL(fmt, ...)
+#define DEBUG(fmt, ...) DEBUG_NULL(fmt, ## __VA_ARGS__)
 #endif
 
-#endif /* __DEBUG_H */
+#endif /* __UTILS_DEBUG_H */

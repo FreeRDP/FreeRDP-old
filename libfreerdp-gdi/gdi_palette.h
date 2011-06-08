@@ -22,7 +22,7 @@
 
 #include "gdi.h"
 
-HPALETTE gdi_CreatePalette(HPALETTE palette);
-HPALETTE gdi_GetSystemPalette();
+HGDI_PALETTE gdi_CreatePalette(HGDI_PALETTE palette);
+HGDI_PALETTE gdi_GetSystemPalette();
 
 #endif /* __GDI_PALETTE_H */

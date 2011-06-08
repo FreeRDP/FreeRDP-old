@@ -35,12 +35,12 @@
  * @return current device context
  */
 
-HDC gdi_GetDC()
+HGDI_DC gdi_GetDC()
 {
-	HDC hDC = (HDC) malloc(sizeof(DC));
+	HGDI_DC hDC = (HGDI_DC) malloc(sizeof(GDI_DC));
 	hDC->bytesPerPixel = 4;
 	hDC->bitsPerPixel = 32;
-	hDC->drawMode = R2_BLACK;
+	hDC->drawMode = GDI_R2_BLACK;
 	hDC->clip = gdi_CreateRectRgn(0, 0, 0, 0);
 	hDC->clip->null = 1;
 	hDC->hwnd = NULL;
@@ -54,9 +54,9 @@ HDC gdi_GetDC()
  * @return new compatible device context
  */
 
-HDC gdi_CreateCompatibleDC(HDC hdc)
+HGDI_DC gdi_CreateCompatibleDC(HGDI_DC hdc)
 {
-	HDC hDC = (HDC) malloc(sizeof(DC));
+	HGDI_DC hDC = (HGDI_DC) malloc(sizeof(GDI_DC));
 	hDC->bytesPerPixel = hdc->bytesPerPixel;
 	hDC->bitsPerPixel = hdc->bitsPerPixel;
 	hDC->drawMode = hdc->drawMode;
@@ -73,38 +73,38 @@ HDC gdi_CreateCompatibleDC(HDC hdc)
  * Select a GDI object in the current device context.\n
  * @msdn{dd162957}
  * @param hdc device context
- * @param hgdiobj new selected GDI object
+ * @param hgdiobject new selected GDI object
  * @return previous selected GDI object
  */
 
-HGDIOBJ gdi_SelectObject(HDC hdc, HGDIOBJ hgdiobj)
+HGDIOBJECT gdi_SelectObject(HGDI_DC hdc, HGDIOBJECT hgdiobject)
 {
-	if (hgdiobj == NULL)
+	HGDIOBJECT previousSelectedObject = hdc->selectedObject;
+
+	if (hgdiobject == NULL)
 		return NULL;
 
-	HGDIOBJ previousSelectedObject = hdc->selectedObject;
-
-	if (hgdiobj->objectType == GDIOBJ_BITMAP)
+	if (hgdiobject->objectType == GDIOBJECT_BITMAP)
 	{
-		hdc->selectedObject = hgdiobj;
+		hdc->selectedObject = hgdiobject;
 	}
-	else if (hgdiobj->objectType == GDIOBJ_PEN)
+	else if (hgdiobject->objectType == GDIOBJECT_PEN)
 	{
-		previousSelectedObject = (HGDIOBJ) hdc->pen;
-		hdc->pen = (HPEN) hgdiobj;
+		previousSelectedObject = (HGDIOBJECT) hdc->pen;
+		hdc->pen = (HGDI_PEN) hgdiobject;
 	}
-	else if (hgdiobj->objectType == GDIOBJ_BRUSH)
+	else if (hgdiobject->objectType == GDIOBJECT_BRUSH)
 	{
-		previousSelectedObject = (HGDIOBJ) hdc->brush;
-		hdc->brush = (HBRUSH) hgdiobj;
+		previousSelectedObject = (HGDIOBJECT) hdc->brush;
+		hdc->brush = (HGDI_BRUSH) hgdiobject;
 	}
-	else if (hgdiobj->objectType == GDIOBJ_REGION)
+	else if (hgdiobject->objectType == GDIOBJECT_REGION)
 	{
-		hdc->selectedObject = hgdiobj;
+		hdc->selectedObject = hgdiobject;
 	}
-	else if (hgdiobj->objectType == GDIOBJ_RECT)
+	else if (hgdiobject->objectType == GDIOBJECT_RECT)
 	{
-		hdc->selectedObject = hgdiobj;
+		hdc->selectedObject = hgdiobject;
 	}
 	else
 	{
@@ -118,46 +118,50 @@ HGDIOBJ gdi_SelectObject(HDC hdc, HGDIOBJ hgdiobj)
 /**
  * Delete a GDI object.\n
  * @msdn{dd183539}
- * @param hgdiobj GDI object
+ * @param hgdiobject GDI object
  * @return 1 if successful, 0 otherwise
  */
 
-int gdi_DeleteObject(HGDIOBJ hgdiobj)
+int gdi_DeleteObject(HGDIOBJECT hgdiobject)
 {
-	if (hgdiobj == NULL)
+	if (hgdiobject == NULL)
 		return 0;
 
-	if (hgdiobj->objectType == GDIOBJ_BITMAP)
+	if (hgdiobject->objectType == GDIOBJECT_BITMAP)
 	{
-		HBITMAP hBitmap = (HBITMAP) hgdiobj;
+		HGDI_BITMAP hBitmap = (HGDI_BITMAP) hgdiobject;
 
 		if (hBitmap->data != NULL)
 			free(hBitmap->data);
 
 		free(hBitmap);
 	}
-	else if (hgdiobj->objectType == GDIOBJ_PEN)
+	else if (hgdiobject->objectType == GDIOBJECT_PEN)
 	{
-		HPEN hPen = (HPEN) hgdiobj;
+		HGDI_PEN hPen = (HGDI_PEN) hgdiobject;
 		free(hPen);
 	}
-	else if (hgdiobj->objectType == GDIOBJ_BRUSH)
+	else if (hgdiobject->objectType == GDIOBJECT_BRUSH)
 	{
-		HBRUSH hBrush = (HBRUSH) hgdiobj;
+		HGDI_BRUSH hBrush = (HGDI_BRUSH) hgdiobject;
+
+		if(hBrush->style == GDI_BS_PATTERN)
+			gdi_DeleteObject((HGDIOBJECT) hBrush->pattern);
+
 		free(hBrush);
 	}
-	else if (hgdiobj->objectType == GDIOBJ_REGION)
+	else if (hgdiobject->objectType == GDIOBJECT_REGION)
 	{
-		free(hgdiobj);
+		free(hgdiobject);
 	}
-	else if (hgdiobj->objectType == GDIOBJ_RECT)
+	else if (hgdiobject->objectType == GDIOBJECT_RECT)
 	{
-		free(hgdiobj);
+		free(hgdiobject);
 	}
 	else
 	{
 		/* Unknown GDI Object Type */
-		free(hgdiobj);
+		free(hgdiobject);
 		return 0;
 	}
 
@@ -171,8 +175,16 @@ int gdi_DeleteObject(HGDIOBJ hgdiobj)
  * @return 1 if successful, 0 otherwise
  */
 
-int gdi_DeleteDC(HDC hdc)
+int gdi_DeleteDC(HGDI_DC hdc)
 {
+	if (hdc->hwnd)
+	{
+		free(hdc->hwnd->invalid);
+		free(hdc->hwnd);
+	}
+
+	free(hdc->clip);
 	free(hdc);
+
 	return 1;
 }

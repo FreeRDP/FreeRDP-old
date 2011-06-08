@@ -20,12 +20,12 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <freerdp/rfx.h>
 #include <freerdp/freerdp.h>
 
 #include "color.h"
 #include "decode.h"
 
-#include "gdi.h"
 #include "gdi_dc.h"
 #include "gdi_pen.h"
 #include "gdi_line.h"
@@ -37,8 +37,10 @@
 #include "gdi_drawing.h"
 #include "gdi_clipping.h"
 
+#include "gdi.h"
+
 /* Ternary Raster Operation Table */
-const unsigned int rop3_code_table[] =
+const uint32 rop3_code_table[] =
 {
 	0x00000042, // 0
 	0x00010289, // DPSoon
@@ -300,8 +302,8 @@ const unsigned int rop3_code_table[] =
 
 /* GDI Helper Functions */
 
-unsigned int
-gdi_rop3_code(unsigned char code)
+uint32
+gdi_rop3_code(uint8 code)
 {
 	return rop3_code_table[code];
 }
@@ -355,10 +357,10 @@ gdi_copy_memb(uint8 * d, uint8 * s, int n)
 }
 
 uint8*
-gdi_get_bitmap_pointer(HDC hdcBmp, int x, int y)
+gdi_get_bitmap_pointer(HGDI_DC hdcBmp, int x, int y)
 {
 	uint8 * p;
-	HBITMAP hBmp = (HBITMAP) hdcBmp->selectedObject;
+	HGDI_BITMAP hBmp = (HGDI_BITMAP) hdcBmp->selectedObject;
 	
 	if (x >= 0 && x < hBmp->width && y >= 0 && y < hBmp->height)
 	{
@@ -373,15 +375,15 @@ gdi_get_bitmap_pointer(HDC hdcBmp, int x, int y)
 }
 
 uint8*
-gdi_get_brush_pointer(HDC hdcBrush, int x, int y)
+gdi_get_brush_pointer(HGDI_DC hdcBrush, int x, int y)
 {
 	uint8 * p;
 
 	if (hdcBrush->brush != NULL)
 	{
-		if (hdcBrush->brush->style == BS_PATTERN)
+		if (hdcBrush->brush->style == GDI_BS_PATTERN)
 		{
-			HBITMAP hBmpBrush = hdcBrush->brush->pattern;
+			HGDI_BITMAP hBmpBrush = hdcBrush->brush->pattern;
 	
 			if (x >= 0 && y >= 0)
 			{
@@ -410,11 +412,11 @@ gdi_is_mono_pixel_set(uint8* data, int x, int y, int width)
 	return (data[byte] & (0x80 >> shift)) != 0;
 }
 
-HBITMAP
+HGDI_BITMAP
 gdi_create_bitmap(GDI* gdi, int width, int height, int bpp, uint8* data)
 {
 	uint8* bmpData;
-	HBITMAP bitmap;
+	HGDI_BITMAP bitmap;
 	
 	bmpData = gdi_image_convert(data, NULL, width, height, gdi->srcBpp, bpp, gdi->clrconv);
 	bitmap = gdi_CreateBitmap(width, height, gdi->dstBpp, bmpData);
@@ -422,12 +424,12 @@ gdi_create_bitmap(GDI* gdi, int width, int height, int bpp, uint8* data)
 	return bitmap;
 }
 
-gdi_bitmap*
+GDI_IMAGE*
 gdi_bitmap_new(GDI *gdi, int width, int height, int bpp, uint8* data)
 {
-	gdi_bitmap *gdi_bmp;
+	GDI_IMAGE *gdi_bmp;
 	
-	gdi_bmp = (gdi_bitmap*) malloc(sizeof(gdi_bitmap));
+	gdi_bmp = (GDI_IMAGE*) malloc(sizeof(GDI_IMAGE));
 	gdi_bmp->hdc = gdi_CreateCompatibleDC(gdi->hdc);
 	
 	DEBUG_GDI("gdi_bitmap_new: width:%d height:%d bpp:%d", width, height, bpp);
@@ -441,19 +443,19 @@ gdi_bitmap_new(GDI *gdi, int width, int height, int bpp, uint8* data)
 		gdi_bmp->bitmap = gdi_create_bitmap(gdi, width, height, bpp, data);
 	}
 	
-	gdi_SelectObject(gdi_bmp->hdc, (HGDIOBJ) gdi_bmp->bitmap);
+	gdi_SelectObject(gdi_bmp->hdc, (HGDIOBJECT) gdi_bmp->bitmap);
 	gdi_bmp->org_bitmap = NULL;
 
 	return gdi_bmp;
 }
 
 void
-gdi_bitmap_free(gdi_bitmap *gdi_bmp)
+gdi_bitmap_free(GDI_IMAGE *gdi_bmp)
 {
 	if (gdi_bmp != 0)
 	{
-		gdi_SelectObject(gdi_bmp->hdc, (HGDIOBJ) gdi_bmp->org_bitmap);
-		gdi_DeleteObject((HGDIOBJ) gdi_bmp->bitmap);
+		gdi_SelectObject(gdi_bmp->hdc, (HGDIOBJECT) gdi_bmp->org_bitmap);
+		gdi_DeleteObject((HGDIOBJECT) gdi_bmp->bitmap);
 		gdi_DeleteDC(gdi_bmp->hdc);
 		free(gdi_bmp);
 	}
@@ -486,11 +488,11 @@ static RD_HGLYPH
 gdi_ui_create_glyph(struct rdp_inst * inst, int width, int height, uint8 * data)
 {
 	uint8* glyph;
-	gdi_bitmap *gdi_bmp;
+	GDI_IMAGE *gdi_bmp;
 
-	//DEBUG_GDI("gdi_ui_create_glyph: width:%d height:%d", width, height);
+	DEBUG_GDI("gdi_ui_create_glyph: width:%d height:%d", width, height);
 
-	gdi_bmp = (gdi_bitmap*) malloc(sizeof(gdi_bitmap));
+	gdi_bmp = (GDI_IMAGE*) malloc(sizeof(GDI_IMAGE));
 	
 	gdi_bmp->hdc = gdi_GetDC();
 	gdi_bmp->hdc->bytesPerPixel = 1;
@@ -499,7 +501,7 @@ gdi_ui_create_glyph(struct rdp_inst * inst, int width, int height, uint8 * data)
 	gdi_bmp->bitmap = gdi_CreateBitmap(width, height, 1, glyph);
 	gdi_bmp->bitmap->bytesPerPixel = 1;
 	gdi_bmp->bitmap->bitsPerPixel = 1;
-	gdi_SelectObject(gdi_bmp->hdc, (HGDIOBJ) gdi_bmp->bitmap);
+	gdi_SelectObject(gdi_bmp->hdc, (HGDIOBJECT) gdi_bmp->bitmap);
 	gdi_bmp->org_bitmap = NULL;
 
 	return (RD_HGLYPH) gdi_bmp;
@@ -514,7 +516,7 @@ gdi_ui_create_glyph(struct rdp_inst * inst, int width, int height, uint8 * data)
 static void
 gdi_ui_destroy_glyph(struct rdp_inst * inst, RD_HGLYPH glyph)
 {
-	gdi_bitmap_free((gdi_bitmap*) glyph);
+	gdi_bitmap_free((GDI_IMAGE*) glyph);
 }
 
 /**
@@ -529,10 +531,10 @@ gdi_ui_destroy_glyph(struct rdp_inst * inst, RD_HGLYPH glyph)
 static RD_HBITMAP
 gdi_ui_create_bitmap(struct rdp_inst * inst, int width, int height, uint8* data)
 {
-	gdi_bitmap *gdi_bmp;
+	GDI_IMAGE *gdi_bmp;
 	GDI *gdi = GET_GDI(inst);
 
-	//DEBUG_GDI("gdi_ui_create_bitmap: width:%d height:%d", width, height);
+	DEBUG_GDI("gdi_ui_create_bitmap: width:%d height:%d", width, height);
 
 	gdi_bmp = gdi_bitmap_new(gdi, width, height, gdi->dstBpp, data);
 	
@@ -554,13 +556,13 @@ gdi_ui_create_bitmap(struct rdp_inst * inst, int width, int height, uint8* data)
 static void
 gdi_ui_paint_bitmap(struct rdp_inst * inst, int x, int y, int cx, int cy, int width, int height, uint8 * data)
 {
-	gdi_bitmap *gdi_bmp;
+	GDI_IMAGE *gdi_bmp;
 	GDI *gdi = GET_GDI(inst);
 
 	DEBUG_GDI("ui_paint_bitmap: x:%d y:%d cx:%d cy:%d", x, y, cx, cy);
 
-	gdi_bmp = (gdi_bitmap*) inst->ui_create_bitmap(inst, width, height, data);
-	gdi_BitBlt(gdi->primary->hdc, x, y, cx, cy, gdi_bmp->hdc, 0, 0, SRCCOPY);
+	gdi_bmp = (GDI_IMAGE*) inst->ui_create_bitmap(inst, width, height, data);
+	gdi_BitBlt(gdi->primary->hdc, x, y, cx, cy, gdi_bmp->hdc, 0, 0, GDI_SRCCOPY);
 	inst->ui_destroy_bitmap(inst, (RD_HBITMAP) gdi_bmp);
 }
 
@@ -573,7 +575,7 @@ gdi_ui_paint_bitmap(struct rdp_inst * inst, int x, int y, int cx, int cy, int wi
 static void
 gdi_ui_destroy_bitmap(struct rdp_inst * inst, RD_HBITMAP bmp)
 {
-	gdi_bitmap_free((gdi_bitmap*) bmp);
+	gdi_bitmap_free((GDI_IMAGE*) bmp);
 }
 
 /**
@@ -591,7 +593,7 @@ gdi_ui_destroy_bitmap(struct rdp_inst * inst, RD_HBITMAP bmp)
 static void
 gdi_ui_line(struct rdp_inst * inst, uint8 opcode, int startx, int starty, int endx, int endy, RD_PEN * pen)
 {
-	HPEN hPen;
+	HGDI_PEN hPen;
 	int cx, cy;
 	uint32 color;
 	GDI *gdi = GET_GDI(inst);
@@ -602,14 +604,14 @@ gdi_ui_line(struct rdp_inst * inst, uint8 opcode, int startx, int starty, int en
 	cy = endy - starty + 1;
 	
 	color = gdi_color_convert(pen->color, gdi->srcBpp, 32, gdi->clrconv);
-	hPen = gdi_CreatePen(pen->style, pen->width, (COLORREF) color);
-	gdi_SelectObject(gdi->drawing->hdc, (HGDIOBJ) hPen);
+	hPen = gdi_CreatePen(pen->style, pen->width, (GDI_COLOR) color);
+	gdi_SelectObject(gdi->drawing->hdc, (HGDIOBJECT) hPen);
 	gdi_SetROP2(gdi->drawing->hdc, opcode);
 
 	gdi_MoveToEx(gdi->drawing->hdc, startx, starty, NULL);
 	gdi_LineTo(gdi->drawing->hdc, endx, endy);
 	
-	gdi_DeleteObject((HGDIOBJ) hPen);
+	gdi_DeleteObject((HGDIOBJECT) hPen);
 }
 
 /**
@@ -625,18 +627,19 @@ gdi_ui_line(struct rdp_inst * inst, uint8 opcode, int startx, int starty, int en
 static void
 gdi_ui_rect(struct rdp_inst * inst, int x, int y, int cx, int cy, uint32 color)
 {
-	RECT rect;
-	HBRUSH hBrush;
+	GDI_RECT rect;
+	HGDI_BRUSH hBrush;
 	uint32 brush_color;
 	GDI *gdi = GET_GDI(inst);
 
-	//DEBUG_GDI("ui_rect: x:%d y:%d cx:%d cy:%d", x, y, cx, cy);
+	DEBUG_GDI("ui_rect: x:%d y:%d cx:%d cy:%d", x, y, cx, cy);
 
 	gdi_CRgnToRect(x, y, cx, cy, &rect);
 	brush_color = gdi_color_convert(color, gdi->srcBpp, 32, gdi->clrconv);
 
 	hBrush = gdi_CreateSolidBrush(brush_color);
 	gdi_FillRect(gdi->drawing->hdc, &rect, hBrush);
+	gdi_DeleteObject((HGDIOBJECT) hBrush);
 }
 
 /**
@@ -673,7 +676,7 @@ static void
 gdi_ui_polyline(struct rdp_inst * inst, uint8 opcode, RD_POINT * points, int npoints, RD_PEN * pen)
 {
 	int i;
-	HPEN hPen;
+	HGDI_PEN hPen;
 	int cx, cy;
 	uint32 color;
 	GDI *gdi = GET_GDI(inst);
@@ -682,8 +685,8 @@ gdi_ui_polyline(struct rdp_inst * inst, uint8 opcode, RD_POINT * points, int npo
 
 	color = gdi_color_convert(pen->color, gdi->srcBpp, 32, gdi->clrconv);
 
-	hPen = gdi_CreatePen(pen->style, pen->width, (COLORREF) color);
-	gdi_SelectObject(gdi->drawing->hdc, (HGDIOBJ) hPen);
+	hPen = gdi_CreatePen(pen->style, pen->width, (GDI_COLOR) color);
+	gdi_SelectObject(gdi->drawing->hdc, (HGDIOBJECT) hPen);
 	gdi_SetROP2(gdi->drawing->hdc, opcode);
 
 	cx = points[0].x;
@@ -696,7 +699,7 @@ gdi_ui_polyline(struct rdp_inst * inst, uint8 opcode, RD_POINT * points, int npo
 		gdi_LineTo(gdi->drawing->hdc, cx, cy);
 	}
 
-	gdi_DeleteObject((HGDIOBJ) hPen);
+	gdi_DeleteObject((HGDIOBJECT) hPen);
 }
 
 /**
@@ -750,11 +753,11 @@ gdi_ui_start_draw_glyphs(struct rdp_inst * inst, uint32 bgcolor, uint32 fgcolor)
 static void
 gdi_ui_draw_glyph(struct rdp_inst * inst, int x, int y, int cx, int cy, RD_HGLYPH glyph)
 {
-	gdi_bitmap* gdi_bmp;
+	GDI_IMAGE* gdi_bmp;
 	GDI *gdi = GET_GDI(inst);
 
-	gdi_bmp = (gdi_bitmap*) glyph;
-	gdi_BitBlt(gdi->drawing->hdc, x, y, cx, cy, gdi_bmp->hdc, 0, 0, DSPDxax);
+	gdi_bmp = (GDI_IMAGE*) glyph;
+	gdi_BitBlt(gdi->drawing->hdc, x, y, cx, cy, gdi_bmp->hdc, 0, 0, GDI_DSPDxax);
 }
 
 /**
@@ -810,15 +813,15 @@ gdi_ui_destblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int c
 static void
 gdi_ui_patblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy, RD_BRUSH * brush, uint32 bgcolor, uint32 fgcolor)
 {
-	HBRUSH originalBrush;
+	HGDI_BRUSH originalBrush;
 	GDI *gdi = GET_GDI(inst);
 	
 	DEBUG_GDI("ui_patblt: x: %d y: %d cx: %d cy: %d rop: 0x%X", x, y, cx, cy, gdi_rop3_code(opcode));
 	
-	if (brush->style == BS_PATTERN)
+	if (brush->style == GDI_BS_PATTERN)
 	{
 		uint8* data;
-		HBITMAP hBmp;
+		HGDI_BITMAP hBmp;
 
 		if (brush->bd == 0) /* RDP4 Brush */
 		{
@@ -841,11 +844,11 @@ gdi_ui_patblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy
 
 			gdi_PatBlt(gdi->drawing->hdc, x, y, cx, cy, gdi_rop3_code(opcode));
 
-			gdi_DeleteObject((HGDIOBJ) gdi->drawing->hdc->brush);
+			gdi_DeleteObject((HGDIOBJECT) gdi->drawing->hdc->brush);
 			gdi->drawing->hdc->brush = originalBrush;
 		}
 	}
-	else if (brush->style == BS_SOLID)
+	else if (brush->style == GDI_BS_SOLID)
 	{
 		uint32 color;
 		originalBrush = gdi->drawing->hdc->brush;
@@ -855,7 +858,7 @@ gdi_ui_patblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy
 
 		gdi_PatBlt(gdi->drawing->hdc, x, y, cx, cy, gdi_rop3_code(opcode));
 
-		gdi_DeleteObject((HGDIOBJ) gdi->drawing->hdc->brush);
+		gdi_DeleteObject((HGDIOBJECT) gdi->drawing->hdc->brush);
 		gdi->drawing->hdc->brush = originalBrush;
 	}
 	else
@@ -905,13 +908,13 @@ gdi_ui_screenblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int
 static void
 gdi_ui_memblt(struct rdp_inst * inst, uint8 opcode, int x, int y, int cx, int cy, RD_HBITMAP src, int srcx, int srcy)
 {
-	gdi_bitmap *gdi_bmp;
+	GDI_IMAGE *gdi_bmp;
 	GDI *gdi = GET_GDI(inst);
 
-	//DEBUG_GDI("gdi_ui_memblt: x:%d y:%d cx:%d cy:%d srcx:%d, srcy:%d rop:0x%X",
-	//          x, y, cx, cy, srcx, srcy, gdi_rop3_code(opcode));
+	DEBUG_GDI("gdi_ui_memblt: x:%d y:%d cx:%d cy:%d srcx:%d, srcy:%d rop:0x%X",
+	          x, y, cx, cy, srcx, srcy, gdi_rop3_code(opcode));
 
-	gdi_bmp = (gdi_bitmap*) src;
+	gdi_bmp = (GDI_IMAGE*) src;
 	gdi_BitBlt(gdi->drawing->hdc, x, y, cx, cy, gdi_bmp->hdc, srcx, srcy, gdi_rop3_code(opcode));
 }
 
@@ -951,7 +954,7 @@ static RD_HPALETTE
 gdi_ui_create_palette(struct rdp_inst * inst, RD_PALETTE * palette)
 {
 	DEBUG_GDI("gdi_ui_create_palette");
-	return (RD_HPALETTE) gdi_CreatePalette((HPALETTE) palette);
+	return (RD_HPALETTE) gdi_CreatePalette((HGDI_PALETTE) palette);
 }
 
 /**
@@ -1008,12 +1011,12 @@ gdi_ui_reset_clipping_region(struct rdp_inst * inst)
 static RD_HBITMAP
 gdi_ui_create_surface(struct rdp_inst * inst, int width, int height, RD_HBITMAP old_surface)
 {
-	gdi_bitmap *gdi_bmp;
-	gdi_bitmap *old_gdi_bmp;
+	GDI_IMAGE *gdi_bmp;
+	GDI_IMAGE *old_gdi_bmp;
 	GDI *gdi = GET_GDI(inst);
 
 	gdi_bmp = gdi_bitmap_new(gdi, width, height, gdi->dstBpp, NULL);
-	old_gdi_bmp = (gdi_bitmap*) old_surface;
+	old_gdi_bmp = (GDI_IMAGE*) old_surface;
 	
 	if (old_gdi_bmp != 0)
 	{
@@ -1025,7 +1028,7 @@ gdi_ui_create_surface(struct rdp_inst * inst, int width, int height, RD_HBITMAP 
 		gdi->drawing = gdi_bmp;
 	}
 	
-	//DEBUG_GDI("ui_create_surface");
+	DEBUG_GDI("ui_create_surface");
 	
 	return (RD_HBITMAP) gdi_bmp;
 }
@@ -1042,15 +1045,15 @@ gdi_ui_switch_surface(struct rdp_inst * inst, RD_HBITMAP surface)
 {
 	GDI *gdi = GET_GDI(inst);
 
-	//DEBUG_GDI("ui_switch_surface");
+	DEBUG_GDI("ui_switch_surface");
 	
 	if (surface != 0)
 	{
-		gdi->drawing = (gdi_bitmap*) surface;
+		gdi->drawing = (GDI_IMAGE*) surface;
 	}
 	else
 	{
-		gdi->drawing = (gdi_bitmap*) gdi->primary;
+		gdi->drawing = (GDI_IMAGE*) gdi->primary;
 	}
 }
 
@@ -1074,7 +1077,7 @@ gdi_ui_destroy_surface(struct rdp_inst * inst, RD_HBITMAP surface)
 	
 	if (surface != 0)
 	{
-		gdi_bitmap_free((gdi_bitmap*) surface);
+		gdi_bitmap_free((GDI_IMAGE*) surface);
 	}
 }
 
@@ -1192,7 +1195,7 @@ gdi_init(rdpInst * inst, uint32 flags)
 	gdi->primary_buffer = gdi->primary->bitmap->data;
 	gdi->drawing = gdi->primary;
 
-	gdi->primary->hdc->hwnd = (HWND) malloc(sizeof(WND));
+	gdi->primary->hdc->hwnd = (HGDI_WND) malloc(sizeof(GDI_WND));
 	gdi->primary->hdc->hwnd->invalid = gdi_CreateRectRgn(0, 0, 0, 0);
 	gdi->primary->hdc->hwnd->invalid->null = 1;
 
@@ -1202,4 +1205,17 @@ gdi_init(rdpInst * inst, uint32 flags)
 	gdi_register_callbacks(inst);
 
 	return 0;
+}
+
+void gdi_free(rdpInst* inst)
+{
+	GDI *gdi = GET_GDI(inst);
+
+	if (gdi)
+	{
+		gdi_bitmap_free(gdi->primary);
+		gdi_DeleteObject((HGDIOBJECT) gdi->hdc);
+		free(gdi->clrconv);
+		free(gdi);
+	}
 }

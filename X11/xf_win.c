@@ -931,7 +931,7 @@ l_ui_set_default_cursor(struct rdp_inst * inst)
 static RD_HPALETTE
 l_ui_create_palette(struct rdp_inst * inst, RD_PALETTE * palette)
 {
-	return (RD_HPALETTE) gdi_CreatePalette((HPALETTE) palette);
+	return (RD_HPALETTE) gdi_CreatePalette((HGDI_PALETTE) palette);
 }
 
 static void

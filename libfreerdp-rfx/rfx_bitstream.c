@@ -20,15 +20,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "rfx_bitstream.h"
 
-struct _RFX_BITSTREAM
-{
-	unsigned char * bytes;
-	int nbytes;
-	int byte_pos;
-	int bits_left;
-};
+#include "rfx_bitstream.h"
 
 RFX_BITSTREAM *
 rfx_bitstream_new(void)
@@ -37,41 +30,46 @@ rfx_bitstream_new(void)
 
 	bs = (RFX_BITSTREAM *) malloc(sizeof(RFX_BITSTREAM));
 	memset(bs, 0, sizeof(RFX_BITSTREAM));
+
 	return bs;
 }
 
 void
-rfx_bitstream_put_bytes(RFX_BITSTREAM * bs, const unsigned char * bytes, int nbytes)
+rfx_bitstream_put_buffer(RFX_BITSTREAM * bs, uint8 * buffer, int nbytes)
 {
-	bs->bytes = (unsigned char *) malloc(nbytes);
-	memcpy(bs->bytes, bytes, nbytes);
+	bs->buffer = buffer;
 	bs->nbytes = nbytes;
 	bs->byte_pos = 0;
 	bs->bits_left = 8;
 }
 
-unsigned int
+uint32
 rfx_bitstream_get_bits(RFX_BITSTREAM * bs, int nbits)
 {
-	unsigned int n = 0;
 	int b;
+	uint32 n = 0;
 
 	while (bs->byte_pos < bs->nbytes && nbits > 0)
 	{
 		b = nbits;
+
 		if (b > bs->bits_left)
 			b = bs->bits_left;
+
 		if (n)
 			n <<= b;
-		n |= (bs->bytes[bs->byte_pos] >> (bs->bits_left - b)) & ((1 << b) - 1);
+
+		n |= (bs->buffer[bs->byte_pos] >> (bs->bits_left - b)) & ((1 << b) - 1);
 		bs->bits_left -= b;
 		nbits -= b;
+
 		if (bs->bits_left == 0)
 		{
 			bs->bits_left = 8;
 			bs->byte_pos++;
 		}
 	}
+
 	return n;
 }
 
@@ -86,14 +84,16 @@ rfx_bitstream_left(RFX_BITSTREAM * bs)
 {
 	if (bs->byte_pos >= bs->nbytes)
 		return 0;
+
 	return (bs->nbytes - bs->byte_pos - 1) * 8 + bs->bits_left;
 }
 
 void
 rfx_bitstream_free(RFX_BITSTREAM * bs)
 {
-	if (bs->bytes)
-		free(bs->bytes);
-	free(bs);
+	if (bs != NULL)
+	{
+		free(bs);
+	}
 }
 

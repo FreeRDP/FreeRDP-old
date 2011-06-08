@@ -10,8 +10,28 @@
       <Platform>Win32</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\include\freerdp\rfx.h" />
+    <ClInclude Include="..\libfreerdp-rfx\rfx_bitstream.h" />
+    <ClInclude Include="..\libfreerdp-rfx\rfx_constants.h" />
+    <ClInclude Include="..\libfreerdp-rfx\rfx_decode.h" />
+    <ClInclude Include="..\libfreerdp-rfx\rfx_differential.h" />
+    <ClInclude Include="..\libfreerdp-rfx\rfx_dwt.h" />
+    <ClInclude Include="..\libfreerdp-rfx\rfx_private.h" />
+    <ClInclude Include="..\libfreerdp-rfx\rfx_quantization.h" />
+    <ClInclude Include="..\libfreerdp-rfx\rfx_rlgr.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\libfreerdp-rfx\rfx.c" />
+    <ClCompile Include="..\libfreerdp-rfx\rfx_bitstream.c" />
+    <ClCompile Include="..\libfreerdp-rfx\rfx_decode.c" />
+    <ClCompile Include="..\libfreerdp-rfx\rfx_differential.c" />
+    <ClCompile Include="..\libfreerdp-rfx\rfx_dwt.c" />
+    <ClCompile Include="..\libfreerdp-rfx\rfx_quantization.c" />
+    <ClCompile Include="..\libfreerdp-rfx\rfx_rlgr.c" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{65B0C0EE-55CF-417A-B4BD-A3F3E036DEC1}</ProjectGuid>
+    <ProjectGuid>{E58AAE35-B0A1-4805-9E46-69E43ECC5E33}</ProjectGuid>
     <RootNamespace>libgdi</RootNamespace>
     <Keyword>Win32Proj</Keyword>
   </PropertyGroup>
@@ -55,6 +75,7 @@
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <CompileAs>CompileAsC</CompileAs>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -71,12 +92,6 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClCompile Include="..\libfreerdp-gdi\color.c" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="..\libfreerdp-gdi\color.h" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

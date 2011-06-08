@@ -149,15 +149,15 @@ enum XF_EXIT_CODE
 };
 
 #ifdef WITH_DEBUG_X11
-#define DEBUG_X11(fmt, ...) DEBUG_CLASS(X11, fmt, ...)
+#define DEBUG_X11(fmt, ...) DEBUG_CLASS(X11, fmt, ## __VA_ARGS__)
 #else
-#define DEBUG_X11(fmt, ...) DEBUG_NULL(fmt, ...)
+#define DEBUG_X11(fmt, ...) DEBUG_NULL(fmt, ## __VA_ARGS__)
 #endif
 
 #ifdef WITH_DEBUG_X11_KBD
-#define DEBUG_X11_KBD(fmt, ...) DEBUG_CLASS(X11_KBD, fmt, ...)
+#define DEBUG_X11_KBD(fmt, ...) DEBUG_CLASS(X11_KBD, fmt, ## __VA_ARGS__)
 #else
-#define DEBUG_X11_KBD(fmt, ...) DEBUG_NULL(fmt, ...)
+#define DEBUG_X11_KBD(fmt, ...) DEBUG_NULL(fmt, ## __VA_ARGS__)
 #endif
 
 #endif

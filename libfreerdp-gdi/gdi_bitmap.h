@@ -22,21 +22,21 @@
 
 #include "gdi.h"
 
-COLORREF gdi_GetPixel(HDC hdc, int nXPos, int nYPos);
-COLORREF gdi_SetPixel(HDC hdc, int X, int Y, COLORREF crColor);
-uint8 gdi_GetPixel_8bpp(HBITMAP hBmp, int X, int Y);
-uint16 gdi_GetPixel_16bpp(HBITMAP hBmp, int X, int Y);
-uint32 gdi_GetPixel_32bpp(HBITMAP hBmp, int X, int Y);
-uint8* gdi_GetPointer_8bpp(HBITMAP hBmp, int X, int Y);
-uint16* gdi_GetPointer_16bpp(HBITMAP hBmp, int X, int Y);
-uint32* gdi_GetPointer_32bpp(HBITMAP hBmp, int X, int Y);
-void gdi_SetPixel_8bpp(HBITMAP hBmp, int X, int Y, uint8 pixel);
-void gdi_SetPixel_16bpp(HBITMAP hBmp, int X, int Y, uint16 pixel);
-void gdi_SetPixel_32bpp(HBITMAP hBmp, int X, int Y, uint32 pixel);
-HBITMAP gdi_CreateBitmap(int nWidth, int nHeight, int cBitsPerPixel, uint8* data);
-HBITMAP gdi_CreateCompatibleBitmap(HDC hdc, int nWidth, int nHeight);
-int gdi_BitBlt(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc, int rop);
+GDI_COLOR gdi_GetPixel(HGDI_DC hdc, int nXPos, int nYPos);
+GDI_COLOR gdi_SetPixel(HGDI_DC hdc, int X, int Y, GDI_COLOR crColor);
+uint8 gdi_GetPixel_8bpp(HGDI_BITMAP hBmp, int X, int Y);
+uint16 gdi_GetPixel_16bpp(HGDI_BITMAP hBmp, int X, int Y);
+uint32 gdi_GetPixel_32bpp(HGDI_BITMAP hBmp, int X, int Y);
+uint8* gdi_GetPointer_8bpp(HGDI_BITMAP hBmp, int X, int Y);
+uint16* gdi_GetPointer_16bpp(HGDI_BITMAP hBmp, int X, int Y);
+uint32* gdi_GetPointer_32bpp(HGDI_BITMAP hBmp, int X, int Y);
+void gdi_SetPixel_8bpp(HGDI_BITMAP hBmp, int X, int Y, uint8 pixel);
+void gdi_SetPixel_16bpp(HGDI_BITMAP hBmp, int X, int Y, uint16 pixel);
+void gdi_SetPixel_32bpp(HGDI_BITMAP hBmp, int X, int Y, uint32 pixel);
+HGDI_BITMAP gdi_CreateBitmap(int nWidth, int nHeight, int cBitsPerPixel, uint8* data);
+HGDI_BITMAP gdi_CreateCompatibleBitmap(HGDI_DC hdc, int nWidth, int nHeight);
+int gdi_BitBlt(HGDI_DC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HGDI_DC hdcSrc, int nXSrc, int nYSrc, int rop);
 
-typedef int (*pBitBlt)(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HDC hdcSrc, int nXSrc, int nYSrc, int rop);
+typedef int (*pBitBlt)(HGDI_DC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HGDI_DC hdcSrc, int nXSrc, int nYSrc, int rop);
 
 #endif /* __GDI_BITMAP_H */

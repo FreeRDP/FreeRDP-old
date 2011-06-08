@@ -69,11 +69,18 @@ xfree(void * mem)
 char *
 xstrdup(const char * s)
 {
-	char * mem = strdup(s);
+	char * mem;
+
+#ifdef _WIN32
+	mem = _strdup(s);
+#else
+	mem = strdup(s);
+#endif
 
 	if (mem == NULL)
 	{
 		perror("strdup");
 	}
+
 	return mem;
 }

@@ -254,24 +254,24 @@ crypto_cert_get_issuer(CryptoCert cert)
 char *
 crypto_cert_get_fingerprint(CryptoCert cert)
 {
-	unsigned char fp_buf[20];
-	unsigned int fp_len = sizeof(fp_buf);
+	char *fp, *p;
 	unsigned int i;
-	char * fingerprint;
-	char * p;
+	unsigned int fp_len = 0;
+	unsigned char fp_buf[EVP_MAX_MD_SIZE];
 
 	X509_digest(cert->px509, EVP_sha1(), fp_buf, &fp_len);
-	fingerprint = malloc(fp_len * 3);
-	for (i = 0, p = fingerprint; i < fp_len; i++)
-	{
-		sprintf(p, "%02x", fp_buf[i]);
-		p += 2;
-		if (i < fp_len - 1)
-			*p++ = ':';
-	}
-	*p = '\0';
+	fp = (char*) xmalloc(fp_len * 3);
+	memset(fp, '\0', fp_len * 3);
 
-	return fingerprint;
+	p = fp;
+	for (i = 0; i < fp_len - 1; i++)
+	{
+		sprintf(p, "%02x:", fp_buf[i]);
+		p = (char*) &fp[i * 3];
+	}
+	sprintf(p, "%02x", fp_buf[i]);
+
+	return fp;
 }
 
 int
@@ -354,16 +354,15 @@ struct rdp_tls
 RD_BOOL
 tls_verify(rdpTls * tls, const char * server)
 {
+	int ret;
+	RD_BOOL verified = False;
+
 	/* TODO: Check for eku extension with server authentication purpose */
 
-	RD_BOOL verified = False;
-	int ret;
-
 	ret = SSL_get_verify_result(tls->ssl);
+
 	if (ret == X509_V_OK)
-	{
 		verified = True;
-	}
 
 	return verified;
 }

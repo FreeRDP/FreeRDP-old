@@ -83,9 +83,9 @@ void
 cache_free(rdpCache * cache);
 
 #ifdef WITH_DEBUG_CACHE
-#define DEBUG_CACHE(fmt, ...) DEBUG_CLASS(CACHE, fmt, ...)
+#define DEBUG_CACHE(fmt, ...) DEBUG_CLASS(CACHE, fmt, ## __VA_ARGS__)
 #else
-#define DEBUG_CACHE(fmt, ...) DEBUG_NULL(fmt, ...)
+#define DEBUG_CACHE(fmt, ...) DEBUG_NULL(fmt, ## __VA_ARGS__)
 #endif
 
 #endif

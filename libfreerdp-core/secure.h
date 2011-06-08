@@ -105,9 +105,9 @@ void
 sec_free(rdpSec * sec);
 
 #ifdef WITH_DEBUG_SEC
-#define DEBUG_SEC(fmt, ...) DEBUG_CLASS(SEC, fmt, ...)
+#define DEBUG_SEC(fmt, ...) DEBUG_CLASS(SEC, fmt, ## __VA_ARGS__)
 #else
-#define DEBUG_SEC(fmt, ...) DEBUG_NULL(fmt, ...)
+#define DEBUG_SEC(fmt, ...) DEBUG_NULL(fmt, ## __VA_ARGS__)
 #endif
 
 #endif

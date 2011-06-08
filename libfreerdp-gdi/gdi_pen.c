@@ -37,23 +37,23 @@
  * @return new pen
  */
 
-HPEN gdi_CreatePen(int fnPenStyle, int nWidth, int crColor)
+HGDI_PEN gdi_CreatePen(int fnPenStyle, int nWidth, int crColor)
 {
-	HPEN hPen = (HPEN) malloc(sizeof(PEN));
-	hPen->objectType = GDIOBJ_PEN;
+	HGDI_PEN hPen = (HGDI_PEN) malloc(sizeof(GDI_PEN));
+	hPen->objectType = GDIOBJECT_PEN;
 	hPen->style = fnPenStyle;
 	hPen->color = crColor;
 	hPen->width = nWidth;
 	return hPen;
 }
 
-uint8 gdi_GetPenColor_8bpp(HPEN pen)
+uint8 gdi_GetPenColor_8bpp(HGDI_PEN pen)
 {
 	/* TODO: implement conversion using palette */
 	return 0xFF;
 }
 
-uint16 gdi_GetPenColor_16bpp(HPEN pen)
+uint16 gdi_GetPenColor_16bpp(HGDI_PEN pen)
 {
 	uint16 p;
 	int r, g, b;
@@ -63,7 +63,7 @@ uint16 gdi_GetPenColor_16bpp(HPEN pen)
 	return p;
 }
 
-uint32 gdi_GetPenColor_32bpp(HPEN pen)
+uint32 gdi_GetPenColor_32bpp(HGDI_PEN pen)
 {
 	return pen->color;
 }

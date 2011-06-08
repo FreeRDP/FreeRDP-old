@@ -27,7 +27,7 @@
 
 #include "gdi_clipping.h"
 
-int gdi_SetClipRgn(HDC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight)
+int gdi_SetClipRgn(HGDI_DC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight)
 {
 	return gdi_SetRgn(hdc->clip, nXLeft, nYLeft, nWidth, nHeight);
 }
@@ -39,7 +39,7 @@ int gdi_SetClipRgn(HDC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight)
  * @return clipping region
  */
 
-HRGN gdi_GetClipRgn(HDC hdc)
+HGDI_RGN gdi_GetClipRgn(HGDI_DC hdc)
 {
 	return hdc->clip;
 }
@@ -50,7 +50,7 @@ HRGN gdi_GetClipRgn(HDC hdc)
  * @return
  */
 
-int gdi_SetNullClipRgn(HDC hdc)
+int gdi_SetNullClipRgn(HGDI_DC hdc)
 {
 	gdi_SetClipRgn(hdc, 0, 0, 0, 0);
 	hdc->clip->null = 1;
@@ -69,12 +69,12 @@ int gdi_SetNullClipRgn(HDC hdc)
  * @return 1 if there is something to draw, 0 otherwise
  */
 
-int gdi_ClipCoords(HDC hdc, int *x, int *y, int *w, int *h, int *srcx, int *srcy)
+int gdi_ClipCoords(HGDI_DC hdc, int *x, int *y, int *w, int *h, int *srcx, int *srcy)
 {
-	RECT bmp;
-	RECT clip;
-	RECT coords;
-	HBITMAP hBmp;
+	GDI_RECT bmp;
+	GDI_RECT clip;
+	GDI_RECT coords;
+	HGDI_BITMAP hBmp;
 
 	int dx = 0;
 	int dy = 0;
@@ -83,7 +83,7 @@ int gdi_ClipCoords(HDC hdc, int *x, int *y, int *w, int *h, int *srcx, int *srcy
 	if (hdc == NULL)
 		return 0;
 
-	hBmp = (HBITMAP) hdc->selectedObject;
+	hBmp = (HGDI_BITMAP) hdc->selectedObject;
 
 	if (hBmp != NULL)
 	{

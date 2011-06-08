@@ -22,10 +22,10 @@
 
 #include "gdi.h"
 
-HDC gdi_GetDC();
-HDC gdi_CreateCompatibleDC(HDC hdc);
-HGDIOBJ gdi_SelectObject(HDC hdc, HGDIOBJ hgdiobj);
-int gdi_DeleteObject(HGDIOBJ hgdiobj);
-int gdi_DeleteDC(HDC hdc);
+HGDI_DC gdi_GetDC();
+HGDI_DC gdi_CreateCompatibleDC(HGDI_DC hdc);
+HGDIOBJECT gdi_SelectObject(HGDI_DC hdc, HGDIOBJECT hgdiobject);
+int gdi_DeleteObject(HGDIOBJECT hgdiobject);
+int gdi_DeleteDC(HGDI_DC hdc);
 
 #endif /* __GDI_DC_H */

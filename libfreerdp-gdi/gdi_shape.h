@@ -22,12 +22,12 @@
 
 #include "gdi.h"
 
-int gdi_Ellipse(HDC hdc, int nLeftRect, int nTopRect, int nRightRect, int nBottomRect);
-int gdi_FillRect(HDC hdc, HRECT rect, HBRUSH hbr);
-int gdi_Polygon(HDC hdc, POINT *lpPoints, int nCount);
-int gdi_PolyPolygon(HDC hdc, POINT *lpPoints, int *lpPolyCounts, int nCount);
-int gdi_Rectangle(HDC hdc, int nLeftRect, int nTopRect, int nRightRect, int nBottomRect);
+int gdi_Ellipse(HGDI_DC hdc, int nLeftRect, int nTopRect, int nRightRect, int nBottomRect);
+int gdi_FillRect(HGDI_DC hdc, HGDI_RECT rect, HGDI_BRUSH hbr);
+int gdi_Polygon(HGDI_DC hdc, GDI_POINT *lpPoints, int nCount);
+int gdi_PolyPolygon(HGDI_DC hdc, GDI_POINT *lpPoints, int *lpPolyCounts, int nCount);
+int gdi_Rectangle(HGDI_DC hdc, int nLeftRect, int nTopRect, int nRightRect, int nBottomRect);
 
-typedef int (*pFillRect)(HDC hdc, HRECT rect, HBRUSH hbr);
+typedef int (*pFillRect)(HGDI_DC hdc, HGDI_RECT rect, HGDI_BRUSH hbr);
 
 #endif /* __GDI_SHAPE_H */

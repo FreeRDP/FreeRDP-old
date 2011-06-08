@@ -20,23 +20,39 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
 #include "rfx_dwt.h"
 
 void
-rfx_dwt_2d_decode(int * buffer, int subband_width)
+rfx_dwt_2d_decode(RFX_CONTEXT * context, int * buffer, int subband_width)
 {
-	int * idwt;
-	int * dst;
+	int n;
+	int x, y;
 	int * l;
 	int * h;
+	int * dst;
+	int * idwt;
+	int idwt_alloc;
 	int total_width;
-	int x, y;
-	int n;
 
 	/* The 4 sub-bands are stored in HL(0), LH(1), HH(2), LL(3) order. */
 
-	idwt = (int *) malloc(subband_width * subband_width * 4 * sizeof(int));
-	total_width =  subband_width << 1;
+	switch (subband_width)
+	{
+		case 8:
+		case 16:
+		case 32:
+			idwt = (int*) context->idwt_buffers[subband_width >> 3];
+			idwt_alloc = 0;
+			break;
+
+		default:
+			idwt = (int*) malloc(subband_width * subband_width * 4 * sizeof(int));
+			idwt_alloc = 1;
+			break;
+	}
+
+	total_width = subband_width << 1;
 
 	/* Inverse DWT in horizontal direction, results in 2 sub-bands in L, H order in tmp buffer idwt. */
 
@@ -117,6 +133,7 @@ rfx_dwt_2d_decode(int * buffer, int subband_width)
 		}
 	}
 
-	free(idwt);
+	if (idwt_alloc)
+		free(idwt);
 }
 
