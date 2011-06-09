@@ -35,7 +35,7 @@
 
 #include "test_librfx.h"
 
-static const unsigned char y_data[] =
+static const uint8 y_data[] =
 {
 	                  0x19, 0x82, 0x1d, 0x10, 0x62, 0x9d, 0x28, 0x85, 0x2c, 0xa2, 0x14, 0xb2, 0x88,
 	0x52, 0xca, 0x21, 0x4b, 0x28, 0x85, 0x2c, 0xa2, 0x14, 0xb2, 0x88, 0x52, 0xca, 0x21, 0x4b, 0x28,
@@ -58,7 +58,7 @@ static const unsigned char y_data[] =
 	0x4d, 0x43, 0x46, 0xd7, 0xe9, 0xe2, 0x20, 0x30, 0x00
 };
 
-static const unsigned char cb_data[] =
+static const uint8 cb_data[] =
 {
 		                                                  0x1b, 0x04, 0x7f, 0x04, 0x31, 0x5f, 0xc2,
 	0x94, 0xaf, 0x05, 0x29, 0x5e, 0x0a, 0x52, 0xbc, 0x14, 0xa5, 0x78, 0x29, 0x25, 0x78, 0x29, 0x25,
@@ -83,7 +83,7 @@ static const unsigned char cb_data[] =
 	0x77, 0x82, 0xbc, 0x00, 0x18, 0x00
 };
 
-static const unsigned char cr_data[] =
+static const uint8 cr_data[] =
 {
 		                                0x1b, 0xfc, 0x11, 0xc1, 0x0f, 0x4a, 0xc1, 0x4f, 0x4a, 0xc1,
 	0x4f, 0x4a, 0xa1, 0x4d, 0x95, 0x42, 0x9e, 0x95, 0x42, 0x9e, 0x95, 0x42, 0x9b, 0x2a, 0x85, 0x3d,
@@ -146,7 +146,7 @@ test_bitstream(void)
 	RFX_BITSTREAM * bs;
 
 	bs = rfx_bitstream_new();
-	rfx_bitstream_put_bytes(bs, y_data, sizeof(y_data));
+	rfx_bitstream_put_buffer(bs, (uint8 *) y_data, sizeof(y_data));
 	while (!rfx_bitstream_eos(bs))
 	{
 		b = rfx_bitstream_get_bits(bs, 3);
@@ -178,7 +178,7 @@ test_rlgr(void)
 {
 	int n;
 
-	n = rfx_rlgr_decode(RLGR1, y_data, sizeof(y_data), buffer, sizeof(buffer) / sizeof(unsigned int));
+	n = rfx_rlgr_decode(RLGR3, y_data, sizeof(y_data), buffer, sizeof(buffer) / sizeof(unsigned int));
 
 	//printf("RLGR decode %d bytes to %d values.", sizeof(y_data), n);
 	//dump_buffer(buffer, n);
@@ -210,25 +210,30 @@ test_quantization(void)
 void
 test_dwt(void)
 {
-	rfx_dwt_2d_decode((int*) buffer + 3840, 8);
-	rfx_dwt_2d_decode((int*) buffer + 3072, 16);
-	rfx_dwt_2d_decode((int*) buffer, 32);
+	RFX_CONTEXT * context;
+
+	context = rfx_context_new();
+	rfx_dwt_2d_decode(context, (int*) buffer + 3840, 8);
+	rfx_dwt_2d_decode(context, (int*) buffer + 3072, 16);
+	rfx_dwt_2d_decode(context, (int*) buffer, 32);
 	//dump_buffer(buffer, 4096);
+	rfx_context_free(context);
 }
 
 void
 test_decode(void)
 {
 	RFX_CONTEXT * context;
-	unsigned char * decode_buffer;
+	uint8 decode_buffer[4096 * 3];
 
 	context = rfx_context_new();
 	context->mode = RLGR3;
 	rfx_context_set_pixel_format(context, RFX_PIXEL_FORMAT_RGB);
-	decode_buffer = rfx_decode_rgb(context,
+	rfx_decode_rgb(context,
 		y_data, sizeof(y_data), test_quantization_values,
 		cb_data, sizeof(cb_data), test_quantization_values,
-		cr_data, sizeof(cr_data), test_quantization_values);
+		cr_data, sizeof(cr_data), test_quantization_values,
+		decode_buffer);
 	rfx_context_free(context);
 
 	/* Dump a .ppm image. */
@@ -245,8 +250,6 @@ test_decode(void)
 	fflush(fp);
 	fclose(fp);
 	frame_id++;
-
-	free(decode_buffer);
 }
 
 
