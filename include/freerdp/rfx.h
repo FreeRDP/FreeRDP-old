@@ -151,6 +151,7 @@ struct _RFX_CONTEXT
 	uint32* idwt_buffers[5]; /* sub-band buffer array */
 	
 	void (* decode_YCbCr_to_RGB)(uint32 * y_r_buf, uint32 * cb_g_buf, uint32 * cr_b_buf);
+	void (* encode_RGB_to_YCbCr)(uint32 * y_r_buf, uint32 * cb_g_buf, uint32 * cr_b_buf);
 };
 typedef struct _RFX_CONTEXT RFX_CONTEXT;
 
