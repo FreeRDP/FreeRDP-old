@@ -130,6 +130,7 @@ int add_librfx_suite(void)
 	add_test_suite(librfx);
 
 	add_test_function(bitstream);
+	add_test_function(bitstream_enc);
 	add_test_function(rlgr);
 	add_test_function(differential);
 	add_test_function(quantization);
@@ -155,6 +156,29 @@ test_bitstream(void)
 	rfx_bitstream_free(bs);
 
 	//printf("\n");
+}
+
+void
+test_bitstream_enc(void)
+{
+	uint8 buffer[10];
+	RFX_BITSTREAM * bs;
+	int i;
+
+	bs = rfx_bitstream_new();
+	memset(buffer, 0, sizeof(buffer));
+	rfx_bitstream_put_buffer(bs, buffer, sizeof(buffer));
+	for (i = 0; i < 16; i++)
+	{
+		rfx_bitstream_put_bits(bs, i, 5);
+	}
+	for (i = 0; i < sizeof(buffer); i++)
+	{
+		printf("%X ", buffer[i]);
+	}
+	rfx_bitstream_free(bs);
+
+	printf("\n");
 }
 
 static unsigned int buffer[4096];
