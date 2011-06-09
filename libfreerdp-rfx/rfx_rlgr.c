@@ -65,10 +65,11 @@
 /* Returns the least number of bits required to represent a given value */
 #define GetMinBits(_val, _nbits) \
 { \
+	uint32 _v = _val; \
 	_nbits = 0; \
-	while (_val) \
+	while (_v) \
 	{ \
-		_val >>= 1; \
+		_v >>= 1; \
 		_nbits++; \
 	} \
 } \
