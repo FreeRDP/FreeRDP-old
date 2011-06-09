@@ -20,6 +20,7 @@ AH_TEMPLATE(NEED_ALIGN, [Alignment])
 AH_TEMPLATE(DISABLE_TLS, [Disable TLS encryption])
 AH_TEMPLATE(WITH_SSE, [Enable SSE Optimizations])
 AH_TEMPLATE(WITH_XKBFILE, [Use xkbfile for keyboard handling])
+AH_TEMPLATE(WITH_PROFILER, [Turn on the code profiler])
 AH_TEMPLATE(WITH_DEBUG, [Turn on debugging messages])
 AH_TEMPLATE(WITH_DEBUG_RDP, [Turn on debugging messages])
 AH_TEMPLATE(WITH_DEBUG_GDI, [Turn on debugging messages])
@@ -1022,6 +1023,24 @@ AC_ARG_WITH([cunit],
 			cunit="yes"
 			EXTRA_SUBDIRS="$EXTRA_SUBDIRS cunit"
 		fi
+	]
+)
+
+#
+# Profiler
+#
+profiler="no"
+AC_ARG_WITH([profiler],
+	[AS_HELP_STRING([--with-profiler], [enable the code profiler])])
+AS_IF([test "x$with_profiler" == xyes],
+	[
+		profiler="yes"
+		AM_CONDITIONAL(WITH_PROFILER, true)
+		AC_DEFINE(WITH_PROFILER,1)
+	],
+	[
+		profiler="no"
+		AM_CONDITIONAL(WITH_PROFILER, false)
 	]
 )
 
