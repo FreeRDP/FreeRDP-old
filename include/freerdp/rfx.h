@@ -22,6 +22,8 @@
 
 #include "types/base.h"
 
+#include <freerdp/utils/profiler.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -152,6 +154,15 @@ struct _RFX_CONTEXT
 	
 	void (* decode_YCbCr_to_RGB)(uint32 * y_r_buf, uint32 * cb_g_buf, uint32 * cr_b_buf);
 	void (* encode_RGB_to_YCbCr)(uint32 * y_r_buf, uint32 * cb_g_buf, uint32 * cr_b_buf);
+
+	/* profiler definitions */
+	PROFILER_DEFINE(prof_rfx_decode_rgb);
+	PROFILER_DEFINE(prof_rfx_decode_component);
+	PROFILER_DEFINE(prof_rfx_rlgr_decode);
+	PROFILER_DEFINE(prof_rfx_differential_decode);
+	PROFILER_DEFINE(prof_rfx_quantization_decode);
+	PROFILER_DEFINE(prof_rfx_dwt_2d_decode);
+	PROFILER_DEFINE(prof_rfx_decode_YCbCr_to_RGB);
 };
 typedef struct _RFX_CONTEXT RFX_CONTEXT;
 

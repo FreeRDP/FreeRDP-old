@@ -31,6 +31,41 @@
 
 #include "librfx.h"
 
+void rfx_profiler_create(RFX_CONTEXT * context)
+{
+	PROFILER_CREATE(context->prof_rfx_decode_rgb, "rfx_decode_rgb");
+	PROFILER_CREATE(context->prof_rfx_decode_component, "rfx_decode_component");
+	PROFILER_CREATE(context->prof_rfx_rlgr_decode, "rfx_rlgr_decode");
+	PROFILER_CREATE(context->prof_rfx_differential_decode, "rfx_differential_decode");
+	PROFILER_CREATE(context->prof_rfx_quantization_decode, "rfx_quantization_decode");
+	PROFILER_CREATE(context->prof_rfx_dwt_2d_decode, "rfx_dwt_2d_decode");
+	PROFILER_CREATE(context->prof_rfx_decode_YCbCr_to_RGB, "rfx_decode_YCbCr_to_RGB");
+}
+
+void rfx_profiler_free(RFX_CONTEXT * context)
+{
+	PROFILER_FREE(context->prof_rfx_decode_rgb);
+	PROFILER_FREE(context->prof_rfx_decode_component);
+	PROFILER_FREE(context->prof_rfx_rlgr_decode);
+	PROFILER_FREE(context->prof_rfx_differential_decode);
+	PROFILER_FREE(context->prof_rfx_quantization_decode);
+	PROFILER_FREE(context->prof_rfx_dwt_2d_decode);
+	PROFILER_FREE(context->prof_rfx_decode_YCbCr_to_RGB);
+}
+
+void rfx_profiler_print(RFX_CONTEXT * context)
+{
+	PROFILER_PRINT_HEADER;
+	PROFILER_PRINT(context->prof_rfx_decode_rgb);
+	PROFILER_PRINT(context->prof_rfx_decode_component);
+	PROFILER_PRINT(context->prof_rfx_rlgr_decode);
+	PROFILER_PRINT(context->prof_rfx_differential_decode);
+	PROFILER_PRINT(context->prof_rfx_quantization_decode);
+	PROFILER_PRINT(context->prof_rfx_dwt_2d_decode);
+	PROFILER_PRINT(context->prof_rfx_decode_YCbCr_to_RGB);
+	PROFILER_PRINT_FOOTER;
+}
+
 RFX_CONTEXT *
 rfx_context_new(void)
 {
@@ -49,6 +84,9 @@ rfx_context_new(void)
 	context->idwt_buffers[1] = (uint32*) context->idwt_buffer_8;
 	context->idwt_buffers[2] = (uint32*) context->idwt_buffer_16;
 	context->idwt_buffers[4] = (uint32*) context->idwt_buffer_32;
+
+	/* create profilers for default decoding routines */
+	rfx_profiler_create(context);
 	
 	/* set up default decoding routines */
 	context->decode_YCbCr_to_RGB = rfx_decode_YCbCr_to_RGB;
@@ -67,6 +105,9 @@ rfx_context_free(RFX_CONTEXT * context)
 		free(context->quants);
 
 	rfx_pool_free(context->pool);
+
+	rfx_profiler_print(context);
+	rfx_profiler_free(context);
 
 	if (context != NULL)
 		free(context);

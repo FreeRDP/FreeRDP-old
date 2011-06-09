@@ -27,6 +27,9 @@
 
 void rfx_init_sse(RFX_CONTEXT * context)
 {
-	DEBUG_RFX("Using SSE2 optimizations");
+	DEBUG_RFX("Using SSE optimizations");
+
+	IF_PROFILER(context->prof_rfx_decode_YCbCr_to_RGB->name = "rfx_decode_YCbCr_to_RGB_SSE2");
+	
 	context->decode_YCbCr_to_RGB = rfx_decode_YCbCr_to_RGB_SSE2;
 }
