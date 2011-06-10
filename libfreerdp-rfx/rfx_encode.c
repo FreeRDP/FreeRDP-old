@@ -25,7 +25,7 @@
 #include "rfx_quantization.h"
 #include "rfx_dwt.h"
 
-#include "rfx_decode.h"
+#include "rfx_encode.h"
 
 #define MINMAX(_v,_l,_h) ((_v) < (_l) ? (_l) : ((_v) > (_h) ? (_h) : (_v)))
 
@@ -54,6 +54,10 @@ static void
 rfx_encode_component(RFX_CONTEXT * context, const uint32 * quantization_values,
 	uint16 * data, uint8 * buffer, int * size)
 {
+	rfx_dwt_2d_encode(context, (short*)data, 32);
+	rfx_dwt_2d_encode(context, (short*)data + 3072, 16);
+	rfx_dwt_2d_encode(context, (short*)data + 3840, 8);
+
 	*size = 0;
 }
 
