@@ -26,7 +26,6 @@
 void
 rfx_dwt_2d_decode(RFX_CONTEXT * context, short * buffer, int subband_width)
 {
-	int idwt_alloc;
 	short * idwt;
 	short * dst, * l, * h;
 	short * l_dst, * h_dst;
@@ -35,21 +34,7 @@ rfx_dwt_2d_decode(RFX_CONTEXT * context, short * buffer, int subband_width)
 	int x, y;
 	int n;
 
-	switch (subband_width)
-	{
-		case 8:
-		case 16:
-		case 32:
-			idwt = (short*) context->idwt_buffers[subband_width >> 3];
-			idwt_alloc = 0;
-			break;
-
-		default:
-			idwt = (short*) malloc(subband_width * subband_width * 4 * sizeof(short));
-			idwt_alloc = 1;
-			break;
-	}
-
+	idwt = (short*) context->dwt_buffers[subband_width >> 3];
 	total_width = subband_width << 1;
 
 	/* Inverse DWT in horizontal direction, results in 2 sub-bands in L, H order in tmp buffer idwt. */
@@ -120,9 +105,6 @@ rfx_dwt_2d_decode(RFX_CONTEXT * context, short * buffer, int subband_width)
 			dst[total_width] = (*h << 1) + ((dst[0] + dst[n < subband_width - 1 ? 2 * total_width : 0]) >> 1);
 		}
 	}
-
-	if (idwt_alloc)
-		free(idwt);
 }
 
 void
@@ -136,7 +118,7 @@ rfx_dwt_2d_encode(RFX_CONTEXT * context, short * buffer, int subband_width)
 	int x, y;
 	int n;
 
-	dwt = (short*) context->idwt_buffers[subband_width >> 3];
+	dwt = (short*) context->dwt_buffers[subband_width >> 3];
 	total_width = subband_width << 1;
 
 	/* DWT in vertical direction, results in 2 sub-bands in L, H order in tmp buffer dwt. */

@@ -147,10 +147,10 @@ struct _RFX_CONTEXT
 	uint16* cb_g_buffer;
 	uint16* cr_b_buffer;
  
-	uint16 idwt_buffer_8[256]; /* sub-band width 8 */
-	uint16 idwt_buffer_16[1024]; /* sub-band width 16 */
-	uint16 idwt_buffer_32[4096]; /* sub-band width 32 */
-	uint16* idwt_buffers[5]; /* sub-band buffer array */
+	uint16 dwt_buffer_8[256]; /* sub-band width 8 */
+	uint16 dwt_buffer_16[1024]; /* sub-band width 16 */
+	uint16 dwt_buffer_32[4096]; /* sub-band width 32 */
+	uint16* dwt_buffers[5]; /* sub-band buffer array */
 	
 	void (* decode_YCbCr_to_RGB)(uint16 * y_r_buf, uint16 * cb_g_buf, uint16 * cr_b_buf);
 	void (* encode_RGB_to_YCbCr)(uint16 * y_r_buf, uint16 * cb_g_buf, uint16 * cr_b_buf);
