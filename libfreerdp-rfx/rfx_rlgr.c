@@ -56,7 +56,7 @@
 		nZeroesWritten = buffer_size; \
 	if (nZeroesWritten > 0) \
 	{ \
-		memset(dst, 0, nZeroesWritten * sizeof(int)); \
+		memset(dst, 0, nZeroesWritten * sizeof(short)); \
 		dst += nZeroesWritten; \
 	} \
 	buffer_size -= (nZeroes); \
@@ -75,7 +75,7 @@
 } \
 
 /* Converts from (2 * magnitude - sign) to integer */
-#define GetIntFrom2MagSign(twoMs) (((twoMs) & 1) ? -1 * (int)(((twoMs) + 1) >> 1) : (int)((twoMs) >> 1))
+#define GetIntFrom2MagSign(twoMs) (((twoMs) & 1) ? -1 * (short)(((twoMs) + 1) >> 1) : (short)((twoMs) >> 1))
 
 /*
  * Update the passed parameter and clamp it to the range [0, KPMAX]
@@ -94,11 +94,11 @@
 /* Outputs the Golomb/Rice encoding of a non-negative integer */
 #define GetGRCode(krp, kr) rfx_rlgr_get_gr_code(bs, krp, kr)
 
-static uint32
+static uint16
 rfx_rlgr_get_gr_code(RFX_BITSTREAM * bs, int * krp, int * kr)
 {
 	int vk;
-	uint32 mag;
+	uint16 mag;
 
 	/* chew up/count leading 1s and escape 0 */
 	for (vk = 0; GetBits(1) == 1;)
@@ -122,13 +122,13 @@ rfx_rlgr_get_gr_code(RFX_BITSTREAM * bs, int * krp, int * kr)
 }
 
 int
-rfx_rlgr_decode(RLGR_MODE mode, const uint8 * data, int data_size, uint32 * buffer, int buffer_size)
+rfx_rlgr_decode(RLGR_MODE mode, const uint8 * data, int data_size, uint16 * buffer, int buffer_size)
 {
 	int k;
 	int kp;
 	int kr;
 	int krp;
-	uint32 * dst;
+	uint16 * dst;
 	RFX_BITSTREAM * bs;
 
 	bs = rfx_bitstream_new();

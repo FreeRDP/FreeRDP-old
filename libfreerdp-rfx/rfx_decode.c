@@ -30,10 +30,10 @@
 #define MINMAX(_v,_l,_h) ((_v) < (_l) ? (_l) : ((_v) > (_h) ? (_h) : (_v)))
 
 void
-rfx_decode_YCbCr_to_RGB(uint32 * y_r_buf, uint32 * cb_g_buf, uint32 * cr_b_buf)
+rfx_decode_YCbCr_to_RGB(uint16 * y_r_buf, uint16 * cb_g_buf, uint16 * cr_b_buf)
 {
-	int y, cb, cr;
-	int r, g, b;
+	short y, cb, cr;
+	short r, g, b;
 
 	int i;
 	for (i = 0; i < 4096; i++)
@@ -52,7 +52,7 @@ rfx_decode_YCbCr_to_RGB(uint32 * y_r_buf, uint32 * cb_g_buf, uint32 * cr_b_buf)
 
 static void
 rfx_decode_component(RFX_CONTEXT * context, const uint32 * quantization_values, int half,
-	const uint8 * data, int size, uint32 * buffer)
+	const uint8 * data, int size, uint16 * buffer)
 {
 	PROFILER_ENTER(context->prof_rfx_decode_component);
 
@@ -78,10 +78,10 @@ rfx_decode_component(RFX_CONTEXT * context, const uint32 * quantization_values, 
 	PROFILER_EXIT(context->prof_rfx_quantization_decode);
 
 	PROFILER_ENTER(context->prof_rfx_dwt_2d_decode);
-		rfx_dwt_2d_decode(context, (int*) buffer + 3840, 8);
-		rfx_dwt_2d_decode(context, (int*) buffer + 3072, 16);
+		rfx_dwt_2d_decode(context, (short*)buffer + 3840, 8);
+		rfx_dwt_2d_decode(context, (short*)buffer + 3072, 16);
 		if (!half)
-			rfx_dwt_2d_decode(context, (int*) buffer, 32);
+			rfx_dwt_2d_decode(context, (short*)buffer, 32);
 	PROFILER_EXIT(context->prof_rfx_dwt_2d_decode);
 
 	PROFILER_EXIT(context->prof_rfx_decode_component);
@@ -95,7 +95,7 @@ rfx_decode_rgb(RFX_CONTEXT * context,
 {
 	int i;
 	uint8 * dst;
-	int r, g, b;
+	uint16 r, g, b;
 
 	PROFILER_ENTER(context->prof_rfx_decode_rgb);
 

@@ -43,11 +43,11 @@ rfx_bitstream_put_buffer(RFX_BITSTREAM * bs, uint8 * buffer, int nbytes)
 	bs->bits_left = 8;
 }
 
-uint32
+uint16
 rfx_bitstream_get_bits(RFX_BITSTREAM * bs, int nbits)
 {
 	int b;
-	uint32 n = 0;
+	uint16 n = 0;
 
 	while (bs->byte_pos < bs->nbytes && nbits > 0)
 	{
@@ -74,7 +74,7 @@ rfx_bitstream_get_bits(RFX_BITSTREAM * bs, int nbits)
 }
 
 void
-rfx_bitstream_put_bits(RFX_BITSTREAM * bs, unsigned int bits, int nbits)
+rfx_bitstream_put_bits(RFX_BITSTREAM * bs, uint16 bits, int nbits)
 {
 	int b;
 

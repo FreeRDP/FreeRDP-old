@@ -165,7 +165,7 @@ int add_librfx_suite(void)
 void
 test_bitstream(void)
 {
-	unsigned int b;
+	uint16 b;
 	RFX_BITSTREAM * bs;
 
 	bs = rfx_bitstream_new();
@@ -203,7 +203,7 @@ test_bitstream_enc(void)
 	//printf("\n");
 }
 
-static unsigned int buffer[4096];
+static uint16 buffer[4096];
 
 void
 dump_buffer(int * buf, int n)
@@ -259,9 +259,9 @@ test_dwt(void)
 	RFX_CONTEXT * context;
 
 	context = rfx_context_new();
-	rfx_dwt_2d_decode(context, (int*) buffer + 3840, 8);
-	rfx_dwt_2d_decode(context, (int*) buffer + 3072, 16);
-	rfx_dwt_2d_decode(context, (int*) buffer, 32);
+	rfx_dwt_2d_decode(context, (short*) buffer + 3840, 8);
+	rfx_dwt_2d_decode(context, (short*) buffer + 3072, 16);
+	rfx_dwt_2d_decode(context, (short*) buffer, 32);
 	//dump_buffer(buffer, 4096);
 	rfx_context_free(context);
 }

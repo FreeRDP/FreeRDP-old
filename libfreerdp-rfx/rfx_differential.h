@@ -23,7 +23,7 @@
 #include <freerdp/rfx.h>
 
 void
-rfx_differential_decode(uint32 * buffer, int buffer_size);
+rfx_differential_decode(uint16 * buffer, int buffer_size);
 
 #endif
 

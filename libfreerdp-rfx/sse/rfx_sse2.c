@@ -25,57 +25,55 @@
 
 #include "rfx_sse2.h"
 
-void rfx_decode_YCbCr_to_RGB_SSE2(uint32 * y_r_buffer, uint32 * cb_g_buffer, uint32 * cr_b_buffer)
+void rfx_decode_YCbCr_to_RGB_SSE2(uint16 * y_r_buffer, uint16 * cb_g_buffer, uint16 * cr_b_buffer)
 {
-	__m128 y_add = _mm_set_ps1(128.0f);
-	__m128 r_cr_t = _mm_set_ps1(1.403f);
-	__m128 g_cb_t = _mm_set_ps1(-0.344f);
-	__m128 g_cr_t = _mm_set_ps1(-0.714f);
-	__m128 b_cb_t = _mm_set_ps1(1.77f);
-
-	__m128 min = _mm_set_ps1(0.0f);
-	__m128 max = _mm_set_ps1(255.0f);
-
-	__m128 y, cb, cr;
-	__m128 r, g, b, tmp;	
-
+	__m128i y_add = _mm_set1_epi16(128);
+	__m128i zero = _mm_set1_epi16(0);
+	__m128i max = _mm_set1_epi16(255);
+	
+	__m128i y, cb, cr;
+	__m128i r, g, b;
+	
 	__m128i * y_r_buf = (__m128i*) y_r_buffer;
 	__m128i * cb_g_buf = (__m128i*) cb_g_buffer;
 	__m128i * cr_b_buf = (__m128i*) cr_b_buffer;
 
 	int i;
-	for (i = 0; i < (4096 / 4); i++)
-	{
-		y = _mm_cvtepi32_ps(*y_r_buf);
-		cb = _mm_cvtepi32_ps(*cb_g_buf);
-		cr = _mm_cvtepi32_ps(*cr_b_buf);
+	for (i = 0; i < (4096 / 8); i++)
+	{		
+		y = _mm_add_epi16(*y_r_buf, y_add);	// y = y_r_buf[i] + 128;
+		cb = *cb_g_buf;						// cb = cb_g_buf[i];
+		cr = *cr_b_buf;						// cr = cr_b_buf[i];
+			
+		// r = between(y + cr + (cr >> 2) + (cr >> 3) + (cr >> 5), 0, 255);
+		r = _mm_add_epi16(y, cr);
+		r = _mm_add_epi16(r, _mm_srai_epi16(cr, 2));
+		r = _mm_add_epi16(r, _mm_srai_epi16(cr, 3));
+		r = _mm_add_epi16(r, _mm_srai_epi16(cr, 5));
+		r = _mm_between_epi16(r, zero, max);
+		_mm_stream_si128(y_r_buf, r);
 
-		/* y = y + 128 */
-		y = _mm_add_ps(y, y_add);
-
-		/* r = between(y + (cr * 1.403), 0, 255) */
-		r = _mm_mul_ps(cr, r_cr_t);
-		r = _mm_add_ps(r, y);
-		r = _mm_between_ps(r, min, max);
-		_mm_cvtps_epi32_and_store(y_r_buf, r);
-
-		/* g = between(y + (cb * -0.344) + (cr * -0.714), 0, 255) */
-		g = _mm_mul_ps(cb, g_cb_t);
-		tmp = _mm_mul_ps(cr, g_cr_t);
-		g = _mm_add_ps(g, tmp);
-		g = _mm_add_ps(g, y);
-		g = _mm_between_ps(g, min, max);
-		_mm_cvtps_epi32_and_store(cb_g_buf, g);
-
-		/* b = between(y + (cb * 1.77), 0, 255) */
-		b = _mm_mul_ps(cb, b_cb_t);
-		b = _mm_add_ps(b, y);
-		b = _mm_between_ps(b, min, max);
-		_mm_cvtps_epi32_and_store(cr_b_buf, b);
-
+		// g = between(y - (cb >> 2) - (cb >> 4) - (cb >> 5) - (cr >> 1) - (cr >> 3) - (cr >> 4) - (cr >> 5), 0, 255);
+		g = _mm_sub_epi16(y, _mm_srai_epi16(cb, 2));
+		g = _mm_sub_epi16(g, _mm_srai_epi16(cb, 4));
+		g = _mm_sub_epi16(g, _mm_srai_epi16(cb, 5));
+		g = _mm_sub_epi16(g, _mm_srai_epi16(cr, 1));
+		g = _mm_sub_epi16(g, _mm_srai_epi16(cr, 3));
+		g = _mm_sub_epi16(g, _mm_srai_epi16(cr, 4));
+		g = _mm_sub_epi16(g, _mm_srai_epi16(cr, 5));
+		g = _mm_between_epi16(g, zero, max);
+		_mm_stream_si128(cb_g_buf, g);
+		
+		// b = between(y + cb + (cb >> 1) + (cb >> 2) + (cb >> 6), 0, 255);
+		b = _mm_add_epi16(y, cb);
+		b = _mm_add_epi16(b, _mm_srai_epi16(cb, 1));
+		b = _mm_add_epi16(b, _mm_srai_epi16(cb, 2));
+		b = _mm_add_epi16(b, _mm_srai_epi16(cb, 6));
+		b = _mm_between_epi16(b, zero, max);
+		_mm_stream_si128(cr_b_buf, b);
+		
 		y_r_buf++;
 		cb_g_buf++;
 		cr_b_buf++;
 	}
 }
-

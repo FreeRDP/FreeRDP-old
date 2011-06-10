@@ -22,6 +22,6 @@
 
 #include <freerdp/rfx.h>
 
-void rfx_decode_YCbCr_to_RGB_SSE2(uint32 * y_r_buffer, uint32 * cb_g_buffer, uint32 * cr_b_buffer);
+void rfx_decode_YCbCr_to_RGB_SSE2(uint16 * y_r_buffer, uint16 * cb_g_buffer, uint16 * cr_b_buffer);
 
 #endif /* __RFX_SSE2_H */

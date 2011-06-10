@@ -24,13 +24,13 @@
 #include "rfx_dwt.h"
 
 void
-rfx_dwt_2d_decode(RFX_CONTEXT * context, int * buffer, int subband_width)
+rfx_dwt_2d_decode(RFX_CONTEXT * context, short * buffer, int subband_width)
 {
 	int idwt_alloc;
-	int * idwt;
-	int * dst, * l, * h;
-	int * l_dst, * h_dst;
-	int * hl, * lh, * hh, * ll;
+	short * idwt;
+	short * dst, * l, * h;
+	short * l_dst, * h_dst;
+	short * hl, * lh, * hh, * ll;
 	int total_width;
 	int x, y;
 	int n;
@@ -40,12 +40,12 @@ rfx_dwt_2d_decode(RFX_CONTEXT * context, int * buffer, int subband_width)
 		case 8:
 		case 16:
 		case 32:
-			idwt = (int*) context->idwt_buffers[subband_width >> 3];
+			idwt = (short*) context->idwt_buffers[subband_width >> 3];
 			idwt_alloc = 0;
 			break;
 
 		default:
-			idwt = (int*) malloc(subband_width * subband_width * 4 * sizeof(int));
+			idwt = (short*) malloc(subband_width * subband_width * 4 * sizeof(short));
 			idwt_alloc = 1;
 			break;
 	}

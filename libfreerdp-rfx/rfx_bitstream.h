@@ -35,10 +35,10 @@ RFX_BITSTREAM *
 rfx_bitstream_new(void);
 void
 rfx_bitstream_put_buffer(RFX_BITSTREAM * bs, uint8 * buffer, int nbytes);
-unsigned int
+uint16
 rfx_bitstream_get_bits(RFX_BITSTREAM * bs, int nbits);
 void
-rfx_bitstream_put_bits(RFX_BITSTREAM * bs, unsigned int bits, int nbits);
+rfx_bitstream_put_bits(RFX_BITSTREAM * bs, uint16 bits, int nbits);
 int
 rfx_bitstream_eos(RFX_BITSTREAM * bs);
 int

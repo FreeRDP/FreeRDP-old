@@ -30,10 +30,10 @@
 #define MINMAX(_v,_l,_h) ((_v) < (_l) ? (_l) : ((_v) > (_h) ? (_h) : (_v)))
 
 void
-rfx_encode_RGB_to_YCbCr(uint32 * y_r_buf, uint32 * cb_g_buf, uint32 * cr_b_buf)
+rfx_encode_RGB_to_YCbCr(uint16 * y_r_buf, uint16 * cb_g_buf, uint16 * cr_b_buf)
 {
-	int y, cb, cr;
-	int r, g, b;
+	short y, cb, cr;
+	short r, g, b;
 
 	int i;
 	for (i = 0; i < 4096; i++)
@@ -55,9 +55,9 @@ rfx_encode_rgb(RFX_CONTEXT * context, const uint8 * rgb_buffer, int rowstride)
 {
 	int x, y;
 	const uint8 * src;
-	uint32 * y_r_buffer = context->y_r_buffer;
-	uint32 * cb_g_buffer = context->cb_g_buffer;
-	uint32 * cr_b_buffer = context->cr_b_buffer;
+	uint16 * y_r_buffer = context->y_r_buffer;
+	uint16 * cb_g_buffer = context->cb_g_buffer;
+	uint16 * cr_b_buffer = context->cr_b_buffer;
 
 	for (y = 0; y < 64; y++)
 	{
@@ -68,26 +68,26 @@ rfx_encode_rgb(RFX_CONTEXT * context, const uint8 * rgb_buffer, int rowstride)
 			switch (context->pixel_format)
 			{
 				case RFX_PIXEL_FORMAT_BGRA:
-					*cr_b_buffer++ = (uint32) (*src++);
-					*cb_g_buffer++ = (uint32) (*src++);
-					*y_r_buffer++ = (uint32) (*src++);
+					*cr_b_buffer++ = (uint16) (*src++);
+					*cb_g_buffer++ = (uint16) (*src++);
+					*y_r_buffer++ = (uint16) (*src++);
 					src++;
 					break;
 				case RFX_PIXEL_FORMAT_RGBA:
-					*y_r_buffer++ = (uint32) (*src++);
-					*cb_g_buffer++ = (uint32) (*src++);
-					*cr_b_buffer++ = (uint32) (*src++);
+					*y_r_buffer++ = (uint16) (*src++);
+					*cb_g_buffer++ = (uint16) (*src++);
+					*cr_b_buffer++ = (uint16) (*src++);
 					src++;
 					break;
 				case RFX_PIXEL_FORMAT_BGR:
-					*cr_b_buffer++ = (uint32) (*src++);
-					*cb_g_buffer++ = (uint32) (*src++);
-					*y_r_buffer++ = (uint32) (*src++);
+					*cr_b_buffer++ = (uint16) (*src++);
+					*cb_g_buffer++ = (uint16) (*src++);
+					*y_r_buffer++ = (uint16) (*src++);
 					break;
 				case RFX_PIXEL_FORMAT_RGB:
-					*y_r_buffer++ = (uint32) (*src++);
-					*cb_g_buffer++ = (uint32) (*src++);
-					*cr_b_buffer++ = (uint32) (*src++);
+					*y_r_buffer++ = (uint16) (*src++);
+					*cb_g_buffer++ = (uint16) (*src++);
+					*cr_b_buffer++ = (uint16) (*src++);
 					break;
 				default:
 					break;

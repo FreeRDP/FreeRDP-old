@@ -139,21 +139,21 @@ struct _RFX_CONTEXT
 
 	RFX_POOL* pool; /* memory pool */
 
-	uint32 y_r_mem[4096+4]; /* 4096 = 64x64 (+ 4x4 = 16 for mem align) */
-	uint32 cb_g_mem[4096+4]; /* 4096 = 64x64 (+ 4x4 = 16 for mem align) */
-	uint32 cr_b_mem[4096+4]; /* 4096 = 64x64 (+ 4x4 = 16 for mem align) */
+	uint16 y_r_mem[4096+8]; /* 4096 = 64x64 (+ 8x2 = 16 for mem align) */
+	uint16 cb_g_mem[4096+8]; /* 4096 = 64x64 (+ 8x2 = 16 for mem align) */
+	uint16 cr_b_mem[4096+8]; /* 4096 = 64x64 (+ 8x2 = 16 for mem align) */
  
- 	uint32* y_r_buffer;
-	uint32* cb_g_buffer;
-	uint32* cr_b_buffer;
+ 	uint16* y_r_buffer;
+	uint16* cb_g_buffer;
+	uint16* cr_b_buffer;
  
-	uint32 idwt_buffer_8[256]; /* sub-band width 8 */
-	uint32 idwt_buffer_16[1024]; /* sub-band width 16 */
-	uint32 idwt_buffer_32[4096]; /* sub-band width 32 */
-	uint32* idwt_buffers[5]; /* sub-band buffer array */
+	uint16 idwt_buffer_8[256]; /* sub-band width 8 */
+	uint16 idwt_buffer_16[1024]; /* sub-band width 16 */
+	uint16 idwt_buffer_32[4096]; /* sub-band width 32 */
+	uint16* idwt_buffers[5]; /* sub-band buffer array */
 	
-	void (* decode_YCbCr_to_RGB)(uint32 * y_r_buf, uint32 * cb_g_buf, uint32 * cr_b_buf);
-	void (* encode_RGB_to_YCbCr)(uint32 * y_r_buf, uint32 * cb_g_buf, uint32 * cr_b_buf);
+	void (* decode_YCbCr_to_RGB)(uint16 * y_r_buf, uint16 * cb_g_buf, uint16 * cr_b_buf);
+	void (* encode_RGB_to_YCbCr)(uint16 * y_r_buf, uint16 * cb_g_buf, uint16 * cr_b_buf);
 
 	/* profiler definitions */
 	PROFILER_DEFINE(prof_rfx_decode_rgb);

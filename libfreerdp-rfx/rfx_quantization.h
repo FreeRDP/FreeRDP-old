@@ -23,7 +23,7 @@
 #include <freerdp/rfx.h>
 
 void
-rfx_quantization_decode(uint32 * buffer, int buffer_size, uint32 factor);
+rfx_quantization_decode(uint16 * buffer, int buffer_size, uint32 factor);
 
 #endif
 

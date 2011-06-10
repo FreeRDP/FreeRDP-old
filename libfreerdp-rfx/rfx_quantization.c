@@ -20,9 +20,9 @@
 #include "rfx_quantization.h"
 
 void
-rfx_quantization_decode(uint32 * buffer, int buffer_size, uint32 factor)
+rfx_quantization_decode(uint16 * buffer, int buffer_size, uint32 factor)
 {
-	uint32 * dst;
+	uint16 * dst;
 
 	if (factor <= 6)
 		return;
