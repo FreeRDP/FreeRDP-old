@@ -52,7 +52,7 @@ rfx_encode_RGB_to_YCbCr(uint16 * y_r_buf, uint16 * cb_g_buf, uint16 * cr_b_buf)
 
 static void
 rfx_encode_component(RFX_CONTEXT * context, const uint32 * quantization_values,
-	uint32 * data, uint8 * buffer, int * size)
+	uint16 * data, uint8 * buffer, int * size)
 {
 	*size = 0;
 }
