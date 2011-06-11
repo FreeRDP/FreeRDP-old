@@ -58,6 +58,17 @@ rfx_encode_component(RFX_CONTEXT * context, const uint32 * quantization_values,
 	rfx_dwt_2d_encode(context, (short*)data + 3072, 16);
 	rfx_dwt_2d_encode(context, (short*)data + 3840, 8);
 
+	rfx_quantization_encode(data, 1024, quantization_values[8]); /* HL1 */
+	rfx_quantization_encode(data + 1024, 1024, quantization_values[7]); /* LH1 */
+	rfx_quantization_encode(data + 2048, 1024, quantization_values[9]); /* HH1 */
+	rfx_quantization_encode(data + 3072, 256, quantization_values[5]); /* HL2 */
+	rfx_quantization_encode(data + 3328, 256, quantization_values[4]); /* LH2 */
+	rfx_quantization_encode(data + 3584, 256, quantization_values[6]); /* HH2 */
+	rfx_quantization_encode(data + 3840, 64, quantization_values[2]); /* HL3 */
+	rfx_quantization_encode(data + 3904, 64, quantization_values[1]); /* LH3 */
+	rfx_quantization_encode(data + 3868, 64, quantization_values[3]); /* HH3 */
+	rfx_quantization_encode(data + 4032, 64, quantization_values[0]); /* LL3 */
+
 	*size = 0;
 }
 

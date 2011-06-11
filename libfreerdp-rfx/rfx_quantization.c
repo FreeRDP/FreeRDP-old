@@ -22,14 +22,30 @@
 void
 rfx_quantization_decode(uint16 * buffer, int buffer_size, uint32 factor)
 {
-	uint16 * dst;
+	sint16 * dst;
 
 	if (factor <= 6)
 		return;
 
-	for (dst = buffer; buffer_size > 0; dst++, buffer_size--)
+	factor -= 6;
+	for (dst = (sint16 *) buffer; buffer_size > 0; dst++, buffer_size--)
 	{
-		*dst <<= (factor - 6);
+		*dst <<= factor;
+	}
+}
+
+void
+rfx_quantization_encode(uint16 * buffer, int buffer_size, uint32 factor)
+{
+	sint16 * dst;
+
+	if (factor <= 6)
+		return;
+
+	factor -= 6;
+	for (dst = (sint16 *) buffer; buffer_size > 0; dst++, buffer_size--)
+	{
+		*dst >>= factor;
 	}
 }
 
