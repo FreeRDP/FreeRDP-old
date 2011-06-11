@@ -27,8 +27,12 @@
 
 void rfx_decode_YCbCr_to_RGB_SSE2(uint16 * y_r_buffer, uint16 * cb_g_buffer, uint16 * cr_b_buffer)
 {
+	_mm_prefetch((char*)y_r_buffer, _MM_HINT_NTA);
+	_mm_prefetch((char*)cb_g_buffer, _MM_HINT_NTA);
+	_mm_prefetch((char*)cr_b_buffer, _MM_HINT_NTA);	
+	
 	__m128i y_add = _mm_set1_epi16(128);
-	__m128i zero = _mm_set1_epi16(0);
+	__m128i zero = _mm_setzero_si128();
 	__m128i max = _mm_set1_epi16(255);
 	
 	__m128i y, cb, cr;
@@ -51,7 +55,7 @@ void rfx_decode_YCbCr_to_RGB_SSE2(uint16 * y_r_buffer, uint16 * cb_g_buffer, uin
 		r = _mm_add_epi16(r, _mm_srai_epi16(cr, 3));
 		r = _mm_add_epi16(r, _mm_srai_epi16(cr, 5));
 		r = _mm_between_epi16(r, zero, max);
-		_mm_stream_si128(y_r_buf, r);
+		_mm_store_si128(y_r_buf, r);
 
 		// g = between(y - (cb >> 2) - (cb >> 4) - (cb >> 5) - (cr >> 1) - (cr >> 3) - (cr >> 4) - (cr >> 5), 0, 255);
 		g = _mm_sub_epi16(y, _mm_srai_epi16(cb, 2));
@@ -62,7 +66,7 @@ void rfx_decode_YCbCr_to_RGB_SSE2(uint16 * y_r_buffer, uint16 * cb_g_buffer, uin
 		g = _mm_sub_epi16(g, _mm_srai_epi16(cr, 4));
 		g = _mm_sub_epi16(g, _mm_srai_epi16(cr, 5));
 		g = _mm_between_epi16(g, zero, max);
-		_mm_stream_si128(cb_g_buf, g);
+		_mm_store_si128(cb_g_buf, g);
 		
 		// b = between(y + cb + (cb >> 1) + (cb >> 2) + (cb >> 6), 0, 255);
 		b = _mm_add_epi16(y, cb);
@@ -70,7 +74,7 @@ void rfx_decode_YCbCr_to_RGB_SSE2(uint16 * y_r_buffer, uint16 * cb_g_buffer, uin
 		b = _mm_add_epi16(b, _mm_srai_epi16(cb, 2));
 		b = _mm_add_epi16(b, _mm_srai_epi16(cb, 6));
 		b = _mm_between_epi16(b, zero, max);
-		_mm_stream_si128(cr_b_buf, b);
+		_mm_store_si128(cr_b_buf, b);
 		
 		y_r_buf++;
 		cb_g_buf++;
