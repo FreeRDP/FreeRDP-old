@@ -27,6 +27,8 @@
 #include <errno.h>
 #include <pwd.h>
 #include <pthread.h>
+#include <semaphore.h>
+#include <freerdp/utils/semaphore.h>
 #include <freerdp/freerdp.h>
 #include <freerdp/chanman.h>
 #include <freerdp/utils/memory.h>
@@ -648,6 +650,7 @@ run_dfbfreerdp(rdpSet * settings, rdpChanMan * chan_man)
 	return 0;
 }
 
+static sem_t g_sem;
 static int g_thread_count = 0;
 
 struct thread_data
@@ -671,6 +674,10 @@ thread_func(void * arg)
 
 	pthread_detach(pthread_self());
 	g_thread_count--;
+        if (g_thread_count < 1)
+        {
+                freerdp_sem_signal(&g_sem);
+        }
 
 	return NULL;
 }
@@ -683,6 +690,42 @@ main(int argc, char ** argv)
 	pthread_t thread;
 	int index = 1;
 
+	char *home = getenv("HOME");
+	if (home) {
+		static char resourcefile[512];
+		strncat(resourcefile, home, strlen(home));
+		resourcefile[512-1] = (char)0;
+		strcat(resourcefile, "/.directfbrc");
+		resourcefile[512-1] = (char)0;
+
+		char *display = getenv("DISPLAY");
+
+#if   defined(__unix) || defined(__linux)
+		char *graphics = "fbdev";
+#elif defined(__APPLE__)
+		char *graphics = "opengl";
+#else
+		char *graphics = "gdi";
+#endif
+		if (display) graphics = "x11";
+
+		static char buffer[128];
+		strcat(buffer, "system=");
+		strcat(buffer, graphics);
+		strcat(buffer, "\ndepth=32\nmode=1024x768\nautoflip-window\nforce-windowed\n");
+
+		FILE *fp;
+		fp = fopen(resourcefile, "wx"); /* "x" assures no overwrite of an existing resource file */
+		if (fp != NULL)
+		{
+			fputs((char *)(&buffer), fp);
+			fclose(fp);
+			printf("INFO: created default DirectFB resource file: %s\n", resourcefile);
+		}
+	} else {
+		printf("WARNING: HOME variable not set, unable to create a default DirectFB ~/.directfbrc resource file\n");
+	}
+
 	setlocale(LC_CTYPE, "");
 
 	if (!freerdp_global_init())
@@ -694,6 +737,8 @@ main(int argc, char ** argv)
 
 	dfb_init(&argc, &argv);
 	dfb_kb_init();
+
+	freerdp_sem_create(&g_sem, 0);
 
 	while (1)
 	{
@@ -719,7 +764,9 @@ main(int argc, char ** argv)
 
 	while (g_thread_count > 0)
 	{
-		sleep(1);
+                DEBUG("main thread, waiting for all threads to exit");
+                freerdp_sem_wait(&g_sem);
+                DEBUG("main thread, all threads did exit");
 	}
 
 	freerdp_chanman_uninit();
