@@ -34,3 +34,17 @@ rfx_differential_decode(uint16 * buffer, int buffer_size)
 	}
 }
 
+void
+rfx_differential_encode(uint16 * buffer, int buffer_size)
+{
+	uint16 n1, n2;
+	uint16 * dst;
+
+	for (n1 = *buffer, dst = buffer + 1; buffer_size > 1; dst++, buffer_size--)
+	{
+		n2 = *dst;
+		*dst -= n1;
+		n1 = n2;
+	}
+}
+

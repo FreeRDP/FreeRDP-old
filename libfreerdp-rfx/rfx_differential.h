@@ -24,6 +24,8 @@
 
 void
 rfx_differential_decode(uint16 * buffer, int buffer_size);
+void
+rfx_differential_encode(uint16 * buffer, int buffer_size);
 
 #endif
 

@@ -69,6 +69,8 @@ rfx_encode_component(RFX_CONTEXT * context, const uint32 * quantization_values,
 	rfx_quantization_encode(data + 3868, 64, quantization_values[3]); /* HH3 */
 	rfx_quantization_encode(data + 4032, 64, quantization_values[0]); /* LL3 */
 
+	rfx_differential_encode(data + 4032, 64);
+
 	*size = 0;
 }
 
