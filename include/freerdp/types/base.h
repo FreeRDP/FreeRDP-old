@@ -23,11 +23,6 @@
 #ifndef __TYPES_BASE_H
 #define __TYPES_BASE_H
 
-#ifndef True
-#define True  (1)
-#define False (0)
-#endif
-
 typedef unsigned char uint8;
 typedef signed char sint8;
 typedef unsigned short uint16;

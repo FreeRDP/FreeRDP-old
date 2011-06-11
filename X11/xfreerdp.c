@@ -22,6 +22,7 @@
 #include <string.h>
 #include <locale.h>
 #include <unistd.h>
+#include <X11/Xlib.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <errno.h>
