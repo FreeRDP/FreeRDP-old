@@ -65,16 +65,7 @@ rfx_decode_component(RFX_CONTEXT * context, const uint32 * quantization_values, 
 	PROFILER_EXIT(context->prof_rfx_differential_decode);
 
 	PROFILER_ENTER(context->prof_rfx_quantization_decode);
-		rfx_quantization_decode(buffer, 1024, quantization_values[8]); /* HL1 */
-		rfx_quantization_decode(buffer + 1024, 1024, quantization_values[7]); /* LH1 */
-		rfx_quantization_decode(buffer + 2048, 1024, quantization_values[9]); /* HH1 */
-		rfx_quantization_decode(buffer + 3072, 256, quantization_values[5]); /* HL2 */
-		rfx_quantization_decode(buffer + 3328, 256, quantization_values[4]); /* LH2 */
-		rfx_quantization_decode(buffer + 3584, 256, quantization_values[6]); /* HH2 */
-		rfx_quantization_decode(buffer + 3840, 64, quantization_values[2]); /* HL3 */
-		rfx_quantization_decode(buffer + 3904, 64, quantization_values[1]); /* LH3 */
-		rfx_quantization_decode(buffer + 3868, 64, quantization_values[3]); /* HH3 */
-		rfx_quantization_decode(buffer + 4032, 64, quantization_values[0]); /* LL3 */
+		context->quantization_decode(buffer, quantization_values);
 	PROFILER_EXIT(context->prof_rfx_quantization_decode);
 
 	PROFILER_ENTER(context->prof_rfx_dwt_2d_decode);

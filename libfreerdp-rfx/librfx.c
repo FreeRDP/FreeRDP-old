@@ -28,6 +28,7 @@
 #include "rfx_pool.h"
 #include "rfx_decode.h"
 #include "rfx_encode.h"
+#include "rfx_quantization.h"
 
 #include "librfx.h"
 
@@ -88,9 +89,10 @@ rfx_context_new(void)
 	/* create profilers for default decoding routines */
 	rfx_profiler_create(context);
 	
-	/* set up default decoding routines */
+	/* set up default routines */
 	context->decode_YCbCr_to_RGB = rfx_decode_YCbCr_to_RGB;
 	context->encode_RGB_to_YCbCr = rfx_encode_RGB_to_YCbCr;
+	context->quantization_decode = rfx_quantization_decode;	
 
 	/* detect and enable SIMD CPU acceleration */
 	RFX_INIT_SIMD(context);

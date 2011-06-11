@@ -151,9 +151,11 @@ struct _RFX_CONTEXT
 	uint16 dwt_buffer_16[1024]; /* sub-band width 16 */
 	uint16 dwt_buffer_32[4096]; /* sub-band width 32 */
 	uint16* dwt_buffers[5]; /* sub-band buffer array */
-	
+
+	/* routines*/
 	void (* decode_YCbCr_to_RGB)(uint16 * y_r_buf, uint16 * cb_g_buf, uint16 * cr_b_buf);
 	void (* encode_RGB_to_YCbCr)(uint16 * y_r_buf, uint16 * cb_g_buf, uint16 * cr_b_buf);
+	void (* quantization_decode)(uint16 * buffer, const uint32 * quantization_values);
 
 	/* profiler definitions */
 	PROFILER_DEFINE(prof_rfx_decode_rgb);
