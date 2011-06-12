@@ -23,10 +23,10 @@
 #include "rfx_differential.h"
 
 void
-rfx_differential_decode(uint16 * buffer, int buffer_size)
+rfx_differential_decode(sint16 * buffer, int buffer_size)
 {
-	uint16 * src;
-	uint16 * dst;
+	sint16 * src;
+	sint16 * dst;
 
 	for (src = buffer, dst = buffer + 1; buffer_size > 1; src++, dst++, buffer_size--)
 	{
@@ -35,10 +35,10 @@ rfx_differential_decode(uint16 * buffer, int buffer_size)
 }
 
 void
-rfx_differential_encode(uint16 * buffer, int buffer_size)
+rfx_differential_encode(sint16 * buffer, int buffer_size)
 {
-	uint16 n1, n2;
-	uint16 * dst;
+	sint16 n1, n2;
+	sint16 * dst;
 
 	for (n1 = *buffer, dst = buffer + 1; buffer_size > 1; dst++, buffer_size--)
 	{

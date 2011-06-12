@@ -23,9 +23,9 @@
 #include <freerdp/rfx.h>
 
 void
-rfx_differential_decode(uint16 * buffer, int buffer_size);
+rfx_differential_decode(sint16 * buffer, int buffer_size);
 void
-rfx_differential_encode(uint16 * buffer, int buffer_size);
+rfx_differential_encode(sint16 * buffer, int buffer_size);
 
 #endif
 

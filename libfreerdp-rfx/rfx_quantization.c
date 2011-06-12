@@ -20,7 +20,7 @@
 #include "rfx_quantization.h"
 
 void
-rfx_quantization_decode_block(uint16 * buffer, int buffer_size, uint32 factor)
+rfx_quantization_decode_block(sint16 * buffer, int buffer_size, uint32 factor)
 {
 	sint16 * dst;
 
@@ -28,14 +28,14 @@ rfx_quantization_decode_block(uint16 * buffer, int buffer_size, uint32 factor)
 		return;
 
 	factor -= 6;
-	for (dst = (sint16 *) buffer; buffer_size > 0; dst++, buffer_size--)
+	for (dst = buffer; buffer_size > 0; dst++, buffer_size--)
 	{
 		*dst <<= factor;
 	}
 }
 
 void
-rfx_quantization_decode(uint16 * buffer, const uint32 * quantization_values)
+rfx_quantization_decode(sint16 * buffer, const uint32 * quantization_values)
 {
 	rfx_quantization_decode_block(buffer, 1024, quantization_values[8]); /* HL1 */
 	rfx_quantization_decode_block(buffer + 1024, 1024, quantization_values[7]); /* LH1 */
@@ -50,7 +50,7 @@ rfx_quantization_decode(uint16 * buffer, const uint32 * quantization_values)
 }
 
 void
-rfx_quantization_encode(uint16 * buffer, int buffer_size, uint32 factor)
+rfx_quantization_encode(sint16 * buffer, int buffer_size, uint32 factor)
 {
 	sint16 * dst;
 
@@ -58,7 +58,7 @@ rfx_quantization_encode(uint16 * buffer, int buffer_size, uint32 factor)
 		return;
 
 	factor -= 6;
-	for (dst = (sint16 *) buffer; buffer_size > 0; dst++, buffer_size--)
+	for (dst = buffer; buffer_size > 0; dst++, buffer_size--)
 	{
 		*dst >>= factor;
 	}

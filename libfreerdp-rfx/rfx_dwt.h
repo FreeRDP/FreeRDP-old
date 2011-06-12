@@ -23,9 +23,9 @@
 #include <freerdp/rfx.h>
 
 void
-rfx_dwt_2d_decode(RFX_CONTEXT * context, short * buffer, int subband_width);
+rfx_dwt_2d_decode(RFX_CONTEXT * context, sint16 * buffer, int subband_width);
 void
-rfx_dwt_2d_encode(RFX_CONTEXT * context, short * buffer, int subband_width);
+rfx_dwt_2d_encode(RFX_CONTEXT * context, sint16 * buffer, int subband_width);
 
 #endif
 

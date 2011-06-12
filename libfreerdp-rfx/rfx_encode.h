@@ -23,7 +23,7 @@
 #include <freerdp/rfx.h>
 
 void
-rfx_encode_RGB_to_YCbCr(uint16 * y_r_buf, uint16 * cb_g_buf, uint16 * cr_b_buf);
+rfx_encode_RGB_to_YCbCr(sint16 * y_r_buf, sint16 * cb_g_buf, sint16 * cr_b_buf);
 
 void
 rfx_encode_rgb(RFX_CONTEXT * context, const uint8 * rgb_buffer, int rowstride,

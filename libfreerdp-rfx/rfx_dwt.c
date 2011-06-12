@@ -24,17 +24,17 @@
 #include "rfx_dwt.h"
 
 void
-rfx_dwt_2d_decode(RFX_CONTEXT * context, short * buffer, int subband_width)
+rfx_dwt_2d_decode(RFX_CONTEXT * context, sint16 * buffer, int subband_width)
 {
-	short * idwt;
-	short * dst, * l, * h;
-	short * l_dst, * h_dst;
-	short * hl, * lh, * hh, * ll;
+	sint16 * idwt;
+	sint16 * dst, * l, * h;
+	sint16 * l_dst, * h_dst;
+	sint16 * hl, * lh, * hh, * ll;
 	int total_width;
 	int x, y;
 	int n;
 
-	idwt = (short*) context->dwt_buffers[subband_width >> 3];
+	idwt = (sint16*) context->dwt_buffers[subband_width >> 3];
 	total_width = subband_width << 1;
 
 	/* Inverse DWT in horizontal direction, results in 2 sub-bands in L, H order in tmp buffer idwt. */
@@ -108,17 +108,17 @@ rfx_dwt_2d_decode(RFX_CONTEXT * context, short * buffer, int subband_width)
 }
 
 void
-rfx_dwt_2d_encode(RFX_CONTEXT * context, short * buffer, int subband_width)
+rfx_dwt_2d_encode(RFX_CONTEXT * context, sint16 * buffer, int subband_width)
 {
-	short * dwt;
-	short * src, * l, * h;
-	short * l_src, * h_src;
-	short * hl, * lh, * hh, * ll;
+	sint16 * dwt;
+	sint16 * src, * l, * h;
+	sint16 * l_src, * h_src;
+	sint16 * hl, * lh, * hh, * ll;
 	int total_width;
 	int x, y;
 	int n;
 
-	dwt = (short*) context->dwt_buffers[subband_width >> 3];
+	dwt = (sint16*) context->dwt_buffers[subband_width >> 3];
 	total_width = subband_width << 1;
 
 	/* DWT in vertical direction, results in 2 sub-bands in L, H order in tmp buffer dwt. */

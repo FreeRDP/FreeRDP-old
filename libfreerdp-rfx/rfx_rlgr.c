@@ -56,7 +56,7 @@
 		nZeroesWritten = buffer_size; \
 	if (nZeroesWritten > 0) \
 	{ \
-		memset(dst, 0, nZeroesWritten * sizeof(short)); \
+		memset(dst, 0, nZeroesWritten * sizeof(sint16)); \
 		dst += nZeroesWritten; \
 	} \
 	buffer_size -= (nZeroes); \
@@ -75,7 +75,7 @@
 } \
 
 /* Converts from (2 * magnitude - sign) to integer */
-#define GetIntFrom2MagSign(twoMs) (((twoMs) & 1) ? -1 * (short)(((twoMs) + 1) >> 1) : (short)((twoMs) >> 1))
+#define GetIntFrom2MagSign(twoMs) (((twoMs) & 1) ? -1 * (sint16)(((twoMs) + 1) >> 1) : (sint16)((twoMs) >> 1))
 
 /*
  * Update the passed parameter and clamp it to the range [0, KPMAX]
@@ -122,13 +122,13 @@ rfx_rlgr_get_gr_code(RFX_BITSTREAM * bs, int * krp, int * kr)
 }
 
 int
-rfx_rlgr_decode(RLGR_MODE mode, const uint8 * data, int data_size, uint16 * buffer, int buffer_size)
+rfx_rlgr_decode(RLGR_MODE mode, const uint8 * data, int data_size, sint16 * buffer, int buffer_size)
 {
 	int k;
 	int kp;
 	int kr;
 	int krp;
-	uint16 * dst;
+	sint16 * dst;
 	RFX_BITSTREAM * bs;
 
 	bs = rfx_bitstream_new();

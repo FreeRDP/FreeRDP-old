@@ -30,10 +30,10 @@
 #define MINMAX(_v,_l,_h) ((_v) < (_l) ? (_l) : ((_v) > (_h) ? (_h) : (_v)))
 
 void
-rfx_encode_RGB_to_YCbCr(uint16 * y_r_buf, uint16 * cb_g_buf, uint16 * cr_b_buf)
+rfx_encode_RGB_to_YCbCr(sint16 * y_r_buf, sint16 * cb_g_buf, sint16 * cr_b_buf)
 {
-	short y, cb, cr;
-	short r, g, b;
+	sint16 y, cb, cr;
+	sint16 r, g, b;
 
 	int i;
 	for (i = 0; i < 4096; i++)
@@ -52,11 +52,11 @@ rfx_encode_RGB_to_YCbCr(uint16 * y_r_buf, uint16 * cb_g_buf, uint16 * cr_b_buf)
 
 static void
 rfx_encode_component(RFX_CONTEXT * context, const uint32 * quantization_values,
-	uint16 * data, uint8 * buffer, int * size)
+	sint16 * data, uint8 * buffer, int * size)
 {
-	rfx_dwt_2d_encode(context, (short*)data, 32);
-	rfx_dwt_2d_encode(context, (short*)data + 3072, 16);
-	rfx_dwt_2d_encode(context, (short*)data + 3840, 8);
+	rfx_dwt_2d_encode(context, data, 32);
+	rfx_dwt_2d_encode(context, data + 3072, 16);
+	rfx_dwt_2d_encode(context, data + 3840, 8);
 
 	rfx_quantization_encode(data, 1024, quantization_values[8]); /* HL1 */
 	rfx_quantization_encode(data + 1024, 1024, quantization_values[7]); /* LH1 */
@@ -81,9 +81,9 @@ rfx_encode_rgb(RFX_CONTEXT * context, const uint8 * rgb_buffer, int rowstride,
 {
 	int x, y;
 	const uint8 * src;
-	uint16 * y_r_buffer = context->y_r_buffer;
-	uint16 * cb_g_buffer = context->cb_g_buffer;
-	uint16 * cr_b_buffer = context->cr_b_buffer;
+	sint16 * y_r_buffer = context->y_r_buffer;
+	sint16 * cb_g_buffer = context->cb_g_buffer;
+	sint16 * cr_b_buffer = context->cr_b_buffer;
 
 	for (y = 0; y < 64; y++)
 	{
@@ -94,26 +94,26 @@ rfx_encode_rgb(RFX_CONTEXT * context, const uint8 * rgb_buffer, int rowstride,
 			switch (context->pixel_format)
 			{
 				case RFX_PIXEL_FORMAT_BGRA:
-					*cr_b_buffer++ = (uint16) (*src++);
-					*cb_g_buffer++ = (uint16) (*src++);
-					*y_r_buffer++ = (uint16) (*src++);
+					*cr_b_buffer++ = (sint16) (*src++);
+					*cb_g_buffer++ = (sint16) (*src++);
+					*y_r_buffer++ = (sint16) (*src++);
 					src++;
 					break;
 				case RFX_PIXEL_FORMAT_RGBA:
-					*y_r_buffer++ = (uint16) (*src++);
-					*cb_g_buffer++ = (uint16) (*src++);
-					*cr_b_buffer++ = (uint16) (*src++);
+					*y_r_buffer++ = (sint16) (*src++);
+					*cb_g_buffer++ = (sint16) (*src++);
+					*cr_b_buffer++ = (sint16) (*src++);
 					src++;
 					break;
 				case RFX_PIXEL_FORMAT_BGR:
-					*cr_b_buffer++ = (uint16) (*src++);
-					*cb_g_buffer++ = (uint16) (*src++);
-					*y_r_buffer++ = (uint16) (*src++);
+					*cr_b_buffer++ = (sint16) (*src++);
+					*cb_g_buffer++ = (sint16) (*src++);
+					*y_r_buffer++ = (sint16) (*src++);
 					break;
 				case RFX_PIXEL_FORMAT_RGB:
-					*y_r_buffer++ = (uint16) (*src++);
-					*cb_g_buffer++ = (uint16) (*src++);
-					*cr_b_buffer++ = (uint16) (*src++);
+					*y_r_buffer++ = (sint16) (*src++);
+					*cb_g_buffer++ = (sint16) (*src++);
+					*cr_b_buffer++ = (sint16) (*src++);
 					break;
 				default:
 					break;

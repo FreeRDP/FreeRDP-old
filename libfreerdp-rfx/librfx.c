@@ -78,13 +78,13 @@ rfx_context_new(void)
 	context->pool = rfx_pool_new();
 
 	/* align buffers to 16 byte boundary (needed for SSE/SSE2 instructions) */
-	context->y_r_buffer = (uint16 *)(((uintptr_t)context->y_r_mem + 16) & ~ 0x0F);
-	context->cb_g_buffer = (uint16 *)(((uintptr_t)context->cb_g_mem + 16) & ~ 0x0F);
-	context->cr_b_buffer = (uint16 *)(((uintptr_t)context->cr_b_mem + 16) & ~ 0x0F);
+	context->y_r_buffer = (sint16 *)(((uintptr_t)context->y_r_mem + 16) & ~ 0x0F);
+	context->cb_g_buffer = (sint16 *)(((uintptr_t)context->cb_g_mem + 16) & ~ 0x0F);
+	context->cr_b_buffer = (sint16 *)(((uintptr_t)context->cr_b_mem + 16) & ~ 0x0F);
 
-	context->dwt_buffers[1] = (uint16*) context->dwt_buffer_8;
-	context->dwt_buffers[2] = (uint16*) context->dwt_buffer_16;
-	context->dwt_buffers[4] = (uint16*) context->dwt_buffer_32;
+	context->dwt_buffers[1] = (sint16*) context->dwt_buffer_8;
+	context->dwt_buffers[2] = (sint16*) context->dwt_buffer_16;
+	context->dwt_buffers[4] = (sint16*) context->dwt_buffer_32;
 
 	/* create profilers for default decoding routines */
 	rfx_profiler_create(context);

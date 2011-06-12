@@ -27,7 +27,7 @@
 
 #define CACHE_LINE_BYTES	64
 
-void rfx_decode_YCbCr_to_RGB_SSE2(uint16 * y_r_buffer, uint16 * cb_g_buffer, uint16 * cr_b_buffer)
+void rfx_decode_YCbCr_to_RGB_SSE2(sint16 * y_r_buffer, sint16 * cb_g_buffer, sint16 * cr_b_buffer)
 {	
 	__m128i zero = _mm_setzero_si128();
 	__m128i max = _mm_set1_epi16(255);
@@ -37,13 +37,13 @@ void rfx_decode_YCbCr_to_RGB_SSE2(uint16 * y_r_buffer, uint16 * cb_g_buffer, uin
 	__m128i * cr_b_buf = (__m128i*) cr_b_buffer;
 
 	int i;
-	for (i = 0; i < (4096 * sizeof(uint16) / sizeof(__m128i)); i+=(CACHE_LINE_BYTES / sizeof(__m128i)))
+	for (i = 0; i < (4096 * sizeof(sint16) / sizeof(__m128i)); i+=(CACHE_LINE_BYTES / sizeof(__m128i)))
 	{
 		_mm_prefetch((char*)(&y_r_buf[i]), _MM_HINT_NTA);
 		_mm_prefetch((char*)(&cb_g_buf[i]), _MM_HINT_NTA);
 		_mm_prefetch((char*)(&cr_b_buf[i]), _MM_HINT_NTA);
 	}
-	for (i = 0; i < (4096 * sizeof(uint16) / sizeof(__m128i)); i++)
+	for (i = 0; i < (4096 * sizeof(sint16) / sizeof(__m128i)); i++)
 	{
 		// y = y_r_buf[i] + 128;
 		__m128i y = _mm_load_si128(&y_r_buf[i]);
@@ -85,7 +85,7 @@ void rfx_decode_YCbCr_to_RGB_SSE2(uint16 * y_r_buffer, uint16 * cb_g_buffer, uin
 }
 
 static __inline void __attribute__((__gnu_inline__, __always_inline__, __artificial__))
-rfx_quantization_decode_block_SSE2(uint16 * buffer, const int buffer_size, const uint32 factor)
+rfx_quantization_decode_block_SSE2(sint16 * buffer, const int buffer_size, const uint32 factor)
 {
 	int shift = factor-6;
 	if (shift <= 0)
@@ -104,12 +104,12 @@ rfx_quantization_decode_block_SSE2(uint16 * buffer, const int buffer_size, const
 	} while(ptr < buf_end);
 }
 
-void rfx_quantization_decode_SSE2(uint16 * buffer, const uint32 * quantization_values)
+void rfx_quantization_decode_SSE2(sint16 * buffer, const uint32 * quantization_values)
 {
 	__m128i * buf = (__m128i*) buffer;
 	
 	int i;
-	for (i = 0; i < (4096 * sizeof(uint16) / sizeof(__m128i)); i+=(CACHE_LINE_BYTES / sizeof(__m128i)))
+	for (i = 0; i < (4096 * sizeof(sint16) / sizeof(__m128i)); i+=(CACHE_LINE_BYTES / sizeof(__m128i)))
 	{
 		_mm_prefetch((char*)(&buf[i]), _MM_HINT_NTA);
 	}
