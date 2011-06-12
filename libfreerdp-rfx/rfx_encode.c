@@ -52,7 +52,7 @@ rfx_encode_RGB_to_YCbCr(sint16 * y_r_buf, sint16 * cb_g_buf, sint16 * cr_b_buf)
 
 static void
 rfx_encode_component(RFX_CONTEXT * context, const uint32 * quantization_values,
-	sint16 * data, uint8 * buffer, int * size)
+	sint16 * data, uint8 * buffer, int buffer_size, int * size)
 {
 	rfx_dwt_2d_encode(context, data, 32);
 	rfx_dwt_2d_encode(context, data + 3072, 16);
@@ -62,13 +62,13 @@ rfx_encode_component(RFX_CONTEXT * context, const uint32 * quantization_values,
 
 	rfx_differential_encode(data + 4032, 64);
 
-	*size = 0;
+	*size = rfx_rlgr_encode(context->mode, data, 4096, buffer, buffer_size);
 }
 
 void
 rfx_encode_rgb(RFX_CONTEXT * context, const uint8 * rgb_buffer, int rowstride,
 	const uint32 * y_quants, const uint32 * cb_quants, const uint32 * cr_quants,
-	uint8 * ycbcr_buffer, int * y_size, int * cb_size, int * cr_size)
+	uint8 * ycbcr_buffer, int buffer_size, int * y_size, int * cb_size, int * cr_size)
 {
 	int x, y;
 	const uint8 * src;
@@ -114,7 +114,11 @@ rfx_encode_rgb(RFX_CONTEXT * context, const uint8 * rgb_buffer, int rowstride,
 
 	context->encode_RGB_to_YCbCr(context->y_r_buffer, context->cb_g_buffer, context->cr_b_buffer);
 
-	rfx_encode_component(context, y_quants, context->y_r_buffer, ycbcr_buffer, y_size);
-	rfx_encode_component(context, cb_quants, context->cb_g_buffer, ycbcr_buffer + (*y_size), cb_size);
-	rfx_encode_component(context, cr_quants, context->cr_b_buffer, ycbcr_buffer + (*y_size) + (*cb_size), cr_size);
+	rfx_encode_component(context, y_quants, context->y_r_buffer, ycbcr_buffer, buffer_size, y_size);
+	ycbcr_buffer += (*y_size);
+	buffer_size -= (*y_size);
+	rfx_encode_component(context, cb_quants, context->cb_g_buffer, ycbcr_buffer, buffer_size, cb_size);
+	ycbcr_buffer += (*cb_size);
+	buffer_size -= (*cb_size);
+	rfx_encode_component(context, cr_quants, context->cr_b_buffer, ycbcr_buffer, buffer_size, cr_size);
 }

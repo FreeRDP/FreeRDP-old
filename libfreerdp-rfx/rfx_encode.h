@@ -28,7 +28,7 @@ rfx_encode_RGB_to_YCbCr(sint16 * y_r_buf, sint16 * cb_g_buf, sint16 * cr_b_buf);
 void
 rfx_encode_rgb(RFX_CONTEXT * context, const uint8 * rgb_buffer, int rowstride,
 	const uint32 * y_quants, const uint32 * cb_quants, const uint32 * cr_quants,
-	uint8 * ycbcr_buffer, int * y_size, int * cb_size, int * cr_size);
+	uint8 * ycbcr_buffer, int buffer_size, int * y_size, int * cb_size, int * cr_size);
 
 #endif
 

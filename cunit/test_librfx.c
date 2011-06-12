@@ -258,6 +258,25 @@ test_dwt(void)
 	rfx_context_free(context);
 }
 
+static void
+dump_ppm_image(uint8 * image_buf)
+{
+	/* Dump a .ppm image. */
+	static int frame_id = 0;
+	char buf[100];
+	FILE * fp;
+
+	snprintf(buf, sizeof(buf), "/tmp/FreeRDP_Frame_%d.ppm", frame_id);
+	fp = fopen(buf, "wb");
+	fwrite("P6\n", 1, 3, fp);
+	fwrite("64 64\n", 1, 6, fp);
+	fwrite("255\n", 1, 4, fp);
+	fwrite(image_buf, 1, 4096 * 3, fp);
+	fflush(fp);
+	fclose(fp);
+	frame_id++;
+}
+
 void
 test_decode(void)
 {
@@ -274,20 +293,7 @@ test_decode(void)
 		decode_buffer);
 	rfx_context_free(context);
 
-	/* Dump a .ppm image. */
-	static int frame_id = 0;
-	char buf[100];
-	FILE * fp;
-
-	snprintf(buf, sizeof(buf), "/tmp/FreeRDP_Frame_%d.ppm", frame_id);
-	fp = fopen(buf, "wb");
-	fwrite("P6\n", 1, 3, fp);
-	fwrite("64 64\n", 1, 6, fp);
-	fwrite("255\n", 1, 4, fp);
-	fwrite(decode_buffer, 1, 4096 * 3, fp);
-	fflush(fp);
-	fclose(fp);
-	frame_id++;
+	dump_ppm_image(decode_buffer);
 }
 
 void
@@ -297,6 +303,7 @@ test_encode(void)
 	uint8 ycbcr_buffer[16384];
 	int y_size, cb_size, cr_size;
 	int i;
+	uint8 decode_buffer[4096 * 3];
 
 	rgb_data = (uint8 *) malloc(64 * 64 * 3);
 	for (i = 0; i < 64; i++)
@@ -309,8 +316,22 @@ test_encode(void)
 
 	rfx_encode_rgb(context, rgb_data, 64 * 3,
 		test_quantization_values, test_quantization_values, test_quantization_values,
-		ycbcr_buffer, &y_size, &cb_size, &cr_size);
-	dump_buffer(context->cb_g_buffer, 4096);
+		ycbcr_buffer, sizeof(ycbcr_buffer), &y_size, &cb_size, &cr_size);
+	//dump_buffer(context->cb_g_buffer, 4096);
+
+	/*printf("*** Y ***\n");
+	hexdump(ycbcr_buffer, y_size);
+	printf("*** Cb ***\n");
+	hexdump(ycbcr_buffer + y_size, cb_size);
+	printf("*** Cr ***\n");
+	hexdump(ycbcr_buffer + y_size + cb_size, cr_size);*/
+
+	rfx_decode_rgb(context,
+		ycbcr_buffer, y_size, test_quantization_values,
+		ycbcr_buffer + y_size, cb_size, test_quantization_values,
+		ycbcr_buffer + y_size + cb_size, cr_size, test_quantization_values,
+		decode_buffer);
+	dump_ppm_image(decode_buffer);
 
 	rfx_context_free(context);
 	free(rgb_data);

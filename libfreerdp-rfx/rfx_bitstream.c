@@ -112,6 +112,12 @@ rfx_bitstream_left(RFX_BITSTREAM * bs)
 	return (bs->nbytes - bs->byte_pos - 1) * 8 + bs->bits_left;
 }
 
+int
+rfx_bitstream_get_processed_bytes(RFX_BITSTREAM * bs)
+{
+	return (bs->bits_left < 8 ? bs->byte_pos + 1 : bs->byte_pos);
+}
+
 void
 rfx_bitstream_free(RFX_BITSTREAM * bs)
 {

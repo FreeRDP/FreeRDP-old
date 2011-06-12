@@ -43,6 +43,8 @@ int
 rfx_bitstream_eos(RFX_BITSTREAM * bs);
 int
 rfx_bitstream_left(RFX_BITSTREAM * bs);
+int
+rfx_bitstream_get_processed_bytes(RFX_BITSTREAM * bs);
 void
 rfx_bitstream_free(RFX_BITSTREAM * bs);
 
