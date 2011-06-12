@@ -1060,7 +1060,6 @@ AS_IF([test "x$with_sse" == xno],
 		AM_CONDITIONAL(WITH_SSE, true)
 		AC_DEFINE(WITH_SSE,1)
 		CFLAGS="$CFLAGS -msse2"
-		REQUIRED_SUBDIRS="libfreerdp-rfx/sse $REQUIRED_SUBDIRS"
 	]
 )
 
