@@ -7,5 +7,6 @@ include_HEADERS = \
 	datablob.h \
 	memory.h \
 	semaphore.h \
+	stream.h \
 	unicode.h \
 	wait_obj.h
