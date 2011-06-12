@@ -1065,6 +1065,8 @@ RD_BOOL
 l_ui_check_certificate(rdpInst * inst, const char * fingerprint,
 	const char * subject, const char * issuer, RD_BOOL verified)
 {
+	char answer;
+
 	printf("certificate details:\n");
 	printf("  Subject:\n    %s\n", subject);
 	printf("  Issued by:\n    %s\n", issuer);
@@ -1073,7 +1075,13 @@ l_ui_check_certificate(rdpInst * inst, const char * fingerprint,
 	if (!verified)
 		printf("The server could not be authenticated. Connection security may be compromised!\n");
 
-	return True;
+	printf("Accept this certificate? (Y/N): ");
+	answer = fgetc(stdin);
+
+	if (answer == 'y' || answer == 'Y')
+		return True;
+	else
+		return False;
 }
 
 static int
