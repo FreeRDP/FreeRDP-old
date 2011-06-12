@@ -24,8 +24,8 @@ libfreerdp_rfx_la_LDFLAGS =
 libfreerdp_rfx_la_LIBADD =
 
 if WITH_SSE
-libfreerdp_rfx_la_CFLAGS += -I./sse
-libfreerdp_rfx_la_LIBADD += ./sse/libfreerdp-rfx-sse.la
+libfreerdp_rfx_la_CFLAGS += -I$(top_srcdir)/libfreerdp-rfx/sse
+libfreerdp_rfx_la_LIBADD += sse/libfreerdp-rfx-sse.la
 endif
 
 # extra
