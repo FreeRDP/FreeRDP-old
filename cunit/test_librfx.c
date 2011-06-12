@@ -32,6 +32,7 @@
 #include "rfx_quantization.h"
 #include "rfx_dwt.h"
 #include "rfx_decode.h"
+#include "rfx_encode.h"
 
 #include "test_librfx.h"
 
@@ -203,10 +204,10 @@ test_bitstream_enc(void)
 	//printf("\n");
 }
 
-static uint16 buffer[4096];
+static sint16 buffer[4096];
 
 void
-dump_buffer(int * buf, int n)
+dump_buffer(sint16 * buf, int n)
 {
 	int i;
 
@@ -214,7 +215,7 @@ dump_buffer(int * buf, int n)
 	{
 		if (i % 16 == 0)
 			printf("\n%04d ", i);
-		printf("% 3d ", buf[i]);
+		printf("% 4d ", buf[i]);
 	}
 	printf("\n");
 }
@@ -250,9 +251,9 @@ test_dwt(void)
 	RFX_CONTEXT * context;
 
 	context = rfx_context_new();
-	rfx_dwt_2d_decode(context, (short*) buffer + 3840, 8);
-	rfx_dwt_2d_decode(context, (short*) buffer + 3072, 16);
-	rfx_dwt_2d_decode(context, (short*) buffer, 32);
+	rfx_dwt_2d_decode(context, buffer + 3840, 8);
+	rfx_dwt_2d_decode(context, buffer + 3072, 16);
+	rfx_dwt_2d_decode(context, buffer, 32);
 	//dump_buffer(buffer, 4096);
 	rfx_context_free(context);
 }
@@ -292,6 +293,9 @@ test_decode(void)
 void
 test_encode(void)
 {
+	RFX_CONTEXT * context;
+	uint8 ycbcr_buffer[16384];
+	int y_size, cb_size, cr_size;
 	int i;
 
 	rgb_data = (uint8 *) malloc(64 * 64 * 3);
@@ -299,6 +303,16 @@ test_encode(void)
 		memcpy(rgb_data + i * 64 * 3, rgb_scanline_data, 64 * 3);
 	//hexdump(rgb_data, 64 * 64 * 3);
 
+	context = rfx_context_new();
+	context->mode = RLGR3;
+	rfx_context_set_pixel_format(context, RFX_PIXEL_FORMAT_RGB);
+
+	rfx_encode_rgb(context, rgb_data, 64 * 3,
+		test_quantization_values, test_quantization_values, test_quantization_values,
+		ycbcr_buffer, &y_size, &cb_size, &cr_size);
+	dump_buffer(context->cb_g_buffer, 4096);
+
+	rfx_context_free(context);
 	free(rgb_data);
 }
 
