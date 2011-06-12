@@ -1,4 +1,4 @@
-AC_INIT(freerdp, m4_esyscmd([build-aux/git-version-gen .tarball-version]),
+AC_INIT(freerdp, m4_esyscmd([build-aux/git-version-gen .version]),
         [freerdp-devel@lists.sourceforge.net])
 AM_INIT_AUTOMAKE([1.11 dist-xz color-tests parallel-tests])
 AM_SILENT_RULES([yes]) # make --enable-silent-rules the default.
