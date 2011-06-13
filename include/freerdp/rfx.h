@@ -152,7 +152,7 @@ struct _RFX_CONTEXT
 	sint16 dwt_buffer_32[4096]; /* sub-band width 32 */
 	sint16* dwt_buffers[5]; /* sub-band buffer array */
 
-	/* routines*/
+	/* routines */
 	void (* decode_YCbCr_to_RGB)(sint16 * y_r_buf, sint16 * cb_g_buf, sint16 * cr_b_buf);
 	void (* encode_RGB_to_YCbCr)(sint16 * y_r_buf, sint16 * cb_g_buf, sint16 * cr_b_buf);
 	void (* quantization_decode)(sint16 * buffer, const uint32 * quantization_values);
@@ -174,6 +174,10 @@ void rfx_context_set_pixel_format(RFX_CONTEXT * context, RFX_PIXEL_FORMAT pixel_
 
 RFX_MESSAGE* rfx_process_message(RFX_CONTEXT * context, uint8 * data, int data_size);
 void rfx_message_free(RFX_CONTEXT * context, RFX_MESSAGE * message);
+
+int rfx_compose_message_header(RFX_CONTEXT * context, uint8 * buffer, int buffer_size);
+int rfx_compose_message_data(RFX_CONTEXT * context, uint8 * buffer, int buffer_size,
+	const RFX_RECT * rects, int num_rects, uint8 * image_buffer, int width, int height);
 
 #ifdef __cplusplus
 }

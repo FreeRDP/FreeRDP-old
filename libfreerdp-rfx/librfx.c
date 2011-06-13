@@ -464,3 +464,82 @@ rfx_message_free(RFX_CONTEXT * context, RFX_MESSAGE * message)
 		free(message);
 	}
 }
+
+static int
+rfx_compose_message_sync(RFX_CONTEXT * context, uint8 * buffer, int buffer_size)
+{
+	return 0;
+}
+
+static int
+rfx_compose_message_codec_versions(RFX_CONTEXT * context, uint8 * buffer, int buffer_size)
+{
+	return 0;
+}
+
+static int
+rfx_compose_message_channels(RFX_CONTEXT * context, uint8 * buffer, int buffer_size)
+{
+	return 0;
+}
+
+static int
+rfx_compose_message_context(RFX_CONTEXT * context, uint8 * buffer, int buffer_size)
+{
+	return 0;
+}
+
+int
+rfx_compose_message_header(RFX_CONTEXT * context, uint8 * buffer, int buffer_size)
+{
+	int composed_size;
+
+	composed_size = rfx_compose_message_sync(context, buffer, buffer_size);
+	composed_size += rfx_compose_message_codec_versions(context, buffer + composed_size, buffer_size - composed_size);
+	composed_size += rfx_compose_message_channels(context, buffer + composed_size, buffer_size - composed_size);
+	composed_size += rfx_compose_message_context(context, buffer + composed_size, buffer_size - composed_size);
+
+	return composed_size;
+}
+
+static int
+rfx_compose_message_frame_begin(RFX_CONTEXT * context, uint8 * buffer, int buffer_size)
+{
+	return 0;
+}
+
+static int
+rfx_compose_message_region(RFX_CONTEXT * context, uint8 * buffer, int buffer_size,
+	const RFX_RECT * rects, int num_rects)
+{
+	return 0;
+}
+
+static int
+rfx_compose_message_tileset(RFX_CONTEXT * context, uint8 * buffer, int buffer_size,
+	uint8 * image_buffer, int width, int height)
+{
+	return 0;
+}
+
+static int
+rfx_compose_message_frame_end(RFX_CONTEXT * context, uint8 * buffer, int buffer_size)
+{
+	return 0;
+}
+
+int
+rfx_compose_message_data(RFX_CONTEXT * context, uint8 * buffer, int buffer_size,
+	const RFX_RECT * rects, int num_rects, uint8 * image_buffer, int width, int height)
+{
+	int composed_size;
+
+	composed_size = rfx_compose_message_frame_begin(context, buffer, buffer_size);
+	composed_size += rfx_compose_message_region(context, buffer + composed_size, buffer_size - composed_size,
+		rects, num_rects);
+	composed_size += rfx_compose_message_tileset(context, buffer + composed_size, buffer_size - composed_size,
+		image_buffer, width, height);
+	composed_size += rfx_compose_message_frame_end(context, buffer + composed_size, buffer_size - composed_size);
+
+	return composed_size;
+}
