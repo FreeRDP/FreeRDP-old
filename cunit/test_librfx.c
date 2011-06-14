@@ -32,6 +32,7 @@
 #include "rfx_quantization.h"
 #include "rfx_dwt.h"
 #include "rfx_decode.h"
+#include "rfx_encode.h"
 
 #include "test_librfx.h"
 
@@ -114,6 +115,27 @@ static const unsigned int test_quantization_values[] =
 	6, 6, 6, 6, 7, 7, 8, 8, 8, 9
 };
 
+static const uint8 rgb_scanline_data[] =
+{
+	0xFF, 0x00, 0x00, 0xFF, 0x00, 0x00, 0xFF, 0x00, 0x00, 0xFF, 0x00, 0x00,
+	0xFF, 0x00, 0x00, 0xFF, 0x00, 0x00, 0xFF, 0x00, 0x00, 0xFF, 0x00, 0x00,
+	0xFF, 0x00, 0x00, 0xFF, 0x00, 0x00, 0xFF, 0x00, 0x00, 0xFF, 0x00, 0x00,
+	0xFF, 0x00, 0x00, 0xFF, 0x00, 0x00, 0xFF, 0x00, 0x00, 0xFF, 0x00, 0x00,
+	0xFF, 0x00, 0x00, 0xFF, 0x00, 0x00, 0xFF, 0x00, 0x00, 0xFF, 0x00, 0x00,
+	0xFF, 0x00, 0x00, 0x00, 0xFF, 0x00, 0x00, 0xFF, 0x00, 0x00, 0xFF, 0x00,
+	0x00, 0xFF, 0x00, 0x00, 0xFF, 0x00, 0x00, 0xFF, 0x00, 0x00, 0xFF, 0x00,
+	0x00, 0xFF, 0x00, 0x00, 0xFF, 0x00, 0x00, 0xFF, 0x00, 0x00, 0xFF, 0x00,
+	0x00, 0xFF, 0x00, 0x00, 0xFF, 0x00, 0x00, 0xFF, 0x00, 0x00, 0xFF, 0x00,
+	0x00, 0xFF, 0x00, 0x00, 0xFF, 0x00, 0x00, 0xFF, 0x00, 0x00, 0xFF, 0x00,
+	0x00, 0xFF, 0x00, 0x00, 0xFF, 0x00, 0x00, 0xFF, 0x00, 0x00, 0xFF, 0x00,
+	0x00, 0x00, 0xFF, 0x00, 0x00, 0xFF, 0x00, 0x00, 0xFF, 0x00, 0x00, 0xFF,
+	0x00, 0x00, 0xFF, 0x00, 0x00, 0xFF, 0x00, 0x00, 0xFF, 0x00, 0x00, 0xFF,
+	0x00, 0x00, 0xFF, 0x00, 0x00, 0xFF, 0x00, 0x00, 0xFF, 0x00, 0x00, 0xFF,
+	0x00, 0x00, 0xFF, 0x00, 0x00, 0xFF, 0x00, 0x00, 0xFF, 0x00, 0x00, 0xFF,
+	0x00, 0x00, 0xFF, 0x00, 0x00, 0xFF, 0x00, 0x00, 0xFF, 0x00, 0x00, 0xFF
+};
+
+static uint8 * rgb_data;
 
 int init_librfx_suite(void)
 {
@@ -130,11 +152,14 @@ int add_librfx_suite(void)
 	add_test_suite(librfx);
 
 	add_test_function(bitstream);
+	add_test_function(bitstream_enc);
 	add_test_function(rlgr);
 	add_test_function(differential);
 	add_test_function(quantization);
 	add_test_function(dwt);
 	add_test_function(decode);
+	add_test_function(encode);
+	add_test_function(message);
 
 	return 0;
 }
@@ -142,7 +167,7 @@ int add_librfx_suite(void)
 void
 test_bitstream(void)
 {
-	unsigned int b;
+	uint16 b;
 	RFX_BITSTREAM * bs;
 
 	bs = rfx_bitstream_new();
@@ -157,10 +182,33 @@ test_bitstream(void)
 	//printf("\n");
 }
 
-static unsigned int buffer[4096];
+void
+test_bitstream_enc(void)
+{
+	uint8 buffer[10];
+	RFX_BITSTREAM * bs;
+	int i;
+
+	bs = rfx_bitstream_new();
+	memset(buffer, 0, sizeof(buffer));
+	rfx_bitstream_put_buffer(bs, buffer, sizeof(buffer));
+	for (i = 0; i < 16; i++)
+	{
+		rfx_bitstream_put_bits(bs, i, 5);
+	}
+	/*for (i = 0; i < sizeof(buffer); i++)
+	{
+		printf("%X ", buffer[i]);
+	}*/
+	rfx_bitstream_free(bs);
+
+	//printf("\n");
+}
+
+static sint16 buffer[4096];
 
 void
-dump_buffer(int * buf, int n)
+dump_buffer(sint16 * buf, int n)
 {
 	int i;
 
@@ -168,7 +216,7 @@ dump_buffer(int * buf, int n)
 	{
 		if (i % 16 == 0)
 			printf("\n%04d ", i);
-		printf("% 3d ", buf[i]);
+		printf("% 4d ", buf[i]);
 	}
 	printf("\n");
 }
@@ -194,16 +242,7 @@ test_differential(void)
 void
 test_quantization(void)
 {
-	rfx_quantization_decode(buffer, 1024, test_quantization_values[0]); /* HL1 */
-	rfx_quantization_decode(buffer + 1024, 1024, test_quantization_values[1]); /* LH1 */
-	rfx_quantization_decode(buffer + 2048, 1024, test_quantization_values[2]); /* HH1 */
-	rfx_quantization_decode(buffer + 3072, 256, test_quantization_values[3]); /* HL2 */
-	rfx_quantization_decode(buffer + 3328, 256, test_quantization_values[4]); /* LH2 */
-	rfx_quantization_decode(buffer + 3584, 256, test_quantization_values[5]); /* HH2 */
-	rfx_quantization_decode(buffer + 3840, 64, test_quantization_values[6]); /* HL3 */
-	rfx_quantization_decode(buffer + 3904, 64, test_quantization_values[7]); /* LH3 */
-	rfx_quantization_decode(buffer + 3868, 64, test_quantization_values[8]); /* HH3 */
-	rfx_quantization_decode(buffer + 4032, 64, test_quantization_values[9]); /* LL3 */
+	rfx_quantization_decode(buffer, test_quantization_values);
 	//dump_buffer(buffer, 4096);
 }
 
@@ -213,11 +252,28 @@ test_dwt(void)
 	RFX_CONTEXT * context;
 
 	context = rfx_context_new();
-	rfx_dwt_2d_decode(context, (int*) buffer + 3840, 8);
-	rfx_dwt_2d_decode(context, (int*) buffer + 3072, 16);
-	rfx_dwt_2d_decode(context, (int*) buffer, 32);
+	rfx_dwt_2d_decode(buffer, context->dwt_buffer_8, context->dwt_buffer_16, context->dwt_buffer_32);
 	//dump_buffer(buffer, 4096);
 	rfx_context_free(context);
+}
+
+static void
+dump_ppm_image(uint8 * image_buf)
+{
+	/* Dump a .ppm image. */
+	static int frame_id = 0;
+	char buf[100];
+	FILE * fp;
+
+	snprintf(buf, sizeof(buf), "/tmp/FreeRDP_Frame_%d.ppm", frame_id);
+	fp = fopen(buf, "wb");
+	fwrite("P6\n", 1, 3, fp);
+	fwrite("64 64\n", 1, 6, fp);
+	fwrite("255\n", 1, 4, fp);
+	fwrite(image_buf, 1, 4096 * 3, fp);
+	fflush(fp);
+	fclose(fp);
+	frame_id++;
 }
 
 void
@@ -236,20 +292,66 @@ test_decode(void)
 		decode_buffer);
 	rfx_context_free(context);
 
-	/* Dump a .ppm image. */
-	static int frame_id = 0;
-	char buf[100];
-	FILE * fp;
-
-	snprintf(buf, sizeof(buf), "/tmp/FreeRDP_Frame_%d.ppm", frame_id);
-	fp = fopen(buf, "wb");
-	fwrite("P6\n", 1, 3, fp);
-	fwrite("64 64\n", 1, 6, fp);
-	fwrite("255\n", 1, 4, fp);
-	fwrite(decode_buffer, 1, 4096 * 3, fp);
-	fflush(fp);
-	fclose(fp);
-	frame_id++;
+	dump_ppm_image(decode_buffer);
 }
 
+void
+test_encode(void)
+{
+	RFX_CONTEXT * context;
+	uint8 ycbcr_buffer[16384];
+	int y_size, cb_size, cr_size;
+	int i;
+	uint8 decode_buffer[4096 * 3];
 
+	rgb_data = (uint8 *) malloc(64 * 64 * 3);
+	for (i = 0; i < 64; i++)
+		memcpy(rgb_data + i * 64 * 3, rgb_scanline_data, 64 * 3);
+	//hexdump(rgb_data, 64 * 64 * 3);
+
+	context = rfx_context_new();
+	context->mode = RLGR3;
+	rfx_context_set_pixel_format(context, RFX_PIXEL_FORMAT_RGB);
+
+	rfx_encode_rgb(context, rgb_data, 64 * 3,
+		test_quantization_values, test_quantization_values, test_quantization_values,
+		ycbcr_buffer, sizeof(ycbcr_buffer), &y_size, &cb_size, &cr_size);
+	//dump_buffer(context->cb_g_buffer, 4096);
+
+	/*printf("*** Y ***\n");
+	hexdump(ycbcr_buffer, y_size);
+	printf("*** Cb ***\n");
+	hexdump(ycbcr_buffer + y_size, cb_size);
+	printf("*** Cr ***\n");
+	hexdump(ycbcr_buffer + y_size + cb_size, cr_size);*/
+
+	rfx_decode_rgb(context,
+		ycbcr_buffer, y_size, test_quantization_values,
+		ycbcr_buffer + y_size, cb_size, test_quantization_values,
+		ycbcr_buffer + y_size + cb_size, cr_size, test_quantization_values,
+		decode_buffer);
+	dump_ppm_image(decode_buffer);
+
+	rfx_context_free(context);
+	free(rgb_data);
+}
+
+void
+test_message(void)
+{
+	RFX_CONTEXT * context;
+	uint8 buffer[16384];
+	int size;
+
+	context = rfx_context_new();
+	context->mode = RLGR3;
+	context->width = 800;
+	context->height = 600;
+	rfx_context_set_pixel_format(context, RFX_PIXEL_FORMAT_RGB);
+
+	size =  rfx_compose_message_header(context, buffer, sizeof(buffer));
+	/*hexdump(buffer, size);*/
+	rfx_process_message(context, buffer, size);
+
+	rfx_context_free(context);
+}

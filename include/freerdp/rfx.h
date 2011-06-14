@@ -22,6 +22,8 @@
 
 #include "types/base.h"
 
+#include <freerdp/utils/profiler.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -41,6 +43,9 @@ extern "C" {
 #define WBT_EXTENSION		0xCCC7
 #define CBT_TILESET		0xCAC2
 #define CBT_TILE		0xCAC3
+
+/* tileSize */
+#define CT_TILE_64x64		0x0040
 
 /* properties.flags */
 #define CODEC_MODE		0x02
@@ -137,20 +142,37 @@ struct _RFX_CONTEXT
 
 	RFX_POOL* pool; /* memory pool */
 
-	uint32 y_r_mem[4096+4]; /* 4096 = 64x64 (+ 4x4 = 16 for mem align) */
-	uint32 cb_g_mem[4096+4]; /* 4096 = 64x64 (+ 4x4 = 16 for mem align) */
-	uint32 cr_b_mem[4096+4]; /* 4096 = 64x64 (+ 4x4 = 16 for mem align) */
+	sint16 y_r_mem[4096+8]; /* 4096 = 64x64 (+ 8x2 = 16 for mem align) */
+	sint16 cb_g_mem[4096+8]; /* 4096 = 64x64 (+ 8x2 = 16 for mem align) */
+	sint16 cr_b_mem[4096+8]; /* 4096 = 64x64 (+ 8x2 = 16 for mem align) */
  
- 	uint32* y_r_buffer;
-	uint32* cb_g_buffer;
-	uint32* cr_b_buffer;
+ 	sint16 * y_r_buffer;
+	sint16 * cb_g_buffer;
+	sint16 * cr_b_buffer;
  
-	uint32 idwt_buffer_8[256]; /* sub-band width 8 */
-	uint32 idwt_buffer_16[1024]; /* sub-band width 16 */
-	uint32 idwt_buffer_32[4096]; /* sub-band width 32 */
-	uint32* idwt_buffers[5]; /* sub-band buffer array */
-	
-	void (* decode_YCbCr_to_RGB)(uint32 * y_r_buf, uint32 * cb_g_buf, uint32 * cr_b_buf);
+	sint16 dwt_mem_8[8*8*2*2 + 8]; /* sub-band width 8 */
+	sint16 dwt_mem_16[16*16*2*2 + 8]; /* sub-band width 16 */
+	sint16 dwt_mem_32[32*32*2*2 + 8]; /* sub-band width 32 */
+	//sint16* dwt_buffers[5]; /* sub-band buffer array */
+
+ 	sint16 * dwt_buffer_8;
+	sint16 * dwt_buffer_16;
+	sint16 * dwt_buffer_32;
+
+	/* routines */
+	void (* decode_YCbCr_to_RGB)(sint16 * y_r_buf, sint16 * cb_g_buf, sint16 * cr_b_buf);
+	void (* encode_RGB_to_YCbCr)(sint16 * y_r_buf, sint16 * cb_g_buf, sint16 * cr_b_buf);
+	void (* quantization_decode)(sint16 * buffer, const uint32 * quantization_values);
+	void (* dwt_2d_decode)(sint16 * buffer, sint16 * dwt_buffer_8, sint16 * dwt_buffer_16, sint16 * dwt_buffer_32);
+
+	/* profiler definitions */
+	PROFILER_DEFINE(prof_rfx_decode_rgb);
+	PROFILER_DEFINE(prof_rfx_decode_component);
+	PROFILER_DEFINE(prof_rfx_rlgr_decode);
+	PROFILER_DEFINE(prof_rfx_differential_decode);
+	PROFILER_DEFINE(prof_rfx_quantization_decode);
+	PROFILER_DEFINE(prof_rfx_dwt_2d_decode);
+	PROFILER_DEFINE(prof_rfx_decode_YCbCr_to_RGB);
 };
 typedef struct _RFX_CONTEXT RFX_CONTEXT;
 
@@ -160,6 +182,10 @@ void rfx_context_set_pixel_format(RFX_CONTEXT * context, RFX_PIXEL_FORMAT pixel_
 
 RFX_MESSAGE* rfx_process_message(RFX_CONTEXT * context, uint8 * data, int data_size);
 void rfx_message_free(RFX_CONTEXT * context, RFX_MESSAGE * message);
+
+int rfx_compose_message_header(RFX_CONTEXT * context, uint8 * buffer, int buffer_size);
+int rfx_compose_message_data(RFX_CONTEXT * context, uint8 * buffer, int buffer_size,
+	const RFX_RECT * rects, int num_rects, uint8 * image_buffer, int width, int height);
 
 #ifdef __cplusplus
 }

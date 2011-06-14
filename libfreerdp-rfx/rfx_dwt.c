@@ -24,31 +24,14 @@
 #include "rfx_dwt.h"
 
 void
-rfx_dwt_2d_decode(RFX_CONTEXT * context, int * buffer, int subband_width)
+rfx_dwt_2d_decode_block(sint16 * buffer, sint16 * idwt, int subband_width)
 {
-	int idwt_alloc;
-	int * idwt;
-	int * dst, * l, * h;
-	int * l_dst, * h_dst;
-	int * hl, * lh, * hh, * ll;
+	sint16 * dst, * l, * h;
+	sint16 * l_dst, * h_dst;
+	sint16 * hl, * lh, * hh, * ll;
 	int total_width;
 	int x, y;
 	int n;
-
-	switch (subband_width)
-	{
-		case 8:
-		case 16:
-		case 32:
-			idwt = (int*) context->idwt_buffers[subband_width >> 3];
-			idwt_alloc = 0;
-			break;
-
-		default:
-			idwt = (int*) malloc(subband_width * subband_width * 4 * sizeof(int));
-			idwt_alloc = 1;
-			break;
-	}
 
 	total_width = subband_width << 1;
 
@@ -85,8 +68,8 @@ rfx_dwt_2d_decode(RFX_CONTEXT * context, int * buffer, int subband_width)
 			h_dst[x + 1] = (hh[n] << 1) + ((h_dst[x] + h_dst[x + 2]) >> 1);
 		}
 		x = n << 1;
-		l_dst[x + 1] = (hl[n] << 1) + ((l_dst[x] + l_dst[x]) >> 1);
-		h_dst[x + 1] = (hh[n] << 1) + ((h_dst[x] + h_dst[x]) >> 1);		
+		l_dst[x + 1] = (hl[n] << 1) + (l_dst[x]);
+		h_dst[x + 1] = (hh[n] << 1) + (h_dst[x]);		
 
 		ll += subband_width;
 		hl += subband_width;
@@ -120,8 +103,96 @@ rfx_dwt_2d_decode(RFX_CONTEXT * context, int * buffer, int subband_width)
 			dst[total_width] = (*h << 1) + ((dst[0] + dst[n < subband_width - 1 ? 2 * total_width : 0]) >> 1);
 		}
 	}
-
-	if (idwt_alloc)
-		free(idwt);
 }
 
+void
+rfx_dwt_2d_decode(sint16 * buffer, sint16 * dwt_buffer_8, sint16 * dwt_buffer_16, sint16 * dwt_buffer_32)
+{
+	rfx_dwt_2d_decode_block(buffer + 3840, dwt_buffer_8, 8);
+	rfx_dwt_2d_decode_block(buffer + 3072, dwt_buffer_16, 16);
+	rfx_dwt_2d_decode_block(buffer, dwt_buffer_32, 32);
+}
+
+void
+rfx_dwt_2d_encode_block(sint16 * buffer, sint16 * dwt, int subband_width)
+{
+	sint16 * src, * l, * h;
+	sint16 * l_src, * h_src;
+	sint16 * hl, * lh, * hh, * ll;
+	int total_width;
+	int x, y;
+	int n;
+
+	total_width = subband_width << 1;
+
+	/* DWT in vertical direction, results in 2 sub-bands in L, H order in tmp buffer dwt. */
+	for (x = 0; x < total_width; x++)
+	{
+		for (n = 0; n < subband_width; n++)
+		{
+			y = n << 1;
+			l = dwt + n * total_width + x;
+			h = l + subband_width * total_width;
+			src = buffer + y * total_width + x;
+
+			/* H */
+			*h = (src[total_width] - ((src[0] + src[n < subband_width - 1 ? 2 * total_width : 0]) >> 1)) >> 1;
+
+			/* L */
+			*l = src[0] + (n == 0 ? *h : (*(h - total_width) + *h) >> 1);
+		}
+	}
+
+	/* DWT in horizontal direction, results in 4 sub-bands in HL(0), LH(1), HH(2), LL(3) order, stored in original buffer. */
+	/* The lower part L generates LL(3) and HL(0). */
+	/* The higher part H generates LH(1) and HH(2). */
+
+	ll = buffer + subband_width * subband_width * 3;
+	hl = buffer;
+	l_src = dwt;
+
+	lh = buffer + subband_width * subband_width;
+	hh = buffer + subband_width * subband_width * 2;
+	h_src = dwt + subband_width * subband_width * 2;
+
+	for (y = 0; y < subband_width; y++)
+	{
+		/* L */
+		for (n = 0; n < subband_width; n++)
+		{
+			x = n << 1;
+
+			/* HL */
+			hl[n] = (l_src[x + 1] - ((l_src[x] + l_src[n < subband_width - 1 ? x + 2 : x]) >> 1)) >> 1;
+			/* LL */
+			ll[n] = l_src[x] + (n == 0 ? hl[n] : (hl[n - 1] + hl[n]) >> 1);
+		}
+
+		/* H */
+		for (n = 0; n < subband_width; n++)
+		{
+			x = n << 1;
+
+			/* HH */
+			hh[n] = (h_src[x + 1] - ((h_src[x] + h_src[n < subband_width - 1 ? x + 2 : x]) >> 1)) >> 1;
+			/* LH */
+			lh[n] = h_src[x] + (n == 0 ? hh[n] : (hh[n - 1] + hh[n]) >> 1);
+		}
+
+		ll += subband_width;
+		hl += subband_width;
+		l_src += total_width;
+
+		lh += subband_width;
+		hh += subband_width;
+		h_src += total_width;
+	}
+}
+
+void
+rfx_dwt_2d_encode(sint16 * buffer, sint16 * dwt_buffer_8, sint16 * dwt_buffer_16, sint16 * dwt_buffer_32)
+{
+	rfx_dwt_2d_encode_block(buffer, dwt_buffer_32, 32);
+	rfx_dwt_2d_encode_block(buffer + 3072, dwt_buffer_16, 16);
+	rfx_dwt_2d_encode_block(buffer + 3840, dwt_buffer_8, 8);
+}

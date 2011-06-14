@@ -2,7 +2,6 @@
 REQUIRED_SUBDIRS = \
 	libfreerdp-asn1 \
 	libfreerdp-gdi \
-	libfreerdp-rfx/sse \
 	libfreerdp-rfx \
 	libfreerdp-utils \
 	libfreerdp-core \

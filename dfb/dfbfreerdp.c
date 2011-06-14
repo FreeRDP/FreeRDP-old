@@ -503,7 +503,6 @@ static int
 run_dfbfreerdp(rdpSet * settings, rdpChanMan * chan_man)
 {
 	rdpInst * inst;
-	void * dfb_info;
 	void * read_fds[32];
 	void * write_fds[32];
 	int read_count;
@@ -643,10 +642,9 @@ run_dfbfreerdp(rdpSet * settings, rdpChanMan * chan_man)
 		}
 	}
 	/* cleanup */
-	dfb_info = inst->param1;
 	inst->rdp_disconnect(inst);
+	dfb_uninit(inst);
 	freerdp_free(inst);
-	dfb_uninit(dfb_info);
 	return 0;
 }
 

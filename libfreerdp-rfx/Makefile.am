@@ -12,6 +12,7 @@ libfreerdp_rfx_la_SOURCES = \
 	rfx_quantization.c rfx_quantization.h \
 	rfx_dwt.c rfx_dwt.h \
 	rfx_decode.c rfx_decode.h \
+	rfx_encode.c rfx_encode.h \
 	rfx_pool.c rfx_pool.h \
 	librfx.c librfx.h
 
@@ -24,6 +25,7 @@ libfreerdp_rfx_la_LDFLAGS =
 libfreerdp_rfx_la_LIBADD =
 
 if WITH_SSE
+SUBDIRS = sse
 libfreerdp_rfx_la_CFLAGS += -I./sse
 libfreerdp_rfx_la_LIBADD += ./sse/libfreerdp-rfx-sse.la
 endif

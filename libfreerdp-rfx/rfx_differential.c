@@ -23,14 +23,28 @@
 #include "rfx_differential.h"
 
 void
-rfx_differential_decode(uint32 * buffer, int buffer_size)
+rfx_differential_decode(sint16 * buffer, int buffer_size)
 {
-	uint32 * src;
-	uint32 * dst;
+	sint16 * src;
+	sint16 * dst;
 
 	for (src = buffer, dst = buffer + 1; buffer_size > 1; src++, dst++, buffer_size--)
 	{
 		*dst += *src;
+	}
+}
+
+void
+rfx_differential_encode(sint16 * buffer, int buffer_size)
+{
+	sint16 n1, n2;
+	sint16 * dst;
+
+	for (n1 = *buffer, dst = buffer + 1; buffer_size > 1; dst++, buffer_size--)
+	{
+		n2 = *dst;
+		*dst -= n1;
+		n1 = n2;
 	}
 }
 

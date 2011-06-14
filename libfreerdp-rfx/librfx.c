@@ -27,8 +27,46 @@
 
 #include "rfx_pool.h"
 #include "rfx_decode.h"
+#include "rfx_encode.h"
+#include "rfx_quantization.h"
+#include "rfx_dwt.h"
 
 #include "librfx.h"
+
+void rfx_profiler_create(RFX_CONTEXT * context)
+{
+	PROFILER_CREATE(context->prof_rfx_decode_rgb, "rfx_decode_rgb");
+	PROFILER_CREATE(context->prof_rfx_decode_component, "rfx_decode_component");
+	PROFILER_CREATE(context->prof_rfx_rlgr_decode, "rfx_rlgr_decode");
+	PROFILER_CREATE(context->prof_rfx_differential_decode, "rfx_differential_decode");
+	PROFILER_CREATE(context->prof_rfx_quantization_decode, "rfx_quantization_decode");
+	PROFILER_CREATE(context->prof_rfx_dwt_2d_decode, "rfx_dwt_2d_decode");
+	PROFILER_CREATE(context->prof_rfx_decode_YCbCr_to_RGB, "rfx_decode_YCbCr_to_RGB");
+}
+
+void rfx_profiler_free(RFX_CONTEXT * context)
+{
+	PROFILER_FREE(context->prof_rfx_decode_rgb);
+	PROFILER_FREE(context->prof_rfx_decode_component);
+	PROFILER_FREE(context->prof_rfx_rlgr_decode);
+	PROFILER_FREE(context->prof_rfx_differential_decode);
+	PROFILER_FREE(context->prof_rfx_quantization_decode);
+	PROFILER_FREE(context->prof_rfx_dwt_2d_decode);
+	PROFILER_FREE(context->prof_rfx_decode_YCbCr_to_RGB);
+}
+
+void rfx_profiler_print(RFX_CONTEXT * context)
+{
+	PROFILER_PRINT_HEADER;
+	PROFILER_PRINT(context->prof_rfx_decode_rgb);
+	PROFILER_PRINT(context->prof_rfx_decode_component);
+	PROFILER_PRINT(context->prof_rfx_rlgr_decode);
+	PROFILER_PRINT(context->prof_rfx_differential_decode);
+	PROFILER_PRINT(context->prof_rfx_quantization_decode);
+	PROFILER_PRINT(context->prof_rfx_dwt_2d_decode);
+	PROFILER_PRINT(context->prof_rfx_decode_YCbCr_to_RGB);
+	PROFILER_PRINT_FOOTER;
+}
 
 RFX_CONTEXT *
 rfx_context_new(void)
@@ -41,16 +79,22 @@ rfx_context_new(void)
 	context->pool = rfx_pool_new();
 
 	/* align buffers to 16 byte boundary (needed for SSE/SSE2 instructions) */
-	context->y_r_buffer = (uint32 *)(((uintptr_t)context->y_r_mem + 16) & ~ 0x0F);
-	context->cb_g_buffer = (uint32 *)(((uintptr_t)context->cb_g_mem + 16) & ~ 0x0F);
-	context->cr_b_buffer = (uint32 *)(((uintptr_t)context->cr_b_mem + 16) & ~ 0x0F);
+	context->y_r_buffer = (sint16 *)(((uintptr_t)context->y_r_mem + 16) & ~ 0x0F);
+	context->cb_g_buffer = (sint16 *)(((uintptr_t)context->cb_g_mem + 16) & ~ 0x0F);
+	context->cr_b_buffer = (sint16 *)(((uintptr_t)context->cr_b_mem + 16) & ~ 0x0F);
 
-	context->idwt_buffers[1] = (uint32*) context->idwt_buffer_8;
-	context->idwt_buffers[2] = (uint32*) context->idwt_buffer_16;
-	context->idwt_buffers[4] = (uint32*) context->idwt_buffer_32;
+	context->dwt_buffer_8 = (sint16 *)(((uintptr_t)context->dwt_mem_8 + 16) & ~ 0x0F);
+	context->dwt_buffer_16 = (sint16 *)(((uintptr_t)context->dwt_mem_16 + 16) & ~ 0x0F);
+	context->dwt_buffer_32 = (sint16 *)(((uintptr_t)context->dwt_mem_32 + 16) & ~ 0x0F);
+
+	/* create profilers for default decoding routines */
+	rfx_profiler_create(context);
 	
-	/* set up default decoding routines */
+	/* set up default routines */
 	context->decode_YCbCr_to_RGB = rfx_decode_YCbCr_to_RGB;
+	context->encode_RGB_to_YCbCr = rfx_encode_RGB_to_YCbCr;
+	context->quantization_decode = rfx_quantization_decode;	
+	context->dwt_2d_decode = rfx_dwt_2d_decode;
 
 	/* detect and enable SIMD CPU acceleration */
 	RFX_INIT_SIMD(context);
@@ -65,6 +109,9 @@ rfx_context_free(RFX_CONTEXT * context)
 		free(context->quants);
 
 	rfx_pool_free(context->pool);
+
+	rfx_profiler_print(context);
+	rfx_profiler_free(context);
 
 	if (context != NULL)
 		free(context);
@@ -418,4 +465,118 @@ rfx_message_free(RFX_CONTEXT * context, RFX_MESSAGE * message)
 
 		free(message);
 	}
+}
+
+static int
+rfx_compose_message_sync(RFX_CONTEXT * context, uint8 * buffer, int buffer_size)
+{
+	SET_UINT16(buffer, 0, WBT_SYNC); /* BlockT.blockType */
+	SET_UINT32(buffer, 2, 12); /* BlockT.blockLen */
+	SET_UINT32(buffer, 6, WF_MAGIC); /* magic */
+	SET_UINT16(buffer, 10, WF_VERSION_1_0); /* version */
+
+	return 12;
+}
+
+static int
+rfx_compose_message_codec_versions(RFX_CONTEXT * context, uint8 * buffer, int buffer_size)
+{
+	SET_UINT16(buffer, 0, WBT_CODEC_VERSIONS); /* BlockT.blockType */
+	SET_UINT32(buffer, 2, 10); /* BlockT.blockLen */
+	SET_UINT8(buffer, 6, 1); /* numCodecs */
+	SET_UINT8(buffer, 7, 1); /* codecs.codecId */
+	SET_UINT16(buffer, 8, WF_VERSION_1_0); /* codecs.version */
+
+	return 10;
+}
+
+static int
+rfx_compose_message_channels(RFX_CONTEXT * context, uint8 * buffer, int buffer_size)
+{
+	SET_UINT16(buffer, 0, WBT_CHANNELS); /* BlockT.blockType */
+	SET_UINT32(buffer, 2, 12); /* BlockT.blockLen */
+	SET_UINT8(buffer, 6, 1); /* numChannels */
+	SET_UINT8(buffer, 7, 0); /* Channel.channelId */
+	SET_UINT16(buffer, 8, context->width); /* Channel.width */
+	SET_UINT16(buffer, 10, context->height); /* Channel.height */
+
+	return 12;
+}
+
+static int
+rfx_compose_message_context(RFX_CONTEXT * context, uint8 * buffer, int buffer_size)
+{
+	uint16 properties;
+
+	SET_UINT16(buffer, 0, WBT_CONTEXT); /* CodecChannelT.blockType */
+	SET_UINT32(buffer, 2, 13); /* CodecChannelT.blockLen */
+	SET_UINT8(buffer, 6, 1); /* CodecChannelT.codecId */
+	SET_UINT8(buffer, 7, 0); /* CodecChannelT.channelId */
+	SET_UINT8(buffer, 8, 0); /* ctxId */
+	SET_UINT16(buffer, 9, CT_TILE_64x64); /* tileSize */
+
+	/* properties */
+	properties = context->flags; /* flags */
+	properties |= (COL_CONV_ICT << 3); /* cct */
+	properties |= (CLW_XFORM_DWT_53_A << 5); /* xft */
+	properties |= ((context->mode == RLGR1 ? CLW_ENTROPY_RLGR1 : CLW_ENTROPY_RLGR3) << 9); /* et */
+	properties |= (SCALAR_QUANTIZATION << 13); /* qt */
+	SET_UINT16(buffer, 11, properties);
+
+	return 13;
+}
+
+int
+rfx_compose_message_header(RFX_CONTEXT * context, uint8 * buffer, int buffer_size)
+{
+	int composed_size;
+
+	composed_size = rfx_compose_message_sync(context, buffer, buffer_size);
+	composed_size += rfx_compose_message_codec_versions(context, buffer + composed_size, buffer_size - composed_size);
+	composed_size += rfx_compose_message_channels(context, buffer + composed_size, buffer_size - composed_size);
+	composed_size += rfx_compose_message_context(context, buffer + composed_size, buffer_size - composed_size);
+
+	return composed_size;
+}
+
+static int
+rfx_compose_message_frame_begin(RFX_CONTEXT * context, uint8 * buffer, int buffer_size)
+{
+	return 0;
+}
+
+static int
+rfx_compose_message_region(RFX_CONTEXT * context, uint8 * buffer, int buffer_size,
+	const RFX_RECT * rects, int num_rects)
+{
+	return 0;
+}
+
+static int
+rfx_compose_message_tileset(RFX_CONTEXT * context, uint8 * buffer, int buffer_size,
+	uint8 * image_buffer, int width, int height)
+{
+	return 0;
+}
+
+static int
+rfx_compose_message_frame_end(RFX_CONTEXT * context, uint8 * buffer, int buffer_size)
+{
+	return 0;
+}
+
+int
+rfx_compose_message_data(RFX_CONTEXT * context, uint8 * buffer, int buffer_size,
+	const RFX_RECT * rects, int num_rects, uint8 * image_buffer, int width, int height)
+{
+	int composed_size;
+
+	composed_size = rfx_compose_message_frame_begin(context, buffer, buffer_size);
+	composed_size += rfx_compose_message_region(context, buffer + composed_size, buffer_size - composed_size,
+		rects, num_rects);
+	composed_size += rfx_compose_message_tileset(context, buffer + composed_size, buffer_size - composed_size,
+		image_buffer, width, height);
+	composed_size += rfx_compose_message_frame_end(context, buffer + composed_size, buffer_size - composed_size);
+
+	return composed_size;
 }

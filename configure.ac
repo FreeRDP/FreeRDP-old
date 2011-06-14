@@ -20,6 +20,7 @@ AH_TEMPLATE(NEED_ALIGN, [Alignment])
 AH_TEMPLATE(DISABLE_TLS, [Disable TLS encryption])
 AH_TEMPLATE(WITH_SSE, [Enable SSE Optimizations])
 AH_TEMPLATE(WITH_XKBFILE, [Use xkbfile for keyboard handling])
+AH_TEMPLATE(WITH_PROFILER, [Turn on the code profiler])
 AH_TEMPLATE(WITH_DEBUG, [Turn on debugging messages])
 AH_TEMPLATE(WITH_DEBUG_RDP, [Turn on debugging messages])
 AH_TEMPLATE(WITH_DEBUG_GDI, [Turn on debugging messages])
@@ -1026,6 +1027,24 @@ AC_ARG_WITH([cunit],
 )
 
 #
+# Profiler
+#
+profiler="no"
+AC_ARG_WITH([profiler],
+	[AS_HELP_STRING([--with-profiler], [enable the code profiler])])
+AS_IF([test "x$with_profiler" == xyes],
+	[
+		profiler="yes"
+		AM_CONDITIONAL(WITH_PROFILER, true)
+		AC_DEFINE(WITH_PROFILER,1)
+	],
+	[
+		profiler="no"
+		AM_CONDITIONAL(WITH_PROFILER, false)
+	]
+)
+
+#
 # SSE
 #
 sse="yes"
@@ -1041,7 +1060,6 @@ AS_IF([test "x$with_sse" == xno],
 		AM_CONDITIONAL(WITH_SSE, true)
 		AC_DEFINE(WITH_SSE,1)
 		CFLAGS="$CFLAGS -msse2"
-		REQUIRED_SUBDIRS="libfreerdp-rfx/sse $REQUIRED_SUBDIRS"
 	]
 )
 
