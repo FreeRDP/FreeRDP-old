@@ -252,9 +252,7 @@ test_dwt(void)
 	RFX_CONTEXT * context;
 
 	context = rfx_context_new();
-	rfx_dwt_2d_decode(context, buffer + 3840, 8);
-	rfx_dwt_2d_decode(context, buffer + 3072, 16);
-	rfx_dwt_2d_decode(context, buffer, 32);
+	rfx_dwt_2d_decode(buffer, context->dwt_buffer_8, context->dwt_buffer_16, context->dwt_buffer_32);
 	//dump_buffer(buffer, 4096);
 	rfx_context_free(context);
 }
