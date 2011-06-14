@@ -29,6 +29,7 @@
 #include "rfx_decode.h"
 #include "rfx_encode.h"
 #include "rfx_quantization.h"
+#include "rfx_dwt.h"
 
 #include "librfx.h"
 
@@ -82,9 +83,9 @@ rfx_context_new(void)
 	context->cb_g_buffer = (sint16 *)(((uintptr_t)context->cb_g_mem + 16) & ~ 0x0F);
 	context->cr_b_buffer = (sint16 *)(((uintptr_t)context->cr_b_mem + 16) & ~ 0x0F);
 
-	context->dwt_buffers[1] = (sint16*) context->dwt_buffer_8;
-	context->dwt_buffers[2] = (sint16*) context->dwt_buffer_16;
-	context->dwt_buffers[4] = (sint16*) context->dwt_buffer_32;
+	context->dwt_buffer_8 = (sint16 *)(((uintptr_t)context->dwt_mem_8 + 16) & ~ 0x0F);
+	context->dwt_buffer_16 = (sint16 *)(((uintptr_t)context->dwt_mem_16 + 16) & ~ 0x0F);
+	context->dwt_buffer_32 = (sint16 *)(((uintptr_t)context->dwt_mem_32 + 16) & ~ 0x0F);
 
 	/* create profilers for default decoding routines */
 	rfx_profiler_create(context);
@@ -93,6 +94,7 @@ rfx_context_new(void)
 	context->decode_YCbCr_to_RGB = rfx_decode_YCbCr_to_RGB;
 	context->encode_RGB_to_YCbCr = rfx_encode_RGB_to_YCbCr;
 	context->quantization_decode = rfx_quantization_decode;	
+	context->dwt_2d_decode = rfx_dwt_2d_decode;
 
 	/* detect and enable SIMD CPU acceleration */
 	RFX_INIT_SIMD(context);

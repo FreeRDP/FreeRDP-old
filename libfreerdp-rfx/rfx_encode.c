@@ -54,9 +54,7 @@ static void
 rfx_encode_component(RFX_CONTEXT * context, const uint32 * quantization_values,
 	sint16 * data, uint8 * buffer, int buffer_size, int * size)
 {
-	rfx_dwt_2d_encode(context, data, 32);
-	rfx_dwt_2d_encode(context, data + 3072, 16);
-	rfx_dwt_2d_encode(context, data + 3840, 8);
+	rfx_dwt_2d_encode(data, context->dwt_buffer_8, context->dwt_buffer_16, context->dwt_buffer_32);
 
 	rfx_quantization_encode(data, quantization_values);
 

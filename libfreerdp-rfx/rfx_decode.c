@@ -51,7 +51,7 @@ rfx_decode_YCbCr_to_RGB(sint16 * y_r_buf, sint16 * cb_g_buf, sint16 * cr_b_buf)
 }
 
 static void
-rfx_decode_component(RFX_CONTEXT * context, const uint32 * quantization_values, int half,
+rfx_decode_component(RFX_CONTEXT * context, const uint32 * quantization_values,
 	const uint8 * data, int size, sint16 * buffer)
 {
 	PROFILER_ENTER(context->prof_rfx_decode_component);
@@ -69,10 +69,7 @@ rfx_decode_component(RFX_CONTEXT * context, const uint32 * quantization_values, 
 	PROFILER_EXIT(context->prof_rfx_quantization_decode);
 
 	PROFILER_ENTER(context->prof_rfx_dwt_2d_decode);
-		rfx_dwt_2d_decode(context, buffer + 3840, 8);
-		rfx_dwt_2d_decode(context, buffer + 3072, 16);
-		if (!half)
-			rfx_dwt_2d_decode(context, buffer, 32);
+		context->dwt_2d_decode(buffer, context->dwt_buffer_8, context->dwt_buffer_16, context->dwt_buffer_32);
 	PROFILER_EXIT(context->prof_rfx_dwt_2d_decode);
 
 	PROFILER_EXIT(context->prof_rfx_decode_component);
@@ -91,9 +88,9 @@ rfx_decode_rgb(RFX_CONTEXT * context,
 	PROFILER_ENTER(context->prof_rfx_decode_rgb);
 
 	dst = rgb_buffer;
-	rfx_decode_component(context, y_quants, 0, y_data, y_size, context->y_r_buffer);
-	rfx_decode_component(context, cb_quants, 0, cb_data, cb_size, context->cb_g_buffer);
-	rfx_decode_component(context, cr_quants, 0, cr_data, cr_size, context->cr_b_buffer);
+	rfx_decode_component(context, y_quants, y_data, y_size, context->y_r_buffer);
+	rfx_decode_component(context, cb_quants, cb_data, cb_size, context->cb_g_buffer);
+	rfx_decode_component(context, cr_quants, cr_data, cr_size, context->cr_b_buffer);
 
 	PROFILER_ENTER(context->prof_rfx_decode_YCbCr_to_RGB);
 		context->decode_YCbCr_to_RGB(context->y_r_buffer, context->cb_g_buffer, context->cr_b_buffer);

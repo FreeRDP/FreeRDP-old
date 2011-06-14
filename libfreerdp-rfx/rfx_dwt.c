@@ -24,9 +24,8 @@
 #include "rfx_dwt.h"
 
 void
-rfx_dwt_2d_decode(RFX_CONTEXT * context, sint16 * buffer, int subband_width)
+rfx_dwt_2d_decode_block(sint16 * buffer, sint16 * idwt, int subband_width)
 {
-	sint16 * idwt;
 	sint16 * dst, * l, * h;
 	sint16 * l_dst, * h_dst;
 	sint16 * hl, * lh, * hh, * ll;
@@ -34,7 +33,6 @@ rfx_dwt_2d_decode(RFX_CONTEXT * context, sint16 * buffer, int subband_width)
 	int x, y;
 	int n;
 
-	idwt = (sint16*) context->dwt_buffers[subband_width >> 3];
 	total_width = subband_width << 1;
 
 	/* Inverse DWT in horizontal direction, results in 2 sub-bands in L, H order in tmp buffer idwt. */
@@ -70,8 +68,8 @@ rfx_dwt_2d_decode(RFX_CONTEXT * context, sint16 * buffer, int subband_width)
 			h_dst[x + 1] = (hh[n] << 1) + ((h_dst[x] + h_dst[x + 2]) >> 1);
 		}
 		x = n << 1;
-		l_dst[x + 1] = (hl[n] << 1) + ((l_dst[x] + l_dst[x]) >> 1);
-		h_dst[x + 1] = (hh[n] << 1) + ((h_dst[x] + h_dst[x]) >> 1);		
+		l_dst[x + 1] = (hl[n] << 1) + (l_dst[x]);
+		h_dst[x + 1] = (hh[n] << 1) + (h_dst[x]);		
 
 		ll += subband_width;
 		hl += subband_width;
@@ -108,9 +106,16 @@ rfx_dwt_2d_decode(RFX_CONTEXT * context, sint16 * buffer, int subband_width)
 }
 
 void
-rfx_dwt_2d_encode(RFX_CONTEXT * context, sint16 * buffer, int subband_width)
+rfx_dwt_2d_decode(sint16 * buffer, sint16 * dwt_buffer_8, sint16 * dwt_buffer_16, sint16 * dwt_buffer_32)
 {
-	sint16 * dwt;
+	rfx_dwt_2d_decode_block(buffer + 3840, dwt_buffer_8, 8);
+	rfx_dwt_2d_decode_block(buffer + 3072, dwt_buffer_16, 16);
+	rfx_dwt_2d_decode_block(buffer, dwt_buffer_32, 32);
+}
+
+void
+rfx_dwt_2d_encode_block(sint16 * buffer, sint16 * dwt, int subband_width)
+{
 	sint16 * src, * l, * h;
 	sint16 * l_src, * h_src;
 	sint16 * hl, * lh, * hh, * ll;
@@ -118,7 +123,6 @@ rfx_dwt_2d_encode(RFX_CONTEXT * context, sint16 * buffer, int subband_width)
 	int x, y;
 	int n;
 
-	dwt = (sint16*) context->dwt_buffers[subband_width >> 3];
 	total_width = subband_width << 1;
 
 	/* DWT in vertical direction, results in 2 sub-bands in L, H order in tmp buffer dwt. */
@@ -183,6 +187,12 @@ rfx_dwt_2d_encode(RFX_CONTEXT * context, sint16 * buffer, int subband_width)
 		hh += subband_width;
 		h_src += total_width;
 	}
-	
 }
 
+void
+rfx_dwt_2d_encode(sint16 * buffer, sint16 * dwt_buffer_8, sint16 * dwt_buffer_16, sint16 * dwt_buffer_32)
+{
+	rfx_dwt_2d_encode_block(buffer, dwt_buffer_32, 32);
+	rfx_dwt_2d_encode_block(buffer + 3072, dwt_buffer_16, 16);
+	rfx_dwt_2d_encode_block(buffer + 3840, dwt_buffer_8, 8);
+}
