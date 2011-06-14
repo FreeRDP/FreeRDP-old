@@ -568,12 +568,16 @@ dfb_post_connect(rdpInst * inst)
 }
 
 void
-dfb_uninit(void * dfb_info)
+dfb_uninit(rdpInst * inst)
 {
-	dfbInfo * dfbi;
-	dfbi = (dfbInfo *) dfb_info;
-	dfbi->primary->Release(dfbi->primary);
-	dfbi->dfb->Release(dfbi->dfb);
+	dfbInfo *dfbi = GET_DFBI(inst);
+
+	if (inst->settings->software_gdi == 1)
+	{
+		gdi_free(inst);
+		dfbi->primary->Release(dfbi->primary);
+		dfbi->dfb->Release(dfbi->dfb);
+	}
 }
 
 int

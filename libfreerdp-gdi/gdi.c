@@ -1213,6 +1213,8 @@ void gdi_free(rdpInst* inst)
 
 	if (gdi)
 	{
+		gdi_bitmap_free(gdi->tile);
+		rfx_context_free(gdi->rfx_context);
 		gdi_bitmap_free(gdi->primary);
 		gdi_DeleteObject((HGDIOBJECT) gdi->hdc);
 		free(gdi->clrconv);
