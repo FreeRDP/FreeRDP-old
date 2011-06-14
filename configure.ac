@@ -1071,7 +1071,7 @@ AC_ARG_WITH(neon,
         then
 		AM_CONDITIONAL(WITH_NEON, true)
 		AC_DEFINE(WITH_NEON,1)
-		CFLAGS="$CFLAGS"
+		CFLAGS="$CFLAGS -mfpu=neon"
         fi
     ])
 

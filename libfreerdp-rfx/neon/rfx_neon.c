@@ -21,7 +21,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "rfx_sse.h"
+#include <arm_neon.h>
+
+#include "rfx_neon.h"
 
 void rfx_init_neon(RFX_CONTEXT * context)
 {
