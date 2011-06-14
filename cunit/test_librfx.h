@@ -39,4 +39,6 @@ void
 test_decode(void);
 void
 test_encode(void);
+void
+test_message(void);
 

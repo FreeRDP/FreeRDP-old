@@ -468,25 +468,60 @@ rfx_message_free(RFX_CONTEXT * context, RFX_MESSAGE * message)
 static int
 rfx_compose_message_sync(RFX_CONTEXT * context, uint8 * buffer, int buffer_size)
 {
-	return 0;
+	SET_UINT16(buffer, 0, WBT_SYNC); /* BlockT.blockType */
+	SET_UINT32(buffer, 2, 12); /* BlockT.blockLen */
+	SET_UINT32(buffer, 6, WF_MAGIC); /* magic */
+	SET_UINT16(buffer, 10, WF_VERSION_1_0); /* version */
+
+	return 12;
 }
 
 static int
 rfx_compose_message_codec_versions(RFX_CONTEXT * context, uint8 * buffer, int buffer_size)
 {
-	return 0;
+	SET_UINT16(buffer, 0, WBT_CODEC_VERSIONS); /* BlockT.blockType */
+	SET_UINT32(buffer, 2, 10); /* BlockT.blockLen */
+	SET_UINT8(buffer, 6, 1); /* numCodecs */
+	SET_UINT8(buffer, 7, 1); /* codecs.codecId */
+	SET_UINT16(buffer, 8, WF_VERSION_1_0); /* codecs.version */
+
+	return 10;
 }
 
 static int
 rfx_compose_message_channels(RFX_CONTEXT * context, uint8 * buffer, int buffer_size)
 {
-	return 0;
+	SET_UINT16(buffer, 0, WBT_CHANNELS); /* BlockT.blockType */
+	SET_UINT32(buffer, 2, 12); /* BlockT.blockLen */
+	SET_UINT8(buffer, 6, 1); /* numChannels */
+	SET_UINT8(buffer, 7, 0); /* Channel.channelId */
+	SET_UINT16(buffer, 8, context->width); /* Channel.width */
+	SET_UINT16(buffer, 10, context->height); /* Channel.height */
+
+	return 12;
 }
 
 static int
 rfx_compose_message_context(RFX_CONTEXT * context, uint8 * buffer, int buffer_size)
 {
-	return 0;
+	uint16 properties;
+
+	SET_UINT16(buffer, 0, WBT_CONTEXT); /* CodecChannelT.blockType */
+	SET_UINT32(buffer, 2, 13); /* CodecChannelT.blockLen */
+	SET_UINT8(buffer, 6, 1); /* CodecChannelT.codecId */
+	SET_UINT8(buffer, 7, 0); /* CodecChannelT.channelId */
+	SET_UINT8(buffer, 8, 0); /* ctxId */
+	SET_UINT16(buffer, 9, CT_TILE_64x64); /* tileSize */
+
+	/* properties */
+	properties = context->flags; /* flags */
+	properties |= (COL_CONV_ICT << 3); /* cct */
+	properties |= (CLW_XFORM_DWT_53_A << 5); /* xft */
+	properties |= ((context->mode == RLGR1 ? CLW_ENTROPY_RLGR1 : CLW_ENTROPY_RLGR3) << 9); /* et */
+	properties |= (SCALAR_QUANTIZATION << 13); /* qt */
+	SET_UINT16(buffer, 11, properties);
+
+	return 13;
 }
 
 int

@@ -44,6 +44,9 @@ extern "C" {
 #define CBT_TILESET		0xCAC2
 #define CBT_TILE		0xCAC3
 
+/* tileSize */
+#define CT_TILE_64x64		0x0040
+
 /* properties.flags */
 #define CODEC_MODE		0x02
 

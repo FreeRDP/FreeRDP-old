@@ -159,6 +159,7 @@ int add_librfx_suite(void)
 	add_test_function(dwt);
 	add_test_function(decode);
 	add_test_function(encode);
+	add_test_function(message);
 
 	return 0;
 }
@@ -337,3 +338,22 @@ test_encode(void)
 	free(rgb_data);
 }
 
+void
+test_message(void)
+{
+	RFX_CONTEXT * context;
+	uint8 buffer[16384];
+	int size;
+
+	context = rfx_context_new();
+	context->mode = RLGR3;
+	context->width = 800;
+	context->height = 600;
+	rfx_context_set_pixel_format(context, RFX_PIXEL_FORMAT_RGB);
+
+	size =  rfx_compose_message_header(context, buffer, sizeof(buffer));
+	/*hexdump(buffer, size);*/
+	rfx_process_message(context, buffer, size);
+
+	rfx_context_free(context);
+}
