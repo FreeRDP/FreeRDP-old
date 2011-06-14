@@ -1,8 +1,8 @@
 /*
    FreeRDP: A Remote Desktop Protocol client.
-   RemoteFX Codec Library
+   RemoteFX Codec Library - NEON Optimizations
 
-   Copyright 2011 Vic Lee
+   Copyright 2011 Marc-Andre Moreau <marcandre.moreau@gmail.com>
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -17,27 +17,16 @@
    limitations under the License.
 */
 
-#ifndef __LIBRFX_H
-#define __LIBRFX_H
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-#include <freerdp/utils/debug.h>
-
-#ifdef WITH_DEBUG_RFX
-#define DEBUG_RFX(fmt, ...) DEBUG_CLASS(RFX, fmt, ## __VA_ARGS__)
-#else
-#define DEBUG_RFX(fmt, ...) DEBUG_NULL(fmt, ## __VA_ARGS__)
-#endif
-
-#ifdef WITH_SSE
 #include "rfx_sse.h"
-#endif
 
-#ifdef WITH_NEON
-#include "rfx_neon.h"
-#endif
-
-#ifndef RFX_INIT_SIMD
-#define RFX_INIT_SIMD(_rfx_context) do { } while (0)
-#endif
-
-#endif /* __LIBRFX_H */
+void rfx_init_neon(RFX_CONTEXT * context)
+{
+	if (1)
+	{
+		DEBUG_RFX("Using NEON optimizations");
+	}
+}

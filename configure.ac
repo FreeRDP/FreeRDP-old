@@ -1172,6 +1172,7 @@ libfreerdp-asn1/Makefile
 libfreerdp-gdi/Makefile
 libfreerdp-rfx/Makefile
 libfreerdp-rfx/sse/Makefile
+libfreerdp-rfx/neon/Makefile
 libfreerdp-utils/Makefile
 libfreerdp-core/Makefile
 docs/Makefile

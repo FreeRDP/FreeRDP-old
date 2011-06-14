@@ -30,6 +30,12 @@ libfreerdp_rfx_la_CFLAGS += -I./sse
 libfreerdp_rfx_la_LIBADD += ./sse/libfreerdp-rfx-sse.la
 endif
 
+if WITH_NEON
+SUBDIRS = neon
+libfreerdp_rfx_la_CFLAGS += -I./neon
+libfreerdp_rfx_la_LIBADD += ./neon/libfreerdp-rfx-neon.la
+endif
+
 # extra
 EXTRA_DIST =
 
