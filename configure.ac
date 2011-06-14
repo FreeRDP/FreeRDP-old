@@ -19,6 +19,7 @@ AH_TEMPLATE(IPv6, [IPv6])
 AH_TEMPLATE(NEED_ALIGN, [Alignment])
 AH_TEMPLATE(DISABLE_TLS, [Disable TLS encryption])
 AH_TEMPLATE(WITH_SSE, [Enable SSE Optimizations])
+AH_TEMPLATE(WITH_NEON, [Enable NEON Optimizations])
 AH_TEMPLATE(WITH_XKBFILE, [Use xkbfile for keyboard handling])
 AH_TEMPLATE(WITH_PROFILER, [Turn on the code profiler])
 AH_TEMPLATE(WITH_DEBUG, [Turn on debugging messages])
@@ -1047,21 +1048,32 @@ AS_IF([test "x$with_profiler" == xyes],
 #
 # SSE
 #
-sse="yes"
-AC_ARG_WITH([sse],
-	[AS_HELP_STRING([--with-sse], [Enable SSE Optimizations [default=yes]])])
-AS_IF([test "x$with_sse" == xno],
-	[
-		sse="no"
-		AM_CONDITIONAL(WITH_SSE, false)
-	],
-	[
-		sse="yes"
+AM_CONDITIONAL(WITH_SSE, false)
+AC_ARG_WITH(sse,
+    [  --with-sse  enable SSE optimizations],
+    [
+        if test $withval != "no";
+        then
 		AM_CONDITIONAL(WITH_SSE, true)
 		AC_DEFINE(WITH_SSE,1)
 		CFLAGS="$CFLAGS -msse2"
-	]
-)
+        fi
+    ])
+
+#
+# NEON
+#
+AM_CONDITIONAL(WITH_NEON, false)
+AC_ARG_WITH(neon,
+    [  --with-neon  enable NEON optimizations],
+    [
+        if test $withval != "no";
+        then
+		AM_CONDITIONAL(WITH_NEON, true)
+		AC_DEFINE(WITH_NEON,1)
+		CFLAGS="$CFLAGS"
+        fi
+    ])
 
 #
 # X11
