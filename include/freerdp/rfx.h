@@ -135,6 +135,7 @@ struct _RFX_CONTEXT
 	RFX_PIXEL_FORMAT pixel_format;
 
 	/* temporary data within a frame */
+	uint32 frame_idx;
 	uint8 num_quants;
 	uint32 * quants;
 

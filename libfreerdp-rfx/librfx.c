@@ -564,7 +564,20 @@ rfx_compose_message_header(RFX_CONTEXT * context, uint8 * buffer, int buffer_siz
 static int
 rfx_compose_message_frame_begin(RFX_CONTEXT * context, uint8 * buffer, int buffer_size)
 {
-	return 0;
+	if (buffer_size < 14)
+	{
+		printf("rfx_compose_message_frame_begin: buffer size too small.\n");
+		return 0;
+	}
+
+	SET_UINT16(buffer, 0, WBT_FRAME_BEGIN); /* CodecChannelT.blockType */
+	SET_UINT32(buffer, 2, 14); /* CodecChannelT.blockLen */
+	SET_UINT8(buffer, 6, 1); /* CodecChannelT.codecId */
+	SET_UINT8(buffer, 7, 0); /* CodecChannelT.channelId */
+	SET_UINT32(buffer, 8, context->frame_idx); /* frameIdx */
+	SET_UINT16(buffer, 12, 1); /* numRegions */
+
+	return 14;
 }
 
 static int
@@ -584,7 +597,18 @@ rfx_compose_message_tileset(RFX_CONTEXT * context, uint8 * buffer, int buffer_si
 static int
 rfx_compose_message_frame_end(RFX_CONTEXT * context, uint8 * buffer, int buffer_size)
 {
-	return 0;
+	if (buffer_size < 8)
+	{
+		printf("rfx_compose_message_frame_end: buffer size too small.\n");
+		return 0;
+	}
+
+	SET_UINT16(buffer, 0, WBT_FRAME_END); /* CodecChannelT.blockType */
+	SET_UINT32(buffer, 2, 8); /* CodecChannelT.blockLen */
+	SET_UINT8(buffer, 6, 1); /* CodecChannelT.codecId */
+	SET_UINT8(buffer, 7, 0); /* CodecChannelT.channelId */
+
+	return 8;
 }
 
 int
