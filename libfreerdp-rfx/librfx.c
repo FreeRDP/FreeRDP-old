@@ -468,6 +468,12 @@ rfx_message_free(RFX_CONTEXT * context, RFX_MESSAGE * message)
 static int
 rfx_compose_message_sync(RFX_CONTEXT * context, uint8 * buffer, int buffer_size)
 {
+	if (buffer_size < 12)
+	{
+		printf("rfx_compose_message_sync: buffer size too small.\n");
+		return 0;
+	}
+
 	SET_UINT16(buffer, 0, WBT_SYNC); /* BlockT.blockType */
 	SET_UINT32(buffer, 2, 12); /* BlockT.blockLen */
 	SET_UINT32(buffer, 6, WF_MAGIC); /* magic */
@@ -479,6 +485,12 @@ rfx_compose_message_sync(RFX_CONTEXT * context, uint8 * buffer, int buffer_size)
 static int
 rfx_compose_message_codec_versions(RFX_CONTEXT * context, uint8 * buffer, int buffer_size)
 {
+	if (buffer_size < 10)
+	{
+		printf("rfx_compose_message_codec_versions: buffer size too small.\n");
+		return 0;
+	}
+
 	SET_UINT16(buffer, 0, WBT_CODEC_VERSIONS); /* BlockT.blockType */
 	SET_UINT32(buffer, 2, 10); /* BlockT.blockLen */
 	SET_UINT8(buffer, 6, 1); /* numCodecs */
@@ -491,6 +503,12 @@ rfx_compose_message_codec_versions(RFX_CONTEXT * context, uint8 * buffer, int bu
 static int
 rfx_compose_message_channels(RFX_CONTEXT * context, uint8 * buffer, int buffer_size)
 {
+	if (buffer_size < 12)
+	{
+		printf("rfx_compose_message_channels: buffer size too small.\n");
+		return 0;
+	}
+
 	SET_UINT16(buffer, 0, WBT_CHANNELS); /* BlockT.blockType */
 	SET_UINT32(buffer, 2, 12); /* BlockT.blockLen */
 	SET_UINT8(buffer, 6, 1); /* numChannels */
@@ -505,6 +523,12 @@ static int
 rfx_compose_message_context(RFX_CONTEXT * context, uint8 * buffer, int buffer_size)
 {
 	uint16 properties;
+
+	if (buffer_size < 13)
+	{
+		printf("rfx_compose_message_context: buffer size too small.\n");
+		return 0;
+	}
 
 	SET_UINT16(buffer, 0, WBT_CONTEXT); /* CodecChannelT.blockType */
 	SET_UINT32(buffer, 2, 13); /* CodecChannelT.blockLen */
