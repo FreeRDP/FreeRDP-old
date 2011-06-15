@@ -206,6 +206,7 @@ rfx_process_message_context(RFX_CONTEXT * context, uint8 * data, int data_size)
 	DEBUG_RFX("codec %d channel %d ctx %d tileSize %d properties 0x%X.",
 		codecId, channelId, ctxId, tileSize, properties);
 
+	context->properties = properties;
 	context->flags = (properties & 0x0007);
 
 	if (context->flags == CODEC_MODE)
@@ -546,6 +547,7 @@ rfx_compose_message_context(RFX_CONTEXT * context, uint8 * buffer, int buffer_si
 	properties |= ((context->mode == RLGR1 ? CLW_ENTROPY_RLGR1 : CLW_ENTROPY_RLGR3) << 9); /* et */
 	properties |= (SCALAR_QUANTIZATION << 13); /* qt */
 	SET_UINT16(buffer, 11, properties);
+	context->properties = properties;
 
 	return 13;
 }

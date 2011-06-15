@@ -126,7 +126,8 @@ typedef struct _RFX_MESSAGE RFX_MESSAGE;
 
 struct _RFX_CONTEXT
 {
-	int flags;
+	uint16 flags;
+	uint16 properties;
 	uint16 width;
 	uint16 height;
 	RLGR_MODE mode;
