@@ -344,6 +344,7 @@ test_message(void)
 	RFX_CONTEXT * context;
 	uint8 buffer[16384];
 	int size;
+	RFX_RECT rect = {0, 0, 64, 64};
 
 	context = rfx_context_new();
 	context->mode = RLGR3;
@@ -351,9 +352,13 @@ test_message(void)
 	context->height = 600;
 	rfx_context_set_pixel_format(context, RFX_PIXEL_FORMAT_RGB);
 
-	size =  rfx_compose_message_header(context, buffer, sizeof(buffer));
+	size = rfx_compose_message_header(context, buffer, sizeof(buffer));
 	/*hexdump(buffer, size);*/
 	rfx_process_message(context, buffer, size);
+
+	size = rfx_compose_message_data(context, buffer, sizeof(buffer),
+		&rect, 1, rgb_data, 64, 64, 64 * 3);
+	hexdump(buffer, size);
 
 	rfx_context_free(context);
 }
