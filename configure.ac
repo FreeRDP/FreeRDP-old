@@ -1071,7 +1071,7 @@ AC_ARG_WITH(neon,
         then
 		AM_CONDITIONAL(WITH_NEON, true)
 		AC_DEFINE(WITH_NEON,1)
-		CFLAGS="$CFLAGS"
+		CFLAGS="$CFLAGS -mfpu=neon"
         fi
     ])
 
@@ -1169,10 +1169,12 @@ AC_CONFIG_FILES([
 Makefile
 freerdp.pc
 libfreerdp-asn1/Makefile
-libfreerdp-gdi/Makefile
 libfreerdp-rfx/Makefile
 libfreerdp-rfx/sse/Makefile
 libfreerdp-rfx/neon/Makefile
+libfreerdp-gdi/Makefile
+libfreerdp-gdi/sse/Makefile
+libfreerdp-gdi/neon/Makefile
 libfreerdp-utils/Makefile
 libfreerdp-core/Makefile
 docs/Makefile

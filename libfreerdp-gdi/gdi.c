@@ -26,6 +26,7 @@
 #include "color.h"
 #include "decode.h"
 
+#include "libgdi.h"
 #include "gdi_dc.h"
 #include "gdi_pen.h"
 #include "gdi_line.h"
@@ -1203,6 +1204,8 @@ gdi_init(rdpInst * inst, uint32 flags)
 	gdi->tile = gdi_bitmap_new(gdi, 64, 64, 32, NULL);
 
 	gdi_register_callbacks(inst);
+
+	GDI_INIT_SIMD(gdi);
 
 	return 0;
 }

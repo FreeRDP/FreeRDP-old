@@ -1,8 +1,8 @@
 ## Process this file with automake to produce Makefile.in
 REQUIRED_SUBDIRS = \
 	libfreerdp-asn1 \
-	libfreerdp-gdi \
 	libfreerdp-rfx \
+	libfreerdp-gdi \
 	libfreerdp-utils \
 	libfreerdp-core \
 	docs \

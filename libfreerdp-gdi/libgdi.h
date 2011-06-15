@@ -1,6 +1,6 @@
 /*
    FreeRDP: A Remote Desktop Protocol client.
-   RemoteFX Codec Library - NEON Optimizations
+   GDI Library
 
    Copyright 2011 Marc-Andre Moreau <marcandre.moreau@gmail.com>
 
@@ -17,16 +17,19 @@
    limitations under the License.
 */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#ifndef __LIBGDI_H
+#define __LIBGDI_H
 
-#include "rfx_neon.h"
+#ifdef WITH_SSE
+#include "gdi_sse.h"
+#endif
 
-void rfx_init_neon(RFX_CONTEXT * context)
-{
-	if (1)
-	{
-		DEBUG_RFX("Using NEON optimizations");
-	}
-}
+#ifdef WITH_NEON
+#include "gdi_neon.h"
+#endif
+
+#ifndef GDI_INIT_SIMD
+#define GDI_INIT_SIMD(_gdi) do { } while (0)
+#endif
+
+#endif /* __LIBGDI_H */
