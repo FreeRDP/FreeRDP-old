@@ -552,7 +552,7 @@ rfx_compose_message_region(RFX_CONTEXT * context, uint8 * buffer, int buffer_siz
 
 static int
 rfx_compose_message_tileset(RFX_CONTEXT * context, uint8 * buffer, int buffer_size,
-	uint8 * image_buffer, int width, int height)
+	uint8 * image_data, int width, int height, int rowstride)
 {
 	return 0;
 }
@@ -565,7 +565,7 @@ rfx_compose_message_frame_end(RFX_CONTEXT * context, uint8 * buffer, int buffer_
 
 int
 rfx_compose_message_data(RFX_CONTEXT * context, uint8 * buffer, int buffer_size,
-	const RFX_RECT * rects, int num_rects, uint8 * image_buffer, int width, int height)
+	const RFX_RECT * rects, int num_rects, uint8 * image_data, int width, int height, int rowstride)
 {
 	int composed_size;
 
@@ -573,7 +573,7 @@ rfx_compose_message_data(RFX_CONTEXT * context, uint8 * buffer, int buffer_size,
 	composed_size += rfx_compose_message_region(context, buffer + composed_size, buffer_size - composed_size,
 		rects, num_rects);
 	composed_size += rfx_compose_message_tileset(context, buffer + composed_size, buffer_size - composed_size,
-		image_buffer, width, height);
+		image_data, width, height, rowstride);
 	composed_size += rfx_compose_message_frame_end(context, buffer + composed_size, buffer_size - composed_size);
 
 	return composed_size;

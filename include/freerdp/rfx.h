@@ -180,7 +180,7 @@ void rfx_message_free(RFX_CONTEXT * context, RFX_MESSAGE * message);
 
 int rfx_compose_message_header(RFX_CONTEXT * context, uint8 * buffer, int buffer_size);
 int rfx_compose_message_data(RFX_CONTEXT * context, uint8 * buffer, int buffer_size,
-	const RFX_RECT * rects, int num_rects, uint8 * image_buffer, int width, int height);
+	const RFX_RECT * rects, int num_rects, uint8 * image_data, int width, int height, int rowstride);
 
 #ifdef __cplusplus
 }
