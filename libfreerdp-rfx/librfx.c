@@ -33,6 +33,23 @@
 
 #include "librfx.h"
 
+/*
+   The quantization values control the compression rate and quality. The value
+   range is between 6 and 15. The higher value, the higher compression rate
+   and lower quality.
+
+   This is the default values being use by the MS RDP server, and we will also
+   use it as our default values for the encoder. It can be overrided by setting
+   the context->num_quants and context->quants member.
+
+   The order of the values are:
+   LL3, LH3, HL3, HH3, LH2, HL2, HH2, LH1, HL1, HH1
+*/
+static const uint32 rfx_default_quantization_values[] =
+{
+	6, 6, 6, 6, 7, 7, 8, 8, 8, 9
+};
+
 void rfx_profiler_create(RFX_CONTEXT * context)
 {
 	PROFILER_CREATE(context->prof_rfx_decode_rgb, "rfx_decode_rgb");
@@ -626,7 +643,66 @@ static int
 rfx_compose_message_tileset(RFX_CONTEXT * context, uint8 * buffer, int buffer_size,
 	uint8 * image_data, int width, int height, int rowstride)
 {
-	return 0;
+	int size;
+	int i;
+	int numQuants;
+	const uint32 * quantVals;
+	int quantIdxY;
+	int quantIdxCb;
+	int quantIdxCr;
+	int numTiles;
+	int numTilesX;
+	int numTilesY;
+
+	if (context->num_quants == 0)
+	{
+		numQuants = 1;
+		quantVals = rfx_default_quantization_values;
+		quantIdxY = 0;
+		quantIdxCb = 0;
+		quantIdxCr = 0;
+	}
+	else
+	{
+		numQuants = context->num_quants;
+		quantVals = context->quants;
+		quantIdxY = context->quant_idx_y;
+		quantIdxCb = context->quant_idx_cb;
+		quantIdxCr = context->quant_idx_cr;
+	}
+
+	numTilesX = (width + 63) / 64;
+	numTilesY = (height + 63) / 64;
+	numTiles = numTilesX * numTilesY;
+
+	if (buffer_size < 22 + numQuants * 5)
+	{
+		printf("rfx_compose_message_tileset: buffer size too small.\n");
+		return 0;
+	}
+
+	SET_UINT16(buffer, 0, WBT_EXTENSION); /* CodecChannelT.blockType */
+	/* set CodecChannelT.blockLen later */
+	SET_UINT8(buffer, 6, 1); /* CodecChannelT.codecId */
+	SET_UINT8(buffer, 7, 0); /* CodecChannelT.channelId */
+	SET_UINT16(buffer, 8, CBT_TILESET); /* subtype */
+	SET_UINT16(buffer, 10, 0); /* idx */
+	SET_UINT16(buffer, 12, context->properties); /* properties */
+	SET_UINT8(buffer, 14, numQuants); /* numQuants */
+	SET_UINT8(buffer, 15, 0x40); /* tileSize */
+	SET_UINT16(buffer, 16, numTiles); /* numTiles */
+	/* set tilesDataSize later */
+	size = 22;
+
+	for (i = 0; i < numQuants * 5; i++)
+	{
+		SET_UINT8(buffer, size, quantVals[0] + (quantVals[1] << 4));
+		quantVals += 2;
+		size++;
+	}
+
+	SET_UINT32(buffer, 2, size); /* CodecChannelT.blockLen */
+	return size;
 }
 
 static int

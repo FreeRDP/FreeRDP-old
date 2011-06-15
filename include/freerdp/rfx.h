@@ -140,6 +140,9 @@ struct _RFX_CONTEXT
 	uint32 frame_idx;
 	uint8 num_quants;
 	uint32 * quants;
+	uint8 quant_idx_y;
+	uint8 quant_idx_cb;
+	uint8 quant_idx_cr;
 
 	/* pre-allocated buffers */
 
