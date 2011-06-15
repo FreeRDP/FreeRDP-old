@@ -213,7 +213,7 @@ rfx_dwt_2d_decode_block_vert_SSE2(sint16 * l, sint16 * h, sint16 * dst, int subb
 	sint16 * h_ptr = h;
 	sint16 * dst_ptr = dst;
 	
-	int total_width = subband_width * subband_width;
+	int total_width = subband_width + subband_width;
 
 	/* Even coefficients */
 	for (n = 0; n < subband_width; n++)
