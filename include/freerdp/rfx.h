@@ -148,19 +148,24 @@ struct _RFX_CONTEXT
 	sint16 cb_g_mem[4096+8]; /* 4096 = 64x64 (+ 8x2 = 16 for mem align) */
 	sint16 cr_b_mem[4096+8]; /* 4096 = 64x64 (+ 8x2 = 16 for mem align) */
  
- 	sint16* y_r_buffer;
-	sint16* cb_g_buffer;
-	sint16* cr_b_buffer;
+ 	sint16 * y_r_buffer;
+	sint16 * cb_g_buffer;
+	sint16 * cr_b_buffer;
  
-	sint16 dwt_buffer_8[256]; /* sub-band width 8 */
-	sint16 dwt_buffer_16[1024]; /* sub-band width 16 */
-	sint16 dwt_buffer_32[4096]; /* sub-band width 32 */
-	sint16* dwt_buffers[5]; /* sub-band buffer array */
+	sint16 dwt_mem_8[8*8*2*2 + 8]; /* sub-band width 8 */
+	sint16 dwt_mem_16[16*16*2*2 + 8]; /* sub-band width 16 */
+	sint16 dwt_mem_32[32*32*2*2 + 8]; /* sub-band width 32 */
+	//sint16* dwt_buffers[5]; /* sub-band buffer array */
+
+ 	sint16 * dwt_buffer_8;
+	sint16 * dwt_buffer_16;
+	sint16 * dwt_buffer_32;
 
 	/* routines */
 	void (* decode_YCbCr_to_RGB)(sint16 * y_r_buf, sint16 * cb_g_buf, sint16 * cr_b_buf);
 	void (* encode_RGB_to_YCbCr)(sint16 * y_r_buf, sint16 * cb_g_buf, sint16 * cr_b_buf);
 	void (* quantization_decode)(sint16 * buffer, const uint32 * quantization_values);
+	void (* dwt_2d_decode)(sint16 * buffer, sint16 * dwt_buffer_8, sint16 * dwt_buffer_16, sint16 * dwt_buffer_32);
 
 	/* profiler definitions */
 	PROFILER_DEFINE(prof_rfx_decode_rgb);

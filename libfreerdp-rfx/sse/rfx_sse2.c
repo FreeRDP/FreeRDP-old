@@ -27,6 +27,17 @@
 
 #define CACHE_LINE_BYTES	64
 
+static __inline void __attribute__((__gnu_inline__, __always_inline__, __artificial__))
+_mm_prefetch_buffer(char * buffer, int num_bytes)
+{
+	__m128i * buf = (__m128i*) buffer;
+	int i;
+	for (i = 0; i < (num_bytes / sizeof(__m128i)); i+=(CACHE_LINE_BYTES / sizeof(__m128i)))
+	{
+		_mm_prefetch((char*)(&buf[i]), _MM_HINT_NTA);
+	}
+}
+
 void rfx_decode_YCbCr_to_RGB_SSE2(sint16 * y_r_buffer, sint16 * cb_g_buffer, sint16 * cr_b_buffer)
 {	
 	__m128i zero = _mm_setzero_si128();
@@ -106,13 +117,7 @@ rfx_quantization_decode_block_SSE2(sint16 * buffer, const int buffer_size, const
 
 void rfx_quantization_decode_SSE2(sint16 * buffer, const uint32 * quantization_values)
 {
-	__m128i * buf = (__m128i*) buffer;
-	
-	int i;
-	for (i = 0; i < (4096 * sizeof(sint16) / sizeof(__m128i)); i+=(CACHE_LINE_BYTES / sizeof(__m128i)))
-	{
-		_mm_prefetch((char*)(&buf[i]), _MM_HINT_NTA);
-	}
+	_mm_prefetch_buffer((char *) buffer, 4096 * sizeof(sint16));
 
 	rfx_quantization_decode_block_SSE2(buffer, 1024, quantization_values[8]); // HL1
 	rfx_quantization_decode_block_SSE2(buffer + 1024, 1024, quantization_values[7]); // LH1
@@ -123,5 +128,191 @@ void rfx_quantization_decode_SSE2(sint16 * buffer, const uint32 * quantization_v
 	rfx_quantization_decode_block_SSE2(buffer + 3840, 64, quantization_values[2]); // HL3
 	rfx_quantization_decode_block_SSE2(buffer + 3904, 64, quantization_values[1]); // LH3
 	rfx_quantization_decode_block_SSE2(buffer + 3868, 64, quantization_values[3]); // HH3
-	rfx_quantization_decode_block_SSE2(buffer + 4032, 64, quantization_values[0]); // LL3	
+	rfx_quantization_decode_block_SSE2(buffer + 4032, 64, quantization_values[0]); // LL3
+}
+
+static __inline void __attribute__((__gnu_inline__, __always_inline__, __artificial__))
+rfx_dwt_2d_decode_block_horiz_SSE2(sint16 * l, sint16 * h, sint16 * dst, int subband_width)
+{
+	int y, n;
+	sint16 * l_ptr = l;
+	sint16 * h_ptr = h;
+	sint16 * dst_ptr = dst;
+
+	for (y = 0; y < subband_width; y++)
+	{
+		/* Even coefficients */
+		for (n = 0; n < subband_width; n+=8)
+		{
+			// dst[2n] = l[n] - ((h[n-1] + h[n] + 1) >> 1);
+			
+			__m128i l_n = _mm_load_si128((__m128i*) l_ptr);
+
+			__m128i h_n = _mm_load_si128((__m128i*) h_ptr);
+			__m128i h_n_m = _mm_loadu_si128((__m128i*) (h_ptr - 1));
+			if (n == 0)
+			{
+				int first = _mm_extract_epi16(h_n_m, 1);
+				h_n_m = _mm_insert_epi16(h_n_m, first, 0);
+			}
+			
+			__m128i tmp_n = _mm_add_epi16(h_n, h_n_m);
+			tmp_n = _mm_add_epi16(tmp_n, _mm_set1_epi16(1));
+			tmp_n = _mm_srai_epi16(tmp_n, 1);
+			
+			__m128i dst_n = _mm_sub_epi16(l_n, tmp_n);
+			
+			_mm_store_si128((__m128i*) l_ptr, dst_n);
+			
+			l_ptr+=8;
+			h_ptr+=8;
+		}
+		l_ptr -= subband_width;
+		h_ptr -= subband_width;
+		
+		/* Odd coefficients */
+		for (n = 0; n < subband_width; n+=8)
+		{
+			// dst[2n + 1] = (h[n] << 1) + ((dst[2n] + dst[2n + 2]) >> 1);
+			
+			__m128i h_n = _mm_load_si128((__m128i*) h_ptr);
+			
+			h_n = _mm_slli_epi16(h_n, 1);
+			
+			__m128i dst_n = _mm_load_si128((__m128i*) (l_ptr));
+			__m128i dst_n_p = _mm_loadu_si128((__m128i*) (l_ptr + 1));
+			if (n == subband_width - 8)
+			{
+				int last = _mm_extract_epi16(dst_n_p, 6);
+				dst_n_p = _mm_insert_epi16(dst_n_p, last, 7);
+			}
+			
+			__m128i tmp_n = _mm_add_epi16(dst_n_p, dst_n);
+			tmp_n = _mm_srai_epi16(tmp_n, 1);
+			
+			tmp_n = _mm_add_epi16(tmp_n, h_n);
+			
+			__m128i dst1 = _mm_unpacklo_epi16(dst_n, tmp_n);
+			__m128i dst2 = _mm_unpackhi_epi16(dst_n, tmp_n);
+			
+			_mm_store_si128((__m128i*) dst_ptr, dst1);
+			_mm_store_si128((__m128i*) (dst_ptr + 8), dst2);
+			
+			l_ptr+=8;
+			h_ptr+=8;
+			dst_ptr+=16;
+		}
+	}
+}
+
+static __inline void __attribute__((__gnu_inline__, __always_inline__, __artificial__))
+rfx_dwt_2d_decode_block_vert_SSE2(sint16 * l, sint16 * h, sint16 * dst, int subband_width)
+{
+	int x, n;
+	sint16 * l_ptr = l;
+	sint16 * h_ptr = h;
+	sint16 * dst_ptr = dst;
+	
+	int total_width = subband_width + subband_width;
+
+	/* Even coefficients */
+	for (n = 0; n < subband_width; n++)
+	{
+		for (x = 0; x < total_width; x+=8)
+		{
+			// dst[2n] = l[n] - ((h[n-1] + h[n] + 1) >> 1);
+			
+			__m128i l_n = _mm_load_si128((__m128i*) l_ptr);
+			__m128i h_n = _mm_load_si128((__m128i*) h_ptr);
+			
+			__m128i tmp_n = _mm_add_epi16(h_n, _mm_set1_epi16(1));;
+			if (n == 0)
+				tmp_n = _mm_add_epi16(tmp_n, h_n);
+			else
+			{
+				__m128i h_n_m = _mm_loadu_si128((__m128i*) (h_ptr - total_width));
+				tmp_n = _mm_add_epi16(tmp_n, h_n_m);
+			}
+			tmp_n = _mm_srai_epi16(tmp_n, 1);
+			
+			__m128i dst_n = _mm_sub_epi16(l_n, tmp_n);
+			_mm_store_si128((__m128i*) dst_ptr, dst_n);
+			
+			l_ptr+=8;
+			h_ptr+=8;
+			dst_ptr+=8;
+		}
+		dst_ptr+=total_width;
+	}
+	
+	h_ptr = h;
+	dst_ptr = dst + total_width;
+	
+	/* Odd coefficients */
+	for (n = 0; n < subband_width; n++)
+	{
+		for (x = 0; x < total_width; x+=8)
+		{
+			// dst[2n + 1] = (h[n] << 1) + ((dst[2n] + dst[2n + 2]) >> 1);
+			
+			__m128i h_n = _mm_load_si128((__m128i*) h_ptr);
+			__m128i dst_n_m = _mm_load_si128((__m128i*) (dst_ptr - total_width));
+			h_n = _mm_slli_epi16(h_n, 1);
+			
+			__m128i tmp_n = dst_n_m;
+			if (n == subband_width - 1)
+				tmp_n = _mm_add_epi16(tmp_n, dst_n_m);
+			else
+			{
+				__m128i dst_n_p = _mm_loadu_si128((__m128i*) (dst_ptr + total_width));
+				tmp_n = _mm_add_epi16(tmp_n, dst_n_p);
+			}
+			tmp_n = _mm_srai_epi16(tmp_n, 1);
+			
+			__m128i dst_n = _mm_add_epi16(tmp_n, h_n);
+			_mm_store_si128((__m128i*) dst_ptr, dst_n);
+
+			h_ptr+=8;
+			dst_ptr+=8;
+		}
+		dst_ptr+=total_width;
+	}
+}
+
+static __inline void __attribute__((__gnu_inline__, __always_inline__, __artificial__))
+rfx_dwt_2d_decode_block_SSE2(sint16 * buffer, sint16 * idwt, int subband_width)
+{
+	sint16 * hl, * lh, * hh, * ll;
+	sint16 * l_dst, * h_dst;
+
+	_mm_prefetch_buffer((char *) idwt, subband_width * 4 * sizeof(sint16));
+
+	/* Inverse DWT in horizontal direction, results in 2 sub-bands in L, H order in tmp buffer idwt. */
+	/* The 4 sub-bands are stored in HL(0), LH(1), HH(2), LL(3) order. */
+	/* The lower part L uses LL(3) and HL(0). */
+	/* The higher part H uses LH(1) and HH(2). */
+
+	ll = buffer + subband_width * subband_width * 3;
+	hl = buffer;
+	l_dst = idwt;
+
+	rfx_dwt_2d_decode_block_horiz_SSE2(ll, hl, l_dst, subband_width);
+
+	lh = buffer + subband_width * subband_width;
+	hh = buffer + subband_width * subband_width * 2;
+	h_dst = idwt + subband_width * subband_width * 2;
+	
+	rfx_dwt_2d_decode_block_horiz_SSE2(lh, hh, h_dst, subband_width);
+
+	/* Inverse DWT in vertical direction, results are stored in original buffer. */
+	rfx_dwt_2d_decode_block_vert_SSE2(l_dst, h_dst, buffer, subband_width);
+}
+
+void rfx_dwt_2d_decode_SSE2(sint16 * buffer, sint16 * dwt_buffer_8, sint16 * dwt_buffer_16, sint16 * dwt_buffer_32)
+{
+	_mm_prefetch_buffer((char *) buffer, 4096 * sizeof(sint16));
+	
+	rfx_dwt_2d_decode_block_SSE2(buffer + 3840, dwt_buffer_8, 8);
+	rfx_dwt_2d_decode_block_SSE2(buffer + 3072, dwt_buffer_16, 16);
+	rfx_dwt_2d_decode_block_SSE2(buffer, dwt_buffer_32, 32);
 }
