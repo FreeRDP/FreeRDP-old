@@ -584,7 +584,38 @@ static int
 rfx_compose_message_region(RFX_CONTEXT * context, uint8 * buffer, int buffer_size,
 	const RFX_RECT * rects, int num_rects)
 {
-	return 0;
+	int size;
+	int i;
+
+	if (buffer_size < 15 + num_rects * 8)
+	{
+		printf("rfx_compose_message_region: buffer size too small.\n");
+		return 0;
+	}
+
+	SET_UINT16(buffer, 0, WBT_REGION); /* CodecChannelT.blockType */
+	/* set CodecChannelT.blockLen later */
+	SET_UINT8(buffer, 6, 1); /* CodecChannelT.codecId */
+	SET_UINT8(buffer, 7, 0); /* CodecChannelT.channelId */
+	SET_UINT8(buffer, 8, 1); /* regionFlags */
+	SET_UINT16(buffer, 9, num_rects); /* numRects */
+	size = 11;
+
+	for (i = 0; i < num_rects; i++)
+	{
+		SET_UINT16(buffer, size, rects[i].x);
+		SET_UINT16(buffer, size + 2, rects[i].y);
+		SET_UINT16(buffer, size + 4, rects[i].width);
+		SET_UINT16(buffer, size + 6, rects[i].height);
+		size += 8;
+	}
+
+	SET_UINT16(buffer, size, CBT_REGION); /* regionType */
+	SET_UINT16(buffer, size + 2, 1); /* numTilesets */
+	size += 4;
+
+	SET_UINT32(buffer, 2, size); /* CodecChannelT.blockLen */
+	return size;
 }
 
 static int

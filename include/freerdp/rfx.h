@@ -41,6 +41,7 @@ extern "C" {
 #define WBT_FRAME_END		0xCCC5
 #define WBT_REGION		0xCCC6
 #define WBT_EXTENSION		0xCCC7
+#define CBT_REGION		0xCAC1
 #define CBT_TILESET		0xCAC2
 #define CBT_TILE		0xCAC3
 
