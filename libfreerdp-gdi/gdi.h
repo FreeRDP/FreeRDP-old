@@ -229,6 +229,17 @@ struct _GDI_IMAGE
 typedef struct _GDI_IMAGE GDI_IMAGE;
 typedef GDI_IMAGE* HGDI_IMAGE;
 
+#include "gdi_dc.h"
+#include "gdi_pen.h"
+#include "gdi_line.h"
+#include "gdi_shape.h"
+#include "gdi_brush.h"
+#include "gdi_region.h"
+#include "gdi_bitmap.h"
+#include "gdi_palette.h"
+#include "gdi_drawing.h"
+#include "gdi_clipping.h"
+
 struct _GDI
 {
 	int width;
@@ -247,8 +258,14 @@ struct _GDI
 	GDI_COLOR textColor;
 	void * rfx_context;
 	GDI_IMAGE *tile;
+
+	/* callbacks */
+	p_gdi_BitBlt BitBlt;
+	p_gdi_image_convert gdi_image_convert;
 };
 typedef struct _GDI GDI;
+
+#include "decode.h"
 
 uint32 gdi_rop3_code(uint8 code);
 void gdi_copy_mem(uint8 *d, uint8 *s, int n);

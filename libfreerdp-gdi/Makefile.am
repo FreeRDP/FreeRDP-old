@@ -21,7 +21,7 @@ libfreerdp_gdi_la_SOURCES = \
 	gdi_8bpp.c gdi_8bpp.h \
 	color.c color.h \
 	decode.c decode.h \
-	libgdi.c libgdi.h \
+	libgdi.h \
 	gdi.c gdi.h
 
 libfreerdp_gdi_la_CFLAGS = \
