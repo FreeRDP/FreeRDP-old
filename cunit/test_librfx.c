@@ -313,7 +313,7 @@ test_encode(void)
 	context->mode = RLGR3;
 	rfx_context_set_pixel_format(context, RFX_PIXEL_FORMAT_RGB);
 
-	rfx_encode_rgb(context, rgb_data, 64 * 3,
+	rfx_encode_rgb(context, rgb_data, 64, 64, 64 * 3,
 		test_quantization_values, test_quantization_values, test_quantization_values,
 		ycbcr_buffer, sizeof(ycbcr_buffer), &y_size, &cb_size, &cr_size);
 	//dump_buffer(context->cb_g_buffer, 4096);
