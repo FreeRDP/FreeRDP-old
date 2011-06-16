@@ -316,21 +316,21 @@ void
 test_encode(void)
 {
 	RFX_CONTEXT * context;
-	uint8 ycbcr_buffer[16384];
+	uint8 ycbcr_buffer[1024000];
 	int y_size, cb_size, cr_size;
 	int i;
 	uint8 decode_buffer[4096 * 3];
 
-	rgb_data = (uint8 *) malloc(100 * 80 * 3);
-	for (i = 0; i < 80; i++)
-		memcpy(rgb_data + i * 100 * 3, rgb_scanline_data, 80 * 3);
+	rgb_data = (uint8 *) malloc(64 * 64 * 3);
+	for (i = 0; i < 64; i++)
+		memcpy(rgb_data + i * 64 * 3, rgb_scanline_data, 64 * 3);
 	//hexdump(rgb_data, 64 * 64 * 3);
 
 	context = rfx_context_new();
 	context->mode = RLGR3;
 	rfx_context_set_pixel_format(context, RFX_PIXEL_FORMAT_RGB);
 
-	rfx_encode_rgb(context, rgb_data, 64, 64, 100 * 3,
+	rfx_encode_rgb(context, rgb_data, 64, 64, 64 * 3,
 		test_quantization_values, test_quantization_values, test_quantization_values,
 		ycbcr_buffer, sizeof(ycbcr_buffer), &y_size, &cb_size, &cr_size);
 	//dump_buffer(context->cb_g_buffer, 4096);
@@ -357,9 +357,14 @@ void
 test_message(void)
 {
 	RFX_CONTEXT * context;
-	uint8 buffer[16384];
+	uint8 buffer[1024000];
 	int size;
+	int i;
 	RFX_RECT rect = {0, 0, 64, 64};
+
+	rgb_data = (uint8 *) malloc(100 * 80 * 3);
+	for (i = 0; i < 80; i++)
+		memcpy(rgb_data + i * 100 * 3, rgb_scanline_data, 100 * 3);
 
 	context = rfx_context_new();
 	context->mode = RLGR3;
@@ -376,4 +381,5 @@ test_message(void)
 	/*hexdump(buffer, size);*/
 
 	rfx_context_free(context);
+	free(rgb_data);
 }
