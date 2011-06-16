@@ -27,6 +27,57 @@
 
 #include "rfx_decode.h"
 
+static __inline void __attribute__((__gnu_inline__, __always_inline__, __artificial__))
+rfx_decode_format_RGB(sint16 * r_buf, sint16 * g_buf, sint16 * b_buf,
+	RFX_PIXEL_FORMAT pixel_format, uint8 * dst_buf)
+{
+	sint16 * r = r_buf;
+	sint16 * g = g_buf;
+	sint16 * b = b_buf;
+	uint8 * dst = dst_buf;
+	int i;
+	
+	switch (pixel_format)
+	{
+		case RFX_PIXEL_FORMAT_BGRA:
+			for (i = 0; i < 4096; i++)
+			{
+				*dst++ = (uint8) (*b++);
+				*dst++ = (uint8) (*g++);
+				*dst++ = (uint8) (*r++);
+				*dst++ = 0xFF;
+			}
+			break;
+		case RFX_PIXEL_FORMAT_RGBA:
+			for (i = 0; i < 4096; i++)
+			{
+				*dst++ = (uint8) (*r++);
+				*dst++ = (uint8) (*g++);
+				*dst++ = (uint8) (*b++);
+				*dst++ = 0xFF;
+			}
+			break;
+		case RFX_PIXEL_FORMAT_BGR:
+			for (i = 0; i < 4096; i++)
+			{
+				*dst++ = (uint8) (*b++);
+				*dst++ = (uint8) (*g++);
+				*dst++ = (uint8) (*r++);
+			}
+			break;
+		case RFX_PIXEL_FORMAT_RGB:
+			for (i = 0; i < 4096; i++)
+			{
+				*dst++ = (uint8) (*r++);
+				*dst++ = (uint8) (*g++);
+				*dst++ = (uint8) (*b++);
+			}
+			break;
+		default:
+			break;
+	}
+}
+
 #define MINMAX(_v,_l,_h) ((_v) < (_l) ? (_l) : ((_v) > (_h) ? (_h) : (_v)))
 
 void
@@ -81,13 +132,8 @@ rfx_decode_rgb(RFX_CONTEXT * context,
 	const uint8 * cb_data, int cb_size, const uint32 * cb_quants,
 	const uint8 * cr_data, int cr_size, const uint32 * cr_quants, uint8* rgb_buffer)
 {
-	int i;
-	uint8 * dst;
-	sint16 * r, * g, * b;
-
 	PROFILER_ENTER(context->prof_rfx_decode_rgb);
 
-	dst = rgb_buffer;
 	rfx_decode_component(context, y_quants, y_data, y_size, context->y_r_buffer);
 	rfx_decode_component(context, cb_quants, cb_data, cb_size, context->cb_g_buffer);
 	rfx_decode_component(context, cr_quants, cr_data, cr_size, context->cr_b_buffer);
@@ -96,58 +142,11 @@ rfx_decode_rgb(RFX_CONTEXT * context,
 		context->decode_YCbCr_to_RGB(context->y_r_buffer, context->cb_g_buffer, context->cr_b_buffer);
 	PROFILER_EXIT(context->prof_rfx_decode_YCbCr_to_RGB);
 
-	switch (context->pixel_format)
-	{
-		case RFX_PIXEL_FORMAT_BGRA:
-			r = context->y_r_buffer;
-			g = context->cb_g_buffer;
-			b = context->cr_b_buffer;
-			for (i = 0; i < 4096; i++)
-			{
-				*dst++ = (uint8) (*b++);
-				*dst++ = (uint8) (*g++);
-				*dst++ = (uint8) (*r++);
-				*dst++ = 0xFF;
-			}
-			break;
-		case RFX_PIXEL_FORMAT_RGBA:
-			r = context->y_r_buffer;
-			g = context->cb_g_buffer;
-			b = context->cr_b_buffer;
-			for (i = 0; i < 4096; i++)
-			{
-				*dst++ = (uint8) (*r++);
-				*dst++ = (uint8) (*g++);
-				*dst++ = (uint8) (*b++);
-				*dst++ = 0xFF;
-			}
-			break;
-		case RFX_PIXEL_FORMAT_BGR:
-			r = context->y_r_buffer;
-			g = context->cb_g_buffer;
-			b = context->cr_b_buffer;
-			for (i = 0; i < 4096; i++)
-			{
-				*dst++ = (uint8) (*b++);
-				*dst++ = (uint8) (*g++);
-				*dst++ = (uint8) (*r++);
-			}
-			break;
-		case RFX_PIXEL_FORMAT_RGB:
-			r = context->y_r_buffer;
-			g = context->cb_g_buffer;
-			b = context->cr_b_buffer;
-			for (i = 0; i < 4096; i++)
-			{
-				*dst++ = (uint8) (*r++);
-				*dst++ = (uint8) (*g++);
-				*dst++ = (uint8) (*b++);
-			}
-			break;
-		default:
-			break;
-	}
-
+	PROFILER_ENTER(context->prof_rfx_decode_format_RGB);
+		rfx_decode_format_RGB(context->y_r_buffer, context->cb_g_buffer, context->cr_b_buffer,
+			context->pixel_format, rgb_buffer);
+	PROFILER_EXIT(context->prof_rfx_decode_format_RGB);
+	
 	PROFILER_EXIT(context->prof_rfx_decode_rgb);
 	return rgb_buffer;
 }

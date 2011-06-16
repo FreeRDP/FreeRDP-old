@@ -179,6 +179,7 @@ struct _RFX_CONTEXT
 	PROFILER_DEFINE(prof_rfx_quantization_decode);
 	PROFILER_DEFINE(prof_rfx_dwt_2d_decode);
 	PROFILER_DEFINE(prof_rfx_decode_YCbCr_to_RGB);
+	PROFILER_DEFINE(prof_rfx_decode_format_RGB);
 };
 typedef struct _RFX_CONTEXT RFX_CONTEXT;
 
