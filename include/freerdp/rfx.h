@@ -135,6 +135,7 @@ struct _RFX_CONTEXT
 	uint32 codec_id;
 	uint32 codec_version;
 	RFX_PIXEL_FORMAT pixel_format;
+	uint8 bytes_per_pixel;
 
 	/* temporary data within a frame */
 	uint32 frame_idx;

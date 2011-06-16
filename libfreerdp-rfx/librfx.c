@@ -98,6 +98,9 @@ rfx_context_new(void)
 
 	context->pool = rfx_pool_new();
 
+	/* initialize the default pixel format */
+	rfx_context_set_pixel_format(context, RFX_PIXEL_FORMAT_BGRA);
+
 	/* align buffers to 16 byte boundary (needed for SSE/SSE2 instructions) */
 	context->y_r_buffer = (sint16 *)(((uintptr_t)context->y_r_mem + 16) & ~ 0x0F);
 	context->cb_g_buffer = (sint16 *)(((uintptr_t)context->cb_g_mem + 16) & ~ 0x0F);
@@ -141,6 +144,20 @@ void
 rfx_context_set_pixel_format(RFX_CONTEXT * context, RFX_PIXEL_FORMAT pixel_format)
 {
 	context->pixel_format = pixel_format;
+	switch (pixel_format)
+	{
+		case RFX_PIXEL_FORMAT_BGRA:
+		case RFX_PIXEL_FORMAT_RGBA:
+			context->bytes_per_pixel = 4;
+			break;
+		case RFX_PIXEL_FORMAT_BGR:
+		case RFX_PIXEL_FORMAT_RGB:
+			context->bytes_per_pixel = 3;
+			break;
+		default:
+			context->bytes_per_pixel = 0;
+			break;
+	}
 }
 
 static void
@@ -643,6 +660,15 @@ rfx_compose_message_region(RFX_CONTEXT * context, uint8 * buffer, int buffer_siz
 }
 
 static int
+rfx_compose_message_tile(RFX_CONTEXT * context, uint8 * buffer, int buffer_size,
+	uint8 * tile_data, int tile_width, int tile_height, int rowstride,
+	int quantIdxY, int quantIdxCb, int quantIdxCr, int xIdx, int yIdx)
+{
+	DEBUG_RFX("xIdx=%d yIdx=%d width=%d height=%d", xIdx, yIdx, tile_width, tile_height);
+	return 0;
+}
+
+static int
 rfx_compose_message_tileset(RFX_CONTEXT * context, uint8 * buffer, int buffer_size,
 	uint8 * image_data, int width, int height, int rowstride)
 {
@@ -656,6 +682,9 @@ rfx_compose_message_tileset(RFX_CONTEXT * context, uint8 * buffer, int buffer_si
 	int numTiles;
 	int numTilesX;
 	int numTilesY;
+	int xIdx;
+	int yIdx;
+	int tilesDataSize;
 
 	if (context->num_quants == 0)
 	{
@@ -704,7 +733,24 @@ rfx_compose_message_tileset(RFX_CONTEXT * context, uint8 * buffer, int buffer_si
 		size++;
 	}
 
+	tilesDataSize = 0;
+	for (yIdx = 0; yIdx < numTilesY; yIdx++)
+	{
+		for (xIdx = 0; xIdx < numTilesX; xIdx++)
+		{
+			tilesDataSize += rfx_compose_message_tile(context,
+				buffer + size + tilesDataSize, buffer_size - size - tilesDataSize,
+				image_data + yIdx * 64 * rowstride + xIdx * 64 * context->bytes_per_pixel,
+				xIdx < numTilesX - 1 ? 64 : width - xIdx * 64,
+				yIdx < numTilesY - 1 ? 64 : height - yIdx * 64,
+				rowstride, quantIdxY, quantIdxCb, quantIdxCr, xIdx, yIdx);
+		}
+	}
+
+	size += tilesDataSize;
 	SET_UINT32(buffer, 2, size); /* CodecChannelT.blockLen */
+	SET_UINT32(buffer, 18, tilesDataSize); /* tilesDataSize */
+
 	return size;
 }
 
