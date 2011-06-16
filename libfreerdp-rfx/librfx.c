@@ -662,10 +662,41 @@ rfx_compose_message_region(RFX_CONTEXT * context, uint8 * buffer, int buffer_siz
 static int
 rfx_compose_message_tile(RFX_CONTEXT * context, uint8 * buffer, int buffer_size,
 	uint8 * tile_data, int tile_width, int tile_height, int rowstride,
-	int quantIdxY, int quantIdxCb, int quantIdxCr, int xIdx, int yIdx)
+	const uint32 * quantVals, int quantIdxY, int quantIdxCb, int quantIdxCr, int xIdx, int yIdx)
 {
-	DEBUG_RFX("xIdx=%d yIdx=%d width=%d height=%d", xIdx, yIdx, tile_width, tile_height);
-	return 0;
+	int YLen = 0;
+	int CbLen = 0;
+	int CrLen = 0;
+	int size;
+
+	if (buffer_size < 19)
+	{
+		printf("rfx_compose_message_tile: buffer size too small.\n");
+		return 0;
+	}
+
+	SET_UINT16(buffer, 0, CBT_TILE); /* BlockT.blockType */
+	/* set BlockT.blockLen later */
+	SET_UINT8(buffer, 6, quantIdxY); /* quantIdxY */
+	SET_UINT8(buffer, 7, quantIdxCb); /* quantIdxCb */
+	SET_UINT8(buffer, 8, quantIdxCr); /* quantIdxCr */
+	SET_UINT16(buffer, 9, xIdx); /* xIdx */
+	SET_UINT16(buffer, 11, yIdx); /* yIdx */
+
+	rfx_encode_rgb(context, tile_data, tile_width, tile_height, rowstride,
+		quantVals + quantIdxY * 10, quantVals + quantIdxCb * 10, quantVals + quantIdxCr * 10,
+		buffer + 19, buffer_size - 19, &YLen, &CbLen, &CrLen);
+
+	DEBUG_RFX("xIdx=%d yIdx=%d width=%d height=%d YLen=%d CbLen=%d CrLen=%d",
+		xIdx, yIdx, tile_width, tile_height, YLen, CbLen, CrLen);
+
+	SET_UINT16(buffer, 13, YLen); /* YLen */
+	SET_UINT16(buffer, 15, CbLen); /* CbLen */
+	SET_UINT16(buffer, 17, CrLen); /* CrLen */
+	size = 19 + YLen + CbLen + CrLen;
+	SET_UINT32(buffer, 2, size); /* BlockT.blockLen */
+
+	return size;
 }
 
 static int
@@ -676,6 +707,7 @@ rfx_compose_message_tileset(RFX_CONTEXT * context, uint8 * buffer, int buffer_si
 	int i;
 	int numQuants;
 	const uint32 * quantVals;
+	const uint32 * quantValsPtr;
 	int quantIdxY;
 	int quantIdxCb;
 	int quantIdxCr;
@@ -726,12 +758,15 @@ rfx_compose_message_tileset(RFX_CONTEXT * context, uint8 * buffer, int buffer_si
 	/* set tilesDataSize later */
 	size = 22;
 
+	quantValsPtr = quantVals;
 	for (i = 0; i < numQuants * 5; i++)
 	{
-		SET_UINT8(buffer, size, quantVals[0] + (quantVals[1] << 4));
-		quantVals += 2;
+		SET_UINT8(buffer, size, quantValsPtr[0] + (quantValsPtr[1] << 4));
+		quantValsPtr += 2;
 		size++;
 	}
+
+	DEBUG_RFX("width:%d height:%d rowstride:%d", width, height, rowstride);
 
 	tilesDataSize = 0;
 	for (yIdx = 0; yIdx < numTilesY; yIdx++)
@@ -743,7 +778,7 @@ rfx_compose_message_tileset(RFX_CONTEXT * context, uint8 * buffer, int buffer_si
 				image_data + yIdx * 64 * rowstride + xIdx * 64 * context->bytes_per_pixel,
 				xIdx < numTilesX - 1 ? 64 : width - xIdx * 64,
 				yIdx < numTilesY - 1 ? 64 : height - yIdx * 64,
-				rowstride, quantIdxY, quantIdxCb, quantIdxCr, xIdx, yIdx);
+				rowstride, quantVals, quantIdxY, quantIdxCb, quantIdxCr, xIdx, yIdx);
 		}
 	}
 
