@@ -62,6 +62,9 @@ xf_handle_event_MotionNotify(xfInfo * xfi, XEvent * xevent)
 {
 	if (xevent->xmotion.window == xfi->wnd)
 	{
+		if (!xfi->settings->mouse_motion)
+			if ((xevent->xmotion.state & (Button1Mask | Button2Mask | Button3Mask)) == 0)
+				return 0;
 		xfi->inst->rdp_send_input_mouse(xfi->inst, PTRFLAGS_MOVE, xevent->xmotion.x, xevent->xmotion.y);
 	}
 
