@@ -360,7 +360,8 @@ test_message(void)
 	uint8 buffer[1024000];
 	int size;
 	int i;
-	RFX_RECT rect = {0, 0, 64, 64};
+	RFX_RECT rect = {0, 0, 100, 80};
+	RFX_MESSAGE * message;
 
 	rgb_data = (uint8 *) malloc(100 * 80 * 3);
 	for (i = 0; i < 80; i++)
@@ -374,11 +375,18 @@ test_message(void)
 
 	size = rfx_compose_message_header(context, buffer, sizeof(buffer));
 	/*hexdump(buffer, size);*/
-	rfx_process_message(context, buffer, size);
+	message = rfx_process_message(context, buffer, size);
+	rfx_message_free(context, message);
 
 	size = rfx_compose_message_data(context, buffer, sizeof(buffer),
 		&rect, 1, rgb_data, 100, 80, 100 * 3);
 	/*hexdump(buffer, size);*/
+	message = rfx_process_message(context, buffer, size);
+	for (i = 0; i < message->num_tiles; i++)
+	{
+		dump_ppm_image(message->tiles[i]->data);
+	}
+	rfx_message_free(context, message);
 
 	rfx_context_free(context);
 	free(rgb_data);
