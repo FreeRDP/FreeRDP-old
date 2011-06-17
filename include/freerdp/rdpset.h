@@ -82,6 +82,7 @@ struct rdp_set
 	int off_screen_bitmaps;
 	int triblt;
 	int new_cursors;
+	int mouse_motion;
 	int bulk_compression;
 	int rfx_flags; /* 0 no remotefx */
 	int ui_decode_flags;
