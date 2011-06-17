@@ -20,10 +20,10 @@
 #ifndef __XF_TYPES_H
 #define __XF_TYPES_H
 
+#include <X11/Xlib.h>
 #include <freerdp/freerdp.h>
 #include <freerdp/chanman.h>
 #include <freerdp/utils/debug.h>
-#include <X11/Xlib.h>
 
 #include "gdi.h"
 

@@ -997,7 +997,8 @@ process_color_pointer_common(rdpRdp * rdp, STREAM s, int bpp)
 	y = MAX(y, 0);
 	y = MIN(y, height - 1);
 	cursor = ui_create_cursor(rdp->inst, x, y, width, height, mask, data, bpp);
-	ui_set_cursor(rdp->inst, cursor);
+	if (rdp->inst->settings->mouse_motion)
+		ui_set_cursor(rdp->inst, cursor);
 	cache_put_cursor(rdp->cache, cache_idx, cursor);
 }
 
@@ -1015,7 +1016,8 @@ process_cached_pointer_pdu(rdpRdp * rdp, STREAM s)
 	uint16 cache_idx;
 
 	in_uint16_le(s, cache_idx);
-	ui_set_cursor(rdp->inst, cache_get_cursor(rdp->cache, cache_idx));
+	if (rdp->inst->settings->mouse_motion)
+		ui_set_cursor(rdp->inst, cache_get_cursor(rdp->cache, cache_idx));
 }
 
 /* Process a system pointer PDU */
@@ -1028,11 +1030,13 @@ process_system_pointer_pdu(rdpRdp * rdp, STREAM s)
 	switch (system_pointer_type)
 	{
 		case RDP_SYSPTR_NULL:
-			ui_set_null_cursor(rdp->inst);
+			if (rdp->inst->settings->mouse_motion)
+				ui_set_null_cursor(rdp->inst);
 			break;
 
 		case RDP_SYSPTR_DEFAULT:
-			ui_set_default_cursor(rdp->inst);
+			if (rdp->inst->settings->mouse_motion)
+				ui_set_default_cursor(rdp->inst);
 			break;
 
 		default:

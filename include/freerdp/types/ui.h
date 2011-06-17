@@ -31,6 +31,11 @@ typedef void *RD_HGLYPH;
 typedef void *RD_HPALETTE;
 typedef void *RD_HCURSOR;
 
+#ifndef True
+#define True  (1)
+#define False (0)
+#endif
+
 typedef struct _RD_POINT
 {
 	sint16 x, y;

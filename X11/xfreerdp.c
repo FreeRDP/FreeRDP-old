@@ -22,6 +22,7 @@
 #include <string.h>
 #include <locale.h>
 #include <unistd.h>
+#include <X11/Xlib.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <errno.h>
@@ -72,6 +73,7 @@ set_default_params(xfInfo * xfi)
 	settings->desktop_save = 0;
 	settings->performanceflags =
 		PERF_DISABLE_WALLPAPER | PERF_DISABLE_FULLWINDOWDRAG | PERF_DISABLE_MENUANIMATIONS;
+	settings->mouse_motion = 1;
 	settings->off_screen_bitmaps = 1;
 	settings->polygon_ellipse_orders = 1;
 	settings->triblt = 0;
@@ -121,6 +123,7 @@ out_args(void)
 		"\t-z: enable bulk compression\n"
 		"\t--gdi: GDI rendering (sw or hw, for software or hardware)\n"
 		"\t-x: performance flags (m, b or l for modem, broadband or lan)\n"
+		"\t-m: don't send mouse motion events\n"
 		"\t-X: embed into another window with a given XID.\n"
 #ifndef DISABLE_TLS
 		"\t--no-rdp: disable Standard RDP encryption\n"
@@ -389,6 +392,10 @@ process_params(xfInfo * xfi, int argc, char ** argv, int * pindex)
 			settings->server_depth = 32;
 			settings->performanceflags = PERF_FLAG_NONE;
 			xfi->codec = XF_CODEC_REMOTEFX;
+		}
+		else if (strcmp("-m", argv[*pindex]) == 0)
+		{
+			settings->mouse_motion = 0;
 		}
 		else if (strcmp("--app", argv[*pindex]) == 0)
 		{

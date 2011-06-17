@@ -14,7 +14,7 @@ endif
 libfreerdp_rfx_sse_la_CFLAGS = \
 	-I$(top_srcdir) \
 	-I$(top_srcdir)/include \
-	-I..
+	-I$(top_srcdir)/libfreerdp-rfx
 
 libfreerdp_rfx_sse_la_LDFLAGS =
 
