@@ -697,7 +697,7 @@ uint8* gdi_mono_image_convert(uint8* srcData, int width, int height, int srcBpp,
 			fgcolor &= 0xFF;
 			redFg = clrconv->palette->entries[fgcolor].red;
 			greenFg = clrconv->palette->entries[fgcolor].green;
-			blueFg = clrconv->palette->entries[bgcolor].blue;
+			blueFg = clrconv->palette->entries[fgcolor].blue;
 			break;
 		case 16:
 			GetRGB16(redBg, greenBg, blueBg, bgcolor);
