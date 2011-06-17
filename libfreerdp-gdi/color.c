@@ -687,11 +687,8 @@ uint8* gdi_mono_image_convert(uint8* srcData, int width, int height, int srcBpp,
 	uint8 redBg, greenBg, blueBg;
 	uint8 redFg, greenFg, blueFg;
 
-	if(dstBpp == 16)
-	{
-		if(srcBpp == 8)
-		{
-			/* convert palette colors to 16-bit colors */
+	switch (srcBpp) {
+		case 8:
 			bgcolor &= 0xFF;
 			redBg = clrconv->palette->entries[bgcolor].red;
 			greenBg = clrconv->palette->entries[bgcolor].green;
@@ -700,19 +697,25 @@ uint8* gdi_mono_image_convert(uint8* srcData, int width, int height, int srcBpp,
 			fgcolor &= 0xFF;
 			redFg = clrconv->palette->entries[fgcolor].red;
 			greenFg = clrconv->palette->entries[fgcolor].green;
-			blueFg = clrconv->palette->entries[fgcolor].blue;
+			blueFg = clrconv->palette->entries[bgcolor].blue;
+			break;
+		case 16:
+			GetRGB16(redBg, greenBg, blueBg, bgcolor);
+			GetRGB16(redFg, greenFg, blueFg, fgcolor);
+			break;
+		case 15:
+			GetRGB15(redBg, greenBg, blueBg, bgcolor);
+			GetRGB15(redFg, greenFg, blueFg, fgcolor);
+			break;
+		default:
+			GetRGB32(redBg, greenBg, blueBg, bgcolor);
+			GetRGB32(redFg, greenFg, blueFg, fgcolor);
+	}
 
-			if(clrconv->rgb555)
-			{
-				bgcolor = RGB15(redBg, greenBg, blueBg);
-				fgcolor = RGB15(redFg, greenFg, blueFg);
-			}
-			else
-			{
-				bgcolor = RGB16(redBg, greenBg, blueBg);
-				fgcolor = RGB16(redFg, greenFg, blueFg);
-			}
-		}
+	if(dstBpp == 16)
+	{
+		/* GT: looks strange to me. Convert colors from RGB16 to RGB15 when
+		 * srcBpp == dstBpp == 16? */
 		if(clrconv->rgb555)
 		{
 			if(srcBpp == 16)
@@ -756,9 +759,6 @@ uint8* gdi_mono_image_convert(uint8* srcData, int width, int height, int srcBpp,
 	}
 	else if(dstBpp == 32)
 	{
-		GetRGB32(redBg, greenBg, blueBg, bgcolor);
-		GetRGB32(redFg, greenFg, blueFg, fgcolor);
-
 		dstData = (uint8*) malloc(width * height * 4);
 		dst32 = (uint32*) dstData;
 		for(index = height; index > 0; index--)
@@ -769,11 +769,11 @@ uint8* gdi_mono_image_convert(uint8* srcData, int width, int height, int srcBpp,
 			{
 				if((bitMask >> bitIndex) & 0x01)
 				{
-					*dst32 = BGR32(redBg, greenBg, blueBg);
+					*dst32 = RGB32(redBg, greenBg, blueBg);
 				}
 				else
 				{
-					*dst32 = BGR32(redFg, greenFg, blueFg);
+					*dst32 = RGB32(redFg, greenFg, blueFg);
 				}
 				dst32++;
 			}
