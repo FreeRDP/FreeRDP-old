@@ -359,7 +359,7 @@ test_message(void)
 	RFX_CONTEXT * context;
 	uint8 buffer[1024000];
 	int size;
-	int i;
+	int i, j;
 	RFX_RECT rect = {0, 0, 100, 80};
 	RFX_MESSAGE * message;
 
@@ -378,15 +378,21 @@ test_message(void)
 	message = rfx_process_message(context, buffer, size);
 	rfx_message_free(context, message);
 
-	size = rfx_compose_message_data(context, buffer, sizeof(buffer),
-		&rect, 1, rgb_data, 100, 80, 100 * 3);
-	/*hexdump(buffer, size);*/
-	message = rfx_process_message(context, buffer, size);
-	for (i = 0; i < message->num_tiles; i++)
+	for (i = 0; i < 1000; i++)
 	{
-		dump_ppm_image(message->tiles[i]->data);
+		size = rfx_compose_message_data(context, buffer, sizeof(buffer),
+			&rect, 1, rgb_data, 100, 80, 100 * 3);
+		/*hexdump(buffer, size);*/
+		message = rfx_process_message(context, buffer, size);
+		if (i == 0)
+		{
+			for (j = 0; j < message->num_tiles; j++)
+			{
+				dump_ppm_image(message->tiles[j]->data);
+			}
+		}
+		rfx_message_free(context, message);
 	}
-	rfx_message_free(context, message);
 
 	rfx_context_free(context);
 	free(rgb_data);
