@@ -1,6 +1,6 @@
 /*
    FreeRDP: A Remote Desktop Protocol client.
-   RemoteFX Codec Library - Decode
+   RemoteFX Codec Library - Encode
 
    Copyright 2011 Vic Lee
 
@@ -129,13 +129,25 @@ static void
 rfx_encode_component(RFX_CONTEXT * context, const uint32 * quantization_values,
 	sint16 * data, uint8 * buffer, int buffer_size, int * size)
 {
-	rfx_dwt_2d_encode(data, context->dwt_buffer_8, context->dwt_buffer_16, context->dwt_buffer_32);
+	PROFILER_ENTER(context->prof_rfx_encode_component);
 
-	rfx_quantization_encode(data, quantization_values);
+	PROFILER_ENTER(context->prof_rfx_dwt_2d_encode);
+		rfx_dwt_2d_encode(data, context->dwt_buffer_8, context->dwt_buffer_16, context->dwt_buffer_32);
+	PROFILER_EXIT(context->prof_rfx_dwt_2d_encode);
 
-	rfx_differential_encode(data + 4032, 64);
+	PROFILER_ENTER(context->prof_rfx_quantization_encode);
+		rfx_quantization_encode(data, quantization_values);
+	PROFILER_EXIT(context->prof_rfx_quantization_encode);
 
-	*size = rfx_rlgr_encode(context->mode, data, 4096, buffer, buffer_size);
+	PROFILER_ENTER(context->prof_rfx_differential_encode);
+		rfx_differential_encode(data + 4032, 64);
+	PROFILER_EXIT(context->prof_rfx_differential_encode);
+
+	PROFILER_ENTER(context->prof_rfx_rlgr_encode);
+		*size = rfx_rlgr_encode(context->mode, data, 4096, buffer, buffer_size);
+	PROFILER_EXIT(context->prof_rfx_rlgr_encode);
+
+	PROFILER_EXIT(context->prof_rfx_encode_component);
 }
 
 void
@@ -147,10 +159,16 @@ rfx_encode_rgb(RFX_CONTEXT * context, const uint8 * rgb_data, int width, int hei
 	sint16 * cb_g_buffer = context->cb_g_buffer;
 	sint16 * cr_b_buffer = context->cr_b_buffer;
 
-	rfx_encode_format_RGB(rgb_data, width, height, rowstride,
-		context->pixel_format, y_r_buffer, cb_g_buffer, cr_b_buffer);
+	PROFILER_ENTER(context->prof_rfx_encode_rgb);
 
-	context->encode_RGB_to_YCbCr(context->y_r_buffer, context->cb_g_buffer, context->cr_b_buffer);
+	PROFILER_ENTER(context->prof_rfx_encode_format_RGB);
+		rfx_encode_format_RGB(rgb_data, width, height, rowstride,
+			context->pixel_format, y_r_buffer, cb_g_buffer, cr_b_buffer);
+	PROFILER_EXIT(context->prof_rfx_encode_format_RGB);
+
+	PROFILER_ENTER(context->prof_rfx_encode_RGB_to_YCbCr);
+		context->encode_RGB_to_YCbCr(context->y_r_buffer, context->cb_g_buffer, context->cr_b_buffer);
+	PROFILER_EXIT(context->prof_rfx_encode_RGB_to_YCbCr);
 
 	rfx_encode_component(context, y_quants, context->y_r_buffer, ycbcr_buffer, buffer_size, y_size);
 	ycbcr_buffer += (*y_size);
@@ -159,4 +177,6 @@ rfx_encode_rgb(RFX_CONTEXT * context, const uint8 * rgb_data, int width, int hei
 	ycbcr_buffer += (*cb_size);
 	buffer_size -= (*cb_size);
 	rfx_encode_component(context, cr_quants, context->cr_b_buffer, ycbcr_buffer, buffer_size, cr_size);
+
+	PROFILER_EXIT(context->prof_rfx_encode_rgb);
 }

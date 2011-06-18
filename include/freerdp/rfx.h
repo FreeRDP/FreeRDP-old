@@ -181,6 +181,15 @@ struct _RFX_CONTEXT
 	PROFILER_DEFINE(prof_rfx_dwt_2d_decode);
 	PROFILER_DEFINE(prof_rfx_decode_YCbCr_to_RGB);
 	PROFILER_DEFINE(prof_rfx_decode_format_RGB);
+
+	PROFILER_DEFINE(prof_rfx_encode_rgb);
+	PROFILER_DEFINE(prof_rfx_encode_component);
+	PROFILER_DEFINE(prof_rfx_rlgr_encode);
+	PROFILER_DEFINE(prof_rfx_differential_encode);
+	PROFILER_DEFINE(prof_rfx_quantization_encode);
+	PROFILER_DEFINE(prof_rfx_dwt_2d_encode);
+	PROFILER_DEFINE(prof_rfx_encode_RGB_to_YCbCr);
+	PROFILER_DEFINE(prof_rfx_encode_format_RGB);
 };
 typedef struct _RFX_CONTEXT RFX_CONTEXT;
 
