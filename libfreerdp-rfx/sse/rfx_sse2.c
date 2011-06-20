@@ -57,14 +57,14 @@ rfx_decode_YCbCr_to_RGB_SSE2(sint16 * y_r_buffer, sint16 * cb_g_buffer, sint16 *
 	}
 	for (i = 0; i < (4096 * sizeof(sint16) / sizeof(__m128i)); i++)
 	{
-		// y = y_r_buf[i] + 128;
+		/* y = y_r_buf[i] + 128; */
 		__m128i y = _mm_load_si128(&y_r_buf[i]);
 		y = _mm_add_epi16(y, _mm_set1_epi16(128));
-		
-		// cr = cr_b_buf[i];
+
+		/* cr = cr_b_buf[i]; */
 		__m128i cr = _mm_load_si128(&cr_b_buf[i]);
-			
-		// r = between(y + cr + (cr >> 2) + (cr >> 3) + (cr >> 5), 0, 255);
+
+		/* r = between(y + cr + (cr >> 2) + (cr >> 3) + (cr >> 5), 0, 255); */
 		__m128i r = _mm_add_epi16(y, cr);
 		r = _mm_add_epi16(r, _mm_srai_epi16(cr, 2));
 		r = _mm_add_epi16(r, _mm_srai_epi16(cr, 3));
@@ -72,10 +72,10 @@ rfx_decode_YCbCr_to_RGB_SSE2(sint16 * y_r_buffer, sint16 * cb_g_buffer, sint16 *
 		r = _mm_between_epi16(r, zero, max);
 		_mm_store_si128(&y_r_buf[i], r);
 
-		// cb = cb_g_buf[i];
+		/* cb = cb_g_buf[i]; */
 		__m128i cb = _mm_load_si128(&cb_g_buf[i]);
 
-		// g = between(y - (cb >> 2) - (cb >> 4) - (cb >> 5) - (cr >> 1) - (cr >> 3) - (cr >> 4) - (cr >> 5), 0, 255);
+		/* g = between(y - (cb >> 2) - (cb >> 4) - (cb >> 5) - (cr >> 1) - (cr >> 3) - (cr >> 4) - (cr >> 5), 0, 255); */
 		__m128i g = _mm_sub_epi16(y, _mm_srai_epi16(cb, 2));
 		g = _mm_sub_epi16(g, _mm_srai_epi16(cb, 4));
 		g = _mm_sub_epi16(g, _mm_srai_epi16(cb, 5));
@@ -85,8 +85,8 @@ rfx_decode_YCbCr_to_RGB_SSE2(sint16 * y_r_buffer, sint16 * cb_g_buffer, sint16 *
 		g = _mm_sub_epi16(g, _mm_srai_epi16(cr, 5));
 		g = _mm_between_epi16(g, zero, max);
 		_mm_store_si128(&cb_g_buf[i], g);		
-		
-		// b = between(y + cb + (cb >> 1) + (cb >> 2) + (cb >> 6), 0, 255);
+
+		/* b = between(y + cb + (cb >> 1) + (cb >> 2) + (cb >> 6), 0, 255); */
 		__m128i b = _mm_add_epi16(y, cb);
 		b = _mm_add_epi16(b, _mm_srai_epi16(cb, 1));
 		b = _mm_add_epi16(b, _mm_srai_epi16(cb, 2));
@@ -183,7 +183,8 @@ rfx_quantization_decode_block_SSE2(sint16 * buffer, const int buffer_size, const
 	} while(ptr < buf_end);
 }
 
-void rfx_quantization_decode_SSE2(sint16 * buffer, const uint32 * quantization_values)
+void
+rfx_quantization_decode_SSE2(sint16 * buffer, const uint32 * quantization_values)
 {
 	_mm_prefetch_buffer((char *) buffer, 4096 * sizeof(sint16));
 
@@ -376,7 +377,8 @@ rfx_dwt_2d_decode_block_SSE2(sint16 * buffer, sint16 * idwt, int subband_width)
 	rfx_dwt_2d_decode_block_vert_SSE2(l_dst, h_dst, buffer, subband_width);
 }
 
-void rfx_dwt_2d_decode_SSE2(sint16 * buffer, sint16 * dwt_buffer_8, sint16 * dwt_buffer_16, sint16 * dwt_buffer_32)
+void
+rfx_dwt_2d_decode_SSE2(sint16 * buffer, sint16 * dwt_buffer_8, sint16 * dwt_buffer_16, sint16 * dwt_buffer_32)
 {
 	_mm_prefetch_buffer((char *) buffer, 4096 * sizeof(sint16));
 	
