@@ -160,7 +160,6 @@ struct _RFX_CONTEXT
 	sint16 dwt_mem_8[8*8*2*2 + 8]; /* sub-band width 8 */
 	sint16 dwt_mem_16[16*16*2*2 + 8]; /* sub-band width 16 */
 	sint16 dwt_mem_32[32*32*2*2 + 8]; /* sub-band width 32 */
-	//sint16* dwt_buffers[5]; /* sub-band buffer array */
 
  	sint16 * dwt_buffer_8;
 	sint16 * dwt_buffer_16;
@@ -170,6 +169,7 @@ struct _RFX_CONTEXT
 	void (* decode_YCbCr_to_RGB)(sint16 * y_r_buf, sint16 * cb_g_buf, sint16 * cr_b_buf);
 	void (* encode_RGB_to_YCbCr)(sint16 * y_r_buf, sint16 * cb_g_buf, sint16 * cr_b_buf);
 	void (* quantization_decode)(sint16 * buffer, const uint32 * quantization_values);
+	void (* quantization_encode)(sint16 * buffer, const uint32 * quantization_values);
 	void (* dwt_2d_decode)(sint16 * buffer, sint16 * dwt_buffer_8, sint16 * dwt_buffer_16, sint16 * dwt_buffer_32);
 
 	/* profiler definitions */
