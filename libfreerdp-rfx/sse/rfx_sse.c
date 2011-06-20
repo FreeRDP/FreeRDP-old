@@ -37,10 +37,12 @@ void rfx_init_sse(RFX_CONTEXT * context)
 		DEBUG_RFX("Using SSE2 optimizations");
 
 		IF_PROFILER(context->prof_rfx_decode_YCbCr_to_RGB->name = "rfx_decode_YCbCr_to_RGB_SSE2");
+		IF_PROFILER(context->prof_rfx_encode_RGB_to_YCbCr->name = "rfx_encode_RGB_to_YCbCr_SSE2");
 		IF_PROFILER(context->prof_rfx_quantization_decode->name = "rfx_quantization_decode_SSE2");
 		IF_PROFILER(context->prof_rfx_dwt_2d_decode->name = "rfx_dwt_2d_decode_SSE2");
 		
 		context->decode_YCbCr_to_RGB = rfx_decode_YCbCr_to_RGB_SSE2;
+		context->encode_RGB_to_YCbCr = rfx_encode_RGB_to_YCbCr_SSE2;
 		context->quantization_decode = rfx_quantization_decode_SSE2;
 		context->dwt_2d_decode = rfx_dwt_2d_decode_SSE2;
 	}

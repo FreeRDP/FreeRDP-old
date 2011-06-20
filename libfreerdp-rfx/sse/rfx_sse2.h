@@ -23,6 +23,7 @@
 #include <freerdp/rfx.h>
 
 void rfx_decode_YCbCr_to_RGB_SSE2(sint16 * y_r_buffer, sint16 * cb_g_buffer, sint16 * cr_b_buffer);
+void rfx_encode_RGB_to_YCbCr_SSE2(sint16 * y_r_buffer, sint16 * cb_g_buffer, sint16 * cr_b_buffer);
 void rfx_quantization_decode_SSE2(sint16 * buffer, const uint32 * quantization_values);
 void rfx_dwt_2d_decode_SSE2(sint16 * buffer, sint16 * dwt_buffer_8, sint16 * dwt_buffer_16, sint16 * dwt_buffer_32);
 
