@@ -230,6 +230,71 @@ server is running Windows 7 or Windows 2008 R2. <backend> can be "alsa" or
 automatically. Please read the FreeRDP Wiki for more information regarding
 Multimedia Redirection.
 
+.SH "RETURN VALUES"
+.PP
+.IP "\fB0\fP"
+Session terminated normally
+.IP "\fB1\fP"
+Disconnected by an administrative tool on the server
+.IP "\fB2\fP"
+Forced logoff by an administrative tool on the server
+.IP "\fB3\fP"
+Server idle limit timer has elapsed
+.IP "\fB4\fP"
+Server active limit timer has elapsed
+.IP "\fB5\fP"
+The session has been replaced
+.IP "\fB6\fP"
+The server ran out of memory
+.IP "\fB7\fP"
+The server denied the connection
+.IP "\fB8\fP"
+The server denied the connection for security reasons
+.IP "\fB9\fP"
+Connection denied due to insufficient user privileges
+.IP "\fB10\fP"
+The server requires fresh credentials
+.IP "\fB11\fP"
+Disconnect by an administrative tool on the server running the user's section
+
+.IP "\fB16\fP"
+An internal licensing error has occurred
+.IP "\fB17\fP"
+No license server available
+.IP "\fB18\fP"
+No valid license available
+.IP "\fB19\fP"
+Invalid licensing message
+.IP "\fB20\fP"
+The Client Access License stored by the client has been modified
+.IP "\fB21\fP"
+Client license error
+.IP "\fB22\fP"
+Network error during licensing protocol
+.IP "\fB23\fP"
+The client prematurely ended the licensing protocol
+.IP "\fB24\fP"
+A licensing message was incorrectly encrypted
+.IP "\fB25\fP"
+The Client Access License stored by the client could not be upgraded or renewed
+.IP "\fB26\fP"
+The server is not licensed to accept remote connections
+
+.IP "\fB32\fP"
+RDP protocol error set
+
+.IP "\fB128\fP"
+Wrong parameters
+.IP "\fB129\fP"
+The client ran out of memory
+.IP "\fB130\fP"
+Connection terminated due to a protocol error
+.IP "\fB131\fP"
+Connection to remote host has failed
+
+.IP "\fB255\fP"
+Unknown error
+
 .PP
 .SH LINKS
 Main website of FreeRDP
