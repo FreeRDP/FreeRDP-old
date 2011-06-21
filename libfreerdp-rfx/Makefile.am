@@ -26,14 +26,14 @@ libfreerdp_rfx_la_LIBADD =
 
 if WITH_SSE
 SUBDIRS = sse
-libfreerdp_rfx_la_CFLAGS += -I./sse
-libfreerdp_rfx_la_LIBADD += ./sse/libfreerdp-rfx-sse.la
+libfreerdp_rfx_la_CFLAGS += -I$(top_srcdir)/libfreerdp-rfx/sse
+libfreerdp_rfx_la_LIBADD += sse/libfreerdp-rfx-sse.la
 endif
 
 if WITH_NEON
 SUBDIRS = neon
-libfreerdp_rfx_la_CFLAGS += -I./neon
-libfreerdp_rfx_la_LIBADD += ./neon/libfreerdp-rfx-neon.la
+libfreerdp_rfx_la_CFLAGS += -I$(top_srcdir)/libfreerdp-rfx/neon
+libfreerdp_rfx_la_LIBADD += neon/libfreerdp-rfx-neon.la
 endif
 
 # extra

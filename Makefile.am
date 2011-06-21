@@ -43,14 +43,17 @@ SUBDIRS = $(REQUIRED_SUBDIRS) $(EXTRA_SUBDIRS)
 DIST_SUBDIRS = $(REQUIRED_SUBDIRS) $(OPTIONAL_SUBDIRS)
 
 EXTRA_DIST = autogen.sh build-aux indent-all.sh freerdp.spec \
-	AUTHORS ChangeLog INSTALL NEWS README LICENSE
+	AUTHORS ChangeLog INSTALL NEWS README LICENSE .version
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = freerdp.pc
 
 ## Support version extraction from GIT tree
-BUILT_SOURCES = $(top_srcdir)/.version
-$(top_srcdir)/.version:
+BUILT_SOURCES = .version
+.version:
 	echo $(VERSION) > $@-t && mv $@-t $@
+
+# Arrange so that .tarball-version appears only in the distribution
+# tarball, and never in a checked-out repository.
 dist-hook:
 	echo $(VERSION) > $(distdir)/.tarball-version
