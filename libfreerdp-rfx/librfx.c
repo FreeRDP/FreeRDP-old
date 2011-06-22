@@ -146,6 +146,7 @@ rfx_context_new(void)
 	context->decode_YCbCr_to_RGB = rfx_decode_YCbCr_to_RGB;
 	context->encode_RGB_to_YCbCr = rfx_encode_RGB_to_YCbCr;
 	context->quantization_decode = rfx_quantization_decode;	
+	context->quantization_encode = rfx_quantization_encode;	
 	context->dwt_2d_decode = rfx_dwt_2d_decode;
 
 	/* detect and enable SIMD CPU acceleration */
