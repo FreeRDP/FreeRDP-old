@@ -299,23 +299,7 @@ gdi_rop3_code(uint8 code)
 void
 gdi_copy_mem(uint8 * d, uint8 * s, int n)
 {
-	while (n & (~7))
-	{
-		*(d++) = *(s++);
-		*(d++) = *(s++);
-		*(d++) = *(s++);
-		*(d++) = *(s++);
-		*(d++) = *(s++);
-		*(d++) = *(s++);
-		*(d++) = *(s++);
-		*(d++) = *(s++);
-		n = n - 8;
-	}
-	while (n > 0)
-	{
-		*(d++) = *(s++);
-		n--;
-	}
+	memcpy(d, s, n);
 }
 
 void
