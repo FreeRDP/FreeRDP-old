@@ -1,6 +1,6 @@
 /*
    FreeRDP: A Remote Desktop Protocol client.
-   RemoteFX Codec Library - Decode
+   RemoteFX Codec Library - Encode
 
    Copyright 2011 Vic Lee
 
@@ -29,6 +29,81 @@
 
 #define MINMAX(_v,_l,_h) ((_v) < (_l) ? (_l) : ((_v) > (_h) ? (_h) : (_v)))
 
+static __inline void __attribute__((__gnu_inline__, __always_inline__, __artificial__))
+rfx_encode_format_RGB(const uint8 * rgb_data, int width, int height, int rowstride,
+	RFX_PIXEL_FORMAT pixel_format, sint16 * r_buf, sint16 * g_buf, sint16 * b_buf)
+{
+	int x, y;
+	int x_exceed;
+	int y_exceed;
+	const uint8 * src;
+
+	x_exceed = 64 - width;
+	y_exceed = 64 - height;
+	for (y = 0; y < height; y++)
+	{
+		src = rgb_data + y * rowstride;
+
+		switch (pixel_format)
+		{
+			case RFX_PIXEL_FORMAT_BGRA:
+				for (x = 0; x < width; x++)
+				{
+					*b_buf++ = (sint16) (*src++);
+					*g_buf++ = (sint16) (*src++);
+					*r_buf++ = (sint16) (*src++);
+					src++;
+				}
+				break;
+			case RFX_PIXEL_FORMAT_RGBA:
+				for (x = 0; x < width; x++)
+				{
+					*r_buf++ = (sint16) (*src++);
+					*g_buf++ = (sint16) (*src++);
+					*b_buf++ = (sint16) (*src++);
+					src++;
+				}
+				break;
+			case RFX_PIXEL_FORMAT_BGR:
+				for (x = 0; x < width; x++)
+				{
+					*b_buf++ = (sint16) (*src++);
+					*g_buf++ = (sint16) (*src++);
+					*r_buf++ = (sint16) (*src++);
+				}
+				break;
+			case RFX_PIXEL_FORMAT_RGB:
+				for (x = 0; x < width; x++)
+				{
+					*r_buf++ = (sint16) (*src++);
+					*g_buf++ = (sint16) (*src++);
+					*b_buf++ = (sint16) (*src++);
+				}
+				break;
+			default:
+				break;
+		}
+		/* Fill the horizontal region outside of 64x64 tile size to 0 in order to be better compressed. */
+		if (x_exceed > 0)
+		{
+			memset(r_buf, 0, x_exceed * sizeof(sint16));
+			memset(g_buf, 0, x_exceed * sizeof(sint16));
+			memset(b_buf, 0, x_exceed * sizeof(sint16));
+			r_buf += x_exceed;
+			g_buf += x_exceed;
+			b_buf += x_exceed;
+		}
+	}
+
+	/* Fill the vertical region outside of 64x64 tile size to 0 in order to be better compressed. */
+	if (y_exceed > 0)
+	{
+		memset(r_buf, 0, y_exceed * 64 * sizeof(sint16));
+		memset(g_buf, 0, y_exceed * 64 * sizeof(sint16));
+		memset(b_buf, 0, y_exceed * 64 * sizeof(sint16));
+	}
+}
+
 void
 rfx_encode_RGB_to_YCbCr(sint16 * y_r_buf, sint16 * cb_g_buf, sint16 * cr_b_buf)
 {
@@ -54,63 +129,46 @@ static void
 rfx_encode_component(RFX_CONTEXT * context, const uint32 * quantization_values,
 	sint16 * data, uint8 * buffer, int buffer_size, int * size)
 {
-	rfx_dwt_2d_encode(data, context->dwt_buffer_8, context->dwt_buffer_16, context->dwt_buffer_32);
+	PROFILER_ENTER(context->prof_rfx_encode_component);
 
-	rfx_quantization_encode(data, quantization_values);
+	PROFILER_ENTER(context->prof_rfx_dwt_2d_encode);
+		rfx_dwt_2d_encode(data, context->dwt_buffer_8, context->dwt_buffer_16, context->dwt_buffer_32);
+	PROFILER_EXIT(context->prof_rfx_dwt_2d_encode);
 
-	rfx_differential_encode(data + 4032, 64);
+	PROFILER_ENTER(context->prof_rfx_quantization_encode);
+		context->quantization_encode(data, quantization_values);
+	PROFILER_EXIT(context->prof_rfx_quantization_encode);
 
-	*size = rfx_rlgr_encode(context->mode, data, 4096, buffer, buffer_size);
+	PROFILER_ENTER(context->prof_rfx_differential_encode);
+		rfx_differential_encode(data + 4032, 64);
+	PROFILER_EXIT(context->prof_rfx_differential_encode);
+
+	PROFILER_ENTER(context->prof_rfx_rlgr_encode);
+		*size = rfx_rlgr_encode(context->mode, data, 4096, buffer, buffer_size);
+	PROFILER_EXIT(context->prof_rfx_rlgr_encode);
+
+	PROFILER_EXIT(context->prof_rfx_encode_component);
 }
 
 void
-rfx_encode_rgb(RFX_CONTEXT * context, const uint8 * rgb_buffer, int rowstride,
+rfx_encode_rgb(RFX_CONTEXT * context, const uint8 * rgb_data, int width, int height, int rowstride,
 	const uint32 * y_quants, const uint32 * cb_quants, const uint32 * cr_quants,
 	uint8 * ycbcr_buffer, int buffer_size, int * y_size, int * cb_size, int * cr_size)
 {
-	int x, y;
-	const uint8 * src;
 	sint16 * y_r_buffer = context->y_r_buffer;
 	sint16 * cb_g_buffer = context->cb_g_buffer;
 	sint16 * cr_b_buffer = context->cr_b_buffer;
 
-	for (y = 0; y < 64; y++)
-	{
-		src = rgb_buffer + y * rowstride;
+	PROFILER_ENTER(context->prof_rfx_encode_rgb);
 
-		for (x = 0; x < 64; x++)
-		{
-			switch (context->pixel_format)
-			{
-				case RFX_PIXEL_FORMAT_BGRA:
-					*cr_b_buffer++ = (sint16) (*src++);
-					*cb_g_buffer++ = (sint16) (*src++);
-					*y_r_buffer++ = (sint16) (*src++);
-					src++;
-					break;
-				case RFX_PIXEL_FORMAT_RGBA:
-					*y_r_buffer++ = (sint16) (*src++);
-					*cb_g_buffer++ = (sint16) (*src++);
-					*cr_b_buffer++ = (sint16) (*src++);
-					src++;
-					break;
-				case RFX_PIXEL_FORMAT_BGR:
-					*cr_b_buffer++ = (sint16) (*src++);
-					*cb_g_buffer++ = (sint16) (*src++);
-					*y_r_buffer++ = (sint16) (*src++);
-					break;
-				case RFX_PIXEL_FORMAT_RGB:
-					*y_r_buffer++ = (sint16) (*src++);
-					*cb_g_buffer++ = (sint16) (*src++);
-					*cr_b_buffer++ = (sint16) (*src++);
-					break;
-				default:
-					break;
-			}
-		}
-	}
+	PROFILER_ENTER(context->prof_rfx_encode_format_RGB);
+		rfx_encode_format_RGB(rgb_data, width, height, rowstride,
+			context->pixel_format, y_r_buffer, cb_g_buffer, cr_b_buffer);
+	PROFILER_EXIT(context->prof_rfx_encode_format_RGB);
 
-	context->encode_RGB_to_YCbCr(context->y_r_buffer, context->cb_g_buffer, context->cr_b_buffer);
+	PROFILER_ENTER(context->prof_rfx_encode_RGB_to_YCbCr);
+		context->encode_RGB_to_YCbCr(context->y_r_buffer, context->cb_g_buffer, context->cr_b_buffer);
+	PROFILER_EXIT(context->prof_rfx_encode_RGB_to_YCbCr);
 
 	rfx_encode_component(context, y_quants, context->y_r_buffer, ycbcr_buffer, buffer_size, y_size);
 	ycbcr_buffer += (*y_size);
@@ -119,4 +177,6 @@ rfx_encode_rgb(RFX_CONTEXT * context, const uint8 * rgb_buffer, int rowstride,
 	ycbcr_buffer += (*cb_size);
 	buffer_size -= (*cb_size);
 	rfx_encode_component(context, cr_quants, context->cr_b_buffer, ycbcr_buffer, buffer_size, cr_size);
+
+	PROFILER_EXIT(context->prof_rfx_encode_rgb);
 }

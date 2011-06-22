@@ -6,7 +6,9 @@ include_HEADERS = \
 	chan_plugin.h \
 	datablob.h \
 	memory.h \
+	profiler.h \
 	semaphore.h \
+	stopwatch.h \
 	stream.h \
 	unicode.h \
 	wait_obj.h
