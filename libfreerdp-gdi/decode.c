@@ -30,7 +30,7 @@
 
 #include "decode.h"
 
-void gdi_decode_frame(GDI *gdi, int x, int y, uint8 * data, uint32 length)
+void gdi_decode_bitmap_data(GDI *gdi, int x, int y, uint8 * data, uint32 length)
 {
 	int i, tx, ty;
 	RFX_MESSAGE * message;
@@ -64,38 +64,81 @@ void gdi_decode_frame(GDI *gdi, int x, int y, uint8 * data, uint32 length)
 	rfx_message_free(gdi->rfx_context, message);
 }
 
-void gdi_decode_data(GDI *gdi, uint8 * data, int data_size)
+int gdi_decode_surface_bits(GDI *gdi, uint8 * data, int size)
 {
-	int size;
 	int destLeft;
 	int destTop;
-	uint16 cmdType;
-	uint32 length;
+	uint32 bitmapDataLength;
 
-	while (data_size > 0)
+	/* SURFCMD_STREAM_SURF_BITS */
+	/* cmdType (2 bytes) */
+	destLeft = GET_UINT16(data, 2); /* destLeft (2 bytes) */
+	destTop = GET_UINT16(data, 4); /* destTop (2 bytes) */
+	/* destRight (2 bytes) */
+	/* destBottom (2 bytes) */
+
+	/* BITMAP_DATA_EX */
+	/* bpp (1 byte) */
+	/* reserved1 (1 byte) */
+	/* reserved2 (1 byte) */
+	/* codecID (1 byte) */
+	/* width (2 bytes) */
+	/* height (2 bytes) */
+	bitmapDataLength = GET_UINT32(data, 18); /* bitmapDataLength (4 bytes) */
+	gdi_decode_bitmap_data(gdi, destLeft, destTop, data + 22, bitmapDataLength); /* bitmapData*/
+
+	return 22 + bitmapDataLength;
+}
+
+int gdi_decode_frame_marker(GDI *gdi, uint8 * data, int size)
+{
+	uint16 frameAction;
+	uint32 frameId;
+
+	frameAction = GET_UINT16(data, 0); /* frameAction */
+	frameId = GET_UINT32(data, 2); /* frameId */
+
+	switch (frameAction)
 	{
-		cmdType = GET_UINT16(data, 0);
+		case SURFACECMD_FRAMEACTION_BEGIN:
+			break;
+
+		case SURFACECMD_FRAMEACTION_END:
+			break;
+
+		default:
+			break;
+	}
+
+	return 8;
+}
+
+void gdi_decode_data(GDI *gdi, uint8 * data, int size)
+{
+	int cmdLength;
+	uint16 cmdType;
+
+	while (size > 0)
+	{
+		cmdType = GET_UINT16(data, 0); /* cmdType */
 
 		switch (cmdType)
 		{
 			case CMDTYPE_SET_SURFACE_BITS:
 			case CMDTYPE_STREAM_SURFACE_BITS:
-				destLeft = GET_UINT16(data, 2);
-				destTop = GET_UINT16(data, 4);
-				length = GET_UINT32(data, 18);
-				gdi_decode_frame(gdi, destLeft, destTop, data + 22, length);
-				size = 22 + length;
+				cmdLength = gdi_decode_surface_bits(gdi, data, size);
 				break;
 
 			case CMDTYPE_FRAME_MARKER:
-				size = 8;
+				cmdLength = gdi_decode_frame_marker(gdi, data, size);
 				break;
 
 			default:
-				size = 2;
+				cmdLength = 2;
 				break;
 		}
-		data_size -= size;
-		data += size;
+
+		size -= cmdLength;
+		data += cmdLength;
 	}
 }
