@@ -30,25 +30,27 @@
 
 #include "decode.h"
 
-void gdi_decode_bitmap_data(GDI *gdi, int x, int y, uint8 * data, uint32 length)
+int gdi_decode_bitmap_data_ex(GDI *gdi, uint16 x, uint16 y, uint8 * data, int size)
 {
 	int i, tx, ty;
+	uint8* bitmapData;
+	uint32 bitmapDataLength;
 	RFX_MESSAGE * message;
 
-	message = rfx_process_message((RFX_CONTEXT *) gdi->rfx_context, data, length);
+	/* BITMAP_DATA_EX */
+	/* bpp (1 byte) */
+	/* reserved1 (1 byte) */
+	/* reserved2 (1 byte) */
+	/* codecID (1 byte) */
+	/* width (2 bytes) */
+	/* height (2 bytes) */
+	bitmapDataLength = GET_UINT32(data, 8); /* bitmapDataLength (4 bytes) */
+	bitmapData = data + 12; /* bitmapData */
 
-	if (message->num_rects > 1)
-	{
-		printf("warning: more than one clipping region\n");
-	}
+	/* decode bitmap data */
+	message = rfx_process_message((RFX_CONTEXT *) gdi->rfx_context, bitmapData, bitmapDataLength);
 
-	for (i = 0; i < message->num_rects; i++)
-	{
-		tx = message->rects[i].x + x;
-		ty = message->rects[i].y + y;
-		gdi_SetClipRgn(gdi->primary->hdc, tx, ty, message->rects[i].width, message->rects[i].height);
-	}
-
+	/* blit each tile */
 	for (i = 0; i < message->num_tiles; i++)
 	{
 		tx = message->tiles[i]->x + x;
@@ -62,32 +64,32 @@ void gdi_decode_bitmap_data(GDI *gdi, int x, int y, uint8 * data, uint32 length)
 	}
 
 	rfx_message_free(gdi->rfx_context, message);
+
+	return bitmapDataLength + 12;
 }
 
 int gdi_decode_surface_bits(GDI *gdi, uint8 * data, int size)
 {
-	int destLeft;
-	int destTop;
-	uint32 bitmapDataLength;
+	int length;
+	uint16 destLeft;
+	uint16 destTop;
+	uint16 destRight;
+	uint16 destBottom;
 
 	/* SURFCMD_STREAM_SURF_BITS */
 	/* cmdType (2 bytes) */
 	destLeft = GET_UINT16(data, 2); /* destLeft (2 bytes) */
 	destTop = GET_UINT16(data, 4); /* destTop (2 bytes) */
-	/* destRight (2 bytes) */
-	/* destBottom (2 bytes) */
+	destRight = GET_UINT16(data, 6); /* destRight (2 bytes) */
+	destBottom = GET_UINT16(data, 8); /* destBottom (2 bytes) */
 
-	/* BITMAP_DATA_EX */
-	/* bpp (1 byte) */
-	/* reserved1 (1 byte) */
-	/* reserved2 (1 byte) */
-	/* codecID (1 byte) */
-	/* width (2 bytes) */
-	/* height (2 bytes) */
-	bitmapDataLength = GET_UINT32(data, 18); /* bitmapDataLength (4 bytes) */
-	gdi_decode_bitmap_data(gdi, destLeft, destTop, data + 22, bitmapDataLength); /* bitmapData*/
+	/* set clipping region */
+	gdi_SetClipRgn(gdi->primary->hdc, destLeft, destTop, destRight - destLeft, destBottom - destTop);
 
-	return 22 + bitmapDataLength;
+	/* decode extended bitmap data */
+	length = gdi_decode_bitmap_data_ex(gdi, destLeft, destTop, data + 10, size - 10) + 10;
+
+	return length;
 }
 
 int gdi_decode_frame_marker(GDI *gdi, uint8 * data, int size)
