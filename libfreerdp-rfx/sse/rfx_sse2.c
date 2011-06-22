@@ -415,11 +415,11 @@ rfx_dwt_2d_decode_block_SSE2(sint16 * buffer, sint16 * idwt, int subband_width)
 }
 
 void
-rfx_dwt_2d_decode_SSE2(sint16 * buffer, sint16 * dwt_buffer_8, sint16 * dwt_buffer_16, sint16 * dwt_buffer_32)
+rfx_dwt_2d_decode_SSE2(sint16 * buffer, sint16 * dwt_buffer)
 {
 	_mm_prefetch_buffer((char *) buffer, 4096 * sizeof(sint16));
 	
-	rfx_dwt_2d_decode_block_SSE2(buffer + 3840, dwt_buffer_8, 8);
-	rfx_dwt_2d_decode_block_SSE2(buffer + 3072, dwt_buffer_16, 16);
-	rfx_dwt_2d_decode_block_SSE2(buffer, dwt_buffer_32, 32);
+	rfx_dwt_2d_decode_block_SSE2(buffer + 3840, dwt_buffer, 8);
+	rfx_dwt_2d_decode_block_SSE2(buffer + 3072, dwt_buffer, 16);
+	rfx_dwt_2d_decode_block_SSE2(buffer, dwt_buffer, 32);
 }

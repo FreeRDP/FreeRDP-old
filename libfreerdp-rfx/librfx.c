@@ -135,9 +135,7 @@ rfx_context_new(void)
 	context->cb_g_buffer = (sint16 *)(((uintptr_t)context->cb_g_mem + 16) & ~ 0x0F);
 	context->cr_b_buffer = (sint16 *)(((uintptr_t)context->cr_b_mem + 16) & ~ 0x0F);
 
-	context->dwt_buffer_8 = (sint16 *)(((uintptr_t)context->dwt_mem_8 + 16) & ~ 0x0F);
-	context->dwt_buffer_16 = (sint16 *)(((uintptr_t)context->dwt_mem_16 + 16) & ~ 0x0F);
-	context->dwt_buffer_32 = (sint16 *)(((uintptr_t)context->dwt_mem_32 + 16) & ~ 0x0F);
+	context->dwt_buffer = (sint16 *)(((uintptr_t)context->dwt_mem + 16) & ~ 0x0F);
 
 	/* create profilers for default decoding routines */
 	rfx_profiler_create(context);
