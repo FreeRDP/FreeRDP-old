@@ -180,7 +180,7 @@ RFX_CONTEXT* rfx_context_new(void);
 void rfx_context_free(RFX_CONTEXT * context);
 void rfx_context_set_pixel_format(RFX_CONTEXT * context, RFX_PIXEL_FORMAT pixel_format);
 
-RFX_MESSAGE* rfx_process_message(RFX_CONTEXT * context, uint8 * data, int data_size);
+RFX_MESSAGE* rfx_process_message(RFX_CONTEXT * context, uint8 * data, int size);
 void rfx_message_free(RFX_CONTEXT * context, RFX_MESSAGE * message);
 
 int rfx_compose_message_header(RFX_CONTEXT * context, uint8 * buffer, int buffer_size);

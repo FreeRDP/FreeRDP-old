@@ -124,11 +124,12 @@ rfx_context_set_pixel_format(RFX_CONTEXT * context, RFX_PIXEL_FORMAT pixel_forma
 }
 
 static void
-rfx_process_message_sync(RFX_CONTEXT * context, uint8 * data, int data_size)
+rfx_process_message_sync(RFX_CONTEXT * context, uint8 * data, int size)
 {
 	uint32 magic;
 
-	magic = GET_UINT32(data, 0);
+	/* RFX_SYNC */
+	magic = GET_UINT32(data, 0); /* magic (4 bytes), 0xCACCACCA */
 
 	if (magic != WF_MAGIC)
 	{
@@ -136,7 +137,7 @@ rfx_process_message_sync(RFX_CONTEXT * context, uint8 * data, int data_size)
 		return;
 	}
 
-	context->version = GET_UINT16(data, 4);
+	context->version = GET_UINT16(data, 4); /* version (2 bytes), WF_VERSION_1_0 (0x0100) */
 
 	if (context->version != WF_VERSION_1_0)
 	{
@@ -148,70 +149,67 @@ rfx_process_message_sync(RFX_CONTEXT * context, uint8 * data, int data_size)
 }
 
 static void
-rfx_process_message_codec_versions(RFX_CONTEXT * context, uint8 * data, int data_size)
+rfx_process_message_codec_versions(RFX_CONTEXT * context, uint8 * data, int size)
 {
 	int numCodecs;
 
-	numCodecs = GET_UINT8(data, 0);
+	numCodecs = GET_UINT8(data, 0); /* numCodecs (1 byte), must be set to 0x01 */
 
-	if (numCodecs < 1)
+	if (numCodecs != 1)
 	{
-		DEBUG_RFX("no version.");
+		DEBUG_RFX("numCodecs: %d, expected:1", numCodecs);
 		return;
 	}
 
-	context->codec_id = GET_UINT8(data, 1);
-	context->codec_version = GET_UINT16(data, 2);
+	/* RFX_CODEC_VERSIONT */
+	context->codec_id = GET_UINT8(data, 1); /* codecId (1 byte) */
+	context->codec_version = GET_UINT16(data, 2); /* version (2 bytes) */
 
 	DEBUG_RFX("id %d version 0x%X.", context->codec_id, context->codec_version);
 }
 
 static void
-rfx_process_message_channels(RFX_CONTEXT * context, uint8 * data, int data_size)
+rfx_process_message_channels(RFX_CONTEXT * context, uint8 * data, int size)
 {
 	int channelId;
-	int numChannels;
+	uint8 numChannels;
 
-	numChannels = GET_UINT8(data, 0);
+	numChannels = GET_UINT8(data, 0); /* numChannels (1 byte), must bet set to 0x01 */
 
-	if (numChannels < 1)
+	if (numChannels != 1)
 	{
-		DEBUG_RFX("no channel.");
+		DEBUG_RFX("numChannels:%d, expected:1", numChannels);
 		return;
 	}
 
-	channelId = GET_UINT8(data, 1);
-	context->width = GET_UINT16(data, 2);
-	context->height = GET_UINT16(data, 4);
+	/* RFX_CHANNELT */
+	channelId = GET_UINT8(data, 1); /* channelId (1 byte) */
+	context->width = GET_UINT16(data, 2); /* width (2 bytes) */
+	context->height = GET_UINT16(data, 4); /* height (2 bytes) */
 
 	DEBUG_RFX("numChannels %d id %d, %dx%d.",
 		numChannels, channelId, context->width, context->height);
 }
 
 static void
-rfx_process_message_context(RFX_CONTEXT * context, uint8 * data, int data_size)
+rfx_process_message_context(RFX_CONTEXT * context, uint8 * data, int size)
 {
 	uint8 ctxId;
-	uint8 codecId;
-	uint8 channelId;
 	uint16 tileSize;
 	uint16 properties;
 
-	codecId = GET_UINT8(data, 0);
-	channelId = GET_UINT8(data, 1);
-	ctxId = GET_UINT8(data, 2);
-	tileSize = GET_UINT16(data, 3);
-	properties = GET_UINT16(data, 5);
+	ctxId = GET_UINT8(data, 0); /* ctxId (1 byte), must be set to 0x00 */
+	tileSize = GET_UINT16(data, 1); /* tileSize (2 bytes), must be set to CT_TILE_64x64 (0x0040) */
+	properties = GET_UINT16(data, 3); /* properties (2 bytes) */
 
-	DEBUG_RFX("codec %d channel %d ctx %d tileSize %d properties 0x%X.",
-		codecId, channelId, ctxId, tileSize, properties);
+	DEBUG_RFX("ctxId %d tileSize %d properties 0x%X.", ctxId, tileSize, properties);
 
 	context->flags = (properties & 0x0007);
 
 	if (context->flags == CODEC_MODE)
-		DEBUG_RFX("codec in image mode.");
+		DEBUG_RFX("codec is in image mode.");
 	else
-		DEBUG_RFX("codec in video mode.");
+		DEBUG_RFX("codec is in video mode.");
 
 	switch ((properties & 0x1E00) >> 9)
 	{
@@ -232,11 +230,30 @@ rfx_process_message_context(RFX_CONTEXT * context, uint8 * data, int data_size)
 }
 
 static void
-rfx_process_message_region(RFX_CONTEXT * context, RFX_MESSAGE * message, uint8 * data, int data_size)
+rfx_process_message_frame_begin(RFX_CONTEXT * context, RFX_MESSAGE * message, uint8 * data, int size)
+{
+	uint32 frameIdx;
+	uint16 numRegions;
+
+	frameIdx = GET_UINT32(data, 0); /* frameIdx (4 bytes), if codec is in video mode, must be ignored */
+	numRegions = GET_UINT16(data, 4); /* numRegions (2 bytes) */
+
+	DEBUG_RFX("RFX_FRAME_BEGIN: frameIdx:%d numRegions:%d", frameIdx, numRegions);
+}
+
+static void
+rfx_process_message_frame_end(RFX_CONTEXT * context, RFX_MESSAGE * message, uint8 * data, int size)
+{
+	DEBUG_RFX("RFX_FRAME_END");
+}
+
+static void
+rfx_process_message_region(RFX_CONTEXT * context, RFX_MESSAGE * message, uint8 * data, int size)
 {
 	int i;
 
-	message->num_rects = GET_UINT16(data, 3);
+	/* regionFlags (1 byte) */
+	message->num_rects = GET_UINT16(data, 1); /* numRects (2 bytes) */
 
 	if (message->num_rects < 1)
 	{
@@ -249,26 +266,28 @@ rfx_process_message_region(RFX_CONTEXT * context, RFX_MESSAGE * message, uint8 *
 	else
 		message->rects = (RFX_RECT*) malloc(message->num_rects * sizeof(RFX_RECT));
 
-	data += 5;
-	data_size -= 5;
+	data += 3;
+	size -= 3;
 
-	for (i = 0; i < message->num_rects && data_size > 0; i++)
+	/* rects */
+	for (i = 0; i < message->num_rects && size > 0; i++)
 	{
-		message->rects[i].x = GET_UINT16(data, 0);
-		message->rects[i].y = GET_UINT16(data, 2);
-		message->rects[i].width = GET_UINT16(data, 4);
-		message->rects[i].height = GET_UINT16(data, 6);
+		/* RFX_RECT */
+		message->rects[i].x = GET_UINT16(data, 0); /* x (2 bytes) */
+		message->rects[i].y = GET_UINT16(data, 2); /* y (2 bytes) */
+		message->rects[i].width = GET_UINT16(data, 4); /* width (2 bytes) */
+		message->rects[i].height = GET_UINT16(data, 6); /* height (2 bytes) */
 
 		DEBUG_RFX("rect %d (%d %d %d %d).",
 			i, message->rects[i].x, message->rects[i].y, message->rects[i].width, message->rects[i].height);
 
 		data += 8;
-		data_size -= 8;
+		size -= 8;
 	}
 }
 
 static void
-rfx_process_message_tile(RFX_CONTEXT * context, RFX_TILE * tile, uint8 * data, int data_size)
+rfx_process_message_tile(RFX_CONTEXT * context, RFX_TILE * tile, uint8 * data, int size)
 {
 	uint8 quantIdxY;
 	uint8 quantIdxCb;
@@ -276,14 +295,15 @@ rfx_process_message_tile(RFX_CONTEXT * context, RFX_TILE * tile, uint8 * data, i
 	uint16 xIdx, yIdx;
 	uint16 YLen, CbLen, CrLen;
 
-	quantIdxY = GET_UINT8(data, 0);
-	quantIdxCb = GET_UINT8(data, 1);
-	quantIdxCr = GET_UINT8(data, 2);
-	xIdx = GET_UINT16(data, 3);
-	yIdx = GET_UINT16(data, 5);
-	YLen = GET_UINT16(data, 7);
-	CbLen = GET_UINT16(data, 9);
-	CrLen = GET_UINT16(data, 11);
+	/* RFX_TILE */
+	quantIdxY = GET_UINT8(data, 0); /* quantIdxY (1 byte) */
+	quantIdxCb = GET_UINT8(data, 1); /* quantIdxCb (1 byte) */
+	quantIdxCr = GET_UINT8(data, 2); /* quantIdxCr (1 byte) */
+	xIdx = GET_UINT16(data, 3); /* xIdx (2 bytes) */
+	yIdx = GET_UINT16(data, 5); /* yIdx (2 bytes) */
+	YLen = GET_UINT16(data, 7); /* YLen (2 bytes) */
+	CbLen = GET_UINT16(data, 9); /* CbLen (2 bytes) */
+	CrLen = GET_UINT16(data, 11); /* CrLen (2 bytes) */
 
 	DEBUG_RFX("quantIdxY:%d quantIdxCb:%d quantIdxCr:%d xIdx:%d yIdx:%d YLen:%d CbLen:%d CrLen:%d",
 		quantIdxY, quantIdxCb, quantIdxCr, xIdx, yIdx, YLen, CbLen, CrLen);
@@ -300,14 +320,27 @@ rfx_process_message_tile(RFX_CONTEXT * context, RFX_TILE * tile, uint8 * data, i
 }
 
 static void
-rfx_process_message_tileset(RFX_CONTEXT * context, RFX_MESSAGE * message, uint8 * data, int data_size)
+rfx_process_message_tileset(RFX_CONTEXT * context, RFX_MESSAGE * message, uint8 * data, int size)
 {
 	int i;
+	uint16 subtype;
 	uint32 blockLen;
 	uint32 blockType;
-	uint32 tileDataSize;
+	uint32 tilesDataSize;
 
-	context->num_quants = GET_UINT8(data, 4);
+	subtype = GET_UINT16(data, 0); /* subtype (2 bytes) must be set to CBT_TILESET (0xCAC2) */
+
+	if (subtype != CBT_TILESET)
+	{
+		DEBUG_RFX("invalid subtype, expected CBT_TILESET.");
+		return;
+	}
+
+	/* idx (2 bytes), must be set to 0x0000 */
+	/* properties (2 bytes) */
+
+	context->num_quants = GET_UINT8(data, 6); /* numQuant (1 byte) */
+	/* tileSize (1 byte), must be set to 0x40 */
 
 	if (context->num_quants < 1)
 	{
@@ -315,7 +348,7 @@ rfx_process_message_tileset(RFX_CONTEXT * context, RFX_MESSAGE * message, uint8 
 		return;
 	}
 
-	message->num_tiles = GET_UINT16(data, 6);
+	message->num_tiles = GET_UINT16(data, 8); /* numTiles (2 bytes) */
 
 	if (message->num_tiles < 1)
 	{
@@ -323,18 +356,20 @@ rfx_process_message_tileset(RFX_CONTEXT * context, RFX_MESSAGE * message, uint8 
 		return;
 	}
 
-	tileDataSize = GET_UINT32(data, 8);
+	tilesDataSize = GET_UINT32(data, 10); /* tilesDataSize (4 bytes) */
 
-	data += 12;
-	data_size -= 12;
+	data += 14;
+	size -= 14;
 
 	if (context->quants != NULL)
 		context->quants = (uint32*) realloc((void*) context->quants, context->num_quants * 10 * sizeof(uint32));
 	else
 		context->quants = (uint32*) malloc(context->num_quants * 10 * sizeof(uint32));
 
-	for (i = 0; i < context->num_quants && data_size > 0; i++)
+	/* quantVals */
+	for (i = 0; i < context->num_quants && size > 0; i++)
 	{
+		/* RFX_CODEC_QUANT */
 		context->quants[i * 10] = (data[0] & 0x0F);
 		context->quants[i * 10 + 1] = (data[0] >> 4);
 		context->quants[i * 10 + 2] = (data[1] & 0x0F);
@@ -354,36 +389,35 @@ rfx_process_message_tileset(RFX_CONTEXT * context, RFX_MESSAGE * message, uint8 
 			context->quants[i * 10 + 8], context->quants[i * 10 + 9]);
 
 		data += 5;
-		data_size -= 5;
+		size -= 5;
 	}
 
 	message->tiles = rfx_pool_get_tiles(context->pool, message->num_tiles);
 
-	for (i = 0; i < message->num_tiles && data_size > 0; i++)
+	/* tiles */
+	for (i = 0; i < message->num_tiles && size > 0; i++)
 	{
-		blockType = GET_UINT16(data, 0);
-		blockLen = GET_UINT32(data, 2);
+		/* RFX_TILE */
+		blockType = GET_UINT16(data, 0); /* blockType (2 bytes), must be set to CBT_TILE (0xCAC3) */
+		blockLen = GET_UINT32(data, 2); /* blockLen (4 bytes) */
 
-		switch (blockType)
+		if (blockType != CBT_TILE)
 		{
-			case CBT_TILE:
-				rfx_process_message_tile(context, message->tiles[i], data + 6, blockLen - 6);
-				break;
-
-			default:
-				DEBUG_RFX("unknown block type 0x%X", blockType);
-				break;
+			DEBUG_RFX("unknown block type 0x%X, expected CBT_TILE (0xCAC3).", blockType);
+			break;
 		}
 
-		data_size -= blockLen;
+		rfx_process_message_tile(context, message->tiles[i], data + 6, blockLen - 6);
+
+		size -= blockLen;
 		data += blockLen;
 	}
 }
 
 RFX_MESSAGE *
-rfx_process_message(RFX_CONTEXT * context, uint8 * data, int data_size)
+rfx_process_message(RFX_CONTEXT * context, uint8 * data, int size)
 {
-	uint32 subtype;
+	uint32 offset;
 	uint32 blockLen;
 	uint32 blockType;
 	RFX_MESSAGE * message;
@@ -391,50 +425,55 @@ rfx_process_message(RFX_CONTEXT * context, uint8 * data, int data_size)
 	message = (RFX_MESSAGE *) malloc(sizeof(RFX_MESSAGE));
 	memset(message, 0, sizeof(RFX_MESSAGE));
 
-	while (data_size > 0)
+	while (size > 0)
 	{
-		blockType = GET_UINT16(data, 0);
-		blockLen = GET_UINT32(data, 2);
+		/* RFX_BLOCKT */
+		blockType = GET_UINT16(data, 0); /* blockType (2 bytes) */
+		blockLen = GET_UINT32(data, 2); /* blockLen (4 bytes) */
+		offset = 6;
+
 		DEBUG_RFX("blockType 0x%X blockLen %d", blockType, blockLen);
+
+		if (blockType >= WBT_CONTEXT && blockType <= WBT_EXTENSION)
+		{
+			/* RFX_CODEC_CHANNELT */
+			/* codecId (1 byte) must be set to 0x01 */
+			/* channelId (1 byte) must be set to 0x00 */
+			offset = 8;
+		}
 
 		switch (blockType)
 		{
 			case WBT_SYNC:
-				rfx_process_message_sync(context, data + 6, blockLen - 6);
+				rfx_process_message_sync(context, data + offset, blockLen - offset);
 				break;
 
 			case WBT_CODEC_VERSIONS:
-				rfx_process_message_codec_versions(context, data + 6, blockLen - 6);
+				rfx_process_message_codec_versions(context, data + offset, blockLen - offset);
 				break;
 
 			case WBT_CHANNELS:
-				rfx_process_message_channels(context, data + 6, blockLen - 6);
+				rfx_process_message_channels(context, data + offset, blockLen - offset);
 				break;
 
 			case WBT_CONTEXT:
-				rfx_process_message_context(context, data + 6, blockLen - 6);
+				rfx_process_message_context(context, data + offset, blockLen - offset);
 				break;
 
 			case WBT_FRAME_BEGIN:
+				rfx_process_message_frame_begin(context, message, data + offset, blockLen - offset);
+				break;
+
 			case WBT_FRAME_END:
-				/* Can be ignored. */
+				rfx_process_message_frame_end(context, message, data + offset, blockLen - offset);
 				break;
 
 			case WBT_REGION:
-				rfx_process_message_region(context, message, data + 6, blockLen - 6);
+				rfx_process_message_region(context, message, data + offset, blockLen - offset);
 				break;
 
 			case WBT_EXTENSION:
-				subtype = GET_UINT16(data, 8);
-				switch (subtype)
-				{
-					case CBT_TILESET:
-						rfx_process_message_tileset(context, message, data + 10, blockLen - 10);
-						break;
-					default:
-						DEBUG_RFX("unknown subtype 0x%X", subtype);
-						break;
-				}
+				rfx_process_message_tileset(context, message, data + offset, blockLen - offset);
 				break;
 
 			default:
@@ -442,7 +481,7 @@ rfx_process_message(RFX_CONTEXT * context, uint8 * data, int data_size)
 				break;
 		}
 
-		data_size -= blockLen;
+		size -= blockLen;
 		data += blockLen;
 	}
 

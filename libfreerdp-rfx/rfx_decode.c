@@ -88,9 +88,9 @@ rfx_decode_rgb(RFX_CONTEXT * context,
 	PROFILER_ENTER(context->prof_rfx_decode_rgb);
 
 	dst = rgb_buffer;
-	rfx_decode_component(context, y_quants, y_data, y_size, context->y_r_buffer);
-	rfx_decode_component(context, cb_quants, cb_data, cb_size, context->cb_g_buffer);
-	rfx_decode_component(context, cr_quants, cr_data, cr_size, context->cr_b_buffer);
+	rfx_decode_component(context, y_quants, y_data, y_size, context->y_r_buffer); /* YData */
+	rfx_decode_component(context, cb_quants, cb_data, cb_size, context->cb_g_buffer); /* CbData */
+	rfx_decode_component(context, cr_quants, cr_data, cr_size, context->cr_b_buffer); /* CrData */
 
 	PROFILER_ENTER(context->prof_rfx_decode_YCbCr_to_RGB);
 		context->decode_YCbCr_to_RGB(context->y_r_buffer, context->cb_g_buffer, context->cr_b_buffer);

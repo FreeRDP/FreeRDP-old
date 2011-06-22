@@ -23,6 +23,7 @@ dfbfreerdp_LDADD = \
 	../libfreerdp-kbd/libfreerdp-kbd.la \
 	../libfreerdp-chanman/libfreerdp-chanman.la \
 	../libfreerdp-core/libfreerdp-core.la \
+	../libfreerdp-utils/libfreerdp-utils.la \
 	@DFB_LIBS@ -lfusion -ldirect -lz
 
 

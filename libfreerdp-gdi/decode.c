@@ -37,6 +37,11 @@ void gdi_decode_frame(GDI *gdi, int x, int y, uint8 * data, uint32 length)
 
 	message = rfx_process_message((RFX_CONTEXT *) gdi->rfx_context, data, length);
 
+	if (message->num_rects > 1)
+	{
+		printf("warning: more than one clipping region\n");
+	}
+
 	for (i = 0; i < message->num_rects; i++)
 	{
 		tx = message->rects[i].x + x;
