@@ -168,6 +168,7 @@ void rdp_process_bitmap_capset(rdpRdp * rdp, STREAM s)
 		ui_warning(rdp->inst, "Remote desktop does not support color depth %d; falling back to %d\n",
 			rdp->settings->server_depth, preferredBitsPerPixel);
 		rdp->settings->server_depth = preferredBitsPerPixel;
+		ui_resize_window(rdp->inst);
 	}
 	if (rdp->settings->width != desktopWidth || rdp->settings->height != desktopHeight)
 	{
