@@ -103,11 +103,11 @@ devman_unregister_service(DEVMAN* devman, SERVICE* srv)
 
 		if (pdev->service == srv)
 		{
-			devman_unregister_device(devman, pdev);
-			devman_rewind(devman);
-
 			if (pdev->service->type == RDPDR_DTYP_SMARTCARD && pdev->service->control)
 				pthread_cancel(scard_thread);
+
+			devman_unregister_device(devman, pdev);
+			devman_rewind(devman);
 		}
 	}
 
