@@ -167,6 +167,7 @@ struct _RFX_CONTEXT
 	void (* quantization_decode)(sint16 * buffer, const uint32 * quantization_values);
 	void (* quantization_encode)(sint16 * buffer, const uint32 * quantization_values);
 	void (* dwt_2d_decode)(sint16 * buffer, sint16 * dwt_buffer);
+	void (* dwt_2d_encode)(sint16 * buffer, sint16 * dwt_buffer);
 
 	/* profiler definitions */
 	PROFILER_DEFINE(prof_rfx_decode_rgb);

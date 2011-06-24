@@ -423,3 +423,152 @@ rfx_dwt_2d_decode_SSE2(sint16 * buffer, sint16 * dwt_buffer)
 	rfx_dwt_2d_decode_block_SSE2(buffer + 3072, dwt_buffer, 16);
 	rfx_dwt_2d_decode_block_SSE2(buffer, dwt_buffer, 32);
 }
+
+static __inline void __attribute__((__gnu_inline__, __always_inline__, __artificial__))
+rfx_dwt_2d_encode_block_vert_SSE2(sint16 * src, sint16 * l, sint16 * h, int subband_width)
+{
+	int total_width;
+	int x;
+	int n;
+	__m128i src_2n;
+	__m128i src_2n_1;
+	__m128i src_2n_2;
+	__m128i h_n;
+	__m128i h_n_m;
+	__m128i l_n;
+
+	total_width = subband_width << 1;
+
+	for (n = 0; n < subband_width; n++)
+	{
+		for (x = 0; x < total_width; x += 8)
+		{
+			src_2n = _mm_load_si128((__m128i*) src);
+			src_2n_1 = _mm_load_si128((__m128i*) (src + total_width));
+			if (n < subband_width - 1)
+				src_2n_2 = _mm_load_si128((__m128i*) (src + 2 * total_width));
+			else
+				src_2n_2 = src_2n_1;
+
+			/* h[n] = (src[2n + 1] - ((src[2n] + src[2n + 2]) >> 1)) >> 1 */
+
+			h_n = _mm_add_epi16(src_2n, src_2n_2);
+			h_n = _mm_srai_epi16(h_n, 1);
+			h_n = _mm_sub_epi16(src_2n_1, h_n);
+			h_n = _mm_srai_epi16(h_n, 1);
+
+			_mm_store_si128((__m128i*) h, h_n);
+
+			if (n == 0)
+				h_n_m = h_n;
+			else
+				h_n_m = _mm_load_si128((__m128i*) (h - total_width));
+
+			/* l[n] = src[2n] + ((h[n - 1] + h[n]) >> 1) */
+
+			l_n = _mm_add_epi16(h_n_m, h_n);
+			l_n = _mm_srai_epi16(l_n, 1);
+			l_n = _mm_add_epi16(l_n, src_2n);
+
+			_mm_store_si128((__m128i*) l, l_n);
+
+			src += 8;
+			l += 8;
+			h += 8;
+		}
+		src += total_width;
+	}
+}
+
+static __inline void __attribute__((__gnu_inline__, __always_inline__, __artificial__))
+rfx_dwt_2d_encode_block_horiz_SSE2(sint16 * src, sint16 * l, sint16 * h, int subband_width)
+{
+	int y;
+	int n;
+	int first;
+	__m128i src_2n;
+	__m128i src_2n_1;
+	__m128i src_2n_2;
+	__m128i h_n;
+	__m128i h_n_m;
+	__m128i l_n;
+
+	for (y = 0; y < subband_width; y++)
+	{
+		for (n = 0; n < subband_width; n += 8)
+		{
+			/* The following 3 Set operations consumes more than half of the total DWT processing time! */
+			src_2n = _mm_set_epi16(src[14], src[12], src[10], src[8], src[6], src[4], src[2], src[0]);
+			src_2n_1 = _mm_set_epi16(src[15], src[13], src[11], src[9], src[7], src[5], src[3], src[1]);
+			src_2n_2 = _mm_set_epi16(n == subband_width - 8 ? src[15] : src[16],
+				src[14], src[12], src[10], src[8], src[6], src[4], src[2]);
+
+			/* h[n] = (src[2n + 1] - ((src[2n] + src[2n + 2]) >> 1)) >> 1 */
+
+			h_n = _mm_add_epi16(src_2n, src_2n_2);
+			h_n = _mm_srai_epi16(h_n, 1);
+			h_n = _mm_sub_epi16(src_2n_1, h_n);
+			h_n = _mm_srai_epi16(h_n, 1);
+
+			_mm_store_si128((__m128i*) h, h_n);
+
+			h_n_m = _mm_loadu_si128((__m128i*) (h - 1));
+			if (n == 0)
+			{
+				first = _mm_extract_epi16(h_n_m, 1);
+				h_n_m = _mm_insert_epi16(h_n_m, first, 0);
+			}
+
+			/* l[n] = src[2n] + ((h[n - 1] + h[n]) >> 1) */
+
+			l_n = _mm_add_epi16(h_n_m, h_n);
+			l_n = _mm_srai_epi16(l_n, 1);
+			l_n = _mm_add_epi16(l_n, src_2n);
+
+			_mm_store_si128((__m128i*) l, l_n);
+
+			src += 16;
+			l += 8;
+			h += 8;
+		}
+	}
+}
+
+static __inline void __attribute__((__gnu_inline__, __always_inline__, __artificial__))
+rfx_dwt_2d_encode_block_SSE2(sint16 * buffer, sint16 * dwt, int subband_width)
+{
+	sint16 * hl, * lh, * hh, * ll;
+	sint16 * l_src, * h_src;
+
+	_mm_prefetch_buffer((char *) dwt, subband_width * 4 * sizeof(sint16));
+
+	/* DWT in vertical direction, results in 2 sub-bands in L, H order in tmp buffer dwt. */
+
+	l_src = dwt;
+	h_src = dwt + subband_width * subband_width * 2;
+
+	rfx_dwt_2d_encode_block_vert_SSE2(buffer, l_src, h_src, subband_width);
+
+	/* DWT in horizontal direction, results in 4 sub-bands in HL(0), LH(1), HH(2), LL(3) order, stored in original buffer. */
+	/* The lower part L generates LL(3) and HL(0). */
+	/* The higher part H generates LH(1) and HH(2). */
+
+	ll = buffer + subband_width * subband_width * 3;
+	hl = buffer;
+
+	lh = buffer + subband_width * subband_width;
+	hh = buffer + subband_width * subband_width * 2;
+
+	rfx_dwt_2d_encode_block_horiz_SSE2(l_src, ll, hl, subband_width);
+	rfx_dwt_2d_encode_block_horiz_SSE2(h_src, lh, hh, subband_width);
+}
+
+void
+rfx_dwt_2d_encode_SSE2(sint16 * buffer, sint16 * dwt_buffer)
+{
+	_mm_prefetch_buffer((char *) buffer, 4096 * sizeof(sint16));
+	
+	rfx_dwt_2d_encode_block_SSE2(buffer, dwt_buffer, 32);
+	rfx_dwt_2d_encode_block_SSE2(buffer + 3072, dwt_buffer, 16);
+	rfx_dwt_2d_encode_block_SSE2(buffer + 3840, dwt_buffer, 8);
+}

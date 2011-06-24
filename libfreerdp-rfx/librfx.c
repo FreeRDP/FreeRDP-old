@@ -146,6 +146,7 @@ rfx_context_new(void)
 	context->quantization_decode = rfx_quantization_decode;	
 	context->quantization_encode = rfx_quantization_encode;	
 	context->dwt_2d_decode = rfx_dwt_2d_decode;
+	context->dwt_2d_encode = rfx_dwt_2d_encode;
 
 	/* detect and enable SIMD CPU acceleration */
 	RFX_INIT_SIMD(context);
