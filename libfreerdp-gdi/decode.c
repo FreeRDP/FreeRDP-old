@@ -51,30 +51,49 @@ int gdi_decode_bitmap_data_ex(GDI *gdi, uint16 x, uint16 y, uint8 * data, int si
 	/* decode bitmap data */
 	message = rfx_process_message((RFX_CONTEXT *) gdi->rfx_context, bitmapData, bitmapDataLength);
 
-	/* blit each tile */
-	for (i = 0; i < message->num_tiles; i++)
+	if (message->num_rects > 1) /* RDVH */
 	{
-		tx = message->tiles[i]->x + x;
-		ty = message->tiles[i]->y + y;
-		data = message->tiles[i]->data;
-
-		gdi_image_convert(data, gdi->tile->bitmap->data, 64, 64, 32, 32, gdi->clrconv);
-
-		for (j = 0; j < message->num_rects; j++)
+		/* blit each tile */
+		for (i = 0; i < message->num_tiles; i++)
 		{
-			gdi_SetClipRgn(gdi->primary->hdc,
-					message->rects[j].x, message->rects[j].y,
-					message->rects[j].width, message->rects[j].height);
+			tx = message->tiles[i]->x + x;
+			ty = message->tiles[i]->y + y;
+			data = message->tiles[i]->data;
 
-			gdi_BitBlt(gdi->primary->hdc, tx, ty, 64, 64, gdi->tile->hdc, 0, 0, GDI_SRCCOPY);
+			gdi_image_convert(data, gdi->tile->bitmap->data, 64, 64, 32, 32, gdi->clrconv);
+
+			for (j = 0; j < message->num_rects; j++)
+			{
+				gdi_SetClipRgn(gdi->primary->hdc,
+						message->rects[j].x, message->rects[j].y,
+						message->rects[j].width, message->rects[j].height);
+
+				gdi_BitBlt(gdi->primary->hdc, tx, ty, 64, 64, gdi->tile->hdc, 0, 0, GDI_SRCCOPY);
+			}
+		}
+
+		for (i = 0; i < message->num_rects; i++)
+		{
+			gdi_InvalidateRegion(gdi->primary->hdc,
+					message->rects[i].x, message->rects[i].y,
+					message->rects[i].width, message->rects[i].height);
 		}
 	}
-
-	for (i = 0; i < message->num_rects; i++)
+	else /* RDSH */
 	{
-		gdi_InvalidateRegion(gdi->primary->hdc,
-				message->rects[i].x, message->rects[i].y,
-				message->rects[i].width, message->rects[i].height);
+		/* blit each tile */
+		for (i = 0; i < message->num_tiles; i++)
+		{
+			tx = message->tiles[i]->x + x;
+			ty = message->tiles[i]->y + y;
+			data = message->tiles[i]->data;
+
+			gdi_image_convert(data, gdi->tile->bitmap->data, 64, 64, 32, 32, gdi->clrconv);
+
+			gdi_BitBlt(gdi->primary->hdc, tx, ty, 64, 64, gdi->tile->hdc, 0, 0, GDI_SRCCOPY);
+
+			gdi_InvalidateRegion(gdi->primary->hdc, tx, ty, 64, 64);
+		}
 	}
 
 	rfx_message_free(gdi->rfx_context, message);
