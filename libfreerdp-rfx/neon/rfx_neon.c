@@ -24,10 +24,376 @@
 
 #include "rfx_neon.h"
 
+#if defined(ANDROID_DISABLED)
+#include <cpu-features.h>
+#include <android/log.h>
+#endif
+
+#define CACHE_LINE_BYTES	64
+
+static __inline void __attribute__((__gnu_inline__, __always_inline__, __artificial__))
+prefetch_buffer(char * buffer, int num_bytes)
+{
+	asm("  mov r3, %0			\t\n"
+		"  add r4, r3, %1		\t\n"
+		"1:	 		\t\n"
+		"  pld [r3]				\t\n"
+		"  add r3, r3, #64		\t\n"
+		"  cmp r3, r4			\t\n"
+		"  bne 1b		\t\n"
+		: // no output
+		: "r" (buffer), "r" (num_bytes)
+		: "r3", "r4" );
+}
+
+static __inline void __attribute__((__gnu_inline__, __always_inline__, __artificial__))
+prefetch_line(char * buffer)
+{
+	asm("  mov r3, %0			\t\n"
+		"  pld [r3, #0]				\t\n"
+		: // no output
+		: "r" (buffer)
+		: "r3" );
+}
+
+
+static __inline void __attribute__((__gnu_inline__, __always_inline__, __artificial__))
+prefetch_buffers(char * buffer1, char * buffer2, char * buffer3, int num_bytes)
+{
+	asm("  mov r3, %0			\t\n"
+		"  mov r4, %1			\t\n"
+		"  mov r5, %2			\t\n"
+		"  mov r6, #0			\t\n"
+		"cache_loop2:	 		\t\n"
+		"  pld [r3, r6]			\t\n"
+		"  pld [r3, r6]			\t\n"
+		"  pld [r3, r6]			\t\n"
+		"  add r6, r6, #64		\t\n"
+		"  cmp r6, %3			\t\n"
+		"  bne cache_loop2		\t\n"
+		: // no output
+		: "r" (buffer1), "r" (buffer2), "r" (buffer3), "r" (num_bytes)
+		: "r3", "r4", "r5", "r6" );
+}
+
+
+void rfx_decode_YCbCr_to_RGB_NEON(sint16 * y_r_buffer, sint16 * cb_g_buffer, sint16 * cr_b_buffer)
+{
+	int16x8_t zero = vdupq_n_s16(0);
+	int16x8_t max = vdupq_n_s16(255);
+	int16x8_t y_add = vdupq_n_s16(128);
+
+	int16x8_t* y_r_buf = (int16x8_t*)y_r_buffer;
+	int16x8_t* cb_g_buf = (int16x8_t*)cb_g_buffer;
+	int16x8_t* cr_b_buf = (int16x8_t*)cr_b_buffer;
+
+	prefetch_buffers((char*)y_r_buf, (char*)cb_g_buf, (char*)cr_b_buf, sizeof(sint16) * 4096);
+
+	int i;
+	for (i = 0; i < 4096 / 8; i++)
+	{
+		int16x8_t y = vld1q_s16((sint16*)&y_r_buf[i]);
+		y = vaddq_s16(y, y_add);
+
+		int16x8_t cr = vld1q_s16((sint16*)&cr_b_buf[i]);
+
+		// r = between((y + cr + (cr >> 2) + (cr >> 3) + (cr >> 5)), 0, 255);
+		int16x8_t r = vaddq_s16(y, cr);
+		r = vaddq_s16(r, vshrq_n_s16(cr, 2));
+		r = vaddq_s16(r, vshrq_n_s16(cr, 3));
+		r = vaddq_s16(r, vshrq_n_s16(cr, 5));
+		r = vminq_s16(vmaxq_s16(r, zero), max);
+		vst1q_s16((sint16*)&y_r_buf[i], r);
+
+		// cb = cb_g_buf[i];
+		int16x8_t cb = vld1q_s16((sint16*)&cb_g_buf[i]);
+
+		// g = between(y - (cb >> 2) - (cb >> 4) - (cb >> 5) - (cr >> 1) - (cr >> 3) - (cr >> 4) - (cr >> 5), 0, 255);
+		int16x8_t g = vsubq_s16(y, vshrq_n_s16(cb, 2));
+		g = vsubq_s16(g, vshrq_n_s16(cb, 4));
+		g = vsubq_s16(g, vshrq_n_s16(cb, 5));
+		g = vsubq_s16(g, vshrq_n_s16(cr, 1));
+		g = vsubq_s16(g, vshrq_n_s16(cr, 3));
+		g = vsubq_s16(g, vshrq_n_s16(cr, 4));
+		g = vsubq_s16(g, vshrq_n_s16(cr, 5));
+		g = vminq_s16(vmaxq_s16(g, zero), max);
+		vst1q_s16((sint16*)&cb_g_buf[i], g);
+
+		// b = between((y + cb + (cb >> 1) + (cb >> 2) + (cb >> 6)), 0, 255);
+		int16x8_t b = vaddq_s16(y, cb);
+		b = vaddq_s16(b, vshrq_n_s16(cb, 1));
+		b = vaddq_s16(b, vshrq_n_s16(cb, 2));
+		b = vaddq_s16(b, vshrq_n_s16(cb, 6));
+		b = vminq_s16(vmaxq_s16(b, zero), max);
+		vst1q_s16((sint16*)&cr_b_buf[i], b);
+	}
+}
+
+static __inline void __attribute__((__gnu_inline__, __always_inline__, __artificial__))
+rfx_quantization_decode_block_NEON(sint16 * buffer, int buffer_size, uint32 factor)
+{
+	if (factor <= 6)
+		return;
+	int16x8_t quantFactors = vdupq_n_s16(factor - 6);
+	int16x8_t* buf = (int16x8_t*)buffer;
+	int16x8_t* buf_end = (int16x8_t*)(buffer + buffer_size);
+
+	do
+	{
+		int16x8_t val = vld1q_s16((sint16*)buf);
+		val = vshlq_s16(val, quantFactors);
+		vst1q_s16((sint16*)buf, val);
+		buf++;
+	}
+	while(buf < buf_end);
+}
+
+void
+rfx_quantization_decode_NEON(sint16 * buffer, const uint32 * quantization_values)
+{
+	prefetch_buffer((char *) buffer, 4096 * sizeof(sint16));
+
+	rfx_quantization_decode_block_NEON(buffer, 1024, quantization_values[8]); /* HL1 */
+	rfx_quantization_decode_block_NEON(buffer + 1024, 1024, quantization_values[7]); /* LH1 */
+	rfx_quantization_decode_block_NEON(buffer + 2048, 1024, quantization_values[9]); /* HH1 */
+	rfx_quantization_decode_block_NEON(buffer + 3072, 256, quantization_values[5]); /* HL2 */
+	rfx_quantization_decode_block_NEON(buffer + 3328, 256, quantization_values[4]); /* LH2 */
+	rfx_quantization_decode_block_NEON(buffer + 3584, 256, quantization_values[6]); /* HH2 */
+	rfx_quantization_decode_block_NEON(buffer + 3840, 64, quantization_values[2]); /* HL3 */
+	rfx_quantization_decode_block_NEON(buffer + 3904, 64, quantization_values[1]); /* LH3 */
+	rfx_quantization_decode_block_NEON(buffer + 3868, 64, quantization_values[3]); /* HH3 */
+	rfx_quantization_decode_block_NEON(buffer + 4032, 64, quantization_values[0]); /* LL3 */
+}
+
+
+
+static __inline void __attribute__((__gnu_inline__, __always_inline__, __artificial__))
+rfx_dwt_2d_decode_block_horiz_NEON(sint16 * l, sint16 * h, sint16 * dst, int subband_width)
+{
+	int y, n;
+	sint16 * l_ptr = l;
+	sint16 * h_ptr = h;
+	sint16 * dst_ptr = dst;
+
+	for (y = 0; y < subband_width; y++)
+	{
+		/* Even coefficients */
+		for (n = 0; n < subband_width; n+=8)
+		{
+			// dst[2n] = l[n] - ((h[n-1] + h[n] + 1) >> 1);
+			int16x8_t l_n = vld1q_s16(l_ptr);
+
+			int16x8_t h_n = vld1q_s16(h_ptr);
+			int16x8_t h_n_m = vld1q_s16(h_ptr - 1);
+
+			if (n == 0)
+			{
+				int16_t first = vgetq_lane_s16(h_n_m, 1);
+				h_n_m = vsetq_lane_s16(first, h_n_m, 0);
+			}
+
+			int16x8_t tmp_n = vaddq_s16(h_n, h_n_m);
+			tmp_n = vaddq_s16(tmp_n, vdupq_n_s16(1));
+			tmp_n = vshrq_n_s16(tmp_n, 1);
+
+			int16x8_t dst_n = vsubq_s16(l_n, tmp_n);
+
+			vst1q_s16(l_ptr, dst_n);
+
+			l_ptr+=8;
+			h_ptr+=8;
+		}
+		l_ptr -= subband_width;
+		h_ptr -= subband_width;
+
+		/* Odd coefficients */
+		for (n = 0; n < subband_width; n+=8)
+		{
+			// dst[2n + 1] = (h[n] << 1) + ((dst[2n] + dst[2n + 2]) >> 1);
+
+			int16x8_t h_n = vld1q_s16(h_ptr);
+
+			h_n = vshlq_n_s16(h_n, 1);
+
+			int16x8x2_t dst_n;
+			dst_n.val[0] = vld1q_s16(l_ptr);
+			int16x8_t dst_n_p = vld1q_s16(l_ptr + 1);
+			if (n == subband_width - 8)
+			{
+				int16_t last = vgetq_lane_s16(dst_n_p, 6);
+				dst_n_p = vsetq_lane_s16(last, dst_n_p, 7);
+			}
+
+			dst_n.val[1] = vaddq_s16(dst_n_p, dst_n.val[0]);
+			dst_n.val[1] = vshrq_n_s16(dst_n.val[1], 1);
+
+			dst_n.val[1] = vaddq_s16(dst_n.val[1], h_n);
+
+			vst2q_s16(dst_ptr, dst_n);
+
+			l_ptr+=8;
+			h_ptr+=8;
+			dst_ptr+=16;
+		}
+	}
+}
+
+static __inline void __attribute__((__gnu_inline__, __always_inline__, __artificial__))
+rfx_dwt_2d_decode_block_vert_NEON(sint16 * l, sint16 * h, sint16 * dst, int subband_width)
+{
+	int x, n;
+	sint16 * l_ptr = l;
+	sint16 * h_ptr = h;
+	sint16 * dst_ptr = dst;
+
+	int total_width = subband_width + subband_width;
+
+	/* Even coefficients */
+	for (n = 0; n < subband_width; n++)
+	{
+		for (x = 0; x < total_width; x+=8)
+		{
+			// dst[2n] = l[n] - ((h[n-1] + h[n] + 1) >> 1);
+
+			int16x8_t l_n = vld1q_s16(l_ptr);
+			int16x8_t h_n = vld1q_s16(h_ptr);
+
+			int16x8_t tmp_n = vaddq_s16(h_n, vdupq_n_s16(1));;
+			if (n == 0)
+				tmp_n = vaddq_s16(tmp_n, h_n);
+			else
+			{
+				int16x8_t h_n_m = vld1q_s16((h_ptr - total_width));
+				tmp_n = vaddq_s16(tmp_n, h_n_m);
+			}
+			tmp_n = vshrq_n_s16(tmp_n, 1);
+
+			int16x8_t dst_n = vsubq_s16(l_n, tmp_n);
+			vst1q_s16(dst_ptr, dst_n);
+
+			l_ptr+=8;
+			h_ptr+=8;
+			dst_ptr+=8;
+		}
+		dst_ptr+=total_width;
+	}
+
+	h_ptr = h;
+	dst_ptr = dst + total_width;
+
+	/* Odd coefficients */
+	for (n = 0; n < subband_width; n++)
+	{
+		for (x = 0; x < total_width; x+=8)
+		{
+			// dst[2n + 1] = (h[n] << 1) + ((dst[2n] + dst[2n + 2]) >> 1);
+
+			int16x8_t h_n = vld1q_s16(h_ptr);
+			int16x8_t dst_n_m = vld1q_s16(dst_ptr - total_width);
+			h_n = vshlq_n_s16(h_n, 1);
+
+			int16x8_t tmp_n = dst_n_m;
+			if (n == subband_width - 1)
+				tmp_n = vaddq_s16(tmp_n, dst_n_m);
+			else
+			{
+				int16x8_t dst_n_p = vld1q_s16((dst_ptr + total_width));
+				tmp_n = vaddq_s16(tmp_n, dst_n_p);
+			}
+			tmp_n = vshrq_n_s16(tmp_n, 1);
+
+			int16x8_t dst_n = vaddq_s16(tmp_n, h_n);
+			vst1q_s16(dst_ptr, dst_n);
+
+			h_ptr+=8;
+			dst_ptr+=8;
+		}
+		dst_ptr+=total_width;
+	}
+}
+
+static __inline void __attribute__((__gnu_inline__, __always_inline__, __artificial__))
+rfx_dwt_2d_decode_block_NEON(sint16 * buffer, sint16 * idwt, int subband_width)
+{
+	sint16 * hl, * lh, * hh, * ll;
+	sint16 * l_dst, * h_dst;
+
+	prefetch_buffer((char *) idwt, subband_width * 4 * sizeof(sint16));
+
+	/* Inverse DWT in horizontal direction, results in 2 sub-bands in L, H order in tmp buffer idwt. */
+	/* The 4 sub-bands are stored in HL(0), LH(1), HH(2), LL(3) order. */
+	/* The lower part L uses LL(3) and HL(0). */
+	/* The higher part H uses LH(1) and HH(2). */
+
+	ll = buffer + subband_width * subband_width * 3;
+	hl = buffer;
+	l_dst = idwt;
+
+	rfx_dwt_2d_decode_block_horiz_NEON(ll, hl, l_dst, subband_width);
+
+	lh = buffer + subband_width * subband_width;
+	hh = buffer + subband_width * subband_width * 2;
+	h_dst = idwt + subband_width * subband_width * 2;
+
+	rfx_dwt_2d_decode_block_horiz_NEON(lh, hh, h_dst, subband_width);
+
+	/* Inverse DWT in vertical direction, results are stored in original buffer. */
+	rfx_dwt_2d_decode_block_vert_NEON(l_dst, h_dst, buffer, subband_width);
+}
+
+void
+rfx_dwt_2d_decode_NEON(sint16 * buffer, sint16 * dwt_buffer_8, sint16 * dwt_buffer_16, sint16 * dwt_buffer_32)
+{
+	prefetch_buffer((char *) buffer, 4096 * sizeof(sint16));
+
+	rfx_dwt_2d_decode_block_NEON(buffer + 3840, dwt_buffer_8, 8);
+	rfx_dwt_2d_decode_block_NEON(buffer + 3072, dwt_buffer_16, 16);
+	rfx_dwt_2d_decode_block_NEON(buffer, dwt_buffer_32, 32);
+}
+
+
+
+int isNeonSupported()
+{
+#if defined(ANDROID_DISABLED)
+	if (android_getCpuFamily() != ANDROID_CPU_FAMILY_ARM)
+	{
+		_android_log_print(ANDROID_LOG_INFO, "freerdp", "NEON optimization disabled - No ARM CPU found");
+		return 0;
+	}
+
+	features = android_getCpuFeatures();
+	if ((features & ANDROID_CPU_ARM_FEATURE_ARMv7))
+	{
+		if (features & ANDROID_CPU_ARM_FEATURE_NEON)
+			return 1;
+		_android_log_print(ANDROID_LOG_INFO, "freerdp", "NEON optimization disabled - CPU not NEON capable");
+	}
+	else
+		_android_log_print(ANDROID_LOG_INFO, "freerdp", "NEON optimization disabled - No ARMv7 CPU found");
+
+    return 0;
+#else
+    return 1; // TODO: set to 1 for development
+//    return 0;
+#endif
+}
+
+
 void rfx_init_neon(RFX_CONTEXT * context)
 {
-	if (1)
+
+
+	if(isNeonSupported())
 	{
 		DEBUG_RFX("Using NEON optimizations");
+
+		IF_PROFILER(context->prof_rfx_decode_YCbCr_to_RGB->name = "rfx_decode_YCbCr_to_RGB_NEON");
+		IF_PROFILER(context->prof_rfx_quantization_decode->name = "rfx_quantization_decode_NEON");
+		IF_PROFILER(context->prof_rfx_dwt_2d_decode->name = "rfx_dwt_2d_decode_NEON");
+
+		context->decode_YCbCr_to_RGB = rfx_decode_YCbCr_to_RGB_NEON;
+		context->quantization_decode = rfx_quantization_decode_NEON;
+		context->dwt_2d_decode = rfx_dwt_2d_decode_NEON;
 	}
 }
