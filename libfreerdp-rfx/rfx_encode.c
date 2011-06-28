@@ -132,7 +132,7 @@ rfx_encode_component(RFX_CONTEXT * context, const uint32 * quantization_values,
 	PROFILER_ENTER(context->prof_rfx_encode_component);
 
 	PROFILER_ENTER(context->prof_rfx_dwt_2d_encode);
-		rfx_dwt_2d_encode(data, context->dwt_buffer_8, context->dwt_buffer_16, context->dwt_buffer_32);
+		context->dwt_2d_encode(data, context->dwt_buffer);
 	PROFILER_EXIT(context->prof_rfx_dwt_2d_encode);
 
 	PROFILER_ENTER(context->prof_rfx_quantization_encode);

@@ -23,9 +23,9 @@
 #include <freerdp/rfx.h>
 
 void
-rfx_dwt_2d_decode(sint16 * buffer, sint16 * dwt_buffer_8, sint16 * dwt_buffer_16, sint16 * dwt_buffer_32);
+rfx_dwt_2d_decode(sint16 * buffer, sint16 * dwt_buffer);
 void
-rfx_dwt_2d_encode(sint16 * buffer, sint16 * dwt_buffer_8, sint16 * dwt_buffer_16, sint16 * dwt_buffer_32);
+rfx_dwt_2d_encode(sint16 * buffer, sint16 * dwt_buffer);
 
 #endif
 

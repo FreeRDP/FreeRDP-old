@@ -120,7 +120,7 @@ rfx_decode_component(RFX_CONTEXT * context, const uint32 * quantization_values,
 	PROFILER_EXIT(context->prof_rfx_quantization_decode);
 
 	PROFILER_ENTER(context->prof_rfx_dwt_2d_decode);
-		context->dwt_2d_decode(buffer, context->dwt_buffer_8, context->dwt_buffer_16, context->dwt_buffer_32);
+		context->dwt_2d_decode(buffer, context->dwt_buffer);
 	PROFILER_EXIT(context->prof_rfx_dwt_2d_decode);
 
 	PROFILER_EXIT(context->prof_rfx_decode_component);

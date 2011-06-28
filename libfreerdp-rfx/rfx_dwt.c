@@ -106,11 +106,11 @@ rfx_dwt_2d_decode_block(sint16 * buffer, sint16 * idwt, int subband_width)
 }
 
 void
-rfx_dwt_2d_decode(sint16 * buffer, sint16 * dwt_buffer_8, sint16 * dwt_buffer_16, sint16 * dwt_buffer_32)
+rfx_dwt_2d_decode(sint16 * buffer, sint16 * dwt_buffer)
 {
-	rfx_dwt_2d_decode_block(buffer + 3840, dwt_buffer_8, 8);
-	rfx_dwt_2d_decode_block(buffer + 3072, dwt_buffer_16, 16);
-	rfx_dwt_2d_decode_block(buffer, dwt_buffer_32, 32);
+	rfx_dwt_2d_decode_block(buffer + 3840, dwt_buffer, 8);
+	rfx_dwt_2d_decode_block(buffer + 3072, dwt_buffer, 16);
+	rfx_dwt_2d_decode_block(buffer, dwt_buffer, 32);
 }
 
 void
@@ -136,7 +136,7 @@ rfx_dwt_2d_encode_block(sint16 * buffer, sint16 * dwt, int subband_width)
 			src = buffer + y * total_width + x;
 
 			/* H */
-			*h = (src[total_width] - ((src[0] + src[n < subband_width - 1 ? 2 * total_width : 0]) >> 1)) >> 1;
+			*h = (src[total_width] - ((src[0] + src[n < subband_width - 1 ? 2 * total_width : total_width]) >> 1)) >> 1;
 
 			/* L */
 			*l = src[0] + (n == 0 ? *h : (*(h - total_width) + *h) >> 1);
@@ -190,9 +190,9 @@ rfx_dwt_2d_encode_block(sint16 * buffer, sint16 * dwt, int subband_width)
 }
 
 void
-rfx_dwt_2d_encode(sint16 * buffer, sint16 * dwt_buffer_8, sint16 * dwt_buffer_16, sint16 * dwt_buffer_32)
+rfx_dwt_2d_encode(sint16 * buffer, sint16 * dwt_buffer)
 {
-	rfx_dwt_2d_encode_block(buffer, dwt_buffer_32, 32);
-	rfx_dwt_2d_encode_block(buffer + 3072, dwt_buffer_16, 16);
-	rfx_dwt_2d_encode_block(buffer + 3840, dwt_buffer_8, 8);
+	rfx_dwt_2d_encode_block(buffer, dwt_buffer, 32);
+	rfx_dwt_2d_encode_block(buffer + 3072, dwt_buffer, 16);
+	rfx_dwt_2d_encode_block(buffer + 3840, dwt_buffer, 8);
 }
