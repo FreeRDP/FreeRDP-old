@@ -796,6 +796,8 @@ run_xfreerdp(xfInfo * xfi)
 		}
 	}
 
+	DEBUG_X11("disconnected, reason %d", inst->disc_reason);
+
 	g_disconnect_reason = inst->disc_reason;
 
 	/* cleanup */
