@@ -32,6 +32,10 @@
 #include "rfx_sse.h"
 #endif
 
+#ifdef WITH_NEON
+#include "rfx_neon.h"
+#endif
+
 #ifndef RFX_INIT_SIMD
 #define RFX_INIT_SIMD(_rfx_context) do { } while (0)
 #endif

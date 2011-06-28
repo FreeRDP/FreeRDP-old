@@ -1,8 +1,8 @@
 /*
    FreeRDP: A Remote Desktop Protocol client.
-   RemoteFX Codec Library - Differential Encoding
+   GDI NEON Optimizations
 
-   Copyright 2011 Vic Lee
+   Copyright 2011 Marc-Andre Moreau <marcandre.moreau@gmail.com>
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -17,15 +17,16 @@
    limitations under the License.
 */
 
-#ifndef __RFX_DIFFERENTIAL_H
-#define __RFX_DIFFERENTIAL_H
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 
-#include <freerdp/rfx.h>
+#include <freerdp/freerdp.h>
+#include "gdi.h"
 
-void
-rfx_differential_decode(sint16 * buffer, int buffer_size);
-void
-rfx_differential_encode(sint16 * buffer, int buffer_size);
+#include "gdi_neon.h"
 
-#endif
+void gdi_init_neon(GDI* gdi)
+{
 
+}

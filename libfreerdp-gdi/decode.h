@@ -25,7 +25,7 @@
 
 #include "gdi.h"
 
-void gdi_decode_frame(GDI *gdi, int x, int y, uint8 * data, uint32 length);
-void gdi_decode_data(GDI *gdi, uint8 * data, int data_size);
+void gdi_decode_bitmap_data(GDI *gdi, int x, int y, uint8 * data, uint32 length);
+void gdi_decode_data(GDI *gdi, uint8 * data, int size);
 
 #endif /* __DECODE_H */

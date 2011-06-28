@@ -31,20 +31,12 @@ void rfx_init_sse(RFX_CONTEXT * context);
 #define RFX_INIT_SIMD(_rfx_context) rfx_init_sse(_rfx_context)
 #endif
 
-static __inline __m128 __attribute__((__gnu_inline__, __always_inline__, __artificial__))
-_mm_between_ps (__m128 val, __m128 min, __m128 max)
+static __inline __m128i __attribute__((__gnu_inline__, __always_inline__, __artificial__))
+_mm_between_epi16 (__m128i val, __m128i min, __m128i max)
 {
-	__m128 ret;
-	ret = _mm_max_ps(val, min);
-	return _mm_min_ps(ret, max);
-}
-
-static __inline void __attribute__((__gnu_inline__, __always_inline__, __artificial__))
-_mm_cvtps_epi32_and_store (__m128i * loc, __m128 val)
-{
-	__m128i tmp;
-	tmp = _mm_cvtps_epi32(val);
-	_mm_stream_si128(loc, tmp);
+	__m128i ret;
+	ret = _mm_max_epi16(val, min);
+	return _mm_min_epi16(ret, max);
 }
 
 #endif /* __RFX_SSE_H */

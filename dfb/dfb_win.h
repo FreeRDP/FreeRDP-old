@@ -29,7 +29,7 @@ dfb_pre_connect(rdpInst * inst);
 int
 dfb_post_connect(rdpInst * inst);
 void
-dfb_uninit(void * dfb_info);
+dfb_uninit(rdpInst * inst);
 int
 dfb_get_fds(rdpInst * inst, void ** read_fds, int * read_count,
 	void ** write_fds, int * write_count);

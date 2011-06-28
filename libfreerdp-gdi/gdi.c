@@ -23,19 +23,7 @@
 #include <freerdp/rfx.h>
 #include <freerdp/freerdp.h>
 
-#include "color.h"
-#include "decode.h"
-
-#include "gdi_dc.h"
-#include "gdi_pen.h"
-#include "gdi_line.h"
-#include "gdi_shape.h"
-#include "gdi_brush.h"
-#include "gdi_region.h"
-#include "gdi_bitmap.h"
-#include "gdi_palette.h"
-#include "gdi_drawing.h"
-#include "gdi_clipping.h"
+#include "libgdi.h"
 
 #include "gdi.h"
 
@@ -1188,6 +1176,11 @@ gdi_init(rdpInst * inst, uint32 flags)
 
 	gdi_register_callbacks(inst);
 
+	gdi->BitBlt = gdi_BitBlt;
+	gdi->gdi_image_convert = gdi_image_convert;
+
+	GDI_INIT_SIMD(gdi);
+
 	return 0;
 }
 
@@ -1197,6 +1190,8 @@ void gdi_free(rdpInst* inst)
 
 	if (gdi)
 	{
+		gdi_bitmap_free(gdi->tile);
+		rfx_context_free(gdi->rfx_context);
 		gdi_bitmap_free(gdi->primary);
 		gdi_DeleteObject((HGDIOBJECT) gdi->hdc);
 		free(gdi->clrconv);

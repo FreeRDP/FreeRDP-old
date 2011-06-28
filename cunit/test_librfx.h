@@ -26,6 +26,8 @@ int add_librfx_suite(void);
 void
 test_bitstream(void);
 void
+test_bitstream_enc(void);
+void
 test_rlgr(void);
 void
 test_differential(void);
@@ -35,4 +37,8 @@ void
 test_dwt(void);
 void
 test_decode(void);
+void
+test_encode(void);
+void
+test_message(void);
 
