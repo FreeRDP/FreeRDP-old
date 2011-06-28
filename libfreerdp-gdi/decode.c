@@ -30,67 +30,150 @@
 
 #include "decode.h"
 
-void gdi_decode_frame(GDI *gdi, int x, int y, uint8 * data, uint32 length)
+int gdi_decode_bitmap_data_ex(GDI *gdi, uint16 x, uint16 y, uint8 * data, int size)
 {
-	int i, tx, ty;
+	int i, j;
+	int tx, ty;
+	uint8* bitmapData;
+	uint32 bitmapDataLength;
 	RFX_MESSAGE * message;
 
-	message = rfx_process_message((RFX_CONTEXT *) gdi->rfx_context, data, length);
+	/* BITMAP_DATA_EX */
+	/* bpp (1 byte) */
+	/* reserved1 (1 byte) */
+	/* reserved2 (1 byte) */
+	/* codecID (1 byte) */
+	/* width (2 bytes) */
+	/* height (2 bytes) */
+	bitmapDataLength = GET_UINT32(data, 8); /* bitmapDataLength (4 bytes) */
+	bitmapData = data + 12; /* bitmapData */
 
-	for (i = 0; i < message->num_rects; i++)
+	/* decode bitmap data */
+	message = rfx_process_message((RFX_CONTEXT *) gdi->rfx_context, bitmapData, bitmapDataLength);
+
+	if (message->num_rects > 1) /* RDVH */
 	{
-		tx = message->rects[i].x + x;
-		ty = message->rects[i].y + y;
-		gdi_SetClipRgn(gdi->primary->hdc, tx, ty, message->rects[i].width, message->rects[i].height);
+		/* blit each tile */
+		for (i = 0; i < message->num_tiles; i++)
+		{
+			tx = message->tiles[i]->x + x;
+			ty = message->tiles[i]->y + y;
+			data = message->tiles[i]->data;
+
+			gdi_image_convert(data, gdi->tile->bitmap->data, 64, 64, 32, 32, gdi->clrconv);
+
+			for (j = 0; j < message->num_rects; j++)
+			{
+				gdi_SetClipRgn(gdi->primary->hdc,
+						message->rects[j].x, message->rects[j].y,
+						message->rects[j].width, message->rects[j].height);
+
+				gdi_BitBlt(gdi->primary->hdc, tx, ty, 64, 64, gdi->tile->hdc, 0, 0, GDI_SRCCOPY);
+			}
+		}
+
+		for (i = 0; i < message->num_rects; i++)
+		{
+			gdi_InvalidateRegion(gdi->primary->hdc,
+					message->rects[i].x, message->rects[i].y,
+					message->rects[i].width, message->rects[i].height);
+		}
 	}
-
-	for (i = 0; i < message->num_tiles; i++)
+	else /* RDSH */
 	{
-		tx = message->tiles[i]->x + x;
-		ty = message->tiles[i]->y + y;
-		data = message->tiles[i]->data;
+		/* blit each tile */
+		for (i = 0; i < message->num_tiles; i++)
+		{
+			tx = message->tiles[i]->x + x;
+			ty = message->tiles[i]->y + y;
+			data = message->tiles[i]->data;
 
-		gdi_image_convert(data, gdi->tile->bitmap->data, 64, 64, 32, 32, gdi->clrconv);
-		gdi_BitBlt(gdi->primary->hdc, tx, ty, 64, 64, gdi->tile->hdc, 0, 0, GDI_SRCCOPY);
+			gdi_image_convert(data, gdi->tile->bitmap->data, 64, 64, 32, 32, gdi->clrconv);
 
-		gdi_InvalidateRegion(gdi->primary->hdc, tx, ty, 64, 64);
+			gdi_BitBlt(gdi->primary->hdc, tx, ty, 64, 64, gdi->tile->hdc, 0, 0, GDI_SRCCOPY);
+
+			gdi_InvalidateRegion(gdi->primary->hdc, tx, ty, 64, 64);
+		}
 	}
 
 	rfx_message_free(gdi->rfx_context, message);
+
+	return bitmapDataLength + 12;
 }
 
-void gdi_decode_data(GDI *gdi, uint8 * data, int data_size)
+int gdi_decode_surface_bits(GDI *gdi, uint8 * data, int size)
 {
-	int size;
-	int destLeft;
-	int destTop;
-	uint16 cmdType;
-	uint32 length;
+	int length;
+	uint16 destLeft;
+	uint16 destTop;
+	uint16 destRight;
+	uint16 destBottom;
 
-	while (data_size > 0)
+	/* SURFCMD_STREAM_SURF_BITS */
+	/* cmdType (2 bytes) */
+	destLeft = GET_UINT16(data, 2); /* destLeft (2 bytes) */
+	destTop = GET_UINT16(data, 4); /* destTop (2 bytes) */
+	destRight = GET_UINT16(data, 6); /* destRight (2 bytes) */
+	destBottom = GET_UINT16(data, 8); /* destBottom (2 bytes) */
+
+	/* set clipping region */
+	gdi_SetClipRgn(gdi->primary->hdc, destLeft, destTop, destRight - destLeft, destBottom - destTop);
+
+	/* decode extended bitmap data */
+	length = gdi_decode_bitmap_data_ex(gdi, destLeft, destTop, data + 10, size - 10) + 10;
+
+	return length;
+}
+
+int gdi_decode_frame_marker(GDI *gdi, uint8 * data, int size)
+{
+	uint16 frameAction;
+	uint32 frameId;
+
+	frameAction = GET_UINT16(data, 0); /* frameAction */
+	frameId = GET_UINT32(data, 2); /* frameId */
+
+	switch (frameAction)
 	{
-		cmdType = GET_UINT16(data, 0);
+		case SURFACECMD_FRAMEACTION_BEGIN:
+			break;
+
+		case SURFACECMD_FRAMEACTION_END:
+			break;
+
+		default:
+			break;
+	}
+
+	return 8;
+}
+
+void gdi_decode_data(GDI *gdi, uint8 * data, int size)
+{
+	int cmdLength;
+	uint16 cmdType;
+
+	while (size > 0)
+	{
+		cmdType = GET_UINT16(data, 0); /* cmdType */
 
 		switch (cmdType)
 		{
 			case CMDTYPE_SET_SURFACE_BITS:
 			case CMDTYPE_STREAM_SURFACE_BITS:
-				destLeft = GET_UINT16(data, 2);
-				destTop = GET_UINT16(data, 4);
-				length = GET_UINT32(data, 18);
-				gdi_decode_frame(gdi, destLeft, destTop, data + 22, length);
-				size = 22 + length;
+				cmdLength = gdi_decode_surface_bits(gdi, data, size);
 				break;
 
 			case CMDTYPE_FRAME_MARKER:
-				size = 8;
+				cmdLength = gdi_decode_frame_marker(gdi, data, size);
 				break;
 
 			default:
-				size = 2;
+				cmdLength = 2;
 				break;
 		}
-		data_size -= size;
-		data += size;
+
+		size -= cmdLength;
+		data += cmdLength;
 	}
 }

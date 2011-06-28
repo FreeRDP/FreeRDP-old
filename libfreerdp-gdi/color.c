@@ -618,7 +618,7 @@ uint8* gdi_image_convert_32bpp(uint8* srcData, uint8* dstData, int width, int he
 	return srcData;
 }
 
-p_gdi_image_convert gdi_image_convert_[5] =
+p_gdi_image_convert_bpp gdi_image_convert_[5] =
 {
 	NULL,
 	gdi_image_convert_8bpp,
@@ -629,7 +629,7 @@ p_gdi_image_convert gdi_image_convert_[5] =
 
 uint8* gdi_image_convert(uint8* srcData, uint8* dstData, int width, int height, int srcBpp, int dstBpp, HCLRCONV clrconv)
 {
-	p_gdi_image_convert _p_gdi_image_convert = gdi_image_convert_[IBPP(srcBpp)];
+	p_gdi_image_convert_bpp _p_gdi_image_convert = gdi_image_convert_[IBPP(srcBpp)];
 
 	if (_p_gdi_image_convert != NULL)
 		return _p_gdi_image_convert(srcData, dstData, width, height, srcBpp, dstBpp, clrconv);

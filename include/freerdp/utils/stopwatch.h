@@ -1,8 +1,8 @@
 /*
    FreeRDP: A Remote Desktop Protocol client.
-   RemoteFX Codec Library - Differential Encoding
+   Stopwatch Utils
 
-   Copyright 2011 Vic Lee
+   Copyright 2011 Stephen Erisman
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -17,15 +17,28 @@
    limitations under the License.
 */
 
-#ifndef __RFX_DIFFERENTIAL_H
-#define __RFX_DIFFERENTIAL_H
+#ifndef __UTILS_STOPWATCH_H
+#define __UTILS_STOPWATCH_H
 
-#include <freerdp/rfx.h>
+#include <freerdp/utils/memory.h>
+#include <time.h>
 
-void
-rfx_differential_decode(sint16 * buffer, int buffer_size);
-void
-rfx_differential_encode(sint16 * buffer, int buffer_size);
+struct _STOPWATCH
+{
+	clock_t start;
+	clock_t end;
+	double elapsed;
+	clock_t count;
+};
+typedef struct _STOPWATCH STOPWATCH;
 
-#endif
+STOPWATCH * stopwatch_create();
+void stopwatch_free(STOPWATCH * stopwatch);
 
+void stopwatch_start(STOPWATCH * stopwatch);
+void stopwatch_stop(STOPWATCH * stopwatch);
+void stopwatch_reset(STOPWATCH * stopwatch);
+
+double stopwatch_get_elapsed_time_in_seconds(STOPWATCH * stopwatch);
+
+#endif /* __UTILS_STOPWATCH_H */

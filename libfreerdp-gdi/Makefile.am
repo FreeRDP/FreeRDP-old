@@ -21,6 +21,7 @@ libfreerdp_gdi_la_SOURCES = \
 	gdi_8bpp.c gdi_8bpp.h \
 	color.c color.h \
 	decode.c decode.h \
+	libgdi.h \
 	gdi.c gdi.h
 
 libfreerdp_gdi_la_CFLAGS = \
@@ -30,8 +31,20 @@ libfreerdp_gdi_la_CFLAGS = \
 
 libfreerdp_gdi_la_LDFLAGS =
 
-libfreerdp_gdi_la_LIBDADD = \
+libfreerdp_gdi_la_LIBADD = \
 	../libfreerdp-rfx/libfreerdp-rfx.la
+
+if WITH_SSE
+SUBDIRS = sse
+libfreerdp_gdi_la_CFLAGS += -I./sse
+libfreerdp_gdi_la_LIBADD += ./sse/libfreerdp-gdi-sse.la
+endif
+
+if WITH_NEON
+SUBDIRS = neon
+libfreerdp_gdi_la_CFLAGS += -I./neon
+libfreerdp_gdi_la_LIBADD += ./neon/libfreerdp-gdi-neon.la
+endif
 
 # extra
 EXTRA_DIST =

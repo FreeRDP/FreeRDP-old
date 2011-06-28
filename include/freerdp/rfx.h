@@ -22,6 +22,8 @@
 
 #include "types/base.h"
 
+#include <freerdp/utils/profiler.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -39,8 +41,12 @@ extern "C" {
 #define WBT_FRAME_END		0xCCC5
 #define WBT_REGION		0xCCC6
 #define WBT_EXTENSION		0xCCC7
+#define CBT_REGION		0xCAC1
 #define CBT_TILESET		0xCAC2
 #define CBT_TILE		0xCAC3
+
+/* tileSize */
+#define CT_TILE_64x64		0x0040
 
 /* properties.flags */
 #define CODEC_MODE		0x02
@@ -120,7 +126,8 @@ typedef struct _RFX_MESSAGE RFX_MESSAGE;
 
 struct _RFX_CONTEXT
 {
-	int flags;
+	uint16 flags;
+	uint16 properties;
 	uint16 width;
 	uint16 height;
 	RLGR_MODE mode;
@@ -128,29 +135,58 @@ struct _RFX_CONTEXT
 	uint32 codec_id;
 	uint32 codec_version;
 	RFX_PIXEL_FORMAT pixel_format;
+	uint8 bytes_per_pixel;
 
 	/* temporary data within a frame */
+	uint32 frame_idx;
 	uint8 num_quants;
 	uint32 * quants;
+	uint8 quant_idx_y;
+	uint8 quant_idx_cb;
+	uint8 quant_idx_cr;
 
 	/* pre-allocated buffers */
 
 	RFX_POOL* pool; /* memory pool */
 
-	uint32 y_r_mem[4096+4]; /* 4096 = 64x64 (+ 4x4 = 16 for mem align) */
-	uint32 cb_g_mem[4096+4]; /* 4096 = 64x64 (+ 4x4 = 16 for mem align) */
-	uint32 cr_b_mem[4096+4]; /* 4096 = 64x64 (+ 4x4 = 16 for mem align) */
+	sint16 y_r_mem[4096+8]; /* 4096 = 64x64 (+ 8x2 = 16 for mem align) */
+	sint16 cb_g_mem[4096+8]; /* 4096 = 64x64 (+ 8x2 = 16 for mem align) */
+	sint16 cr_b_mem[4096+8]; /* 4096 = 64x64 (+ 8x2 = 16 for mem align) */
  
- 	uint32* y_r_buffer;
-	uint32* cb_g_buffer;
-	uint32* cr_b_buffer;
+ 	sint16 * y_r_buffer;
+	sint16 * cb_g_buffer;
+	sint16 * cr_b_buffer;
  
-	uint32 idwt_buffer_8[256]; /* sub-band width 8 */
-	uint32 idwt_buffer_16[1024]; /* sub-band width 16 */
-	uint32 idwt_buffer_32[4096]; /* sub-band width 32 */
-	uint32* idwt_buffers[5]; /* sub-band buffer array */
-	
-	void (* decode_YCbCr_to_RGB)(uint32 * y_r_buf, uint32 * cb_g_buf, uint32 * cr_b_buf);
+	sint16 dwt_mem[32*32*2*2 + 8]; /* maximum sub-band width is 32 */
+
+	sint16 * dwt_buffer;
+
+	/* routines */
+	void (* decode_YCbCr_to_RGB)(sint16 * y_r_buf, sint16 * cb_g_buf, sint16 * cr_b_buf);
+	void (* encode_RGB_to_YCbCr)(sint16 * y_r_buf, sint16 * cb_g_buf, sint16 * cr_b_buf);
+	void (* quantization_decode)(sint16 * buffer, const uint32 * quantization_values);
+	void (* quantization_encode)(sint16 * buffer, const uint32 * quantization_values);
+	void (* dwt_2d_decode)(sint16 * buffer, sint16 * dwt_buffer);
+	void (* dwt_2d_encode)(sint16 * buffer, sint16 * dwt_buffer);
+
+	/* profiler definitions */
+	PROFILER_DEFINE(prof_rfx_decode_rgb);
+	PROFILER_DEFINE(prof_rfx_decode_component);
+	PROFILER_DEFINE(prof_rfx_rlgr_decode);
+	PROFILER_DEFINE(prof_rfx_differential_decode);
+	PROFILER_DEFINE(prof_rfx_quantization_decode);
+	PROFILER_DEFINE(prof_rfx_dwt_2d_decode);
+	PROFILER_DEFINE(prof_rfx_decode_YCbCr_to_RGB);
+	PROFILER_DEFINE(prof_rfx_decode_format_RGB);
+
+	PROFILER_DEFINE(prof_rfx_encode_rgb);
+	PROFILER_DEFINE(prof_rfx_encode_component);
+	PROFILER_DEFINE(prof_rfx_rlgr_encode);
+	PROFILER_DEFINE(prof_rfx_differential_encode);
+	PROFILER_DEFINE(prof_rfx_quantization_encode);
+	PROFILER_DEFINE(prof_rfx_dwt_2d_encode);
+	PROFILER_DEFINE(prof_rfx_encode_RGB_to_YCbCr);
+	PROFILER_DEFINE(prof_rfx_encode_format_RGB);
 };
 typedef struct _RFX_CONTEXT RFX_CONTEXT;
 
@@ -158,8 +194,12 @@ RFX_CONTEXT* rfx_context_new(void);
 void rfx_context_free(RFX_CONTEXT * context);
 void rfx_context_set_pixel_format(RFX_CONTEXT * context, RFX_PIXEL_FORMAT pixel_format);
 
-RFX_MESSAGE* rfx_process_message(RFX_CONTEXT * context, uint8 * data, int data_size);
+RFX_MESSAGE* rfx_process_message(RFX_CONTEXT * context, uint8 * data, int size);
 void rfx_message_free(RFX_CONTEXT * context, RFX_MESSAGE * message);
+
+int rfx_compose_message_header(RFX_CONTEXT * context, uint8 * buffer, int buffer_size);
+int rfx_compose_message_data(RFX_CONTEXT * context, uint8 * buffer, int buffer_size,
+	const RFX_RECT * rects, int num_rects, uint8 * image_data, int width, int height, int rowstride);
 
 #ifdef __cplusplus
 }
