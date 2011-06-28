@@ -1202,4 +1202,6 @@ void gdi_free(rdpInst* inst)
 		free(gdi->clrconv);
 		free(gdi);
 	}
+	
+	SET_GDI(inst, NULL);
 }

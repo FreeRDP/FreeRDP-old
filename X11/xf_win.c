@@ -787,6 +787,14 @@ l_ui_reset_clip(struct rdp_inst * inst)
 static void
 l_ui_resize_window(struct rdp_inst * inst)
 {
+	xfInfo * xfi = GET_XFI(inst);
+
+	if (xfi->settings->software_gdi == 1)
+	{
+		gdi_free(inst);
+		gdi_init(inst, CLRCONV_ALPHA | CLRBUF_32BPP);		
+	}
+	
 	printf("ui_resize_window:\n");
 }
 
