@@ -440,6 +440,7 @@ MyVirtualChannelClose(uint32 openHandle)
 	struct chan_data * lchan;
 	int index;
 
+	DEBUG_CHANMAN("MyVirtualChannelClose:");
 	chan_man = freerdp_chanman_find_by_open_handle(openHandle, &index);
 	if ((chan_man == NULL) || (index < 0) || (index >= CHANNEL_MAX_COUNT))
 	{
@@ -1026,6 +1027,7 @@ freerdp_chanman_close(rdpChanMan * chan_man, rdpInst * inst)
 	int index;
 	struct lib_data * llib;
 
+	DEBUG_CHANMAN("freerdp_chanman_close:");
 	chan_man->is_connected = 0;
 	freerdp_chanman_check_fds(chan_man, inst);
 	/* tell all libraries we are shutting down */
