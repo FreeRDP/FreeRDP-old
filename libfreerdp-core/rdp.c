@@ -36,6 +36,7 @@
 #include "ext.h"
 #include "surface.h"
 #include <freerdp/freerdp.h>
+#include <freerdp/utils/hexdump.h>
 
 #include "rdp.h"
 
@@ -1410,7 +1411,7 @@ process_redirect_pdu(rdpRdp * rdp, STREAM s)
 		rdp->redirect_routingtoken = xmalloc_in_len32_data(rdp, s,
 			&rdp->redirect_routingtoken_len);
 		printf("redirect_cookie_len: %d\n", rdp->redirect_routingtoken_len);
-		hexdump((void*)rdp->redirect_routingtoken, rdp->redirect_routingtoken_len);
+		freerdp_hexdump((uint8*)rdp->redirect_routingtoken, rdp->redirect_routingtoken_len);
 	}
 	if (redirFlags & LB_USERNAME)
 	{
@@ -1444,7 +1445,7 @@ process_redirect_pdu(rdpRdp * rdp, STREAM s)
 		rdp->redirect_target_net_addresses = xmalloc_in_len32_data(rdp, s,
 			&rdp->redirect_target_net_addresses_len);
 		printf("redirect_target_net_addresses_len: %d\n", rdp->redirect_target_net_addresses_len);
-		hexdump((void*)rdp->redirect_target_net_addresses, rdp->redirect_target_net_addresses_len);
+		freerdp_hexdump((uint8*)rdp->redirect_target_net_addresses, rdp->redirect_target_net_addresses_len);
 	}
 	if (redirFlags & LB_NOREDIRECT)
 	{

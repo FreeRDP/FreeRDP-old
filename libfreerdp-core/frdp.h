@@ -53,8 +53,6 @@ void
 ui_warning(rdpInst * inst, char * format, ...);
 void
 ui_unimpl(rdpInst * inst, char * format, ...);
-void
-hexdump(unsigned char * p, int len);
 int
 load_license(unsigned char ** data);
 RD_BOOL

@@ -27,6 +27,7 @@
 #include "ext.h"
 #include <freerdp/freerdp.h>
 #include <freerdp/utils/memory.h>
+#include <freerdp/utils/hexdump.h>
 
 #define RDP_FROM_INST(_inst) ((rdpRdp *) (_inst->rdp))
 
@@ -88,34 +89,6 @@ ui_unimpl(rdpInst * inst, char * format, ...)
 	inst->ui_unimpl(inst, text2);
 	xfree(text1);
 	xfree(text2);
-}
-
-void
-hexdump(unsigned char * p, int len)
-{
-	unsigned char *line = p;
-	int i, thisline, offset = 0;
-
-	while (offset < len)
-	{
-		printf("%04x ", offset);
-		thisline = len - offset;
-		if (thisline > 16)
-			thisline = 16;
-
-		for (i = 0; i < thisline; i++)
-			printf("%02x ", line[i]);
-
-		for (; i < 16; i++)
-			printf("   ");
-
-		for (i = 0; i < thisline; i++)
-			printf("%c", (line[i] >= 0x20 && line[i] < 0x7f) ? line[i] : '.');
-
-		printf("\n");
-		offset += thisline;
-		line += thisline;
-	}
 }
 
 int

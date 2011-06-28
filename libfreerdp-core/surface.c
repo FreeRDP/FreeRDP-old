@@ -21,6 +21,7 @@
 #include "rdp.h"
 #include "stream.h"
 #include <freerdp/freerdp.h>
+#include <freerdp/utils/hexdump.h>
 
 #include "surface.h"
 
@@ -83,7 +84,7 @@ surface_codec_cap(rdpRdp * rdp, uint8 * codec_guid, int codec_id,
 	else
 	{
 		//printf("unknown guid\n");
-		hexdump(codec_guid, 16);
+		freerdp_hexdump(codec_guid, 16);
 	}
 	return s;
 }
