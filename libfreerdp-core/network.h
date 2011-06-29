@@ -40,6 +40,7 @@ struct rdp_network
 	char* username;
 	struct stream in;
 	struct stream out;
+	struct _NEGO * nego;
 	struct rdp_rdp * rdp;
 	struct rdp_tcp * tcp;
 	struct rdp_sec * sec;
@@ -51,18 +52,20 @@ struct rdp_network
 };
 typedef struct rdp_network rdpNetwork;
 
+STREAM
+network_stream_init(rdpNetwork * net, uint32 min_size);
 RD_BOOL
 network_connect(rdpNetwork * net, char* server, char* username, int port);
+void
+network_disconnect(rdpNetwork * net);
 
 void
 network_send(rdpNetwork * net, STREAM s);
-
 STREAM
 network_recv(rdpNetwork * net, STREAM s, uint32 length);
 
 rdpNetwork*
 network_new(rdpRdp * rdp);
-
 void
 network_free(rdpNetwork * net);
 

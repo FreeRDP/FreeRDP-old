@@ -80,6 +80,7 @@ tcp_socket_ok(int sck)
 			return True;
 		}
 	}
+
 	return False;
 }
 
@@ -93,13 +94,16 @@ tcp_can_send(int sck, int millis)
 
 	time.tv_sec = millis / 1000;
 	time.tv_usec = (millis * 1000) % 1000000;
+
 	FD_ZERO(&wfds);
 	FD_SET(sck, &wfds);
 	sel_count = select(sck + 1, 0, &wfds, 0, &time);
+
 	if (sel_count > 0)
 	{
 		return tcp_socket_ok(sck);
 	}
+
 	return False;
 }
 
@@ -113,33 +117,17 @@ tcp_can_recv(int sck, int millis)
 
 	time.tv_sec = millis / 1000;
 	time.tv_usec = (millis * 1000) % 1000000;
+
 	FD_ZERO(&rfds);
 	FD_SET(sck, &rfds);
 	sel_count = select(sck + 1, &rfds, 0, 0, &time);
+
 	if (sel_count > 0)
 	{
 		return tcp_socket_ok(sck);
 	}
+
 	return False;
-}
-
-/* Initialize and return STREAM.
- * The stream will have room for at least minsize.
- * The tcp layers out stream will be used. */
-STREAM
-tcp_init(rdpTcp * tcp, uint32 minsize)
-{
-	STREAM result = &(tcp->out);
-
-	if (minsize > result->size)
-	{
-		result->data = (uint8 *) xrealloc(result->data, minsize);
-		result->size = minsize;
-	}
-
-	result->p = result->data;
-	result->end = result->data + result->size;
-	return result;
 }
 
 void
@@ -163,7 +151,7 @@ tcp_write(rdpTcp * tcp, STREAM s)
 				}
 				else
 				{
-					ui_error(tcp->iso->net->rdp->inst, "send: %s\n", TCP_STRERROR);
+					ui_error(tcp->net->rdp->inst, "send: %s\n", TCP_STRERROR);
 					return;
 				}
 			}
@@ -177,7 +165,7 @@ tcp_read(rdpTcp * tcp, char* b, int length)
 {
 	int rcvd = 0;
 
-	if (!ui_select(tcp->iso->mcs->net->sec->rdp->inst, tcp->sock))
+	if (!ui_select(tcp->net->sec->rdp->inst, tcp->sock))
 		return -1; /* user quit */
 
 	rcvd = recv(tcp->sock, b, length, 0);
@@ -191,13 +179,13 @@ tcp_read(rdpTcp * tcp, char* b, int length)
 		}
 		else
 		{
-			ui_error(tcp->iso->mcs->net->rdp->inst, "recv: %s\n", TCP_STRERROR);
+			ui_error(tcp->net->rdp->inst, "recv: %s\n", TCP_STRERROR);
 			return -1;
 		}
 	}
 	else if (rcvd == 0)
 	{
-		ui_error(tcp->iso->mcs->net->rdp->inst, "Connection closed\n");
+		ui_error(tcp->net->rdp->inst, "Connection closed\n");
 			return -1;
 	}
 
@@ -228,7 +216,7 @@ tcp_connect(rdpTcp * tcp, char * server, int port)
 
 	if ((n = getaddrinfo(server, tcp_port_rdp_s, &hints, &res)))
 	{
-		ui_error(tcp->iso->mcs->net->sec->rdp->inst, "getaddrinfo: %s\n", gai_strerror(n));
+		ui_error(tcp->net->rdp->inst, "getaddrinfo: %s\n", gai_strerror(n));
 		return False;
 	}
 
@@ -250,7 +238,7 @@ tcp_connect(rdpTcp * tcp, char * server, int port)
 
 	if (sock == -1)
 	{
-		ui_error(tcp->iso->mcs->net->sec->rdp->inst, "%s: unable to connect\n", server);
+		ui_error(tcp->net->rdp->inst, "%s: unable to connect\n", server);
 		return False;
 	}
 
@@ -267,13 +255,13 @@ tcp_connect(rdpTcp * tcp, char * server, int port)
 	}
 	else if ((servaddr.sin_addr.s_addr = inet_addr(server)) == INADDR_NONE)
 	{
-		ui_error(tcp->iso->mcs->sec->rdp->inst, "%s: unable to resolve host\n", server);
+		ui_error(tcp->net->rdp->inst, "%s: unable to resolve host\n", server);
 		return False;
 	}
 
 	if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
 	{
-		ui_error(tcp->iso->mcs->sec->rdp->inst, "socket: %s\n", TCP_STRERROR);
+		ui_error(tcp->net->rdp->inst, "socket: %s\n", TCP_STRERROR);
 		return False;
 	}
 
@@ -282,7 +270,7 @@ tcp_connect(rdpTcp * tcp, char * server, int port)
 
 	if (connect(sock, (struct sockaddr *) &servaddr, sizeof(struct sockaddr)) < 0)
 	{
-		ui_error(tcp->iso->mcs->sec->rdp->inst, "connect: %s\n", TCP_STRERROR);
+		ui_error(tcp->net->rdp->inst, "connect: %s\n", TCP_STRERROR);
 		TCP_CLOSE(sock);
 		return False;
 	}
@@ -360,24 +348,19 @@ tcp_get_address(rdpTcp * tcp)
 }
 
 rdpTcp *
-tcp_new(struct rdp_iso * iso)
+tcp_new(struct rdp_network * net)
 {
 	rdpTcp * self;
 
 	self = (rdpTcp *) xmalloc(sizeof(rdpTcp));
+
 	if (self != NULL)
 	{
 		memset(self, 0, sizeof(rdpTcp));
-		self->iso = iso;
-
-		self->in.size = 4096;
-		self->in.data = (uint8 *) xmalloc(self->in.size);
-
-		self->out.size = 4096;
-		self->out.data = (uint8 *) xmalloc(self->out.size);
-
+		self->net = net;
 		self->sock = -1;
 	}
+
 	return self;
 }
 
@@ -386,8 +369,6 @@ tcp_free(rdpTcp * tcp)
 {
 	if (tcp != NULL)
 	{
-		xfree(tcp->in.data);
-		xfree(tcp->out.data);
 		xfree(tcp);
 	}
 }

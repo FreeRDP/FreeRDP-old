@@ -30,7 +30,6 @@ struct rdp_iso
 {
 	char* cookie;
 	struct _NEGO * nego;
-	struct rdp_tcp * tcp;
 	struct rdp_mcs * mcs;
 	struct rdp_network * net;
 };

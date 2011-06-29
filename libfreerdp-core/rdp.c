@@ -1750,16 +1750,12 @@ rdp_new(struct rdp_set *settings, struct rdp_inst *inst)
 		self->buffer_size = 2048;
 		self->buffer = xmalloc(self->buffer_size);
 		memset(self->buffer, 0, self->buffer_size);
-		self->net = network_new(self);
 		self->sec = sec_new(self);
+		self->net = network_new(self);
 		self->orders = orders_new(self);
 		self->pcache = pcache_new(self);
 		self->cache = cache_new(self);
 		self->ext = ext_new(self);
-
-		self->net->rdp = self;
-		self->net->sec = self->sec;
-		self->net->tcp = self->net->iso->tcp;
 	}
 	return self;
 }

@@ -69,7 +69,7 @@ int nego_tcp_connect(NEGO *nego)
 {
 	if (nego->tcp_connected == 0)
 	{
-		if (tcp_connect(nego->iso->tcp, nego->hostname, nego->port) == False)
+		if (tcp_connect(nego->net->tcp, nego->hostname, nego->port) == False)
 		{
 			nego->tcp_connected = 0;
 			return 0;
@@ -93,7 +93,7 @@ int nego_tcp_connect(NEGO *nego)
 int nego_tcp_disconnect(NEGO *nego)
 {
 	if (nego->tcp_connected)
-		tcp_disconnect(nego->iso->tcp);
+		tcp_disconnect(nego->net->tcp);
 
 	nego->tcp_connected = 0;
 	return 1;
@@ -110,8 +110,8 @@ void nego_attempt_nla(NEGO *nego)
 	nego->requested_protocols = PROTOCOL_NLA | PROTOCOL_TLS;
 
 	nego_tcp_connect(nego);
-	x224_send_connection_request(nego->iso);
-	tpkt_recv(nego->iso, &code, NULL);
+	x224_send_connection_request(nego->net->iso);
+	tpkt_recv(nego->net->iso, &code, NULL);
 
 	if (nego->state != NEGO_STATE_FINAL)
 	{
@@ -137,8 +137,8 @@ void nego_attempt_tls(NEGO *nego)
 	nego->requested_protocols = PROTOCOL_TLS;
 
 	nego_tcp_connect(nego);
-	x224_send_connection_request(nego->iso);
-	tpkt_recv(nego->iso, &code, NULL);
+	x224_send_connection_request(nego->net->iso);
+	tpkt_recv(nego->net->iso, &code, NULL);
 
 	if (nego->state != NEGO_STATE_FINAL)
 	{
@@ -162,9 +162,9 @@ void nego_attempt_rdp(NEGO *nego)
 	nego->requested_protocols = PROTOCOL_RDP;
 
 	nego_tcp_connect(nego);
-	x224_send_connection_request(nego->iso);
+	x224_send_connection_request(nego->net->iso);
 
-	if (tpkt_recv(nego->iso, &code, NULL) == NULL)
+	if (tpkt_recv(nego->net->iso, &code, NULL) == NULL)
 		nego->state = NEGO_STATE_FAIL;
 	else
 		nego->state = NEGO_STATE_FINAL;
@@ -278,14 +278,14 @@ void nego_process_negotiation_failure(NEGO *nego, STREAM s)
  * @return
  */
 
-NEGO* nego_new(struct rdp_iso * iso)
+NEGO* nego_new(struct rdp_network * net)
 {
 	NEGO *nego = (NEGO*) xmalloc(sizeof(NEGO));
 
 	if (nego != NULL)
 	{
 		memset(nego, '\0', sizeof(NEGO));
-		nego->iso = iso;
+		nego->net = net;
 		nego_init(nego);
 	}
 

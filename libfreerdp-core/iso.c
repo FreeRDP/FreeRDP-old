@@ -69,7 +69,7 @@ x224_send_dst_src_class(rdpIso * iso, uint8 code)
 {
 	STREAM s;
 
-	s = tcp_init(iso->tcp, 11);
+	s = network_stream_init(iso->net, 11);
 
 	tpkt_output_header(s, 11);
 
@@ -104,7 +104,7 @@ x224_send_connection_request(rdpIso * iso)
 		length += 8;
 
 	/* FIXME: Use x224_send_dst_src_class */
-	s = tcp_init(iso->tcp, length);
+	s = network_stream_init(iso->net, length);
 
 	tpkt_output_header(s, length);
 
@@ -268,7 +268,7 @@ STREAM
 iso_init(rdpIso * iso, int length)
 {
 	STREAM s;
-	s = tcp_init(iso->tcp, length + 7);
+	s = network_stream_init(iso->net, length + 7);
 	s_push_layer(s, iso_hdr, 7);
 	return s;
 }
@@ -278,7 +278,7 @@ STREAM
 iso_fp_init(rdpIso * iso, int length)
 {
 	STREAM s;
-	s = tcp_init(iso->tcp, length + 3);
+	s = network_stream_init(iso->net, length + 3);
 	s_push_layer(s, iso_hdr, 3);
 	return s;
 }
@@ -399,11 +399,7 @@ void
 iso_disconnect(rdpIso * iso)
 {
 	x224_send_dst_src_class(iso, X224_TPDU_DISCONNECT_REQUEST);
-#ifndef DISABLE_TLS
-	if (iso->net->tls)
-		tls_disconnect(iso->net->tls);
-#endif
-	tcp_disconnect(iso->tcp);
+	network_disconnect(iso->net);
 }
 
 rdpIso *
@@ -418,8 +414,7 @@ iso_new(struct rdp_network * net)
 		memset(self, 0, sizeof(rdpIso));
 		self->net = net;
 		self->mcs = net->mcs;
-		self->tcp = tcp_new(self);
-		self->nego = nego_new(self);
+		self->nego = net->nego;
 	}
 
 	return self;
@@ -430,9 +425,6 @@ iso_free(rdpIso * iso)
 {
 	if (iso != NULL)
 	{
-		tcp_free(iso->tcp);
-		if (iso->nego != NULL)
-			nego_free(iso->nego);
 		xfree(iso);
 	}
 }

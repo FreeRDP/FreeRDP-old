@@ -27,11 +27,9 @@
 struct rdp_tcp
 {
 	int sock;
-	struct rdp_iso * iso;
-	int tcp_port_rdp;
 	char ipaddr[32];
-	struct stream in;
-	struct stream out;
+	int tcp_port_rdp;
+	struct rdp_network * net;
 #ifdef _WIN32
 	WSAEVENT wsa_event;
 #endif
@@ -47,12 +45,6 @@ RD_BOOL
 tcp_can_send(int sck, int millis);
 RD_BOOL
 tcp_can_recv(int sck, int millis);
-STREAM
-tcp_init(rdpTcp * tcp, uint32 minsize);
-void
-tcp_send(rdpTcp * tcp, STREAM s);
-STREAM
-tcp_recv(rdpTcp * tcp, STREAM s, uint32 length);
 RD_BOOL
 tcp_connect(rdpTcp * tcp, char * server, int port);
 void
@@ -60,7 +52,7 @@ tcp_disconnect(rdpTcp * tcp);
 char *
 tcp_get_address(rdpTcp * tcp);
 rdpTcp *
-tcp_new(struct rdp_iso * iso);
+tcp_new(struct rdp_network * net);
 void
 tcp_free(rdpTcp * tcp);
 

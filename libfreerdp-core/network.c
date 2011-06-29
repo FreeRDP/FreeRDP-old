@@ -21,6 +21,27 @@
 
 #include "network.h"
 
+/* Initialize and return STREAM.
+ * The stream will have room for at least min_size.
+ * The tcp layers out stream will be used. */
+
+STREAM
+network_stream_init(rdpNetwork * net, uint32 min_size)
+{
+	STREAM result = &(net->out);
+
+	if (min_size > result->size)
+	{
+		result->data = (uint8 *) xrealloc(result->data, min_size);
+		result->size = min_size;
+	}
+
+	result->p = result->data;
+	result->end = result->data + result->size;
+
+	return result;
+}
+
 #ifndef DISABLE_TLS
 
 /* verify SSL/TLS connection integrity. 2 checks are carried out. First make sure that the
@@ -177,6 +198,16 @@ network_connect(rdpNetwork * net, char* server, char* username, int port)
 }
 
 void
+network_disconnect(rdpNetwork * net)
+{
+#ifndef DISABLE_TLS
+	if (net->tls)
+		tls_disconnect(net->tls);
+#endif
+	tcp_disconnect(net->tcp);
+}
+
+void
 network_send(rdpNetwork * net, STREAM s)
 {
 #ifndef DISABLE_TLS
@@ -260,9 +291,13 @@ network_new(rdpRdp * rdp)
 	{
 		memset(self, 0, sizeof(rdpNetwork));
 		self->rdp = rdp;
+		self->sec = rdp->sec;
 		self->mcs = mcs_new(self);
+		self->tcp = tcp_new(self);
+		self->nego = nego_new(self);
 		self->iso = iso_new(self);
 		self->license = license_new(self);
+		self->sec->net = self;
 
 		self->in.size = 4096;
 		self->in.data = (uint8 *) xmalloc(self->in.size);
@@ -281,6 +316,22 @@ network_free(rdpNetwork * net)
 	{
 		xfree(net->in.data);
 		xfree(net->out.data);
+
+		if (net->tcp != NULL)
+			tcp_free(net->tcp);
+
+		if (net->iso != NULL)
+			iso_free(net->iso);
+
+		if (net->mcs != NULL)
+			mcs_free(net->mcs);
+
+		if (net->nego != NULL)
+			nego_free(net->nego);
+
+		if (net->license != NULL)
+			license_free(net->license);
+
 		xfree(net);
 	}
 }
