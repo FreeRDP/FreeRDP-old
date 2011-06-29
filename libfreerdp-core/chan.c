@@ -20,8 +20,8 @@
 #include "frdp.h"
 #include "chan.h"
 #include "mcs.h"
-#include "secure.h"
 #include "rdp.h"
+#include "security.h"
 #include <freerdp/rdpset.h>
 #include <freerdp/utils/memory.h>
 #include <freerdp/constants/vchan.h>
@@ -38,11 +38,11 @@ vchan_send(rdpChannels * chan, int mcs_id, char * data, int total_length)
 	rdpSet * settings;
 	struct rdp_chan * channel;
 
-	settings = chan->mcs->sec->rdp->settings;
+	settings = chan->mcs->net->rdp->settings;
 	chan_index = (mcs_id - MCS_GLOBAL_CHANNEL) - 1;
 	if ((chan_index < 0) || (chan_index >= settings->num_channels))
 	{
-		ui_error(chan->mcs->sec->rdp->inst, "error\n");
+		ui_error(chan->mcs->net->rdp->inst, "error\n");
 		return 0;
 	}
 	channel = &(settings->channels[chan_index]);
@@ -61,12 +61,12 @@ vchan_send(rdpChannels * chan, int mcs_id, char * data, int total_length)
 		{
 			chan_flags |= CHANNEL_FLAG_SHOW_PROTOCOL;
 		}
-		s = sec_init(chan->mcs->sec, sec_flags, length + 8);
+		s = sec_init(chan->mcs->net->sec, sec_flags, length + 8);
 		out_uint32_le(s, total_length);
 		out_uint32_le(s, chan_flags);
 		out_uint8p(s, data + sent, length);
 		s_mark_end(s);
-		sec_send_to_channel(chan->mcs->sec, s, sec_flags, mcs_id);
+		sec_send_to_channel(chan->mcs->net->sec, s, sec_flags, mcs_id);
 		sent += length;
 		chan_flags = 0;
 	}
@@ -86,7 +86,7 @@ vchan_process(rdpChannels * chan, STREAM s, int mcs_id)
 	length = (int) (s->end - s->p);
 	data = (char *) (s->p);
 	s->p += length;
-	ui_channel_data(chan->mcs->sec->rdp->inst, mcs_id, data, length, flags, total_length);
+	ui_channel_data(chan->mcs->net->sec->rdp->inst, mcs_id, data, length, flags, total_length);
 }
 
 rdpChannels *

@@ -11,4 +11,5 @@ include_HEADERS = \
 	stopwatch.h \
 	stream.h \
 	unicode.h \
-	wait_obj.h
+	wait_obj.h \
+	hexdump.h

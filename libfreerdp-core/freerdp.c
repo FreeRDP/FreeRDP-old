@@ -19,7 +19,7 @@
 #include <stdarg.h>
 #include "frdp.h"
 #include "rdp.h"
-#include "secure.h"
+#include "security.h"
 #include "mcs.h"
 #include "iso.h"
 #include "tcp.h"
@@ -27,6 +27,7 @@
 #include "ext.h"
 #include <freerdp/freerdp.h>
 #include <freerdp/utils/memory.h>
+#include <freerdp/utils/hexdump.h>
 
 #define RDP_FROM_INST(_inst) ((rdpRdp *) (_inst->rdp))
 
@@ -88,34 +89,6 @@ ui_unimpl(rdpInst * inst, char * format, ...)
 	inst->ui_unimpl(inst, text2);
 	xfree(text1);
 	xfree(text2);
-}
-
-void
-hexdump(unsigned char * p, int len)
-{
-	unsigned char *line = p;
-	int i, thisline, offset = 0;
-
-	while (offset < len)
-	{
-		printf("%04x ", offset);
-		thisline = len - offset;
-		if (thisline > 16)
-			thisline = 16;
-
-		for (i = 0; i < thisline; i++)
-			printf("%02x ", line[i]);
-
-		for (; i < 16; i++)
-			printf("   ");
-
-		for (i = 0; i < thisline; i++)
-			printf("%c", (line[i] >= 0x20 && line[i] < 0x7f) ? line[i] : '.');
-
-		printf("\n");
-		offset += thisline;
-		line += thisline;
-	}
 }
 
 int
@@ -477,9 +450,9 @@ l_rdp_get_fds(rdpInst * inst, void ** read_fds, int * read_count,
 
 	rdp = RDP_FROM_INST(inst);
 #ifdef _WIN32
-	read_fds[*read_count] = (void *) (rdp->sec->mcs->iso->tcp->wsa_event);
+	read_fds[*read_count] = (void *) (rdp->net->tcp->wsa_event);
 #else
-	read_fds[*read_count] = (void *)(long) (rdp->sec->mcs->iso->tcp->sock);
+	read_fds[*read_count] = (void *)(long) (rdp->net->tcp->sockfd);
 #endif
 	(*read_count)++;
 	return 0;
@@ -495,10 +468,10 @@ l_rdp_check_fds(rdpInst * inst)
 
 	rdp = RDP_FROM_INST(inst);
 #ifdef _WIN32
-	WSAResetEvent(rdp->sec->mcs->iso->tcp->wsa_event);
+	WSAResetEvent(rdp->net->tcp->wsa_event);
 #endif
 	rv = 0;
-	if (tcp_can_recv(rdp->sec->mcs->iso->tcp->sock, 0))
+	if (tcp_can_recv(rdp->net->tcp->sockfd, 0))
 	{
 		if (!rdp_loop(rdp, &deactivated))
 		{
@@ -559,7 +532,7 @@ l_rdp_channel_data(rdpInst * inst, int chan_id, char * data, int data_size)
 	rdpChannels * chan;
 
 	rdp = RDP_FROM_INST(inst);
-	chan = rdp->sec->mcs->chan;
+	chan = rdp->net->mcs->chan;
 	return vchan_send(chan, chan_id, data, data_size);
 }
 

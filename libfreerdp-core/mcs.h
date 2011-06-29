@@ -21,13 +21,14 @@
 #define __MCS_H
 
 #include "iso.h"
+#include "network.h"
 #include <freerdp/utils/debug.h>
 
 struct rdp_mcs
 {
-	struct rdp_sec * sec;
 	uint16 mcs_userid;
 	struct rdp_iso * iso;
+	struct rdp_network * net;
 	struct rdp_channels * chan;
 };
 typedef struct rdp_mcs rdpMcs;
@@ -49,7 +50,7 @@ mcs_connect(rdpMcs * mcs);
 void
 mcs_disconnect(rdpMcs * mcs);
 rdpMcs *
-mcs_new(struct rdp_sec * secure);
+mcs_new(struct rdp_network * net);
 void
 mcs_free(rdpMcs * mcs);
 

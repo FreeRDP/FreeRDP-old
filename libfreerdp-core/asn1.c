@@ -21,9 +21,9 @@
 #include "iso.h"
 #include "mcs.h"
 #include "chan.h"
-#include "secure.h"
 #include "rdp.h"
 #include "asn1.h"
+#include "security.h"
 
 /* Parse an ASN.1 BER header */
 RD_BOOL
@@ -42,7 +42,7 @@ ber_parse_header(rdpMcs * mcs, STREAM s, int tagval, int *length)
 
 	if (tag != tagval)
 	{
-		ui_error(mcs->sec->rdp->inst, "expected tag %d, got %d\n", tagval, tag);
+		ui_error(mcs->net->rdp->inst, "expected tag %d, got %d\n", tagval, tag);
 		return False;
 	}
 

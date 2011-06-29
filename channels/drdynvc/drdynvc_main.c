@@ -28,6 +28,7 @@
 #include <freerdp/utils/stream.h>
 #include <freerdp/utils/chan_plugin.h>
 #include <freerdp/utils/wait_obj.h>
+#include <freerdp/utils/hexdump.h>
 
 #include "drdynvc_main.h"
 
@@ -72,43 +73,9 @@ struct drdynvc_plugin
 };
 
 #if LOG_LEVEL > 10
-void
-hexdump(char* p, int len)
-{
-	unsigned char* line;
-	int i;
-	int thisline;
-	int offset;
-
-	line = (unsigned char*)p;
-	offset = 0;
-	while (offset < len)
-	{
-		printf("%04x ", offset);
-		thisline = len - offset;
-		if (thisline > 16)
-		{
-		  thisline = 16;
-		}
-		for (i = 0; i < thisline; i++)
-		{
-		  printf("%02x ", line[i]);
-		}
-		for (; i < 16; i++)
-		{
-		  printf("   ");
-		}
-		for (i = 0; i < thisline; i++)
-		{
-		  printf("%c", (line[i] >= 0x20 && line[i] < 0x7f) ? line[i] : '.');
-		}
-		printf("\n");
-		offset += thisline;
-		line += thisline;
-	}
-}
+#define hexdump(data,length)	freerdp_hexdump(data,length)
 #else
-#define hexdump(p,len)
+#define hexdump(data,length)	do { } while (0)
 #endif
 
 static int

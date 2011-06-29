@@ -20,7 +20,7 @@
 #ifndef __NTLMSSP_H
 #define __NTLMSSP_H
 
-#include "secure.h"
+#include "security.h"
 #include "credssp.h"
 
 #include <freerdp/utils/debug.h>

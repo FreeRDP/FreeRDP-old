@@ -26,7 +26,7 @@
 #include "iso.h"
 #include "tcp.h"
 #include "mcs.h"
-#include "secure.h"
+#include "security.h"
 #include "rail.h"
 #include "capabilities.h"
 #include "orders.h"
@@ -35,7 +35,9 @@
 #include "bitmap.h"
 #include "ext.h"
 #include "surface.h"
+#include "network.h"
 #include <freerdp/freerdp.h>
+#include <freerdp/utils/hexdump.h>
 
 #include "rdp.h"
 
@@ -152,7 +154,7 @@ rdp_init_data(rdpRdp * rdp, int maxlen)
 
 	uint32 sec_flags;
 
-	if (rdp->sec->tls_connected)
+	if (rdp->net->tls_connected)
 		sec_flags = 0;
 	else
 		sec_flags = rdp->settings->encryption ? SEC_ENCRYPT : 0;
@@ -185,7 +187,7 @@ rdp_send_data(rdpRdp * rdp, STREAM s, uint8 data_pdu_type)
 	/* Share Control Header */
 	out_uint16_le(s, length); /* totalLength */
 	out_uint16_le(s, (RDP_PDU_DATA | 0x10)); /* pduType */
-	out_uint16_le(s, (rdp->sec->mcs->mcs_userid + 1001)); /* PDUSource */
+	out_uint16_le(s, (rdp->net->mcs->mcs_userid + 1001)); /* PDUSource */
 
 	/* Share Data Header */
 	out_uint32_le(s, rdp->rdp_shareid);	/* shareId */
@@ -351,7 +353,7 @@ rdp_send_client_info(rdpRdp * rdp, uint32 flags, char *domain_name,
 	userName = freerdp_uniconv_out(rdp->uniconv, username, &cbUserName);
 	alternateShell = freerdp_uniconv_out(rdp->uniconv, shell, &cbAlternateShell);
 	workingDir = freerdp_uniconv_out(rdp->uniconv, dir, &cbWorkingDir);
-	clientAddress = freerdp_uniconv_out(rdp->uniconv, tcp_get_address(rdp->sec->mcs->iso->tcp), &cbClientAddress);
+	clientAddress = freerdp_uniconv_out(rdp->uniconv, tcp_get_address(rdp->net->tcp), &cbClientAddress);
 	clientDir = freerdp_uniconv_out(rdp->uniconv, dll, &cbClientDir); /* client working directory OR binary name */
 
 	length = 8 + (5 * 4) + cbDomain + cbUserName + cbPassword + cbAlternateShell + cbWorkingDir;
@@ -763,7 +765,7 @@ rdp_send_confirm_active(rdpRdp * rdp)
 	s_mark_end(caps);
 	caplen = (int) (caps->end - caps->data);
 
-	if (rdp->sec->tls_connected)
+	if (rdp->net->tls_connected)
 		sec_flags = 0;
 	else
 		sec_flags = rdp->settings->encryption ? SEC_ENCRYPT : 0;
@@ -774,7 +776,7 @@ rdp_send_confirm_active(rdpRdp * rdp)
 	/* share control header */
 	out_uint16_le(s, length);
 	out_uint16_le(s, (RDP_PDU_CONFIRM_ACTIVE | 0x10));	/* Version 1 */
-	out_uint16_le(s, (rdp->sec->mcs->mcs_userid + 1001));
+	out_uint16_le(s, (rdp->net->mcs->mcs_userid + 1001));
 
 	out_uint32_le(s, rdp->rdp_shareid); /* sharedId */
 	/* originatorId must be set to the server channel ID
@@ -1041,6 +1043,7 @@ process_system_pointer_pdu(rdpRdp * rdp, STREAM s)
 
 		default:
 			ui_unimpl(rdp->inst, "Unknown System Pointer message 0x%x\n", system_pointer_type);
+			break;
 	}
 }
 
@@ -1090,6 +1093,7 @@ process_pointer_pdu(rdpRdp * rdp, STREAM s)
 
 		default:
 			ui_unimpl(rdp->inst, "Unknown Pointer message 0x%x\n", message_type);
+			break;
 	}
 }
 
@@ -1262,6 +1266,7 @@ process_update_pdu(rdpRdp * rdp, STREAM s)
 
 		default:
 			ui_unimpl(rdp->inst, "Unknown update pdu type 0x%x\n", update_type);
+			break;
 	}
 	ui_end_update(rdp->inst);
 }
@@ -1359,6 +1364,7 @@ process_data_pdu(rdpRdp * rdp, STREAM s)
 
 		default:
 			ui_unimpl(rdp->inst, "Unknown data PDU type 0x%x\n", pduType2);
+			break;
 	}
 	return False;
 }
@@ -1410,7 +1416,7 @@ process_redirect_pdu(rdpRdp * rdp, STREAM s)
 		rdp->redirect_routingtoken = xmalloc_in_len32_data(rdp, s,
 			&rdp->redirect_routingtoken_len);
 		printf("redirect_cookie_len: %d\n", rdp->redirect_routingtoken_len);
-		hexdump((void*)rdp->redirect_routingtoken, rdp->redirect_routingtoken_len);
+		freerdp_hexdump((uint8*)rdp->redirect_routingtoken, rdp->redirect_routingtoken_len);
 	}
 	if (redirFlags & LB_USERNAME)
 	{
@@ -1444,7 +1450,7 @@ process_redirect_pdu(rdpRdp * rdp, STREAM s)
 		rdp->redirect_target_net_addresses = xmalloc_in_len32_data(rdp, s,
 			&rdp->redirect_target_net_addresses_len);
 		printf("redirect_target_net_addresses_len: %d\n", rdp->redirect_target_net_addresses_len);
-		hexdump((void*)rdp->redirect_target_net_addresses, rdp->redirect_target_net_addresses_len);
+		freerdp_hexdump((uint8*)rdp->redirect_target_net_addresses, rdp->redirect_target_net_addresses_len);
 	}
 	if (redirFlags & LB_NOREDIRECT)
 	{
@@ -1641,6 +1647,7 @@ rdp_loop(rdpRdp * rdp, RD_BOOL * deactivated)
 				break;
 			default:
 				ui_unimpl(rdp->inst, "Unknown PDU type 0x%x", type);
+				break;
 		}
 		if (disc)
 			return False;
@@ -1671,7 +1678,7 @@ rdp_connect(rdpRdp * rdp)
 		connect_flags |= INFO_REMOTECONSOLEAUDIO;
 	}
 
-	if (!sec_connect(rdp->sec, rdp->settings->server, rdp->settings->username, rdp->settings->tcp_port_rdp))
+	if (!network_connect(rdp->net, rdp->settings->server, rdp->settings->username, rdp->settings->tcp_port_rdp))
 		return False;
 
 	password_encoded = freerdp_uniconv_out(rdp->uniconv, rdp->settings->password, &password_encoded_len);
@@ -1679,7 +1686,7 @@ rdp_connect(rdpRdp * rdp)
 	xfree(password_encoded);
 
 	/* by setting encryption to False here, we have an encrypted login packet but unencrypted transfer of other packets */
-	if (rdp->sec->tls_connected)
+	if (rdp->net->tls_connected)
 		rdp->settings->encryption = 0;
 
 	return True;
@@ -1701,7 +1708,8 @@ rdp_reconnect(rdpRdp * rdp)
 	sec_disconnect(rdp->sec);
 	sec_free(rdp->sec);
 	rdp->sec = sec_new(rdp);
-	if (!sec_connect(rdp->sec, server, username, rdp->settings->tcp_port_rdp))
+
+	if (!network_connect(rdp->net, server, username, rdp->settings->tcp_port_rdp))
 		return False;
 
 	domain = rdp->redirect_domain ? rdp->redirect_domain : rdp->settings->domain;
@@ -1713,11 +1721,14 @@ rdp_reconnect(rdpRdp * rdp)
 	}
 	else
 		password = freerdp_uniconv_out(rdp->uniconv, rdp->settings->password, &password_len);
+
 	rdp_send_client_info(rdp, INFO_NORMALLOGON | INFO_AUTOLOGON,
 			domain, username, password, password_len,
 			rdp->settings->shell, rdp->settings->directory);
+
 	if (!rdp->redirect_password)
 		xfree(password);
+
 	return True;
 }
 
@@ -1745,6 +1756,7 @@ rdp_new(struct rdp_set *settings, struct rdp_inst *inst)
 		self->buffer = xmalloc(self->buffer_size);
 		memset(self->buffer, 0, self->buffer_size);
 		self->sec = sec_new(self);
+		self->net = network_new(self);
 		self->orders = orders_new(self);
 		self->pcache = pcache_new(self);
 		self->cache = cache_new(self);
