@@ -20,8 +20,8 @@
 #include "frdp.h"
 #include "chan.h"
 #include "mcs.h"
-#include "secure.h"
 #include "rdp.h"
+#include "security.h"
 #include <freerdp/rdpset.h>
 #include <freerdp/utils/memory.h>
 #include <freerdp/constants/vchan.h>

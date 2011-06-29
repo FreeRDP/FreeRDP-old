@@ -20,7 +20,7 @@
 #include "tcp.h"
 #include "mcs.h"
 #include "nego.h"
-#include "secure.h"
+#include "security.h"
 #include "credssp.h"
 #include "rdp.h"
 #include <freerdp/rdpset.h>

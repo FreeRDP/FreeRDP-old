@@ -20,10 +20,11 @@
 #include "frdp.h"
 #include "iso.h"
 #include "chan.h"
-#include "secure.h"
 #include "rdp.h"
 #include "asn1.h"
 #include "tcp.h"
+#include "connect.h"
+#include "security.h"
 #include <freerdp/rdpset.h>
 #include <freerdp/utils/memory.h>
 
@@ -69,7 +70,7 @@ mcs_send_connect_initial(rdpMcs * mcs)
 	gccCCrq.p = gccCCrq.data = (uint8 *) xmalloc(gccCCrq.size);
 	gccCCrq.end = gccCCrq.data + gccCCrq.size;
 
-	sec_out_gcc_conference_create_request(mcs->net->sec, &gccCCrq);
+	connect_output_gcc_conference_create_request(mcs->net->sec, &gccCCrq);
 	gccCCrq_length = gccCCrq.end - gccCCrq.data;
 	length = 9 + 3 * 34 + 4 + gccCCrq_length;
 
@@ -125,7 +126,7 @@ mcs_recv_connect_response(rdpMcs * mcs)
 
 	ber_parse_header(mcs, s, BER_TAG_OCTET_STRING, &length);
 
-	sec_process_mcs_data(mcs->net->sec, s);
+	connect_process_mcs_data(mcs->net->sec, s);
 	return s_check_end(s);
 }
 

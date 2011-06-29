@@ -1,6 +1,6 @@
 /*
    FreeRDP: A Remote Desktop Protocol client.
-   Protocol services - RDP encryption and licensing
+   Standard RDP Security
 
    Copyright (C) Jay Sorg 2009-2011
 
@@ -17,8 +17,8 @@
    limitations under the License.
 */
 
-#ifndef __SECURE_H
-#define __SECURE_H
+#ifndef __SECURITY_H
+#define __SECURITY_H
 
 typedef struct rdp_sec rdpSec;
 
@@ -73,6 +73,12 @@ buf_out_uint32(uint8 * buffer, uint32 value);
 void
 sec_sign(uint8 * signature, int siglen, uint8 * session_key, int keylen,
 	 uint8 * data, int datalen);
+RD_BOOL
+sec_parse_public_key(rdpSec * sec, STREAM s, uint32 len, uint8 * modulus, uint8 * exponent);
+RD_BOOL
+sec_parse_public_sig(STREAM s, uint32 len);
+void
+sec_generate_keys(rdpSec * sec, uint8 * client_random, uint8 * server_random, int rc4_key_size);
 STREAM
 sec_init(rdpSec * sec, uint32 flags, int maxlen);
 STREAM
@@ -84,11 +90,11 @@ sec_send(rdpSec * sec, STREAM s, uint32 flags);
 void
 sec_fp_send(rdpSec * sec, STREAM s, uint32 flags);
 void
-sec_process_mcs_data(rdpSec * sec, STREAM s);
+sec_reverse_copy(uint8 * out, uint8 * in, int len);
+void
+connect_process_mcs_data(rdpSec * sec, STREAM s);
 STREAM
 sec_recv(rdpSec * sec, secRecvType * type);
-void
-sec_out_gcc_conference_create_request(rdpSec * sec, STREAM s);
 void
 sec_establish_key(rdpSec * sec);
 void

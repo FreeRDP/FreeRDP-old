@@ -10,6 +10,7 @@ libfreerdp_core_la_SOURCES = \
 	bitmap.c bitmap.h \
 	cache.c cache.h \
 	capabilities.c capabilities.h \
+	connect.c connect.h \
 	chan.c chan.h \
 	ext.c ext.h \
 	freerdp.c \
@@ -22,7 +23,7 @@ libfreerdp_core_la_SOURCES = \
 	pstcache.c pstcache.h \
 	rail.c rail.h \
 	rdp.c rdp.h \
-	secure.c secure.h \
+	security.c security.h \
 	network.c network.h \
 	crypto.h \
 	tcp.c tcp.h \

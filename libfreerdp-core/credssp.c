@@ -21,7 +21,7 @@
 #include "rdp.h"
 #include "tls.h"
 #include "asn1.h"
-#include "secure.h"
+#include "security.h"
 #include "stream.h"
 #include "tcp.h"
 #include "mcs.h"

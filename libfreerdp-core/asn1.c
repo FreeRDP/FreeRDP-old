@@ -21,9 +21,9 @@
 #include "iso.h"
 #include "mcs.h"
 #include "chan.h"
-#include "secure.h"
 #include "rdp.h"
 #include "asn1.h"
+#include "security.h"
 
 /* Parse an ASN.1 BER header */
 RD_BOOL

@@ -32,7 +32,6 @@
 #include "frdp.h"
 #include "iso.h"
 #include "mcs.h"
-#include "secure.h"
 #include "rdp.h"
 #include <freerdp/utils/memory.h>
 #include <freerdp/utils/hexdump.h>

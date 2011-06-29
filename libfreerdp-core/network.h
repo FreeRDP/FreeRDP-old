@@ -28,7 +28,7 @@
 #include "iso.h"
 #include "mcs.h"
 #include "rdp.h"
-#include "secure.h"
+#include "security.h"
 #include "stream.h"
 #include "credssp.h"
 #include "license.h"

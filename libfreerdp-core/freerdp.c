@@ -19,7 +19,7 @@
 #include <stdarg.h>
 #include "frdp.h"
 #include "rdp.h"
-#include "secure.h"
+#include "security.h"
 #include "mcs.h"
 #include "iso.h"
 #include "tcp.h"
