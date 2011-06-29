@@ -21,12 +21,13 @@
 #define __LICENSE_H
 
 #include "stream.h"
+#include "network.h"
 #include <freerdp/types/ui.h>
 #include <freerdp/utils/debug.h>
 
 struct rdp_license
 {
-	struct rdp_sec * sec;
+	struct rdp_network * net;
 	uint8 license_key[16];
 	uint8 license_sign_key[16];
 	RD_BOOL license_issued;
@@ -36,7 +37,7 @@ typedef struct rdp_license rdpLicense;
 void
 license_process(rdpLicense * license, STREAM s);
 rdpLicense *
-license_new(struct rdp_sec * secure);
+license_new(struct rdp_network * net);
 void
 license_free(rdpLicense * license);
 

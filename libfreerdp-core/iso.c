@@ -20,7 +20,7 @@
 #include "tcp.h"
 #include "mcs.h"
 #include "nego.h"
-#include "secure.h"
+#include "security.h"
 #include "credssp.h"
 #include "rdp.h"
 #include <freerdp/rdpset.h>
@@ -69,7 +69,7 @@ x224_send_dst_src_class(rdpIso * iso, uint8 code)
 {
 	STREAM s;
 
-	s = tcp_init(iso->tcp, 11);
+	s = network_stream_init(iso->net, 11);
 
 	tpkt_output_header(s, 11);
 
@@ -80,7 +80,7 @@ x224_send_dst_src_class(rdpIso * iso, uint8 code)
 	out_uint8(s, 0);	/* class */
 
 	s_mark_end(s);
-	tcp_send(iso->tcp, s);
+	network_send(iso->net, s);
 }
 
 /* Output and send X.224 Connection Request TPDU with routing for username */
@@ -93,9 +93,9 @@ x224_send_connection_request(rdpIso * iso)
 
 	cookie_length = strlen(iso->cookie);
 
-	if (iso->mcs->sec->rdp->redirect_routingtoken)
+	if (iso->net->rdp->redirect_routingtoken)
 		/* routingToken */
-		length += iso->mcs->sec->rdp->redirect_routingtoken_len;
+		length += iso->net->rdp->redirect_routingtoken_len;
 	else
 		/* cookie */
 		length += 19 + cookie_length;
@@ -104,7 +104,7 @@ x224_send_connection_request(rdpIso * iso)
 		length += 8;
 
 	/* FIXME: Use x224_send_dst_src_class */
-	s = tcp_init(iso->tcp, length);
+	s = network_stream_init(iso->net, length);
 
 	tpkt_output_header(s, length);
 
@@ -115,10 +115,10 @@ x224_send_connection_request(rdpIso * iso)
 	out_uint16_le(s, 0);	/* src_ref */
 	out_uint8(s, 0);	/* class */
 
-	if (iso->mcs->sec->rdp->redirect_routingtoken)
+	if (iso->net->rdp->redirect_routingtoken)
 	{
 		/* routingToken */
-		out_uint8p(s, iso->mcs->sec->rdp->redirect_routingtoken, iso->mcs->sec->rdp->redirect_routingtoken_len);
+		out_uint8p(s, iso->net->rdp->redirect_routingtoken, iso->net->rdp->redirect_routingtoken_len);
 	}
 	else
 	{
@@ -138,7 +138,7 @@ x224_send_connection_request(rdpIso * iso)
 	}
 
 	s_mark_end(s);
-	tcp_send(iso->tcp, s);
+	network_send(iso->net, s);
 }
 
 /* Receive an X.224 TPDU */
@@ -149,7 +149,7 @@ x224_recv(rdpIso * iso, STREAM s, int length, uint8 * pcode)
 	uint8 code;
 	uint8 subcode;
 
-	s = tcp_recv(iso->tcp, s, length - 4);
+	s = network_recv(iso->net, s, length - 4);
 
 	if (s == NULL)
 		return NULL;
@@ -217,7 +217,7 @@ tpkt_recv(rdpIso * iso, uint8 * pcode, isoRecvType * ptype)
 	STREAM s;
 	int length;
 
-	s = tcp_recv(iso->tcp, NULL, 4);
+	s = network_recv(iso->net, NULL, 4);
 
 	if (s == NULL)
 		return NULL;
@@ -250,7 +250,7 @@ tpkt_recv(rdpIso * iso, uint8 * pcode, isoRecvType * ptype)
 			next_be(s, length);
 		}
 
-		s = tcp_recv(iso->tcp, s, length - 4);
+		s = network_recv(iso->net, s, length - 4);
 		return s;
 	}
 	return NULL;	/* Fast-Path not allowed */
@@ -268,7 +268,7 @@ STREAM
 iso_init(rdpIso * iso, int length)
 {
 	STREAM s;
-	s = tcp_init(iso->tcp, length + 7);
+	s = network_stream_init(iso->net, length + 7);
 	s_push_layer(s, iso_hdr, 7);
 	return s;
 }
@@ -278,7 +278,7 @@ STREAM
 iso_fp_init(rdpIso * iso, int length)
 {
 	STREAM s;
-	s = tcp_init(iso->tcp, length + 3);
+	s = network_stream_init(iso->net, length + 3);
 	s_push_layer(s, iso_hdr, 3);
 	return s;
 }
@@ -300,7 +300,7 @@ iso_send(rdpIso * iso, STREAM s)
 	out_uint8(s, X224_TPDU_DATA);	/* code */
 	out_uint8(s, 0x80);		/* eot */
 
-	tcp_send(iso->tcp, s);
+	network_send(iso->net, s);
 }
 
 /* Send an fast path data PDU */
@@ -335,7 +335,7 @@ iso_fp_send(rdpIso * iso, STREAM s, uint32 flags)
 		out_uint8(s, len);
 	}
 
-	tcp_send(iso->tcp, s);
+	network_send(iso->net, s);
 }
 
 /* Receive ISO transport data packet
@@ -355,7 +355,7 @@ iso_recv(rdpIso * iso, isoRecvType * ptype)
 		(*ptype == ISO_RECV_X224) &&
 		(code != X224_TPDU_DATA))
 	{
-		ui_error(iso->mcs->sec->rdp->inst, "expected X224_TPDU_DATA, got 0x%x\n", code);
+		ui_error(iso->net->rdp->inst, "expected X224_TPDU_DATA, got 0x%x\n", code);
 		return NULL;
 	}
 
@@ -366,8 +366,14 @@ iso_recv(rdpIso * iso, isoRecvType * ptype)
 RD_BOOL
 iso_connect(rdpIso * iso, char *server, char *username, int port)
 {
-	if (strlen(iso->mcs->sec->rdp->settings->domain) > 0)
-		iso->cookie = iso->mcs->sec->rdp->settings->domain;
+	if (iso->net == NULL)
+		printf("iso->net\n");
+
+	if (iso->net->rdp == NULL)
+		printf("iso->net->rdp\n");
+
+	if (strlen(iso->net->rdp->settings->domain) > 0)
+		iso->cookie = iso->net->rdp->settings->domain;
 	else
 		iso->cookie = username;
 
@@ -376,6 +382,7 @@ iso_connect(rdpIso * iso, char *server, char *username, int port)
 	iso->nego->tcp_connected = 0;
 
 	nego_init(iso->nego);
+
 	if (nego_connect(iso->nego) > 0)
 	{
 		return True;
@@ -392,15 +399,11 @@ void
 iso_disconnect(rdpIso * iso)
 {
 	x224_send_dst_src_class(iso, X224_TPDU_DISCONNECT_REQUEST);
-#ifndef DISABLE_TLS
-	if (iso->mcs->sec->tls)
-		tls_disconnect(iso->mcs->sec->tls);
-#endif
-	tcp_disconnect(iso->tcp);
+	network_disconnect(iso->net);
 }
 
 rdpIso *
-iso_new(struct rdp_mcs *mcs)
+iso_new(struct rdp_network * net)
 {
 	rdpIso *self;
 
@@ -409,9 +412,9 @@ iso_new(struct rdp_mcs *mcs)
 	if (self != NULL)
 	{
 		memset(self, 0, sizeof(rdpIso));
-		self->mcs = mcs;
-		self->tcp = tcp_new(self);
-		self->nego = nego_new(self);
+		self->net = net;
+		self->mcs = net->mcs;
+		self->nego = net->nego;
 	}
 
 	return self;
@@ -422,9 +425,6 @@ iso_free(rdpIso * iso)
 {
 	if (iso != NULL)
 	{
-		tcp_free(iso->tcp);
-		if (iso->nego != NULL)
-			nego_free(iso->nego);
 		xfree(iso);
 	}
 }

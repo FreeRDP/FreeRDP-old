@@ -21,6 +21,7 @@
 #define __CHAN_H
 
 #include "mcs.h"
+#include "network.h"
 
 struct rdp_channels
 {

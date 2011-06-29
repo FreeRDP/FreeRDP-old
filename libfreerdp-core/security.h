@@ -1,6 +1,6 @@
 /*
    FreeRDP: A Remote Desktop Protocol client.
-   Protocol services - RDP encryption and licensing
+   Standard RDP Security
 
    Copyright (C) Jay Sorg 2009-2011
 
@@ -17,8 +17,8 @@
    limitations under the License.
 */
 
-#ifndef __SECURE_H
-#define __SECURE_H
+#ifndef __SECURITY_H
+#define __SECURITY_H
 
 typedef struct rdp_sec rdpSec;
 
@@ -37,8 +37,9 @@ sec_global_finish(void);
 
 struct rdp_sec
 {
-	struct rdp_rdp * rdp;
 	int rc4_key_len;
+	struct rdp_rdp * rdp;
+	struct rdp_network * net;
 	CryptoRc4 rc4_decrypt_key;
 	CryptoRc4 rc4_encrypt_key;
 	uint32 server_public_key_len;
@@ -51,13 +52,6 @@ struct rdp_sec
 	/* These values must be available to reset state - Session Directory */
 	int sec_encrypt_use_count;
 	int sec_decrypt_use_count;
-	struct rdp_mcs * mcs;
-	struct rdp_license * license;
-	int tls_connected;
-#ifndef DISABLE_TLS
-	struct rdp_tls * tls;
-	struct rdp_credssp * credssp;
-#endif
 };
 
 enum sec_recv_type
@@ -79,6 +73,12 @@ buf_out_uint32(uint8 * buffer, uint32 value);
 void
 sec_sign(uint8 * signature, int siglen, uint8 * session_key, int keylen,
 	 uint8 * data, int datalen);
+RD_BOOL
+sec_parse_public_key(rdpSec * sec, STREAM s, uint32 len, uint8 * modulus, uint8 * exponent);
+RD_BOOL
+sec_parse_public_sig(STREAM s, uint32 len);
+void
+sec_generate_keys(rdpSec * sec, uint8 * client_random, uint8 * server_random, int rc4_key_size);
 STREAM
 sec_init(rdpSec * sec, uint32 flags, int maxlen);
 STREAM
@@ -90,13 +90,17 @@ sec_send(rdpSec * sec, STREAM s, uint32 flags);
 void
 sec_fp_send(rdpSec * sec, STREAM s, uint32 flags);
 void
-sec_process_mcs_data(rdpSec * sec, STREAM s);
+sec_reverse_copy(uint8 * out, uint8 * in, int len);
+RD_BOOL
+sec_parse_cert_chain_v1(rdpSec * sec, STREAM s, uint8 * modulus, uint8 * exponent);
+RD_BOOL
+sec_parse_cert_chain_v2(rdpSec * sec, STREAM s, uint8 * modulus, uint8 * exponent);
+void
+connect_process_mcs_data(rdpSec * sec, STREAM s);
 STREAM
 sec_recv(rdpSec * sec, secRecvType * type);
 void
-sec_out_gcc_conference_create_request(rdpSec * sec, STREAM s);
-RD_BOOL
-sec_connect(rdpSec * sec, char *server, char *username, int port);
+sec_establish_key(rdpSec * sec);
 void
 sec_disconnect(rdpSec * sec);
 rdpSec *

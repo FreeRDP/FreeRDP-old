@@ -32,9 +32,9 @@
 #include "frdp.h"
 #include "iso.h"
 #include "mcs.h"
-#include "secure.h"
 #include "rdp.h"
 #include <freerdp/utils/memory.h>
+#include <freerdp/utils/hexdump.h>
 
 #include "tcp.h"
 
@@ -79,6 +79,7 @@ tcp_socket_ok(int sck)
 			return True;
 		}
 	}
+
 	return False;
 }
 
@@ -92,13 +93,16 @@ tcp_can_send(int sck, int millis)
 
 	time.tv_sec = millis / 1000;
 	time.tv_usec = (millis * 1000) % 1000000;
+
 	FD_ZERO(&wfds);
 	FD_SET(sck, &wfds);
 	sel_count = select(sck + 1, 0, &wfds, 0, &time);
+
 	if (sel_count > 0)
 	{
 		return tcp_socket_ok(sck);
 	}
+
 	return False;
 }
 
@@ -112,164 +116,85 @@ tcp_can_recv(int sck, int millis)
 
 	time.tv_sec = millis / 1000;
 	time.tv_usec = (millis * 1000) % 1000000;
+
 	FD_ZERO(&rfds);
 	FD_SET(sck, &rfds);
 	sel_count = select(sck + 1, &rfds, 0, 0, &time);
+
 	if (sel_count > 0)
 	{
 		return tcp_socket_ok(sck);
 	}
+
 	return False;
 }
 
-/* Initialize and return STREAM.
- * The stream will have room for at least minsize.
- * The tcp layers out stream will be used. */
-STREAM
-tcp_init(rdpTcp * tcp, uint32 minsize)
-{
-	STREAM result = &(tcp->out);
-
-	if (minsize > result->size)
-	{
-		result->data = (uint8 *) xrealloc(result->data, minsize);
-		result->size = minsize;
-	}
-
-	result->p = result->data;
-	result->end = result->data + result->size;
-	return result;
-}
-
-/* Send data from stream to tcp socket.
- * Will block until all data has been sent. */
 void
-tcp_send(rdpTcp * tcp, STREAM s)
+tcp_write(rdpTcp * tcp, char* b, int length)
 {
 	int sent = 0;
 	int total = 0;
-	int length = s->end - s->data;
 
-#ifndef DISABLE_TLS
-	if (tcp->iso->mcs->sec->tls_connected)
-	{
-		tls_write(tcp->iso->mcs->sec->tls, (char*) s->data, length);
-	}
-	else
-#endif
+	while (total < length)
 	{
 		while (total < length)
 		{
-			while (total < length)
+			sent = send(tcp->sockfd, b + total, length - total, MSG_NOSIGNAL);
+			if (sent <= 0)
 			{
-				sent = send(tcp->sock, s->data + total, length - total, MSG_NOSIGNAL);
-				if (sent <= 0)
+				if (sent == -1 && TCP_BLOCKS)
 				{
-					if (sent == -1 && TCP_BLOCKS)
-					{
-						tcp_can_send(tcp->sock, 100);
-						sent = 0;
-					}
-					else
-					{
-						ui_error(tcp->iso->mcs->sec->rdp->inst, "send: %s\n", TCP_STRERROR);
-						return;
-					}
+					tcp_can_send(tcp->sockfd, 100);
+					sent = 0;
 				}
-				total += sent;
+				else
+				{
+					ui_error(tcp->net->rdp->inst, "send: %s\n", TCP_STRERROR);
+					return;
+				}
 			}
+			total += sent;
 		}
 	}
 }
 
-/* Read length bytes from tcp socket to stream and return it.
- * Appends to stream s if specified, otherwise it uses stream from tcp layer.
- * Will block until data available.
- * Returns NULL on error. */
-STREAM
-tcp_recv(rdpTcp * tcp, STREAM s, uint32 length)
+int
+tcp_read(rdpTcp * tcp, char* b, int length)
 {
 	int rcvd = 0;
-	uint32 p_offset;
-	uint32 new_length;
-	uint32 end_offset;
 
-	if (s == NULL)
+	if (!ui_select(tcp->net->sec->rdp->inst, tcp->sockfd))
+		return -1; /* user quit */
+
+	rcvd = recv(tcp->sockfd, b, length, 0);
+
+	if (rcvd < 0)
 	{
-		/* read into "new" stream */
-		if (length > tcp->in.size)
+		if (rcvd == -1 && TCP_BLOCKS)
 		{
-			tcp->in.data = (uint8 *) xrealloc(tcp->in.data, length);
-			tcp->in.size = length;
-		}
-
-		tcp->in.end = tcp->in.p = tcp->in.data;
-		s = &(tcp->in);
-	}
-	else
-	{
-		/* append to existing stream */
-		new_length = (s->end - s->data) + length;
-		if (new_length > s->size)
-		{
-			p_offset = s->p - s->data;
-			end_offset = s->end - s->data;
-			s->data = (uint8 *) xrealloc(s->data, new_length);
-			s->size = new_length;
-			s->p = s->data + p_offset;
-			s->end = s->data + end_offset;
-		}
-	}
-
-	while (length > 0)
-	{
-#ifndef DISABLE_TLS
-		if (tcp->iso->mcs->sec->tls_connected)
-		{
-			rcvd = tls_read(tcp->iso->mcs->sec->tls, (char*) s->end, length);
-
-			if (rcvd < 0)
-				return NULL;
+			tcp_can_recv(tcp->sockfd, 1);
+			rcvd = 0;
 		}
 		else
-#endif
 		{
-			if (!ui_select(tcp->iso->mcs->sec->rdp->inst, tcp->sock))
-				return NULL; /* user quit */
-
-			rcvd = recv(tcp->sock, s->end, length, 0);
-			if (rcvd < 0)
-			{
-				if (rcvd == -1 && TCP_BLOCKS)
-				{
-					tcp_can_recv(tcp->sock, 1);
-					rcvd = 0;
-				}
-				else
-				{
-					ui_error(tcp->iso->mcs->sec->rdp->inst, "recv: %s\n", TCP_STRERROR);
-					return NULL;
-				}
-			}
-			else if (rcvd == 0)
-			{
-				ui_error(tcp->iso->mcs->sec->rdp->inst, "Connection closed\n");
-				return NULL;
-			}
+			ui_error(tcp->net->rdp->inst, "recv: %s\n", TCP_STRERROR);
+			return -1;
 		}
-
-		s->end += rcvd;
-		length -= rcvd;
+	}
+	else if (rcvd == 0)
+	{
+		ui_error(tcp->net->rdp->inst, "Connection closed\n");
+			return -1;
 	}
 
-	return s;
+	return rcvd;
 }
 
 /* Establish a connection on the TCP layer */
 RD_BOOL
 tcp_connect(rdpTcp * tcp, char * server, int port)
 {
-	int sock;
+	int sockfd;
 	uint32 option_value;
 	socklen_t option_len;
 
@@ -289,29 +214,29 @@ tcp_connect(rdpTcp * tcp, char * server, int port)
 
 	if ((n = getaddrinfo(server, tcp_port_rdp_s, &hints, &res)))
 	{
-		ui_error(tcp->iso->mcs->sec->rdp->inst, "getaddrinfo: %s\n", gai_strerror(n));
+		ui_error(tcp->net->rdp->inst, "getaddrinfo: %s\n", gai_strerror(n));
 		return False;
 	}
 
 	ressave = res;
-	sock = -1;
+	sockfd = -1;
 	while (res)
 	{
-		sock = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
-		if (!(sock < 0))
+		sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+		if (!(sockfd < 0))
 		{
-			if (connect(sock, res->ai_addr, res->ai_addrlen) == 0)
+			if (connect(sockfd, res->ai_addr, res->ai_addrlen) == 0)
 				break;
-			TCP_CLOSE(sock);
-			sock = -1;
+			TCP_CLOSE(sockfd);
+			sockfd = -1;
 		}
 		res = res->ai_next;
 	}
 	freeaddrinfo(ressave);
 
-	if (sock == -1)
+	if (sockfd == -1)
 	{
-		ui_error(tcp->iso->mcs->sec->rdp->inst, "%s: unable to connect\n", server);
+		ui_error(tcp->net->rdp->inst, "%s: unable to connect\n", server);
 		return False;
 	}
 
@@ -328,13 +253,13 @@ tcp_connect(rdpTcp * tcp, char * server, int port)
 	}
 	else if ((servaddr.sin_addr.s_addr = inet_addr(server)) == INADDR_NONE)
 	{
-		ui_error(tcp->iso->mcs->sec->rdp->inst, "%s: unable to resolve host\n", server);
+		ui_error(tcp->net->rdp->inst, "%s: unable to resolve host\n", server);
 		return False;
 	}
 
 	if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
 	{
-		ui_error(tcp->iso->mcs->sec->rdp->inst, "socket: %s\n", TCP_STRERROR);
+		ui_error(tcp->net->rdp->inst, "socket: %s\n", TCP_STRERROR);
 		return False;
 	}
 
@@ -343,40 +268,40 @@ tcp_connect(rdpTcp * tcp, char * server, int port)
 
 	if (connect(sock, (struct sockaddr *) &servaddr, sizeof(struct sockaddr)) < 0)
 	{
-		ui_error(tcp->iso->mcs->sec->rdp->inst, "connect: %s\n", TCP_STRERROR);
+		ui_error(tcp->net->rdp->inst, "connect: %s\n", TCP_STRERROR);
 		TCP_CLOSE(sock);
 		return False;
 	}
 
 #endif /* IPv6 */
 
-	tcp->sock = sock;
+	tcp->sockfd = sockfd;
 
 	/* set socket as non blocking */
 #ifdef _WIN32
 	{
 		u_long arg = 1;
-		ioctlsocket(tcp->sock, FIONBIO, &arg);
+		ioctlsocket(tcp->sockfd, FIONBIO, &arg);
 		tcp->wsa_event = WSACreateEvent();
-		WSAEventSelect(tcp->sock, tcp->wsa_event, FD_READ);
+		WSAEventSelect(tcp->sockfd, tcp->wsa_event, FD_READ);
 	}
 #else
-	option_value = fcntl(tcp->sock, F_GETFL);
+	option_value = fcntl(tcp->sockfd, F_GETFL);
 	option_value = option_value | O_NONBLOCK;
-	fcntl(tcp->sock, F_SETFL, option_value);
+	fcntl(tcp->sockfd, F_SETFL, option_value);
 #endif
 
 	option_value = 1;
 	option_len = sizeof(option_value);
-	setsockopt(tcp->sock, IPPROTO_TCP, TCP_NODELAY, (void *) &option_value, option_len);
+	setsockopt(tcp->sockfd, IPPROTO_TCP, TCP_NODELAY, (void *) &option_value, option_len);
 	/* receive buffer must be a least 16 K */
-	if (getsockopt(tcp->sock, SOL_SOCKET, SO_RCVBUF, (void *) &option_value, &option_len) == 0)
+	if (getsockopt(tcp->sockfd, SOL_SOCKET, SO_RCVBUF, (void *) &option_value, &option_len) == 0)
 	{
 		if (option_value < (1024 * 16))
 		{
 			option_value = 1024 * 16;
 			option_len = sizeof(option_value);
-			setsockopt(tcp->sock, SOL_SOCKET, SO_RCVBUF, (void *) &option_value,
+			setsockopt(tcp->sockfd, SOL_SOCKET, SO_RCVBUF, (void *) &option_value,
 				   option_len);
 		}
 	}
@@ -388,10 +313,10 @@ tcp_connect(rdpTcp * tcp, char * server, int port)
 void
 tcp_disconnect(rdpTcp * tcp)
 {
-	if (tcp->sock != -1)
+	if (tcp->sockfd != -1)
 	{
-		TCP_CLOSE(tcp->sock);
-		tcp->sock = -1;
+		TCP_CLOSE(tcp->sockfd);
+		tcp->sockfd = -1;
 	}
 #ifdef _WIN32
 	if (tcp->wsa_event)
@@ -408,7 +333,7 @@ tcp_get_address(rdpTcp * tcp)
 {
 	struct sockaddr_in sockaddr;
 	socklen_t len = sizeof(sockaddr);
-	if (getsockname(tcp->sock, (struct sockaddr *) &sockaddr, &len) == 0)
+	if (getsockname(tcp->sockfd, (struct sockaddr *) &sockaddr, &len) == 0)
 	{
 		uint8 *ip = (uint8 *) & sockaddr.sin_addr;
 		snprintf(tcp->ipaddr, sizeof(tcp->ipaddr), "%d.%d.%d.%d", ip[0], ip[1], ip[2],
@@ -421,24 +346,19 @@ tcp_get_address(rdpTcp * tcp)
 }
 
 rdpTcp *
-tcp_new(struct rdp_iso * iso)
+tcp_new(struct rdp_network * net)
 {
 	rdpTcp * self;
 
 	self = (rdpTcp *) xmalloc(sizeof(rdpTcp));
+
 	if (self != NULL)
 	{
 		memset(self, 0, sizeof(rdpTcp));
-		self->iso = iso;
-
-		self->in.size = 4096;
-		self->in.data = (uint8 *) xmalloc(self->in.size);
-
-		self->out.size = 4096;
-		self->out.data = (uint8 *) xmalloc(self->out.size);
-
-		self->sock = -1;
+		self->net = net;
+		self->sockfd = -1;
 	}
+
 	return self;
 }
 
@@ -447,8 +367,6 @@ tcp_free(rdpTcp * tcp)
 {
 	if (tcp != NULL)
 	{
-		xfree(tcp->in.data);
-		xfree(tcp->out.data);
 		xfree(tcp);
 	}
 }

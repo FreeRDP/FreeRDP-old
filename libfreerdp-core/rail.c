@@ -19,7 +19,7 @@
 
 #include "frdp.h"
 #include "rdp.h"
-#include "secure.h"
+#include "security.h"
 #include <freerdp/rdpset.h>
 #include <freerdp/utils/memory.h>
 

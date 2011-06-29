@@ -22,7 +22,7 @@
 
 #include "frdp.h"
 #include "stream.h"
-#include "iso.h"
+#include "network.h"
 
 enum _NEGO_STATE
 {
@@ -41,7 +41,7 @@ struct _NEGO
 	char *hostname;
 	NEGO_STATE state;
 	int tcp_connected;
-	struct rdp_iso * iso;
+	struct rdp_network * net;
 	uint32 selected_protocol;
 	uint32 requested_protocols;
 	uint8 enabled_protocols[3];
@@ -60,7 +60,7 @@ void nego_recv(NEGO *nego, STREAM s);
 void nego_process_negotiation_response(NEGO *nego, STREAM s);
 void nego_process_negotiation_failure(NEGO *nego, STREAM s);
 
-NEGO* nego_new(rdpIso * iso);
+NEGO* nego_new(struct rdp_network * net);
 void nego_init(NEGO *nego);
 void nego_free(NEGO *nego);
 

@@ -65,11 +65,12 @@ struct rdp_rdp
 	UNICONV *uniconv;
 	RDPCOMP mppc_dict;
 	struct rdp_sec * sec;
-	struct rdp_set * settings; // RDP settings
+	struct rdp_network * net;
+	struct rdp_set * settings;
 	struct rdp_orders * orders;
 	struct rdp_pcache * pcache;
 	struct rdp_cache * cache;
-	struct rdp_app * app; // RemoteApp
+	struct rdp_app * app;
 	struct rdp_ext * ext;
 	/* Session Directory redirection */
 	int redirect;

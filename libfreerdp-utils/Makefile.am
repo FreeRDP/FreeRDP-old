@@ -13,7 +13,8 @@ libfreerdp_utils_la_SOURCES = \
 	wait_obj.c \
 	chan_plugin.c \
 	stopwatch.c \
-	profiler.c
+	profiler.c \
+	hexdump.c
 
 libfreerdp_utils_la_CFLAGS = \
 	-I$(top_srcdir) \
