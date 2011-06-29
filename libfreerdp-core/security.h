@@ -91,6 +91,10 @@ void
 sec_fp_send(rdpSec * sec, STREAM s, uint32 flags);
 void
 sec_reverse_copy(uint8 * out, uint8 * in, int len);
+RD_BOOL
+sec_parse_cert_chain_v1(rdpSec * sec, STREAM s, uint8 * modulus, uint8 * exponent);
+RD_BOOL
+sec_parse_cert_chain_v2(rdpSec * sec, STREAM s, uint8 * modulus, uint8 * exponent);
 void
 connect_process_mcs_data(rdpSec * sec, STREAM s);
 STREAM

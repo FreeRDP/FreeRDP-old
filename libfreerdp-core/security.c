@@ -439,6 +439,138 @@ sec_parse_public_sig(STREAM s, uint32 len)
 	return len == 72;
 }
 
+RD_BOOL
+sec_parse_cert_chain_v1(rdpSec * sec, STREAM s, uint8 * modulus, uint8 * exponent)
+{
+	uint16 wPublicKeyBlobType, wPublicKeyBlobLen;
+	uint16 wSignatureBlobType, wSignatureBlobLen;
+
+	DEBUG_SEC("We're going for a Server Proprietary Certificate (no TS license)");
+	in_uint8s(s, 4);	/* dwSigAlgId must be 1 (SIGNATURE_ALG_RSA) */
+	in_uint8s(s, 4);	/* dwKeyAlgId must be 1 (KEY_EXCHANGE_ALG_RSA ) */
+
+	in_uint16_le(s, wPublicKeyBlobType);
+	if (wPublicKeyBlobType != BB_RSA_KEY_BLOB)
+		return False;
+
+	in_uint16_le(s, wPublicKeyBlobLen);
+
+	if (!sec_parse_public_key(sec, s, wPublicKeyBlobLen, modulus, exponent))
+		return False;
+
+	in_uint16_le(s, wSignatureBlobType);
+	if (wSignatureBlobType != BB_RSA_SIGNATURE_BLOB)
+		return False;
+
+	in_uint16_le(s, wSignatureBlobLen);
+	if (!sec_parse_public_sig(s, wSignatureBlobLen))
+		return False;
+
+	return True;
+}
+
+RD_BOOL
+sec_parse_cert_chain_v2(rdpSec * sec, STREAM s, uint8 * modulus, uint8 * exponent)
+{
+	uint32 cert_total_count, cert_counter;
+	uint32 license_cert_len, ts_cert_len;
+	CryptoCert license_cert, ts_cert;
+
+	DEBUG_SEC("We're going for a X.509 Certificate (TS license)");
+	in_uint32_le(s, cert_total_count);	/* Number of certificates */
+	DEBUG_SEC("Cert chain length: %d", cert_total_count);
+
+	if (cert_total_count < 2)
+	{
+		ui_error(sec->rdp->inst, "Server didn't send enough X509 certificates\n");
+		return False;
+	}
+
+	/* X.509 Certificate Chain: */
+	/* Only the 2 last certificates in chain are _really_ interesting */
+	for (cert_counter=0; cert_counter < cert_total_count - 2; cert_counter++)
+	{
+		uint32 ignorelen;
+		CryptoCert ignorecert;
+
+		DEBUG_SEC("Ignoring cert: %d", cert_counter);
+		in_uint32_le(s, ignorelen);
+		DEBUG_SEC("Ignored Certificate length is %d", ignorelen);
+		ignorecert = crypto_cert_read(s->p, ignorelen);
+		in_uint8s(s, ignorelen);
+		if (ignorecert == NULL)
+		{
+			ui_error(sec->rdp->inst, "Couldn't read certificate %d from server certificate chain\n", cert_counter);
+			return False;
+		}
+
+#ifdef WITH_DEBUG_SEC
+		DEBUG_SEC("cert #%d (ignored):", cert_counter);
+		crypto_cert_print_fp(stdout, ignorecert);
+#endif
+		/* TODO: Verify the certificate chain all the way from CA root to prevent MITM attacks */
+		crypto_cert_free(ignorecert);
+	}
+
+	/* The second to last certificate is the license server */
+	in_uint32_le(s, license_cert_len);
+	DEBUG_SEC("License Server Certificate length is %d", license_cert_len);
+	license_cert = crypto_cert_read(s->p, license_cert_len);
+	in_uint8s(s, license_cert_len);
+	if (NULL == license_cert)
+	{
+		ui_error(sec->rdp->inst, "Couldn't load License Server Certificate from server\n");
+		return False;
+	}
+#ifdef WITH_DEBUG_SEC
+	crypto_cert_print_fp(stdout, license_cert);
+#endif
+
+	/* The last certificate is the Terminal Server */
+	in_uint32_le(s, ts_cert_len);
+	DEBUG_SEC("TS Certificate length is %d", ts_cert_len);
+	ts_cert = crypto_cert_read(s->p, ts_cert_len);
+	in_uint8s(s, ts_cert_len);
+	if (NULL == ts_cert)
+	{
+		crypto_cert_free(license_cert);
+		ui_error(sec->rdp->inst, "Couldn't load TS Certificate from server\n");
+		return False;
+	}
+
+#ifdef WITH_DEBUG_SEC
+	crypto_cert_print_fp(stdout, ts_cert);
+#endif
+	if (!crypto_cert_verify(ts_cert, license_cert))
+	{
+		crypto_cert_free(ts_cert);
+		crypto_cert_free(license_cert);
+		ui_error(sec->rdp->inst, "TS Certificate not signed with License Certificate\n");
+		return False;
+	}
+	crypto_cert_free(license_cert);
+
+	if (crypto_cert_get_pub_exp_mod(ts_cert, &(sec->server_public_key_len),
+			exponent, SEC_EXPONENT_SIZE, modulus, SEC_MAX_MODULUS_SIZE) != 0)
+	{
+		ui_error(sec->rdp->inst, "Problem extracting RSA key from TS Certificate\n");
+		crypto_cert_free(ts_cert);
+		return False;
+	}
+	crypto_cert_free(ts_cert);
+
+	if ((sec->server_public_key_len < SEC_MODULUS_SIZE) ||
+	    (sec->server_public_key_len > SEC_MAX_MODULUS_SIZE))
+	{
+		ui_error(sec->rdp->inst, "Bad TS Certificate public key size (%u bits)\n",
+		         sec->server_public_key_len * 8);
+		return False;
+	}
+	in_uint8s(s, 8 + 4 * cert_total_count); /* Padding */
+
+	return True;
+}
+
 /* Receive secure transport packet
  * Some package types are processed internally.
  * If s is returned a package of *type must be processed by the caller */

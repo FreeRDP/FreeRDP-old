@@ -224,20 +224,43 @@ connect_process_server_security_data(rdpSec * sec, STREAM s, uint32 * encryption
 	uint32 certChainVersion;
 	uint32 dwVersion;
 
-	in_uint32_le(s, *encryptionMethod);	/* 1 = 40-bit, 2 = 128-bit, 0 for TLS/CredSSP */
-	in_uint32_le(s, encryptionLevel);	/* 1 = low, 2 = client compatible, 3 = high */
-	if (encryptionLevel == 0)		/* no encryption */
+	/**
+	 * encryptionMethod:
+	 *
+	 * ENCRYPTION_METHOD_NONE	0
+	 * ENCRYPTION_METHOD_40BIT	1
+	 * ENCRYPTION_METHOD_128BIT	2
+	 * ENCRYPTION_METHOD_56BIT	8
+	 * ENCRYPTION_METHOD_FIPS	16
+	 *
+	 */
+	in_uint32_le(s, *encryptionMethod); /* encryptionMethod, 0 for TLS/NLA */
+
+	/**
+	 * encryptionLevel:
+	 *
+	 * ENCRYPTION_LEVEL_NONE		0
+	 * ENCRYPTION_LEVEL_LOW			1
+	 * ENCRYPTION_LEVEL_CLIENT_COMPATIBLE	2
+	 * ENCRYPTION_LEVEL_HIGH		3
+	 * ENCRYPTION_LEVEL_FIPS		4
+	 *
+	 */
+	in_uint32_le(s, encryptionLevel); /* encryptionLevel, 0 for TLS/NLA */
+
+	if (encryptionLevel == 0) /* no encryption */
 		return False;
-	in_uint32_le(s, serverRandomLen);
-	in_uint32_le(s, serverCertLen);
+
+	in_uint32_le(s, serverRandomLen); /* serverRandomLen */
+	in_uint32_le(s, serverCertLen); /* serverCertLen */
 
 	if (serverRandomLen != SEC_RANDOM_SIZE)
 	{
-		ui_error(sec->rdp->inst, "random len %d, expected %d\n", serverRandomLen, SEC_RANDOM_SIZE);
+		ui_error(sec->rdp->inst, "serverRandomLen %d, expected %d\n", serverRandomLen, SEC_RANDOM_SIZE);
 		return False;
 	}
 
-	in_uint8a(s, server_random, SEC_RANDOM_SIZE);
+	in_uint8a(s, server_random, SEC_RANDOM_SIZE); /* serverRandom */
 
 	/* Server Certificate: */
 	in_uint32_le(s, dwVersion); /* bit 0x80000000 = temporary certificate */
@@ -245,125 +268,15 @@ connect_process_server_security_data(rdpSec * sec, STREAM s, uint32 * encryption
 
 	if (certChainVersion == 1)	 /* Server Proprietary Certificate */
 	{
-		uint16 wPublicKeyBlobType, wPublicKeyBlobLen;
-		uint16 wSignatureBlobType, wSignatureBlobLen;
-
-		DEBUG_SEC("We're going for a Server Proprietary Certificate (no TS license)");
-		in_uint8s(s, 4);	/* dwSigAlgId must be 1 (SIGNATURE_ALG_RSA) */
-		in_uint8s(s, 4);	/* dwKeyAlgId must be 1 (KEY_EXCHANGE_ALG_RSA ) */
-
-		in_uint16_le(s, wPublicKeyBlobType);
-		if (wPublicKeyBlobType != BB_RSA_KEY_BLOB)
-			return False;
-
-		in_uint16_le(s, wPublicKeyBlobLen);
-
-		if (!sec_parse_public_key(sec, s, wPublicKeyBlobLen, modulus, exponent))
-			return False;
-
-		in_uint16_le(s, wSignatureBlobType);
-		if (wSignatureBlobType != BB_RSA_SIGNATURE_BLOB)
-			return False;
-
-		in_uint16_le(s, wSignatureBlobLen);
-		if (!sec_parse_public_sig(s, wSignatureBlobLen))
-			return False;
+		sec_parse_cert_chain_v1(sec, s, modulus, exponent);
 	}
 	else if (certChainVersion == 2)	 /* X.509 */
 	{
-		uint32 cert_total_count, cert_counter;
-		uint32 license_cert_len, ts_cert_len;
-		CryptoCert license_cert, ts_cert;
-
-		DEBUG_SEC("We're going for a X.509 Certificate (TS license)");
-		in_uint32_le(s, cert_total_count);	/* Number of certificates */
-		DEBUG_SEC("Cert chain length: %d", cert_total_count);
-		if (cert_total_count < 2)
-		{
-			ui_error(sec->rdp->inst, "Server didn't send enough X509 certificates\n");
-			return False;
-		}
-		/* X.509 Certificate Chain: */
-		/* Only the 2 last certificates in chain are _really_ interesting */
-		for (cert_counter=0; cert_counter < cert_total_count - 2; cert_counter++)
-		{
-			uint32 ignorelen;
-			CryptoCert ignorecert;
-
-			DEBUG_SEC("Ignoring cert: %d", cert_counter);
-			in_uint32_le(s, ignorelen);
-			DEBUG_SEC("Ignored Certificate length is %d", ignorelen);
-			ignorecert = crypto_cert_read(s->p, ignorelen);
-			in_uint8s(s, ignorelen);
-			if (ignorecert == NULL)
-			{
-				ui_error(sec->rdp->inst, "Couldn't read certificate %d from server certificate chain\n", cert_counter);
-				return False;
-			}
-
-#ifdef WITH_DEBUG_SEC
-			DEBUG_SEC("cert #%d (ignored):", cert_counter);
-			crypto_cert_print_fp(stdout, ignorecert);
-#endif
-			/* TODO: Verify the certificate chain all the way from CA root to prevent MITM attacks */
-			crypto_cert_free(ignorecert);
-		}
-		/* The second to last certificate is the license server */
-		in_uint32_le(s, license_cert_len);
-		DEBUG_SEC("License Server Certificate length is %d", license_cert_len);
-		license_cert = crypto_cert_read(s->p, license_cert_len);
-		in_uint8s(s, license_cert_len);
-		if (NULL == license_cert)
-		{
-			ui_error(sec->rdp->inst, "Couldn't load License Server Certificate from server\n");
-			return False;
-		}
-#ifdef WITH_DEBUG_SEC
-		crypto_cert_print_fp(stdout, license_cert);
-#endif
-		/* The last certificate is the Terminal Server */
-		in_uint32_le(s, ts_cert_len);
-		DEBUG_SEC("TS Certificate length is %d", ts_cert_len);
-		ts_cert = crypto_cert_read(s->p, ts_cert_len);
-		in_uint8s(s, ts_cert_len);
-		if (NULL == ts_cert)
-		{
-			crypto_cert_free(license_cert);
-			ui_error(sec->rdp->inst, "Couldn't load TS Certificate from server\n");
-			return False;
-		}
-#ifdef WITH_DEBUG_SEC
-		crypto_cert_print_fp(stdout, ts_cert);
-#endif
-		if (!crypto_cert_verify(ts_cert, license_cert))
-		{
-			crypto_cert_free(ts_cert);
-			crypto_cert_free(license_cert);
-			ui_error(sec->rdp->inst, "TS Certificate not signed with License Certificate\n");
-			return False;
-		}
-		crypto_cert_free(license_cert);
-
-		if (crypto_cert_get_pub_exp_mod(ts_cert, &(sec->server_public_key_len),
-				exponent, SEC_EXPONENT_SIZE, modulus, SEC_MAX_MODULUS_SIZE) != 0)
-		{
-			ui_error(sec->rdp->inst, "Problem extracting RSA key from TS Certificate\n");
-			crypto_cert_free(ts_cert);
-			return False;
-		}
-		crypto_cert_free(ts_cert);
-		if ((sec->server_public_key_len < SEC_MODULUS_SIZE) ||
-		    (sec->server_public_key_len > SEC_MAX_MODULUS_SIZE))
-		{
-			ui_error(sec->rdp->inst, "Bad TS Certificate public key size (%u bits)\n",
-			         sec->server_public_key_len * 8);
-			return False;
-		}
-		in_uint8s(s, 8 + 4 * cert_total_count); /* Padding */
+		sec_parse_cert_chain_v2(sec, s, modulus, exponent);
 	}
 	else
 	{
-		ui_error(sec->rdp->inst, "Invalid cert chain version\n");
+		ui_error(sec->rdp->inst, "invalid cert chain version: %d\n", certChainVersion);
 		return False;
 	}
 
