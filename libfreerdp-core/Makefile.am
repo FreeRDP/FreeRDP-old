@@ -23,6 +23,7 @@ libfreerdp_core_la_SOURCES = \
 	rail.c rail.h \
 	rdp.c rdp.h \
 	secure.c secure.h \
+	network.c network.h \
 	crypto.h \
 	tcp.c tcp.h \
 	nego.c nego.h \

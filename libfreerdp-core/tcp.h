@@ -28,15 +28,20 @@ struct rdp_tcp
 {
 	int sock;
 	struct rdp_iso * iso;
-	struct stream in;
-	struct stream out;
 	int tcp_port_rdp;
 	char ipaddr[32];
+	struct stream in;
+	struct stream out;
 #ifdef _WIN32
 	WSAEVENT wsa_event;
 #endif
 };
 typedef struct rdp_tcp rdpTcp;
+
+void
+tcp_write(rdpTcp * tcp, STREAM s);
+int
+tcp_read(rdpTcp * tcp, char* b, int length);
 
 RD_BOOL
 tcp_can_send(int sck, int millis);

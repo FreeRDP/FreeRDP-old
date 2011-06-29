@@ -20,7 +20,7 @@
 #ifndef __CREDSSP_H
 #define __CREDSSP_H
 
-#include "secure.h"
+#include "network.h"
 #include "ntlmssp.h"
 
 struct rdp_credssp
@@ -33,7 +33,7 @@ struct rdp_credssp
 	DATABLOB ts_credentials;
 	CryptoRc4 rc4_seal_state;
 	struct _NTLMSSP *ntlmssp;
-	struct rdp_sec * sec;
+	struct rdp_network * net;
 };
 typedef struct rdp_credssp rdpCredssp;
 
@@ -50,7 +50,7 @@ void credssp_encode_ts_credentials(rdpCredssp *credssp);
 void credssp_current_time(uint8* timestamp);
 void credssp_rc4k(uint8* key, int length, uint8* plaintext, uint8* ciphertext);
 
-rdpCredssp* credssp_new(rdpSec *sec);
+rdpCredssp* credssp_new(struct rdp_network * net);
 void credssp_free(rdpCredssp *credssp);
 
-#endif // __CREDSSP_H
+#endif /* __CREDSSP_H */

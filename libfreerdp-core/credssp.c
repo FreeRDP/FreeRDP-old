@@ -58,7 +58,7 @@ asn1_write(const void *buffer, size_t size, void *fd)
 void credssp_ntlmssp_init(rdpCredssp *credssp)
 {
 	NTLMSSP *ntlmssp = credssp->ntlmssp;
-	rdpSet *settings = credssp->sec->rdp->settings;
+	rdpSet *settings = credssp->net->rdp->settings;
 
 	ntlmssp_set_password(ntlmssp, settings->password);
 	ntlmssp_set_username(ntlmssp, settings->username);
@@ -92,7 +92,7 @@ int credssp_get_public_key(rdpCredssp *credssp)
 	CryptoCert cert;
 	int ret;
 
-	cert = tls_get_certificate(credssp->sec->tls);
+	cert = tls_get_certificate(credssp->net->tls);
 	if (cert == NULL)
 	{
 		printf("credssp_get_public_key: tls_get_certificate failed to return the server certificate.\n");
@@ -396,7 +396,7 @@ void credssp_send(rdpCredssp *credssp, DATABLOB *negoToken, DATABLOB *pubKeyAuth
 
 		if (enc_rval.encoded != -1)
 		{
-			tls_write(credssp->sec->tls, buffer, size);
+			tls_write(credssp->net->tls, buffer, size);
 		}
 
 		asn_DEF_TSRequest.free_struct(&asn_DEF_TSRequest, ts_request, 0);
@@ -422,7 +422,7 @@ int credssp_recv(rdpCredssp *credssp, DATABLOB *negoToken, DATABLOB *pubKeyAuth,
 	TSRequest_t *ts_request = 0;
 
 	recv_buffer = xmalloc(size);
-	bytes_read = tls_read(credssp->sec->tls, recv_buffer, size);
+	bytes_read = tls_read(credssp->net->tls, recv_buffer, size);
 
 	if (bytes_read < 0)
 		return -1;
@@ -503,7 +503,7 @@ void credssp_current_time(uint8* timestamp)
  */
 
 rdpCredssp *
-credssp_new(struct rdp_sec * sec)
+credssp_new(struct rdp_network * net)
 {
 	rdpCredssp * self;
 
@@ -511,7 +511,7 @@ credssp_new(struct rdp_sec * sec)
 	if (self != NULL)
 	{
 		memset(self, 0, sizeof(rdpCredssp));
-		self->sec = sec;
+		self->net = net;
 		self->send_seq_num = 0;
 		self->ntlmssp = ntlmssp_new();
 	}

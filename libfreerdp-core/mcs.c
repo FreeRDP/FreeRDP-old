@@ -69,7 +69,7 @@ mcs_send_connect_initial(rdpMcs * mcs)
 	gccCCrq.p = gccCCrq.data = (uint8 *) xmalloc(gccCCrq.size);
 	gccCCrq.end = gccCCrq.data + gccCCrq.size;
 
-	sec_out_gcc_conference_create_request(mcs->sec, &gccCCrq);
+	sec_out_gcc_conference_create_request(mcs->net->sec, &gccCCrq);
 	gccCCrq_length = gccCCrq.end - gccCCrq.data;
 	length = 9 + 3 * 34 + 4 + gccCCrq_length;
 
@@ -115,7 +115,7 @@ mcs_recv_connect_response(rdpMcs * mcs)
 	in_uint8(s, result);
 	if (result != 0)
 	{
-		ui_error(mcs->sec->rdp->inst, "MCS connect: %d\n", result);
+		ui_error(mcs->net->rdp->inst, "MCS connect: %d\n", result);
 		return False;
 	}
 
@@ -125,7 +125,7 @@ mcs_recv_connect_response(rdpMcs * mcs)
 
 	ber_parse_header(mcs, s, BER_TAG_OCTET_STRING, &length);
 
-	sec_process_mcs_data(mcs->sec, s);
+	sec_process_mcs_data(mcs->net->sec, s);
 	return s_check_end(s);
 }
 
@@ -173,14 +173,14 @@ mcs_recv_aucf(rdpMcs * mcs, uint16 * mcs_userid)
 	in_uint8(s, opcode);
 	if ((opcode >> 2) != T125_DOMAINMCSPDU_AttachUserConfirm)
 	{
-		ui_error(mcs->sec->rdp->inst, "expected AUcf, got %d\n", opcode);
+		ui_error(mcs->net->rdp->inst, "expected AUcf, got %d\n", opcode);
 		return False;
 	}
 
 	in_uint8(s, result);
 	if (result != 0)
 	{
-		ui_error(mcs->sec->rdp->inst, "AUrq: %d\n", result);
+		ui_error(mcs->net->rdp->inst, "AUrq: %d\n", result);
 		return False;
 	}
 
@@ -222,14 +222,14 @@ mcs_recv_cjcf(rdpMcs * mcs)
 	in_uint8(s, opcode);
 	if ((opcode >> 2) != T125_DOMAINMCSPDU_ChannelJoinConfirm)
 	{
-		ui_error(mcs->sec->rdp->inst, "expected CJcf, got %d\n", opcode);
+		ui_error(mcs->net->rdp->inst, "expected CJcf, got %d\n", opcode);
 		return False;
 	}
 
 	in_uint8(s, result);
 	if (result != 0)
 	{
-		ui_error(mcs->sec->rdp->inst, "CJrq: %d\n", result);
+		ui_error(mcs->net->rdp->inst, "CJrq: %d\n", result);
 		return False;
 	}
 
@@ -321,7 +321,7 @@ mcs_recv(rdpMcs * mcs, isoRecvType * ptype, uint16 * channel)
 		{
 			if (pduType != T125_DOMAINMCSPDU_DisconnectProviderUltimatum)
 			{
-				ui_error(mcs->sec->rdp->inst, "expected data, got %d\n", pduType);
+				ui_error(mcs->net->rdp->inst, "expected data, got %d\n", pduType);
 			}
 			return NULL;
 		}
@@ -356,7 +356,7 @@ mcs_connect(rdpMcs * mcs)
 	mcs_send_connect_initial(mcs);
 	if (!mcs_recv_connect_response(mcs))
 	{
-		ui_error(mcs->sec->rdp->inst, "invalid mcs_recv_connect_response\n");
+		ui_error(mcs->net->rdp->inst, "invalid mcs_recv_connect_response\n");
 		goto error;
 	}
 
@@ -365,7 +365,7 @@ mcs_connect(rdpMcs * mcs)
 	mcs_send_aurq(mcs);
 	if (!mcs_recv_aucf(mcs, &(mcs->mcs_userid)))
 	{
-		ui_error(mcs->sec->rdp->inst, "invalid mcs_recv_aucf\n");
+		ui_error(mcs->net->rdp->inst, "invalid mcs_recv_aucf\n");
 		goto error;
 	}
 
@@ -373,29 +373,29 @@ mcs_connect(rdpMcs * mcs)
 
 	if (!mcs_recv_cjcf(mcs))
 	{
-		ui_error(mcs->sec->rdp->inst, "invalid mcs_recv_cjcf\n");
+		ui_error(mcs->net->rdp->inst, "invalid mcs_recv_cjcf\n");
 		goto error;
 	}
 
 	mcs_send_cjrq(mcs, MCS_GLOBAL_CHANNEL);
 	if (!mcs_recv_cjcf(mcs))
 	{
-		ui_error(mcs->sec->rdp->inst, "invalid mcs_recv_cjcf\n");
+		ui_error(mcs->net->rdp->inst, "invalid mcs_recv_cjcf\n");
 		goto error;
 	}
 
-	settings = mcs->sec->rdp->settings;
+	settings = mcs->net->rdp->settings;
 	for (i = 0; i < settings->num_channels; i++)
 	{
 		mcs_id = settings->channels[i].chan_id;
 		if (mcs_id >= mcs->mcs_userid + MCS_USERCHANNEL_BASE)
 		{
-			ui_warning(mcs->sec->rdp->inst, "channel %d got id %d >= %d\n", i, mcs_id, mcs->mcs_userid + MCS_USERCHANNEL_BASE);
+			ui_warning(mcs->net->rdp->inst, "channel %d got id %d >= %d\n", i, mcs_id, mcs->mcs_userid + MCS_USERCHANNEL_BASE);
 		}
 		mcs_send_cjrq(mcs, mcs_id);
 		if (!mcs_recv_cjcf(mcs))
 		{
-			ui_error(mcs->sec->rdp->inst, "channel %d id %d invalid mcs_recv_cjcf\n", i, mcs_id);
+			ui_error(mcs->net->rdp->inst, "channel %d id %d invalid mcs_recv_cjcf\n", i, mcs_id);
 			goto error;
 		}
 	}
@@ -414,18 +414,21 @@ mcs_disconnect(rdpMcs * mcs)
 }
 
 rdpMcs *
-mcs_new(struct rdp_sec * sec)
+mcs_new(struct rdp_network * net)
 {
 	rdpMcs * self;
 
 	self = (rdpMcs *) xmalloc(sizeof(rdpMcs));
+
 	if (self != NULL)
 	{
 		memset(self, 0, sizeof(rdpMcs));
-		self->sec = sec;
-		self->iso = iso_new(self);
+		self->net = net;
+		self->iso = iso_new(net);
 		self->chan = vchan_new(self);
+		self->net->iso = self->iso;
 	}
+
 	return self;
 }
 

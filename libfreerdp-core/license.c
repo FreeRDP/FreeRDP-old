@@ -49,7 +49,7 @@ static void
 license_generate_hwid(rdpLicense * license, uint8 * hwid)
 {
 	buf_out_uint32(hwid, 2);
-	strncpy((char *) (hwid + 4), license->sec->rdp->settings->hostname, LICENSE_HWID_SIZE - 4);
+	strncpy((char *) (hwid + 4), license->net->rdp->settings->hostname, LICENSE_HWID_SIZE - 4);
 }
 
 /* Send a Licensing packet with Client License Information */
@@ -63,7 +63,7 @@ license_present(rdpLicense * license, uint8 * client_random, uint8 * rsa_data,
 		license_size + LICENSE_HWID_SIZE + LICENSE_SIGNATURE_SIZE;
 	STREAM s;
 
-	s = sec_init(license->sec, sec_flags, length + 4);
+	s = sec_init(license->net->sec, sec_flags, length + 4);
 
 	/* Licensing Preamble (LICENSE_PREAMBLE) */
 	out_uint8(s, LICENSE_INFO);	/* bMsgType LICENSE_INFO */
@@ -96,7 +96,7 @@ license_present(rdpLicense * license, uint8 * client_random, uint8 * rsa_data,
 	out_uint8p(s, signature, LICENSE_SIGNATURE_SIZE);	/* MACData */
 
 	s_mark_end(s);
-	sec_send(license->sec, s, sec_flags);
+	sec_send(license->net->sec, s, sec_flags);
 }
 
 /* Send a Licensing packet with Client New License Request */
@@ -109,7 +109,7 @@ license_send_request(rdpLicense * license, uint8 * client_random, uint8 * rsa_da
 	uint16 length = 128 + userlen + hostlen;
 	STREAM s;
 
-	s = sec_init(license->sec, sec_flags, length + 2);
+	s = sec_init(license->net->sec, sec_flags, length + 2);
 
 	/* Licensing Preamble (LICENSE_PREAMBLE) */
 	out_uint8(s, NEW_LICENSE_REQUEST);	/* NEW_LICENSE_REQUEST */
@@ -139,7 +139,7 @@ license_send_request(rdpLicense * license, uint8 * client_random, uint8 * rsa_da
 	out_uint8p(s, host, hostlen);
 
 	s_mark_end(s);
-	sec_send(license->sec, s, sec_flags);
+	sec_send(license->net->sec, s, sec_flags);
 }
 
 /* Process a Server License Request packet */
@@ -208,8 +208,8 @@ license_process_request(rdpLicense * license, STREAM s)
 	}
 
 	license_send_request(license, null_data, null_data,
-			     license->sec->rdp->settings->username,
-			     license->sec->rdp->settings->hostname);
+			     license->net->rdp->settings->username,
+			     license->net->rdp->settings->hostname);
 }
 
 /* Send a Licensing packet with Platform Challenge Response */
@@ -220,7 +220,7 @@ license_send_authresp(rdpLicense * license, uint8 * token, uint8 * crypt_hwid, u
 	uint16 length = 58;
 	STREAM s;
 
-	s = sec_init(license->sec, sec_flags, length + 2);
+	s = sec_init(license->net->sec, sec_flags, length + 2);
 
 	/* Licensing Preamble (LICENSE_PREAMBLE) */
 	out_uint8(s, PLATFORM_CHALLENGE_RESPONSE);	/* PLATFORM_CHALLENGE_RESPONSE */
@@ -240,7 +240,7 @@ license_send_authresp(rdpLicense * license, uint8 * token, uint8 * crypt_hwid, u
 	out_uint8p(s, signature, LICENSE_SIGNATURE_SIZE);	/* MACData */
 
 	s_mark_end(s);
-	sec_send(license->sec, s, sec_flags);
+	sec_send(license->net->sec, s, sec_flags);
 }
 
 /* Parse a Server Platform Challenge packet */
@@ -256,7 +256,7 @@ license_parse_authreq(rdpLicense * license, STREAM s, uint8 ** token, uint8 ** s
 	in_uint16_le(s, tokenlen);	/* wBlobLen */
 	if (tokenlen != LICENSE_TOKEN_SIZE)
 	{
-		ui_error(license->sec->rdp->inst, "token len %d\n", tokenlen);
+		ui_error(license->net->rdp->inst, "token len %d\n", tokenlen);
 		return False;
 	}
 	in_uint8p(s, *token, tokenlen);	/* RC4-encrypted challenge data */
@@ -396,14 +396,14 @@ license_process(rdpLicense * license, STREAM s)
 			break;
 
 		default:
-			ui_unimpl(license->sec->rdp->inst, "Unknown license tag 0x%x", tag);
+			ui_unimpl(license->net->rdp->inst, "Unknown license tag 0x%x", tag);
 	}
 	s->p = license_start + wMsgSize;	/* FIXME: Shouldn't be necessary if parsed properly */
 	ASSERT(s->p <= s->end);
 }
 
 rdpLicense *
-license_new(struct rdp_sec *sec)
+license_new(struct rdp_network * net)
 {
 	rdpLicense *self;
 
@@ -411,7 +411,7 @@ license_new(struct rdp_sec *sec)
 	if (self != NULL)
 	{
 		memset(self, 0, sizeof(rdpLicense));
-		self->sec = sec;
+		self->net = net;
 	}
 	return self;
 }

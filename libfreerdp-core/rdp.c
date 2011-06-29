@@ -35,6 +35,7 @@
 #include "bitmap.h"
 #include "ext.h"
 #include "surface.h"
+#include "network.h"
 #include <freerdp/freerdp.h>
 #include <freerdp/utils/hexdump.h>
 
@@ -186,7 +187,7 @@ rdp_send_data(rdpRdp * rdp, STREAM s, uint8 data_pdu_type)
 	/* Share Control Header */
 	out_uint16_le(s, length); /* totalLength */
 	out_uint16_le(s, (RDP_PDU_DATA | 0x10)); /* pduType */
-	out_uint16_le(s, (rdp->sec->mcs->mcs_userid + 1001)); /* PDUSource */
+	out_uint16_le(s, (rdp->net->mcs->mcs_userid + 1001)); /* PDUSource */
 
 	/* Share Data Header */
 	out_uint32_le(s, rdp->rdp_shareid);	/* shareId */
@@ -352,7 +353,7 @@ rdp_send_client_info(rdpRdp * rdp, uint32 flags, char *domain_name,
 	userName = freerdp_uniconv_out(rdp->uniconv, username, &cbUserName);
 	alternateShell = freerdp_uniconv_out(rdp->uniconv, shell, &cbAlternateShell);
 	workingDir = freerdp_uniconv_out(rdp->uniconv, dir, &cbWorkingDir);
-	clientAddress = freerdp_uniconv_out(rdp->uniconv, tcp_get_address(rdp->sec->mcs->iso->tcp), &cbClientAddress);
+	clientAddress = freerdp_uniconv_out(rdp->uniconv, tcp_get_address(rdp->net->tcp), &cbClientAddress);
 	clientDir = freerdp_uniconv_out(rdp->uniconv, dll, &cbClientDir); /* client working directory OR binary name */
 
 	length = 8 + (5 * 4) + cbDomain + cbUserName + cbPassword + cbAlternateShell + cbWorkingDir;
@@ -775,7 +776,7 @@ rdp_send_confirm_active(rdpRdp * rdp)
 	/* share control header */
 	out_uint16_le(s, length);
 	out_uint16_le(s, (RDP_PDU_CONFIRM_ACTIVE | 0x10));	/* Version 1 */
-	out_uint16_le(s, (rdp->sec->mcs->mcs_userid + 1001));
+	out_uint16_le(s, (rdp->net->mcs->mcs_userid + 1001));
 
 	out_uint32_le(s, rdp->rdp_shareid); /* sharedId */
 	/* originatorId must be set to the server channel ID
@@ -1672,7 +1673,7 @@ rdp_connect(rdpRdp * rdp)
 		connect_flags |= INFO_REMOTECONSOLEAUDIO;
 	}
 
-	if (!sec_connect(rdp->sec, rdp->settings->server, rdp->settings->username, rdp->settings->tcp_port_rdp))
+	if (!network_connect(rdp->net, rdp->settings->server, rdp->settings->username, rdp->settings->tcp_port_rdp))
 		return False;
 
 	password_encoded = freerdp_uniconv_out(rdp->uniconv, rdp->settings->password, &password_encoded_len);
@@ -1702,7 +1703,8 @@ rdp_reconnect(rdpRdp * rdp)
 	sec_disconnect(rdp->sec);
 	sec_free(rdp->sec);
 	rdp->sec = sec_new(rdp);
-	if (!sec_connect(rdp->sec, server, username, rdp->settings->tcp_port_rdp))
+
+	if (!network_connect(rdp->net, server, username, rdp->settings->tcp_port_rdp))
 		return False;
 
 	domain = rdp->redirect_domain ? rdp->redirect_domain : rdp->settings->domain;
@@ -1714,11 +1716,14 @@ rdp_reconnect(rdpRdp * rdp)
 	}
 	else
 		password = freerdp_uniconv_out(rdp->uniconv, rdp->settings->password, &password_len);
+
 	rdp_send_client_info(rdp, INFO_NORMALLOGON | INFO_AUTOLOGON,
 			domain, username, password, password_len,
 			rdp->settings->shell, rdp->settings->directory);
+
 	if (!rdp->redirect_password)
 		xfree(password);
+
 	return True;
 }
 
@@ -1745,11 +1750,16 @@ rdp_new(struct rdp_set *settings, struct rdp_inst *inst)
 		self->buffer_size = 2048;
 		self->buffer = xmalloc(self->buffer_size);
 		memset(self->buffer, 0, self->buffer_size);
+		self->net = network_new(self);
 		self->sec = sec_new(self);
 		self->orders = orders_new(self);
 		self->pcache = pcache_new(self);
 		self->cache = cache_new(self);
 		self->ext = ext_new(self);
+
+		self->net->rdp = self;
+		self->net->sec = self->sec;
+		self->net->tcp = self->net->iso->tcp;
 	}
 	return self;
 }

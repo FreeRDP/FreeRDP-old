@@ -450,9 +450,9 @@ l_rdp_get_fds(rdpInst * inst, void ** read_fds, int * read_count,
 
 	rdp = RDP_FROM_INST(inst);
 #ifdef _WIN32
-	read_fds[*read_count] = (void *) (rdp->sec->mcs->iso->tcp->wsa_event);
+	read_fds[*read_count] = (void *) (rdp->net->tcp->wsa_event);
 #else
-	read_fds[*read_count] = (void *)(long) (rdp->sec->mcs->iso->tcp->sock);
+	read_fds[*read_count] = (void *)(long) (rdp->net->tcp->sock);
 #endif
 	(*read_count)++;
 	return 0;
@@ -468,10 +468,10 @@ l_rdp_check_fds(rdpInst * inst)
 
 	rdp = RDP_FROM_INST(inst);
 #ifdef _WIN32
-	WSAResetEvent(rdp->sec->mcs->iso->tcp->wsa_event);
+	WSAResetEvent(rdp->net->tcp->wsa_event);
 #endif
 	rv = 0;
-	if (tcp_can_recv(rdp->sec->mcs->iso->tcp->sock, 0))
+	if (tcp_can_recv(rdp->net->tcp->sock, 0))
 	{
 		if (!rdp_loop(rdp, &deactivated))
 		{
@@ -532,7 +532,7 @@ l_rdp_channel_data(rdpInst * inst, int chan_id, char * data, int data_size)
 	rdpChannels * chan;
 
 	rdp = RDP_FROM_INST(inst);
-	chan = rdp->sec->mcs->chan;
+	chan = rdp->net->mcs->chan;
 	return vchan_send(chan, chan_id, data, data_size);
 }
 

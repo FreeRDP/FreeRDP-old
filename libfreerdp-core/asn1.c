@@ -42,7 +42,7 @@ ber_parse_header(rdpMcs * mcs, STREAM s, int tagval, int *length)
 
 	if (tag != tagval)
 	{
-		ui_error(mcs->sec->rdp->inst, "expected tag %d, got %d\n", tagval, tag);
+		ui_error(mcs->net->rdp->inst, "expected tag %d, got %d\n", tagval, tag);
 		return False;
 	}
 

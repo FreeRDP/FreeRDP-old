@@ -18,6 +18,8 @@
 */
 
 #include <freerdp/types/ui.h>
+
+#include "network.h"
 #include "stream.h"
 #include "nego.h"
 
@@ -28,8 +30,9 @@ struct rdp_iso
 {
 	char* cookie;
 	struct _NEGO * nego;
-	struct rdp_mcs * mcs;
 	struct rdp_tcp * tcp;
+	struct rdp_mcs * mcs;
+	struct rdp_network * net;
 };
 typedef struct rdp_iso rdpIso;
 
@@ -60,7 +63,7 @@ iso_connect(rdpIso * iso, char * server, char * username, int port);
 void
 iso_disconnect(rdpIso * iso);
 rdpIso *
-iso_new(struct rdp_mcs * mcs);
+iso_new(struct rdp_network * net);
 void
 iso_free(rdpIso * iso);
 

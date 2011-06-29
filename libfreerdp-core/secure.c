@@ -283,7 +283,7 @@ sec_init(rdpSec * sec, uint32 flags, int maxlen)
 
 	if (flags)
 	{
-		if (!(sec->license->license_issued))
+		if (!(sec->net->license->license_issued))
 			hdrlen = (flags & SEC_ENCRYPT) ? 12 : 4;
 		else
 			hdrlen = (flags & SEC_ENCRYPT) ? 12 : 0;
@@ -291,7 +291,7 @@ sec_init(rdpSec * sec, uint32 flags, int maxlen)
 	else
 		hdrlen = 0;
 
-	s = mcs_init(sec->mcs, maxlen + hdrlen);
+	s = mcs_init(sec->net->mcs, maxlen + hdrlen);
 	s_push_layer(s, sec_hdr, hdrlen);
 
 	return s;
@@ -305,7 +305,7 @@ sec_fp_init(rdpSec * sec, uint32 flags, int maxlen)
 	int hdrlen;
 
 	hdrlen = (flags & SEC_ENCRYPT) ? 8 : 0;
-	s = mcs_fp_init(sec->mcs, maxlen + hdrlen);
+	s = mcs_fp_init(sec->net->mcs, maxlen + hdrlen);
 	s_push_layer(s, sec_hdr, hdrlen);
 
 	return s;
@@ -321,7 +321,7 @@ sec_send_to_channel(rdpSec * sec, STREAM s, uint32 flags, uint16 channel)
 	if (flags)
 	{
 		/* Basic Security Header */
-		if (!(sec->license->license_issued) || (flags & SEC_ENCRYPT))
+		if (!(sec->net->license->license_issued) || (flags & SEC_ENCRYPT))
 			out_uint32_le(s, flags); /* flags */
 
 		if (flags & SEC_ENCRYPT)
@@ -339,7 +339,7 @@ sec_send_to_channel(rdpSec * sec, STREAM s, uint32 flags, uint16 channel)
 		}
 	}
 
-	mcs_send_to_channel(sec->mcs, s, channel);
+	mcs_send_to_channel(sec->net->mcs, s, channel);
 }
 
 /* Transmit secure transport packet */
@@ -362,11 +362,11 @@ sec_fp_send(rdpSec * sec, STREAM s, uint32 flags)
 		sec_sign(s->p, 8, sec->sec_sign_key, sec->rc4_key_len, s->p + 8, datalen);
 		sec_encrypt(sec, s->p + 8, datalen);
 	}
-	mcs_fp_send(sec->mcs, s, flags);
+	mcs_fp_send(sec->net->mcs, s, flags);
 }
 
 /* Transfer the client random to the server */
-static void
+void
 sec_establish_key(rdpSec * sec)
 {
 	uint32 length = sec->server_public_key_len + SEC_PADDING_SIZE;
@@ -451,7 +451,7 @@ sec_out_client_core_data(rdpSec * sec, rdpSet * settings, STREAM s)
 		is set in earlyCapabilityFlags */
 	out_uint8(s, con_type);
 	out_uint8(s, 0); /* pad1octet */
-	out_uint32_le(s, sec->mcs->iso->nego->selected_protocol); /* serverSelectedProtocol */
+	out_uint32_le(s, sec->net->iso->nego->selected_protocol); /* serverSelectedProtocol */
 }
 
 static void
@@ -950,7 +950,7 @@ sec_recv(rdpSec * sec, secRecvType * type)
 	uint32 sec_flags;
 	isoRecvType iso_type;
 
-	while ((s = mcs_recv(sec->mcs, &iso_type, &channel)) != NULL)
+	while ((s = mcs_recv(sec->net->mcs, &iso_type, &channel)) != NULL)
 	{
 		if ((iso_type == ISO_RECV_FAST_PATH) ||
 			(iso_type == ISO_RECV_FAST_PATH_ENCRYPTED))
@@ -968,7 +968,7 @@ sec_recv(rdpSec * sec, secRecvType * type)
 			ui_error(sec->rdp->inst, "expected ISO_RECV_X224, got %d\n", iso_type);
 			return NULL;
 		}
-		if (sec->rdp->settings->encryption || !sec->license->license_issued)
+		if (sec->rdp->settings->encryption || !sec->net->license->license_issued)
 		{
 			/* basicSecurityHeader: */
 			in_uint32_le(s, sec_flags);
@@ -982,7 +982,7 @@ sec_recv(rdpSec * sec, secRecvType * type)
 			if (sec_flags & SEC_LICENSE_PKT)
 			{
 				*type = SEC_RECV_LICENSE;
-				license_process(sec->license, s);
+				license_process(sec->net->license, s);
 				continue;
 			}
 
@@ -995,7 +995,7 @@ sec_recv(rdpSec * sec, secRecvType * type)
 
 		if (channel != MCS_GLOBAL_CHANNEL)
 		{
-			vchan_process(sec->mcs->chan, s, channel);
+			vchan_process(sec->net->mcs->chan, s, channel);
 			*type = SEC_RECV_IOCHANNEL;
 			return s;
 		}
@@ -1006,161 +1006,11 @@ sec_recv(rdpSec * sec, secRecvType * type)
 	return NULL;
 }
 
-#ifndef DISABLE_TLS
-
-/* verify SSL/TLS connection integrity. 2 checks are carried out. First make sure that the
- * certificate is assigned to the server we're connected to, and second make sure that the
- * certificate is signed by a trusted certification authority
- */
-
-static RD_BOOL
-sec_verify_tls(rdpSec * sec, const char * server)
-{
-	char * issuer;
-	char * subject;
-	char * fingerprint;
-	CryptoCert cert;
-	RD_BOOL verified = False;
-
-#ifdef _WIN32
-	/*
-	 * TODO: FIX ME! This is really bad, I know...
-	 * There appears to be a buffer overflow only
-	 * on Windows that affects this part of the code.
-	 * Skipping it is a workaround, but it's obviously
-	 * not a permanent "solution".
-	 */
-	return True;
-#endif
-
-	cert = tls_get_certificate(sec->tls);
-
-	if (!cert)
-	{
-		goto exit;
-	}
-
-	subject = crypto_cert_get_subject(cert);
-	issuer = crypto_cert_get_issuer(cert);
-	fingerprint = crypto_cert_get_fingerprint(cert);
-
-	verified = tls_verify(sec->tls, server);
-
-	if (verified != False)
-		verified = crypto_cert_verify_peer_identity(cert, server);
-
-	verified = ui_check_certificate(sec->rdp->inst, fingerprint, subject, issuer, verified);
-
-	xfree(fingerprint);
-	xfree(subject);
-	xfree(issuer);
-
-exit:
-	if (cert)
-	{
-		crypto_cert_free(cert);
-		cert = NULL;
-	}
-
-	return verified;
-}
-#endif
-
-/* Establish a secure connection */
-RD_BOOL
-sec_connect(rdpSec * sec, char *server, char *username, int port)
-{
-	NEGO *nego = sec->mcs->iso->nego;
-
-	sec->license->license_issued = 0;
-	if (sec->rdp->settings->nla_security)
-		nego->enabled_protocols[PROTOCOL_NLA] = 1;
-	if (sec->rdp->settings->tls_security)
-		nego->enabled_protocols[PROTOCOL_TLS] = 1;
-	if (sec->rdp->settings->rdp_security)
-		nego->enabled_protocols[PROTOCOL_RDP] = 1;
-
-	if (!iso_connect(sec->mcs->iso, server, username, port))
-		return False;
-
-#ifndef DISABLE_TLS
-	if(nego->selected_protocol & PROTOCOL_NLA)
-	{
-		/* TLS with NLA was successfully negotiated */
-		RD_BOOL status = 1;
-		printf("TLS encryption with NLA negotiated\n");
-		sec->tls = tls_new();
-		if (!tls_connect(sec->tls, sec->mcs->iso->tcp->sock))
-			return False;
-		if (!sec_verify_tls(sec, server))
-			return False;
-		sec->tls_connected = 1;
-		sec->rdp->settings->encryption = 0;
-
-		if (!sec->rdp->settings->autologin)
-			if (!ui_authenticate(sec->rdp->inst))
-				return False;
-
-		sec->credssp = credssp_new(sec);
-
-		if (credssp_authenticate(sec->credssp) < 0)
-		{
-			printf("Authentication failure, check credentials.\n"
-					"If credentials are valid, the NTLMSSP implementation may be to blame.\n");
-			credssp_free(sec->credssp);
-			return 0;
-		}
-
-		credssp_free(sec->credssp);
-
-		status = mcs_connect(sec->mcs);
-		return status;
-	}
-	else if(nego->selected_protocol & PROTOCOL_TLS)
-	{
-		/* TLS without NLA was successfully negotiated */
-		RD_BOOL success;
-		printf("TLS encryption negotiated\n");
-		sec->tls = tls_new();
-		if (!tls_connect(sec->tls, sec->mcs->iso->tcp->sock))
-			return False;
-		if (!sec_verify_tls(sec, server))
-			return False;
-		sec->tls_connected = 1;
-		sec->rdp->settings->encryption = 0;
-		success = mcs_connect(sec->mcs);
-		return success;
-	}
-	else
-#endif
-	{
-		RD_BOOL success;
-
-		printf("Standard RDP encryption negotiated\n");
-
-		success = mcs_connect(sec->mcs);
-
-		if (success && sec->rdp->settings->encryption)
-			sec_establish_key(sec);
-
-		return success;
-	}
-
-	return 0;
-}
-
 /* Disconnect a connection */
 void
 sec_disconnect(rdpSec * sec)
 {
-	mcs_disconnect(sec->mcs);
-
-#ifndef DISABLE_TLS
-	if (sec->tls)
-		tls_free(sec->tls);
-	sec->tls = NULL;
-	sec->tls_connected = 0;
-#endif
+	mcs_disconnect(sec->net->mcs);
 
 	if (sec->rc4_decrypt_key)
 		crypto_rc4_free(sec->rc4_decrypt_key);
@@ -1180,10 +1030,9 @@ sec_new(struct rdp_rdp * rdp)
 	{
 		memset(self, 0, sizeof(rdpSec));
 		self->rdp = rdp;
-		self->mcs = mcs_new(self);
-		self->license = license_new(self);
 		self->rc4_decrypt_key = NULL;
 		self->rc4_encrypt_key = NULL;
+		self->net = rdp->net;
 	}
 	return self;
 }
@@ -1193,8 +1042,8 @@ sec_free(rdpSec * sec)
 {
 	if (sec != NULL)
 	{
-		license_free(sec->license);
-		mcs_free(sec->mcs);
+		license_free(sec->net->license);
+		mcs_free(sec->net->mcs);
 		xfree(sec);
 	}
 }

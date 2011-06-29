@@ -35,6 +35,7 @@
 #include "secure.h"
 #include "rdp.h"
 #include <freerdp/utils/memory.h>
+#include <freerdp/utils/hexdump.h>
 
 #include "tcp.h"
 
@@ -141,128 +142,66 @@ tcp_init(rdpTcp * tcp, uint32 minsize)
 	return result;
 }
 
-/* Send data from stream to tcp socket.
- * Will block until all data has been sent. */
 void
-tcp_send(rdpTcp * tcp, STREAM s)
+tcp_write(rdpTcp * tcp, STREAM s)
 {
 	int sent = 0;
 	int total = 0;
 	int length = s->end - s->data;
 
-#ifndef DISABLE_TLS
-	if (tcp->iso->mcs->sec->tls_connected)
-	{
-		tls_write(tcp->iso->mcs->sec->tls, (char*) s->data, length);
-	}
-	else
-#endif
+	while (total < length)
 	{
 		while (total < length)
 		{
-			while (total < length)
+			sent = send(tcp->sock, s->data + total, length - total, MSG_NOSIGNAL);
+			if (sent <= 0)
 			{
-				sent = send(tcp->sock, s->data + total, length - total, MSG_NOSIGNAL);
-				if (sent <= 0)
+				if (sent == -1 && TCP_BLOCKS)
 				{
-					if (sent == -1 && TCP_BLOCKS)
-					{
-						tcp_can_send(tcp->sock, 100);
-						sent = 0;
-					}
-					else
-					{
-						ui_error(tcp->iso->mcs->sec->rdp->inst, "send: %s\n", TCP_STRERROR);
-						return;
-					}
+					tcp_can_send(tcp->sock, 100);
+					sent = 0;
 				}
-				total += sent;
+				else
+				{
+					ui_error(tcp->iso->net->rdp->inst, "send: %s\n", TCP_STRERROR);
+					return;
+				}
 			}
+			total += sent;
 		}
 	}
 }
 
-/* Read length bytes from tcp socket to stream and return it.
- * Appends to stream s if specified, otherwise it uses stream from tcp layer.
- * Will block until data available.
- * Returns NULL on error. */
-STREAM
-tcp_recv(rdpTcp * tcp, STREAM s, uint32 length)
+int
+tcp_read(rdpTcp * tcp, char* b, int length)
 {
 	int rcvd = 0;
-	uint32 p_offset;
-	uint32 new_length;
-	uint32 end_offset;
 
-	if (s == NULL)
+	if (!ui_select(tcp->iso->mcs->net->sec->rdp->inst, tcp->sock))
+		return -1; /* user quit */
+
+	rcvd = recv(tcp->sock, b, length, 0);
+
+	if (rcvd < 0)
 	{
-		/* read into "new" stream */
-		if (length > tcp->in.size)
+		if (rcvd == -1 && TCP_BLOCKS)
 		{
-			tcp->in.data = (uint8 *) xrealloc(tcp->in.data, length);
-			tcp->in.size = length;
-		}
-
-		tcp->in.end = tcp->in.p = tcp->in.data;
-		s = &(tcp->in);
-	}
-	else
-	{
-		/* append to existing stream */
-		new_length = (s->end - s->data) + length;
-		if (new_length > s->size)
-		{
-			p_offset = s->p - s->data;
-			end_offset = s->end - s->data;
-			s->data = (uint8 *) xrealloc(s->data, new_length);
-			s->size = new_length;
-			s->p = s->data + p_offset;
-			s->end = s->data + end_offset;
-		}
-	}
-
-	while (length > 0)
-	{
-#ifndef DISABLE_TLS
-		if (tcp->iso->mcs->sec->tls_connected)
-		{
-			rcvd = tls_read(tcp->iso->mcs->sec->tls, (char*) s->end, length);
-
-			if (rcvd < 0)
-				return NULL;
+			tcp_can_recv(tcp->sock, 1);
+			rcvd = 0;
 		}
 		else
-#endif
 		{
-			if (!ui_select(tcp->iso->mcs->sec->rdp->inst, tcp->sock))
-				return NULL; /* user quit */
-
-			rcvd = recv(tcp->sock, s->end, length, 0);
-			if (rcvd < 0)
-			{
-				if (rcvd == -1 && TCP_BLOCKS)
-				{
-					tcp_can_recv(tcp->sock, 1);
-					rcvd = 0;
-				}
-				else
-				{
-					ui_error(tcp->iso->mcs->sec->rdp->inst, "recv: %s\n", TCP_STRERROR);
-					return NULL;
-				}
-			}
-			else if (rcvd == 0)
-			{
-				ui_error(tcp->iso->mcs->sec->rdp->inst, "Connection closed\n");
-				return NULL;
-			}
+			ui_error(tcp->iso->mcs->net->rdp->inst, "recv: %s\n", TCP_STRERROR);
+			return -1;
 		}
-
-		s->end += rcvd;
-		length -= rcvd;
+	}
+	else if (rcvd == 0)
+	{
+		ui_error(tcp->iso->mcs->net->rdp->inst, "Connection closed\n");
+			return -1;
 	}
 
-	return s;
+	return rcvd;
 }
 
 /* Establish a connection on the TCP layer */
@@ -289,7 +228,7 @@ tcp_connect(rdpTcp * tcp, char * server, int port)
 
 	if ((n = getaddrinfo(server, tcp_port_rdp_s, &hints, &res)))
 	{
-		ui_error(tcp->iso->mcs->sec->rdp->inst, "getaddrinfo: %s\n", gai_strerror(n));
+		ui_error(tcp->iso->mcs->net->sec->rdp->inst, "getaddrinfo: %s\n", gai_strerror(n));
 		return False;
 	}
 
@@ -311,7 +250,7 @@ tcp_connect(rdpTcp * tcp, char * server, int port)
 
 	if (sock == -1)
 	{
-		ui_error(tcp->iso->mcs->sec->rdp->inst, "%s: unable to connect\n", server);
+		ui_error(tcp->iso->mcs->net->sec->rdp->inst, "%s: unable to connect\n", server);
 		return False;
 	}
 
