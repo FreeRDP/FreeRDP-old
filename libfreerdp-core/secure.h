@@ -37,8 +37,9 @@ sec_global_finish(void);
 
 struct rdp_sec
 {
-	struct rdp_rdp * rdp;
 	int rc4_key_len;
+	struct rdp_rdp * rdp;
+	struct rdp_network * net;
 	CryptoRc4 rc4_decrypt_key;
 	CryptoRc4 rc4_encrypt_key;
 	uint32 server_public_key_len;
@@ -51,8 +52,6 @@ struct rdp_sec
 	/* These values must be available to reset state - Session Directory */
 	int sec_encrypt_use_count;
 	int sec_decrypt_use_count;
-	int tls_connected;
-	struct rdp_network * net;
 };
 
 enum sec_recv_type
@@ -92,8 +91,6 @@ void
 sec_out_gcc_conference_create_request(rdpSec * sec, STREAM s);
 void
 sec_establish_key(rdpSec * sec);
-RD_BOOL
-sec_verify_tls(rdpSec * sec, const char * server);
 void
 sec_disconnect(rdpSec * sec);
 rdpSec *

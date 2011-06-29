@@ -154,7 +154,7 @@ rdp_init_data(rdpRdp * rdp, int maxlen)
 
 	uint32 sec_flags;
 
-	if (rdp->sec->tls_connected)
+	if (rdp->net->tls_connected)
 		sec_flags = 0;
 	else
 		sec_flags = rdp->settings->encryption ? SEC_ENCRYPT : 0;
@@ -765,7 +765,7 @@ rdp_send_confirm_active(rdpRdp * rdp)
 	s_mark_end(caps);
 	caplen = (int) (caps->end - caps->data);
 
-	if (rdp->sec->tls_connected)
+	if (rdp->net->tls_connected)
 		sec_flags = 0;
 	else
 		sec_flags = rdp->settings->encryption ? SEC_ENCRYPT : 0;
@@ -1043,6 +1043,7 @@ process_system_pointer_pdu(rdpRdp * rdp, STREAM s)
 
 		default:
 			ui_unimpl(rdp->inst, "Unknown System Pointer message 0x%x\n", system_pointer_type);
+			break;
 	}
 }
 
@@ -1092,6 +1093,7 @@ process_pointer_pdu(rdpRdp * rdp, STREAM s)
 
 		default:
 			ui_unimpl(rdp->inst, "Unknown Pointer message 0x%x\n", message_type);
+			break;
 	}
 }
 
@@ -1264,6 +1266,7 @@ process_update_pdu(rdpRdp * rdp, STREAM s)
 
 		default:
 			ui_unimpl(rdp->inst, "Unknown update pdu type 0x%x\n", update_type);
+			break;
 	}
 	ui_end_update(rdp->inst);
 }
@@ -1361,6 +1364,7 @@ process_data_pdu(rdpRdp * rdp, STREAM s)
 
 		default:
 			ui_unimpl(rdp->inst, "Unknown data PDU type 0x%x\n", pduType2);
+			break;
 	}
 	return False;
 }
@@ -1643,6 +1647,7 @@ rdp_loop(rdpRdp * rdp, RD_BOOL * deactivated)
 				break;
 			default:
 				ui_unimpl(rdp->inst, "Unknown PDU type 0x%x", type);
+				break;
 		}
 		if (disc)
 			return False;
@@ -1681,7 +1686,7 @@ rdp_connect(rdpRdp * rdp)
 	xfree(password_encoded);
 
 	/* by setting encryption to False here, we have an encrypted login packet but unencrypted transfer of other packets */
-	if (rdp->sec->tls_connected)
+	if (rdp->net->tls_connected)
 		rdp->settings->encryption = 0;
 
 	return True;

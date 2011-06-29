@@ -452,7 +452,7 @@ l_rdp_get_fds(rdpInst * inst, void ** read_fds, int * read_count,
 #ifdef _WIN32
 	read_fds[*read_count] = (void *) (rdp->net->tcp->wsa_event);
 #else
-	read_fds[*read_count] = (void *)(long) (rdp->net->tcp->sock);
+	read_fds[*read_count] = (void *)(long) (rdp->net->tcp->sockfd);
 #endif
 	(*read_count)++;
 	return 0;
@@ -471,7 +471,7 @@ l_rdp_check_fds(rdpInst * inst)
 	WSAResetEvent(rdp->net->tcp->wsa_event);
 #endif
 	rv = 0;
-	if (tcp_can_recv(rdp->net->tcp->sock, 0))
+	if (tcp_can_recv(rdp->net->tcp->sockfd, 0))
 	{
 		if (!rdp_loop(rdp, &deactivated))
 		{

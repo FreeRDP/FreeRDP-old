@@ -397,6 +397,7 @@ license_process(rdpLicense * license, STREAM s)
 
 		default:
 			ui_unimpl(license->net->rdp->inst, "Unknown license tag 0x%x", tag);
+			break;
 	}
 	s->p = license_start + wMsgSize;	/* FIXME: Shouldn't be necessary if parsed properly */
 	ASSERT(s->p <= s->end);

@@ -17,6 +17,7 @@
    limitations under the License.
 */
 
+#include <freerdp/types/base.h>
 #include <freerdp/utils/memory.h>
 
 #include "network.h"
@@ -58,17 +59,6 @@ network_verify_tls(rdpNetwork * net)
 	CryptoCert cert;
 	RD_BOOL verified = False;
 
-#ifdef _WIN32
-	/*
-	 * TODO: FIX ME! This is really bad, I know...
-	 * There appears to be a buffer overflow only
-	 * on Windows that affects this part of the code.
-	 * Skipping it is a workaround, but it's obviously
-	 * not a permanent "solution".
-	 */
-	return True;
-#endif
-
 	cert = tls_get_certificate(net->tls);
 
 	if (!cert)
@@ -103,6 +93,78 @@ exit:
 #endif
 
 RD_BOOL
+network_connect_rdp(rdpNetwork * net)
+{
+	RD_BOOL status = False;
+
+	printf("Standard RDP encryption negotiated\n");
+
+	status = mcs_connect(net->mcs);
+
+	if (status && net->rdp->settings->encryption)
+		sec_establish_key(net->sec);
+
+	return status;
+}
+
+RD_BOOL
+network_connect_tls(rdpNetwork * net)
+{
+	RD_BOOL status = False;
+	net->tls = tls_new();
+
+	if (!tls_connect(net->tls, net->tcp->sockfd))
+		return False;
+
+	if (!network_verify_tls(net))
+		return False;
+
+	net->tls_connected = 1;
+	net->rdp->settings->encryption = 0;
+
+	status = mcs_connect(net->mcs);
+
+	return status;
+}
+
+RD_BOOL
+network_connect_nla(rdpNetwork * net)
+{
+	/* TLS with NLA was successfully negotiated */
+
+	RD_BOOL status = 1;
+	net->tls = tls_new();
+
+	if (!tls_connect(net->tls, net->tcp->sockfd))
+		return False;
+
+	if (!network_verify_tls(net))
+		return False;
+
+	net->tls_connected = 1;
+	net->rdp->settings->encryption = 0;
+
+	if (!net->rdp->settings->autologin)
+		if (!ui_authenticate(net->rdp->inst))
+			return False;
+
+	net->credssp = credssp_new(net);
+
+	if (credssp_authenticate(net->credssp) < 0)
+	{
+		printf("Authentication failure, check credentials.\n"
+				"If credentials are valid, the NTLMSSP implementation may be to blame.\n");
+		credssp_free(net->credssp);
+		return 0;
+	}
+
+	credssp_free(net->credssp);
+	status = mcs_connect(net->mcs);
+
+	return status;
+}
+
+RD_BOOL
 network_connect(rdpNetwork * net, char* server, char* username, int port)
 {
 	NEGO *nego = net->iso->nego;
@@ -126,75 +188,22 @@ network_connect(rdpNetwork * net, char* server, char* username, int port)
 	if(nego->selected_protocol & PROTOCOL_NLA)
 	{
 		/* TLS with NLA was successfully negotiated */
-
-		RD_BOOL status = 1;
 		printf("TLS encryption with NLA negotiated\n");
-		net->tls = tls_new();
-
-		if (!tls_connect(net->tls, net->tcp->sock))
-			return False;
-
-		if (!network_verify_tls(net))
-			return False;
-
-		net->sec->tls_connected = 1;
-		net->rdp->settings->encryption = 0;
-
-		if (!net->rdp->settings->autologin)
-			if (!ui_authenticate(net->rdp->inst))
-				return False;
-
-		net->credssp = credssp_new(net);
-
-		if (credssp_authenticate(net->credssp) < 0)
-		{
-			printf("Authentication failure, check credentials.\n"
-					"If credentials are valid, the NTLMSSP implementation may be to blame.\n");
-			credssp_free(net->credssp);
-			return 0;
-		}
-
-		credssp_free(net->credssp);
-
-		status = mcs_connect(net->mcs);
-		return status;
+		return network_connect_nla(net);
 	}
 	else if(nego->selected_protocol & PROTOCOL_TLS)
 	{
 		/* TLS without NLA was successfully negotiated */
-		RD_BOOL success;
 		printf("TLS encryption negotiated\n");
-		net->tls = tls_new();
-
-		if (!tls_connect(net->tls, net->tcp->sock))
-			return False;
-
-		if (!network_verify_tls(net))
-			return False;
-
-		net->sec->tls_connected = 1;
-		net->rdp->settings->encryption = 0;
-
-		success = mcs_connect(net->mcs);
-
-		return success;
+		return network_connect_tls(net);
 	}
 	else
 #endif
 	{
-		RD_BOOL success;
-
-		printf("Standard RDP encryption negotiated\n");
-
-		success = mcs_connect(net->mcs);
-
-		if (success && net->rdp->settings->encryption)
-			sec_establish_key(net->sec);
-
-		return success;
+		return network_connect_rdp(net);
 	}
 
-	return 0;
+	return False;
 }
 
 void
@@ -211,14 +220,14 @@ void
 network_send(rdpNetwork * net, STREAM s)
 {
 #ifndef DISABLE_TLS
-	if (net->sec->tls_connected)
+	if (net->tls_connected)
 	{
 		tls_write(net->tls, (char*) s->data, s->end - s->data);
 	}
 	else
 #endif
 	{
-		tcp_write(net->tcp, s);
+		tcp_write(net->tcp, (char*) s->data, s->end - s->data);
 	}
 }
 
@@ -260,7 +269,7 @@ network_recv(rdpNetwork * net, STREAM s, uint32 length)
 	while (length > 0)
 	{
 #ifndef DISABLE_TLS
-		if (net->sec->tls_connected)
+		if (net->tls_connected)
 		{
 			rcvd = tls_read(net->tls, (char*) s->end, length);
 

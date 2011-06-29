@@ -258,7 +258,7 @@ static void
 sec_decrypt(rdpSec * sec, uint8 * data, int length)
 {
 #ifndef DISABLE_TLS
-	if (sec->tls_connected)
+	if (sec->net->tls_connected)
 		return;
 #endif
 
@@ -462,7 +462,7 @@ sec_out_client_security_data(rdpSec * sec, rdpSet * settings, STREAM s)
 	out_uint16_le(s, UDH_CS_SECURITY);	/* User Data Header type */
 	out_uint16_le(s, 12);			/* total length */
 
-	if (settings->encryption || sec->tls_connected)
+	if (settings->encryption || sec->net->tls_connected)
 		encryptionMethods = ENCRYPTION_40BIT_FLAG | ENCRYPTION_128BIT_FLAG;
 
 	out_uint32_le(s, encryptionMethods);	/* encryptionMethods */

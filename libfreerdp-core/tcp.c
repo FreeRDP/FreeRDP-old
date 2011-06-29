@@ -131,22 +131,21 @@ tcp_can_recv(int sck, int millis)
 }
 
 void
-tcp_write(rdpTcp * tcp, STREAM s)
+tcp_write(rdpTcp * tcp, char* b, int length)
 {
 	int sent = 0;
 	int total = 0;
-	int length = s->end - s->data;
 
 	while (total < length)
 	{
 		while (total < length)
 		{
-			sent = send(tcp->sock, s->data + total, length - total, MSG_NOSIGNAL);
+			sent = send(tcp->sockfd, b + total, length - total, MSG_NOSIGNAL);
 			if (sent <= 0)
 			{
 				if (sent == -1 && TCP_BLOCKS)
 				{
-					tcp_can_send(tcp->sock, 100);
+					tcp_can_send(tcp->sockfd, 100);
 					sent = 0;
 				}
 				else
@@ -165,16 +164,16 @@ tcp_read(rdpTcp * tcp, char* b, int length)
 {
 	int rcvd = 0;
 
-	if (!ui_select(tcp->net->sec->rdp->inst, tcp->sock))
+	if (!ui_select(tcp->net->sec->rdp->inst, tcp->sockfd))
 		return -1; /* user quit */
 
-	rcvd = recv(tcp->sock, b, length, 0);
+	rcvd = recv(tcp->sockfd, b, length, 0);
 
 	if (rcvd < 0)
 	{
 		if (rcvd == -1 && TCP_BLOCKS)
 		{
-			tcp_can_recv(tcp->sock, 1);
+			tcp_can_recv(tcp->sockfd, 1);
 			rcvd = 0;
 		}
 		else
@@ -196,7 +195,7 @@ tcp_read(rdpTcp * tcp, char* b, int length)
 RD_BOOL
 tcp_connect(rdpTcp * tcp, char * server, int port)
 {
-	int sock;
+	int sockfd;
 	uint32 option_value;
 	socklen_t option_len;
 
@@ -221,22 +220,22 @@ tcp_connect(rdpTcp * tcp, char * server, int port)
 	}
 
 	ressave = res;
-	sock = -1;
+	sockfd = -1;
 	while (res)
 	{
-		sock = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
-		if (!(sock < 0))
+		sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+		if (!(sockfd < 0))
 		{
-			if (connect(sock, res->ai_addr, res->ai_addrlen) == 0)
+			if (connect(sockfd, res->ai_addr, res->ai_addrlen) == 0)
 				break;
-			TCP_CLOSE(sock);
-			sock = -1;
+			TCP_CLOSE(sockfd);
+			sockfd = -1;
 		}
 		res = res->ai_next;
 	}
 	freeaddrinfo(ressave);
 
-	if (sock == -1)
+	if (sockfd == -1)
 	{
 		ui_error(tcp->net->rdp->inst, "%s: unable to connect\n", server);
 		return False;
@@ -277,33 +276,33 @@ tcp_connect(rdpTcp * tcp, char * server, int port)
 
 #endif /* IPv6 */
 
-	tcp->sock = sock;
+	tcp->sockfd = sockfd;
 
 	/* set socket as non blocking */
 #ifdef _WIN32
 	{
 		u_long arg = 1;
-		ioctlsocket(tcp->sock, FIONBIO, &arg);
+		ioctlsocket(tcp->sockfd, FIONBIO, &arg);
 		tcp->wsa_event = WSACreateEvent();
-		WSAEventSelect(tcp->sock, tcp->wsa_event, FD_READ);
+		WSAEventSelect(tcp->sockfd, tcp->wsa_event, FD_READ);
 	}
 #else
-	option_value = fcntl(tcp->sock, F_GETFL);
+	option_value = fcntl(tcp->sockfd, F_GETFL);
 	option_value = option_value | O_NONBLOCK;
-	fcntl(tcp->sock, F_SETFL, option_value);
+	fcntl(tcp->sockfd, F_SETFL, option_value);
 #endif
 
 	option_value = 1;
 	option_len = sizeof(option_value);
-	setsockopt(tcp->sock, IPPROTO_TCP, TCP_NODELAY, (void *) &option_value, option_len);
+	setsockopt(tcp->sockfd, IPPROTO_TCP, TCP_NODELAY, (void *) &option_value, option_len);
 	/* receive buffer must be a least 16 K */
-	if (getsockopt(tcp->sock, SOL_SOCKET, SO_RCVBUF, (void *) &option_value, &option_len) == 0)
+	if (getsockopt(tcp->sockfd, SOL_SOCKET, SO_RCVBUF, (void *) &option_value, &option_len) == 0)
 	{
 		if (option_value < (1024 * 16))
 		{
 			option_value = 1024 * 16;
 			option_len = sizeof(option_value);
-			setsockopt(tcp->sock, SOL_SOCKET, SO_RCVBUF, (void *) &option_value,
+			setsockopt(tcp->sockfd, SOL_SOCKET, SO_RCVBUF, (void *) &option_value,
 				   option_len);
 		}
 	}
@@ -315,10 +314,10 @@ tcp_connect(rdpTcp * tcp, char * server, int port)
 void
 tcp_disconnect(rdpTcp * tcp)
 {
-	if (tcp->sock != -1)
+	if (tcp->sockfd != -1)
 	{
-		TCP_CLOSE(tcp->sock);
-		tcp->sock = -1;
+		TCP_CLOSE(tcp->sockfd);
+		tcp->sockfd = -1;
 	}
 #ifdef _WIN32
 	if (tcp->wsa_event)
@@ -335,7 +334,7 @@ tcp_get_address(rdpTcp * tcp)
 {
 	struct sockaddr_in sockaddr;
 	socklen_t len = sizeof(sockaddr);
-	if (getsockname(tcp->sock, (struct sockaddr *) &sockaddr, &len) == 0)
+	if (getsockname(tcp->sockfd, (struct sockaddr *) &sockaddr, &len) == 0)
 	{
 		uint8 *ip = (uint8 *) & sockaddr.sin_addr;
 		snprintf(tcp->ipaddr, sizeof(tcp->ipaddr), "%d.%d.%d.%d", ip[0], ip[1], ip[2],
@@ -358,7 +357,7 @@ tcp_new(struct rdp_network * net)
 	{
 		memset(self, 0, sizeof(rdpTcp));
 		self->net = net;
-		self->sock = -1;
+		self->sockfd = -1;
 	}
 
 	return self;

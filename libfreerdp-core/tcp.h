@@ -26,7 +26,7 @@
 
 struct rdp_tcp
 {
-	int sock;
+	int sockfd;
 	char ipaddr[32];
 	int tcp_port_rdp;
 	struct rdp_network * net;
@@ -37,7 +37,7 @@ struct rdp_tcp
 typedef struct rdp_tcp rdpTcp;
 
 void
-tcp_write(rdpTcp * tcp, STREAM s);
+tcp_write(rdpTcp * tcp, char* b, int length);
 int
 tcp_read(rdpTcp * tcp, char* b, int length);
 

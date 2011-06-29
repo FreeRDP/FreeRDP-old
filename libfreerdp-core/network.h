@@ -40,6 +40,7 @@ struct rdp_network
 	char* username;
 	struct stream in;
 	struct stream out;
+	int tls_connected;
 	struct _NEGO * nego;
 	struct rdp_rdp * rdp;
 	struct rdp_tcp * tcp;
