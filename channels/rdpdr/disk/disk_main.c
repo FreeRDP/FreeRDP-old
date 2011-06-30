@@ -36,98 +36,13 @@
 
 #include "config.h"
 
-#ifdef HAVE_SYS_VFS_H
-#include <sys/vfs.h>
-#endif
-
-#ifdef HAVE_SYS_STATVFS_H
-#include <sys/statvfs.h>
-#endif
-
-#ifdef HAVE_SYS_STATFS_H
-#include <sys/statfs.h>
-#endif
-
 #ifdef HAVE_SYS_PARAM_H
 #include <sys/param.h>
-#endif
-
-#ifdef HAVE_SYS_MOUNT_H
-#include <sys/mount.h>
 #endif
 
 #include "rdpdr_types.h"
 #include "rdpdr_constants.h"
 #include "devman.h"
-
-#ifdef STAT_STATFS3_OSF1
-#define STATFS_FN(path, buf) (statfs(path,buf,sizeof(buf)))
-#define STATFS_T statfs
-#define USE_STATFS
-#endif
-
-#ifdef STAT_STATVFS
-#define STATFS_FN(path, buf) (statvfs(path,buf))
-#define STATFS_T statvfs
-#define USE_STATVFS
-#endif
-
-#ifdef STAT_STATVFS64
-#define STATFS_FN(path, buf) (statvfs64(path,buf))
-#define STATFS_T statvfs64
-#define USE_STATVFS
-#endif
-
-#if (defined(STAT_STATFS2_FS_DATA) || defined(STAT_STATFS2_BSIZE) || defined(STAT_STATFS2_FSIZE))
-#define STATFS_FN(path, buf) (statfs(path,buf))
-#define STATFS_T statfs
-#define USE_STATFS
-#endif
-
-#ifdef STAT_STATFS4
-#define STATFS_FN(path, buf) (statfs(path,buf,sizeof(buf),0))
-#define STATFS_T statfs
-#define USE_STATFS
-#endif
-
-#if ((defined(USE_STATFS) && defined(HAVE_STRUCT_STATFS_F_NAMEMAX)) || (defined(USE_STATVFS) && defined(HAVE_STRUCT_STATVFS_F_NAMEMAX)))
-#define F_NAMELEN(buf) ((buf).f_namemax)
-#endif
-
-#if ((defined(USE_STATFS) && defined(HAVE_STRUCT_STATFS_F_NAMELEN)) || (defined(USE_STATVFS) && defined(HAVE_STRUCT_STATVFS_F_NAMELEN)))
-#define F_NAMELEN(buf) ((buf).f_namelen)
-#endif
-
-#ifndef F_NAMELEN
-#define F_NAMELEN(buf) (255)
-#endif
-
-/* Dummy statfs fallback */
-#ifndef STATFS_T
-struct dummy_statfs_t
-{
-	long f_bfree;
-	long f_bsize;
-	long f_blocks;
-	int f_namelen;
-	int f_namemax;
-};
-
-static int
-dummy_statfs(struct dummy_statfs_t *buf)
-{
-	buf->f_blocks = 262144;
-	buf->f_bfree = 131072;
-	buf->f_bsize = 512;
-	buf->f_namelen = 255;
-	buf->f_namemax = 255;
-
-	return 0;
-}
-
-#define STATFS_T dummy_statfs_t
-#define STATFS_FN(path,buf) (dummy_statfs(buf))
-#endif
 
 struct _FILE_INFO
 {
@@ -587,7 +502,6 @@ static uint32
 disk_query_volume_info(IRP * irp)
 {
 	FILE_INFO * finfo;
-	struct STATFS_T stat_fs;
 	uint32 status;
 	int size;
 	char * buf;
@@ -601,11 +515,6 @@ disk_query_volume_info(IRP * irp)
 	{
 		LLOGLN(0, ("disk_query_volume_info: invalid file id"));
 		return RD_STATUS_INVALID_HANDLE;
-	}
-	if (STATFS_FN(finfo->fullpath, &stat_fs) != 0)
-	{
-		LLOGLN(0, ("disk_query_volume_info: statfs failed"));
-		return RD_STATUS_ACCESS_DENIED;
 	}
 
 	size = 0;
@@ -632,17 +541,17 @@ disk_query_volume_info(IRP * irp)
 			size = 24;
 			buf = malloc(size);
 			memset(buf, 0, size);
-			SET_UINT64(buf, 0, stat_fs.f_blocks); /* TotalAllocationUnits */
-			SET_UINT64(buf, 8, stat_fs.f_bfree); /* AvailableAllocationUnits */
-			SET_UINT32(buf, 16, stat_fs.f_bsize / 0x200); /* SectorsPerAllocationUnit */
-			SET_UINT32(buf, 20, 0x200); /* BytesPerSector */
+			SET_UINT64(buf, 0, 0x1000000); /* TotalAllocationUnits */
+			SET_UINT64(buf, 8, 0x800000); /* AvailableAllocationUnits */
+			SET_UINT32(buf, 16, 1); /* SectorsPerAllocationUnit */
+			SET_UINT32(buf, 20, 0x400); /* BytesPerSector */
 			break;
 
 		case FileFsAttributeInformation:
 			buf = malloc(256);
 			memset(buf, 0, 256);
 			SET_UINT32(buf, 0, FILE_CASE_SENSITIVE_SEARCH | FILE_CASE_PRESERVED_NAMES | FILE_UNICODE_ON_DISK); /* FileSystemAttributes */
-			SET_UINT32(buf, 4, F_NAMELEN(stat_fs)); /* MaximumComponentNameLength */
+			SET_UINT32(buf, 4, 255); /* MaximumComponentNameLength */
 			s = freerdp_uniconv_out(uniconv, "FREERDP", &len);
 			memcpy(buf + 17, s, len);
 			xfree(s);
@@ -654,11 +563,11 @@ disk_query_volume_info(IRP * irp)
 			size = 32;
 			buf = malloc(size);
 			memset(buf, 0, size);
-			SET_UINT64(buf, 0, stat_fs.f_blocks); /* TotalAllocationUnits */
-			SET_UINT64(buf, 8, stat_fs.f_bfree); /* CallerAvailableAllocationUnits */
-			SET_UINT64(buf, 16, stat_fs.f_bfree); /* ActualAvailableAllocationUnits */
-			SET_UINT32(buf, 24, stat_fs.f_bsize / 0x200); /* SectorsPerAllocationUnit */
-			SET_UINT32(buf, 28, 0x200); /* BytesPerSector */
+			SET_UINT64(buf, 0, 0x1000000); /* TotalAllocationUnits */
+			SET_UINT64(buf, 8, 0x800000); /* CallerAvailableAllocationUnits */
+			SET_UINT64(buf, 16, 0x800000); /* ActualAvailableAllocationUnits */
+			SET_UINT32(buf, 24, 1); /* SectorsPerAllocationUnit */
+			SET_UINT32(buf, 28, 0x400); /* BytesPerSector */
 			break;
 
 		case FileFsDeviceInformation:
