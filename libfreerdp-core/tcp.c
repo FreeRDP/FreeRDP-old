@@ -257,7 +257,7 @@ tcp_connect(rdpTcp * tcp, char * server, int port)
 		return False;
 	}
 
-	if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+	if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
 	{
 		ui_error(tcp->net->rdp->inst, "socket: %s\n", TCP_STRERROR);
 		return False;
@@ -266,10 +266,10 @@ tcp_connect(rdpTcp * tcp, char * server, int port)
 	servaddr.sin_family = AF_INET;
 	servaddr.sin_port = htons((uint16) port);
 
-	if (connect(sock, (struct sockaddr *) &servaddr, sizeof(struct sockaddr)) < 0)
+	if (connect(sockfd, (struct sockaddr *) &servaddr, sizeof(struct sockaddr)) < 0)
 	{
 		ui_error(tcp->net->rdp->inst, "connect: %s\n", TCP_STRERROR);
-		TCP_CLOSE(sock);
+		TCP_CLOSE(sockfd);
 		return False;
 	}
 
