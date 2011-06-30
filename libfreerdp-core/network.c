@@ -272,15 +272,15 @@ network_recv(rdpNetwork * net, STREAM s, uint32 length)
 		if (net->tls_connected)
 		{
 			rcvd = tls_read(net->tls, (char*) s->end, length);
-
-			if (rcvd < 0)
-				return NULL;
 		}
 		else
 #endif
 		{
 			rcvd = tcp_read(net->tcp, (char*) s->end, length);
 		}
+
+		if (rcvd < 0)
+			return NULL;
 
 		s->end += rcvd;
 		length -= rcvd;
