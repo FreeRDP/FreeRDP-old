@@ -1776,12 +1776,13 @@ rdp_free(rdpRdp * rdp)
 	if (rdp != NULL)
 	{
 		freerdp_uniconv_free(rdp->uniconv);
+		ext_free(rdp->ext);
 		cache_free(rdp->cache);
 		pcache_free(rdp->pcache);
 		orders_free(rdp->orders);
-		xfree(rdp->buffer);
+		network_free(rdp->net);
 		sec_free(rdp->sec);
-		ext_free(rdp->ext);
+		xfree(rdp->buffer);
 		xfree(rdp->redirect_server);
 		xfree(rdp->redirect_routingtoken);
 		xfree(rdp->redirect_username);
