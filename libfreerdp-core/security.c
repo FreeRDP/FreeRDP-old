@@ -674,8 +674,6 @@ sec_free(rdpSec * sec)
 {
 	if (sec != NULL)
 	{
-		license_free(sec->net->license);
-		mcs_free(sec->net->mcs);
 		xfree(sec);
 	}
 }
