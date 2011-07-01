@@ -120,6 +120,7 @@ xf_video_init(xfInfo * xfi)
 		}
 		xfi->xv_pixfmts[i] = 0;
 	}
+	XFree(fo);
 	printf("\n");
 
 	return 0;
@@ -193,7 +194,7 @@ xf_video_process_frame(xfInfo * xfi, RD_VIDEO_FRAME_EVENT * vevent)
 	shminfo.shmid = xfi->xv_shmid;
 	shminfo.shmaddr = image->data = xfi->xv_shmaddr;
 	shminfo.readOnly = False;
-  
+
 	if (!XShmAttach(xfi->display, &shminfo))
 	{
 		XFree(image);
