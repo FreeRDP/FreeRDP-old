@@ -1706,8 +1706,11 @@ rdp_reconnect(rdpRdp * rdp)
 	username = rdp->redirect_username ? rdp->redirect_username : rdp->settings->username;
 
 	sec_disconnect(rdp->sec);
+	network_free(rdp->net);
 	sec_free(rdp->sec);
+
 	rdp->sec = sec_new(rdp);
+	rdp->net = network_new(rdp);
 
 	if (!network_connect(rdp->net, server, username, rdp->settings->tcp_port_rdp))
 		return False;
