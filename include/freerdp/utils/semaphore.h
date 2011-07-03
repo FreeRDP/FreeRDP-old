@@ -23,5 +23,6 @@
 void freerdp_sem_create(void * sem_struct, int iv);
 void freerdp_sem_signal(void * sem_struct);
 void freerdp_sem_wait(void * sem_struct);
+void freerdp_sem_destroy(void * sem_struct);
 
 #endif /* __SEMAPHORE_UTILS_H */
