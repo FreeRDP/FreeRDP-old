@@ -56,6 +56,7 @@
 #else
 #include <dlfcn.h>
 #include <semaphore.h>
+#include <freerdp/utils/semaphore.h>
 #include <netdb.h>
 #include <unistd.h>
 #include <pthread.h>
@@ -65,10 +66,10 @@
 #define MUTEX_UNLOCK(m) pthread_mutex_unlock(&m)
 #define MUTEX_DESTROY(m) pthread_mutex_destroy(&m)
 #define SEMAPHORE sem_t
-#define SEMAPHORE_INIT(s, i, m) sem_init(&s, i, m)
-#define SEMAPHORE_WAIT(s) sem_wait(&s)
-#define SEMAPHORE_POST(s) sem_post(&s)
-#define SEMAPHORE_DESTROY(s) sem_destroy(&s)
+#define SEMAPHORE_INIT(s, m) freerdp_sem_create(&(s), (m))
+#define SEMAPHORE_WAIT(s) freerdp_sem_wait(&(s))
+#define SEMAPHORE_POST(s) freerdp_sem_signal(&(s))
+#define SEMAPHORE_DESTROY(s) freerdp_sem_destroy(&(s))
 #define CHR char
 #define DLOPEN(f) dlopen(f, RTLD_LOCAL | RTLD_LAZY)
 #define DLSYM(f, n) dlsym(f, n)
@@ -652,8 +653,8 @@ freerdp_chanman_new(void)
 	chan_man = (rdpChanMan *) malloc(sizeof(rdpChanMan));
 	memset(chan_man, 0, sizeof(rdpChanMan));
 
-	SEMAPHORE_INIT(chan_man->sem, 0, 1); /* start at 1 */
-	SEMAPHORE_INIT(chan_man->sem_event, 0, 1); /* start at 1 */
+	SEMAPHORE_INIT(chan_man->sem,1); /* start at 1 */
+	SEMAPHORE_INIT(chan_man->sem_event, 1); /* start at 1 */
 #ifdef _WIN32
 	chan_man->chan_event = CreateEvent(NULL, TRUE, FALSE, NULL);
 #else

@@ -37,6 +37,15 @@ void freerdp_sem_create(void * sem_struct, int iv)
 #endif
 }
 
+void freerdp_sem_destroy(void * sem_struct)
+{
+#ifdef __APPLE__
+	semaphore_destroy(mach_task_self(), *((semaphore_t *)sem_struct));
+#else
+	sem_destroy((sem_t *)sem_struct);
+#endif
+}
+
 void freerdp_sem_signal(void * sem_struct)
 {
 #ifdef __APPLE__
