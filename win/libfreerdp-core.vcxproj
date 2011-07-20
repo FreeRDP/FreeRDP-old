@@ -47,7 +47,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>..\include;C:\OpenSSL\include;..\libfreerdp-asn1;..\libfreerdp-core</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\include;..\..\openssl\build\win32-static\include;..\libfreerdp-asn1;..\libfreerdp-core</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;FREERDP_EXPORTS;FREERDP_CHANMAN_EXPORTS;WIN32_LEAN_AND_MEAN;_CRT_SECURE_NO_WARNINGS;L_ENDIAN;EXT_PATH="extensions";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -60,7 +60,7 @@
     </ClCompile>
     <Link>
       <AdditionalDependencies>ws2_32.lib;libeay32.lib;ssleay32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>C:\OpenSSL\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\..\openssl\build\win32-static\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <TargetMachine>MachineX86</TargetMachine>
@@ -70,7 +70,7 @@
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>..\include;..;C:\OpenSSL\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\include;..\..\openssl\build\win32-static\include;..\libfreerdp-asn1;..\libfreerdp-core</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;FREERDP_EXPORTS;_CRT_SECURE_NO_WARNINGS;L_ENDIAN;EXT_PATH="extensions";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -81,7 +81,7 @@
     </ClCompile>
     <Link>
       <AdditionalDependencies>ws2_32.lib;libeay32.lib;ssleay32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>C:\OpenSSL\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\..\openssl\build\win32-static\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>
@@ -95,6 +95,7 @@
     <ClCompile Include="..\libfreerdp-core\cache.c" />
     <ClCompile Include="..\libfreerdp-core\capabilities.c" />
     <ClCompile Include="..\libfreerdp-core\chan.c" />
+    <ClCompile Include="..\libfreerdp-core\connect.c" />
     <ClCompile Include="..\libfreerdp-core\credssp.c" />
     <ClCompile Include="..\libfreerdp-core\crypto\openssl.c" />
     <ClCompile Include="..\libfreerdp-core\ext.c" />
@@ -104,12 +105,13 @@
     <ClCompile Include="..\libfreerdp-core\mcs.c" />
     <ClCompile Include="..\libfreerdp-core\mppc.c" />
     <ClCompile Include="..\libfreerdp-core\nego.c" />
+    <ClCompile Include="..\libfreerdp-core\network.c" />
     <ClCompile Include="..\libfreerdp-core\ntlmssp.c" />
     <ClCompile Include="..\libfreerdp-core\orders.c" />
     <ClCompile Include="..\libfreerdp-core\pstcache.c" />
     <ClCompile Include="..\libfreerdp-core\rail.c" />
     <ClCompile Include="..\libfreerdp-core\rdp.c" />
-    <ClCompile Include="..\libfreerdp-core\secure.c" />
+    <ClCompile Include="..\libfreerdp-core\security.c" />
     <ClCompile Include="..\libfreerdp-core\stream.c" />
     <ClCompile Include="..\libfreerdp-core\surface.c" />
     <ClCompile Include="..\libfreerdp-core\tcp.c" />
@@ -137,7 +139,7 @@
     <ClInclude Include="..\libfreerdp-core\pstcache.h" />
     <ClInclude Include="..\libfreerdp-core\rail.h" />
     <ClInclude Include="..\libfreerdp-core\rdp.h" />
-    <ClInclude Include="..\libfreerdp-core\secure.h" />
+    <ClInclude Include="..\libfreerdp-core\security.h" />
     <ClInclude Include="..\libfreerdp-core\stream.h" />
     <ClInclude Include="..\libfreerdp-core\surface.h" />
     <ClInclude Include="..\libfreerdp-core\tcp.h" />

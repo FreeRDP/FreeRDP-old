@@ -17,6 +17,10 @@
    limitations under the License.
 */
 
+#ifdef WIN32
+#define _WINSOCKAPI_
+#endif
+
 #include <time.h>
 #include <openssl/des.h>
 #include <openssl/md4.h>

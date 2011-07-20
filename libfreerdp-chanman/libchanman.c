@@ -43,7 +43,7 @@
 #define MUTEX_UNLOCK(m) ReleaseMutex(m)
 #define MUTEX_DESTROY(m) CloseHandle(m)
 #define SEMAPHORE HANDLE
-#define SEMAPHORE_INIT(s, i, m) s = CreateSemaphore(NULL, i, m, NULL)
+#define SEMAPHORE_INIT(s, m) s = CreateSemaphore(NULL, m, 1<<16, NULL)
 #define SEMAPHORE_WAIT(s) WaitForSingleObject(s, INFINITE)
 #define SEMAPHORE_POST(s) ReleaseSemaphore(s, 1, NULL)
 #define SEMAPHORE_DESTROY(s) CloseHandle(s)
