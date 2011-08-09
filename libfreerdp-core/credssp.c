@@ -39,7 +39,9 @@
 #include <time.h>
 #include "ntlmssp.h"
 #include <freerdp/rdpset.h>
+#include <freerdp/types/base.h>
 #include <freerdp/utils/memory.h>
+#include <freerdp/utils/hexdump.h>
 
 #include "credssp.h"
 
@@ -189,15 +191,15 @@ void credssp_encrypt_public_key(rdpCredssp *credssp, DATABLOB *d)
 
 #ifdef WITH_DEBUG_NLA
 	printf("Public Key (length = %d)\n", credssp->public_key.length);
-	hexdump(credssp->public_key.data, credssp->public_key.length);
+	freerdp_hexdump(credssp->public_key.data, credssp->public_key.length);
 	printf("\n");
 
 	printf("Encrypted Public Key (length = %d)\n", encrypted_public_key.length);
-	hexdump(encrypted_public_key.data, encrypted_public_key.length);
+	freerdp_hexdump(encrypted_public_key.data, encrypted_public_key.length);
 	printf("\n");
 
 	printf("Signature\n");
-	hexdump(signature, 16);
+	freerdp_hexdump(signature, 16);
 	printf("\n");
 #endif
 
@@ -262,15 +264,15 @@ void credssp_encrypt_ts_credentials(rdpCredssp *credssp, DATABLOB *d)
 
 #ifdef WITH_DEBUG_NLA
 	printf("TSCredentials (length = %d)\n", credssp->ts_credentials.length);
-	hexdump(credssp->ts_credentials.data, credssp->ts_credentials.length);
+	freerdp_hexdump(credssp->ts_credentials.data, credssp->ts_credentials.length);
 	printf("\n");
 
 	printf("Encrypted TSCredentials (length = %d)\n", encrypted_ts_credentials.length);
-	hexdump(encrypted_ts_credentials.data, encrypted_ts_credentials.length);
+	freerdp_hexdump(encrypted_ts_credentials.data, encrypted_ts_credentials.length);
 	printf("\n");
 
 	printf("Signature\n");
-	hexdump(signature, 16);
+	freerdp_hexdump(signature, 16);
 	printf("\n");
 #endif
 
