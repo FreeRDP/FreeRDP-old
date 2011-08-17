@@ -22,7 +22,6 @@
     <ClInclude Include="..\libfreerdp-rfx\rfx_rlgr.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\libfreerdp-rfx\rfx.c" />
     <ClCompile Include="..\libfreerdp-rfx\rfx_bitstream.c" />
     <ClCompile Include="..\libfreerdp-rfx\rfx_decode.c" />
     <ClCompile Include="..\libfreerdp-rfx\rfx_differential.c" />

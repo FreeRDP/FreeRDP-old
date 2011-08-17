@@ -27,7 +27,11 @@
 
 #include "rfx_decode.h"
 
+#ifdef WIN32
+static __inline void
+#else
 static __inline void __attribute__((__gnu_inline__, __always_inline__, __artificial__))
+#endif
 rfx_decode_format_RGB(sint16 * r_buf, sint16 * g_buf, sint16 * b_buf,
 	RFX_PIXEL_FORMAT pixel_format, uint8 * dst_buf)
 {
