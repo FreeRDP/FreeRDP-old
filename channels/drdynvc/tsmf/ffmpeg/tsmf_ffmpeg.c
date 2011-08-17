@@ -90,10 +90,12 @@ tsmf_ffmpeg_init_audio_stream(ITSMFDecoder * decoder, const TS_AM_MEDIA_TYPE * m
 
 	/* FFmpeg's float_to_int16_interleave_sse2 would crash at least in WMA decoder.
 	   We disable sse2 to workaround it, however this should be further investigated. */
-#if LIBAVCODEC_VERSION_MAJOR < 52 || (LIBAVCODEC_VERSION_MAJOR == 52 && LIBAVCODEC_VERSION_MINOR <= 20)
+#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(52, 24, 0)
 	mdecoder->codec_context->dsp_mask = FF_MM_SSE2 | FF_MM_MMXEXT;
-#else
+#elif LIBAVCODEC_VERSION_INT < AV_VERSION_INT(52, 87, 1)
 	mdecoder->codec_context->dsp_mask = FF_MM_SSE2 | FF_MM_MMX2;
+#else
+	mdecoder->codec_context->dsp_mask = AV_CPU_FLAG_SSE2 | AV_CPU_FLAG_MMX2;
 #endif
 
 	return 0;
