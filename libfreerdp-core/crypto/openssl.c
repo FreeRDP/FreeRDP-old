@@ -21,8 +21,8 @@
 #include "crypto.h"
 #include <freerdp/types/base.h>
 #include <freerdp/utils/memory.h>
+#include <freerdp/utils/usleep.h>
 #include <freerdp/constants/constants.h>
-#include <time.h>
 
 #include "tls.h"
 #include "crypto/openssl.h"
@@ -351,7 +351,6 @@ struct rdp_tls
 {
 	SSL_CTX * ctx;
 	SSL * ssl;
-	struct timespec ts;
 };
 
 RD_BOOL
@@ -430,10 +429,6 @@ tls_new(void)
 	 */
 
 	SSL_CTX_set_options(tls->ctx, SSL_OP_ALL);
-
-	/* a small 0.1ms delay when network blocking happens. */
-	tls->ts.tv_sec = 0;
-	tls->ts.tv_nsec = 100000;
 
 	return tls;
 }
@@ -522,7 +517,7 @@ tls_write(rdpTls * tls, char* b, int length)
 				break;
 
 			case SSL_ERROR_WANT_WRITE:
-				nanosleep(&tls->ts, NULL);
+				freerdp_usleep(1000);
 				break;
 
 			default:
@@ -551,7 +546,7 @@ tls_read(rdpTls * tls, char* b, int length)
 				break;
 
 			case SSL_ERROR_WANT_READ:
-				nanosleep(&tls->ts, NULL);
+				freerdp_usleep(1000);
 				break;
 
 			default:

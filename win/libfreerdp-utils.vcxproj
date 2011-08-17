@@ -73,8 +73,10 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\libfreerdp-utils\datablob.c" />
+    <ClCompile Include="..\libfreerdp-utils\hexdump.c" />
     <ClCompile Include="..\libfreerdp-utils\memory.c" />
     <ClCompile Include="..\libfreerdp-utils\unicode.c" />
+    <ClCompile Include="..\libfreerdp-utils\usleep.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
