@@ -14,7 +14,8 @@ libfreerdp_utils_la_SOURCES = \
 	chan_plugin.c \
 	stopwatch.c \
 	profiler.c \
-	hexdump.c
+	hexdump.c \
+	usleep.c
 
 libfreerdp_utils_la_CFLAGS = \
 	-I$(top_srcdir) \
