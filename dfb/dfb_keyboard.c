@@ -136,6 +136,7 @@ dfb_kb_init(void)
 
 	keymap[DIKI_LESS_SIGN - DIKI_UNKNOWN] = 0;
 
+	keymap[DIKI_KP_DECIMAL - DIKI_UNKNOWN] = VK_DECIMAL;
 	keymap[DIKI_KP_0 - DIKI_UNKNOWN] = VK_NUMPAD0;
 	keymap[DIKI_KP_1 - DIKI_UNKNOWN] = VK_NUMPAD1;
 	keymap[DIKI_KP_2 - DIKI_UNKNOWN] = VK_NUMPAD2;
@@ -153,10 +154,32 @@ dfb_kb_init(void)
 }
 
 void
-dfb_kb_send_key(rdpInst * inst, RD_BOOL up, uint8 keycode)
+dfb_kb_send_key(rdpInst * inst, RD_BOOL up, uint8 keycode, uint8 hardwarecode)
 {
 	RD_BOOL extended;
-	uint8 scancode = freerdp_kbd_get_scancode_by_virtualkey(keymap[keycode], &extended);
+	uint8 scancode;
+	
+	if (keycode)
+	{
+		scancode = freerdp_kbd_get_scancode_by_virtualkey(keymap[keycode], &extended);
+	}
+	else
+	{
+		switch(hardwarecode)
+		{
+			case 0x7A:
+				scancode = freerdp_kbd_get_scancode_by_virtualkey(VK_HANGUL, &extended);
+				break;
+				
+			case 0x7B:
+				scancode = freerdp_kbd_get_scancode_by_virtualkey(VK_HANJA, &extended);
+				break;
+			
+			default:
+				return;
+		}
+	}
+	
 	inst->rdp_send_input_scancode(inst, up, extended, scancode);
 }
 
