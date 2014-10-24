@@ -54,6 +54,7 @@ set_default_params(rdpSet * settings)
 	settings->bitmap_compression = 1;
 	settings->desktop_save = 0;
 	settings->performanceflags = PERF_DISABLE_FULLWINDOWDRAG | PERF_DISABLE_MENUANIMATIONS | PERF_DISABLE_WALLPAPER;
+	settings->mouse_motion = 1;
 	settings->off_screen_bitmaps = 1;
 	settings->triblt = 0;
 	settings->software_gdi = 1;
