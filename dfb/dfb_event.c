@@ -29,6 +29,7 @@ int
 dfb_process_event(rdpInst * inst, DFBEvent * event)
 {
 	int keycode;
+	int hardwarecode;
 	int cursor_x;
 	int cursor_y;
 	int device_flags;
@@ -78,12 +79,14 @@ dfb_process_event(rdpInst * inst, DFBEvent * event)
 
 			case DIET_KEYPRESS:
 				keycode = input_event->key_id - DIKI_UNKNOWN;
-				dfb_kb_send_key(inst, 0, keycode);
+				hardwarecode = input_event->key_code;
+				dfb_kb_send_key(inst, 0, keycode, hardwarecode);
 				break;
 
 			case DIET_KEYRELEASE:
 				keycode = input_event->key_id - DIKI_UNKNOWN;
-				dfb_kb_send_key(inst, 1, keycode);
+				hardwarecode = input_event->key_code;
+				dfb_kb_send_key(inst, 1, keycode, hardwarecode);
 				break;
 
 			case DIET_UNKNOWN:
